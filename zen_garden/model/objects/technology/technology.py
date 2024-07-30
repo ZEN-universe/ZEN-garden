@@ -481,7 +481,7 @@ class Technology(Element):
         rules.constraint_cost_capex_total()
 
         # yearly opex
-        rules.constraint_opex_yearly()
+        rules.constraint_cost_opex_yearly()
 
         # total opex of all technologies
         rules.constraint_cost_opex_total()
@@ -952,7 +952,7 @@ class TechnologyRules(GenericRule):
         ### return
         self.constraints.add_constraint("constraint_capex_yearly",constraints)
 
-    def constraint_opex_yearly(self):
+    def constraint_cost_opex_yearly(self):
         """ yearly opex for a technology at a location in each year
 
         .. math::
@@ -974,7 +974,7 @@ class TechnologyRules(GenericRule):
         constraints = lhs == rhs
 
         ### return
-        self.constraints.add_constraint("constraint_opex_yearly",constraints)
+        self.constraints.add_constraint("constraint_cost_opex_yearly",constraints)
 
     def constraint_carbon_emissions_technology_total(self):
         """ calculate total carbon emissions of each technology
