@@ -454,48 +454,48 @@ system['set\_transport\_technologies'] = ['power\_line','natural\_gas\_pipeline'
 
  **Variables** 
 
-| **Name:** | **Time Step Type:** | **Doc String:** | **Scope:** | **Unit Category:** |
-| --- | --- | --- | --- | --- |
-| carbon\_emissions\_annual | set\_time\_steps\_yearly | annual carbon emissions of energy system | energy system | {"emissions": 1}|
-| carbon\_emissions\_cumulative | set\_time\_steps\_yearly | cumulative carbon emissions of energy system over time for each year | energy system | {"emissions": 1}|
+| **Name:**                            | **Time Step Type:** | **Doc String:** | **Scope:** | **Unit Category:** |
+|--------------------------------------| --- | --- | --- | --- |
+| carbon\_emissions\_annual            | set\_time\_steps\_yearly | annual carbon emissions of energy system | energy system | {"emissions": 1}|
+| carbon\_emissions\_cumulative        | set\_time\_steps\_yearly | cumulative carbon emissions of energy system over time for each year | energy system | {"emissions": 1}|
 | carbon\_emissions\_budget\_overshoot | set\_time\_steps\_yearly | overshoot carbon emissions of energy system at the end of the time horizon | energy system | {"emissions": 1}|
 | carbon\_emissions\_annual\_overshoot | set\_time\_steps\_yearly | overshoot of the annual carbon emissions limit of energy system | energy system | {"emissions": 1}|
-| cost\_carbon\_emissions\_total | set\_time\_steps\_yearly | total cost of carbon emissions of energy system | energy system | {"money": 1}|
-| cost\_total | set\_time\_steps\_yearly | total cost of energy system | energy system | {"money": 1}|
-| net\_present\_cost | set\_time\_steps\_yearly | net\_present\_cost of energy system | energy system | {"money": 1}|
-| flow\_import | set\_time\_steps\_operation | node- and time-dependent carrier import from the grid | carrier | {"energy_quantity": 1, "time": -1}|
-| flow\_export | set\_time\_steps\_operation | node- and time-dependent carrier export from the grid | carrier | {"energy_quantity": 1, "time": -1}|
-| cost\_carrier | set\_time\_steps\_operation | node- and time-dependent carrier cost due to import and export | carrier | {"money": 1, "time": -1}|
-| cost\_carrier\_total | set\_time\_steps\_yearly | total carrier cost due to import and export | carrier | {"money": 1}|
-| carbon\_emissions\_carrier | set\_time\_steps\_operation | carbon emissions of importing and exporting carrier | carrier |{"emissions": 1, "time": -1}|
-| carbon\_emissions\_carrier\_total | set\_time\_steps\_yearly | total carbon emissions of importing and exporting carrier | carrier | {"emissions": 1}|
-| shed\_demand | set\_time\_steps\_operation | shed demand of carrier | carrier | {"energy_quantity": 1, "time": -1}|
-| cost\_shed\_demand | set\_time\_steps\_operation | shed demand of carrier | carrier | {"money": 1, "time": -1}|
-| technology\_installation | set\_time\_steps\_yearly | installment of a technology at location l and time t | technology | {}|
-| capacity | set\_time\_steps\_yearly | size of installed technology at location l and time t | technology | {"energy_quantity": 1, "time": -1}|
-| capacity\_addition | set\_time\_steps\_yearly | size of built technology (invested capacity after construction) at location l and time t | technology | {"energy_quantity": 1, "time": -1}|
-| capacity\_investment | set\_time\_steps\_yearly | size of invested technology at location l and time t | technology | {"energy_quantity": 1, "time": -1}|
-| cost\_capex | set\_time\_steps\_yearly | capex for building technology at location l and time t | technology | {"money": 1}|
-| capex\_yearly | set\_time\_steps\_yearly | annual capex for having technology at location l | technology | {"money": 1}|
-| cost\_capex\_total | set\_time\_steps\_yearly | total capex for installing all technologies in all locations at all times | technology | {"money": 1}|
-| cost\_opex | set\_time\_steps\_operation | opex for operating technology at location l and time t | technology |{"money": 1, "time": -1}|
-| opex\_yearly | set\_time\_steps\_yearly | yearly opex for operating technology at location l and year y | technology | {"money": 1}|
-| cost\_opex\_total | set\_time\_steps\_yearly | total opex all technologies and locations in year y | technology | {"money": 1}|
-| carbon\_emissions\_technology | set\_time\_steps\_operation | carbon emissions for operating technology at location l and time t | technology | {"emissions": 1, "time": -1}|
+| cost\_carbon\_emissions\_total       | set\_time\_steps\_yearly | total cost of carbon emissions of energy system | energy system | {"money": 1}|
+| cost\_total                          | set\_time\_steps\_yearly | total cost of energy system | energy system | {"money": 1}|
+| net\_present\_cost                   | set\_time\_steps\_yearly | net\_present\_cost of energy system | energy system | {"money": 1}|
+| flow\_import                         | set\_time\_steps\_operation | node- and time-dependent carrier import from the grid | carrier | {"energy_quantity": 1, "time": -1}|
+| flow\_export                         | set\_time\_steps\_operation | node- and time-dependent carrier export from the grid | carrier | {"energy_quantity": 1, "time": -1}|
+| cost\_carrier                        | set\_time\_steps\_operation | node- and time-dependent carrier cost due to import and export | carrier | {"money": 1, "time": -1}|
+| cost\_carrier\_total                 | set\_time\_steps\_yearly | total carrier cost due to import and export | carrier | {"money": 1}|
+| carbon\_emissions\_carrier           | set\_time\_steps\_operation | carbon emissions of importing and exporting carrier | carrier |{"emissions": 1, "time": -1}|
+| carbon\_emissions\_carrier\_total    | set\_time\_steps\_yearly | total carbon emissions of importing and exporting carrier | carrier | {"emissions": 1}|
+| shed\_demand                         | set\_time\_steps\_operation | shed demand of carrier | carrier | {"energy_quantity": 1, "time": -1}|
+| cost\_shed\_demand                   | set\_time\_steps\_operation | shed demand of carrier | carrier | {"money": 1, "time": -1}|
+| technology\_installation             | set\_time\_steps\_yearly | installment of a technology at location l and time t | technology | {}|
+| capacity                             | set\_time\_steps\_yearly | size of installed technology at location l and time t | technology | {"energy_quantity": 1, "time": -1}|
+| capacity\_addition                   | set\_time\_steps\_yearly | size of built technology (invested capacity after construction) at location l and time t | technology | {"energy_quantity": 1, "time": -1}|
+| capacity\_investment                 | set\_time\_steps\_yearly | size of invested technology at location l and time t | technology | {"energy_quantity": 1, "time": -1}|
+| cost\_capex                          | set\_time\_steps\_yearly | capex for building technology at location l and time t | technology | {"money": 1}|
+| capex\_yearly                        | set\_time\_steps\_yearly | annual capex for having technology at location l | technology | {"money": 1}|
+| cost\_capex\_total                   | set\_time\_steps\_yearly | total capex for installing all technologies in all locations at all times | technology | {"money": 1}|
+| cost\_opex                           | set\_time\_steps\_operation | opex for operating technology at location l and time t | technology |{"money": 1, "time": -1}|
+| cost\_opex\_yearly                   | set\_time\_steps\_yearly | yearly opex for operating technology at location l and year y | technology | {"money": 1}|
+| cost\_opex\_total                    | set\_time\_steps\_yearly | total opex all technologies and locations in year y | technology | {"money": 1}|
+| carbon\_emissions\_technology        | set\_time\_steps\_operation | carbon emissions for operating technology at location l and time t | technology | {"emissions": 1, "time": -1}|
 | carbon\_emissions\_technology\_total | set\_time\_steps\_yearly | total carbon emissions for operating technology at location l and time t | technology | {"emissions": 1}|
-| flow\_conversion\_input | set\_time\_steps\_operation | Carrier input of conversion technologies | conversion technology | {"energy_quantity": 1, "time": -1}|
-| flow\_conversion\_output | set\_time\_steps\_operation | Carrier output of conversion technologies | conversion technology | {"energy_quantity": 1, "time": -1}|
-| capacity\_approximation | set\_time\_steps\_yearly | pwa variable for size of installed technology on edge i and time t | technology | {"energy_quantity": 1, "time": -1}|
-| capex\_approximation | set\_time\_steps\_yearly | pwa variable for capex for installing technology on edge i and time t | technology | {"money": 1}|
-| flow\_approximation\_reference | set\_time\_steps\_operation | pwa of flow of reference carrier of conversion technologies | conversion technology | {"energy_quantity": 1, "time": -1}|
-| flow\_approximation\_dependent | set\_time\_steps\_operation | pwa of flow of dependent carriers of conversion technologies | conversion technology | {"energy_quantity": 1, "time": -1}|
-| flow\_storage\_charge | set\_time\_steps\_operation | carrier flow into storage technology on node i and time t | storage technology | {"energy_quantity": 1, "time": -1}|
-| flow\_storage\_discharge | set\_time\_steps\_operation | carrier flow out of storage technology on node i and time t | storage technology | {"energy_quantity": 1, "time": -1}|
-| storage\_level | set\_time\_steps\_storage\_level | storage level of storage technology on node in each storage time step | storage technology | {"energy_quantity": 1}|
-| flow\_transport | set\_time\_steps\_operation | carrier flow through transport technology on edge i and time t | transport technology | {"energy_quantity": 1, "time": -1}|
-| flow\_transport\_loss | set\_time\_steps\_operation | carrier flow through transport technology on edge i and time t | transport technology | {"energy_quantity": 1, "time": -1}|
-| tech\_on\_var | set\_time\_steps\_operation | Binary variable which equals 1 when technology is switched on at location l and time t, else 0 | technology | {}|
-| tech\_off\_var | set\_time\_steps\_operation | Binary variable which equals 1 when technology is switched off at location l and time t, else 0 | technology | {}|
+| flow\_conversion\_input              | set\_time\_steps\_operation | Carrier input of conversion technologies | conversion technology | {"energy_quantity": 1, "time": -1}|
+| flow\_conversion\_output             | set\_time\_steps\_operation | Carrier output of conversion technologies | conversion technology | {"energy_quantity": 1, "time": -1}|
+| capacity\_approximation              | set\_time\_steps\_yearly | pwa variable for size of installed technology on edge i and time t | technology | {"energy_quantity": 1, "time": -1}|
+| capex\_approximation                 | set\_time\_steps\_yearly | pwa variable for capex for installing technology on edge i and time t | technology | {"money": 1}|
+| flow\_approximation\_reference       | set\_time\_steps\_operation | pwa of flow of reference carrier of conversion technologies | conversion technology | {"energy_quantity": 1, "time": -1}|
+| flow\_approximation\_dependent       | set\_time\_steps\_operation | pwa of flow of dependent carriers of conversion technologies | conversion technology | {"energy_quantity": 1, "time": -1}|
+| flow\_storage\_charge                | set\_time\_steps\_operation | carrier flow into storage technology on node i and time t | storage technology | {"energy_quantity": 1, "time": -1}|
+| flow\_storage\_discharge             | set\_time\_steps\_operation | carrier flow out of storage technology on node i and time t | storage technology | {"energy_quantity": 1, "time": -1}|
+| storage\_level                       | set\_time\_steps\_storage\_level | storage level of storage technology on node in each storage time step | storage technology | {"energy_quantity": 1}|
+| flow\_transport                      | set\_time\_steps\_operation | carrier flow through transport technology on edge i and time t | transport technology | {"energy_quantity": 1, "time": -1}|
+| flow\_transport\_loss                | set\_time\_steps\_operation | carrier flow through transport technology on edge i and time t | transport technology | {"energy_quantity": 1, "time": -1}|
+| tech\_on\_var                        | set\_time\_steps\_operation | Binary variable which equals 1 when technology is switched on at location l and time t, else 0 | technology | {}|
+| tech\_off\_var                       | set\_time\_steps\_operation | Binary variable which equals 1 when technology is switched off at location l and time t, else 0 | technology | {}|
 
  |
 
