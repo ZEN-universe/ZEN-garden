@@ -35,6 +35,8 @@ Documentation
    :maxdepth: 3
    :caption: Dataset Examples
 
+   files/dataset_examples
+
 
 .. toctree::
    :maxdepth: 3
