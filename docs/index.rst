@@ -14,7 +14,7 @@ Documentation
 ======================================
 
 .. toctree::
-   :maxdepth: 3
+   :maxdepth: 2
    :caption: Overview
 
    files/functionalities
@@ -22,7 +22,7 @@ Documentation
    files/license
 
 .. toctree::
-   :maxdepth: 3
+   :maxdepth: 2
    :caption: User guide
 
    files/installation
@@ -32,14 +32,14 @@ Documentation
    files/troubleshooting
 
 .. toctree::
-   :maxdepth: 3
+   :maxdepth: 2
    :caption: Dataset Examples
 
    files/dataset_examples
 
 
 .. toctree::
-   :maxdepth: 3
+   :maxdepth: 2
    :caption: Contributing & Support
 
    files/contributing
@@ -47,7 +47,7 @@ Documentation
 
 
 .. toctree::
-   :maxdepth: 3
+   :maxdepth: 2
    :caption: References
 
    files/api_reference
