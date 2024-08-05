@@ -424,7 +424,7 @@ class Technology(Element):
         variables.add_variable(model, name="cost_opex_total", index_sets=sets["set_time_steps_yearly"],
             bounds=(0,np.inf), doc="total opex all technologies and locations in year y", unit_category={"money": 1})
         # yearly opex
-        variables.add_variable(model, name="opex_yearly", index_sets=cls.create_custom_set(["set_technologies", "set_location", "set_time_steps_yearly"], optimization_setup),
+        variables.add_variable(model, name="cost_opex_yearly", index_sets=cls.create_custom_set(["set_technologies", "set_location", "set_time_steps_yearly"], optimization_setup),
             bounds=(0,np.inf), doc="yearly opex for operating technology at location l and year y", unit_category={"money": 1})
         # carbon emissions
         variables.add_variable(model, name="carbon_emissions_technology", index_sets=cls.create_custom_set(["set_technologies", "set_location", "set_time_steps_operation"], optimization_setup),
@@ -481,7 +481,7 @@ class Technology(Element):
         rules.constraint_cost_capex_total()
 
         # yearly opex
-        rules.constraint_opex_yearly()
+        rules.constraint_cost_opex_yearly()
 
         # total opex of all technologies
         rules.constraint_cost_opex_total()
@@ -652,7 +652,7 @@ class TechnologyRules(GenericRule):
             OPEX_y = \sum_{h\in\mathcal{H}}\sum_{p\in\mathcal{P}} OPEX_{h,p,y}
 
         """
-        lhs = self.variables["cost_opex_total"] - self.variables["opex_yearly"].sum(["set_technologies","set_location"])
+        lhs = self.variables["cost_opex_total"] - self.variables["cost_opex_yearly"].sum(["set_technologies","set_location"])
         rhs = 0
         constraints = lhs == rhs
 
@@ -963,7 +963,7 @@ class TechnologyRules(GenericRule):
         ### return
         self.constraints.add_constraint("constraint_capex_yearly",constraints)
 
-    def constraint_opex_yearly(self):
+    def constraint_cost_opex_yearly(self):
         """ yearly opex for a technology at a location in each year
 
         .. math::
@@ -980,12 +980,12 @@ class TechnologyRules(GenericRule):
         times = times.to_xarray().broadcast_like(self.variables["cost_opex"].mask)
         term_opex_variable = (self.variables["cost_opex"] * times).sum("set_time_steps_operation")
         term_opex_fixed = (self.parameters.opex_specific_fixed * self.variables["capacity"]).sum("set_capacity_types")
-        lhs = self.variables["opex_yearly"] - term_opex_variable - term_opex_fixed
+        lhs = self.variables["cost_opex_yearly"] - term_opex_variable - term_opex_fixed
         rhs = 0
         constraints = lhs == rhs
 
         ### return
-        self.constraints.add_constraint("constraint_opex_yearly",constraints)
+        self.constraints.add_constraint("constraint_cost_opex_yearly",constraints)
 
     def constraint_carbon_emissions_technology_total(self):
         """ calculate total carbon emissions of each technology

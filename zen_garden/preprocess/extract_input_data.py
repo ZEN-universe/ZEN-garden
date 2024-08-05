@@ -440,7 +440,7 @@ class DataInput:
         """ reads input data and restructures the dataframe to return (multi)indexed dict
 
         :return pwa_dict: dictionary with pwa parameters """
-        attribute_name = "capex_specific"
+        attribute_name = "capex_specific_conversion"
         index_sets = ["set_nodes", "set_time_steps_yearly"]
         time_steps = "set_time_steps_yearly"
         unit_category = {"money": 1, "energy_quantity": -1, "time": 1}
