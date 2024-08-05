@@ -29,7 +29,7 @@ Documentation
    files/running_models
    files/building_models
    files/analyzing_models
-   
+   files/troubleshooting
 
 .. toctree::
    :maxdepth: 3
@@ -43,7 +43,6 @@ Documentation
    :caption: Contributing & Support
 
    files/contributing
-   files/troubleshooting
    files/get_help
 
 
