@@ -49,9 +49,9 @@ How to run the ZEN-garden package in a terminal is described in [ZEN-garden as a
 
 **PyCharm Power Shell (Terminal in PyCharm):** As the ${\textsf{\color{orange}zen-garden conda environment}}$ is activated by default, you can simply enter the following ${\textsf{\color{blue}command}}$ followed by a chosen ${\textsf{\color{green}dataset name}}$:
 
-${\textsf{\color{orange}(zen-garden)}}$ PS ${\textsf{\color{brown}C:/Users/Lukas Kunz/ETH/ZEN-garden/ZEN-garden/data/>}}$  ${\textsf{\color{blue}python -m zen-garden --dataset=}}$ ${\textsf{\color{green}"test 1b"}}$
+${\textsf{\color{orange}(zen-garden)}}$ PS ${\textsf{\color{brown}<path_to_zen_garden>/ZEN-garden/data/>}}$  ${\textsf{\color{blue}python -m zen-garden --dataset=}}$ ${\textsf{\color{green}"test 1b"}}$
 
-To copy: ```(zen-garden) PS C:\Users\Lukas Kunz\ETH\ZEN_garden\ZEN-garden\data> python -m zen_garden --dataset=“test_1b“```
+To copy: ```(zen-garden) PS <path_to_zen_garden>\ZEN-garden\data> python -m zen_garden --dataset=“test_1b“```
 
 **Anaconda Prompt:** The only difference when using the Anaconda prompt is that you have to activate the zen-garden environment manually before you can run the package execution command. This can be done by running ```conda activate zen-garden```.
 
@@ -64,14 +64,16 @@ If your console looks something like the screenshot below, the ZEN-garden module
 To run computational more expensive optimization problems, ETH's EULER cluster can be accessed as described at [ZEN-garden on EULER](https://github.com/RRE-ETH/ZEN-garden/discussions/186).
 
 ### Read Results
-After a dataset's optimization problem has been executed, its results can be accessed and visualized with help of the _results.py_ script. To get a first impression of the available results processing functionalities, the Jupyter Notebook _postprocess\_results.ipynb_ can help a lot. It can be found in ZEN-garden's _notebooks_ directory.
+After a dataset's optimization problem has been executed, its results can be accessed and visualized with help of the _results.py_ script. To get a first impression of the available results processing functionalities, the Jupyter Notebook _postprocess\_results.ipynb_ can help a lot. It can be found in ZEN-garden's _notebooks_ directory. 
 
- Another way to access your results is to use the "Read Results" configuration. By running the _results.py_ script, the different member functions of the contained ```Results``` class can be applied to the ```Results``` object to extract and plot the data of your optimization problem. Since the "Read Results" configuration creates an instance of the ```Results``` class, the object can be accessed by "self". By setting a break point at the end of the file, the debugger console can be used to apply the class's functions to the ```Results``` instance.
+The most efficient way to integrate the results script into your result processing script, is to import the `Results` class into your script:
+``from zen_garden.postprocess.results.results import Results``
+Then, you can simply read a result in your script by writing
+``r = Results(path=<path_to_results>)``
+
+Another way to access your results is to use the "Read Results" configuration. By running the _results.py_ script, the different member functions of the contained ```Results``` class can be applied to the ```Results``` object to extract and plot the data of your optimization problem. Since the "Read Results" configuration creates an instance of the ```Results``` class, the object can be accessed by "self". By setting a break point at the end of the file, the debugger console can be used to apply the class's functions to the ```Results``` instance.
 
 ![image](https://github.com/ZEN-universe/ZEN-garden/assets/114185605/85764bc6-2999-4f83-91c6-1d49243a1d8d)
-
-#### How to plot your results
-The class ```Results``` contains three member functions to plot the simulated data. Please have a look at [the plot discussion entry](https://github.com/RRE-ETH/ZEN-garden/discussions/251) to get further explanations.
 
 #### Accessing your results data
 To access the data frames containing the raw optimization results of the variables and parameters, the following member functions of the ```Results``` class can be used:

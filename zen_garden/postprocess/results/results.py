@@ -9,12 +9,13 @@ from zen_garden.postprocess.results.solution_loader import (
 )
 from zen_garden.postprocess.results.multi_hdf_loader import MultiHdfLoader
 from functools import cache
-from zen_garden.model.default_config import Config,Analysis,Solver,System
+from zen_garden.model.default_config import Config, Analysis, Solver, System
 import importlib
 import os
 import logging
 import json
 from pathlib import Path
+
 
 class Results:
     def __init__(self, path: str):
@@ -24,12 +25,15 @@ class Results:
         first_scenario = next(iter(self.solution_loader.scenarios.values()))
         self.name = Path(first_scenario.analysis.dataset).name
 
-    def __str__(self):
+    def __str__(self) -> str:
         first_scenario = next(iter(self.solution_loader.scenarios.values()))
         return f"Results of '{first_scenario.analysis.dataset}'"
 
     def get_df(
-        self, component_name: str, scenario_name: Optional[str] = None, data_type: Literal["dataframe","units"] = "dataframe"
+        self,
+        component_name: str,
+        scenario_name: Optional[str] = None,
+        data_type: Literal["dataframe", "units"] = "dataframe",
     ) -> Optional[dict[str, "pd.DataFrame | pd.Series[Any]"]]:
         """
         Transforms a parameter or variable dataframe (compressed) string into an actual pandas dataframe
@@ -78,9 +82,13 @@ class Results:
         :param keep_raw: Keep the raw values of the rolling horizon optimization
         """
         assert component.timestep_type is not None, "Component has no timestep type."
-        series = self.solution_loader.get_component_data(scenario, component, keep_raw=keep_raw)
 
-        if element_name is not None and element_name in series.index.get_level_values(0):
+        series = self.solution_loader.get_component_data(
+            scenario, component, keep_raw=keep_raw
+        )
+        if element_name is not None and element_name in series.index.get_level_values(
+            0
+        ):
             series = series.loc[element_name]
 
         if year is None:
@@ -128,7 +136,6 @@ class Results:
                     scenario, component.timestep_type, (year_temp,)
                 )
                 series[time_steps_year] = series[time_steps_year] / annuity[year_temp]
-
         try:
             output_df = series[sequence_timesteps]
         except KeyError:
@@ -144,7 +151,6 @@ class Results:
             )
 
             output_df = output_df[hours_of_year]
-
         return output_df
 
     def get_full_ts(
@@ -235,13 +241,15 @@ class Results:
         for y in years:
             timesteps = self.solution_loader.get_timesteps(scenario, component, int(y))
             try:
-                ans.insert(len(ans.columns), y, total_value[timesteps].sum(axis=1,skipna=False))  # type: ignore
+                ans.insert(len(ans.columns), y, total_value[timesteps].sum(axis=1, skipna=False))  # type: ignore
             except KeyError:
                 timestep_list = [i for i in timesteps if i in total_value]
-                ans.insert(len(ans.columns), year, total_value[timestep_list].sum(axis=1,skipna=False))  # type: ignore # noqa
+                ans.insert(len(ans.columns), year, total_value[timestep_list].sum(axis=1, skipna=False))  # type: ignore # noqa
 
         if "mf" in ans.index.names:
-            ans = ans.reorder_levels([i for i in ans.index.names if i != "mf"] + ["mf"]).sort_index(axis=0)
+            ans = ans.reorder_levels(
+                [i for i in ans.index.names if i != "mf"] + ["mf"]
+            ).sort_index(axis=0)
 
         return ans
 
@@ -312,7 +320,9 @@ class Results:
                 ).T
         return total_value
 
-    def _get_annuity(self, scenario: Scenario, discount_to_first_step: bool = True):
+    def _get_annuity(
+        self, scenario: Scenario, discount_to_first_step: bool = True
+    ) -> pd.Series:
         """discounts the duals
 
         :param discount_to_first_step: apply annuity to first year of interval or entire interval
@@ -376,7 +386,7 @@ class Results:
         scenario_name: Optional[str] = None,
         element_name: Optional[str] = None,
         year: Optional[int] = None,
-        discount_to_first_step=True,
+        discount_to_first_step: bool = True,
         keep_raw: Optional[bool] = False,
     ) -> Optional["pd.DataFrame | pd.Series[Any]"]:
         """extracts the dual variables of a constraint
@@ -407,7 +417,12 @@ class Results:
         )
         return _duals
 
-    def get_unit(self, component_name: str, scenario_name: Optional[str] = None,droplevel:bool=True) -> Optional[dict[str, "pd.DataFrame | pd.Series[Any]"]]:
+    def get_unit(
+        self,
+        component_name: str,
+        scenario_name: Optional[str] = None,
+        droplevel: bool = True,
+    ) -> Optional[dict[str, "pd.DataFrame | pd.Series[Any]"]]:
         """
         Extracts the unit of a given Component. If no scenario is given, a random one is taken.
 
@@ -417,15 +432,22 @@ class Results:
         """
         if scenario_name is None:
             scenario_name = next(iter(self.solution_loader.scenarios.keys()))
-        res = self.get_df(component_name, scenario_name=scenario_name, data_type="units")
+        res = self.get_df(
+            component_name, scenario_name=scenario_name, data_type="units"
+        )
         if res is None:
             return None
         units = res[scenario_name]
         if droplevel:
             # TODO make more flexible
-            loc_idx = ["node","location","edge"]
-            time_idx = ["year","time_operation","time_storage_level"]
-            drop_idx = pd.Index(loc_idx+time_idx).intersection(units.index.names)
+            loc_idx = ["node", "location", "edge", "set_location", "set_nodes"]
+            time_idx = [
+                "year",
+                "time_operation",
+                "time_storage_level",
+                "set_time_steps_operation",
+            ]
+            drop_idx = pd.Index(loc_idx + time_idx).intersection(units.index.names)
             units.index = units.index.droplevel(drop_idx.to_list())
             units = units[~units.index.duplicated()]
         return units
@@ -480,7 +502,7 @@ class Results:
         years = list(range(0, system.optimized_years))
         return years
 
-    def has_MF(self, scenario_name: Optional[str] = None):
+    def has_MF(self, scenario_name: Optional[str] = None) -> bool:
         """
         Extracts the System config of a given Scenario. If no scenario is given, a random one is taken.
 
@@ -490,6 +512,154 @@ class Results:
             scenario_name = next(iter(self.solution_loader.scenarios.keys()))
         scenario = self.solution_loader.scenarios[scenario_name]
         return scenario.system.use_rolling_horizon
+
+    def calculate_connected_edges(
+        self, node: str, direction: str, set_nodes_on_edges: dict[str, str]
+    ):
+        """calculates connected edges going in (direction = 'in') or going out (direction = 'out')
+
+        :param node: current node, connected by edges
+        :param direction: direction of edges, either in or out. In: node = endnode, out: node = startnode
+        :param set_nodes_on_edges: set of nodes on edges
+        :return set_connected_edges: list of connected edges"""
+        if direction == "in":
+            # second entry is node into which the flow goes
+            set_connected_edges = [
+                edge
+                for edge in set_nodes_on_edges
+                if set_nodes_on_edges[edge][1] == node
+            ]
+        elif direction == "out":
+            # first entry is node out of which the flow starts
+            set_connected_edges = [
+                edge
+                for edge in set_nodes_on_edges
+                if set_nodes_on_edges[edge][0] == node
+            ]
+        else:
+            raise KeyError(f"invalid direction '{direction}'")
+        return set_connected_edges
+
+    def extract_carrier(
+        self, dataframe: pd.DataFrame, carrier: str, scenario_name: str
+    ) -> pd.DataFrame:
+        """Returns a dataframe that only contains the desired carrier.
+        If carrier is not contained in the dataframe, the technologies that have the provided reference carrier are returned.
+
+        :param dataframe: pd.Dataframe containing the base data
+        :param carrier: name of the carrier
+        :param scenario_name: name of the scenario
+        :return: filtered pd.Dataframe containing only the provided carrier
+        """
+
+        if "carrier" not in dataframe.index.names:
+            reference_carriers = self.get_df(
+                "set_reference_carriers", scenario_name=scenario_name
+            )[scenario_name]
+            data_extracted = pd.DataFrame()
+            for tech in dataframe.index.get_level_values("technology"):
+                if reference_carriers[tech] == carrier:
+                    data_extracted = pd.concat(
+                        [data_extracted, dataframe.query(f"technology == '{tech}'")],
+                        axis=0,
+                    )
+            return data_extracted
+
+        # check if desired carrier isn't contained in data (otherwise .loc raises an error)
+        if carrier not in dataframe.index.get_level_values("carrier"):
+            return None
+
+        return dataframe.query(f"carrier == '{carrier}'")
+
+    def edit_carrier_flows(
+        self, data: pd.DataFrame, node: str, direction: str, scenario: str
+    ) -> pd.DataFrame:
+        """Extracts data of carrier_flow variable as needed for the plot_energy_balance function
+
+        :param data: pd.DataFrame containing data to extract
+        :param node: node of interest
+        :param carrier: carrier of interest
+        :param direction: flow direction with respect to node
+        :param scenario: scenario of interest
+        :return: pd.DataFrame containing carrier_flow data desired
+        """
+        set_nodes_on_edges = self.get_df("set_nodes_on_edges", scenario_name=scenario)[
+            scenario
+        ]
+        set_nodes_on_edges = {
+            edge: set_nodes_on_edges[edge].split(",")
+            for edge in set_nodes_on_edges.index
+        }
+
+        data = data.loc[
+            (
+                slice(None),
+                self.calculate_connected_edges(node, direction, set_nodes_on_edges),
+            ),
+            :,
+        ]
+
+        return data
+
+    def get_energy_balance_dataframes(
+        self, node: str, carrier: str, year: int, scenario_name: Optional[str] = None
+    ) -> dict[str, "pd.Series[Any]"]:
+        """Returns a dictionary with all dataframes that are relevant for the energy balance.
+        The dataframes "flow_transport_in" and "flow_transport_out" contain the data of "flow_transport", filtered for in / out flow.
+
+        :param node: Node of interest
+        :param carrier: Carrier of interest
+        :param year: Year of interest
+        :param scenario_name: Scenario name of interest
+        :return: Dictionary containing the relevant pd.Dataframes
+        """
+        components = {
+            "flow_conversion_output": 1,
+            "flow_conversion_input": -1,
+            "flow_export": -1,
+            "flow_import": 1,
+            "flow_storage_charge": -1,
+            "flow_storage_discharge": 1,
+            "demand": 1,
+            "flow_transport_in": 1,
+            "flow_transport_out": -1,
+            "shed_demand": 1,
+        }
+
+        if scenario_name is None:
+            scenario_name = next(iter(self.solution_loader.scenarios.keys()))
+
+        ans: dict[str, pd.DataFrame] = {}
+
+        for component, factor in components.items():
+
+            if component == "flow_transport_in":
+                full_ts = self.get_full_ts(
+                    "flow_transport", scenario_name=scenario_name, year=year
+                )
+                transport_loss = self.get_full_ts(
+                    "flow_transport_loss", scenario_name=scenario_name, year=year
+                )
+
+                full_ts = self.edit_carrier_flows(
+                    full_ts - transport_loss, node, "in", scenario_name
+                )
+            elif component == "flow_transport_out":
+                full_ts = self.get_full_ts(
+                    "flow_transport", scenario_name=scenario_name, year=year
+                )
+                full_ts = self.edit_carrier_flows(full_ts, node, "out", scenario_name)
+            else:
+                full_ts = self.get_full_ts(
+                    component, scenario_name=scenario_name, year=year
+                )
+            carrier_df = self.extract_carrier(full_ts, carrier, scenario_name)
+            if carrier_df is not None:
+                if "node" in carrier_df.index.names:
+                    carrier_df = carrier_df.query(f"node == '{node}'")
+                ans[component] = carrier_df.multiply(factor)
+
+        return ans
 
 
 if __name__ == "__main__":
