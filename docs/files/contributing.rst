@@ -1,16 +1,12 @@
 ################
-Contributing & Support 
+How to contribute 
 ################
 
-
-How to contribute 
+Coding rules
 =================
 
-**Coding rules**
-
-**Creating Issues**
-
-Where to get help?
+Creating Issues
 =================
 
-**Google forum**
+
+
