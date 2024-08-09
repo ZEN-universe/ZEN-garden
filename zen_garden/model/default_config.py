@@ -109,7 +109,7 @@ class System(Subscriptable):
     interval_between_years: int = 1
     use_rolling_horizon: bool = False
     years_in_rolling_horizon: int = 5
-    interval_between_optimizations: int = 1
+    years_in_decision_horizon: int = 1
     use_capacities_existing: bool = True
 
 class SolverOptions(Subscriptable):
