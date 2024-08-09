@@ -161,8 +161,8 @@ jobs:
   auto_pr:
     name: Auto PR
     runs-on: ubuntu-latest
+    if: ${{  always() && ((github.repository == 'ZEN-universe/ZEN-garden' && github.event_name == 'push') ||  needs.check_skiptests.outputs.skiptests == 'true') }}
     needs: bump_version
-    if: ${{ (github.repository == 'ZEN-universe/ZEN-garden' && github.event_name == 'push') ||  needs.check_skiptests.outputs.skiptests == 'true' }}
     steps:
       - uses: actions/checkout@v3
         with:
