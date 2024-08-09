@@ -29,9 +29,9 @@ jobs:
       - name: Check for #skiptests in commit messages
         id: check_commit
         run: |
-          skip=false
+          skip=false;
           if [[ github.event.head_commit.message =~ "#skiptests" ]]; then
-            skip=true
+            skip=true;
           echo "skiptests=$skip" >> $GITHUB_ENV
           echo "::set-output name=skiptests::$skip"
 
