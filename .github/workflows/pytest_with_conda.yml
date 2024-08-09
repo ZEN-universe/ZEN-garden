@@ -29,8 +29,8 @@ jobs:
       - name: Check for #skiptests in commit messages
         id: check_commit
         run: |
-          echo "commit_message=${{ github.event.head_commit.message }}"
-          if [[ github.event.head_commit.message =~ "#skiptests" ]]; then
+          commit_message="${{ github.event.head_commit.message }}"
+          if [[ "$commit_message" =~ "#skiptests" ]]; then
             skip="true"
           else
             skip="false"
