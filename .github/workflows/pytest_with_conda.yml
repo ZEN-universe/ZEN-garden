@@ -29,9 +29,13 @@ jobs:
       - name: Check for #skiptests in commit messages
         id: check_commit
         run: |
-          skip=$contains(github.event.head_commit.message, '#skiptests')
-          echo "skiptests=$skip" >> $GITHUB_ENV
-          echo "::set-output name=skiptests::$skip"
+          if [[ github.event.head_commit.message == *"#skiptests"* ]]
+            then
+              echo "skiptests=true" >> $GITHUB_ENV
+              echo "::set-output name=skiptests::true"
+          else
+            echo "skiptests=false" >> $GITHUB_ENV
+            echo "::set-output name=skiptests::false"
 
   matrix_prep:
     if: ${{ github.repository == 'ZEN-universe/ZEN-garden' && needs.check_skiptests.outputs.skiptests == 'false' }}
