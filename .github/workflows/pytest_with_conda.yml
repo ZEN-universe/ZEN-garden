@@ -29,14 +29,7 @@ jobs:
       - name: Check for #skiptests in commit messages
         id: check_commit
         run: |
-          skip="false"
-          for commit in $(git log origin/development --pretty=format:"%H" --not main); do
-            message=$(git log -1 --pretty=%B $commit)
-            if [[ "$message" =~ "#skiptests" ]]; then
-              skip="true"
-              break
-            fi
-          done
+          skip=contains(github.event.head_commit.message, '#skiptests')
           echo "skiptests=$skip" >> $GITHUB_ENV
           echo "::set-output name=skiptests::$skip"
 
