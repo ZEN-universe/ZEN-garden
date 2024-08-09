@@ -427,11 +427,11 @@ class OptimizationSetup(object):
         """ returns list of optimization horizon steps """
         # if using rolling horizon
         if self.system.use_rolling_horizon:
-            assert self.system.years_in_rolling_horizon >= self.system.interval_between_optimizations, f"There must be more years in the rolling horizon than the interval between optimizations. years_in_rolling_horizon ({self.system.years_in_rolling_horizon}) < interval_between_optimizations ({self.system.interval_between_optimizations})"
+            assert self.system.years_in_rolling_horizon >= self.system.years_in_decision_horizon, f"There must be at least the same number of years in the rolling horizon as the decision horizon. years_in_rolling_horizon ({self.system.years_in_rolling_horizon}) < years_in_decision_horizon ({self.system.years_in_decision_horizon})"
             self.years_in_horizon = self.system.years_in_rolling_horizon
             time_steps_yearly = self.energy_system.set_time_steps_yearly
-            # skip interval_between_optimizations years
-            self.optimized_time_steps = [year for year in time_steps_yearly if (year % self.system.interval_between_optimizations == 0 or year == time_steps_yearly[-1])]
+            # skip years_in_decision_horizon years
+            self.optimized_time_steps = [year for year in time_steps_yearly if (year % self.system.years_in_decision_horizon == 0 or year == time_steps_yearly[-1])]
             self.steps_horizon = {year: list(range(year, min(year + self.years_in_horizon, max(time_steps_yearly) + 1))) for year in self.optimized_time_steps}
         # if no rolling horizon
         else:
