@@ -26,7 +26,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Check for #skiptests in commit messages
+      - name: Check for '#skiptests' in commit messages
         id: check_commit
         run: |
           commit_message="${{ github.event.head_commit.message }}"
