@@ -35,6 +35,7 @@ jobs:
             skip="true"
           fi
           echo "skiptests=$skip" >> $GITHUB_ENV
+          echo "skiptests=$skip"
           echo "::set-output name=skiptests::$skip"
 
   matrix_prep:
