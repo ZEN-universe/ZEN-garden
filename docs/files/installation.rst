@@ -8,7 +8,7 @@ ZEN-garden is written in Python and is available as a package.
 Installing python
 ==============
 
-If it is your first time using Python, we recommend using `conda <https://docs.conda.io/en/latest/miniconda.html>`_ as the package manager and setting up ZEN-garden as a conda environment. Furthermore, it is helpful to install an integrated development environment (IDE), such as `PyCharm <https://www.jetbrains.com/pycharm/download/>`_. Most users of ZEN-garden use PyCharm, but other IDEs such as `VS Code <https://code.visualstudio.com/>`_ work as well. 
+If it is your first time using Python, we recommend using `conda <https://docs.conda.io/en/latest/miniconda.html>`_ as the package manager and setting up ZEN-garden as a conda environment (see below). Furthermore, it is helpful to install an integrated development environment (IDE), such as `PyCharm <https://www.jetbrains.com/pycharm/download/>`_. Most users of ZEN-garden use PyCharm, but other IDEs such as `VS Code <https://code.visualstudio.com/>`_ work as well.
 
 
 Installing ZEN-garden 
@@ -25,8 +25,10 @@ Navigate to ``ZEN-garden`` on Github and click on the "Fork" button at the top r
 
 Clone your forked repository by running the following lines in Git-Bash::
 
-    git clone git@github.com:your-username/ZEN-garden.git
+    git clone git@github.com:<your-username>/ZEN-garden.git
     cd ZEN-garden
+
+Substitute ``<your-username>`` with your Github username. If you gave the forked repository a different name, replace ``ZEN-garden`` with the name of your repository.
 
 .. note::
     If you get the permissions error "Permission denied (publickey)", you will need to create the SSH key. Follow the instructions on `how to generate an SSH key <https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent#generating-a-new-ssh-key>`_ and then how to add it to your account. You will not need to add the SSH key to the Agent, so only follow the first website until before `Adding your SSH key to the ssh-agent <https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent#adding-your-ssh-key-to-the-ssh-agent>`_
@@ -48,7 +50,7 @@ Now you can install the conda environment for zen-garden with the following comm
 
   conda env create -f zen_garden_env.yml
 
-The installation may take a couple of minutes. If the installation was successful, you can see the environment at ``C:\Users\username \anaconda3\envs`` or wherever Anaconda is installed
+The installation may take a couple of minutes. If the installation was successful, you can see the environment at ``C:\Users\<username>\anaconda3\envs`` or wherever Anaconda is installed
 
 .. note::
     We strongly recommend working with conda environments. When installing the zen-garden conda environment via the ``zen_garden_env.yml``, the zen-garden package, as well as all other dependencies, are installed automatically. 

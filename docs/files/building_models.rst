@@ -196,7 +196,10 @@ If any inconsistency is found, ZEN-garden tries to guess the inconsistent unit (
 
 After ensuring unit consistency, ZEN-garden implies the units of all variables in the optimization problem based on the units of the parameters.
 Each variable definition (``variable.add_variable()``) has the argument ``unit_category`` that defines the combination of units and can look like ``unit_category={"energy_quantity": 1, "time": -1}``.
-In the results, you can retrieve the unit of all parameters and variables by calling ``r.get_unit(<variable/parameter name>)``, where ``r`` is a results object.
+
+.. note::
+
+    In the results, you can retrieve the unit of all parameters and variables by calling ``r.get_unit(<variable/parameter name>)``, where ``r`` is a results object.
 
 **What are known errors with pint?**
 
@@ -254,6 +257,7 @@ The resulting investigated years are
 * ``use_rolling_horizon``: if True, we do not optimize all years simultaneously but optimize for a subset of years and afterward move the optimization window to the next year and optimize again. For further information on rolling horizon and myopic foresight versus perfect foresight refer to, e.g., `Poncelet et al. 2016 <10.1109/EEM.2016.7521261>`_.
 * ``years_in_rolling_horizon``: number of optimization periods in the subset of the optimization horizon as mentioned above. Only relevant if ``use_rolling_horizon`` is True.
 * ``interval_between_optimizations``: number of optimization periods for which the decisions of each rolling horizon are saved. Must be shorter than ``years_in_rolling_horizon``; default is 1. For an example for varying decision horizon lengths, refer to `Keppo et al. 2010 <10.1016/J.ENERGY.2010.01.019>`_. Only relevant if ``use_rolling_horizon`` is True.
+
 Example:
 
 .. code-block::
@@ -295,8 +299,8 @@ For an in-depth introduction to TSA, refer to `Hoffmann et al. 2020 <https://www
 
 The modeling of storage technologies with TSA is challenging because storages couple time steps (see `Technologies`_).
 Hence, the sequence of time steps is important for the operation of the storage level.
-There are different approaches to model storages with TSA, with the approaches by `Gabrielli et al. 2018 <10.1016/J.APENERGY.2017.07.142>`_ and `Kotzur et al. <10.1016/J.APENERGY.2018.01.023>`_ being the most common.
-In ZEN-garden, we extend the approach by Gabrielli et al. 2018 to model storages with TSA. The approach is detailed in `Mannhardt et al. 2023 <10.1016/j.isci.2023.106750>`_.
+There are different approaches to model storages with TSA, with the approaches by `Gabrielli et al. 2018 <https://www.sciencedirect.com/science/article/pii/S0306261917310139>`_ and `Kotzur et al. <https://www.sciencedirect.com/science/article/pii/S0306261918300242>`_ being the most common.
+In ZEN-garden, we extend the approach by Gabrielli et al. 2018 to model storages with TSA. The approach is detailed in `Mannhardt et al. 2023 <https://www.sciencedirect.com/science/article/pii/S2589004223008271>`_.
 In short, every time that the sequence of operational time steps changes, the another storage time step is added. This increases the number of variables, but explicitly enables short- and long-term storages.
 In particular, this storage level representation leads to fewer time steps than the full time series without loss of information.
 
