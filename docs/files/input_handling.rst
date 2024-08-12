@@ -1,11 +1,237 @@
 ################
 Input data handling
 ################
-.. _Default values:
-Default values
+.. _Attribute.json files:
+Attribute.json files
 ==============
+Each element in the input data folder has an ``attributes.json`` file, as shown in :ref:`Input data structure`, which defines the default values for the element.
+This file must be specified for each element and must contain all parameters that this class of elements (Technology, Carrier, etc.) can have.
 
-Structure of attributes file with exceptions
+The ``attributes.json`` files have three main purposes:
+1. Defining all parameters of each element
+2. Providing the default value for each parameter
+3. Defining the unit of each parameter
+
+How are ``attributes.json`` files structured?
+---------------------------------------------
+The general structure of each ``attributes.json`` file is the following:
+
+.. code-block::
+
+    {
+      "parameter_1": {
+        "default_value": v_1,
+        "unit": "u_1"
+      },
+      "parameter_2": {
+        "default_value": v_2,
+        "unit": "u_2"
+      },
+      ...
+    }
+
+The structure is a normal dictionary structure.
+Make sure to have the correct positioning of the brackets.
+- There is **one curly** bracket around all parameters ``{...}``
+- Each parameter has a name, followed **by a colon and curly brackets** ``name: {...}``
+- Inside the curly brackets are in most cases a ``default_value`` as a ``float`` or ``"inf"`` and a ``unit`` as a ``string`` (see :ref:`Unit consistency`).
+
+What are particular parameters in the ``attributes.json`` file?
+-------------------------------------------------------------
+Some parameters do not have the structure above. These are the carriers of technologies (``"reference_carrier"``, ``"input_carrier"``, and ``"output_carrier"``) and the ``conversion_factor`` of conversion technologies.
+
+**Input, output, and reference carriers**
+
+.. code-block::
+
+    "output_carrier": {
+      "default_value": [
+        "heat",
+        "electricity"
+      ],
+    }
+
+The default value of the three carrier types are a list ``[..., ...]``. It can take the following lengths:
+1. 1 carrier: Necessary in the case of the reference carrier
+2. 0 carrier: Empty list if no input or output carrier
+3. more than 1 carrier: for multiple input or output carriers
+
+The units of the carriers in a technology are defined in the corresponding parameters (see :ref:`Unit consistency`) and are therefore omitted in the ``"reference_carrier"``, ``"input_carrier"``, and ``"output_carrier"`` field.
+
+**Conversion factor**
+The ``conversion_factor`` is the fixed ratio between a carrier flow and the reference carrier flow, defined for all dependent carriers, i.e., all carriers except the reference carrier. The default conversion factor is defined in ``attributes.json`` as:
+
+.. code-block::
+
+    "conversion_factor": [
+      {
+        "heat": {
+          "default_value": 1.257,
+          "unit": "GWh/GWh"
+        }
+      },
+      {
+        "natural_gas": {
+          "default_value": 2.857,
+          "unit": "GWh/GWh"
+        }
+      }
+    ]
+The conversion factor is **a list ``[...]`` with each dependent carrier wrapped in curly brackets**. Inside each curly bracket, there are the ``default_value`` and the ``unit``.
+The dependent carriers are the carriers that are not the reference carrier.
+
+.. code-block::
+
+    dependent_carriers = input_carriers + output_carriers - reference_carrier
+
+.. _Overwriting default values:
+Overwriting default values
+==========================
+The paradigm of ZEN-garden is that the user only has to specify those input data that they want to specify.
+Therefore, the user defines default values for all parameters in the ``attributes.json`` files.
+Whenever more information is required, the user can overwrite the default values by providing a ``<parameter_name>.csv`` file in the same folder as the ``attributes.json`` file.
+
+Let's assume the following example: The purpose of the energy system is to provide ``heat``, whose default ``demand`` is given as ``10 GW``:
+
+.. code-block::
+
+    {
+      "demand": {
+        "default_value": 10,
+        "unit": "GW"
+      }
+    }
+
+The energy system is modeled for two nodes, ``CH`` and ``DE`` and spans one year with 8760 time steps.
+
+.. note::
+    To retrieve the dimensions of a parameter, please refer to XXXXX and to the ``index_names`` attribute in the parameter definition.
+
+Providing extra .csv files
+--------------------------
+If the user wants to specify the demand ``CH`` and ``DE`` in the time steps ``0, 14, 300``, the user can create a file ``demand.csv``:
+
+.. code-block::
+
+    node,time,demand
+    CH,0,5
+    CH,14,7
+    CH,300,3
+    DE,0,2
+    DE,14,3
+    DE,300,2
+
+The file overwrites the default value for the demand at nodes ``CH`` and ``DE`` in time steps ``0, 14,300``.
+
+..note::
+    ZEN-garden will select that subset of data that is relevant for the optimization problem.
+    If the user specifies a demand for a node in ``demand.csv`` that is not part of the optimization problem, the demand is ignored for this node.
+
+To avoid overly long files, the dimensions can be unstacked, i.e., the values of one dimension can be the column names of the file:
+
+.. code-block::
+
+    node,0,14,300
+    CH,5,7,3
+    DE,2,3,2
+
+or
+
+.. code-block::
+
+    time,CH,DE
+    0,5,2
+    14,7,3
+    300,3,2
+
+Therefore, the full demand time series is ``10 GW`` except for the time steps ``0, 14, 300`` where it is ``5 GW, 7 GW, 3 GW`` for ``CH`` and ``2 GW, 3 GW, 2 GW`` for ``DE``.
+
+..warning::
+    Make sure that the unit of the values in the ``.csv`` file is consistent with the unit defined in the ``attributes.json`` file!
+    Since we do not specify a unit in the ``.csv`` file, the unit of the values is assumed to be the same as the unit in the ``attributes.json`` file.
+
+Constant dimensions
+-------------------
+Often, we have parameters that are constant over a certain dimension but change with another dimension.
+For example, the demand of an industrial energy carrier might be constant over time but is different for all nodes.
+
+In this case, the full ``demand.csv`` file would be:
+
+.. code-block::
+
+    node,0,1,2,...,8760
+    CH,5,5,5,...,5
+    DE,2,2,2,...,2
+
+This is a very long file, and it is hard to see the structure of the data. Furthermore, it is prone to errors. Therefore, ZEN-garden allows you to drop dimensions that are constant. The file can be shortened to:
+
+.. code-block::
+
+    node,demand
+    CH,5
+    DE,2
+
+The file is much shorter and easier to read. ZEN-garden will automatically fill in the missing dimensions with the constant value.
+
+.. _Yearly variation:
+Yearly variation
+----------------
+We specify hourly-dependent data for each hour of the year.
+However, some parameters might have a yearly variation, e.g., the overall demand may increase or decrease over the year.
+
+To this end, the user can specify a file ``<parameter_name>_yearly_variation.csv`` that multiplies the hourly-dependent data with a factor for each hour of the year.
+ZEN-garden therefore assumes the same time series for each year but allows for the scaling of the time series with the yearly variation.
+
+The user can specify the yearly variation for all dimensions besides the ``time`` dimension:
+
+.. code-block::
+
+    node,2020,2021,2022,...,2050
+    CH,1,1.1,1.2,...,4
+    DE,1,0.99,0.98,...,0.7
+
+If all nodes have the same yearly variation, the file can be shortened to:
+
+.. code-block::
+
+    year,demand_yearly_variation
+    2020,1
+    2021,1.1
+    2022,1.2
+    ...
+    2050,4
+
+..note::
+    So far, ZEN-garden does not allow for different time series for each year.
+
+Data interpolation
+-------------
+In :ref:`Yearly variation`, the demand increase or decrease is linear over the years.
+To reduce the number of data points, ZEN-garden per-default interpolates the data points linearly between the given data points.
+So, the user can reduce the number of data points in the ``demand_yearly_variation.csv`` file:
+
+.. code-block::
+
+    year,demand_yearly_variation
+    2020,1
+    2050,4
+
+If the user wants to disable the interpolation for a specific parameter, the user can create a ``parameters_interpolation_off.csv`` file and specify the parameter names in the file:
+
+.. code-block::
+
+    parameter_name
+    demand_yearly_variation
+
+.. note::
+    The user must specify the file name, i.e., in the example above, the specified file is ``demand_yearly_variation.csv``, not ``demand.csv``.
+    Therefore, the interpolation is only disabled for the yearly variation, not for the hourly-dependent data.
+
+
+Piece-wise affine input data
+----------------------------
+TODO
+
 
 .. _Unit consistency:
 Unit consistency
