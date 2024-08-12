@@ -33,6 +33,16 @@ Documentation
 
 .. toctree::
    :maxdepth: 2
+   :caption: ZEN-garden in detail
+
+   files/input_structure
+   files/input_handling
+   files/optimization_problem
+   files/scenario_analysis
+   files/configurations
+
+.. toctree::
+   :maxdepth: 2
    :caption: Dataset Examples
 
    files/dataset_examples
