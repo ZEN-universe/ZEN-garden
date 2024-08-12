@@ -129,7 +129,7 @@ In the subsequent periods :math:`y>y_0`, :math:`E_y^\mathrm{c}` is calculated as
 
     E_y^\mathrm{c} + \left(\Delta^\mathrm{y}-1\right)E_{y}  - E_{y}^\mathrm{o} \leq e^\mathrm{b}.
 
-:math:`E_y^\mathrm{o}` is the cumulative carbon emission overshoot, which allows exceeding the carbon emission budget :math:`e^\mathrm{b}`, however :math:`E_y^\mathrm{o}` is heavily penalized (:eq:`opex_c`).
+:math:`E_y^\mathrm{o}` is the cumulative carbon emission overshoot, which allows exceeding the carbon emission budget :math:`e^\mathrm{b}`, however :math:`E_y^\mathrm{o}` is heavily penalized.
 Since we only count the last planning period :math:`Y=\max(y)` as a single year (compare :eq:`npc`), :eq:`emission_budget` is simplified for :math:`y=Y` as:
 
 .. math::
@@ -171,7 +171,7 @@ The temporal representation of storage technologies :math:`k\in\mathcal{K}` is p
 .. math::
     \sigma = [0,0,1,2,1,1,3,3,2,0].
 
-The resulting sequence for energy-rated storage variables `\sigma^\mathrm{k}:math:` of the storage time steps `\mathcal{T}^\mathrm{k}=[0,...,6]` is then:
+The resulting sequence for energy-rated storage variables :math:`\sigma^\mathrm{k}:math:` of the storage time steps :math:`\mathcal{T}^\mathrm{k}=[0,...,6]` is then:
 
 .. math::
     \sigma^\mathrm{k} = [0,0,1,2,3,3,4,4,5,6].
