@@ -56,15 +56,15 @@ The overshoot price determines the penalty term that is added to the objective f
 
 **Spatial domain**
 
-Spatial resolution: The user can flexible define the spatial resolution of their model, where each geographical regions is represented by a single node. The set of nodes is defined in the input data. The :ref:`_system` (``system.json``) allows users to flexibly select subsets of the set of nodes included in the input data.
+Spatial resolution: The user can flexible define the spatial resolution of their model, where each geographical regions is represented by a single node. The set of nodes is defined in the input data. The :ref:`system` (``system.json``) allows users to flexibly select subsets of the set of nodes included in the input data.
 
 Network: Edges connect the nodes. Per default, edge distances are computed as the Haversine distance between the nodes they connect. For each transport technology the default values can be overwritten with technology-specific edge distances.
 
 **Temporal domain**
 
-*Interyearly resolution:* ZEN-garden optimizes the design and operation of energy systems over multi-year time horizons. The reference year, the number of years, and the interyearly resolution of the model can be flexibly modified in the system configuration (``system.json``). Additional information on the representation of the temporal domain is provided in :ref:`_Time series aggregation and representation`.
+*Interyearly resolution:* ZEN-garden optimizes the design and operation of energy systems over multi-year time horizons. The reference year, the number of years, and the interyearly resolution of the model can be flexibly modified in the system configuration (``system.json``). Additional information on the representation of the temporal domain is provided in :ref:`Time series aggregation and representation`.
 
-*Intrayearly resolution:* Per default, the interyearly resolution is set at to an hourly resolution and considers 8760 h/a. Timeseries aggregation methods are available via the tsam package and allow users to flexibly reduce model complexity. Timeseries which should not impact the clustering can be excluded by the user. Moreover, a novel forumlation of the constraints describing the storage levels enables users to capture both, long- and short-term storage operation despite applying aggregation methods. :ref:`_Time series aggregation and representation` provides a detailed description of the available parameters.
+*Intrayearly resolution:* Per default, the interyearly resolution is set at to an hourly resolution and considers 8760 h/a. Timeseries aggregation methods are available via the tsam package and allow users to flexibly reduce model complexity. Timeseries which should not impact the clustering can be excluded by the user. Moreover, a novel forumlation of the constraints describing the storage levels enables users to capture both, long- and short-term storage operation despite applying aggregation methods. :ref:`Time series aggregation and representation` provides a detailed description of the available parameters.
 
 **Carrier domain**
 
@@ -73,7 +73,7 @@ Feedstocks and energy carriers are modeled as carriers.
 **Technology domain**
 
 The modular structure of ZEN-gardens allows for a flexible definition of the technology-specific characteristics. General technology features are defined in the technology class. Technology-specific characteristics are defined in the corresponding child-classes.
-Three technology child-classess are available to capture the behaviour of conversion, storage, and transport technologies. Conversion technologies convert 0-n input carriers into 0-m output carriers. Conversion factors describe the conversion of the input and output carriers with respect to the technology-specific unique reference carrier. Storage technologies store carriers over multiple time-steps; and transport technologies transport carriers between nodes via edges. Technology retrofitting is modeled via retrofitting technologies, a child class of conversion technologies. For more detailed information on the available technology types see :ref:`_technologies`.
+Three technology child-classess are available to capture the behaviour of conversion, storage, and transport technologies. Conversion technologies convert 0-n input carriers into 0-m output carriers. Conversion factors describe the conversion of the input and output carriers with respect to the technology-specific unique reference carrier. Storage technologies store carriers over multiple time-steps; and transport technologies transport carriers between nodes via edges. Technology retrofitting is modeled via retrofitting technologies, a child class of conversion technologies. For more detailed information on the available technology types see :ref:`technologies`.
 
 Technology features:
 - technology expansion constraints (minimum and maximum capacity, capacity limits, etc.)
