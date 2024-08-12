@@ -26,7 +26,7 @@ How do I see that my model is infeasible?
 ------------------------------------------
 The output of your optimization tells you the termination condition of your problem. A successful optimization looks like this:
 
-..code-block::
+.. code-block::
 
     Optimization successful:
     Status: ok
@@ -34,7 +34,7 @@ The output of your optimization tells you the termination condition of your prob
 
 whereas an infeasible problem has this output:
 
-..code-block::
+.. code-block::
 
     Optimization failed:
     Status: warning
@@ -42,7 +42,7 @@ whereas an infeasible problem has this output:
 
 Sometimes you will see this message:
 
-..code-block::
+.. code-block::
 
     Optimization failed:
     Status: warning
@@ -51,11 +51,15 @@ Sometimes you will see this message:
 That indicates that the optimizer could not determine whether the problem was, in fact, infeasible or `unbounded <https://www.fico.com/fico-xpress-optimization/docs/latest/solver/optimizer/HTML/chapter3.html?scroll=section3002>`_.
 This can be due to `bad numerics <https://gurobi.com/documentation/current/refman/guidelines_for_numerical_i.html>`_.
 
-To find out whether your problem is actually infeasible or has bad numerics and **you are using Gurobi**, you can disable the `DualReductions <https://www.gurobi.com/documentation/8.1/refman/dualreductions.html#parameter:DualReductions>`_ parameter. Just add this line to the ``config``:
+To find out whether your problem is actually infeasible or has bad numerics and **you are using Gurobi**, you can disable the `DualReductions <https://www.gurobi.com/documentation/8.1/refman/dualreductions.html#parameter:DualReductions>`_ parameter. Just add this line to the ``config.json``:
 
-..code-block::
+.. code-block::
 
-    config.solver["solver_options"]["DualReductions"] = 0
+    "solver": {
+        "solver_options": {
+          "DualReductions": 0
+        }
+    }
 
 This should give you a definite answer if your problem is infeasible. If not, you most probably have numerical issues.
 How can I find out what constraint led to the infeasibility?
@@ -69,7 +73,7 @@ Fortunately, Gurobi has a fantastic tool that is helpful in finding the conflict
 
 Take the original example from the beginning and let's assume there were additional constraints:
 
-..code-block::
+.. code-block::
 
     x <= y    (I)
     x >= 5    (II)
@@ -86,7 +90,7 @@ In ZEN-garden, we automatically write the IIS if you are using Gurobi and the te
 
 Take the following example, which is ``test_1a`` but without the option to import natural gas. Clearly, if no gas can be imported, the heat demand cannot be supplied and the problem becomes infeasible. The resulting IIS is the following:
 
-..code-block::
+.. code-block::
 
     constraint_availability_import:
         [heat, CH, 0]:    1.0 flow_import[heat, CH, 0] <= 0
