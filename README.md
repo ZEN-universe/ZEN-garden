@@ -17,7 +17,7 @@ ZEN-garden is developed by the [Reliability and Risk Engineering Laboratory](htt
 
 ## Documentation
 Please refer to the documentation of the ZEN-garden framework [on Read-the-Docs](https://zen-garden.readthedocs.io/en/latest/). 
-To get started with ZEN-garden, you can follow the instructions in the [installation guide](https://zen-garden.readthedocs.io/en/latest/installation.html).
+To get started with ZEN-garden, you can follow the instructions in the [installation guide](https://zen-garden.readthedocs.io/en/latest/files/installation.html).
 
 In the file `documentation/how_to_ZEN-garden.md`, you can find additional information on how to use the framework. 
 The `documentation/dataset_creation_tutorial.md` file contains a tutorial on how to create a simple dataset for the framework. 
