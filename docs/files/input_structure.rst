@@ -78,6 +78,7 @@ As an example, a :math:`10kW` heat pump could refer to :math:`10kW_{th}` heat ou
 Hence, the user has to specify which carrier is the reference carrier in the file ``attributes.json``.
 For storage technologies and transport technologies, the reference carrier is the carrier that is stored or transported, respectively.
 
+.. _Conversion Technologies:
 Conversion Technologies
 -----------------------
 
