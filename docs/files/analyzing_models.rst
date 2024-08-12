@@ -2,6 +2,7 @@
 Analyzing a model
 ################
 
+.. _Accessing results:
 Accessing results
 =================
 The results of ZEN-garden are stored in the ``output`` folder in the ``data`` directory in a folder with the name of the dataset.
