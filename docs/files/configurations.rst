@@ -5,6 +5,18 @@ Configurations
 System, analysis, solver settings
 ========
 
+.. _system:
+System
+------
+
+.. _analysis:
+Analysis
+-------
+
+.. _solver:
+Solver
+------
+
 .. _Time series aggregation and representation:
 Time series aggregation and representation
 ========
