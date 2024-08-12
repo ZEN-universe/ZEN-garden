@@ -2,42 +2,43 @@
 Running a model
 ################
 
-Running ZEN-garden from Anaconda prompt
+Running ZEN-garden from a terminal
 ==============
 
-To run ZEN-garden from your Anaconda prompt fist, activate the environment where you installed ZEN-garden. Per default, the environment will be called ``zen-garden-env``::
+To run ZEN-garden from a terminal, activate the environment where you installed ZEN-garden. Per default, the environment will be called ``zen-garden-env``::
 
-  conda activate zen-garden env
+  conda activate zen-garden-env
 
 Make sure to change your path to the working directory, i.e. the directory that contains the ``config.json``. This directory will also be used to save the results::
 
-  cd Users/username/Github/ZEN-garden/data
+  cd /path/to/your/data
+
+.. note::
+    You can create the data folder in the ZEN-garden root folder, but it will not be uploaded to Github (it is in the ``.gitignore`` file).
+    This way, you can keep your data separate from the repository.
 
 Execute the following lines to run ZEN-garden as a module::
 
-  Python -m zen_garden
+  python -m zen_garden
 
-You can change the dataset selected in ``config.py`` via the dataset argument::
+When running the previous line, ZEN-garden will attempt to run the dataset specified in ``analyis/dataset`` in ``config.json``. You can change the dataset via the dataset argument::
 
-  Python -m zen_garden --dataset=<my_dataset>
+  python -m zen_garden --dataset=<my_dataset>
 
-You can also execute the tests by running::
+If you have multiple ``config.json`` files in your working directory, you can specify the file you want to use with the ``config`` argument::
 
-  coverage run --source="zen_garden" -m pytest -v tests/testcases/run_test.py
+  python -m zen_garden --config=<my_config.json> --dataset=<my_dataset>
 
-The coverage report is also generated in a similar way by running::
+To test if the setup is working correctly, you can copy a dataset example and the ``config.json`` from the ``dataset_examples`` folder to the data folder and run the following command::
 
-  coverage report -m
-
+  python -m zen_garden --dataset=<example_dataset>
 PyCharm configurations
 ==============
 
-To execute ZEN-garden with the PyCharm IDE you can use the configuration setup which can be found next to the run button, and click on "Edit configurations.." to edit or add a configuration. There are three configurations that are easy to setup and run the model, the tests, and get the coverage reports.
+To execute ZEN-garden with the PyCharm IDE you can use the configuration setup which can be found next to the run button, and click on "Edit configurations.." to edit or add a configuration.
 
 .. image:: ../images/pycharm_configuration.png
     :alt: creating zen-garden configurations in pycharm
-
-**Running the module**
 
 Add a new configuration by clicking on the "+" button on the top left corner of the window. Choose ´´Python´´ as a type. You can name the configuration however you like. The important settings are:
 
@@ -49,35 +50,6 @@ In the end, your configuration to run ZEN-garden as a module should look similar
 
 .. image:: ../images/pycharm_run_module.png
     :alt: run module
-
-**Running the tests**
-
-To run the tests, add another Python configuration. The important settings are:
-
-- Change "Script Path" to "Module name" and set it to "coverage"
-- Set the "Parameters" to: ``´run --source="zen_garden" -m pytest -v run_test.py``
-- Set the python interpreter to the Conda environment that was used to install the requirements and also has the package installed. **Important**: This setup will only work for Conda environments that were also declared as such in PyCharm; if you set the path to the Python executable yourself, you should create a new proper PyCharm interpreter.
-- Set the "Working directory" to the directory ``tests/testcases`` of the repo.
-
-In the end, your configuration to run the tests should look similar to this:
-
-.. image:: ../images/pycharm_run_tests.png
-    :alt: run tests
-
-**Getting the coverage report**
-
-To run the test and also get the coverage report, we use the pipeline settings of the configuration. Add another Python configuration and use the following settings:
-
-- Change "Script Path" to "Module name" and set it to "coverage"
-- Set the "Parameters" to ``report -m``
-- Set the python interpreter to the Conda environment that was used to install the requirements and also has the package installed. *Important*: This setup will only work for Conda environments that were also declared as such in PyCharm; if you set the path to the Python executable yourself, you should create a new proper PyCharm interpreter.
-- Set the "Working directory" to the base directory of the repo.
-- Click on "Modify options", go to the section "Before launch", and select "Add run before launch" where you can now add the "Run Tests" configuration from above.
-
-In the end, your configuration to run the coverage should look similar to this:
-
-.. image:: ../images/pycharm_coverage.png
-    :alt: run coverage
 
 VS code configuations
 ==============
