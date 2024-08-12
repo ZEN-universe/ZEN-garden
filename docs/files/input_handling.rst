@@ -123,7 +123,7 @@ If the user wants to specify the demand ``CH`` and ``DE`` in the time steps ``0,
 
 The file overwrites the default value for the demand at nodes ``CH`` and ``DE`` in time steps ``0, 14,300``.
 
-..note::
+.. note::
     ZEN-garden will select that subset of data that is relevant for the optimization problem.
     If the user specifies a demand for a node in ``demand.csv`` that is not part of the optimization problem, the demand is ignored for this node.
 
@@ -146,7 +146,7 @@ or
 
 Therefore, the full demand time series is ``10 GW`` except for the time steps ``0, 14, 300`` where it is ``5 GW, 7 GW, 3 GW`` for ``CH`` and ``2 GW, 3 GW, 2 GW`` for ``DE``.
 
-..warning::
+.. warning::
     Make sure that the unit of the values in the ``.csv`` file is consistent with the unit defined in the ``attributes.json`` file!
     Since we do not specify a unit in the ``.csv`` file, the unit of the values is assumed to be the same as the unit in the ``attributes.json`` file.
 
@@ -201,7 +201,7 @@ If all nodes have the same yearly variation, the file can be shortened to:
     ...
     2050,4
 
-..note::
+.. note::
     So far, ZEN-garden does not allow for different time series for each year.
 
 Data interpolation
