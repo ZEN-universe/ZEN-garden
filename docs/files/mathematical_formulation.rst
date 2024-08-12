@@ -42,15 +42,18 @@ For annual capital expenditure :math:`A_{h,p,y}` for each technology :math:`h\in
 where :math:`\lceil\cdot\rceil` is the ceiling function and :math:`\psi(y)` is a function that maps the planning period :math:`y` to an actual year. For sake of conciseness, we omit to restate :eq:`annual_capex` for energy-rated storage capacities.
 
 :math:`CAPEX_y` then follows as:
+
 .. math::
     CAPEX_y = \sum_{h\in\mathcal{H}}\sum_{p\in\mathcal{P}}A_{h,p,y}+\sum_{k\in\mathcal{K}}\sum_{n\in\mathcal{N}}A^\mathrm{e}_{k,n,y}.
 
 The annual operational expenditure :math:`OPEX_y` consists of four terms: i) variable operational and maintenance costs of the technologies :math:`OPEX_y^\mathrm{v}`, ii) fixed operational and maintenance costs of the technologies `OPEX_y^\mathrm{f}`,  iii) cost of importing carriers :math:`OPEX_y^\mathrm{i}`, and iv) the cost of carbon emissions :math:`OPEX_y^\mathrm{c}`:
+
 .. math::
     OPEX_y = OPEX_y^\mathrm{v} + OPEX_y^\mathrm{f} + OPEX_y^\mathrm{i} + OPEX_y^\mathrm{c}.
 
 
 `OPEX_y^\mathrm{v}` is the product of the specific variable operational expenditure :math:`\beta_{h,y}` and the reference flows for each technology, calculated for the entire year with the time step duration :math:`\tau_t` and summed over all technologies and positions. The reference flows for conversion technologies are :math:`G_{i,n,t,y}^\mathrm{r}`, for transport technologies :math:`F_{j,e,t,y}`, and for storage technologies :math:`\underline{H}_{k,n,t,y}` and :math:`\overline{H}_{k,n,t,y}`:
+
 .. math::
     :nowrap:
 
@@ -62,6 +65,7 @@ The annual operational expenditure :math:`OPEX_y` consists of four terms: i) var
     \end{gather*}
 
 :math:`OPEX_y^\mathrm{f}` is the product of the specific fixed operational expenditure :math:`\gamma_{h,y}` and the capacity :math:`S_{h,p,y}`, summed over all technologies and positions:
+
 .. math::
     OPEX_y^\mathrm{f} = \sum_{h\in\mathcal{H}}\sum_{p\in\mathcal{P}}\gamma_{h,y}S_{h,p,y}+\sum_{k\in\mathcal{K}}\sum_{n\in\mathcal{N}}\gamma^\mathrm{e}_{k,y}S^\mathrm{e}_{k,n,y}.
 
@@ -72,6 +76,7 @@ The annual operational expenditure :math:`OPEX_y` consists of four terms: i) var
     OPEX_y^\mathrm{i} = \sum_{c\in\mathcal{C}}\sum_{n\in\mathcal{N}}\sum_{t\in\mathcal{T}}\tau_t \left(u_{c,n,t,y}U_{c,n,t,y}+\nu_c D_{c,n,t,y}\right).
 
 :math:`OPEX_y^\mathrm{c}` is composed of a term attributed to the annual carbon emissions :math:`E_y` with the carbon price :math:`\mu` and a term attributed to the annual carbon emission overshoot :math:`E_y^\mathrm{o}` with the carbon overshoot price :math:`\mu^\mathrm{o}`:
+
 .. math::
     :label:opex_c
     OPEX_y^\mathrm{c} = E_y\mu + E_y^\mathrm{o}\mu^\mathrm{o}.
@@ -235,6 +240,7 @@ Analogously for transport technologies :math:`j\in\mathcal{J}`:
     0 \leq F_{j,e,t,y} \leq m_{j,e,t,y}S_{j,e,y}.
 
 Since a storage technology does not charge (:math:`\underline{H}_{k,n,t,y}`) and discharge (:math:`\overline{H}_{k,n,t,y}`) at the same time, the sum of both flows is constrained by the maximum load:
+
 .. math::
     0 \leq \underline{H}_{k,n,t,y}+\overline{H}_{k,n,t,y}\leq m_{k,n,t,y}S_{k,n,y}.
 
@@ -335,7 +341,7 @@ For :math:`0<\varphi<1`, :math:`\sum_{\tilde{t}=0}^{t-1}\kappa^{\tilde{t}}` is r
 
 .. math::\label{eq:storage_level_selfdisch}
     L(t) = L_0\kappa^t + \Delta H\frac{1-\kappa^t}{1-\kappa} = \frac{\Delta H}{1-\kappa}+\left(L_0-\frac{\Delta H}{1-\kappa}\right)\kappa^t.
-:math:
+
 The derivative of :eq:`storage_level_selfdisch` follows as:
 
 .. math::

@@ -29,6 +29,7 @@ Documentation
    files/running_models
    files/building_models
    files/analyzing_models
+   files/mathematical_formuation
    files/troubleshooting
 
 .. toctree::
