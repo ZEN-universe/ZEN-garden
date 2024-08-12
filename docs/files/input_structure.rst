@@ -42,9 +42,9 @@ ZEN-garden is run from this root folder. The dataset folder ``<dataset>`` compri
 
 Note that all folder names in ``<>`` in the structure above can be chosen freely. The dataset is describes by the properties of the ``energy_system``, the ``set_carriers``, and the ``set_technologies``.
 The system configuration is stored in the file ``system.json`` and defines dataset-specific settings, e.g., which technologies to model or how many years and time steps to include.
-The configuration file ``config.json`` contains more general settings for the optimization problem and the solver. Refer to the section :ref:`files/configurations` for more details.
+The configuration file ``config.json`` contains more general settings for the optimization problem and the solver. Refer to the section :ref:`System, analysis, solver settings` for more details.
 
-Depending on your analysis, more files can be added; see :ref:`files/input_handling:default values` and :ref:`files/scenario_analysis` for more information.
+Depending on your analysis, more files can be added; see :ref:`Default values` and :ref:`Scenario analysis` for more information.
 
 Energy System
 ==============
@@ -62,12 +62,12 @@ In fact, ``set_edges.csv`` defines the edges by the nodes they connect.
     You can specify more nodes in ``set_nodes.csv`` than you end up using. In ``system.json`` you can define a subset of nodes you want to select in the model. If you do not specify any nodes in ``system.json``, all nodes from ``set_nodes.csv`` are used.
 
 ``base_units.csv`` define the base units in the model. That means that all units in the model are converted to a combination of base units.
-See :ref:`files/input_handling:unit consistency` for more information.
+See :ref:`Unit consistency` for more information.
 
 Technologies
 ==============
 The ``set_technologies`` folder is specified in three subfolders: ``set_conversion_technologies``, ``set_storage_technologies``, and ``set_transport_technologies``.
-Each technology has its own folder in the respective subfolder. Additional files can further parametrize the carriers (see :ref:`files/input_handling:default values`).
+Each technology has its own folder in the respective subfolder. Additional files can further parametrize the carriers (see :ref:`Default values`).
 
 .. note::
     You can specify more technologies in the three subfolders than you end up using. That can be helpful if you want to model different scenarios with different technologies and carriers.
@@ -77,7 +77,8 @@ As an example, a :math:`10kW` heat pump could refer to :math:`10kW_{th}` heat ou
 Hence, the user has to specify which carrier is the reference carrier in the file ``attributes.json``.
 For storage technologies and transport technologies, the reference carrier is the carrier that is stored or transported, respectively.
 
-**Conversion Technologies**
+Conversion Technologies
+-----------------------
 
 The conversion technologies are defined in the folder ``set_conversion_technologies``.
 A conversion technology converts ``0`` to ``n`` input carriers into ``0`` to ``m`` output carriers.
@@ -88,8 +89,9 @@ A special case of the conversion technologies are retrofitting technologies. The
 They behave equal to conversion technologies, but they are always connected to a conversion technology. They are coupled to a conversion technology by the attribute ``retrofit_flow_coupling_factor`` in the file ``attributes.json``, which couples the reference carrier flow of the retrofitting technology and the base technology.
 A possible application of retrofitting technologies is the installation of a carbon-capture unit on top of a power plant. In this case, the base technology would be ``power_plant`` and the retrofitting technology would be ``carbon_capture``. Refer to the dataset example XXXX for more information.
 
-**Storage Technologies**
-
+.. _Storage Technologies:
+Storage Technologies
+--------------------
 The storage technologies are defined in the folder ``set_storage_technologies``.
 A storage technology connects two time steps by charging at ``t=t0`` and discharging at ``t=t1``.
 
@@ -97,20 +99,21 @@ A storage technology connects two time steps by charging at ``t=t0`` and dischar
     In ZEN-garden, the power-rated (charging-discharging) capacity and energy-rated (storage level) capacity of storage technologies are optimized independently.
     If you want to fix the energy-to-power ratio, the attribute ``energy_to_power_ratio`` in ``attributes.json`` can be set to anything different than ``inf``
 
-**Transport Technologies**
+Transport Technologies
+----------------------
 
 The transport technologies are defined in the folder ``set_transport_technologies``.
 A transport technology connects two nodes via an edge. Different to conversion technologies or storage technologies, transport technology capacities are built on the edges not the nodes.
 
 .. note::
-    By default, the distance of an edge will be calculated as the `haversine distance <https://www.geeksforgeeks.org/haversine-formula-to-find-distance-between-two-points-on-a-sphere/>`_ between the nodes. This can be overwritten for specific edges in a ``distance.csv`` file (see :ref:`files/input_handling:default values`)
+    By default, the distance of an edge will be calculated as the `haversine distance <https://www.geeksforgeeks.org/haversine-formula-to-find-distance-between-two-points-on-a-sphere/>`_ between the nodes. This can be overwritten for specific edges in a ``distance.csv`` file (see :ref:`Default values`)
 
 Carriers
 ==============
 Each energy carrier is defined in its own folder in ``set_carriers``. You do not need to specify the used energy carriers explicitly in ``system.json``, but the carriers are implied from the used technologies.
 All input, output, and reference carriers that are used in the selected technologies (see `Technologies`_) must be defined in the ``set_carriers`` folder.
 The file ``attributes.json`` defines the properties of the carrier, e.g., the carbon intensity or the cost of the carrier.
-Additional files can further parametrize the carriers (see :ref:`files/input_handling:default values`).
+Additional files can further parametrize the carriers (see :ref:`Default values`).
 
 .. note::
     You can specify more carriers in ``set_carriers`` than you end up using. That can be helpful if you want to model different scenarios with different technologies and carriers.
