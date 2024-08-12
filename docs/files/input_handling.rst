@@ -32,9 +32,9 @@ The general structure of each ``attributes.json`` file is the following:
 
 The structure is a normal dictionary structure.
 Make sure to have the correct positioning of the brackets.
-- There is **one curly** bracket around all parameters ``{...}``
-- Each parameter has a name, followed **by a colon and curly brackets** ``name: {...}``
-- Inside the curly brackets are in most cases a ``default_value`` as a ``float`` or ``"inf"`` and a ``unit`` as a ``string`` (see :ref:`Unit consistency`).
+* There is **one curly** bracket around all parameters ``{...}``
+* Each parameter has a name, followed **by a colon and curly brackets** ``name: {...}``
+* Inside the curly brackets are in most cases a ``default_value`` as a ``float`` or ``"inf"`` and a ``unit`` as a ``string`` (see :ref:`Unit consistency`).
 
 What are particular parameters in the ``attributes.json`` file?
 -------------------------------------------------------------
