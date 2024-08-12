@@ -271,7 +271,7 @@ We convert the units by calculating the multiplier
 and multiplying the numeric value with the multiplier.
 
 The base units are defined in the input data set in the file ``/energy_system/base_units.csv``.
-You have to provide an input unit for all attributes in the input files. The unit is added as the ``unit`` field after the default value in the ``attributes.json`` file.
+You have to provide an input unit for all attributes in the input files. The unit is added as the ``unit`` field after the default value in the ``attributes.json`` file (:ref:`Attribute.json files`).
 
 Defining new units
 ------------------
@@ -295,8 +295,6 @@ There are a few rules to follow in choosing the base units:
 2. The base units themselves can not be linearly dependent, e.g., you cannot choose the base units ``GW``, ``hour`` and ``GJ``.
 3. The dimensionalities must be unique. While you can use ``m^3`` and ``km``, you cannot use both ``MW`` and ``GW``. You will get a warning if you define the same unit twice, but that is still ok.
 
-The code will output errors or warnings, if the selection of base units is wrong, so play around with the base units and see what works and what doesn't.
-
 Enforcing unit consistency
 --------------------------
 
@@ -312,7 +310,7 @@ Each variable definition (``variable.add_variable()``) has the argument ``unit_c
 
 .. note::
 
-    In the results, you can retrieve the unit of all parameters and variables by calling ``r.get_unit(<variable/parameter name>)``, where ``r`` is a results object.
+    In the results (:ref:`Accessing results`), you can retrieve the unit of all parameters and variables by calling ``r.get_unit(<variable/parameter name>)``, where ``r`` is a results object.
 
 What are known errors with pint?
 --------------------------------
