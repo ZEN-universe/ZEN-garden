@@ -1,3 +1,4 @@
+.. _Input data structure:
 ################
 Input data structure
 ################
@@ -44,7 +45,7 @@ Note that all folder names in ``<>`` in the structure above can be chosen freely
 The system configuration is stored in the file ``system.json`` and defines dataset-specific settings, e.g., which technologies to model or how many years and time steps to include.
 The configuration file ``config.json`` contains more general settings for the optimization problem and the solver. Refer to the section :ref:`System, analysis, solver settings` for more details.
 
-Depending on your analysis, more files can be added; see :ref:`Default values` and :ref:`Scenario analysis` for more information.
+Depending on your analysis, more files can be added; see :ref:`Attribute.json files` and :ref:`Scenario analysis` for more information.
 
 Energy System
 ==============
@@ -67,7 +68,7 @@ See :ref:`Unit consistency` for more information.
 Technologies
 ==============
 The ``set_technologies`` folder is specified in three subfolders: ``set_conversion_technologies``, ``set_storage_technologies``, and ``set_transport_technologies``.
-Each technology has its own folder in the respective subfolder. Additional files can further parametrize the carriers (see :ref:`Default values`).
+Each technology has its own folder in the respective subfolder. Additional files can further parametrize the carriers (see :ref:`Attribute.json files`).
 
 .. note::
     You can specify more technologies in the three subfolders than you end up using. That can be helpful if you want to model different scenarios with different technologies and carriers.
@@ -106,14 +107,14 @@ The transport technologies are defined in the folder ``set_transport_technologie
 A transport technology connects two nodes via an edge. Different to conversion technologies or storage technologies, transport technology capacities are built on the edges not the nodes.
 
 .. note::
-    By default, the distance of an edge will be calculated as the `haversine distance <https://www.geeksforgeeks.org/haversine-formula-to-find-distance-between-two-points-on-a-sphere/>`_ between the nodes. This can be overwritten for specific edges in a ``distance.csv`` file (see :ref:`Default values`)
+    By default, the distance of an edge will be calculated as the `haversine distance <https://www.geeksforgeeks.org/haversine-formula-to-find-distance-between-two-points-on-a-sphere/>`_ between the nodes. This can be overwritten for specific edges in a ``distance.csv`` file (see :ref:`Attribute.json files`)
 
 Carriers
 ==============
 Each energy carrier is defined in its own folder in ``set_carriers``. You do not need to specify the used energy carriers explicitly in ``system.json``, but the carriers are implied from the used technologies.
 All input, output, and reference carriers that are used in the selected technologies (see `Technologies`_) must be defined in the ``set_carriers`` folder.
 The file ``attributes.json`` defines the properties of the carrier, e.g., the carbon intensity or the cost of the carrier.
-Additional files can further parametrize the carriers (see :ref:`Default values`).
+Additional files can further parametrize the carriers (see :ref:`Attribute.json files`).
 
 .. note::
     You can specify more carriers in ``set_carriers`` than you end up using. That can be helpful if you want to model different scenarios with different technologies and carriers.
