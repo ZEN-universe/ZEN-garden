@@ -1,4 +1,4 @@
-.. _scenario_analysis:
+.. _Scenario analysis:
 ################
 Scenario analysis
 ################

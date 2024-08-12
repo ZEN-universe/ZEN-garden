@@ -1,9 +1,11 @@
 ################
 Configurations
 ################
+.. _System, analysis, solver settings:
 System, analysis, solver settings
 ========
 
+.. _Time series aggregation and representation:
 Time series aggregation and representation
 ========
 Time steps in ZEN-garden
@@ -83,7 +85,7 @@ For an in-depth introduction to TSA, refer to `Hoffmann et al. 2020 <https://www
 How are short-term and long-term storages modeled?
 --------------------------------------------------
 
-The modeling of storage technologies with TSA is challenging because storages couple time steps (see :ref:).
+The modeling of storage technologies with TSA is challenging because storages couple time steps (see :ref:`Storage Technologies`).
 Hence, the sequence of time steps is important for the operation of the storage level.
 There are different approaches to model storages with TSA, with the approaches by `Gabrielli et al. 2018 <https://www.sciencedirect.com/science/article/pii/S0306261917310139>`_ and `Kotzur et al. <https://www.sciencedirect.com/science/article/pii/S0306261918300242>`_ being the most common.
 In ZEN-garden, we extend the approach by Gabrielli et al. 2018 to model storages with TSA. The approach is detailed in `Mannhardt et al. 2023 <https://www.sciencedirect.com/science/article/pii/S2589004223008271>`_.

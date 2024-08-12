@@ -1,11 +1,13 @@
 ################
 Input data handling
 ################
+.. _Default values:
 Default values
 ==============
 
 Structure of attributes file with exceptions
 
+.. _Unit consistency:
 Unit consistency
 ================
 Our models describe physical processes, whose numeric values are always connected to a physical unit. For example, the capacity of a coal power plant is a power, thus the unit is, e.g., GW.
@@ -14,7 +16,8 @@ Thus, we have to make sure that the numeric values have the same physical base u
 
 Another reason for using a base unit is to `keep the numerics of the optimization model in check <https://www.gurobi.com/documentation/9.5/refman/guidelines_for_numerical_i.html>`_.
 
-**What is ZEN-garden's approach to convert all numeric values to common base units?**
+What is ZEN-garden's approach to convert all numeric values to common base units?
+-------------------------------------------------------------------------------------
 
 We define a set of base units, which we can combine to represent each dimensionality in our model. Each unit has a certain physical dimensionality:
 
@@ -44,7 +47,8 @@ and multiplying the numeric value with the multiplier.
 The base units are defined in the input data set in the file ``/energy_system/base_units.csv``.
 You have to provide an input unit for all attributes in the input files. The unit is added as the ``unit`` field after the default value in the ``attributes.json`` file.
 
-**Defining new units**
+Defining new units
+------------------
 
 We are using the package `pint <https://pint.readthedocs.io/en/stable/>`_, which already has the most common units defined. However, some exotic ones, such as ``Euro``, are not yet defined. You can add new units in the file ``system_specification/unit_definitions.txt``:
 
@@ -67,7 +71,8 @@ There are a few rules to follow in choosing the base units:
 
 The code will output errors or warnings, if the selection of base units is wrong, so play around with the base units and see what works and what doesn't.
 
-**Enforcing unit consistency**
+Enforcing unit consistency
+--------------------------
 
 Converting all numeric values to the same set of base units enforces that all magnitudes are comparable; however, this does not ensure that the units are consistent across parameters and elements (technologies and carriers).
 For example, a user might have defined the capacity of an electrolyzer in ``GW``, but the investment costs in ``Euro/(ton/hour)``.
@@ -83,12 +88,14 @@ Each variable definition (``variable.add_variable()``) has the argument ``unit_c
 
     In the results, you can retrieve the unit of all parameters and variables by calling ``r.get_unit(<variable/parameter name>)``, where ``r`` is a results object.
 
-**What are known errors with pint?**
+What are known errors with pint?
+--------------------------------
 
 The ``pint`` package that we use for the unit handling has amazing functionalities but also some hurdles to look out for. The ones we have already found are:
 
 * ``h``: While we might interpret ``h`` as hour, it is actually treated as the planck constant. Please use ``hour`` or in combination with another unit ``GWh``. If you try to use ``h``, e.g., ``ton/h``, ZEN-garden throws an exception
 * ``ton``: pint uses the keyword ``ton`` for imperial ton, not the metric ton. The keyword for those are ``metric_ton`` or ``tonne``. However, per default, ZEN-garden overwrites the definition of ``ton`` to be the metric ton, so ``ton`` and ``tonne`` can be used interchangeably. If you for some reason want to use imperial tons, set ``solver["define_ton_as_metric_ton"] = False``.
 
+.. _Scaling:
 Scaling
 =============
