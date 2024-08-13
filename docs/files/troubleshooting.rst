@@ -62,9 +62,10 @@ To find out whether your problem is actually infeasible or has bad numerics and 
     }
 
 This should give you a definite answer if your problem is infeasible. If not, you most probably have numerical issues.
+
 How can I find out what constraint led to the infeasibility?
 ------------------------------------------------------------
-Finding the source of the infeasibility can become super tricky, especially in large models with a lot of parameters and constraints. You will need to use your knowledge of your own model to understand where you made a mistake. Unfortunately, the solver does not know which parameter value is "right" and which one is "wrong", it only knows that some constraints are conflicting.
+Finding the source of the infeasibility can become tricky, especially in large models with a lot of parameters and constraints. You will need to use your knowledge of your own model to understand where you made a mistake. Unfortunately, the solver does not know which parameter value is "right" and which one is "wrong", it only knows that some constraints are conflicting.
 
 Fortunately, Gurobi has a fantastic tool that is helpful in finding the conflicting constraints that make the problem infeasible: The `Irreducible Inconsistent Subsystem <https://www.gurobi.com/documentation/current/refman/py_model_computeiis.html>`_ (IIS). The IIS is a subproblem of the original problem with two properties:
 
@@ -84,6 +85,7 @@ Take the original example from the beginning and let's assume there were additio
     x + y >= -50     (VI)
 
 Constraints (IV, V, and VI) do not further constrain the problem, and (I, II, and III) are already infeasible. So, Constraints I-VI could be the original problem and I-III the corresponding IIS. Reducing the problem to this subset of constraints makes finding the error significantly easier. Always ask yourself the question: Which of these constraints do I want to remove to make the problem feasible again?
+
 How is the IIS handled in ZEN-garden?
 --------------------------------------
 In ZEN-garden, we automatically write the IIS if you are using Gurobi and the termination condition is infeasible (not infeasible_or_unbounded!). **It is written to the output folder of the dataset.**
