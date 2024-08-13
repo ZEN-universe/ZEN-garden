@@ -28,5 +28,29 @@ Optional arguments can be passed to the member functions to filter the results. 
 2. ``year``: A single optimization period for which the results should be returned (0, 1, 2, ...). Not available for ``r.get_unit()``.
 3. ``scenario_name``: A single scenario name for which the results should be returned.
 
-User guide for visualization 
+Comparing results
+=================
+ZEN-garden provides methods to compare two different result objects. This can be helpful to understand why two results differ.
+Furthermore, it allows for a fast way to spot errors in the datasets.
+The most useful application is to compare the configuration (:ref:`System, analysis, solver settings`) of two datasets and the parameter values.
+Comparing variable values is often not very informative, as the results mostly differ in a large variety of variables.
+Let's assume you have the following two result objects::
+
+    from zen_garden.postprocess.results.results import Results
+    r1 = Results(path='<result_folder_1>')
+    r2 = Results(path='<result_folder_2>')
+
+Then you can compare the two result objects with the following code::
+
+    from zen_garden.postprocess.results.comparisons import compare_model_values, compare_configs
+    compare_parameters = compare_model_values([r1, r2], component_type = 'parameter')
+    compare_variables = compare_model_values([r1, r2], component_type = 'variable')
+    compare_config = compare_configs([r1, r2])
+
+Per default, ``compare_model_values`` compares the total annual values of components (:ref:`Accessing results`). If the user wants to compare the full time series, the optional argument ``compare_total=False`` can be passed to the function.
+``compare_model_values`` also accepts ``component_type = "dual"`` and ``component_type = "sets"``.
+
+``compare_configs`` compares the configurations of the two datasets.
+
+User guide for visualization
 =================
