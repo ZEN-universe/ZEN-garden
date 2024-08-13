@@ -12,7 +12,7 @@ The objective of the optimization problem :math:`J` is to minimize the net prese
 .. math::
     :label: npc
 
-J = &\sum_{y\in\mathcal{Y}}NPC_y = \sum_{y\in\mathcal{Y}}^{Y-1}\sum_{\tilde{y} = 0}^{\Delta^\mathrm{y}-1}\left(\frac{1}{1+r}\right)^{\Delta^\mathrm{y}(y-y_0)+\tilde{y}}\left(CAPEX_y+OPEX_y\right)+\left(\frac{1}{1+r}\right)^{\Delta^\mathrm{y}(Y-y_0)}\left(CAPEX_Y+OPEX_Y\right).
+    J = \sum_{y\in\mathcal{Y}}NPC_y = \sum_{y\in\mathcal{Y}}^{Y-1}\sum_{\tilde{y} = 0}^{\Delta^\mathrm{y}-1}\left(\frac{1}{1+r}\right)^{\Delta^\mathrm{y}(y-y_0)+\tilde{y}}\left(CAPEX_y+OPEX_y\right)+\left(\frac{1}{1+r}\right)^{\Delta^\mathrm{y}(Y-y_0)}\left(CAPEX_Y+OPEX_Y\right).
 
 
 :math:`CAPEX_y` accounts for the annual cash flows due to capacity investments in technologies. Each technology :math:`h\in\mathcal{H}` is either a conversion technology :math:`i\in\mathcal{I}\subseteq\mathcal{H}`, a transport technology :math:`j\in\mathcal{J}\subseteq\mathcal{H}` or a storage technology :math:`k\in\mathcal{K}\subseteq\mathcal{H}`. For sake of simplicity, we index those variables and parameters that apply to all technology types with :math:`h`. Conversion and storage technologies are installed and operated on nodes :math:`n\in\mathcal{N}`, and transport technologies are installed and operated on edges :math:`e\in\mathcal{E}`. We summarize nodes and edges to positions :math:`p\in\mathcal{P}=\mathcal{N}\cup\mathcal{E}`.
@@ -30,7 +30,7 @@ For annual capital expenditure :math:`A_{h,p,y}` for each technology :math:`h\in
 .. math::
     :label: annual_capex
 
-    A_{h,p,y}=f_h&\left(\sum_{\tilde{y}=\max\left(y_0,y-\left\lceil\nicefrac{l_h}{\Delta^\mathrm{y}}\right\rceil+1\right)}^y \alpha_{h,\tilde{y}}\Delta S_{h,p,\tilde{y}}\right+\left.\sum_{\hat{y}=\psi\left(y-\left\lceil\nicefrac{l_h}{\Delta^\mathrm{y}}\right\rceil+1\right)}^{\psi(y_0-1)} \alpha_{h,y_0}\Delta s^\mathrm{ex}_{h,p,\hat{y}}\right),
+    A_{h,p,y}=f_h\left(\sum_{\tilde{y}=\max\left(y_0,y-\left\lceil\nicefrac{l_h}{\Delta^\mathrm{y}}\right\rceil+1\right)}^y \alpha_{h,\tilde{y}}\Delta S_{h,p,\tilde{y}}\right+\left.\sum_{\hat{y}=\psi\left(y-\left\lceil\nicefrac{l_h}{\Delta^\mathrm{y}}\right\rceil+1\right)}^{\psi(y_0-1)} \alpha_{h,y_0}\Delta s^\mathrm{ex}_{h,p,\hat{y}}\right),
 
 where :math:`\lceil\cdot\rceil` is the ceiling function and :math:`\psi(y)` is a function that maps the planning period :math:`y` to an actual year. For sake of conciseness, we omit to restate :eq:`annual_capex` for energy-rated storage capacities.
 
@@ -48,7 +48,7 @@ The annual operational expenditure :math:`OPEX_y` consists of four terms: i) var
 `OPEX_y^\mathrm{v}` is the product of the specific variable operational expenditure :math:`\beta_{h,y}` and the reference flows for each technology, calculated for the entire year with the time step duration :math:`\tau_t` and summed over all technologies and positions. The reference flows for conversion technologies are :math:`G_{i,n,t,y}^\mathrm{r}`, for transport technologies :math:`F_{j,e,t,y}`, and for storage technologies :math:`\underline{H}_{k,n,t,y}` and :math:`\overline{H}_{k,n,t,y}`:
 
 .. math::
-    OPEX_y^\mathrm{v} = & \sum_{t\in\mathcal{T}}\tau_t\bigg(\sum_{i\in\mathcal{I}}\sum_{n\in\mathcal{N}}\beta_{i,y}G_{i,n,t,y}^\mathrm{r} + \sum_{j\in\mathcal{J}}\sum_{e\in\mathcal{E}}\beta_{j,y}F_{j,e,t,y} + \sum_{k\in\mathcal{K}}\sum_{n\in\mathcal{N}}\beta_{k,y}\left(\underline{H}_{k,n,t,y} + \overline{H}_{k,n,t,y}\right)\bigg).
+    OPEX_y^\mathrm{v} = \sum_{t\in\mathcal{T}}\tau_t\bigg(\sum_{i\in\mathcal{I}}\sum_{n\in\mathcal{N}}\beta_{i,y}G_{i,n,t,y}^\mathrm{r} + \sum_{j\in\mathcal{J}}\sum_{e\in\mathcal{E}}\beta_{j,y}F_{j,e,t,y} + \sum_{k\in\mathcal{K}}\sum_{n\in\mathcal{N}}\beta_{k,y}\left(\underline{H}_{k,n,t,y} + \overline{H}_{k,n,t,y}\right)\bigg).
 
 :math:`OPEX_y^\mathrm{f}` is the product of the specific fixed operational expenditure :math:`\gamma_{h,y}` and the capacity :math:`S_{h,p,y}`, summed over all technologies and positions:
 
@@ -103,15 +103,9 @@ Note that :math:`\sum_{k\in\mathcal{K}}\left(\overline{H}_{k,n,t,y}-\underline{H
 The total annual carbon emissions :math:`E_y` account for the operational emissions of importing the carriers :math:`c\in\mathcal{C}` (carbon intensity :math:`\epsilon_c`) and for operating the technologies :math:`h\in\mathcal{H}` (carbon intensity :math:`\epsilon_h`):
 
 .. math::
-    :nowrap:
     :label: energy_balance
 
-    \begin{gather*}
-    E_y = & \sum_{t\in\mathcal{T}}\tau_t\Bigg(\sum_{n\in\mathcal{N}}\bigg(\\
-    &\qquad\sum_{c\in\mathcal{C}}\epsilon_c U_{c,n,t,y}+\sum_{i\in\mathcal{I}}\epsilon_i G_{i,n,t,y}^\mathrm{r}+\\
-    &\qquad\sum_{k\in\mathcal{K}}\epsilon_k\left(\overline{H}_{k,n,t,y}+\underline{H}_{k,n,t,y}\right)\bigg) +\\
-    &\sum_{e\in\mathcal{E}}\sum_{j\in\mathcal{J}}\epsilon_j F_{j,e,t,y} \Bigg).
-    \begin{gather*}
+    E_y = \sum_{t\in\mathcal{T}}\tau_t\Bigg(\sum_{n\in\mathcal{N}}\bigg(\qquad\sum_{c\in\mathcal{C}}\epsilon_c U_{c,n,t,y}+\sum_{i\in\mathcal{I}}\epsilon_i G_{i,n,t,y}^\mathrm{r}+\qquad\sum_{k\in\mathcal{K}}\epsilon_k\left(\overline{H}_{k,n,t,y}+\underline{H}_{k,n,t,y}\right)\bigg) +\sum_{e\in\mathcal{E}}\sum_{j\in\mathcal{J}}\epsilon_j F_{j,e,t,y} \Bigg).
 
 The annual carbon emission limit :math:`e_y` constraints :math:`E_y` in all :math:`y\in\mathcal{Y}`:
 
@@ -190,14 +184,14 @@ The time-coupled equation for the storage level :math:`L_{k,n,t^\mathrm{k},y}` o
 .. math::
     label: storage_level
 
-    L_{k,n,t^\mathrm{k},y} = &L_{k,n,t^\mathrm{k}-1,y}\left(1-\varphi_k\right)^{\tau^\mathrm{k}_{t^\mathrm{k}}}+\left(\underline{\eta}_k\underline{H}_{k,n,\sigma(t^\mathrm{k}),y}-\frac{\overline{H}_{k,n,\sigma(t^\mathrm{k}),y}}{\overline{\eta}_k}\right)\sum_{\tilde{t}^\mathrm{k}=0}^{\tau^\mathrm{k}_{t^\mathrm{k}}-1}\left(1-\varphi_k\right)^{\tilde{t}^\mathrm{k}},
+    L_{k,n,t^\mathrm{k},y} = L_{k,n,t^\mathrm{k}-1,y}\left(1-\varphi_k\right)^{\tau^\mathrm{k}_{t^\mathrm{k}}}+\left(\underline{\eta}_k\underline{H}_{k,n,\sigma(t^\mathrm{k}),y}-\frac{\overline{H}_{k,n,\sigma(t^\mathrm{k}),y}}{\overline{\eta}_k}\right)\sum_{\tilde{t}^\mathrm{k}=0}^{\tau^\mathrm{k}_{t^\mathrm{k}}-1}\left(1-\varphi_k\right)^{\tilde{t}^\mathrm{k}},
 
 with the self-discharge rate :math:`\varphi_k`, the charge and discharge efficiency :math:`\underline{\eta}_k` and :math:`\overline{\eta}_k` and the duration of a storage level time step :math:`\tau^\mathrm{k}_{t^\mathrm{k}}`.
 If storage periodicity is enforced, the storage level at :math:`t^\mathrm{k}=0` is coupled with the level in the last time step of the period
 :math:`t^\mathrm{k}=T^\mathrm{k}`:
 
 .. math::
-    L_{k,n,0,y} = &L_{k,n,T^\mathrm{k},y}\left(1-\varphi_k\right)^{\tau^\mathrm{k}_{t^\mathrm{k}}}+\left(\underline{\eta}_k\underline{H}_{k,n,\sigma(0),y}-\frac{\overline{H}_{k,n,\sigma(0),y}}{\overline{\eta}_k}\right)\sum_{\tilde{t}^\mathrm{k}=0}^{\tau^\mathrm{k}_{t^\mathrm{k}}-1}\left(1-\varphi_k\right)^{\tilde{t}^\mathrm{k}}.
+    L_{k,n,0,y} = L_{k,n,T^\mathrm{k},y}\left(1-\varphi_k\right)^{\tau^\mathrm{k}_{t^\mathrm{k}}}+\left(\underline{\eta}_k\underline{H}_{k,n,\sigma(0),y}-\frac{\overline{H}_{k,n,\sigma(0),y}}{\overline{\eta}_k}\right)\sum_{\tilde{t}^\mathrm{k}=0}^{\tau^\mathrm{k}_{t^\mathrm{k}}-1}\left(1-\varphi_k\right)^{\tilde{t}^\mathrm{k}}.
 
 The non-negative :math:`L_{k,n,t^\mathrm{k},y}` is constrained by the energy-rated storage capacity :math:`S^\mathrm{e}_{k,n,y}`:
 
@@ -236,7 +230,7 @@ The capacity :math:`S_{h,p,y}` of a technology :math:`h\in\mathcal{H}` at a posi
 .. math::
     :label: capacity
 
-    S_{h,p,y}=&\sum_{\tilde{y}=\max\left(y_0,y-\left\lceil\nicefrac{l_h}{\Delta^\mathrm{y}}\right\rceil+1\right)}^y \Delta S_{h,p,\tilde{y}}+\sum_{\hat{y}=\psi\left(\min\left(y_0-1,y-\left\lceil\nicefrac{l_h}{\Delta^\mathrm{y}}\right\rceil+1\right)\right)}^{\psi(y_0)} \Delta s^\mathrm{ex}_{h,p,\hat{y}}.
+    S_{h,p,y}=\sum_{\tilde{y}=\max\left(y_0,y-\left\lceil\nicefrac{l_h}{\Delta^\mathrm{y}}\right\rceil+1\right)}^y \Delta S_{h,p,\tilde{y}}+\sum_{\hat{y}=\psi\left(\min\left(y_0-1,y-\left\lceil\nicefrac{l_h}{\Delta^\mathrm{y}}\right\rceil+1\right)\right)}^{\psi(y_0)} \Delta s^\mathrm{ex}_{h,p,\hat{y}}.
 
 :math:`S_{h,p,y}` is constrained by the capacity limit :math:`s^\mathrm{max}_{h,p,y}`:
 
@@ -251,31 +245,31 @@ In the case of constrained technology deployment, :math:`\Delta S_{h,p,y}` is co
 With the unbounded capacity addition :math:`\zeta_h`, it follows for the conversion technologies :math:`i\in\mathcal{I}`:
 
 .. math::
-    0 \leq \Delta S_{i,n,y}\leq &\left((1+\vartheta_i)^{\Delta^\mathrm{y}}-1\right)\left(K_{i,n,y}+\omega\sum_{\tilde{n}\in\tilde{\mathcal{N}}}K_{i,\tilde{n},y}\right)+\Delta^\mathrm{y}\left(\xi\sum_{\tilde{i}\in\tilde{\mathcal{I}}}S_{\tilde{i},n,y} + \zeta_i\right).
+    0 \leq \Delta S_{i,n,y}\leq \left((1+\vartheta_i)^{\Delta^\mathrm{y}}-1\right)\left(K_{i,n,y}+\omega\sum_{\tilde{n}\in\tilde{\mathcal{N}}}K_{i,\tilde{n},y}\right)+\Delta^\mathrm{y}\left(\xi\sum_{\tilde{i}\in\tilde{\mathcal{I}}}S_{\tilde{i},n,y} + \zeta_i\right).
 
 
 Analogously, it follows for the storage technologies :math:`k\in\mathcal{K}`:
 
 .. math::
-    0 \leq \Delta S_{k,n,y}\leq &\left((1+\vartheta_k)^{\Delta^\mathrm{y}}-1\right)\left(K_{k,n,y}+\omega\sum_{\tilde{n}\in\tilde{\mathcal{N}}}K_{k,\tilde{n},y}\right)+\Delta^\mathrm{y}\left(\xi\sum_{\tilde{k}\in\tilde{\mathcal{K}}}S_{\tilde{k},n,y} + \zeta_k\right).
+    0 \leq \Delta S_{k,n,y}\leq \left((1+\vartheta_k)^{\Delta^\mathrm{y}}-1\right)\left(K_{k,n,y}+\omega\sum_{\tilde{n}\in\tilde{\mathcal{N}}}K_{k,\tilde{n},y}\right)+\Delta^\mathrm{y}\left(\xi\sum_{\tilde{k}\in\tilde{\mathcal{K}}}S_{\tilde{k},n,y} + \zeta_k\right).
 
 
 We prohibit spillover effects for transport technologies :math:`j\in\mathcal{J}` from other edges:
 
 .. math::
-    0 \leq \Delta S_{j,e,y}\leq &\left((1+\vartheta_j)^{\Delta^\mathrm{y}}-1\right)K_{j,e,y}+\Delta^\mathrm{y}\left(\xi\sum_{\tilde{j}\in\tilde{\mathcal{J}}}S_{\tilde{j},e,y} + \zeta_j\right).
+    0 \leq \Delta S_{j,e,y}\leq \left((1+\vartheta_j)^{\Delta^\mathrm{y}}-1\right)K_{j,e,y}+\Delta^\mathrm{y}\left(\xi\sum_{\tilde{j}\in\tilde{\mathcal{J}}}S_{\tilde{j},e,y} + \zeta_j\right).
 
 
 To avoid the unrealistically excessive use of spillover effects, we constrain the capacity additions in all positions as follows:
 
 .. math::
-    \sum_{p\in\mathcal{P}}\Delta S_{h,p,y}\leq &\sum_{p\in\mathcal{P}}\Bigg(\left((1+\vartheta_h)^{\Delta^\mathrm{y}}-1\right)K_{h,p,y}+\Delta^\mathrm{y}\left(\xi\sum_{\tilde{h}\in\tilde{\mathcal{H}}}S_{\tilde{h},p,y} + \zeta_h\right)\Bigg).
+    \sum_{p\in\mathcal{P}}\Delta S_{h,p,y}\leq \sum_{p\in\mathcal{P}}\Bigg(\left((1+\vartheta_h)^{\Delta^\mathrm{y}}-1\right)K_{h,p,y}+\Delta^\mathrm{y}\left(\xi\sum_{\tilde{h}\in\tilde{\mathcal{H}}}S_{\tilde{h},p,y} + \zeta_h\right)\Bigg).
 
 
 :math:`K_{h,p,y}` is a function of the previous capacity additions :math:`\Delta S_{h,p,y}` and :math:`\Delta s^\mathrm{ex}_{h,p,y}` as it represents the expertise and knowledge of the industry on how to install a certain amount of capacity. This knowledge is depreciated over time with the knowledge depreciation rate :math:`\delta`:
 
 .. math::
-    K_{h,p,y} = &\sum_{\tilde{y}=y_0}^{y-1}\left(1-\delta\right)^{\Delta^\mathrm{y}(y-\tilde{y})}\Delta S_{h,p,\tilde{y}} + \sum_{\hat{y}=-\infty}^{\psi(y_0)}\left(1-\delta\right)^{\left(\Delta^\mathrm{y}(y-y_0) + (\psi(y_0)-\hat{y})\right)}\Delta s^\mathrm{ex}_{h,p,\hat{y}}.
+    K_{h,p,y} = \sum_{\tilde{y}=y_0}^{y-1}\left(1-\delta\right)^{\Delta^\mathrm{y}(y-\tilde{y})}\Delta S_{h,p,\tilde{y}} + \sum_{\hat{y}=-\infty}^{\psi(y_0)}\left(1-\delta\right)^{\left(\Delta^\mathrm{y}(y-y_0) + (\psi(y_0)-\hat{y})\right)}\Delta s^\mathrm{ex}_{h,p,\hat{y}}.
 
 
 All investment constraints are formulated in the exact same way for the energy-rated storage capacities and are omitted here for the sake of conciseness.
