@@ -22,6 +22,7 @@ The total investment cost for each conversion technology :math:`i\in\mathcal{I}`
 To annualize the investment, the total investment cost is multiplied by the annuity factor `f_h` with the technology lifetime `l_h`:
 
 .. math::
+    :label: annuity
     f_h=\frac{\left(1+r\right)^{l_h}r}{\left(1+r\right)^{l_h}-1}.
 
 The annual cash flows accrue over :math:`l_h`. For existing capacities :math:`s_{h,p,y}` that were installed before :math:`y_0`, we assume that they cost the unit cost in the first investment period :math:`\alpha_{h,y_0}`.
@@ -30,7 +31,7 @@ For annual capital expenditure :math:`A_{h,p,y}` for each technology :math:`h\in
 .. math::
     :label: annual_capex
 
-    A_{h,p,y}=f_h\left(\sum_{\tilde{y}=\max\left(y_0,y-\left\lceil\nicefrac{l_h}{\Delta^\mathrm{y}}\right\rceil+1\right)}^y \alpha_{h,\tilde{y}}\Delta S_{h,p,\tilde{y}}\right+\left.\sum_{\hat{y}=\psi\left(y-\left\lceil\nicefrac{l_h}{\Delta^\mathrm{y}}\right\rceil+1\right)}^{\psi(y_0-1)} \alpha_{h,y_0}\Delta s^\mathrm{ex}_{h,p,\hat{y}}\right),
+    A_{h,p,y}=f_h\left(\sum_{\tilde{y}=\max\left(y_0,y-\left\lceil\frac{l_h}{\Delta^\mathrm{y}}\right)\rceil+1\right)}^y \alpha_{h,\tilde{y}}\Delta S_{h,p,\tilde{y}}\right+\left.\sum_{\hat{y}=\psi\left(y-\left\lceil\frac{l_h}{\Delta^\mathrm{y}}\right\rceil+1\right)}^{\psi(y_0-1)} \alpha_{h,y_0}\Delta s^\mathrm{ex}_{h,p,\hat{y}}\right),
 
 where :math:`\lceil\cdot\rceil` is the ceiling function and :math:`\psi(y)` is a function that maps the planning period :math:`y` to an actual year. For sake of conciseness, we omit to restate :eq:`annual_capex` for energy-rated storage capacities.
 
@@ -156,7 +157,7 @@ The conversion factor :math:`\eta_{i,c,t,y}` is the ratio between the flow of ca
 .. math::
     \eta_{i,c,t,y} = \frac{\underline{G}_{c,i,n,t,y}}{G_{i,n,t,y}^\mathrm{r}}.
 
-If :math:c\in\overline{\mathcal{C}}_i`:
+If :math:`c\in\overline{\mathcal{C}}_i`:
 
 .. math::
     \eta_{i,c,t,y} = \frac{\overline{G}_{c,i,n,t,y}}{G_{i,n,t,y}^\mathrm{r}}.
@@ -171,7 +172,7 @@ The temporal representation of storage technologies :math:`k\in\mathcal{K}` is p
 .. math::
     \sigma = [0,0,1,2,1,1,3,3,2,0].
 
-The resulting sequence for energy-rated storage variables `\sigma^\mathrm{k}:math:` of the storage time steps `\mathcal{T}^\mathrm{k}=[0,...,6]` is then:
+The resulting sequence for energy-rated storage variables :math:`\sigma^\mathrm{k}:math:` of the storage time steps :math:`\mathcal{T}^\mathrm{k}=[0,...,6]` is then:
 
 .. math::
     \sigma^\mathrm{k} = [0,0,1,2,3,3,4,4,5,6].
@@ -182,7 +183,7 @@ For sake of simplicity, let :math:`\sigma:\mathcal{T}^\mathrm{k}\to \mathcal{T}`
 The time-coupled equation for the storage level :math:`L_{k,n,t^\mathrm{k},y}` of storage technology :math:`k` at node :math:`n` is formulated for each storage level time step except the first :math:`t^\mathrm{k}\in\mathcal{T}^\mathrm{k}\setminus\{0\}` as:
 
 .. math::
-    label: storage_level
+    :label: storage_level
 
     L_{k,n,t^\mathrm{k},y} = L_{k,n,t^\mathrm{k}-1,y}\left(1-\varphi_k\right)^{\tau^\mathrm{k}_{t^\mathrm{k}}}+\left(\underline{\eta}_k\underline{H}_{k,n,\sigma(t^\mathrm{k}),y}-\frac{\overline{H}_{k,n,\sigma(t^\mathrm{k}),y}}{\overline{\eta}_k}\right)\sum_{\tilde{t}^\mathrm{k}=0}^{\tau^\mathrm{k}_{t^\mathrm{k}}-1}\left(1-\varphi_k\right)^{\tilde{t}^\mathrm{k}},
 
@@ -196,7 +197,8 @@ If storage periodicity is enforced, the storage level at :math:`t^\mathrm{k}=0` 
 The non-negative :math:`L_{k,n,t^\mathrm{k},y}` is constrained by the energy-rated storage capacity :math:`S^\mathrm{e}_{k,n,y}`:
 
 .. math::
-    label:limit_storage_level
+    :label:limit_storage_level
+
     0\leq L_{k,n,t^\mathrm{k},y}\leq S^\mathrm{e}_{k,n,y}.
 
 :math:`L_{k,n,t^\mathrm{k},y}` is monotonous between :math:`t^\mathrm{k}` and :math:`t^\mathrm{k}+1`. Hence, :math:`L_{k,n,t^\mathrm{k},y}` and :math:`L_{k,n,t^\mathrm{k}+1,y}` are the local extreme values and :eq:`limit_storage_level` constrains the entire time interval between :math:`t^\mathrm{k}` and :math:`t^\mathrm{k}+1`. We prove this in :eq:`subsec:proof_storage`.
@@ -230,7 +232,7 @@ The capacity :math:`S_{h,p,y}` of a technology :math:`h\in\mathcal{H}` at a posi
 .. math::
     :label: capacity
 
-    S_{h,p,y}=\sum_{\tilde{y}=\max\left(y_0,y-\left\lceil\nicefrac{l_h}{\Delta^\mathrm{y}}\right\rceil+1\right)}^y \Delta S_{h,p,\tilde{y}}+\sum_{\hat{y}=\psi\left(\min\left(y_0-1,y-\left\lceil\nicefrac{l_h}{\Delta^\mathrm{y}}\right\rceil+1\right)\right)}^{\psi(y_0)} \Delta s^\mathrm{ex}_{h,p,\hat{y}}.
+    S_{h,p,y}=\sum_{\tilde{y}=\max\left(y_0,y-\left\lceil\frac{l_h}{\Delta^\mathrm{y}}\right\rceil+1\right)}^y \Delta S_{h,p,\tilde{y}}+\sum_{\hat{y}=\psi\left(\min\left(y_0-1,y-\left\lceil\frac{l_h}{\Delta^\mathrm{y}}\right\rceil+1\right)\right)}^{\psi(y_0)} \Delta s^\mathrm{ex}_{h,p,\hat{y}}.
 
 :math:`S_{h,p,y}` is constrained by the capacity limit :math:`s^\mathrm{max}_{h,p,y}`:
 
