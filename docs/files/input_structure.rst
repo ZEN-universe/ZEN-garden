@@ -41,7 +41,7 @@ ZEN-garden is run from this root folder. The dataset folder ``<dataset>`` compri
     |
     `--config.json
 
-Note that all folder names in ``<>`` in the structure above can be chosen freely. The dataset is describes by the properties of the ``energy_system``, the ``set_carriers``, and the ``set_technologies``.
+Note that all folder names in ``<>`` in the structure above can be chosen freely. The dataset is described by the properties of the ``energy_system``, the ``set_carriers``, and the ``set_technologies``.
 The system configuration is stored in the file ``system.json`` and defines dataset-specific settings, e.g., which technologies to model or how many years and time steps to include.
 The configuration file ``config.json`` contains more general settings for the optimization problem and the solver. Refer to the section :ref:`System, analysis, solver settings` for more details.
 
@@ -78,6 +78,7 @@ As an example, a :math:`10kW` heat pump could refer to :math:`10kW_{th}` heat ou
 Hence, the user has to specify which carrier is the reference carrier in the file ``attributes.json``.
 For storage technologies and transport technologies, the reference carrier is the carrier that is stored or transported, respectively.
 
+.. _Conversion Technologies:
 Conversion Technologies
 -----------------------
 

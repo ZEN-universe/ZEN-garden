@@ -32,9 +32,9 @@ The general structure of each ``attributes.json`` file is the following:
 
 The structure is a normal dictionary structure.
 Make sure to have the correct positioning of the brackets.
-- There is **one curly** bracket around all parameters ``{...}``
-- Each parameter has a name, followed **by a colon and curly brackets** ``name: {...}``
-- Inside the curly brackets are in most cases a ``default_value`` as a ``float`` or ``"inf"`` and a ``unit`` as a ``string`` (see :ref:`Unit consistency`).
+* There is **one curly** bracket around all parameters ``{...}``
+* Each parameter has a name, followed **by a colon and curly brackets** ``name: {...}``
+* Inside the curly brackets are in most cases a ``default_value`` as a ``float`` or ``"inf"`` and a ``unit`` as a ``string`` (see :ref:`Unit consistency`).
 
 What are particular parameters in the ``attributes.json`` file?
 -------------------------------------------------------------
@@ -59,6 +59,7 @@ The default value of the three carrier types are a list ``[..., ...]``. It can t
 The units of the carriers in a technology are defined in the corresponding parameters (see :ref:`Unit consistency`) and are therefore omitted in the ``"reference_carrier"``, ``"input_carrier"``, and ``"output_carrier"`` field.
 
 **Conversion factor**
+
 The ``conversion_factor`` is the fixed ratio between a carrier flow and the reference carrier flow, defined for all dependent carriers, i.e., all carriers except the reference carrier. The default conversion factor is defined in ``attributes.json`` as:
 
 .. code-block::
@@ -84,6 +85,19 @@ The dependent carriers are the carriers that are not the reference carrier.
 
     dependent_carriers = input_carriers + output_carriers - reference_carrier
 
+**Retrofitting flow coupling factor**
+
+The retrofitting flow coupling factor couples the reference carrier flow of the retrofitting technology and the base technology (:ref:`Conversion Technologies`). The default value is defined in ``attributes.json`` as:
+
+.. code-block::
+
+    "retrofit_flow_coupling_factor": {
+      "base_technology": <base_technology_name>,
+      "default_value": 0.5,
+      "unit": "GWh/GWh"
+    }
+
+The retrofitting flow coupling factor is a single parameter with the base technology as a string and the default value and unit as usual.
 .. _Overwriting default values:
 Overwriting default values
 ==========================

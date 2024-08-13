@@ -15,15 +15,10 @@ requires-python= ">=3.10"
 dependencies = [
     "xarray",
     "cython",
-    "pytest",
     "numpy<=1.26.4",
     "pandas",
-    "geopandas",
     "scipy",
-    "coverage",
     "pint",
-    "matplotlib",
-    "entsoe-py",
     "tables",
     "pydantic",
     "tsam",
@@ -48,6 +43,7 @@ docs = [
 
 dev = [
     "pytest",
+    "coverage",
 ]
 
 gurobipy = ["gurobipy"]
