@@ -331,8 +331,8 @@ What are known errors with pint?
 
 The ``pint`` package that we use for the unit handling has amazing functionalities but also some hurdles to look out for. The ones we have already found are:
 
-* ``h``: While we might interpret ``h`` as hour, it is actually treated as the planck constant. Please use ``hour`` or in combination with another unit ``GWh``. If you try to use ``h``, e.g., ``ton/h``, ZEN-garden throws an exception
 * ``ton``: pint uses the keyword ``ton`` for imperial ton, not the metric ton. The keyword for those are ``metric_ton`` or ``tonne``. However, per default, ZEN-garden overwrites the definition of ``ton`` to be the metric ton, so ``ton`` and ``tonne`` can be used interchangeably. If you for some reason want to use imperial tons, set ``solver["define_ton_as_metric_ton"] = False``.
+* ``h``: Until recently, ``h`` was treated as the planck constant, not hour. Fortunately, this has been fixed in Feb 2023. If you encounter this error, please update your pint version.
 
 .. _Scaling:
 Scaling
