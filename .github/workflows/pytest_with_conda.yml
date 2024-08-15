@@ -8,8 +8,7 @@ on:
     branches:
       - main
   pull_request:
-    branches:
-      - main
+    branches: ['*']
 
 # Env variables
 env:
@@ -138,7 +137,7 @@ jobs:
       #     minColorRange: 0
 
   bump_version:
-    if: ${{ github.repository == 'ZEN-universe/ZEN-garden' && needs.check_skiptests.outputs.skiptests == 'false'}}
+    if: ${{ github.repository == 'ZEN-universe/ZEN-garden' && needs.check_skiptests.outputs.skiptests == 'false' && github.event_name == 'push' && github.ref == 'refs/heads/main'}}
     runs-on: ubuntu-latest
     needs: build
     steps:
