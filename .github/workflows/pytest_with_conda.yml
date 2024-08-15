@@ -6,10 +6,9 @@ on:
     - cron:  '30 4 1 * *'
   push:
     branches:
-      - development
-#  pull_request:
-#    branches:
-#      - development
+      - main
+  pull_request:
+    branches: ['*']
 
 # Env variables
 env:
@@ -138,13 +137,13 @@ jobs:
       #     minColorRange: 0
 
   bump_version:
-    if: ${{ github.repository == 'ZEN-universe/ZEN-garden' && needs.check_skiptests.outputs.skiptests == 'false'}}
+    if: ${{ github.repository == 'ZEN-universe/ZEN-garden' && needs.check_skiptests.outputs.skiptests == 'false' && github.event_name == 'push' && github.ref == 'refs/heads/main'}}
     runs-on: ubuntu-latest
     needs: build
     steps:
       - uses: actions/checkout@v3
         with:
-          ref: development
+          ref: main
       - name: Bump version and push tag
         uses: jasonamyers/github-bumpversion-action@v1.0.5
         env:
@@ -153,27 +152,28 @@ jobs:
       - name: Push changes
         if: env.bump != 'none'
         run: |
-          git push origin development --tags
+          git push origin main --tags
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  # Auto pull request into master if build succeeds
-  auto_pr:
-    name: Auto PR
-    runs-on: ubuntu-latest
-    if: ${{  always() && ((github.repository == 'ZEN-universe/ZEN-garden' && github.event_name == 'push') ||  needs.check_skiptests.outputs.skiptests == 'true') }}
-    needs: bump_version
-    steps:
-      - uses: actions/checkout@v3
-        with:
-          ref: development
-          fetch-depth: 0
-
-      - name: Pull Request develop -> main
-        uses: devops-infra/action-pull-request@v0.5.3
-        with:
-          github_token: ${{ github.token }}
-          target_branch: main
-          title: "AUTO PR"
-          body: "**This is an automated pull request triggered by successfull tests of the dev branch!**"
-          label: 'automated pr'
+# commented out because now we directly push to the main
+# Auto pull request into master if build succeeds
+#  auto_pr:
+#    name: Auto PR
+#    runs-on: ubuntu-latest
+#    if: ${{  always() && ((github.repository == 'ZEN-universe/ZEN-garden' && github.event_name == 'push') ||  needs.check_skiptests.outputs.skiptests == 'true') }}
+#    needs: bump_version
+#    steps:
+#      - uses: actions/checkout@v3
+#        with:
+#          ref: development
+#          fetch-depth: 0
+#
+#      - name: Pull Request develop -> main
+#        uses: devops-infra/action-pull-request@v0.5.3
+#        with:
+#          github_token: ${{ github.token }}
+#          target_branch: main
+#          title: "AUTO PR"
+#          body: "**This is an automated pull request triggered by successfull tests of the dev branch!**"
+#          label: 'automated pr'
