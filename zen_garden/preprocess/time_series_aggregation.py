@@ -249,8 +249,8 @@ class TimeSeriesAggregation(object):
     def link_time_steps(self):
         """ calculates the necessary overlapping time steps of the investment and operation of a technology for all years.
         It sets the union of the time steps for investment, operation and years """
-        list_sequence_time_steps = [self.time_steps.sequence_time_steps_operation,
-                                    self.time_steps.sequence_time_steps_yearly]
+        list_sequence_time_steps = [self.time_steps.sequence_time_steps_yearly,
+                                    self.time_steps.sequence_time_steps_operation]
         old_sequence_time_steps = copy.copy(self.time_steps.sequence_time_steps_operation)
         unique_time_steps_sequences = self.unique_time_steps_multiple_indices(list_sequence_time_steps)
         if unique_time_steps_sequences:
@@ -385,8 +385,8 @@ class TimeSeriesAggregation(object):
         sequence_time_steps = np.zeros(np.size(list_sequence_time_steps, axis=1)).astype(int)
         combined_sequence_time_steps = np.vstack(list_sequence_time_steps)
         unique_combined_time_steps, unique_indices, count_combined_time_steps = np.unique(combined_sequence_time_steps, axis=1, return_counts=True, return_index=True)
-        # if unique time steps are the same as original, or if the second until last only have a single unique value
-        if len(np.unique(combined_sequence_time_steps[0, :])) == len(combined_sequence_time_steps[0, :]) or len(np.unique(combined_sequence_time_steps[1:, :], axis=1)[0]) == 1:
+        # if unique yearly time steps (row 1) are the same as original, or if the operational time series (row 0) only has one unique time step
+        if len(np.unique(combined_sequence_time_steps[1, :])) == len(combined_sequence_time_steps[1, :]) or len(np.unique(combined_sequence_time_steps[0, :])) == 1:
             return None
         set_time_steps = []
         time_steps_duration = {}

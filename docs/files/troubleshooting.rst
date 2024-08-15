@@ -26,7 +26,7 @@ How do I see that my model is infeasible?
 ------------------------------------------
 The output of your optimization tells you the termination condition of your problem. A successful optimization looks like this:
 
-..code-block::
+.. code-block::
 
     Optimization successful:
     Status: ok
@@ -34,7 +34,7 @@ The output of your optimization tells you the termination condition of your prob
 
 whereas an infeasible problem has this output:
 
-..code-block::
+.. code-block::
 
     Optimization failed:
     Status: warning
@@ -42,7 +42,7 @@ whereas an infeasible problem has this output:
 
 Sometimes you will see this message:
 
-..code-block::
+.. code-block::
 
     Optimization failed:
     Status: warning
@@ -51,16 +51,21 @@ Sometimes you will see this message:
 That indicates that the optimizer could not determine whether the problem was, in fact, infeasible or `unbounded <https://www.fico.com/fico-xpress-optimization/docs/latest/solver/optimizer/HTML/chapter3.html?scroll=section3002>`_.
 This can be due to `bad numerics <https://gurobi.com/documentation/current/refman/guidelines_for_numerical_i.html>`_.
 
-To find out whether your problem is actually infeasible or has bad numerics and **you are using Gurobi**, you can disable the `DualReductions <https://www.gurobi.com/documentation/8.1/refman/dualreductions.html#parameter:DualReductions>`_ parameter. Just add this line to the ``config``:
+To find out whether your problem is actually infeasible or has bad numerics and **you are using Gurobi**, you can disable the `DualReductions <https://www.gurobi.com/documentation/8.1/refman/dualreductions.html#parameter:DualReductions>`_ parameter. Just add this line to the ``config.json``:
 
-..code-block::
+.. code-block::
 
-    config.solver["solver_options"]["DualReductions"] = 0
+    "solver": {
+        "solver_options": {
+          "DualReductions": 0
+        }
+    }
 
 This should give you a definite answer if your problem is infeasible. If not, you most probably have numerical issues.
+
 How can I find out what constraint led to the infeasibility?
 ------------------------------------------------------------
-Finding the source of the infeasibility can become super tricky, especially in large models with a lot of parameters and constraints. You will need to use your knowledge of your own model to understand where you made a mistake. Unfortunately, the solver does not know which parameter value is "right" and which one is "wrong", it only knows that some constraints are conflicting.
+Finding the source of the infeasibility can become tricky, especially in large models with a lot of parameters and constraints. You will need to use your knowledge of your own model to understand where you made a mistake. Unfortunately, the solver does not know which parameter value is "right" and which one is "wrong", it only knows that some constraints are conflicting.
 
 Fortunately, Gurobi has a fantastic tool that is helpful in finding the conflicting constraints that make the problem infeasible: The `Irreducible Inconsistent Subsystem <https://www.gurobi.com/documentation/current/refman/py_model_computeiis.html>`_ (IIS). The IIS is a subproblem of the original problem with two properties:
 
@@ -69,7 +74,7 @@ Fortunately, Gurobi has a fantastic tool that is helpful in finding the conflict
 
 Take the original example from the beginning and let's assume there were additional constraints:
 
-..code-block::
+.. code-block::
 
     x <= y    (I)
     x >= 5    (II)
@@ -80,13 +85,14 @@ Take the original example from the beginning and let's assume there were additio
     x + y >= -50     (VI)
 
 Constraints (IV, V, and VI) do not further constrain the problem, and (I, II, and III) are already infeasible. So, Constraints I-VI could be the original problem and I-III the corresponding IIS. Reducing the problem to this subset of constraints makes finding the error significantly easier. Always ask yourself the question: Which of these constraints do I want to remove to make the problem feasible again?
+
 How is the IIS handled in ZEN-garden?
 --------------------------------------
 In ZEN-garden, we automatically write the IIS if you are using Gurobi and the termination condition is infeasible (not infeasible_or_unbounded!). **It is written to the output folder of the dataset.**
 
 Take the following example, which is ``test_1a`` but without the option to import natural gas. Clearly, if no gas can be imported, the heat demand cannot be supplied and the problem becomes infeasible. The resulting IIS is the following:
 
-..code-block::
+.. code-block::
 
     constraint_availability_import:
         [heat, CH, 0]:    1.0 flow_import[heat, CH, 0] <= 0
