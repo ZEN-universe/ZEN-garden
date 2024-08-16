@@ -17,6 +17,7 @@ The easiest way to access the results values is to import the ``Results`` class 
 
 The path ``<result_folder>`` is the path to the results folder of the dataset, e.g., ``data/output/<dataset_name>``.
 To access the data frames containing the raw optimization results of the variables and parameters (called component in the following), the following member functions for the instance ``r`` of the ``Results`` class can be used:
+
 1. ``r.get_total()``: Returns annual total values of the component.
 2. ``r.get_full_ts()``: Returns the time series of the component. In case of hourly-resolved data, the time series has a length of 8760 times the number of years simulated.
 3. ``r.get_dual()``: Returns the dual values of the constraints.
@@ -24,6 +25,7 @@ To access the data frames containing the raw optimization results of the variabl
 
 The user must pass the name of the ``component`` to the member functions, e.g., ``r.get_total('capacity')`` to access the annual capacity values for all technologies.
 Optional arguments can be passed to the member functions to filter the results. The optional arguments are:
+
 1. ``element_name``: A single element name that is in the first index of the component (e.g., "wind_onshore" for "capacity", if the technology "wind_onshore" is modeled). Not available for ``r.get_unit()``.
 2. ``year``: A single optimization period for which the results should be returned (0, 1, 2, ...). Not available for ``r.get_unit()``.
 3. ``scenario_name``: A single scenario name for which the results should be returned.
