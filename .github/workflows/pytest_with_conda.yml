@@ -149,9 +149,9 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-#      - name: Push changes
-#        if: env.bump != 'none'
-#        run: |
-#          git push origin main --tags
-#        env:
-#          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Push changes
+        if: env.bump != 'none'
+        run: |
+          git push origin main --tags
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

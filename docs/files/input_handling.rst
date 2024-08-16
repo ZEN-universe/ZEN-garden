@@ -9,6 +9,7 @@ Each element in the input data folder has an ``attributes.json`` file, as shown 
 This file must be specified for each element and must contain all parameters that this class of elements (Technology, Carrier, etc.) can have.
 
 The ``attributes.json`` files have three main purposes:
+
 1. Defining all parameters of each element
 2. Providing the default value for each parameter
 3. Defining the unit of each parameter
@@ -33,6 +34,7 @@ The general structure of each ``attributes.json`` file is the following:
 
 The structure is a normal dictionary structure.
 Make sure to have the correct positioning of the brackets.
+
 * There is **one curly** bracket around all parameters ``{...}``
 * Each parameter has a name, followed **by a colon and curly brackets** ``name: {...}``
 * Inside the curly brackets are in most cases a ``default_value`` as a ``float`` or ``"inf"`` and a ``unit`` as a ``string`` (see :ref:`Unit consistency`).
@@ -53,6 +55,7 @@ Some parameters do not have the structure above. These are the carriers of techn
     }
 
 The default value of the three carrier types are a list ``[..., ...]``. It can take the following lengths:
+
 1. 1 carrier: Necessary in the case of the reference carrier
 2. 0 carrier: Empty list if no input or output carrier
 3. more than 1 carrier: for multiple input or output carriers
@@ -99,6 +102,7 @@ The retrofitting flow coupling factor couples the reference carrier flow of the 
     }
 
 The retrofitting flow coupling factor is a single parameter with the base technology as a string and the default value and unit as usual.
+
 .. _Overwriting default values:
 Overwriting default values
 ==========================
