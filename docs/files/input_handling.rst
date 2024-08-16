@@ -32,9 +32,9 @@ The general structure of each ``attributes.json`` file is the following:
 
 The structure is a normal dictionary structure.
 Make sure to have the correct positioning of the brackets.
-- There is **one curly** bracket around all parameters ``{...}``
-- Each parameter has a name, followed **by a colon and curly brackets** ``name: {...}``
-- Inside the curly brackets are in most cases a ``default_value`` as a ``float`` or ``"inf"`` and a ``unit`` as a ``string`` (see :ref:`Unit consistency`).
+* There is **one curly** bracket around all parameters ``{...}``
+* Each parameter has a name, followed **by a colon and curly brackets** ``name: {...}``
+* Inside the curly brackets are in most cases a ``default_value`` as a ``float`` or ``"inf"`` and a ``unit`` as a ``string`` (see :ref:`Unit consistency`).
 
 What are particular parameters in the ``attributes.json`` file?
 -------------------------------------------------------------
@@ -59,6 +59,7 @@ The default value of the three carrier types are a list ``[..., ...]``. It can t
 The units of the carriers in a technology are defined in the corresponding parameters (see :ref:`Unit consistency`) and are therefore omitted in the ``"reference_carrier"``, ``"input_carrier"``, and ``"output_carrier"`` field.
 
 **Conversion factor**
+
 The ``conversion_factor`` is the fixed ratio between a carrier flow and the reference carrier flow, defined for all dependent carriers, i.e., all carriers except the reference carrier. The default conversion factor is defined in ``attributes.json`` as:
 
 .. code-block::
@@ -84,6 +85,19 @@ The dependent carriers are the carriers that are not the reference carrier.
 
     dependent_carriers = input_carriers + output_carriers - reference_carrier
 
+**Retrofitting flow coupling factor**
+
+The retrofitting flow coupling factor couples the reference carrier flow of the retrofitting technology and the base technology (:ref:`Conversion Technologies`). The default value is defined in ``attributes.json`` as:
+
+.. code-block::
+
+    "retrofit_flow_coupling_factor": {
+      "base_technology": <base_technology_name>,
+      "default_value": 0.5,
+      "unit": "GWh/GWh"
+    }
+
+The retrofitting flow coupling factor is a single parameter with the base technology as a string and the default value and unit as usual.
 .. _Overwriting default values:
 Overwriting default values
 ==========================
@@ -123,7 +137,7 @@ If the user wants to specify the demand ``CH`` and ``DE`` in the time steps ``0,
 
 The file overwrites the default value for the demand at nodes ``CH`` and ``DE`` in time steps ``0, 14,300``.
 
-..note::
+.. note::
     ZEN-garden will select that subset of data that is relevant for the optimization problem.
     If the user specifies a demand for a node in ``demand.csv`` that is not part of the optimization problem, the demand is ignored for this node.
 
@@ -146,7 +160,7 @@ or
 
 Therefore, the full demand time series is ``10 GW`` except for the time steps ``0, 14, 300`` where it is ``5 GW, 7 GW, 3 GW`` for ``CH`` and ``2 GW, 3 GW, 2 GW`` for ``DE``.
 
-..warning::
+.. warning::
     Make sure that the unit of the values in the ``.csv`` file is consistent with the unit defined in the ``attributes.json`` file!
     Since we do not specify a unit in the ``.csv`` file, the unit of the values is assumed to be the same as the unit in the ``attributes.json`` file.
 
@@ -201,7 +215,7 @@ If all nodes have the same yearly variation, the file can be shortened to:
     ...
     2050,4
 
-..note::
+.. note::
     So far, ZEN-garden does not allow for different time series for each year.
 
 Data interpolation
@@ -271,7 +285,7 @@ We convert the units by calculating the multiplier
 and multiplying the numeric value with the multiplier.
 
 The base units are defined in the input data set in the file ``/energy_system/base_units.csv``.
-You have to provide an input unit for all attributes in the input files. The unit is added as the ``unit`` field after the default value in the ``attributes.json`` file.
+You have to provide an input unit for all attributes in the input files. The unit is added as the ``unit`` field after the default value in the ``attributes.json`` file (:ref:`Attribute.json files`).
 
 Defining new units
 ------------------
@@ -295,8 +309,6 @@ There are a few rules to follow in choosing the base units:
 2. The base units themselves can not be linearly dependent, e.g., you cannot choose the base units ``GW``, ``hour`` and ``GJ``.
 3. The dimensionalities must be unique. While you can use ``m^3`` and ``km``, you cannot use both ``MW`` and ``GW``. You will get a warning if you define the same unit twice, but that is still ok.
 
-The code will output errors or warnings, if the selection of base units is wrong, so play around with the base units and see what works and what doesn't.
-
 Enforcing unit consistency
 --------------------------
 
@@ -312,15 +324,15 @@ Each variable definition (``variable.add_variable()``) has the argument ``unit_c
 
 .. note::
 
-    In the results, you can retrieve the unit of all parameters and variables by calling ``r.get_unit(<variable/parameter name>)``, where ``r`` is a results object.
+    In the results (:ref:`Accessing results`), you can retrieve the unit of all parameters and variables by calling ``r.get_unit(<variable/parameter name>)``, where ``r`` is a results object.
 
 What are known errors with pint?
 --------------------------------
 
 The ``pint`` package that we use for the unit handling has amazing functionalities but also some hurdles to look out for. The ones we have already found are:
 
-* ``h``: While we might interpret ``h`` as hour, it is actually treated as the planck constant. Please use ``hour`` or in combination with another unit ``GWh``. If you try to use ``h``, e.g., ``ton/h``, ZEN-garden throws an exception
 * ``ton``: pint uses the keyword ``ton`` for imperial ton, not the metric ton. The keyword for those are ``metric_ton`` or ``tonne``. However, per default, ZEN-garden overwrites the definition of ``ton`` to be the metric ton, so ``ton`` and ``tonne`` can be used interchangeably. If you for some reason want to use imperial tons, set ``solver["define_ton_as_metric_ton"] = False``.
+* ``h``: Until recently, ``h`` was treated as the planck constant, not hour. Fortunately, this has been fixed in Feb 2023. If you encounter this error, please update your pint version.
 
 .. _Scaling:
 Scaling

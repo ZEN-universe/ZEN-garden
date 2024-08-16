@@ -36,7 +36,11 @@ The time parameters in ZEN-garden
 * ``aggregated_time_steps_per_year``: number of representative periods per year to aggregate the time series. Thus, all operational components are aggregated to ``aggregated_time_steps_per_year`` time steps. For further information on time series aggregation, see below.
 * ``optimized_years``: number of investigated years.
 * ``interval_between_years``: interval between two optimization years.
-Example:
+* ``use_rolling_horizon``: if True, we do not optimize all years simultaneously but optimize for a subset of years and afterward move the optimization window to the next year and optimize again. For further information on rolling horizon and myopic foresight versus perfect foresight refer to, e.g., `Poncelet et al. 2016 <10.1109/EEM.2016.7521261>`_.
+* ``years_in_rolling_horizon``: number of optimization periods in the subset of the optimization horizon as mentioned above. Only relevant if ``use_rolling_horizon`` is True.
+* ``interval_between_optimizations``: number of optimization periods for which the decisions of each rolling horizon are saved. Must be shorter than ``years_in_rolling_horizon``; default is 1. For an example for varying decision horizon lengths, refer to `Keppo et al. 2010 <10.1016/J.ENERGY.2010.01.019>`_. Only relevant if ``use_rolling_horizon`` is True.
+
+Example I, no rolling horizon:
 
 .. code-block::
 
@@ -50,11 +54,7 @@ The resulting investigated years are
 
     [2020,2030,2040,2050]
 
-* ``use_rolling_horizon``: if True, we do not optimize all years simultaneously but optimize for a subset of years and afterward move the optimization window to the next year and optimize again. For further information on rolling horizon and myopic foresight versus perfect foresight refer to, e.g., `Poncelet et al. 2016 <10.1109/EEM.2016.7521261>`_.
-* ``years_in_rolling_horizon``: number of optimization periods in the subset of the optimization horizon as mentioned above. Only relevant if ``use_rolling_horizon`` is True.
-* ``interval_between_optimizations``: number of optimization periods for which the decisions of each rolling horizon are saved. Must be shorter than ``years_in_rolling_horizon``; default is 1. For an example for varying decision horizon lengths, refer to `Keppo et al. 2010 <10.1016/J.ENERGY.2010.01.019>`_. Only relevant if ``use_rolling_horizon`` is True.
-
-Example:
+Example II, rolling horizon:
 
 .. code-block::
 
@@ -110,5 +110,3 @@ Great, the TSA works. But I want more information!
 1. In the ``default_config.py``, you find the class ``TimeSeriesAggregation`` where you can set the ``clusterMethod``, ``solver``, ``extremePeriodMethod`` and ``representationMethod``. Most importantly, the ``clusterMethod`` selects which algorithm is used to determine the clusters of representative time steps. Probably, the most common ones are `k_means <https://en.wikipedia.org/wiki/K-means_clustering>`_ and `k_medoids <https://en.wikipedia.org/wiki/K-medoids>`_. While it is probably not necessary at this point to understand the difference of k-means and k-medoids in detail, it is important to know that k-means averages the input data over the representative time steps, which reduces the extreme period behavior, thus, peaks are smoothened.
 2. As said before, each aggregated time step represents multiple base time steps. Thus, the behavior in each aggregated time step accounts for more than one time step. Thus, the operational costs and operational carbon emissions of each aggregated time step are multiplied with the ``time_steps_operation_duration`` of the respective time step.
 3. What is this strange ``sequence_time_steps`` floating around everywhere in the code? The substitution of the base time steps by the aggregated time steps yields a sequence of time steps, which is ``len(set_base_time_steps)`` entries long and encapsulates the order in which the aggregated time steps appear in the representation of the base time steps. We use the sequence of time steps to convert one time step into another. For example we can use the order to get the yearly time step associated with a certain operational time step, or the year of a certain operational time step.
-
-
