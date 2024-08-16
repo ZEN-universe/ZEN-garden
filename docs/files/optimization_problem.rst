@@ -11,21 +11,27 @@ Optimization Setup
 Energy System
 ==================
 
+.. csv-table:: Objective Functions
+    :header-rows: 1
+    :file: tables/objectives.csv
+    :widths: 10 20
+    :delim: ;
+
 .. csv-table:: Energy System Parameters
     :header-rows: 1
-    :file: tables/energy_system_parameters.csv
+    :file: tables/parameters/energy_system_parameters.csv
     :widths: 10 10 20 10
     :delim: ;
 
 .. csv-table:: Energy System Variables
     :header-rows: 1
-    :file: tables/energy_system_variables.csv
+    :file: tables/variables/energy_system_variables.csv
     :widths: 10 10 20 10
     :delim: ;
 
 .. csv-table:: Energy System Constraints
     :header-rows: 1
-    :file: tables/energy_system_constraints.csv
+    :file: tables/constraints/energy_system_constraints.csv
     :widths: 10 10 20 10
     :delim: ;
 
@@ -153,6 +159,3 @@ Transport Technology
     :file: tables/constraints/transport_technology_constraints.csv
     :widths: 10 10 20
     :delim: ;
-
-
-
