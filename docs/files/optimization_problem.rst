@@ -11,12 +11,28 @@ Optimization Setup
 Energy System
 ==================
 
-The class ``EnergySystem`` defines the energy system and takes the optimization setup as input.
+.. csv-table:: Objective Functions
+    :header-rows: 1
+    :file: tables/objectives.csv
+    :widths: 10 20
+    :delim: ;
 
 .. csv-table:: Energy System Parameters
     :header-rows: 1
-    :file: tables/energy_system_parameters.csv
-    :widths: 20 20 40 20
+    :file: tables/parameters/energy_system_parameters.csv
+    :widths: 10 10 20 10
+    :delim: ;
+
+.. csv-table:: Energy System Variables
+    :header-rows: 1
+    :file: tables/variables/energy_system_variables.csv
+    :widths: 10 10 20 10
+    :delim: ;
+
+.. csv-table:: Energy System Constraints
+    :header-rows: 1
+    :file: tables/constraints/energy_system_constraints.csv
+    :widths: 10 10 20 10
     :delim: ;
 
 .. _carrier:
@@ -24,103 +40,122 @@ Carrier
 ==================
 
 .. csv-table:: Carrier Parameters
-    :header: Parameter Name,Time Step Type,Doc String,Unit Category
-    :widths: 20 20 20 20 20
-    :delim: 1
+    :header-rows: 1
+    :file: tables/parameters/carrier_parameters.csv
+    :widths: 10 10 20 10
+    :delim: ;
 
-    ``demand`` , ``set\_time\_steps\_operation`` , Parameter which specifies the carrier demand , {"energy_quantity": 1, "time": -1}
-    ``availability\_import`` , ``set\_time\_steps\_operation`` , Parameter which specifies the maximum energy that can be imported from outside the system boundaries ,  {"energy_quantity": 1, "time": -1}
-    ``availability\_export`` , ``set\_time\_steps\_operation`` , Parameter which specifies the maximum energy that can be exported to outside the system boundaries ,  {"energy_quantity": 1, "time": -1}
-    ``availability\_import\_yearly`` , ``set\_time\_steps\_yearly`` , Parameter which specifies the maximum energy that can be imported from outside the system boundaries for the entire year ,  {"energy_quantity": 1}
-    ``availability\_export\_yearly`` , ``set\_time\_steps\_yearly`` , Parameter which specifies the maximum energy that can be exported to outside the system boundaries for the entire year`` ,  {"energy_quantity": 1}
-    ``price\_import`` , ``set\_time\_steps\_operation`` , Parameter which specifies the import carrier price ,  {"money": 1, "energy_quantity": -1}
-    ``price\_export`` , ``set\_time\_steps\_operation``, Parameter which specifies the export carrier price ,  {"money": 1, "energy_quantity": -1}
-    ``price\_shed\_demand`` , ``temporal immutable`` , Parameter which specifies the price to shed demand ,  {"money": 1, "energy_quantity": -1}
-    ``carbon\_intensity_carrier``, ``set\_time\_steps\_yearly`` , Parameter which specifies the carbon intensity of   {"emissions": 1, "energy_quantity": -1}
+.. csv-table:: Carrier Variables
+    :header-rows: 1
+    :file: tables/variables/carrier_variables.csv
+    :widths: 10 10 20 10
+    :delim: ;
 
-
+.. csv-table:: Carrier Variables
+    :header-rows: 1
+    :file: tables/constraints/carrier_constraints.csv
+    :widths: 10 10 20
+    :delim: ;
 
 .. _technology:
 Technology
 ==================
 
 .. csv-table:: Technology Parameters
-    :header: Parameter Name,Time Step Type,Doc String,Unit Category
-    :widths: 20 20 20 20 20
-    :stub-columns: 1
+    :header-rows: 1
+    :file: tables/parameters/technology_parameters.csv
+    :widths: 10 10 20 10
+    :delim: ;
 
-    ``capacity\_existing`` , temporal immutable , Parameter which specifies the existing technology size , {"energy_quantity": 1, "time": -1}
-    ``capacity\_investment\_existing`` , ``set\_time\_steps\_yearly``\_entire\_horizon , Parameter which specifies the size of the previously invested capacities , {"energy_quantity": 1, "time": -1}
-    ``capacity\_addition\_min`` , temporal immutable , Parameter which specifies the minimum capacity addition that can be installed , {"energy_quantity": 1, "time": -1}
-    ``capacity\_addition\_max`` , temporal immutable , Parameter which specifies the maximum capacity addition that can be installed , {"energy_quantity": 1, "time": -1}
-    ``capacity\_addition\_unbounded`` , temporal immutable , Parameter which specifies the unbounded capacity addition that can be added each year (only for delayed technology deployment) , {"energy_quantity": 1, "time": -1}
-    ``lifetime\_existing`` , temporal immutable , Parameter which specifies the remaining lifetime of an existing technology , {}
-    ``capex\_capacity\_existing`` , temporal immutable , Parameter which specifies the total capex of an existing technology which still has to be paid , {"money": 1, "energy_quantity": -1}
-    ``opex\_specific\_variable`` , ``set\_time\_steps\_operation`` , Parameter which specifies the variable specific opex , {"money": 1, "energy_quantity": -1}
-    ``opex\_specific\_fixed`` , ``set\_time\_steps\_yearly`` , Parameter which specifies the fixed annual specific opex , {"money": 1, "energy_quantity": -1, "time": 1}
-    ``lifetime`` , temporal immutable , Parameter which specifies the lifetime of a newly built technology , {}
-    ``construction\_time`` , temporal immutable , Parameter which specifies the construction time of a newly built technology , {}
-    ``max\_diffusion\_rate`` , ``set\_time\_steps\_yearly`` , Parameter which specifies the maximum diffusion rate which is the maximum increase in capacity between investment steps , {}
-    ``capacity\_limit`` , temporal immutable , Parameter which specifies the capacity limit of technologies , {"energy_quantity": 1, "time": -1}
-    ``min\_load`` , ``set\_time\_steps\_operation`` , Parameter which specifies the minimum load of technology relative to installed capacity , {}
-    ``max\_load`` , ``set\_time\_steps\_operation`` , Parameter which specifies the maximum load of technology relative to installed capacity , {}
-    ``carbon\_intensity\_technology`` , temporal immutable , Parameter which specifies the carbon intensity of each technology , {"emissions": 1, "energy_quantity": -1}
+.. csv-table:: Technology Variables
+    :header-rows: 1
+    :file: tables/variables/technology_variables.csv
+    :widths: 10 10 20 10
+    :delim: ;
 
-
+.. csv-table:: Technology Variables
+    :header-rows: 1
+    :file: tables/constraints/technology_constraints.csv
+    :widths: 10 10 20
+    :delim: ;
 
 .. _conversion_technology:
 Conversion Technology
 ----------------------
 
 .. csv-table:: Conversion Technology Parameters
-    :header: Parameter Name,Time Step Type,Doc String,Unit Category
-    :widths: 20 20 20 20 20
-    :stub-columns: 1
+    :header-rows: 1
+    :file: tables/parameters/conversion_technology_parameters.csv
+    :widths: 10 10 20 10
+    :delim: ;
 
-    ``capex\_specific\_conversion`` , ``set\_time\_steps\_yearly`` , Parameter which specifies the slope of the capex if approximated linearly , {"money": 1, "energy_quantity": -1, "time": 1}
-    ``conversion\_factor`` , ``set\_time\_steps\_yearly`` , Parameter which specifies the slope of the conversion efficiency if approximated linearly , {"energy_quantity": 1, "energy_quantity": -1}
+.. csv-table:: Conversion Technology Variables
+    :header-rows: 1
+    :file: tables/variables/conversion_technology_variables.csv
+    :widths: 10 10 20 10
+    :delim: ;
 
+.. csv-table:: Conversion Technology Variables
+    :header-rows: 1
+    :file: tables/constraints/conversion_technology_constraints.csv
+    :widths: 10 10 20
+    :delim: ;
 
 *Retrofitting Technology**
 
 .. csv-table:: Retrofitting Technology Parameters
-    :header: Parameter Name,Time Step Type,Doc String,Unit Category
-    :widths: 20 20 20 20 20
-    :stub-columns: 1
+    :header-rows: 1
+    :file: tables/parameters/retrofitting_technology_parameters.csv
+    :widths: 10 10 20 10
+    :delim: ;
 
-    ``retrofit\_flow\_coupling\_factor`` , ``set\_time\_steps\_operation`` , Parameter which specifies the flow coupling between the retrofitting technologies and its base technology , technology, {"energy_quantity": 1, "energy_quantity": -1}
+.. csv-table:: Retrofitting Technology Constraints
+    :header-rows: 1
+    :file: tables/constraints/retrofitting_technology_constraints.csv
+    :widths: 10 10 20
+    :delim: ;
 
 .. _storage_technology:
 Storage Technology
 ----------------------
 
 .. csv-table:: Storage Technology Parameters
-    :header: Parameter Name,Time Step Type,Doc String,Unit Category
-    :widths: 20 20 20 20 20
-    :stub-columns: 1
+    :header-rows: 1
+    :file: tables/storage_technology_parameters.csv
+    :widths: 10 10 20 10
+    :delim: ;
 
-    ``time\_steps\_storage\_level\_duration`` , ``set\_time\_steps\_storage\_level`` , Parameter which specifies the time step duration in StorageLevel for all technologies , {"time": 1}
-    ``efficiency\_charge`` , ``set\_time\_steps\_yearly`` , efficiency during charging for storage technologies , {}
-    ``efficiency\_discharge`` , ``set\_time\_steps\_yearly`` , efficiency during discharging for storage technologies , {}
-    ``self\_discharge`` , temporal immutable , self-discharge of storage technologies , {}
-    ``capex\_specific\_storage`` , ``set\_time\_steps\_yearly`` , specific capex of storage technologies , {"money": 1, "energy_quantity": -1, "time": 1}
+.. csv-table:: Storage Technology Variables
+    :header-rows: 1
+    :file: tables/variables/storage_technology_variables.csv
+    :widths: 10 10 20 10
+    :delim: ;
+
+.. csv-table:: Storage Technology Constraints
+    :header-rows: 1
+    :file: tables/constraints/storage_technology_constraints.csv
+    :widths: 10 10 20
+    :delim: ;
+
 
 .. _transport_technology:
 Transport Technology
 ----------------------
 
 .. csv-table:: Transport Technology Parameters
-    :header: Parameter Name,Time Step Type,Doc String,Unit Category
-    :widths: 20 20 20 20 20
-    :stub-columns: 1
+    :header-rows: 1
+    :file: tables/transport_technology_parameters.csv
+    :widths: 10 10 20 10
+    :delim: ;
 
-    ``distance`` , temporal immutable , distance between two nodes for transport technologies , {"distance": 1}
-    ``capex\_specific\_transport`` , ``set\_time\_steps\_yearly`` , capex per unit for transport technologies , {"money": 1, "energy_quantity": -1, "time": 1}
-    ``capex\_per\_distance\_transport`` , ``set\_time\_steps\_yearly`` , capex per distance for transport technologies , {"money": 1, "distance": -1, "energy_quantity": -1, "time": 1}
-    ``transport\_loss\_factor`` , temporal immutable , carrier losses due to transport with transport technologies , {"distance": -1}
-    ``transport\_loss\_factor\_exponential`` , temporal immutable , exponential carrier losses due to transport with transport technologies , {"distance": -1}
+.. csv-table:: Transport Technology Variables
+    :header-rows: 1
+    :file: tables/variables/transport_technology_variables.csv
+    :widths: 10 10 20 10
+    :delim: ;
 
-
-
-
-
+.. csv-table:: Transport Technology Constraints
+    :header-rows: 1
+    :file: tables/constraints/transport_technology_constraints.csv
+    :widths: 10 10 20
+    :delim: ;
