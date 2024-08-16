@@ -68,7 +68,7 @@ html_theme = 'sphinx_book_theme'
 # Theme-specific options to customize the look of a theme
 # For a list of options available for each theme, see the documentation.
 html_theme_options = {
-    "repository_url": "https://github.com/pypsa/pypsa",
+    "repository_url": "https://github.com/ZEN-universe/ZEN-garden",
     "use_repository_button": True,
     "show_navbar_depth": 1,
     "show_toc_level": 2,
@@ -81,9 +81,9 @@ html_short_title = "ZEN-garden"
 # The name of an image file (relative to this directory)
 html_logo = "images/zen_garden_logo_text.png"
 
-html_favicon = "_static/zen_garden_logo.png"
+html_favicon = "images/zen_garden_logo.png"
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-html_static_path = ['_static']
+# html_static_path = ['_static']
