@@ -55,6 +55,20 @@ In this example, first the default value would be read from `àttributes_high.js
 .. note:: 
     ``file_op`` is applied after the file values have replaced the default values and will therefore be applied to **all** paramter values, the default values as well. Thus, setting both ``default_op`` and ``file_op`` will change the default values twice.
 
+.. note::
+    If you want to change the yearly variation of a time-dependent parameter, i.e., adding a file for demand_yearly_variation, please refer to ``demand_yearly_variation`` directly.
+
+    .. code-block::
+
+        {"example": {
+            "electricity": {
+                "demand_yearly_variation":{
+                    "file":"demand_yearly_variation_high"
+                    }
+                }
+            }
+
+Note that you overwrite the demand_yearly_variation parameter, not demand.
 
 .. _overwriting_sets:
 Overwriting entire sets or subsets
