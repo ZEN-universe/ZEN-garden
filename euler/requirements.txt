@@ -22,4 +22,4 @@ tsam
 tables
 filelock
 pydantic
-pyyaml<5.4
+pyyaml
