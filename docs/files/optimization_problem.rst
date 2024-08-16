@@ -14,20 +14,10 @@ Energy System
 The class ``EnergySystem`` defines the energy system and takes the optimization setup as input.
 
 .. csv-table:: Energy System Parameters
-    :header: Parameter Name,Time Step Type,Doc String,Unit Category
-    :widths: 20 20 20 20 20 
-    :stub-columns: 1
-
-    ``carbon\_emissions\_annual\_limit`` , ``set\_time\_steps\_yearly`` , Parameter which specifies the total limit on carbon emissions ,  {"emissions": 1}
-    ``carbon\_emissions\_budget`` , temporal immutable , Parameter which specifies the total budget of carbon emissions until the end of the entire time horizon ,  {"emissions": 1}
-    ``carbon\_emissions\_cumulative\_existing`` , temporal immutable , Parameter which specifies the total previous carbon emissions ,  {"emissions": 1}
-    ``price\_carbon\_emissions`` , ``set\_time\_steps\_yearly`` , Parameter which specifies the yearly carbon price ,  {"money": 1, "emissions": -1}
-    ``price\_carbon\_emissions\_budget\_overshoot`` , temporal immutable , Parameter which specifies the carbon price for budget overshoot ,  {"money": 1, "emissions": -1}
-    ``price\_carbon\_emissions\_annual\_overshoot`` , temporal immutable , Parameter which specifies the carbon price for annual overshoot ,  {"money": 1, "emissions": -1}
-    ``market\_share\_unbounded`` , temporal immutable , Parameter which specifies the unbounded market share ,  {}
-    , ``knowledge\_spillover\_rate`` , temporal immutable , Parameter which specifies the knowledge spillover rate , {}
-    ``time\_steps\_operation\_duration`` , ``set\_time\_steps\_operation`` , Parameter which specifies the time step duration in operation for all technologies ,  {"time": 1}
-
+    :header-rows: 1
+    :file: tables/energy_system_parameters.csv
+    :widths: 20 20 40 20
+    :delim: ;
 
 .. _carrier:
 Carrier
@@ -36,7 +26,7 @@ Carrier
 .. csv-table:: Carrier Parameters
     :header: Parameter Name,Time Step Type,Doc String,Unit Category
     :widths: 20 20 20 20 20
-    :stub-columns: 1
+    :delim: 1
 
     ``demand`` , ``set\_time\_steps\_operation`` , Parameter which specifies the carrier demand , {"energy_quantity": 1, "time": -1}
     ``availability\_import`` , ``set\_time\_steps\_operation`` , Parameter which specifies the maximum energy that can be imported from outside the system boundaries ,  {"energy_quantity": 1, "time": -1}
