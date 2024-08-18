@@ -1,0 +1,17 @@
+Parameter Name;Time Step Type;Doc String;Unit Category
+``capacity_existing``;temporal immutable;Parameter which specifies the existing technology size;{"energy_quantity": 1, "time": -1}
+``capacity_investment_existing``;``set_time_steps_yearly``_entire_horizon;Parameter which specifies the size of the previously invested capacities;{"energy_quantity": 1, "time": -1}
+``capacity_addition_min``;temporal immutable;Parameter which specifies the minimum capacity addition that can be installed;{"energy_quantity": 1, "time": -1}
+``capacity_addition_max``;temporal immutable;Parameter which specifies the maximum capacity addition that can be installed;{"energy_quantity": 1, "time": -1}
+``capacity_addition_unbounded``;temporal immutable;Parameter which specifies the unbounded capacity addition that can be added each year (only for delayed technology deployment);{"energy_quantity": 1, "time": -1}
+``lifetime_existing``;temporal immutable;Parameter which specifies the remaining lifetime of an existing technology;{}
+``capex_capacity_existing``;temporal immutable;Parameter which specifies the total capex of an existing technology which still has to be paid;{"money": 1, "energy_quantity": -1}
+``opex_specific_variable``;``set_time_steps_operation``;Parameter which specifies the variable specific opex;{"money": 1, "energy_quantity": -1}
+``opex_specific_fixed``;``set_time_steps_yearly``;Parameter which specifies the fixed annual specific opex;{"money": 1, "energy_quantity": -1, "time": 1}
+``lifetime``;temporal immutable;Parameter which specifies the lifetime of a newly built technology;{}
+``construction_time``;temporal immutable;Parameter which specifies the construction time of a newly built technology;{}
+``max_diffusion_rate``;``set_time_steps_yearly``;Parameter which specifies the maximum diffusion rate which is the maximum increase in capacity between investment steps;{}
+``capacity_limit``;temporal immutable;Parameter which specifies the capacity limit of technologies;{"energy_quantity": 1, "time": -1}
+``min_load``;``set_time_steps_operation``;Parameter which specifies the minimum load of technology relative to installed capacity;{}
+``max_load``;``set_time_steps_operation``;Parameter which specifies the maximum load of technology relative to installed capacity;{}
+``carbon_intensity_technology``;temporal immutable;Parameter which specifies the carbon intensity of each technology;{"emissions": 1, "energy_quantity": -1}

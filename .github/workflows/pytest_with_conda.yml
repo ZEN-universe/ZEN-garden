@@ -6,10 +6,9 @@ on:
     - cron:  '30 4 1 * *'
   push:
     branches:
-      - development
+      - main
   pull_request:
-    branches:
-      - development
+    branches: ['*']
 
 # Env variables
 env:
@@ -17,12 +16,36 @@ env:
 
 # Jobs
 jobs:
+  check_skiptests:
+    runs-on: ubuntu-latest
+    outputs:
+      skiptests: ${{ steps.check_commit.outputs.skiptests }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check for '#skiptests' in commit messages
+        id: check_commit
+        run: |
+          commit_message="${{ github.event.head_commit.message }}"
+          if [[ "$commit_message" =~ "#skiptests" ]]; then
+            skip="true"
+          else
+            skip="false"
+          fi
+          echo "skiptests=$skip" >> $GITHUB_ENV
+          echo "skiptests=$skip"
+          echo "::set-output name=skiptests::$skip"
+
   matrix_prep:
+    if: ${{ github.repository == 'ZEN-universe/ZEN-garden' && needs.check_skiptests.outputs.skiptests == 'false' }}
+    needs: check_skiptests
     runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
@@ -45,6 +68,7 @@ jobs:
           filter: '[?runs_when==`${{ env.ENV_STATE }}` || runs_when==`${{ github.event_name }}` || runs_when==`always`]'
 
   build:
+    if: ${{ github.repository == 'ZEN-universe/ZEN-garden' && needs.check_skiptests.outputs.skiptests == 'false' }}
     # the testing
     needs: matrix_prep
     strategy:
@@ -55,7 +79,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       # checkout the dev branch
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       # setup the conda env
       - name: Setup Mambaforge
@@ -112,24 +136,22 @@ jobs:
       #     maxColorRange: 100
       #     minColorRange: 0
 
-
-  # Auto pull request into master if build succeeds
-  auto_pr:
-    name: Auto PR
+  bump_version:
+    if: ${{ github.repository == 'ZEN-universe/ZEN-garden' && needs.check_skiptests.outputs.skiptests == 'false' && github.event_name == 'push' && github.ref == 'refs/heads/main'}}
     runs-on: ubuntu-latest
     needs: build
-    if: ${{ github.event_name == 'push' }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
-          ref: development
-          fetch-depth: 0
+          ref: main
+      - name: Bump version and push tag
+        uses: jasonamyers/github-bumpversion-action@v1.0.5
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Pull Request develop -> main
-        uses: devops-infra/action-pull-request@v0.5.3
-        with:
-          github_token: ${{ github.token }}
-          target_branch: main
-          title: "AUTO PR"
-          body: "**This is an automated pull request triggered by successfull tests of the dev branch!**"
-          label: 'automated pr'
+      - name: Push changes
+        if: env.bump != 'none'
+        run: |
+          git push origin main --tags
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

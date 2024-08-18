@@ -1,0 +1,4 @@
+Constraint Name;Time Step Type;Doc String
+``constraint_transport_technology_losses_flow;``set_time_steps_operation`` loss due to transport with through transport technology
+``constraint_transport_technology_capex;``set_time_steps_yearly``;Capital expenditures for installing transport technology
+``constraint_transport_technology_bidirectional;``set_time_steps_yearly``;Forces that transport technology capacity must be equal in both directions

@@ -592,5 +592,5 @@ Retrofitting technologies have two additional attributes compared to their paren
 ![image](https://github.com/ZEN-universe/ZEN-garden/assets/114185605/25e3ce3a-48d1-4b23-8357-769688f346b2)
 
 
-# 20\_unit\_consistency
+# 20\_unit\_consistency\_expectedfailure
 To get a better feeling for the [unit consistency feature](https://github.com/ZEN-universe/ZEN-garden/blob/main/documentation/how_to_ZEN_garden.md#unit-consistency) of ZEN garden, this dataset contains some inconsistent units which must be corrected by you. In comparison to the previous datasets, the _energy_quantity_ of the carrier _natural_gas_ is now given in kilotons instead of MWh to increase complexity. Subsequently, the _energy_quantity_ units of technologies with _reference_carrier_ natural gas must now be specified in kilotons as well. The goal is to correct the inconsistent units with the help of the error messages thrown while running the dataset. In case you don't manage to find the correct units, the solution is: CHP_plant/conversion_factor/natural_gas: kilotons/GWh, natural_gas_pipeline/capacity_investment_existing: kilotons/hour, natural_gas_storage: change energy_quantity of all attributes to _kilotons_ instead of _MWh_.
