@@ -31,7 +31,7 @@ For annual capital expenditure :math:`A_{h,p,y}` for each technology :math:`h\in
 .. math::
     :label: annual_capex
 
-    A_{h,p,y}=f_h\left(\sum_{\tilde{y}=\max\left(y_0,y-\left\lceil\frac{l_h}{\Delta^\mathrm{y}}\right)\rceil+1\right)}^y \alpha_{h,\tilde{y}}\Delta S_{h,p,\tilde{y}}\right+\left.\sum_{\hat{y}=\psi\left(y-\left\lceil\frac{l_h}{\Delta^\mathrm{y}}\right\rceil+1\right)}^{\psi(y_0-1)} \alpha_{h,y_0}\Delta s^\mathrm{ex}_{h,p,\hat{y}}\right),
+    A_{h,p,y}=f_h\left(\sum_{\tilde{y}=\max\left(y_0,y-\left(\lceil\frac{l_h}{\Delta^\mathrm{y}}\right)\rceil+1 \right)}^y \alpha_{h,\tilde{y}}\Delta S_{h,p,\tilde{y}}\right+\left.\sum_{\hat{y}=\psi\left(y-\left\lceil\frac{l_h}{\Delta^\mathrm{y}}\right\rceil+1\right)}^{\psi(y_0-1)} \alpha_{h,y_0}\Delta s^\mathrm{ex}_{h,p,\hat{y}}\right),
 
 where :math:`\lceil\cdot\rceil` is the ceiling function and :math:`\psi(y)` is a function that maps the planning period :math:`y` to an actual year. For sake of conciseness, we omit to restate :eq:`annual_capex` for energy-rated storage capacities.
 
@@ -88,16 +88,9 @@ The sinks of carrier :math:`c` on node :math:`n` are:
 The energy balance for carrier :math:`c\in\mathcal{C}` is then calculated as:
 
 .. math::
-    :nowrap:
     :label: energy_balance
 
-    \begin{gather*}
-    0 = -\left(d_{c,n,t,y}-D_{c,n,t,y}\right) \\
-    + \sum_{i\in\mathcal{I}}\left(\overline{G}_{c,i,n,t,y}-\underline{G}_{c,i,n,t,y}\right) \\
-    + \sum_{j\in\mathcal{J}}\left(\sum_{e\in\underline{\mathcal{E}}_n}\left(F_{j,e,t,y}-F^\mathrm{l}_{j,e,t,y}\right)-\sum_{e'\in\overline{\mathcal{E}}_n}F_{j,e',t,y}\right)\\
-    + \sum_{k\in\mathcal{K}}\left(\overline{H}_{k,n,t,y}-\underline{H}_{k,n,t,y}\right) \\
-    + U_{c,n,t,y} - V_{c,n,t,y}.
-    \end{gather*}
+    0 = -\left(d_{c,n,t,y}-D_{c,n,t,y}\right) + \sum_{i\in\mathcal{I}}\left(\overline{G}_{c,i,n,t,y}-\underline{G}_{c,i,n,t,y}\right) + \sum_{j\in\mathcal{J}}\left(\sum_{e\in\underline{\mathcal{E}}_n}\left(F_{j,e,t,y} - F^\mathrm{l}_{j,e,t,y}\right)-\sum_{e'\in\overline{\mathcal{E}}_n}F_{j,e',t,y}\right) + \sum_{k\in\mathcal{K}}\left(\overline{H}_{k,n,t,y}-\underline{H}_{k,n,t,y}\right)+ U_{c,n,t,y} - V_{c,n,t,y}.
 
 Note that :math:`\sum_{k\in\mathcal{K}}\left(\overline{H}_{k,n,t,y}-\underline{H}_{k,n,t,y}\right)`are zero if :math:`c\neq c^\mathrm{r}_j` and :math:`c\neq c^\mathrm{r}_k`, respectively.
 
