@@ -1,3 +1,4 @@
+.. _input_data_handling:
 ################
 Input data handling
 ################

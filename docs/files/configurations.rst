@@ -9,6 +9,32 @@ System, analysis, solver settings
 System
 ------
 
+The ``system.json`` defines the structure of the energy system and is structured. You can update the default system settings as follows:
+
+.. code-block:: JSON 
+    {
+        key: values
+    }
+
+The following table provides an overview of the key system settings and their default values. 
+
+.. csv-table:: Key System Settings
+    :header-rows: 1
+    :file: tables/system/key_system_settings.csv
+    :widths: 10 10 20
+    :delim: ;
+
+You must define the set of technologies you want to investigate in your system. Only technologies selected in ``system.json``are added to the optimization problem. You can flexibly select any subset of the technologies available in your ``set_technologies``folder. If a technology is not available in your input data, it is dropped from the system. In addition, it is possible to select subsets of your set of nodes defined in `ènergy_system/set_nodes.csv``. In addition, you can specify the starting year (``reference_year``), the time horizon (), and the intra- and interyearly resolution in the ``system.json``. :ref:_Time provides a detailed description of the time-parameters. 
+
+The remaining system settings are summarized in the table below.
+
+.. csv-table:: Other System Settings
+    :header-rows: 1
+    :file: tables/system/other_system_settings.csv
+    :widths: 10 10 20
+    :delim: ;
+
+
 .. _analysis:
 Analysis
 -------
@@ -28,6 +54,7 @@ ZEN-garden is a temporally resolved investment and operation optimization model.
 2. ``set_time_steps_yearly``: Some components have a yearly resolution. These include for example the yearly carbon emission limit (``carbon_emissions_limit``) or the yearly costs (``cost_total``). Note that these are in general not associated with any specific element (technology or carrier).
 3. ``set_time_steps_operation``: The operation of built capacities is resolved on a higher resolution than the yearly time steps. For the technologies and the carriers, this is the index ``set_time_steps_operation``.
 
+.. _time_parameters:
 The time parameters in ZEN-garden
 ---------------------------------
 

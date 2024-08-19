@@ -1,3 +1,4 @@
+.. _optimization_problem
 ################
 Optimization problem
 ################
@@ -5,7 +6,6 @@ Optimization problem
 .. _optimization_setup:
 Optimization Setup
 ==================
-
 
 .. _energy_system:
 Energy System
