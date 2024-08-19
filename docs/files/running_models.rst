@@ -1,4 +1,5 @@
 .. _running_a_model:
+.. _Running a model:
 ################
 Running a model
 ################
