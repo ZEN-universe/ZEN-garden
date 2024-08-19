@@ -3,41 +3,41 @@
 Input data structure
 ################
 The input data is structured in a folder hierarchy. The root folder ``<data_folder>`` contains a subfolder for each dataset and a configuration file ``config.json``.
-ZEN-garden is run from this root folder. The dataset folder ``<dataset>`` comprises the input data for a specific dataset and must contain the following files and subfolders:
+ZEN-garden is run from this root folder (:ref:`Running a model`). The dataset folder ``<dataset>`` comprises the input data for a specific dataset and must contain the following files and subfolders:
 
 .. code-block::
 
     <data_folder>/
     |--<dataset>/
-    | |--energy_system/
-    | | |--attributes.json
-    | | |--base_units.csv
-    | | |--set_nodes.csv
-    | | `--set_edges.csv
-    | |
-    | |--set_carriers/
-    | | |--<carrier1>/
-    | | | `--attributes.json
-    | | `--<carrier2>/
-    | |   `--attributes.json
-    | |
-    | |--set_technologies/
-    | | |--set_conversion_technologies/
-    | | | |--<conversion_technology1>/
-    | | | | --attributes.json
-    | | | |
-    | | | `--<conversion_technology2>/
-    | | |   `--attributes.json
-    | | |
-    | | |--set_storage_technologies/
-    | | |  `--<storage_technology1>/
-    | | |    `--attributes.json
-    | | |
-    | | `--set_transport_technologies/
-    | |    `--<transport_technology1>/
-    | |      `--attributes.json
-    | |
-    | `--system.json
+    |   |--energy_system/
+    |   |   |--attributes.json
+    |   |   |--base_units.csv
+    |   |   |--set_nodes.csv
+    |   |   `--set_edges.csv
+    |   |
+    |   |--set_carriers/
+    |   |   |--<carrier1>/
+    |   |   | `--attributes.json
+    |   |   `--<carrier2>/
+    |   |       `--attributes.json
+    |   |
+    |   |--set_technologies/
+    |   |   |--set_conversion_technologies/
+    |   |   |   |--<conversion_technology1>/
+    |   |   |   |   `--attributes.json
+    |   |   |   |
+    |   |   |   `--<conversion_technology2>/
+    |   |   |       `--attributes.json
+    |   |   |
+    |   |   |--set_storage_technologies/
+    |   |   |      `--<storage_technology1>/
+    |   |   |          `--attributes.json
+    |   |   |
+    |   |   `--set_transport_technologies/
+    |   |       `--<transport_technology1>/
+    |   |           `--attributes.json
+    |   |
+    |   `--system.json
     |
     `--config.json
 
@@ -68,7 +68,7 @@ See :ref:`Unit consistency` for more information.
 Technologies
 ==============
 The ``set_technologies`` folder is specified in three subfolders: ``set_conversion_technologies``, ``set_storage_technologies``, and ``set_transport_technologies``.
-Each technology has its own folder in the respective subfolder. Additional files can further parametrize the carriers (see :ref:`Attribute.json files`).
+Each technology has its own folder in the respective subfolder and must contain the ``attributes.json`` file. Additional files can further parametrize the technologies (see :ref:`Attribute.json files`).
 
 .. note::
     You can specify more technologies in the three subfolders than you end up using. That can be helpful if you want to model different scenarios with different technologies and carriers.
@@ -85,7 +85,7 @@ Conversion Technologies
 The conversion technologies are defined in the folder ``set_conversion_technologies``.
 A conversion technology converts ``0`` to ``n`` input carriers into ``0`` to ``m`` output carriers.
 Note that the conversion factor between the carriers is fixed, e.g., a combined heat and power (CHP) plant cannot sometimes generate more heat and sometimes generate more electricity.
-The file ``attributes.json`` defines the properties of the conversion technology, e.g., the capacity limit, the maximum load, the conversion factor, or the investment cost.
+The file ``attributes.json`` defines the properties of the conversion technology, e.g., the capacity limit, the maximum load, the conversion factor, or the investment cost (see :ref:`_conversion_technology`).
 
 A special case of the conversion technologies are retrofitting technologies. These technologies are defined in the folder ``set_conversion_technologies\set_retrofitting_technologies``, if any exist.
 They behave equal to conversion technologies, but they are always connected to a conversion technology. They are coupled to a conversion technology by the attribute ``retrofit_flow_coupling_factor`` in the file ``attributes.json``, which couples the reference carrier flow of the retrofitting technology and the base technology.
@@ -105,7 +105,7 @@ Transport Technologies
 ----------------------
 
 The transport technologies are defined in the folder ``set_transport_technologies``.
-A transport technology connects two nodes via an edge. Different to conversion technologies or storage technologies, transport technology capacities are built on the edges not the nodes.
+A transport technology connects two nodes via an edge. Different to conversion technologies or storage technologies, transport technology capacities are built on the edges, not the nodes.
 
 .. note::
     By default, the distance of an edge will be calculated as the `haversine distance <https://www.geeksforgeeks.org/haversine-formula-to-find-distance-between-two-points-on-a-sphere/>`_ between the nodes. This can be overwritten for specific edges in a ``distance.csv`` file (see :ref:`Attribute.json files`)
