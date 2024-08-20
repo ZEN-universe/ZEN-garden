@@ -731,6 +731,9 @@ class Scaling:
         self.model = model
         self.algorithm = algorithm
         self.include_rhs = include_rhs
+        #For Numerical Range Improvement
+        self.last_lhs_range = 0
+        self.last_rhs_range = 0
         #For benchmarking
         self.scaling_time = 0
 
@@ -916,11 +919,12 @@ class Scaling:
         #RHS values
         cons_rhs_max = self.generate_numerics_string(rhs_max_index, is_rhs=True)
         cons_rhs_min = self.generate_numerics_string(rhs_min_index, is_rhs=True)
+        #Ranges
+        # LHS
+        range_lhs = np.floor(np.log10(A_abs[index_max]) - np.log10(A_abs[index_min]))
+        # RHS
+        range_rhs = np.floor(np.log10(np.abs(self.rhs[rhs_max_index])) - np.log10(np.abs(self.rhs[rhs_min_index])))
         if benchmarking_output: #for postprocessing
-            #LHS
-            range_lhs = np.floor(np.log10(A_abs[index_max])-np.log10(A_abs[index_min]))
-            #RHS
-            range_rhs = np.floor(np.log10(np.abs(self.rhs[rhs_max_index]))-np.log10(np.abs(self.rhs[rhs_min_index])))
             return range_lhs, range_rhs
         else:
             #Prints
@@ -935,6 +939,13 @@ class Scaling:
             print("Numerical Range:")
             print("LHS : {}".format([format(A_abs[index_min],".1e"),format(A_abs[index_max],".1e")]))
             print("RHS : {}".format([format(np.abs(self.rhs[rhs_min_index]),".1e"),format(np.abs(self.rhs[rhs_max_index]),".1e")]))
+            if i>0:
+                print("Numerical Range Improvement:")
+                print("LHS : {}".format(range_lhs - self.last_lhs_range))
+                print("RHS : {}".format(range_rhs - self.last_rhs_range))
+            self.last_lhs_range = range_lhs
+            self.last_rhs_range = range_rhs
+
 
 
 
