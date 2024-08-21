@@ -2,8 +2,8 @@ name: "Release"
 
 on:
   push:
-    tags:
-      - "v*.*.*"
+    branches:
+      - main
 
 jobs:
   release:
@@ -14,24 +14,22 @@ jobs:
       - name : "Checkout"
         uses: actions/checkout@v4
 
-      - name: Set up Node.js (required for semver)
-        uses: actions/setup-node@v3
-        with:
-          node-version: '18.x'
-
       - name: Extract tag version
-        id: extract_version
-        run: |
-          TAG=${GITHUB_REF#refs/tags/}
-          echo "tag=$TAG" >> $GITHUB_ENV
-          echo "major=$(echo $TAG | cut -d. -f1 | cut -dv -f2)" >> $GITHUB_ENV
-          echo "minor=$(echo $TAG | cut -d. -f2)" >> $GITHUB_ENV
-          echo "patch=$(echo $TAG | cut -d. -f3)" >> $GITHUB_ENV
+        uses: actions-ecosystem/action-get-latest-tag@v1
+        id: get-latest-tag
+        with:
+          semver_only: true
 
       - name: Check for major/minor version
         id: check_version
         run: |
-          if [[ $patch -eq 0 ]]; then
+          TAG=${{ steps.get-latest-tag.outputs.tag }}
+          PATCH_VERSION=$(echo $TAG | cut -d. -f3)
+          echo "tag=$TAG"
+          echo "patch=$PATCH_VERSION"
+          echo "patch=$PATCH_VERSION" >> $GITHUB_ENV
+          
+          if [[ $PATCH_VERSION -eq 0 ]]; then
             echo "is_major_minor=true" >> $GITHUB_ENV
           else
             echo "is_major_minor=false" >> $GITHUB_ENV
@@ -39,11 +37,10 @@ jobs:
 
       - name: Create GitHub Release
         if: env.is_major_minor == 'true'
-        uses: ncipollo/release-action@v2
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag: ${{ env.tag }}
-          name: ${{ env.tag }}
-          commit: ${{ github.sha }}
-          body: "Automated release for version ${{ env.tag }}"
-          draft: false
-          prerelease: false
+          tag: ${{ steps.get-latest-tag.outputs.tag }}
+          name: ${{ steps.get-latest-tag.outputs.tag }}
+          body: "Automated release for version ${{ steps.get-latest-tag.outputs.tag }}"

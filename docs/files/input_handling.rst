@@ -249,7 +249,7 @@ If the user wants to disable the interpolation for a specific parameter, the use
     The user must specify the file name, i.e., in the example above, the specified file is ``demand_yearly_variation.csv``, not ``demand.csv``.
     Therefore, the interpolation is only disabled for the yearly variation, not for the hourly-dependent data.
 
-
+.. _PWA:
 Piece-wise affine input data
 ----------------------------
 TODO
