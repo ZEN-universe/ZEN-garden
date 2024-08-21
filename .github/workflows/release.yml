@@ -43,4 +43,4 @@ jobs:
         with:
           tag: ${{ steps.get-latest-tag.outputs.tag }}
           name: ${{ steps.get-latest-tag.outputs.tag }}
-          body: "Automated release for version ${{ steps.get-latest-tag.outputs.tag }}"
+          body: "Automated release for version ${{ steps.get-latest-tag.outputs.tag }} after major/minor version bump."
