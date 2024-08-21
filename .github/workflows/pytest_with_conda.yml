@@ -160,6 +160,7 @@ jobs:
   release:
     if: ${{ github.repository == 'ZEN-universe/ZEN-garden' && github.event_name == 'push' && github.ref == 'refs/heads/main' }}
     name: "Create Github Release"
+    needs: bump_version
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
