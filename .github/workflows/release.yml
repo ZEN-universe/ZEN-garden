@@ -3,17 +3,9 @@ name: "Release"
 on:
   push:
     tags:
-      - "v*"
+      - "v*.*.*"
 
 jobs:
-#  build:
-#    # Build the Python SDist and wheel, performs metadata and readme linting
-#    name: Build and verify package
-#    runs-on: ubuntu-latest
-#    steps:
-#      - uses: actions/checkout@v4
-#      - uses: hynek/build-and-inspect-python-package@v2
-
   release:
     if: ${{ github.repository == 'ZEN-universe/ZEN-garden' }}
     name: "Create Github Release"
@@ -21,5 +13,37 @@ jobs:
     steps:
       - name : "Checkout"
         uses: actions/checkout@v4
-      - name: Release
-        uses: softprops/action-gh-release@v2
+
+      - name: Set up Node.js (required for semver)
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18.x'
+
+      - name: Extract tag version
+        id: extract_version
+        run: |
+          TAG=${GITHUB_REF#refs/tags/}
+          echo "tag=$TAG" >> $GITHUB_ENV
+          echo "major=$(echo $TAG | cut -d. -f1 | cut -dv -f2)" >> $GITHUB_ENV
+          echo "minor=$(echo $TAG | cut -d. -f2)" >> $GITHUB_ENV
+          echo "patch=$(echo $TAG | cut -d. -f3)" >> $GITHUB_ENV
+
+      - name: Check for major/minor version
+        id: check_version
+        run: |
+          if [[ $patch -eq 0 ]]; then
+            echo "is_major_minor=true" >> $GITHUB_ENV
+          else
+            echo "is_major_minor=false" >> $GITHUB_ENV
+          fi
+
+      - name: Create GitHub Release
+        if: env.is_major_minor == 'true'
+        uses: ncipollo/release-action@v2
+        with:
+          tag: ${{ env.tag }}
+          name: ${{ env.tag }}
+          commit: ${{ github.sha }}
+          body: "Automated release for version ${{ env.tag }}"
+          draft: false
+          prerelease: false
