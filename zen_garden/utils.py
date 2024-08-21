@@ -51,41 +51,31 @@ def get_inheritors(klass):
                 work.append(child)
     return subclasses
 
-# This redirects output streams to files
-# --------------------------------------
-# class RedirectStdStreams(object):
-#     """
-#     A context manager that redirects the output to a file
-#     """
-#
-#     def __init__(self, stdout=None, stderr=None):
-#         """
-#         Initializes the context manager
-#
-#         :param stdout: Stream for stdout
-#         :param stderr: Stream for stderr
-#         """
-#         self._stdout = stdout or sys.stdout
-#         self._stderr = stderr or sys.stderr
-#
-#     def __enter__(self):
-#         self.old_stdout, self.old_stderr = sys.stdout, sys.stderr
-#         self.old_stdout.flush()
-#         self.old_stderr.flush()
-#         sys.stdout, sys.stderr = self._stdout, self._stderr
-#
-#     def __exit__(self, exc_type, exc_value, traceback):
-#         """
-#         The exit function of the context manager
-#
-#         :param exc_type: Type of the exit
-#         :param exc_value: Value of the exit
-#         :param traceback:  traceback of the error
-#         """
-#         self._stdout.flush()
-#         self._stderr.flush()
-#         sys.stdout = self.old_stdout
-#         sys.stderr = self.old_stderr
+def copy_dataset_example(example):
+    """ copies a dataset example to the current working directory """
+    import requests
+    from importlib.metadata import metadata
+    raise NotImplementedError("Copying a dataset example is not implemented yet.")
+    url = metadata("zen_garden").get_all("Project-URL")
+    url = [u.split(", ")[1] for u in url if u.split(", ")[0] == "Homepage"][0]
+    dataset_url = requests.get(f"{url}/tree/main/documentation/dataset_examples/")
+    if dataset_url.status_code == 200:
+        example_url = requests.get(f"{url}/tree/main/documentation/dataset_examples/{example}")
+        if example_url.status_code == 200:
+            raw_url = f"https://raw.githubusercontent.com/{url.split('github.com/')[1]}/main/documentation/dataset_examples"
+            # create new dataset_example folder in current directory
+            dataset_folder = os.path.join(os.getcwd(), "dataset_examples")
+            if not os.path.exists(dataset_folder):
+                os.mkdir(dataset_folder)
+            # copy config.json to dataset_example folder
+            config_response = requests.get(f"{raw_url}/config.json",stream=True)
+            with open(os.path.join(dataset_folder,"config.json"), "wb") as f:
+                f.write(config_response.content)
+        else:
+            raise FileNotFoundError(f"Error in retrieving datasets. URL {example_url.url} not available.")
+    else:
+        raise FileNotFoundError(f"Error in retrieving datasets. URL {dataset_url.url} not available.")
+    return example_path_cwd,config_path_cwd
 
 
 # This functionality is for the IIS constraints

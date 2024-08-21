@@ -17,7 +17,7 @@ ZEN-garden is run from this root folder (:ref:`Running a model`). The dataset fo
     |   |
     |   |--set_carriers/
     |   |   |--<carrier1>/
-    |   |   | `--attributes.json
+    |   |   |   `--attributes.json
     |   |   `--<carrier2>/
     |   |       `--attributes.json
     |   |

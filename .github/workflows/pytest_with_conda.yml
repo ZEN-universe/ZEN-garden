@@ -151,7 +151,7 @@ jobs:
 
       - name: Push changes
         if: env.bump != 'none'
-        run: |
-          git push origin main --tags
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: ad-m/github-push-action@master
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          tags: true
