@@ -11,7 +11,19 @@
 
 1. GitHub registration: If you don't have a GitHub account yet register at: [GitHub](https://github.com/)
 2. Join ZEN-garden repository: If you didn't receive a GitHub invitation, ask your supervisor to invite you to the repository (write them your GitHub email address) [ZEN-Garden Repository](https://github.com/RRE-ETH/ZEN-garden)
-3. Fork the ZEN-garden framework into a personal repository. Follow the instructions [on how to fork ZEN-garden](https://github.com/ZEN-universe/ZEN-garden/discussions/439).
+3. Create your own branch: In the ZEN-garden repository click on "branches" and then "new branch", choose "main" as the branch source and "development\_ZENx\_NS" (NS= name, surname) as its name
+![image](https://github.com/ZEN-universe/ZEN-garden/assets/114185605/77b44be5-5b11-4c6d-a431-e1a41cb99a14)
+
+
+![image](https://github.com/ZEN-universe/ZEN-garden/assets/114185605/59a8ed6f-e97b-4d6e-8826-dc01787216e5)
+
+
+4. Cloning the repository: To create a local copy of your branch on your computer, you must clone the remote repository from GitHub. **It is important that you clone the repository to a path which doesn't contain any spaces!** (Don't clone to e.g. ./Users/Name Surname, otherwise you'll have issues while executing the framework). To clone your branch there's a more beginner-friendly way using GitHub Desktop and a more advanced way using Git Bash for example.
+
+GitHub Desktop: [Clone Repository with GitHub Desktop](https://docs.github.com/en/desktop/contributing-and-collaborating-using-github-desktop/adding-and-cloning-repositories/cloning-a-repository-from-github-to-github-desktop)
+
+To clone the repository by using Git Bash, two methods are available: [HTTPS](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository?tool=webui) or [SSH](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent)
+
 5. ZEN-garden environment creation: Open PyCharm to view the _zen\_garden\_env.yml_ file (contained in the ZEN-garden folder), copy ```conda env create -f zen_garden_env.yml``` and run the command in your Anaconda prompt (takes several minutes), if the installation was successful, you can see the environment at _C:\Users\username \anaconda3\envs_ or wherever Anaconda is installed
 6. Gurobi license: To use all of Gurobi's functionalities, you need to obtain a free academic license: [Get your Gurobi license](https://www.gurobi.com/features/academic-named-user-license/)
  Following these instructions, you'll get a Gurobi license key which you have to run in your command prompt to activate the license for your computer
@@ -444,104 +456,104 @@ system['set\_transport\_technologies'] = ['power\_line','natural\_gas\_pipeline'
 
  **Variables** 
 
-| **Name:** | **Time Step Type:** | **Doc String:** | **Scope:** | **Unit Category:** |
-| --- | --- | --- | --- | --- |
-| carbon\_emissions\_annual | set\_time\_steps\_yearly | annual carbon emissions of energy system | energy system | {"emissions": 1}|
-| carbon\_emissions\_cumulative | set\_time\_steps\_yearly | cumulative carbon emissions of energy system over time for each year | energy system | {"emissions": 1}|
+| **Name:**                            | **Time Step Type:** | **Doc String:** | **Scope:** | **Unit Category:** |
+|--------------------------------------| --- | --- | --- | --- |
+| carbon\_emissions\_annual            | set\_time\_steps\_yearly | annual carbon emissions of energy system | energy system | {"emissions": 1}|
+| carbon\_emissions\_cumulative        | set\_time\_steps\_yearly | cumulative carbon emissions of energy system over time for each year | energy system | {"emissions": 1}|
 | carbon\_emissions\_budget\_overshoot | set\_time\_steps\_yearly | overshoot carbon emissions of energy system at the end of the time horizon | energy system | {"emissions": 1}|
 | carbon\_emissions\_annual\_overshoot | set\_time\_steps\_yearly | overshoot of the annual carbon emissions limit of energy system | energy system | {"emissions": 1}|
-| cost\_carbon\_emissions\_total | set\_time\_steps\_yearly | total cost of carbon emissions of energy system | energy system | {"money": 1}|
-| cost\_total | set\_time\_steps\_yearly | total cost of energy system | energy system | {"money": 1}|
-| net\_present\_cost | set\_time\_steps\_yearly | net\_present\_cost of energy system | energy system | {"money": 1}|
-| flow\_import | set\_time\_steps\_operation | node- and time-dependent carrier import from the grid | carrier | {"energy_quantity": 1, "time": -1}|
-| flow\_export | set\_time\_steps\_operation | node- and time-dependent carrier export from the grid | carrier | {"energy_quantity": 1, "time": -1}|
-| cost\_carrier | set\_time\_steps\_operation | node- and time-dependent carrier cost due to import and export | carrier | {"money": 1, "time": -1}|
-| cost\_carrier\_total | set\_time\_steps\_yearly | total carrier cost due to import and export | carrier | {"money": 1}|
-| carbon\_emissions\_carrier | set\_time\_steps\_operation | carbon emissions of importing and exporting carrier | carrier |{"emissions": 1, "time": -1}|
-| carbon\_emissions\_carrier\_total | set\_time\_steps\_yearly | total carbon emissions of importing and exporting carrier | carrier | {"emissions": 1}|
-| shed\_demand | set\_time\_steps\_operation | shed demand of carrier | carrier | {"energy_quantity": 1, "time": -1}|
-| cost\_shed\_demand | set\_time\_steps\_operation | shed demand of carrier | carrier | {"money": 1, "time": -1}|
-| technology\_installation | set\_time\_steps\_yearly | installment of a technology at location l and time t | technology | {}|
-| capacity | set\_time\_steps\_yearly | size of installed technology at location l and time t | technology | {"energy_quantity": 1, "time": -1}|
-| capacity\_addition | set\_time\_steps\_yearly | size of built technology (invested capacity after construction) at location l and time t | technology | {"energy_quantity": 1, "time": -1}|
-| capacity\_investment | set\_time\_steps\_yearly | size of invested technology at location l and time t | technology | {"energy_quantity": 1, "time": -1}|
-| cost\_capex | set\_time\_steps\_yearly | capex for building technology at location l and time t | technology | {"money": 1}|
-| capex\_yearly | set\_time\_steps\_yearly | annual capex for having technology at location l | technology | {"money": 1}|
-| cost\_capex\_total | set\_time\_steps\_yearly | total capex for installing all technologies in all locations at all times | technology | {"money": 1}|
-| cost\_opex | set\_time\_steps\_operation | opex for operating technology at location l and time t | technology |{"money": 1, "time": -1}|
-| opex\_yearly | set\_time\_steps\_yearly | yearly opex for operating technology at location l and year y | technology | {"money": 1}|
-| cost\_opex\_total | set\_time\_steps\_yearly | total opex all technologies and locations in year y | technology | {"money": 1}|
-| carbon\_emissions\_technology | set\_time\_steps\_operation | carbon emissions for operating technology at location l and time t | technology | {"emissions": 1, "time": -1}|
+| cost\_carbon\_emissions\_total       | set\_time\_steps\_yearly | total cost of carbon emissions of energy system | energy system | {"money": 1}|
+| cost\_total                          | set\_time\_steps\_yearly | total cost of energy system | energy system | {"money": 1}|
+| net\_present\_cost                   | set\_time\_steps\_yearly | net\_present\_cost of energy system | energy system | {"money": 1}|
+| flow\_import                         | set\_time\_steps\_operation | node- and time-dependent carrier import from the grid | carrier | {"energy_quantity": 1, "time": -1}|
+| flow\_export                         | set\_time\_steps\_operation | node- and time-dependent carrier export from the grid | carrier | {"energy_quantity": 1, "time": -1}|
+| cost\_carrier                        | set\_time\_steps\_operation | node- and time-dependent carrier cost due to import and export | carrier | {"money": 1, "time": -1}|
+| cost\_carrier\_total                 | set\_time\_steps\_yearly | total carrier cost due to import and export | carrier | {"money": 1}|
+| carbon\_emissions\_carrier           | set\_time\_steps\_operation | carbon emissions of importing and exporting carrier | carrier |{"emissions": 1, "time": -1}|
+| carbon\_emissions\_carrier\_total    | set\_time\_steps\_yearly | total carbon emissions of importing and exporting carrier | carrier | {"emissions": 1}|
+| shed\_demand                         | set\_time\_steps\_operation | shed demand of carrier | carrier | {"energy_quantity": 1, "time": -1}|
+| cost\_shed\_demand                   | set\_time\_steps\_operation | shed demand of carrier | carrier | {"money": 1, "time": -1}|
+| technology\_installation             | set\_time\_steps\_yearly | installment of a technology at location l and time t | technology | {}|
+| capacity                             | set\_time\_steps\_yearly | size of installed technology at location l and time t | technology | {"energy_quantity": 1, "time": -1}|
+| capacity\_addition                   | set\_time\_steps\_yearly | size of built technology (invested capacity after construction) at location l and time t | technology | {"energy_quantity": 1, "time": -1}|
+| capacity\_investment                 | set\_time\_steps\_yearly | size of invested technology at location l and time t | technology | {"energy_quantity": 1, "time": -1}|
+| cost\_capex                          | set\_time\_steps\_yearly | capex for building technology at location l and time t | technology | {"money": 1}|
+| capex\_yearly                        | set\_time\_steps\_yearly | annual capex for having technology at location l | technology | {"money": 1}|
+| cost\_capex\_total                   | set\_time\_steps\_yearly | total capex for installing all technologies in all locations at all times | technology | {"money": 1}|
+| cost\_opex                           | set\_time\_steps\_operation | opex for operating technology at location l and time t | technology |{"money": 1, "time": -1}|
+| cost\_opex\_yearly                   | set\_time\_steps\_yearly | yearly opex for operating technology at location l and year y | technology | {"money": 1}|
+| cost\_opex\_total                    | set\_time\_steps\_yearly | total opex all technologies and locations in year y | technology | {"money": 1}|
+| carbon\_emissions\_technology        | set\_time\_steps\_operation | carbon emissions for operating technology at location l and time t | technology | {"emissions": 1, "time": -1}|
 | carbon\_emissions\_technology\_total | set\_time\_steps\_yearly | total carbon emissions for operating technology at location l and time t | technology | {"emissions": 1}|
-| flow\_conversion\_input | set\_time\_steps\_operation | Carrier input of conversion technologies | conversion technology | {"energy_quantity": 1, "time": -1}|
-| flow\_conversion\_output | set\_time\_steps\_operation | Carrier output of conversion technologies | conversion technology | {"energy_quantity": 1, "time": -1}|
-| capacity\_approximation | set\_time\_steps\_yearly | pwa variable for size of installed technology on edge i and time t | technology | {"energy_quantity": 1, "time": -1}|
-| capex\_approximation | set\_time\_steps\_yearly | pwa variable for capex for installing technology on edge i and time t | technology | {"money": 1}|
-| flow\_approximation\_reference | set\_time\_steps\_operation | pwa of flow of reference carrier of conversion technologies | conversion technology | {"energy_quantity": 1, "time": -1}|
-| flow\_approximation\_dependent | set\_time\_steps\_operation | pwa of flow of dependent carriers of conversion technologies | conversion technology | {"energy_quantity": 1, "time": -1}|
-| flow\_storage\_charge | set\_time\_steps\_operation | carrier flow into storage technology on node i and time t | storage technology | {"energy_quantity": 1, "time": -1}|
-| flow\_storage\_discharge | set\_time\_steps\_operation | carrier flow out of storage technology on node i and time t | storage technology | {"energy_quantity": 1, "time": -1}|
-| storage\_level | set\_time\_steps\_storage\_level | storage level of storage technology on node in each storage time step | storage technology | {"energy_quantity": 1}|
-| flow\_transport | set\_time\_steps\_operation | carrier flow through transport technology on edge i and time t | transport technology | {"energy_quantity": 1, "time": -1}|
-| flow\_transport\_loss | set\_time\_steps\_operation | carrier flow through transport technology on edge i and time t | transport technology | {"energy_quantity": 1, "time": -1}|
-| tech\_on\_var | set\_time\_steps\_operation | Binary variable which equals 1 when technology is switched on at location l and time t, else 0 | technology | {}|
-| tech\_off\_var | set\_time\_steps\_operation | Binary variable which equals 1 when technology is switched off at location l and time t, else 0 | technology | {}|
+| flow\_conversion\_input              | set\_time\_steps\_operation | Carrier input of conversion technologies | conversion technology | {"energy_quantity": 1, "time": -1}|
+| flow\_conversion\_output             | set\_time\_steps\_operation | Carrier output of conversion technologies | conversion technology | {"energy_quantity": 1, "time": -1}|
+| capacity\_approximation              | set\_time\_steps\_yearly | pwa variable for size of installed technology on edge i and time t | technology | {"energy_quantity": 1, "time": -1}|
+| capex\_approximation                 | set\_time\_steps\_yearly | pwa variable for capex for installing technology on edge i and time t | technology | {"money": 1}|
+| flow\_approximation\_reference       | set\_time\_steps\_operation | pwa of flow of reference carrier of conversion technologies | conversion technology | {"energy_quantity": 1, "time": -1}|
+| flow\_approximation\_dependent       | set\_time\_steps\_operation | pwa of flow of dependent carriers of conversion technologies | conversion technology | {"energy_quantity": 1, "time": -1}|
+| flow\_storage\_charge                | set\_time\_steps\_operation | carrier flow into storage technology on node i and time t | storage technology | {"energy_quantity": 1, "time": -1}|
+| flow\_storage\_discharge             | set\_time\_steps\_operation | carrier flow out of storage technology on node i and time t | storage technology | {"energy_quantity": 1, "time": -1}|
+| storage\_level                       | set\_time\_steps\_storage\_level | storage level of storage technology on node in each storage time step | storage technology | {"energy_quantity": 1}|
+| flow\_transport                      | set\_time\_steps\_operation | carrier flow through transport technology on edge i and time t | transport technology | {"energy_quantity": 1, "time": -1}|
+| flow\_transport\_loss                | set\_time\_steps\_operation | carrier flow through transport technology on edge i and time t | transport technology | {"energy_quantity": 1, "time": -1}|
+| tech\_on\_var                        | set\_time\_steps\_operation | Binary variable which equals 1 when technology is switched on at location l and time t, else 0 | technology | {}|
+| tech\_off\_var                       | set\_time\_steps\_operation | Binary variable which equals 1 when technology is switched off at location l and time t, else 0 | technology | {}|
 
  |
 
  **Constraints** 
 
-| **Name:** | **Time Step Type:** | **Doc String:** | **Scope:** |
-| --- | --- | --- | --- |
-| constraint\_carbon\_emissions\_annual | set\_time\_steps\_yearly | total annual carbon emissions of energy system | energy system |
-| constraint\_carbon\_emissions\_cumulative | set\_time\_steps\_yearly | cumulative carbon emissions of energy system over time | energy system |
-| constraint\_cost\_carbon\_emissions\_total | set\_time\_steps\_yearly | total carbon emissions cost of energy system | energy system |
-| constraint\_carbon\_emissions\_annual\_limit | set\_time\_steps\_yearly | limit of total annual carbon emissions of energy system | energy system |
-| constraint\_carbon\_emissions\_budget | set\_time\_steps\_yearly | Budget of total carbon emissions of energy system | energy system |
+| **Name:**                                        | **Time Step Type:** | **Doc String:** | **Scope:** |
+|--------------------------------------------------| --- | --- | --- |
+| constraint\_carbon\_emissions\_annual            | set\_time\_steps\_yearly | total annual carbon emissions of energy system | energy system |
+| constraint\_carbon\_emissions\_cumulative        | set\_time\_steps\_yearly | cumulative carbon emissions of energy system over time | energy system |
+| constraint\_cost\_carbon\_emissions\_total       | set\_time\_steps\_yearly | total carbon emissions cost of energy system | energy system |
+| constraint\_carbon\_emissions\_annual\_limit     | set\_time\_steps\_yearly | limit of total annual carbon emissions of energy system | energy system |
+| constraint\_carbon\_emissions\_budget            | set\_time\_steps\_yearly | Budget of total carbon emissions of energy system | energy system |
 | constraint\_carbon\_emissions\_budget\_overshoot | set\_time\_steps\_yearly | Disable carbon emissions budget overshoot if carbon emissions budget overshoot price is inf | energy system |
 | constraint\_carbon\_emissions\_annual\_overshoot | set\_time\_steps\_yearly | Disable annual carbon emissions overshoot if annual carbon emissions overshoot price is inf | energy system |
-| constraint\_carbon\_emissions\_overshoot\_limit | set\_time\_steps\_yearly | Limit of overshot carbon emissions of energy system | energy system |
-| constraint\_cost\_total | set\_time\_steps\_yearly | total cost of energy system | energy system |
-| constraint\_net\_present\_cost | set\_time\_steps\_yearly | net\_present\_cost of energy system | energy system |
-| constraint\_availability\_import | set\_time\_steps\_operation | node- and time-dependent carrier availability to import from outside the system boundaries | carrier |
-| constraint\_availability\_export | set\_time\_steps\_operation | node- and time-dependent carrier availability to export to outside the system boundaries | carrier |
-| constraint\_availability\_import\_yearly | set\_time\_steps\_yearly | node- and time-dependent carrier availability to import from outside the system boundaries summed over entire year | carrier |
-| constraint\_availability\_export\_yearly | set\_time\_steps\_yearly | node- and time-dependent carrier availability to export to outside the system boundaries summed over entire year | carrier |
-| constraint\_cost\_carrier | set\_time\_steps\_operation | cost of importing and exporting carrier | carrier |
-| constraint\_cost\_shed\_demand | set\_time\_steps\_operation | cost of shedding carrier demand | carrier |
-| constraint\_limit\_shed\_demand | set\_time\_steps\_operation | limit of shedding carrier demand | carrier |
-| constraint\_cost\_carrier\_total | set\_time\_steps\_yearly | total cost of importing and exporting carriers | carrier |
-| constraint\_carbon\_emissions\_carrier | set\_time\_steps\_operation | carbon emissions of importing and exporting carrier | carrier |
-| constraint\_carbon\_emissions\_carrier\_total | set\_time\_steps\_yearly | total carbon emissions of importing and exporting carriers | carrier |
-| constraint\_nodal\_energy\_balance | set\_time\_steps\_operation | node- and time-dependent energy balance for each carrier | carrier |
-| constraint\_technology\_capacity\_limit | set\_time\_steps\_yearly | limited capacity of technology depending on loc and time | technology |
-| constraint\_technology\_min\_capacity | set\_time\_steps\_yearly | min capacity of technology that can be installed | technology |
-| constraint\_technology\_max\_capacity | set\_time\_steps\_yearly | max capacity of technology that can be installed | technology |
-| constraint\_technology\_construction\_time | set\_time\_steps\_yearly | lead time in which invested technology is constructed | technology |
-| constraint\_technology\_lifetime | set\_time\_steps\_yearly | max capacity of technology that can be installed | technology |
-| constraint\_technology\_diffusion\_limit | set\_time\_steps\_yearly | Limits the newly built capacity by the existing knowledge stock | technology |
-| constraint\_capacity\_factor | set\_time\_steps\_operation | limit max load by installed capacity | technology |
-| constraint\_capex\_yearly | set\_time\_steps\_yearly | annual capex of having capacity of technology. | technology |
-| constraint\_cost\_capex\_total | set\_time\_steps\_yearly | total capex of all technology that can be installed. | technology |
-| constraint\_opex\_technology | set\_time\_steps\_operation | opex for each technology at each location and time step | technology |
-| constraint\_opex\_yearly | set\_time\_steps\_yearly | total opex of all technology that are operated. | technology |
-| constraint\_cost\_opex\_total | set\_time\_steps\_yearly | total opex of all technology that are operated. | technology |
-| constraint\_carbon\_emissions\_technology | set\_time\_steps\_operation | carbon emissions for each technology at each location and time step | technology |
+| constraint\_carbon\_emissions\_overshoot\_limit  | set\_time\_steps\_yearly | Limit of overshot carbon emissions of energy system | energy system |
+| constraint\_cost\_total                          | set\_time\_steps\_yearly | total cost of energy system | energy system |
+| constraint\_net\_present\_cost                   | set\_time\_steps\_yearly | net\_present\_cost of energy system | energy system |
+| constraint\_availability\_import                 | set\_time\_steps\_operation | node- and time-dependent carrier availability to import from outside the system boundaries | carrier |
+| constraint\_availability\_export                 | set\_time\_steps\_operation | node- and time-dependent carrier availability to export to outside the system boundaries | carrier |
+| constraint\_availability\_import\_yearly         | set\_time\_steps\_yearly | node- and time-dependent carrier availability to import from outside the system boundaries summed over entire year | carrier |
+| constraint\_availability\_export\_yearly         | set\_time\_steps\_yearly | node- and time-dependent carrier availability to export to outside the system boundaries summed over entire year | carrier |
+| constraint\_cost\_carrier                        | set\_time\_steps\_operation | cost of importing and exporting carrier | carrier |
+| constraint\_cost\_shed\_demand                   | set\_time\_steps\_operation | cost of shedding carrier demand | carrier |
+| constraint\_limit\_shed\_demand                  | set\_time\_steps\_operation | limit of shedding carrier demand | carrier |
+| constraint\_cost\_carrier\_total                 | set\_time\_steps\_yearly | total cost of importing and exporting carriers | carrier |
+| constraint\_carbon\_emissions\_carrier           | set\_time\_steps\_operation | carbon emissions of importing and exporting carrier | carrier |
+| constraint\_carbon\_emissions\_carrier\_total    | set\_time\_steps\_yearly | total carbon emissions of importing and exporting carriers | carrier |
+| constraint\_nodal\_energy\_balance               | set\_time\_steps\_operation | node- and time-dependent energy balance for each carrier | carrier |
+| constraint\_technology\_capacity\_limit          | set\_time\_steps\_yearly | limited capacity of technology depending on loc and time | technology |
+| constraint\_technology\_min\_capacity            | set\_time\_steps\_yearly | min capacity of technology that can be installed | technology |
+| constraint\_technology\_max\_capacity            | set\_time\_steps\_yearly | max capacity of technology that can be installed | technology |
+| constraint\_technology\_construction\_time       | set\_time\_steps\_yearly | lead time in which invested technology is constructed | technology |
+| constraint\_technology\_lifetime                 | set\_time\_steps\_yearly | max capacity of technology that can be installed | technology |
+| constraint\_technology\_diffusion\_limit         | set\_time\_steps\_yearly | Limits the newly built capacity by the existing knowledge stock | technology |
+| constraint\_capacity\_factor                     | set\_time\_steps\_operation | limit max load by installed capacity | technology |
+| constraint\_capex\_yearly                        | set\_time\_steps\_yearly | annual capex of having capacity of technology. | technology |
+| constraint\_cost\_capex\_total                   | set\_time\_steps\_yearly | total capex of all technology that can be installed. | technology |
+| constraint\_opex\_technology                     | set\_time\_steps\_operation | opex for each technology at each location and time step | technology |
+| constraint\_cost\_opex\_yearly                   | set\_time\_steps\_yearly | total opex of all technology that are operated. | technology |
+| constraint\_cost\_opex\_total                    | set\_time\_steps\_yearly | total opex of all technology that are operated. | technology |
+| constraint\_carbon\_emissions\_technology        | set\_time\_steps\_operation | carbon emissions for each technology at each location and time step | technology |
 | constraint\_carbon\_emissions\_technology\_total | set\_time\_steps\_yearly | total carbon emissions for each technology at each location and time step | technology |
-| disjunct\_on\_technology | set\_time\_steps\_operation | disjunct to indicate that technology is on | technology |
-| disjunct\_off\_technology | set\_time\_steps\_operation | disjunct to indicate that technology is off | technology |
-| disjunction\_decision\_on\_off\_technology | set\_time\_steps\_operation | disjunction to link the on off disjuncts | technology |
-| constraint\_linear\_capex | set\_time\_steps\_yearly | Linear relationship in capex | technology |
-| constraint\_linear\_conversion\_factor | set\_time\_steps\_operation | Linear relationship in conversion\_factor | conversion technology |
-| constraint\_capex\_coupling | set\_time\_steps\_yearly | couples the real capex variables with the approximated variables | conversion technology |
-| constraint\_capacity\_coupling | set\_time\_steps\_yearly | couples the real capacity variables with the approximated variables | conversion technology |
-| constraint\_reference\_flow\_coupling | set\_time\_steps\_operation | couples the real reference flow variables with the approximated variables | conversion technology |
-| constraint\_dependent\_flow\_coupling | set\_time\_steps\_operation | couples the real dependent flow variables with the approximated variables | conversion technology |
-| constraint\_storage\_level\_max | set\_time\_steps\_storage\_level | limit maximum storage level to capacity | storage technology |
-| constraint\_couple\_storage\_level | set\_time\_steps\_storage\_level | couple subsequent storage levels (time coupling constraints) | storage technology |
-| constraint\_storage\_technology\_capex | set\_time\_steps\_yearly | Capital expenditures for installing storage technology | storage technology |
-| constraint\_transport\_technology\_losses\_flow | set\_time\_steps\_operation | Carrier loss due to transport with through transport technology | transport technology |
-| constraint\_transport\_technology\_capex | set\_time\_steps\_yearly | Capital expenditures for installing transport technology | transport technology |
+| disjunct\_on\_technology                         | set\_time\_steps\_operation | disjunct to indicate that technology is on | technology |
+| disjunct\_off\_technology                        | set\_time\_steps\_operation | disjunct to indicate that technology is off | technology |
+| disjunction\_decision\_on\_off\_technology       | set\_time\_steps\_operation | disjunction to link the on off disjuncts | technology |
+| constraint\_linear\_capex                        | set\_time\_steps\_yearly | Linear relationship in capex | technology |
+| constraint\_linear\_conversion\_factor           | set\_time\_steps\_operation | Linear relationship in conversion\_factor | conversion technology |
+| constraint\_capex\_coupling                      | set\_time\_steps\_yearly | couples the real capex variables with the approximated variables | conversion technology |
+| constraint\_capacity\_coupling                   | set\_time\_steps\_yearly | couples the real capacity variables with the approximated variables | conversion technology |
+| constraint\_reference\_flow\_coupling            | set\_time\_steps\_operation | couples the real reference flow variables with the approximated variables | conversion technology |
+| constraint\_dependent\_flow\_coupling            | set\_time\_steps\_operation | couples the real dependent flow variables with the approximated variables | conversion technology |
+| constraint\_storage\_level\_max                  | set\_time\_steps\_storage\_level | limit maximum storage level to capacity | storage technology |
+| constraint\_couple\_storage\_level               | set\_time\_steps\_storage\_level | couple subsequent storage levels (time coupling constraints) | storage technology |
+| constraint\_storage\_technology\_capex           | set\_time\_steps\_yearly | Capital expenditures for installing storage technology | storage technology |
+| constraint\_transport\_technology\_losses\_flow  | set\_time\_steps\_operation | Carrier loss due to transport with through transport technology | transport technology |
+| constraint\_transport\_technology\_capex         | set\_time\_steps\_yearly | Capital expenditures for installing transport technology | transport technology |
 | constraint\_transport\_technology\_bidirectional | set\_time\_steps\_yearly | Forces that transport technology capacity must be equal in both directions | transport technology |
 
  |

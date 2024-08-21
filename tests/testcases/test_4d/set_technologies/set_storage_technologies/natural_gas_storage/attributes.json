@@ -7,11 +7,11 @@
     "default_value": 0.0,
     "unit": "GW"
   },
-  "energy_to_power_ratio": {
-    "default_value": "inf",
+  "energy_to_power_ratio_min": {
+    "default_value": 0,
     "unit": "h"
   },
-  "energy_to_power_ratio": {
+  "energy_to_power_ratio_max": {
     "default_value": "inf",
     "unit": "h"
   },

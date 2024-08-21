@@ -5,18 +5,15 @@ channels:
 dependencies:
   - python=3.11
   - xarray
-  - cython
   - pytest
   - pip
   - numpy
   - pandas
-  - geopandas
   - scipy
   - coverage
   - glpk
   - pint
   - matplotlib
-  - entsoe-py
   - gurobi
   - pytables
   - pydantic

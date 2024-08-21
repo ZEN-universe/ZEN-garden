@@ -1,0 +1,4 @@
+Constraint Name;Time Step Type;Doc String
+``constraint_storage_level_max;``set_time_steps_storage_level``;limit maximum storage level to capacity
+``constraint_couple_storage_level;``set_time_steps_storage_level``;couple subsequent storage levels (time coupling constraints)
+``constraint_storage_technology_capex;``set_time_steps_yearly``;Capital expenditures for installing storage technology

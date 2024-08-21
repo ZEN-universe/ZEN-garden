@@ -40,7 +40,30 @@ def run_module(args=None):
     parser.add_argument("--job_index", required=False, type=str, default=None, help="A comma separated list (no spaces) of indices of the scenarios to run, if None, all scenarios are run in sequence")
     parser.add_argument("--job_index_var", required=False, type=str, default="SLURM_ARRAY_TASK_ID", help="Try to read out the job index from the environment variable specified here. "
                                                                                                          "If both --job_index and --job_index_var are specified, --job_index will be used.")
+    parser.add_argument("--example", required=False, type=str, default=None, help="Run an example scenario. The argument should be the name of a dataset example in documentation/dataset_examples. This command will copy the dataset and the config to the current folder and run the example.")
+
     args = parser.parse_args(args)
+
+    # copy example dataset and run example #TODO so far doesn't work because dataset_examples are not part of the package but outside
+    if args.example is not None:
+        import shutil
+        import pkg_resources
+        dataset_examples_path = pkg_resources.resource_filename("zen_garden", f"documentation/dataset_examples")
+        example_path = pkg_resources.resource_filename("zen_garden", f"documentation/dataset_examples/{args.example}")
+        if not os.path.exists(example_path):
+            raise FileNotFoundError(f"Example dataset {args.example} not found in documentation/dataset_examples.")
+        # create new dataset_example folder in current directory
+        if not os.path.exists(os.path.join(os.getcwd(),"dataset_examples")):
+            os.mkdir(os.path.join(os.getcwd(),"dataset_examples"))
+        dataset_examples_path_cwd = os.path.join(os.getcwd(),"dataset_examples")
+        config_path_cwd = os.path.join(dataset_examples_path_cwd, "config.json")
+        example_path_cwd = os.path.join(dataset_examples_path_cwd, args.example)
+        # copy config.json
+        shutil.copyfile(os.path.join(dataset_examples_path, "config.json"), config_path_cwd)
+        # copy example dataset
+        shutil.copytree(example_path, example_path_cwd)
+        args.dataset = example_path_cwd
+        args.config = config_path_cwd
 
     if not os.path.exists(args.config):
         args.config = args.config.replace(".py", ".json")

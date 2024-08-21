@@ -12,48 +12,53 @@ ZEN-garden is developed and maintained by the `Reliability and Risk Engineering 
 
 Documentation
 ======================================
-**Overview**
 
 .. toctree::
-   :maxdepth: 3
+   :maxdepth: 2
    :caption: Overview
 
    files/functionalities
    files/dependencies
    files/license
 
-**User guide**
-
 .. toctree::
-   :maxdepth: 3
+   :maxdepth: 2
    :caption: User guide
 
    files/installation
-   files/building_models
    files/running_models
+   files/building_models
    files/analyzing_models
-   
-**Dataset Examples**
+   files/mathematical_formulation
+   files/troubleshooting
 
 .. toctree::
-   :maxdepth: 3
+   :maxdepth: 2
+   :caption: ZEN-garden in detail
+
+   files/input_structure
+   files/input_handling
+   files/optimization_problem
+   files/scenario_analysis
+   files/configurations
+
+.. toctree::
+   :maxdepth: 2
    :caption: Dataset Examples
 
+   files/dataset_examples
 
-**Contributing & Support**
 
 .. toctree::
-   :maxdepth: 3
+   :maxdepth: 2
    :caption: Contributing & Support
 
    files/contributing
-   files/troubleshooting
    files/get_help
 
-**References**
 
 .. toctree::
-   :maxdepth: 3
+   :maxdepth: 2
    :caption: References
 
    files/api_reference
