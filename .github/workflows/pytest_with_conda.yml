@@ -189,5 +189,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: ${{ steps.get-latest-tag.outputs.tag }}
-          release_name: ${{ steps.get-latest-tag.outputs.tag }}
+          release_name: Release ${{ steps.get-latest-tag.outputs.tag }}
           body: "Automated release for version ${{ steps.get-latest-tag.outputs.tag }} after major/minor version bump."
+          draft: false
+          prerelease: false
