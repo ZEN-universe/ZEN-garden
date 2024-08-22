@@ -1,0 +1,10 @@
+Variable Name;Time Step Type;Doc String;Unit Category
+``flow_import``;``set_time_steps_operation``;node- and time-dependent carrier import from the grid;{"energy_quantity": 1, "time": -1}
+``flow_export``;``set_time_steps_operation``;node- and time-dependent carrier export from the grid;{"energy_quantity": 1, "time": -1}
+``cost_carrier``;``set_time_steps_operation``;node- and time-dependent carrier cost due to import and export;{"money": 1, "time": -1}
+``cost_carrier_total``;``set_time_steps_yearly``;total carrier cost due to import and export;{"money": 1}
+``carbon_emissions_carrier``;``set_time_steps_operation``;carbon emissions of importing and exporting carriers;{"emissions": 1, "time": -1}
+``carbon_emissions_carrier_total``;``set_time_steps_yearly``;total carbon emissions of importing and exporting carriers;{"emissions": 1}
+``shed_demand``;``set_time_steps_operation``;shed carrier demand;{"energy_quantity": 1, "time": -1}
+``cost_shed_demand``;``set_time_steps_operation``;cost shed carrier demand;{"money": 1, "time": -1}
+

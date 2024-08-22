@@ -382,16 +382,16 @@ class Results:
 
     def get_dual(
         self,
-        constraint: str,
+        component_name: str,
         scenario_name: Optional[str] = None,
         element_name: Optional[str] = None,
         year: Optional[int] = None,
         discount_to_first_step: bool = True,
         keep_raw: Optional[bool] = False,
     ) -> Optional["pd.DataFrame | pd.Series[Any]"]:
-        """extracts the dual variables of a constraint
+        """extracts the dual variables of a component
 
-        :param constraint: Name of dal
+        :param component: Name of dal
         :param scenario_name: Scenario Name
         :param element_name: Name of Element
         :param year: Year
@@ -402,20 +402,20 @@ class Results:
             logging.warning("Duals are not calculated. Skip.")
             return None
 
-        component = self.solution_loader.components[constraint]
+        component = self.solution_loader.components[component_name]
         assert (
             component.component_type is ComponentType.dual
-        ), "Given constraint name is not of type Dual."
+        ), f"Given component {component} is not of type Dual."
 
-        _duals = self.get_full_ts(
-            component_name=constraint,
+        duals = self.get_full_ts(
+            component_name=component_name,
             scenario_name=scenario_name,
             element_name=element_name,
             year=year,
             discount_to_first_step=discount_to_first_step,
             keep_raw=keep_raw,
         )
-        return _duals
+        return duals
 
     def get_unit(
         self,

@@ -323,9 +323,6 @@ class EnergySystem:
             objective = self.rules.objective_total_cost(self.optimization_setup.model)
         elif self.optimization_setup.analysis["objective"] == "total_carbon_emissions":
             objective = self.rules.objective_total_carbon_emissions(self.optimization_setup.model)
-        elif self.optimization_setup.analysis["objective"] == "risk":
-            logging.info("Objective of minimizing risk not yet implemented")
-            objective = self.rules.objective_risk(self.optimization_setup.model)
         else:
             raise KeyError(f"Objective type {self.optimization_setup.analysis['objective']} not known")
 
@@ -558,14 +555,3 @@ class EnergySystemRules(GenericRule):
         """
         sets = self.sets
         return sum(model.variables["carbon_emissions_annual"][year] for year in sets["set_time_steps_yearly"])
-
-    def objective_risk(self, model):
-        """objective function to minimize total risk
-
-        #TODO add latex formula as soon as risk objective is implemented
-
-        :param model: optimization model
-        :return: risk objective function
-        """
-        # TODO implement objective functions for risk
-        return None

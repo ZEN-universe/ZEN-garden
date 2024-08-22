@@ -15,7 +15,7 @@ import sys
 import os
 import zen_garden.model.default_config as default_config
 import json
-
+from zen_garden.utils import copy_dataset_example
 
 def run_module(args=None):
     """
@@ -31,7 +31,7 @@ def run_module(args=None):
                   "current working directory. You can specify a config file with the --config argument. However, " \
                   "note that the output directory will always be the current working directory, independent of the " \
                   "dataset specified in the config file."
-    parser = argparse.ArgumentParser(description=description, add_help=True, usage="usage: python -m zen_garden [-h] [--config CONFIG] [--dataset DATASET]")
+    parser = argparse.ArgumentParser(description=description, add_help=True, usage="usage: python -m zen_garden [-h] [--config CONFIG] [--dataset DATASET] [--job_index JOB_INDEX] [--job_index_var JOB_INDEX_VAR] [--example EXAMPLE]")
     # TODO make json config default
     parser.add_argument("--config", required=False, type=str, default="./config.py", help="The config file used to run the pipeline, "
                                                                                         "defaults to config.py in the current directory.")
@@ -40,7 +40,15 @@ def run_module(args=None):
     parser.add_argument("--job_index", required=False, type=str, default=None, help="A comma separated list (no spaces) of indices of the scenarios to run, if None, all scenarios are run in sequence")
     parser.add_argument("--job_index_var", required=False, type=str, default="SLURM_ARRAY_TASK_ID", help="Try to read out the job index from the environment variable specified here. "
                                                                                                          "If both --job_index and --job_index_var are specified, --job_index will be used.")
+    parser.add_argument("--example", required=False, type=str, default=None, help="Run an example scenario. The argument should be the name of a dataset example in documentation/dataset_examples. This command will copy the dataset and the config to the current folder and run the example.")
+
     args = parser.parse_args(args)
+
+    # copy example dataset and run example #TODO so far doesn't work because dataset_examples are not part of the package but outside
+    if args.example is not None:
+        example_path_cwd,config_path_cwd = copy_dataset_example(args.example)
+        args.dataset = example_path_cwd
+        args.config = config_path_cwd
 
     if not os.path.exists(args.config):
         args.config = args.config.replace(".py", ".json")

@@ -12,72 +12,56 @@ ZEN-garden is developed and maintained by the `Reliability and Risk Engineering 
 
 Documentation
 ======================================
-**Overview**
-
-* :doc:`/documentation/functionalities`
-* :doc:`/documentation/target_group`
-* :doc:`/documentation/dependencies`
-* :doc:`/documentation/license`
-
 
 .. toctree::
-   :maxdepth: 3
+   :maxdepth: 2
    :caption: Overview
 
-   documentation/functionalities
-   documentation/target_group
-   documentation/dependencies
-   documentation/license
-
-**User guide**
-
-* :doc:`/documentation/installation`
-* :doc:`/documentation/building_models`
-* :doc:`/documentation/running_models`
-* :doc:`/documentation/analyzing_models`
+   files/functionalities
+   files/dependencies
+   files/license
 
 .. toctree::
-   :maxdepth: 3
+   :maxdepth: 2
    :caption: User guide
 
-   documentation/installation
-   documentation/building_models
-   documentation/running_models   
-   documentation/analyzing_models
-   
-**Dataset Examples**
+   files/installation
+   files/running_models
+   files/building_models
+   files/analyzing_models
+   files/mathematical_formulation
+   files/troubleshooting
 
 .. toctree::
-   :maxdepth: 3
+   :maxdepth: 2
+   :caption: ZEN-garden in detail
+
+   files/input_structure
+   files/input_handling
+   files/optimization_problem
+   files/scenario_analysis
+   files/configurations
+
+.. toctree::
+   :maxdepth: 2
    :caption: Dataset Examples
 
+   files/dataset_examples
 
-**Contributing & Support**
-
-* :doc:`/documentation/contributing`
-* :doc:`/documentation/troubleshooting`
-* :doc:`/documentation/get_help`
 
 .. toctree::
-   :maxdepth: 3
+   :maxdepth: 2
    :caption: Contributing & Support
 
-   documentation/contributing
-   documentation/troubleshooting
-   documentation/get_help   
+   files/contributing
+   files/get_help
 
-**References**
-
-* :doc:`/documentation/api_reference`
-* :doc:`/documentation/release_notes`
-* :doc:`/documentation/citing`
-* :doc:`/documentation/zen_garden_developers`
 
 .. toctree::
-   :maxdepth: 3
+   :maxdepth: 2
    :caption: References
 
-   documentation/api_reference
-   documentation/release_notes
-   documentation/citing   
-   documentation/zen_garden_developers
+   files/api_reference
+   files/release_notes
+   files/citing
+   files/zen_garden_developers
