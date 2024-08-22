@@ -167,6 +167,12 @@ jobs:
         with:
           ref: main
 
+      - name: Extract tag version
+        uses: actions-ecosystem/action-get-latest-tag@v1
+        id: get-latest-tag
+        with:
+          semver_only: true
+
       - name: Check for major/minor version
         id: check_version
         run: |
