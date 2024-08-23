@@ -8,7 +8,7 @@ authors = [
   {name = "Jacob Mannhardt", email = "jmannhardt@ethz.ch"},
   {name = "Alissa Ganter", email = "aganter@ethz.ch"}
   ]
-version = "1.7.0"
+version = "1.7.1"
 description="ZEN-garden is an optimization model of energy systems and value chains."
 requires-python= ">=3.10"
 
