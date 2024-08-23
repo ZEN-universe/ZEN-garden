@@ -670,7 +670,7 @@ if __name__ == "__main__":
         config = module.config
     except FileNotFoundError:
         with open("config.json") as f:
-            config = Config(json.load(f))
+            config = Config(**json.load(f))
 
     model_name = os.path.basename(config.analysis["dataset"])
     if os.path.exists(
