@@ -125,12 +125,12 @@ jobs:
       # COMMENTED OUT BECAUSE THIS LEAD TO A 400 Bad request ERROR
       - name: Create Coverage Badge
         if: ${{ always() && matrix.label == 'linux-64' && github.event_name == 'push' }}
-        uses: schneegans/dynamic-badges-action@v1.6.0
+        uses: schneegans/dynamic-badges-action@v1.7.0
         with:
           auth: ${{ secrets.GIST_TOKEN }}
           gistID: 30d479a5b4c591a63b7b0f41abbce6a0
           filename: zen_garden_coverage.json
-          label: Coverage
+          label: coverage
           message: ${{ env.COVERAGE_FLT }}%
           valColorRange: ${{ env.COVERAGE_INT }}
           maxColorRange: 100
