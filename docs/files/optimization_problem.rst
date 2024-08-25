@@ -1,3 +1,4 @@
+.. _optimization_problem
 ################
 Optimization problem
 ################
@@ -5,7 +6,6 @@ Optimization problem
 .. _optimization_setup:
 Optimization Setup
 ==================
-
 
 .. _energy_system:
 Energy System
@@ -26,13 +26,13 @@ Energy System
 .. csv-table:: Energy System Variables
     :header-rows: 1
     :file: tables/variables/energy_system_variables.csv
-    :widths: 10 10 20 10
+    :widths: 10 10 30 10
     :delim: ;
 
 .. csv-table:: Energy System Constraints
     :header-rows: 1
     :file: tables/constraints/energy_system_constraints.csv
-    :widths: 10 10 20 10
+    :widths: 10 10 20
     :delim: ;
 
 .. _carrier:
@@ -51,7 +51,7 @@ Carrier
     :widths: 10 10 20 10
     :delim: ;
 
-.. csv-table:: Carrier Variables
+.. csv-table:: Carrier Constraints
     :header-rows: 1
     :file: tables/constraints/carrier_constraints.csv
     :widths: 10 10 20
@@ -73,7 +73,7 @@ Technology
     :widths: 10 10 20 10
     :delim: ;
 
-.. csv-table:: Technology Variables
+.. csv-table:: Technology Constraints
     :header-rows: 1
     :file: tables/constraints/technology_constraints.csv
     :widths: 10 10 20
@@ -95,7 +95,7 @@ Conversion Technology
     :widths: 10 10 20 10
     :delim: ;
 
-.. csv-table:: Conversion Technology Variables
+.. csv-table:: Conversion Technology Constraints
     :header-rows: 1
     :file: tables/constraints/conversion_technology_constraints.csv
     :widths: 10 10 20

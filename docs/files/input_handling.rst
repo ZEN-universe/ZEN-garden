@@ -1,3 +1,4 @@
+.. _input_data_handling:
 ################
 Input data handling
 ################
@@ -5,7 +6,7 @@ Input data handling
 Attribute.json files
 ==============
 Each element in the input data folder has an ``attributes.json`` file, as shown in :ref:`Input data structure`, which defines the default values for the element.
-This file must be specified for each element and must contain all parameters that this class of elements (Technology, Carrier, etc.) can have.
+This file must be specified for each element and must contain all parameters that this class of elements (Technology, Carrier, etc.) can have (see :ref:`optimization_problem`).
 
 The ``attributes.json`` files have three main purposes:
 
@@ -40,7 +41,7 @@ Make sure to have the correct positioning of the brackets.
 
 What are particular parameters in the ``attributes.json`` file?
 -------------------------------------------------------------
-Some parameters do not have the structure above. These are the carriers of technologies (``"reference_carrier"``, ``"input_carrier"``, and ``"output_carrier"``) and the ``conversion_factor`` of conversion technologies.
+Some parameters do not have the structure above. These are the carriers of technologies (``"reference_carrier"``, ``"input_carrier"``, and ``"output_carrier"``), the ``"conversion_factor"`` of conversion technologies, and the ``"retrofit_flow_coupling_factor"`` of retrofitting technologies.
 
 **Input, output, and reference carriers**
 
@@ -63,7 +64,14 @@ The units of the carriers in a technology are defined in the corresponding param
 
 **Conversion factor**
 
-The ``conversion_factor`` is the fixed ratio between a carrier flow and the reference carrier flow, defined for all dependent carriers, i.e., all carriers except the reference carrier. The default conversion factor is defined in ``attributes.json`` as:
+The ``conversion_factor`` is the fixed ratio between a carrier flow and the reference carrier flow, defined for all dependent carriers, i.e., all carriers except the reference carrier.
+
+.. code-block::
+
+    dependent_carriers = input_carriers + output_carriers - reference_carrier
+
+ZEN-garden will check i) that the reference carrier is not part of the input and output carriers, ii) that there is no overlap between the input and output carriers, and iii) that all carriers are defined in their respective folders in ``set_carriers``.
+The default conversion factor is defined in ``attributes.json`` as:
 
 .. code-block::
 
@@ -82,11 +90,6 @@ The ``conversion_factor`` is the fixed ratio between a carrier flow and the refe
       }
     ]
 The conversion factor is **a list ``[...]`` with each dependent carrier wrapped in curly brackets**. Inside each curly bracket, there are the ``default_value`` and the ``unit``.
-The dependent carriers are the carriers that are not the reference carrier.
-
-.. code-block::
-
-    dependent_carriers = input_carriers + output_carriers - reference_carrier
 
 **Retrofitting flow coupling factor**
 
@@ -123,7 +126,7 @@ Let's assume the following example: The purpose of the energy system is to provi
 The energy system is modeled for two nodes, ``CH`` and ``DE`` and spans one year with 8760 time steps.
 
 .. note::
-    To retrieve the dimensions of a parameter, please refer to XXXXX and to the ``index_names`` attribute in the parameter definition.
+    To retrieve the dimensions of a parameter, please refer to :ref:`optimization_problem` and to the ``index_names`` attribute in the parameter definition.
 
 Providing extra .csv files
 --------------------------
@@ -199,8 +202,9 @@ However, some parameters might have a yearly variation, e.g., the overall demand
 
 To this end, the user can specify a file ``<parameter_name>_yearly_variation.csv`` that multiplies the hourly-dependent data with a factor for each hour of the year.
 ZEN-garden therefore assumes the same time series for each year but allows for the scaling of the time series with the yearly variation.
+Per default, the yearly variation is assumed to be ``1``. Therefore, for missing values in ``<parameter_name>_yearly_variation.csv``, the hourly-dependent data is not scaled.
 
-The user can specify the yearly variation for all dimensions besides the ``time`` dimension:
+The user can specify the yearly variation for all dimensions except for the ``time`` dimension:
 
 .. code-block::
 
@@ -220,12 +224,12 @@ If all nodes have the same yearly variation, the file can be shortened to:
     2050,4
 
 .. note::
-    So far, ZEN-garden does not allow for different time series for each year.
+    So far, ZEN-garden does not allow for different time series for each year but only for the scaling while keeping the same shape of the time series.
 
 Data interpolation
 -------------
-In :ref:`Yearly variation`, the demand increase or decrease is linear over the years.
 To reduce the number of data points, ZEN-garden per-default interpolates the data points linearly between the given data points.
+As an example, in :ref:`Yearly variation`, the demand increase or decrease is linear over the years.
 So, the user can reduce the number of data points in the ``demand_yearly_variation.csv`` file:
 
 .. code-block::
@@ -245,19 +249,68 @@ If the user wants to disable the interpolation for a specific parameter, the use
     The user must specify the file name, i.e., in the example above, the specified file is ``demand_yearly_variation.csv``, not ``demand.csv``.
     Therefore, the interpolation is only disabled for the yearly variation, not for the hourly-dependent data.
 
-
+.. _PWA:
 Piece-wise affine input data
 ----------------------------
-TODO
+In ZEN-garden, we can model the capital expenditure (CAPEX) of conversion technologies either linear or piece-wise affine (PWA).
+In the linear case, the ``capex_specific_conversion`` parameter is treated like every other parameter, i.e., the user can specify a constant value and a ``.csv`` file.
 
+In the PWA case, the user can specify a ``nonlinear_capex.csv`` file that contains the breakpoints and the CAPEX values of the PWA representation.
+A PWA representation is a set of linear functions that are connected at the breakpoints. The breakpoints are the capacity additions :math:`\Delta S_m` with the corresponding CAPEX values :math:`\alpha_m`.
+
+.. image:: ../images/PWA.png
+    :alt: Piece-wise affine representation of CAPEX
+
+The file ``nonlinear_capex.csv`` has the following structure:
+
+.. code-block::
+
+    capacity_addition,capex_specific_conversion
+    0,2000
+    20,1700
+    40,1500
+    60,1350
+    80,1200
+    100,1100
+    120,1010
+    140,940
+    160,890
+    180,860
+    200,840
+    GW,Euro/kW
+
+.. note::
+
+    Each new interval between two breakpoints adds a binary variable to the optimization problem, for each technology, each year, and each node. The binary variable is 1 if the capacity is in the interval and 0 otherwise.
+    The user is advised to keep the number of breakpoints low to avoid a combinatorial explosion of binary variables.
+
+.. _MILP:
+Additional mixed-integer constraints
+---------------------------------
+Besides, PWA representation of the CAPEX (see :ref:`PWA`), ZEN-garden allows the use of two additional mixed-integer linear constraints:
+
+**Minimum load**
+
+If the user sets the parameter ``min_load`` to anything other than zero, ZEN-garden will add a mixed-integer linear constraint that ensures that the output of a technology is above minimum load when turned on, otherwise it is zero.
+
+**Technology installation**
+
+If the user sets the parameter ``capacity_addition_min`` to anything other than zero, ZEN-garden will add a mixed-integer linear constraint that ensures that the capacity addition of a technology is above the minimum capacity addition, otherwise it is zero.
+The associated binary variable ``technology_installation`` is 1 if the technology is installed and 0 otherwise.
+
+``technology_installation`` is also used in determining the CAPEX of transport technologies, which depend both on the distance between nodes and the quantity of the transported good.
+The parameter ``capex_specific_transport`` is the CAPEX per unit of transported good, whereas ``capex_per_distance_transport`` is the CAPEX per unit of distance.
+If both parameters are set, ZEN-garden will add a mixed-integer linear constraint where the installation, i.e., the use of a certain edge, itself already accrues a cost, and then on top of that, the quantity cost is added.
+Note that ``capex_specific_transport`` can vary with the length of an edge. In particular, if the user only specifies ``capex_per_distance_transport``, then ZEN-garden multiplies ``capex_per_distance_transport`` with the length of the edge to get the CAPEX per unit of transported good.
+This is the most commonly used case, but it does not account for the fact that there might be an initial investment purely from the installation before adding the cost for the size of the capacity.
 
 .. _Unit consistency:
 Unit consistency
 ================
 Our models describe physical processes, whose numeric values are always connected to a physical unit. For example, the capacity of a coal power plant is a power, thus the unit is, e.g., GW.
 In our optimization models, we use a large variety of different technologies and carriers, for which the input data is often provided in different units. The optimization problem itself however only accepts numeric values.
-Thus, we have to make sure that the numeric values have the same physical base unit, i.e., if our input for technology A is in GW and for technology B in MW, we want to convert both numeric values to, e.g., GW.
 
+Thus, we have to make sure that the numeric values have the same physical base unit, i.e., if our input data for technology A is in GW and for technology B in MW, we want to convert both numeric values to, e.g., GW.
 Another reason for using a base unit is to `keep the numerics of the optimization model in check <https://www.gurobi.com/documentation/9.5/refman/guidelines_for_numerical_i.html>`_.
 
 What is ZEN-garden's approach to convert all numeric values to common base units?
@@ -301,7 +354,7 @@ We are using the package `pint <https://pint.readthedocs.io/en/stable/>`_, which
     Euro = [currency] = EURO = Eur
     pkm = [mileage] = passenger_km = passenger_kilometer
 
-Here, we make use of the existing dimensionality ``[currency]``. If there is a unit you want to define with a dimensionality, that does not exist yet, you can define it the same way:
+Here, we make use of the existing dimensionality ``[currency]``. If there is a unit you want to define with a dimensionality that does not exist yet, you can define it the same way:
 ``pkm = [mileage]``.
 The unit ``pkm`` now has the dimensionality ``[mileage]``.
 
@@ -311,7 +364,7 @@ There are a few rules to follow in choosing the base units:
 
 1. The base units must be exhaustive, thus all input units must be represented as a combination of the base units (i.e., ``Euro/MWh => Euro/GW/hour``). Each base unit can only be raised to the power 1, -1, or 0. We do not want to represent a unit by any base unit with a different exponent, e.g., ``km => (m^3)^(1/3)``
 2. The base units themselves can not be linearly dependent, e.g., you cannot choose the base units ``GW``, ``hour`` and ``GJ``.
-3. The dimensionalities must be unique. While you can use ``m^3`` and ``km``, you cannot use both ``MW`` and ``GW``. You will get a warning if you define the same unit twice, but that is still ok.
+3. The dimensionalities must be unique. While you can use ``m^3`` and ``km``, you cannot use both ``MW`` and ``GW``. You will get a warning if you define the same unit twice.
 
 Enforcing unit consistency
 --------------------------
