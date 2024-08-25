@@ -925,6 +925,8 @@ class Scaling:
         # RHS
         range_rhs = np.floor(np.log10(np.abs(self.rhs[rhs_max_index])) - np.log10(np.abs(self.rhs[rhs_min_index])))
         if benchmarking_output: #for postprocessing
+            range_lhs = np.log10(A_abs[index_max]) - np.log10(A_abs[index_min])
+            range_rhs = np.log10(np.abs(self.rhs[rhs_max_index])) - np.log10(np.abs(self.rhs[rhs_min_index]))
             return range_lhs, range_rhs
         else:
             #Prints
