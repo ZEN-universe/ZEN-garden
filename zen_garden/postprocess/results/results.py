@@ -149,7 +149,6 @@ class Results:
             hours_of_year = list(
                 range(year * _total_hours_per_year, (year + 1) * _total_hours_per_year)
             )
-
             output_df = output_df[hours_of_year]
         return output_df
 
@@ -650,9 +649,12 @@ class Results:
                 )
                 full_ts = self.edit_carrier_flows(full_ts, node, "out", scenario_name)
             else:
-                full_ts = self.get_full_ts(
-                    component, scenario_name=scenario_name, year=year
-                )
+                try:
+                    full_ts = self.get_full_ts(
+                        component, scenario_name=scenario_name, year=year
+                    )
+                except KeyError:
+                    continue
             carrier_df = self.extract_carrier(full_ts, carrier, scenario_name)
             if carrier_df is not None:
                 if "node" in carrier_df.index.names:
