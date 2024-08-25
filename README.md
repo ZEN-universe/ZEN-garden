@@ -1,13 +1,13 @@
 # ZEN-garden
 
 ![GitHub Release](https://img.shields.io/github/v/release/ZEN-universe/ZEN-garden)
-![GitHub Tag](https://img.shields.io/github/v/tag/ZEN-universe/ZEN-garden?link=https%3A%2F%2Fgithub.com%2FZEN-universe%2FZEN-garden%2Ftags)
+![GitHub Tag](https://img.shields.io/github/v/tag/ZEN-universe/ZEN-garden?link=https://github.com/ZEN-universe/ZEN-garden/tags)
 ![GitHub forks](https://img.shields.io/github/forks/ZEN-universe/ZEN-garden)
 
-![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/ZEN-universe/ZEN-garden/pytest_with_conda.yml?link=https%3A%2F%2Fgithub.com%2FZEN-universe%2FZEN-garden%2Factions)
-![Endpoint Badge](https://img.shields.io/endpoint?url=https%3A%2F%2Fgist.githubusercontent.com%2Fjacob-mannhardt%2F30d479a5b4c591a63b7b0f41abbce6a0%2Fraw%2Fec97fea86b075945a3cc61bf96b790c8084cad83%2Fzen_garden_coverage.json&link=https%3A%2F%2Fgithub.com%2FZEN-universe%2FZEN-garden%2Factions)
+![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/ZEN-universe/ZEN-garden/pytest_with_conda.yml?link=https://github.com/ZEN-universe/ZEN-garden/actions)
+![Endpoint Badge](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/jacob-mannhardt/30d479a5b4c591a63b7b0f41abbce6a0/raw/ec97fea86b075945a3cc61bf96b790c8084cad83/zen_garden_coverage.json&link=https://github.com/ZEN-universe/ZEN-garden/actions)
 
-![Read the Docs](https://img.shields.io/readthedocs/zen-garden?logo=readthedocs&link=https%3A%2F%2Fzen-garden.readthedocs.io%2Fen%2Flatest%2Findex.html)
+![Read the Docs](https://img.shields.io/readthedocs/zen-garden?logo=readthedocs&link=https/zen-garden.readthedocs.io/en/latest/index.html)
 
 
 [//]: # (<table><tr><td valign="center"> )
