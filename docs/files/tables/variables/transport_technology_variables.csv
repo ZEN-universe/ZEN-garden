@@ -1,0 +1,3 @@
+Variable Name;Time Step Type;Doc String;Unit Category
+``flow_transport``;``set_time_steps_operation``;carrier flow through transport technology on edge i and time t;{"energy_quantity": 1, "time": -1}
+``flow_transport_loss``;``set_time_steps_operation``;carrier flow through transport technology on edge i and time t;{"energy_quantity": 1, "time": -1}

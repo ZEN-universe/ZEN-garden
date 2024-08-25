@@ -323,7 +323,7 @@ class UnitHandling:
                 elif unit_specs["unit_category"] == {}:
                     assert unit_specs["unit_in_base_units"] == self.ureg("dimensionless"), f"The attribute {attribute_name} of {item.__class__.__name__} {item.name} is per definition dimensionless. However, its unit was defined as {unit_specs['unit_in_base_units']}."
                 # check if nonlinear capex file exists for conversion technology since the units defined there overwrite the attributes file units
-                elif attribute_name == "capex_specific" and hasattr(item, "units_nonlinear_capex_files"):
+                elif attribute_name == "capex_specific_conversion" and hasattr(item, "units_nonlinear_capex_files"):
                     for key, value in item.units_nonlinear_capex_files.items():
                         if "capex" in value:
                             capex_specific_unit = value["capex"].values[0]

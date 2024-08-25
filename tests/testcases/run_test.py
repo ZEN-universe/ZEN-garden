@@ -32,6 +32,7 @@ def config():
     """
     :return: A new instance of the config
     """
+    # TODO make work with new json! maybe use run_module from __main__.py directly
     from config import config
 
     config.solver["keep_files"] = False
@@ -596,4 +597,4 @@ if __name__ == "__main__":
 
     config.solver["keep_files"] = False
     folder_path = os.path.dirname(__file__)
-    test_4d(config, folder_path)
+    test_3c(config, folder_path)

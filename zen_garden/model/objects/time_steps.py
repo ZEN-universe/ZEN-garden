@@ -144,6 +144,7 @@ class TimeStepsDicts(object):
         sequence_operation = self.sequence_time_steps_operation
         sequence_yearly = self.sequence_time_steps_yearly
         time_steps_combi_operation = np.vstack(pd.unique(pd.Series(zip(sequence_operation, sequence_yearly)))).T
+        time_steps_combi_operation = np.sort(time_steps_combi_operation,axis=1)
         # calculate operation2year
         time_steps_operation2year = {key: val for key, val in zip(time_steps_combi_operation[0, :], time_steps_combi_operation[1, :])}
         self.time_steps_operation2year = time_steps_operation2year

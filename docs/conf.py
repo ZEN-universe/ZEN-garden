@@ -20,6 +20,7 @@ project = 'ZEN-garden'
 copyright = '2024, Jacob Mannhardt, Alissa Ganter, Johannes Burger, Francesco de Marco, Giovanni Sansavini'
 author = 'Jacob Mannhardt, Alissa Ganter, Johannes Burger, Francesco de Marco, Giovanni Sansavini'
 release = 'v1.2.0'
+language = "en"
 
 # -- General configuration ---------------------------------------------------
 
@@ -29,7 +30,19 @@ release = 'v1.2.0'
 extensions = ['sphinx.ext.autodoc',
               'sphinx.ext.napoleon',
               'sphinx.ext.mathjax',
-              'myst_parser']
+              'sphinx.ext.autodoc',
+              'sphinx.ext.autosummary',
+              'sphinx.ext.intersphinx',
+              'sphinx.ext.todo',
+              'sphinx.ext.mathjax',
+              'sphinx.ext.napoleon',
+              "sphinx.ext.autosectionlabel",
+              'sphinx_reredirects',
+              'nbsphinx',
+              'nbsphinx_link',
+              'myst_parser',
+              "sphinx.ext.imgconverter",  # for SVG conversion
+             ]
 
 # Specify the special members to include in the documentation
 autodoc_default_options = {
@@ -50,9 +63,27 @@ exclude_patterns = []
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-# html_theme = 'sphinx_book_theme'
+html_theme = 'sphinx_book_theme'
+
+# Theme-specific options to customize the look of a theme
+# For a list of options available for each theme, see the documentation.
+html_theme_options = {
+    "repository_url": "https://github.com/ZEN-universe/ZEN-garden",
+    "use_repository_button": True,
+    "show_navbar_depth": 1,
+    "show_toc_level": 2,
+}
+
+# The name for this set of Sphinx documents.  
+html_title = "ZEN-garden"
+html_short_title = "ZEN-garden"
+
+# The name of an image file (relative to this directory)
+html_logo = "images/zen_garden_logo_text.png"
+
+html_favicon = "images/zen_garden_logo.png"
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-html_static_path = ['_static']
+# html_static_path = ['_static']

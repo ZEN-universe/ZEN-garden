@@ -1,0 +1,46 @@
+name: "Release"
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  release:
+    if: ${{ github.repository == 'ZEN-universe/ZEN-garden' }}
+    name: "Create Github Release"
+    runs-on: ubuntu-latest
+    steps:
+      - name : "Checkout"
+        uses: actions/checkout@v4
+
+      - name: Extract tag version
+        uses: actions-ecosystem/action-get-latest-tag@v1
+        id: get-latest-tag
+        with:
+          semver_only: true
+
+      - name: Check for major/minor version
+        id: check_version
+        run: |
+          TAG=${{ steps.get-latest-tag.outputs.tag }}
+          PATCH_VERSION=$(echo $TAG | cut -d. -f3)
+          echo "tag=$TAG"
+          echo "patch=$PATCH_VERSION"
+          echo "patch=$PATCH_VERSION" >> $GITHUB_ENV
+          
+          if [[ $PATCH_VERSION -eq 0 ]]; then
+            echo "is_major_minor=true" >> $GITHUB_ENV
+          else
+            echo "is_major_minor=false" >> $GITHUB_ENV
+          fi
+
+      - name: Create GitHub Release
+        if: env.is_major_minor == 'true'
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag: ${{ steps.get-latest-tag.outputs.tag }}
+          name: ${{ steps.get-latest-tag.outputs.tag }}
+          body: "Automated release for version ${{ steps.get-latest-tag.outputs.tag }} after major/minor version bump."

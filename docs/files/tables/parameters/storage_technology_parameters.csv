@@ -1,0 +1,6 @@
+Parameter Name;Time Step Type;Doc String;Unit Category
+``time_steps_storage_level_duration``;``set_time_steps_storage_level``;Parameter which specifies the time step duration in StorageLevel for all technologies;{"time": 1}
+``efficiency_charge``;``set_time_steps_yearly``;efficiency during charging for storage technologies;{}
+``efficiency_discharge``;``set_time_steps_yearly``;efficiency during discharging for storage technologies;{}
+``self_discharge``;temporal immutable;self-discharge of storage technologies;{}
+``capex_specific_storage``;``set_time_steps_yearly``;specific capex of storage technologies;{"money": 1, "energy_quantity": -1, "time": 1}
