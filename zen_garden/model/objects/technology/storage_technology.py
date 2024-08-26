@@ -112,10 +112,7 @@ class StorageTechnology(Technology):
         :param optimization_setup: The OptimizationSetup the element is part of """
         # energy to power ratio
         optimization_setup.parameters.add_parameter(name="energy_to_power_ratio_min", index_names=["set_storage_technologies"], doc='power to energy ratio for storage technologies - lower bound', calling_class=cls)
-        optimization_setup.parameters.add_parameter(name="energy_to_power_ratio_max",
-                                                    index_names=["set_storage_technologies"],
-                                                    doc='power to energy ratio for storage technologies - upper bound',
-                                                    calling_class=cls)
+        optimization_setup.parameters.add_parameter(name="energy_to_power_ratio_max", index_names=["set_storage_technologies"], doc='power to energy ratio for storage technologies - upper bound', calling_class=cls)
         # efficiency charge
         optimization_setup.parameters.add_parameter(name="efficiency_charge", index_names=["set_storage_technologies", "set_nodes", "set_time_steps_yearly"], doc='efficiency during charging for storage technologies', calling_class=cls)
         # efficiency discharge

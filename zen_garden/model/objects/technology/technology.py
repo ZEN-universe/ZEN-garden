@@ -283,19 +283,19 @@ class Technology(Element):
 
         # conversion technologies
         optimization_setup.sets.add_set(name="set_conversion_technologies", data=energy_system.set_conversion_technologies,
-                                        doc="Set of conversion technologies. Indexed by set_technologies")
+                                        doc="Set of conversion technologies")
         # retrofitting technologies
         optimization_setup.sets.add_set(name="set_retrofitting_technologies", data=energy_system.set_retrofitting_technologies,
-                                        doc="Set of retrofitting technologies. Indexed by set_conversion_technologies")
+                                        doc="Set of retrofitting technologies")
         # transport technologies
         optimization_setup.sets.add_set(name="set_transport_technologies", data=energy_system.set_transport_technologies,
-                                        doc="Set of transport technologies. Indexed by set_technologies")
+                                        doc="Set of transport technologies")
         # storage technologies
         optimization_setup.sets.add_set(name="set_storage_technologies", data=energy_system.set_storage_technologies,
-                                        doc="Set of storage technologies. Indexed by set_technologies")
+                                        doc="Set of storage technologies")
         # existing installed technologies
         optimization_setup.sets.add_set(name="set_technologies_existing", data=optimization_setup.get_attribute_of_all_elements(cls, "set_technologies_existing"),
-                                        doc="Set of existing technologies. Indexed by set_technologies",
+                                        doc="Set of existing technologies",
                                         index_set="set_technologies")
         # reference carriers
         optimization_setup.sets.add_set(name="set_reference_carriers", data=optimization_setup.get_attribute_of_all_elements(cls, "reference_carrier"),
