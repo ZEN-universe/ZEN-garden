@@ -9,8 +9,10 @@ authors = [
   {name = "Alissa Ganter", email = "aganter@ethz.ch"}
   ]
 version = "1.7.2"
-description="ZEN-garden is an optimization model of energy systems and value chains."
 requires-python= ">=3.10"
+description="ZEN-garden is an optimization model of energy systems and value chains."
+readme = "README.md"
+license = { file = "LICENSE.txt" }
 
 dependencies = [
     "xarray",
