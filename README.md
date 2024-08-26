@@ -1,11 +1,27 @@
 # ZEN-garden
 
-<table><tr><td valign="center"> 
-  <img align="left" height="25px" src="https://github.com/RRE-ETH/ZEN-garden/actions/workflows/pytest_with_conda.yml/badge.svg?branch=development"> 
-  <img align="left" height="25px" src="https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/jafluri/5d0d79e86182cd9ccd785d824b1f9ac7/raw/zen_coverage.json">
-  <b> (Development Branch) </b>
-</td></tr></table>
-<hr style="height: 5px; background-color: black;">
+[![GitHub Release](https://img.shields.io/github/v/release/ZEN-universe/ZEN-garden)](https://github.com/ZEN-universe/ZEN-garden/releases)
+[![GitHub Tag](https://img.shields.io/github/v/tag/ZEN-universe/ZEN-garden)](https://github.com/ZEN-universe/ZEN-garden/tags)
+[![GitHub forks](https://img.shields.io/github/forks/ZEN-universe/ZEN-garden)](https://github.com/ZEN-universe/ZEN-garden/forks)
+
+[![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/ZEN-universe/ZEN-garden/pytest_with_conda.yml)](https://github.com/ZEN-universe/ZEN-garden/actions)
+[![Endpoint Badge](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/jacob-mannhardt/30d479a5b4c591a63b7b0f41abbce6a0/raw/zen_garden_coverage.json)](https://github.com/ZEN-universe/ZEN-garden/actions)
+
+[![Read the Docs](https://img.shields.io/readthedocs/zen-garden?logo=readthedocs)](https://zen-garden.readthedocs.io/en/latest/index.html)
+
+
+[//]: # (<table><tr><td valign="center"> )
+
+[//]: # (  <img align="left" height="25px" src="https://github.com/RRE-ETH/ZEN-garden/actions/workflows/pytest_with_conda.yml/badge.svg?branch=development"> )
+
+[//]: # (  <img align="left" height="25px" src="https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/jafluri/5d0d79e86182cd9ccd785d824b1f9ac7/raw/zen_coverage.json">)
+
+[//]: # (  <b> &#40;Development Branch&#41; </b>)
+
+[//]: # (</td></tr></table>)
+
+[//]: # (<hr style="height: 5px; background-color: black;">)
+
 <img src="https://github.com/ZEN-universe/ZEN-garden/assets/114185605/d6a9aca9-74b0-4a82-8295-43e6a78b8450" alt="drawing" width="200"/>
 
 Welcome to the ZEN-garden! ZEN-garden is an optimization model of energy systems and value chains. 
