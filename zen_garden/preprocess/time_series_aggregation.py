@@ -324,7 +324,7 @@ class TimeSeriesAggregation(object):
                 ts = ts_df.stack()
         # round down if lower than decimal points
         if self.optimization_setup.solver["round_parameters"]:
-            rounding_value = 10 ** (-self.optimization_setup.solver["rounding_decimal_points_ts"])
+            rounding_value = 10 ** (-self.optimization_setup.solver["rounding_decimal_points_tsa"])
             ts[ts.abs() < rounding_value] = 0
         return ts
 

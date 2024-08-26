@@ -7,5 +7,6 @@ Parameter Name;Time Step Type;Doc String;Unit Category
 ``price_import``;``set_time_steps_operation``;Parameter which specifies the import carrier price;{"money": 1, "energy_quantity": -1}
 ``price_export``;``set_time_steps_operation``;Parameter which specifies the export carrier price;{"money": 1, "energy_quantity": -1}
 ``price_shed_demand``;``temporal immutable``;Parameter which specifies the price to shed demand;{"money": 1, "energy_quantity": -1}
-``carbon_intensity_carrier``;``set_time_steps_yearly``;Parameter which specifies the carrier carbon intensity;{"emissions": 1, "energy_quantity": -1}
+``carbon_intensity_carrier_import``;``set_time_steps_yearly``;Parameter which specifies the carrier carbon intensity for carrier import flows;{"emissions": 1, "energy_quantity": -1}
+``carbon_intensity_carrier_export``;``set_time_steps_yearly``;Parameter which specifies the carrier carbon intensity  for carrier export flows;{"emissions": 1, "energy_quantity": -1}
 

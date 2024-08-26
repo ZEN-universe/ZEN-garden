@@ -1,4 +1,4 @@
-Mathmatical formulation
+Mathematical formulation
 ======================
 
 ZEN-garden optimizes the design and operation of energy system models to investigate transition pathways towards decarbonization.
