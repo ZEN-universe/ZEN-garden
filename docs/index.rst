@@ -41,6 +41,7 @@ Documentation
    files/optimization_problem
    files/scenario_analysis
    files/configurations
+   files/additional_features
 
 .. toctree::
    :maxdepth: 2
