@@ -9,39 +9,52 @@ System, analysis, solver settings
 System
 ------
 
-The ``system.json`` defines the structure of the energy system and is structured. You can update the default system settings as follows:
+The ``system.json`` defines the structure of the energy system. The following table summarizes the available system settings and their default values.
 
-.. code-block:: JSON 
-    {
-        key: values
-    }
-
-The following table provides an overview of the key system settings and their default values. 
-
-.. csv-table:: Key System Settings
+.. csv-table:: System Settings
     :header-rows: 1
-    :file: tables/system/key_system_settings.csv
-    :widths: 10 10 20
+    :file: tables/system_settings.csv
+    :widths: 10 10 10 20
     :delim: ;
 
-You must define the set of technologies you want to investigate in your system. Only technologies selected in ``system.json``are added to the optimization problem. You can flexibly select any subset of the technologies available in your ``set_technologies``folder. If a technology is not available in your input data, it is dropped from the system. In addition, it is possible to select subsets of your set of nodes defined in `ènergy_system/set_nodes.csv``. In addition, you can specify the starting year (``reference_year``), the time horizon (), and the intra- and interyearly resolution in the ``system.json``. :ref:_Time provides a detailed description of the time-parameters. 
 
-The remaining system settings are summarized in the table below.
-
-.. csv-table:: Other System Settings
-    :header-rows: 1
-    :file: tables/system/other_system_settings.csv
-    :widths: 10 10 20
-    :delim: ;
-
+Per default, the technology selection is empty. You must define the set of technologies you want to investigate in your system. Only technologies selected in ``system.json`` are added to the optimization problem. You can flexibly select any subset of the technologies available in your ``set_technologies`` folder. If a technology is not defined in your input data, it is dropped from the system. Per default, all nodes defined in ``energy_system/set_nodes.csv`` are added. You can reduce the number of nodes by selecting a subset of nodes in your ``system.json``. In addition, you can specify the starting year (``reference_year``), the time horizon (``optimized_years``), and the interyearly resolution (``interval_between_years``) in the ``system.json``. Per default, each year is represented by 8760 timesteps of length 1h. You can change the interyearly resolution by modifying the ``unaggregated_time_steps_per_year`` and ``total_hours_per_year``. To reduce the complexity and reduce the number of time steps, the timeseries aggregation can be used (``conduct_time_series_aggregation``). Per default, the number of timesteps is reduced to 10 (``aggregated_time_steps_per_year``). :ref:`Time series aggregation and representation` and :ref:`time_parameters` provide a detailed description of the time representation and the time parameters.
 
 .. _analysis:
 Analysis
 -------
 
+The dataset, the objective function and the solver are selected in the ``analysis.json``. The following table summarizes the settings of the ``analysis.json`` and their default values:
+
+.. csv-table:: Analysis Settings
+    :header-rows: 1
+    :file: tables/analysis_settings.csv
+    :widths: 10 10 10 20
+    :delim: ;
+
+The settings of the timeseries aggregation algorithm are also specified in the ``analysis.json``. The following table summarizes the available timeseries aggregation settings and their default values. For further information on how to use the timeseries aggregation, see :ref:`use_tsa`. Ina addition, :ref:`Time series aggregation and representation` and :ref:`time_parameters` provide helpful information on the time representation and the time parameters in ZEN-garden.
+
+.. csv-table:: Timeseries Aggregation Settings
+    :header-rows: 1
+    :file: tables/tsa_settings.csv
+    :widths: 10 10 10 20
+    :delim: ;
+
 .. _solver:
 Solver
 ------
+
+Solver settings are also specified in the ``analysis.json``. The following table summarizes the available solver settings and their default values.
+
+.. csv-table:: Solver Settings
+    :header-rows: 1
+    :file: tables/solver_settings.csv
+    :widths: 10 10 10 20
+    :delim: ;
+
+Per default the open-source solver `HiGHS <https://highs.dev/>`_ is used. You can change the solver by modifying the ``solver`` key. Solver-specific settings are passed via the ``solver_settings``. Please refer to the solver documentation for the available solver settings for the solver that you are using.
+
+For linear optimization problems, the dual variables can be computed by selecting ``duals=True``. You can analyze the numerics of your optimization problem via ``analyze_numerics`` and get recommendations on how to improve the selection of your base units ``recommend_base_units``. In addition, a scaling algorithm is available. Per default, four iterations of the scaling algorithm are conducted without including the values of the right-hand-side. :ref:`Scaling` provides a detailed description of the scaling algorithm.
 
 .. _Time series aggregation and representation:
 Time series aggregation and representation
@@ -113,6 +126,7 @@ I don't investigate hourly behavior or I want to investigate a full time series.
 
 Open the ``system.json`` file and set ``"conduct_time_series_aggregation"=False``. This disables the time series aggregation. If you do not want to investigate a full year, set ``"unaggregated_time_steps_per_year"<8760``
 
+.. _using_the_tsa:
 I want to use the time series aggregation. What do I do?
 -------------------------------------------------------
 

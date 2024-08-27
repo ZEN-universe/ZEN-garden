@@ -1,0 +1,14 @@
+Set Name;Index;Doc String
+``set_nodes``;-;Set of nodes
+``set_edges``;-;Set of edges
+``set_nodes_on_edges``;Set_edges;Set of nodes that constitute an edge
+``set_elements``;-;Set of elements
+``set_carriers``;-;Set of carriers
+``set_technologies``;-;Set of technologies
+``set_base_time_steps``;-;Set of base timesteps
+``set_time_steps_yearly``;-;Set of yearly timesteps
+``set_time_steps_yearly_entire_horizon``;-;Set of yearly timesteps of entire optimization horizon
+``set_time_steps_operation``;-;Set of operational time steps
+``set_time_steps_storage``;-;Set of storage level timesteps
+
+
