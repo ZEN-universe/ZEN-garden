@@ -53,30 +53,48 @@ def get_inheritors(klass):
 
 def copy_dataset_example(example):
     """ copies a dataset example to the current working directory """
-    raise NotImplementedError("Copying a dataset example is not implemented yet.")
     import requests
     from importlib.metadata import metadata
+    import zipfile
+    import io
     url = metadata("zen_garden").get_all("Project-URL")
-    url = [u.split(", ")[1] for u in url if u.split(", ")[0] == "Homepage"][0]
-    dataset_url = requests.get(f"{url}/tree/main/documentation/dataset_examples/")
-    if dataset_url.status_code == 200:
-        example_url = requests.get(f"{url}/tree/main/documentation/dataset_examples/{example}")
-        if example_url.status_code == 200:
-            raw_url = f"https://raw.githubusercontent.com/{url.split('github.com/')[1]}/main/documentation/dataset_examples"
-            # create new dataset_example folder in current directory
-            dataset_folder = os.path.join(os.getcwd(), "dataset_examples")
-            if not os.path.exists(dataset_folder):
-                os.mkdir(dataset_folder)
-            # copy config.json to dataset_example folder
-            config_response = requests.get(f"{raw_url}/config.json",stream=True)
-            with open(os.path.join(dataset_folder,"config.json"), "wb") as f:
-                f.write(config_response.content)
-        else:
-            raise FileNotFoundError(f"Error in retrieving datasets. URL {example_url.url} not available.")
-    else:
-        raise FileNotFoundError(f"Error in retrieving datasets. URL {dataset_url.url} not available.")
-    return example_path_cwd,config_path_cwd
-
+    url = [u.split(", ")[1] for u in url if u.split(", ")[0] == "Zenodo"][0]
+    zenodo_meta = requests.get(url)
+    zenodo_meta.raise_for_status()
+    zenodo_data = zenodo_meta.json()
+    zenodo_zip_url = zenodo_data["files"][0]["links"]["self"]
+    zenodo_zip = requests.get(zenodo_zip_url)
+    zenodo_zip = zipfile.ZipFile(io.BytesIO(zenodo_zip.content))
+    base_path = zenodo_zip.filelist[0].filename
+    example_path = f"{base_path}documentation/dataset_examples/{example}/"
+    config_path = f"{base_path}documentation/dataset_examples/config.json"
+    local_dataset_path = os.path.join(os.getcwd(), "dataset_examples")
+    if not os.path.exists(local_dataset_path):
+        os.mkdir(local_dataset_path)
+    local_example_path = os.path.join(local_dataset_path, example)
+    if not os.path.exists(local_example_path):
+        os.mkdir(local_example_path)
+    example_found = False
+    config_found = False
+    for file in zenodo_zip.filelist:
+        if file.filename.startswith(example_path):
+            filename_ending = file.filename.split(example_path)[1]
+            local_folder_path = os.path.join(local_example_path, filename_ending)
+            if file.is_dir():
+                if not os.path.exists(local_folder_path):
+                    os.mkdir(os.path.join(local_example_path, filename_ending))
+            else:
+                local_file_path = os.path.join(local_example_path, filename_ending)
+                with open(local_file_path, "wb") as f:
+                    f.write(zenodo_zip.read(file))
+            example_found = True
+        elif file.filename == config_path:
+            with open(os.path.join(local_dataset_path, "config.json"), "wb") as f:
+                f.write(zenodo_zip.read(file))
+            config_found = True
+    assert example_found, f"Example {example} could not be downloaded from the dataset examples!"
+    assert config_found, f"Config.json file could not be downloaded from the dataset examples!"
+    return local_example_path,os.path.join(local_dataset_path, "config.json")
 
 # This functionality is for the IIS constraints
 # ---------------------------------------------

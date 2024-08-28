@@ -15,6 +15,7 @@ dependencies:
   - gurobi
   - pytables
   - pydantic
+  - requests
   - pip:
       - tsam
       - h5py
