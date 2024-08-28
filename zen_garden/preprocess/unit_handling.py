@@ -927,7 +927,18 @@ class Scaling:
         if benchmarking_output: #for postprocessing
             range_lhs = np.log10(A_abs[index_max]) - np.log10(A_abs[index_min])
             range_rhs = np.log10(np.abs(self.rhs[rhs_max_index])) - np.log10(np.abs(self.rhs[rhs_min_index]))
-            return range_lhs, range_rhs
+            try:
+                cp = cProfile.Profile()
+                cp.enable()
+                sv_max = sp.sparse.linalg.svds(data_coo, return_singular_vectors=False, k=1, which='LM')[0]
+                sv_min = sp.sparse.linalg.svds(data_coo, return_singular_vectors=False, k=1, which='SM')[0]
+                cond = sv_max / sv_min
+                cp.disable()
+                cp.print_stats("cumtime")
+            except:
+                print("SVD did not converge")
+                cond = 0
+            return range_lhs, range_rhs, cond
         else:
             #Prints
             if no_scaling:
