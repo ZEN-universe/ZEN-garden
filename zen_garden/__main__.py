@@ -44,7 +44,7 @@ def run_module(args=None):
 
     args = parser.parse_args(args)
 
-    # copy example dataset and run example #TODO so far doesn't work because dataset_examples are not part of the package but outside
+    # copy example dataset and run example
     if args.example is not None:
         example_path_cwd,config_path_cwd = copy_dataset_example(args.example)
         args.dataset = example_path_cwd

@@ -30,6 +30,7 @@ dependencies = [
     "pyogrio",
     "psutil",
     "linopy<=0.3.10",
+    "requests",
 ]
 
 [project.optional-dependencies]
@@ -53,3 +54,4 @@ gurobipy = ["gurobipy"]
 [project.urls]
 Homepage = "https://github.com/ZEN-universe/ZEN-garden"
 Documentation = "https://zen-garden.readthedocs.io/en/latest/"
+Zenodo = "https://zenodo.org/api/records/13385111"
