@@ -53,9 +53,9 @@ def get_inheritors(klass):
 
 def copy_dataset_example(example):
     """ copies a dataset example to the current working directory """
+    raise NotImplementedError("Copying a dataset example is not implemented yet.")
     import requests
     from importlib.metadata import metadata
-    raise NotImplementedError("Copying a dataset example is not implemented yet.")
     url = metadata("zen_garden").get_all("Project-URL")
     url = [u.split(", ")[1] for u in url if u.split(", ")[0] == "Homepage"][0]
     dataset_url = requests.get(f"{url}/tree/main/documentation/dataset_examples/")
