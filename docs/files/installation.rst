@@ -3,17 +3,32 @@
 Installation
 ################
 
-ZEN-garden is written in Python and is available as a package. 
+ZEN-garden is written in Python and is available as a package. You can either install it via pip or fork and clone the repository from GitHub.
+We recommend the first option for users who want to use ZEN-garden as a black-box optimization tool. The second option is for developers who want to contribute to the codebase.
 
+For users
+=========
+If you want to use ZEN-garden as a black-box optimization tool, you can install the package via `pip <https://pypi.org/project/zen-garden/>`_:
+
+.. code-block:: bash
+
+    pip install zen-garden
+
+.. note::
+    We recommend working from a conda environment for the installation.
+
+For developers
+==============
+If you want to work on the codebase, you can fork and clone the repository from `GitHub <https://github.com/ZEN-universe/ZEN-garden>`_.
 
 Installing python
-==============
+-----------------
 
 If it is your first time using Python, we recommend using `conda <https://docs.conda.io/en/latest/miniconda.html>`_ as the package manager and setting up ZEN-garden as a conda environment (see below). Furthermore, it is helpful to install an integrated development environment (IDE), such as `PyCharm <https://www.jetbrains.com/pycharm/download/>`_. Most users of ZEN-garden use PyCharm, but other IDEs such as `VS Code <https://code.visualstudio.com/>`_ work as well.
 
 
 Installing ZEN-garden 
-==============
+---------------------
 
 If it's your first time using GitHub, register at `<https://github.com/>`_. Login to Github and create a fork of the ZEN-garden repository. 
 

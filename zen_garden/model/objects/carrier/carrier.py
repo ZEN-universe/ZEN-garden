@@ -226,6 +226,8 @@ class CarrierRules(GenericRule):
 
         .. math::
             U_{c,n,t} \\leq a_{c,n,t}^\mathrm{import}
+
+        .. math::
             V_{c,n,t} \\leq a_{c,n,t}^\mathrm{export}
         """
 
