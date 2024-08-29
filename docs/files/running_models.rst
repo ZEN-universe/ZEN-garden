@@ -13,11 +13,11 @@ To run ZEN-garden from a terminal, activate the environment where you installed 
 
 Running an example model
 ------------------------
-To run one of the already-built example models (see `Dataset Examples <dataset_examples.html>`_), execute the following line::
+To run one of the already-built example models (see `Dataset Examples <dataset_examples.rst>`_), execute the following line::
 
     python -m zen_garden --example=<dataset_example_name>
 
-This will download the selected example in the folder ``dataset_examples``, and run the optimization. The optimization results will be stored in ``dataset_examples/outputs``, and can be read with the ``TODO`` Jupyter notebook file (see more at ``Analyzing a model <analyzing_models.html>`_).
+This will download the selected example in the folder ``dataset_examples``, and run the optimization. The optimization results will be stored in ``dataset_examples/outputs``, and can be read with the ``TODO`` Jupyter notebook file (see more at ``Analyzing a model <analyzing_models.rst>`_).
 .. note::
     Dataset example are an easy and quick way to get started with your model. Find an example that best suits your need and use it as a template to build your own model.
 
