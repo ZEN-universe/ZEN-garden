@@ -7,10 +7,22 @@ Running a model
 Running ZEN-garden from a terminal
 ==============
 
-To run ZEN-garden from a terminal, activate the environment where you installed ZEN-garden. Per default, the environment will be called ``zen-garden-env``::
+To run ZEN-garden from a terminal, activate the environment where you installed ZEN-garden. Per default, the environment will be called ``zen-garden``::
 
-  conda activate zen-garden-env
+  conda activate zen-garden
 
+Running an example model
+------------------------
+To run one of the already-built example models (see `Dataset Examples <dataset_examples.html>`_), execute the following line::
+
+    python -m zen_garden --example=<dataset_example_name>
+
+This will download the selected example in the folder ``dataset_examples``, and run the optimization. The optimization results will be stored in ``dataset_examples/outputs``, and can be read with the ``TODO`` Jupyter notebook file (see more at ``Analyzing a model <analyzing_models.html>`_).
+.. note::
+    Dataset example are an easy and quick way to get started with your model. Find an example that best suits your need and use it as a template to build your own model.
+
+Running your model
+-----------------
 Make sure to change your path to the working directory, i.e. the directory that contains the ``config.json``. This directory will also be used to save the results::
 
   cd /path/to/your/data
@@ -34,6 +46,7 @@ If you have multiple ``config.json`` files in your working directory, you can sp
 To test if the setup is working correctly, you can copy a dataset example and the ``config.json`` from the ``dataset_examples`` folder to the data folder and run the following command::
 
   python -m zen_garden --dataset=<example_dataset>
+
 PyCharm configurations
 ==============
 
