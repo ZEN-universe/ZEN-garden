@@ -1,11 +1,7 @@
 .. _optimization_problem
 ################
-Optimization problem
-################
-
-.. _optimization_setup:
 Sets, parameters, variables, and constraints
-==================
+################
 
 .. _energy_system:
 Energy System
