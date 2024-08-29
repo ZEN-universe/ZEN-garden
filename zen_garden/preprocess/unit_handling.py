@@ -900,7 +900,7 @@ class Scaling:
             var_str = var_str[0] + str(list(var_str[1].values()))
             return f"{A_matrix[index]} {var_str} in {cons_str}"
 
-    def print_numerics(self,i,no_scaling = False, benchmarking_output = False):
+    def print_numerics(self,i,no_scaling = False, benchmarking_output = False, cond_number = False):
         data_coo = self.A_matrix.tocoo()
         A_abs = np.abs(data_coo.data)
         A_abs_nonzero = np.ma.masked_equal(A_abs,0.0,copy=False)
@@ -927,17 +927,18 @@ class Scaling:
         if benchmarking_output: #for postprocessing
             range_lhs = np.log10(A_abs[index_max]) - np.log10(A_abs[index_min])
             range_rhs = np.log10(np.abs(self.rhs[rhs_max_index])) - np.log10(np.abs(self.rhs[rhs_min_index]))
-            try:
-                cp = cProfile.Profile()
-                cp.enable()
-                sv_max = sp.sparse.linalg.svds(data_coo, return_singular_vectors=False, k=1, which='LM')[0]
-                sv_min = sp.sparse.linalg.svds(data_coo, return_singular_vectors=False, k=1, which='SM')[0]
-                cond = sv_max / sv_min
-                cp.disable()
-                cp.print_stats("cumtime")
-            except:
-                print("SVD did not converge")
-                cond = 0
+            cond = 0
+            if cond_number:
+                try:
+                    cp = cProfile.Profile()
+                    cp.enable()
+                    sv_max = sp.sparse.linalg.svds(data_coo, return_singular_vectors=False, k=1, which='LM')[0]
+                    sv_min = sp.sparse.linalg.svds(data_coo, return_singular_vectors=False, k=1, which='SM')[0]
+                    cond = sv_max / sv_min
+                    cp.disable()
+                    cp.print_stats("cumtime")
+                except:
+                    print("SVD did not converge")
             return range_lhs, range_rhs, cond
         else:
             #Prints
