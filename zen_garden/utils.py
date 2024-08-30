@@ -68,6 +68,7 @@ def copy_dataset_example(example):
     base_path = zenodo_zip.filelist[0].filename
     example_path = f"{base_path}documentation/dataset_examples/{example}/"
     config_path = f"{base_path}documentation/dataset_examples/config.json"
+    notebook_path = f"{base_path}notebooks/example_notebook.ipynb"
     local_dataset_path = os.path.join(os.getcwd(), "dataset_examples")
     if not os.path.exists(local_dataset_path):
         os.mkdir(local_dataset_path)
@@ -76,6 +77,7 @@ def copy_dataset_example(example):
         os.mkdir(local_example_path)
     example_found = False
     config_found = False
+    notebook_found = False
     for file in zenodo_zip.filelist:
         if file.filename.startswith(example_path):
             filename_ending = file.filename.split(example_path)[1]
@@ -92,8 +94,25 @@ def copy_dataset_example(example):
             with open(os.path.join(local_dataset_path, "config.json"), "wb") as f:
                 f.write(zenodo_zip.read(file))
             config_found = True
+        elif file.filename == notebook_path:
+            notebook_path_local = os.path.join(local_dataset_path, "example_notebook.ipynb")
+            if not os.path.exists(notebook_path_local):
+                notebook_path_remote = os.path.join(os.getcwd(), "example_notebook.ipynb")
+                with open(notebook_path_remote, "rb") as f:
+                    notebook = json.load(f)
+                for cell in notebook['cells']:
+                    if cell['cell_type'] == 'code':  # Check only code cells
+                        for i, line in enumerate(cell['source']):
+                            if "<dataset_name>" in line:
+                                cell['source'][i] = line.replace("<dataset_name>", example)
+                with open(os.path.join(local_dataset_path, "example_notebook.ipynb"), "w") as f:
+                    json.dump(notebook, f)
+            notebook_found = True
     assert example_found, f"Example {example} could not be downloaded from the dataset examples!"
     assert config_found, f"Config.json file could not be downloaded from the dataset examples!"
+    if not notebook_found:
+        logging.warning("Example jupyter notebook could not be downloaded from the dataset examples!")
+    logging.info(f"Example dataset {example} downloaded to {local_example_path}")
     return local_example_path,os.path.join(local_dataset_path, "config.json")
 
 # This functionality is for the IIS constraints

@@ -7,7 +7,16 @@ Running a model
 Running ZEN-garden from a terminal
 ==============
 
-To run ZEN-garden from a terminal, activate the environment where you installed ZEN-garden. Per default, the environment will be called ``zen-garden``::
+Activate the environment
+------------------------
+
+To run ZEN-garden from a terminal, activate the environment where you installed ZEN-garden. If you downloaded ZEN-garden from pip (``pip install zen-garden``, :ref:`For users`), activate the environment where you installed ZEN-garden.
+
+.. code-block::
+
+    conda activate <your_environment>
+
+If you installed ZEN-garden from the repository, per default, the environment will be called ``zen-garden``::
 
   conda activate zen-garden
 
@@ -31,13 +40,17 @@ Make sure to change your path to the working directory, i.e. the directory that 
 
 .. note::
     You can create the data folder in the ZEN-garden root folder, but it will not be uploaded to Github (it is in the ``.gitignore`` file).
-    This way, you can keep your data separate from the repository.
+    This way, you can keep your data separate from the repository. However, we recommend keeping the data folder in a different location.
+
+.. _Run ZEN-garden with preexisting datasets:
+Run ZEN-garden with preexisting datasets
+----------------------------------------
 
 Execute the following lines to run ZEN-garden as a module::
 
   python -m zen_garden
 
-When running the previous line, ZEN-garden will attempt to run the dataset specified in ``analyis/dataset`` in ``config.json``. You can change the dataset via the dataset argument::
+When running the previous line, ZEN-garden will attempt to run the dataset specified in ``analysis/dataset`` in ``config.json``. You can change the dataset via the dataset argument::
 
   python -m zen_garden --dataset=<my_dataset>
 
@@ -45,12 +58,22 @@ If you have multiple ``config.json`` files in your working directory, you can sp
 
   python -m zen_garden --config=<my_config.json> --dataset=<my_dataset>
 
-To test if the setup is working correctly, you can copy a dataset example and the ``config.json`` from the ``dataset_examples`` folder to the data folder and run the following command::
+.. _Run example:
+Run ZEN-garden with an example dataset
+--------------------------------------
 
-  python -m zen_garden --dataset=<example_dataset>
+To run ZEN-garden with an example dataset, execute the following line::
 
-PyCharm configurations
-==============
+  python -m zen_garden --example=<example_name>
+
+The example dataset will be downloaded, a new folder will be created in the working directory, and the optimization will be run. No prior setup is needed.
+This procedure downloads the example dataset folder and the ``config.json`` file.
+
+This command is particularly useful when you installed ZEN-garden from pip and do not have the repository on your local machine.
+
+
+PyCharm configurations (only for ZEN-garden fork)
+=======
 
 To execute ZEN-garden with the PyCharm IDE you can use the configuration setup which can be found next to the run button, and click on "Edit configurations.." to edit or add a configuration.
 
@@ -68,7 +91,7 @@ In the end, your configuration to run ZEN-garden as a module should look similar
 .. image:: ../images/pycharm_run_module.png
     :alt: run module
 
-VS code configuations
+VS code configuations (only for ZEN-garden fork)
 ==============
 
 To run ZEN-garden as a module in VS code follow these steps:
