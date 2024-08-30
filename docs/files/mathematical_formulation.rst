@@ -52,18 +52,7 @@ For annual capital expenditure :math:`A_{h,p,y}` for each technology :math:`h\in
 .. math::
     :label: capex_yearly
     A_{h,s,p,y}= f_h
-    \left(
-        \sum_{
-        \tilde{y}=\max\left(y_0,y-\left(\lceil\frac{l_h}{\Delta^\mathrm{y}}\right)\rceil+1\right)}^y 
-        I_{h,s,p,\tilde{y}}
-        \right)+
-    \left(
-        \sum_{\hat{y}=\psi \left(
-            y-\left(
-                \lceil\frac{l_h}{\Delta^\mathrm{y}}
-            \right)\rceil+1
-        \right)}^{\psi(y_0-1)} I^\mathrm{ex}_{h,s,p,y}
-        \right),
+    \left(\sum_{\tilde{y}=\max\left(y_0,y-\left(\lceil\frac{l_h}{\Delta^\mathrm{y}}\right)\rceil+1\right)}^y I_{h,s,p,\tilde{y}} \right)+\left(\sum_{\hat{y}=\psi \left(y-\left(\lceil\frac{l_h}{\Delta^\mathrm{y}}\right)\rceil+1\right)}^{\psi(y_0-1)} I^\mathrm{ex}_{h,s,p,y}\right),
 
 where :math:`\lceil\cdot\rceil` is the ceiling function and :math:`\psi(y)` is a function that maps the planning period :math:`y` to the actual year.
 
@@ -196,68 +185,127 @@ The energy balance for carrier :math:`c\in\mathcal{C}` is then calculated as:
 
 Note that :math:`\sum_{k\in\mathcal{K}}\left(\overline{H}_{k,n,t,y}-\underline{H}_{k,n,t,y}\right)`are zero if :math:`c\neq c^\mathrm{r}_j` and :math:`c\neq c^\mathrm{r}_k`, respectively.
 
-The total annual carbon emissions :math:`E_y` account for the operational emissions of importing the carriers :math:`c\in\mathcal{C}` (carbon intensity :math:`\epsilon_c`) and for operating the technologies :math:`h\in\mathcal{H}` (carbon intensity :math:`\epsilon_h`):
+The total annual carrier carbon emissions :math:`E^\mathrm{carrier}_y` represent the sum of the carrier carbon emissions :math:`\Epsilon^\mathrm{carrier}_{c,n,t,y}`:
 
 .. math::
-    :label: energy_balance
+    :label: total_carbon_emissions_carrier
+    E^\mathrm{carrier}_y = \sum_{t\in\mathcal{T}} \sum_{n\in\mathcal{N}} \sum_{c\in\mathcal{C}} \left( \Epsilon^\mathrm{carrier}_{c,n,t,y} \tau_t \right).
 
-    E_y = \sum_{t\in\mathcal{T}}\tau_t\Bigg(\sum_{n\in\mathcal{N}}\bigg(\qquad\sum_{c\in\mathcal{C}}\epsilon_c U_{c,n,t,y}+\sum_{i\in\mathcal{I}}\epsilon_i G_{i,n,t,y}^\mathrm{r}+\qquad\sum_{k\in\mathcal{K}}\epsilon_k\left(\overline{H}_{k,n,t,y}+\underline{H}_{k,n,t,y}\right)\bigg) +\sum_{e\in\mathcal{E}}\sum_{j\in\mathcal{J}}\epsilon_j F_{j,e,t,y} \Bigg).
-
-The annual carbon emission limit :math:`e_y` constraints :math:`E_y` in all :math:`y\in\mathcal{Y}`:
-
-.. math::
-    E_y\leq e_y.
-
-Note that :math:`e_y` can be infinite, in which case the constraint is skipped. The cumulative carbon emissions :math:`E_y^\mathrm{c}` are attributed to the end of the current year. For the first planning period :math:`y=y_0`, :math:`E_y^\mathrm{c}` is calculated as:
+The carrier carbon emissions include the operational emissions of importing and exporting carriers :math:`c\in\mathcal{C}` (carbon intensity :math:`\underline{\epsilon_c}` and :math:`\overline{\epsilon_c}`):
 
 .. math::
-    E_y^\mathrm{c} = E_y.
+    :label: carbon_emissions_carrier
+
+    \Epsilon^\mathrm{carrier}_{c,n,t} = \underline{\epsilon_c} U_{c,n,t,y} - \overline{\epsilon_c} V_{c,n,t,y}.
+    
+
+The total annual technology carbon emissions :math:`E^\mathrm{tech}_y` represent the sum of the technology carbon emissions :math:`\Epsilon^\mathrm{tech}_{h,n,t,y}`:
+
+.. math::
+    :label: total_carbon_emissions_technology
+    E^\mathrm{tech}_y = \sum_{t\in\mathcal{T}} \sum_{n\in\mathcal{N}} \sum_{h\in\mathcal{H}} \left( \Epsilon^\mathrm{tech}_{h,n,t,y} \tau_t \right).
+
+The technology carbon emission :math:`\Epsilon^\mathrm{tech}_{h,n,t,y}` include the emissions for operating the technologies :math:`h\in\mathcal{H}` (carbon intensity :math:`\epsilon_h`). For conversion technologies :math:`i\in\mathcal{I}`, the carbon intensity of operating the technology is mutliplied with their reference flows :math:`G_{i,n,t,y}^\mathrm{r}`:
+
+.. math::
+    :label: carbon_emissions_conversion
+    \Epsilon^\mathrm{tech}_{i,n,t,y} =  \epsilon_i G_{i,n,t,y}^\mathrm{r}.
+
+For storage technologies :math:`k\in\mathcal{K}`, the carbon intensity of operating the technology is mutliplied with the storage charge and discharge flows :math:`\overline{H}_{k,n,t,y}` and :math:`\overline{H}_{k,n,t,y}`:
+    
+.. math::
+    :label: carbon_emissions_storage
+    \Epsilon^\mathrm{tech}_{k,n,t,y} =  \epsilon_k \left( \overline{H}_{k,n,t,y}+\underline{H}_{k,n,t,y} \right).
+
+Finally, for transport technologies :math:`j\in\mathcal{J}`, the carbon intensity of operating the technology is mutliplied with their reference flows :math:`F_{j,e,t,y}`:
+
+.. math::
+    :label: carbon_emissions_transport
+    \Epsilon^\mathrm{tech}_{k,n,t,y} = \epsilon_j F_{j,e,t,y}.
+
+The annual carbon emission limit :math:`e_y` constrains :math:`E_y` in all :math:`y\in\mathcal{Y}`:
+
+.. math::
+    :label: carbon_emissions_annual_limit
+    E_y - E_{y}^\mathrm{bo} \leq e_y.
+
+Note that :math:`e_y` can be infinite, in which case the constraint is skipped. 
+:math:`E_{y}^\mathrm{o}` is the carbon emission overshoot and allows exceeding the annual carbon emission limits. Overshooting the annual carbon emission limits is, however, penalized by the annual carbon emission limit overshoot price :math:`\mu_1\mathrm{o}`. 
+
+By setting the annual carbon emission limit overshoot price :math:`\mu_1\mathrm{o}` to infinite, the annual carbon emission targets are strictly enforced and :math:`E_{y}^\mathrm{bo}=0`.
+
+
+The cumulative carbon emissions :math:`E_y^\mathrm{cum}` are attributed to the end of the current year. For the first planning period :math:`y=y_0`, :math:`E_y^\mathrm{cum}` is calculated as:
+
+.. math::
+    :label: carbon_emissions_cum_0
+    E_y^\mathrm{cum} = E_y.
 
 In the subsequent periods :math:`y>y_0`, :math:`E_y^\mathrm{c}` is calculated as:
 
 .. math::
+    :label: carbon_emissions_cum_1
     E_y^\mathrm{c} = E_{y-1}^\mathrm{c} + \left(\Delta^\mathrm{y}-1\right)E_{y-1}+E_y.
 
-:math:`E_y^\mathrm{c}` is constrained by the carbon emission budget :math:`e^\mathrm{b}` at the end of the planning period :math:`y`:
+The cumulative carbon emissions :math:`E_y^\mathrm{c}` are constrained by the carbon emission budget :math:`e^\mathrm{b}`: 
 
 .. math::
     :label: emission_budget
 
-    E_y^\mathrm{c} + \left(\Delta^\mathrm{y}-1\right)E_{y}  - E_{y}^\mathrm{o} \leq e^\mathrm{b}.
+    E_y^\mathrm{cum} + \left(\Delta^\mathrm{y}-1\right)E_{y}  - E_{y}^\mathrm{bo} \leq e^\mathrm{b}.
 
-:math:`E_y^\mathrm{o}` is the cumulative carbon emission overshoot, which allows exceeding the carbon emission budget :math:`e^\mathrm{b}`, however :math:`E_y^\mathrm{o}` is heavily penalized (:eq:`opex_c`).
-Since we only count the last planning period :math:`Y=\max(y)` as a single year (compare :eq:`npc`), :eq:`emission_budget` is simplified for :math:`y=Y` as:
+Note that :math:`e^\mathrm{b}` can be infinite, in which case the constraint is skipped. :math:`E_y^\mathrm{o}` is the cumulative carbon emission overshoot and allows exceeding the carbon emission budget :math:`e^\mathrm{b}`. However, exceeding the carbon emission budget in the last year of the planning horizon :math:`\mathrm{Y}=\max(y)` (i.e., :math:`E_\mathrm{Y}^\mathrm{o}>0`) is penalized with the carbon emissions budget overshoot price :math:`\mu^\mthrm{bo}` in the objective function (:eq:`opex_c`).
 
-.. math::
-    :label: emission_budget_last_year
-
-    E_Y^\mathrm{c} - E_{y}^\mathrm{o} \leq e^\mathrm{b}.
+By setting the carbon emission budget overshoot price to infinite, we enforce that the cumulative carbon emissions stay below the carbon emission budget :math:`e^\mathrm{b}` across all years (`:math:`E_\mathrm{Y}^\mathrm{o}=0`). By setting the carbon emission budget overshoot price to a real number, we allow overshooting a carbon emission budget overshoot throughout the transition, where overshooting the carbon emission budget in the last year is penalized with the carbon emission budget overshoot costs (i.e. `:math:`E_\mathrm{Y}^\mathrm{o} \geq 0`).
 
 .. _operational_constraints:
 Operational constraints
 -----------------------
 
-The imported flow :math:`U_{c,n,t,y}` is constrained by the availability of carrier imports :math:`a_{c,n,t,y}` for all carriers :math:`c\in\mathcal{C}` in all nodes :math:`n\in\mathcal{N}` and time steps :math:`t\in\mathcal{T}`:
+The carrier import :math:`U_{c,n,t,y}` is limited by the carrier import availability :math:`\underline{a}_{c,n,t,y}` for all carriers :math:`c\in\mathcal{C}` in all nodes :math:`n\in\mathcal{N}` and time steps :math:`t\in\mathcal{T}`:
 
 .. math::
-    0 \leq U_{c,n,t,y} \leq a_{c,n,t,y}.
+    :label: carrier_import
+    0 \leq U_{c,n,t,y} \leq \underline{a}_{c,n,t,y}.
+
+In addition, annual import limits can be applied:
+
+.. math::
+    :label: carrier_import_yearly
+    0 \leq \sum_{t\in\mathcal{T}} \tau U_{c,n,t,y} \leq \underline{a}^{Y}_{c,n,t,y}.
+
+Similarly, the carrier export :math:`V_{c,n,t,y}` is limited by the carrier export availability :math:`\overline{a}_{c,n,t,y}` for all carriers :math:`c\in\mathcal{C}` in all nodes :math:`n\in\mathcal{N}` and time steps :math:`t\in\mathcal{T}`:
+
+.. math::
+    :label: carrier_import
+    0 \leq V_{c,n,t,y} \leq \overline{a}_{c,n,t,y}.
+
+In addition, annual export limits can be applied:
+
+.. math::
+    :label: carrier_export_yearly
+    0 \leq \sum_{t\in\mathcal{T}} \tau V_{c,n,t,y} \leq \overline{a}^{Y}_{c,n,t,y}.
+
+.. note:: 
+    You can skip any of the import and export avaialbility constraints by setting the import and export availability to infinity. 
 
 The shed demand :math:`D_{c,n,t,y}` cannot exceed the demand :math:`d_{c,n,t,y}`:
 
 .. math::
     0 \leq D_{c,n,t,y} \leq d_{c,n,t,y}.
 
-The conversion factor :math:`\eta_{i,c,t,y}` is the ratio between the flow of carrier :math:`c\in\mathcal{C}` in conversion technology :math:`i\in\mathcal{I}` and the flow of the reference carrier :math:`G_{i,n,t,y}^\mathrm{r}`. If :math:`c\in\underline{\mathcal{C}}_i`:
+The conversion factor :math:`\eta_{i,c,t,y}` describes the ratio between the carrier flow :math:`c\in\mathcal{C}` and the reference carrier flow :math:`G_{i,n,t,y}^\mathrm{r}` of a conversion technology :math:`i\in\mathcal{I}`. If the carrier flow is an input carrier, i.e. :math:`c\in\underline{\mathcal{C}}_i`:
 
 .. math::
     \eta_{i,c,t,y} = \frac{\underline{G}_{c,i,n,t,y}}{G_{i,n,t,y}^\mathrm{r}}.
 
-If :math:`c\in\overline{\mathcal{C}}_i`:
+If the carrier flow is an output carrier, i.e. :math:`c\in\overline{\mathcal{C}}_i`:
 
 .. math::
     \eta_{i,c,t,y} = \frac{\overline{G}_{c,i,n,t,y}}{G_{i,n,t,y}^\mathrm{r}}.
 
-The losses :math:`F_{j,e,t,y}^\mathrm{l}` through a transport technology :math:`j\in\mathcal{J}` on edge :math:`e\in\mathcal{E}` are the product of the loss coefficient :math:`\rho_j:math:`, the length of the edge :math:`h_{j,e}` and the flow on the edge :math:`F_{j,e,t,y}`:
+#TODO
+The losses :math:`F_{j,e,t,y}^\mathrm{l}` through a transport technology :math:`j\in\mathcal{J}` on edge :math:`e\in\mathcal{E}` can be expressed by a linear function or by an exponential function using . either as the product of the loss coefficient :math:`\rho_j`, the length of the edge :math:`h_{j,e}` and the flow on the edge :math:`F_{j,e,t,y}`:
 
 .. math::
     F_{j,e,t,y}^\mathrm{l} = \rho_j h_{j,e}F_{j,e,t,y}.
