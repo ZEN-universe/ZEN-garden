@@ -55,4 +55,4 @@ gurobipy = ["gurobipy"]
 [project.urls]
 Homepage = "https://github.com/ZEN-universe/ZEN-garden"
 Documentation = "https://zen-garden.readthedocs.io/en/latest/"
-Zenodo = "https://zenodo.org/api/records/13385111"
+Zenodo = "https://zenodo.org/api/records/13385110"
