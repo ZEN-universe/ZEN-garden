@@ -374,3 +374,110 @@ The ``pint`` package that we use for the unit handling has amazing functionaliti
 .. _Scaling:
 Scaling
 =============
+
+What is scaling and when to use it?
+-----------------------------------
+Simply put, with scaling we aim at enhancing the numeric properties of a given optimization problem, such that solvers can solve it more efficiently and faster. It is generally recommended to include scaling, if the optimization problem at hand faces numerical issues or requires a long time to solve.
+Scaling is done by transforming the coefficients of the decision variables in both constraints and objective function to a similar order of magnitude.
+In more mathematical terms, consider an optimization problem of the form:
+
+.. math::
+
+    \text{minimize} \quad & c^T x \\
+    \text{subject to} \quad & Ax \leq b \\
+
+Where :math:`x \in \mathbb{R}^n` is the vector of decision variables, :math:`A \in \mathbb{R}^{m \times n}` is the constraint matrix, :math:`b \in \mathbb{R}^m` is the right-hand side vector and :math:`c \in \mathbb{R}^n` is the cost vector. Note, that in ZEN-garden the constraints and optimization problem formulation can be generally of any form, however, for simpler notation we consider here the above form.
+If we now choose appropriate positive values for the column scaling vector :math:`s = [s_1, s_2, ..., s_n]` and row scaling vector :math:`r = [r_1, r_2, ..., r_m]`, we can scale the optimization problem with the two diagonal matrices :math:`S = diag(s)` and :math:`R = diag(r)`, such that the scaled optimization problem is:
+
+.. math::
+
+    \text{minimize} \quad & c^T S x \\
+    \text{subject to} \quad & R A S x \leq R b
+
+If done successfully the scaled optimization problem has beneficial numeric properties such that it is less computational expensive to solve
+compared to the original formulation. Note that the objective value remains the same and that the problem's solution is rescaled automatically
+within ZEN-garden so that also the decision variables are in the original scale.
+
+Scaling Algorithms
+------------------
+In ZEN-garden we provide 3 different scaling algorithms, from which the row and column scaling vector entries are determined:
+
+1. (Approximated) Geometric Mean (``"geom"``)
+2. Arithmetic Mean (``"arithm"``)
+3. Infinity Norm (``"infnorm"``)
+
+The approximated geometric mean is the root of the product of the maximum and minimum absolute values of the respective row or column.
+The arithmetic mean is derived over all absolute values of the respective row or column.
+The infinity norm is the maximum absolute value of the respective row or column.
+For a more detailed explanation of each algorithm please see the paper from Elble and Sahinidis (2012) (https://rdcu.be/dStfc).
+
+**Combination of Scaling Algorithms**
+
+While the scaling algorithms can be used individually,
+they can also be combined. In this case, over multiple iterations you can apply a sequence of different scaling algorithms. See :ref: `How to use scaling in ZEN-garden?` for more information.
+
+**Right-Hand Side Scaling**
+
+Furthermore, for all of the above mentioned algorithms, also the right-hand side vector :math:`b` can be included in the scaling process.
+If included, the chosen algorithm determines the row scaling vector entry for a specific row :math:`ì` over all entries of that row in the constraint matrix :math:`A_{i*}` while also considering the respective right-hand side entry :math:`b_i`.
+
+How to use scaling in ZEN-garden?
+---------------------------------
+As described in, :ref:`Configurations` in the :ref:`Solver` section, the scaling can be activated by adjusting the
+``analysis.json`` file. The scaling configuration can be chosen through the following three settings:
+
+1. ``use_scaling``: Boolean, whether scaling should be used or not.
+2. ``scaling_algorithm``: List of strings, the scaling algorithms to be used. Possible entries are: ``"geom"``, ``"arithm"``, ``"infnorm"``. The length of the list determines the number of iterations.
+3. ``include_rhs``: Boolean, whether the right-hand side vector should be included for determining the row scaling vector or not.
+
+For example, the following configuration would use a combination of two iterations of the geometric mean scaling followed by one iteration of the infinity norm algorithm as well as taking into account the right-hand side vector:
+
+.. code-block::
+
+  "solver": {
+    "use_scaling": true,
+    "scaling_algorithm": ["geom", "geom","infnorm"],
+    "scaling_include_rhs": true
+  }
+
+The default configuration are three iterations of the geometric mean scaling algorithm without including the values of the right-hand-side.
+
+Recommendations for using scaling
+-------------------------------
+Here are some recommendations on what configuration to use and when and when not to use scaling. These rules were derived from the results of benchmarking the scaling procedure on different optimization problems as shown :ref:`Results of benchmarking`.
+Please note that these recommendations are general and are likely to not apply to all optimization problems. They rather serve as a starting configuration
+which then can be adjusted based on the problem at hand via for example trial and error.
+
+**Which algorithm to choose and how many iterations?**
+
+The benchmarking indicated a convergence of the numerical range of the scaled optimization problem
+mostly after the third iteration. Therefore, it is recommended to use at least three iterations of the scaling algorithm.
+The geometric mean scaling algorithm and the combination of geometric mean followed by infinity norm scaling showed the
+overall best performance across the considered optimization problems. Therefore, it is recommended to use one of the following configurations:
+
+* ``scaling_algorithm``: ``["geom", "geom", "geom"]``
+* ``scaling_algorithm``: ``["geom", "geom", "infnorm"]``
+
+**When to include the right-hand side vector?**
+
+The benchmarking showed that including the right-hand side vector in the scaling process leads to a better performance of the solver for almost all optimization problems considered.
+Therefore, it is recommended to include the right-hand side vector in the scaling process by setting ``scaling_include_rhs``: ``True``.
+
+**When to not use scaling?**
+
+If the optimization problem already has a good numerical range (which can be checked with ``solver["analyze_numerics"] = True``), scaling might not be necessary. Also if the optimization problem already solves fast, the time necessary for scaling the problem might
+outweigh the time savings from solving the scaled optimization problem. As a rule of thumb, if the time to solve the optimization problem is in similar order of magnitude as the time to scale the problem, scaling should not be applied. The time necessary for scaling can be checked in the output of the optimization problem, if
+scaling is applied.
+
+**How to deal with other complementary solver settings?**
+
+Some solvers might also have their own scaling algorithms or other algorithms to improve the numerical properties of the optimization problem. In our benchmarking, we examined the interaction of the respective functionalities of Gurobi and scaling in ZEN-garden.
+Gurobi has the two options ``ScaleFlag`` and ``NumericFocus`` that aim at improving numerical properties. The following recommendations can be given based on the results of the benchmarking:
+
+* ``NumericFocus`` should be set to its default value ``0``.
+* ``ScaleFlag`` should be set to ``0`` (off) as the scaling in ZEN-garden already takes care of scaling the optimization problem and scaling the problem twice led on average to longer solving times. However, this varied across the optimization problems and therefore this again serves more as a default value to start with and should be tested for the specific problem at hand.
+
+For similar functionalities in other solvers, it is recommended to test the interaction of the respective functionalities with the scaling in ZEN-garden via trial and error.
+
+Results of benchmarking
+-----------------------
