@@ -20,6 +20,20 @@ If you installed ZEN-garden from the repository, per default, the environment wi
 
   conda activate zen-garden
 
+Running an example model
+------------------------
+To run one of the already-built example models (see `Dataset Examples <dataset_examples.rst>`_), execute the following line::
+
+    python -m zen_garden --example=<dataset_example_name>
+
+This will download the selected example in the folder ``dataset_examples``, and run the optimization. The optimization results will be stored in ``dataset_examples/outputs``, and can be read with the ``TODO`` Jupyter notebook file (see more at `Analyzing a model <analyzing_models.rst>`_).
+
+.. note::
+    Dataset example are an easy and quick way to get started with your model.
+    Find an example that best suits your need and use it as a template to build your own model.
+
+Running your model
+-----------------
 Make sure to change your path to the working directory, i.e. the directory that contains the ``config.json``. This directory will also be used to save the results::
 
   cd /path/to/your/data
@@ -57,8 +71,9 @@ This procedure downloads the example dataset folder and the ``config.json`` file
 
 This command is particularly useful when you installed ZEN-garden from pip and do not have the repository on your local machine.
 
+
 PyCharm configurations (only for ZEN-garden fork)
-==============
+=======
 
 To execute ZEN-garden with the PyCharm IDE you can use the configuration setup which can be found next to the run button, and click on "Edit configurations.." to edit or add a configuration.
 
