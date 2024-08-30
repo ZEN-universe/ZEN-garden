@@ -59,7 +59,7 @@ def copy_dataset_example(example):
     import io
     url = metadata("zen_garden").get_all("Project-URL")
     url = [u.split(", ")[1] for u in url if u.split(", ")[0] == "Zenodo"][0]
-    zenodo_meta = requests.get(url)
+    zenodo_meta = requests.get(url,allow_redirects=True)
     zenodo_meta.raise_for_status()
     zenodo_data = zenodo_meta.json()
     zenodo_zip_url = zenodo_data["files"][0]["links"]["self"]
@@ -96,17 +96,14 @@ def copy_dataset_example(example):
             config_found = True
         elif file.filename == notebook_path:
             notebook_path_local = os.path.join(local_dataset_path, "example_notebook.ipynb")
-            if not os.path.exists(notebook_path_local):
-                notebook_path_remote = os.path.join(os.getcwd(), "example_notebook.ipynb")
-                with open(notebook_path_remote, "rb") as f:
-                    notebook = json.load(f)
-                for cell in notebook['cells']:
-                    if cell['cell_type'] == 'code':  # Check only code cells
-                        for i, line in enumerate(cell['source']):
-                            if "<dataset_name>" in line:
-                                cell['source'][i] = line.replace("<dataset_name>", example)
-                with open(os.path.join(local_dataset_path, "example_notebook.ipynb"), "w") as f:
-                    json.dump(notebook, f)
+            notebook = json.loads(zenodo_zip.read(file))
+            for cell in notebook['cells']:
+                if cell['cell_type'] == 'code':  # Check only code cells
+                    for i, line in enumerate(cell['source']):
+                        if "<dataset_name>" in line:
+                            cell['source'][i] = line.replace("<dataset_name>", example)
+            with open(notebook_path_local, "w") as f:
+                json.dump(notebook, f)
             notebook_found = True
     assert example_found, f"Example {example} could not be downloaded from the dataset examples!"
     assert config_found, f"Config.json file could not be downloaded from the dataset examples!"
