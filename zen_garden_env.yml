@@ -16,6 +16,7 @@ dependencies:
   - pytables
   - pydantic
   - requests
+  - ipykernel
   - pip:
       - tsam
       - h5py
