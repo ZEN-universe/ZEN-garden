@@ -114,13 +114,12 @@ The fixed technology operational expenditures :math:`OPEX_y^\mathrm{f}` are the 
     :label: opex_f
     OPEX_y^\mathrm{f} = \sum_{h\in\mathcal{H}}\sum_{p\in\mathcal{P}}\gamma_{h,y}S_{h,p,y}+\sum_{k\in\mathcal{K}}\sum_{n\in\mathcal{N}}\gamma^\mathrm{e}_{k,y}S^\mathrm{e}_{k,n,y}.
 
-The variable technology operational expenditures `OPEX_y^\mathrm{t,v}` are the sum of the variable operational expenditures for each technology over the entire year, where each timestep is multiplied by the time step duration :math:`\tau_t`:
+The variable technology operational expenditures :math:`OPEX_y^\mathrm{t,v}` are the sum of the variable operational expenditures for each technology over the entire year, where each timestep is multiplied by the time step duration :math:`\tau_t`:
 
 .. math::
     :label: opex_v
 
-    OPEX_y^\mathrm{t,v} = \sum_{t\in\mathcal{T}}\tau_t\bigg(\sum_{h\in\mathcal{H}} \sum_{s\in\mathcal{S}} \sum_{p\in\mathcal{P}}
-    O^\mathrm{t}_{h,s,p,t,y} \right)\bigg).
+    OPEX_y^\mathrm{t,v} = \sum_{t\in\mathcal{T}}\tau_t \bigg(\sum_{h\in\mathcal{H}} \sum_{s\in\mathcal{S}} \sum_{p\in\mathcal{P}} O^\mathrm{t}_{h,s,p,t,y} \bigg).
 
 For conversion technologies :math:`i \in \mathcal{I}`, the variable operational expenditure are the product of the specific variable operational expenditure :math:`\beta_{h,y}` and the reference flows :math:`G_{i,n,t,y}^\mathrm{r}`:
 
