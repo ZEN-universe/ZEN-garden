@@ -102,7 +102,7 @@ The capital expenditures for transport technologies are as follows:
 
 **Operational expenditures technology**
 
-The annual operational expenditure for technology operation :math:`OPEX_y^\mathrm{t}` includes the variable operational costs of the technologies :math:`OPEX_y^\mathrm{t,v}` and the fixed operational costs of the technologies `OPEX_y^\mathrm{t,f}`.
+The annual operational expenditure for technology operation :math:`OPEX_y^\mathrm{t}` includes the variable operational costs of the technologies :math:`OPEX_y^\mathrm{t,v}` and the fixed operational costs of the technologies :math:`OPEX_y^\mathrm{t,f}`.
 
 .. math::
     :label: opex_t
@@ -142,7 +142,7 @@ Finally, for storage technologies :math:`k \in \mathcal{K}`, the variable operat
 
     O^\mathrm{t}_{k,s,\mathrm{power},t,y} = \beta_{k,y} \left(\underline{H}_{k,n,t,y} + \overline{H}_{k,n,t,y}\right)
 
-*Operational expenditures carrier*
+**Operational expenditures carrier**
 
 The operational carrier cost :math:`OPEX_y^\mathrm{c}` are the sum of the node- and time dependent carrier cost :math:`O^c_{c,n,t,y}` across all carriers multiplied by the time step duration :math:`\tau_t`: 
 
@@ -246,42 +246,42 @@ The shed demand :math:`D_{c,n,t,y}` cannot exceed the demand :math:`d_{c,n,t,y}`
 Emissions constraints
 -----------------------
 
-The total annual carrier carbon emissions :math:`E^\mathrm{carrier}_y` represent the sum of the carrier carbon emissions :math:`\Epsilon^\mathrm{carrier}_{c,n,t,y}`:
+The total annual carrier carbon emissions :math:`E^\mathrm{carrier}_y` represent the sum of the carrier carbon emissions :math:`\theta^\mathrm{carrier}_{c,n,t,y}`:
 
 .. math::
     :label: total_carbon_emissions_carrier
-    E^\mathrm{carrier}_y = \sum_{t\in\mathcal{T}} \sum_{n\in\mathcal{N}} \sum_{c\in\mathcal{C}} \left( \Epsilon^\mathrm{carrier}_{c,n,t,y} \tau_t \right).
+    E^\mathrm{carrier}_y = \sum_{t\in\mathcal{T}} \sum_{n\in\mathcal{N}} \sum_{c\in\mathcal{C}} \left( \theta^\mathrm{carrier}_{c,n,t,y} \tau_t \right).
 
 The carrier carbon emissions include the operational emissions of importing and exporting carriers :math:`c\in\mathcal{C}` (carbon intensity :math:`\underline{\epsilon_c}` and :math:`\overline{\epsilon_c}`):
 
 .. math::
     :label: carbon_emissions_carrier
 
-    \Epsilon^\mathrm{carrier}_{c,n,t} = \underline{\epsilon_c} U_{c,n,t,y} - \overline{\epsilon_c} V_{c,n,t,y}.
+    \theta^\mathrm{carrier}_{c,n,t} = \underline{\epsilon_c} U_{c,n,t,y} - \overline{\epsilon_c} V_{c,n,t,y}.
     
-The total annual technology carbon emissions :math:`E^\mathrm{tech}_y` represent the sum of the technology carbon emissions :math:`\Epsilon^\mathrm{tech}_{h,n,t,y}`:
+The total annual technology carbon emissions :math:`E^\mathrm{tech}_y` represent the sum of the technology carbon emissions :math:`\theta^\mathrm{tech}_{h,n,t,y}`:
 
 .. math::
     :label: total_carbon_emissions_technology
-    E^\mathrm{tech}_y = \sum_{t\in\mathcal{T}} \sum_{n\in\mathcal{N}} \sum_{h\in\mathcal{H}} \left( \Epsilon^\mathrm{tech}_{h,n,t,y} \tau_t \right).
+    E^\mathrm{tech}_y = \sum_{t\in\mathcal{T}} \sum_{n\in\mathcal{N}} \sum_{h\in\mathcal{H}} \left( \theta^\mathrm{tech}_{h,n,t,y} \tau_t \right).
 
-The technology carbon emission :math:`\Epsilon^\mathrm{tech}_{h,n,t,y}` include the emissions for operating the technologies :math:`h\in\mathcal{H}` (carbon intensity :math:`\epsilon_h`). For conversion technologies :math:`i\in\mathcal{I}`, the carbon intensity of operating the technology is mutliplied with their reference flows :math:`G_{i,n,t,y}^\mathrm{r}`:
+The technology carbon emission :math:`\theta^\mathrm{tech}_{h,n,t,y}` include the emissions for operating the technologies :math:`h\in\mathcal{H}` (carbon intensity :math:`\epsilon_h`). For conversion technologies :math:`i\in\mathcal{I}`, the carbon intensity of operating the technology is mutliplied with their reference flows :math:`G_{i,n,t,y}^\mathrm{r}`:
 
 .. math::
     :label: carbon_emissions_conversion
-    \Epsilon^\mathrm{tech}_{i,n,t,y} =  \epsilon_i G_{i,n,t,y}^\mathrm{r}.
+    \theta^\mathrm{tech}_{i,n,t,y} =  \epsilon_i G_{i,n,t,y}^\mathrm{r}.
 
 For storage technologies :math:`k\in\mathcal{K}`, the carbon intensity of operating the technology is mutliplied with the storage charge and discharge flows :math:`\overline{H}_{k,n,t,y}` and :math:`\overline{H}_{k,n,t,y}`:
     
 .. math::
     :label: carbon_emissions_storage
-    \Epsilon^\mathrm{tech}_{k,n,t,y} =  \epsilon_k \left( \overline{H}_{k,n,t,y}+\underline{H}_{k,n,t,y} \right).
+    \theta^\mathrm{tech}_{k,n,t,y} =  \epsilon_k \left( \overline{H}_{k,n,t,y}+\underline{H}_{k,n,t,y} \right).
 
 Finally, for transport technologies :math:`j\in\mathcal{J}`, the carbon intensity of operating the technology is mutliplied with their reference flows :math:`F_{j,e,t,y}`:
 
 .. math::
     :label: carbon_emissions_transport
-    \Epsilon^\mathrm{tech}_{k,n,t,y} = \epsilon_j F_{j,e,t,y}.
+    \theta^\mathrm{tech}_{k,n,t,y} = \epsilon_j F_{j,e,t,y}.
 
 The annual carbon emission limit :math:`e_y` constrains :math:`E_y` in all :math:`y\in\mathcal{Y}`:
 
