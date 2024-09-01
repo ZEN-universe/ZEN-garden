@@ -481,3 +481,51 @@ For similar functionalities in other solvers, it is recommended to test the inte
 
 Results of benchmarking
 -----------------------
+The scaling functionality was benchmarked by running the following set of models with various scaling configurations:
+
+The following sections will display the results of the benchmarking analysis and should
+help as an orientation and motivation to use scaling for your own model.
+
+**Numerical Range vs. Number of Iterations**
+
+As argued in :ref:`Recommendations for using scaling` the numerical range showed convergence
+in most cases after just three iterations. The following results of running the scaling algorithms geometric mean (``geom``) and arithmetic mean (``arithm``)
+for the model ``PI_small`` for different number of iterations, portrays this result:
+
+.. image:: ../images/PI_small.png
+    :alt: Numerical range vs. number of scaling iterations
+
+The dots indicate the left-hand side (LHS) range, which corresponds to the range of the A-matrix :math:`A`, whereas the crosses represent
+the numerical range of the right-hand side (RHS) vector :math:`b`. The light colors indicate the respective scaling settings without including the right-hand side
+in the derivation of the row scaling vector.
+
+From the plot we can observe:
+
+* convergence of the numerical range (of the LHS) is visible for both algorithms after three iterations
+* a trade-off between a lower LHS range and also decreasing the RHS range may exist, which is visible in case of arithmetic mean scaling
+* neglecting the RHS may lead to a significant increase its numerical range, which is visible for both scaling algorithms (as shown in :ref:`Regression Analysis` this also leads on average to longer solving times)
+
+**Net-solving time comparison for multiple scaling configurations**
+
+**Regression Analysis**
+
+Based on the collected data from the benchmarking runs for the models ``PI_small``, ``WES_nofe``, ``WES_nofe_PI``, and ``WES_nofe_PC``, a regression is run with the net-solving time (solving time + scaling time) as
+the dependent variable. The explanatory variables are the models, the ``use_scaling`` boolean, the ``include_rhs`` boolean, the ``NumericFcous`` (:math:`0` or :math:`1`) setting of gurobi as well as an interaction term between ZEN-garden scaling and gurobi's ``ScaleFlag''.
+The results of the regression analysis are the following:
+
+.. image:: ../images/Regression_results.png
+    :alt: Regression results
+
+The key takeaways from the regression analysis are:
+
+* including ZEN-garden scaling decreases the net-solving time significantly
+* including the RHS for the derivation of the row scaling vectors decreases the net-solving time significantly
+* choosing a low ``NumericFocus`` instead of the automatic one, increases the net-solving time significantly
+* double scaling, which means scaling both in ZEN-garden as well as within the solver (here gurobi), seems to increase the net-solving time significantly
+
+Please note, that these results can not be generalized. They only represent the average effect observed for the models considered here and might vary from case to case.
+
+
+
+
+
