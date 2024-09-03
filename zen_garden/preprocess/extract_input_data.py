@@ -342,9 +342,9 @@ class DataInput:
                     self.system["set_nodes"] = set_nodes_input
                     set_nodes_config = set_nodes_input
                 else:
-                    assert len(set_nodes_config) > 1, f"ZENx is a spatially distributed model. Please specify at least 2 nodes."
-                    _missing_nodes = list(set(set_nodes_config).difference(set_nodes_input))
-                    assert len(_missing_nodes) == 0, f"The nodes {_missing_nodes} were declared in the config but do not exist in the input file {self.folder_path + 'set_nodes'}"
+                    # assert len(set_nodes_config) > 1, f"ZEN-garden is a spatially distributed model. Please specify at least 2 nodes."
+                    missing_nodes = list(set(set_nodes_config).difference(set_nodes_input))
+                    assert len(missing_nodes) == 0, f"The nodes {missing_nodes} were declared in the config but do not exist in the input file {self.folder_path + 'set_nodes'}"
                 if not isinstance(set_nodes_config, list):
                     set_nodes_config = set_nodes_config.to_list()
                 set_nodes_config.sort()
@@ -691,8 +691,7 @@ class DataInput:
             # check if input data is still given with generic time indices
             temporal_header = self.index_names["set_time_steps_yearly"]
             if max(df_input.loc[:, temporal_header]) < self.analysis["earliest_year_of_data"]:
-                logging.warning(
-                    f"DeprecationWarning: Generic time indices (used in {file_name}) will not be supported for input data with yearly time steps any longer! Use the corresponding years (e.g. 2022,2023,...) as time indices instead")
+                logging.warning(f"DeprecationWarning: Generic time indices (used in {file_name}) will not be supported for input data with yearly time steps any longer! Use the corresponding years (e.g. 2022,2023,...) as time indices instead")
                 return df_input
             # assert that correct temporal index_set to get corresponding index_name is given (i.e. set_time_steps_yearly for input data with yearly time steps)(otherwise extract_general_input_data() will find a missing_index)
             assert temporal_header in index_name_list, f"Input data with yearly time steps and therefore the temporal header 'year' needs to be extracted with index_sets=['set_time_steps_yearly'] instead of index_sets=['set_time_steps']"

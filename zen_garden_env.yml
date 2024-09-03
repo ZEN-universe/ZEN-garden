@@ -11,12 +11,12 @@ dependencies:
   - pandas
   - scipy
   - coverage
-  - glpk
   - pint
-  - matplotlib
   - gurobi
   - pytables
   - pydantic
+  - requests
+  - ipykernel
   - pip:
       - tsam
       - h5py

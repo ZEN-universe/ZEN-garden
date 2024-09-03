@@ -1,11 +1,7 @@
 .. _optimization_problem
 ################
-Optimization problem
+Sets, parameters, variables, and constraints
 ################
-
-.. _optimization_setup:
-Optimization Setup
-==================
 
 .. _energy_system:
 Energy System
@@ -14,19 +10,25 @@ Energy System
 .. csv-table:: Objective Functions
     :header-rows: 1
     :file: tables/objectives.csv
-    :widths: 10 20
+    :widths: 10 20 10
+    :delim: ;
+
+.. csv-table:: Energy System Sets
+    :header-rows: 1
+    :file: tables/sets/energy_system_sets.csv
+    :widths: 10 10 10 20
     :delim: ;
 
 .. csv-table:: Energy System Parameters
     :header-rows: 1
     :file: tables/parameters/energy_system_parameters.csv
-    :widths: 10 10 20 10
+    :widths: 10 10 10 20 10
     :delim: ;
 
 .. csv-table:: Energy System Variables
     :header-rows: 1
     :file: tables/variables/energy_system_variables.csv
-    :widths: 10 10 30 10
+    :widths: 10 10 10 30 10
     :delim: ;
 
 .. csv-table:: Energy System Constraints
@@ -61,6 +63,12 @@ Carrier
 Technology
 ==================
 
+.. csv-table:: Technology Sets
+    :header-rows: 1
+    :file: tables/sets/technology_sets.csv
+    :widths: 10 10 20
+    :delim: ;
+
 .. csv-table:: Technology Parameters
     :header-rows: 1
     :file: tables/parameters/technology_parameters.csv
@@ -83,6 +91,12 @@ Technology
 Conversion Technology
 ----------------------
 
+.. csv-table:: Conversion Technology Sets
+    :header-rows: 1
+    :file: tables/sets/conversion_technology_sets.csv
+    :widths: 10 10 20
+    :delim: ;
+
 .. csv-table:: Conversion Technology Parameters
     :header-rows: 1
     :file: tables/parameters/conversion_technology_parameters.csv
@@ -102,6 +116,12 @@ Conversion Technology
     :delim: ;
 
 *Retrofitting Technology**
+
+.. csv-table:: Retrofitting Technology Sets
+    :header-rows: 1
+    :file: tables/sets/retrofitting_technology_sets.csv
+    :widths: 10 10 20
+    :delim: ;
 
 .. csv-table:: Retrofitting Technology Parameters
     :header-rows: 1

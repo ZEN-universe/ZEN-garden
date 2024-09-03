@@ -3,17 +3,34 @@
 Installation
 ################
 
-ZEN-garden is written in Python and is available as a package. 
+ZEN-garden is written in Python and is available as a package. You can either install it via pip or fork and clone the repository from GitHub.
+We recommend the first option for users who want to use ZEN-garden as a black-box optimization tool. The second option is for developers who want to contribute to the codebase.
 
+.. _For users:
+For users (direct installation)
+=========
+If you want to use ZEN-garden as a black-box optimization tool, you can install the package via `pip <https://pypi.org/project/zen-garden/>`_:
 
-Installing python
+.. code-block:: bash
+
+    pip install zen-garden
+
+.. note::
+    We recommend working from a conda environment for the installation. You can quickly create an environment with the following command::
+
+      conda create -n <your_env_name> python=<python_version>
+
+    Replace ``<your_env_name>`` with the name of your environment and check the necessary python version in the `ZEN-garden README <https://github.com/ZEN-universe/ZEN-garden/blob/main/README.md>`_.
+
+To get started with small example models, check out :ref:`Run ZEN-garden with preexisting datasets`.
+
+.. _For developers:
+For developers (forking the repository)
 ==============
-
-If it is your first time using Python, we recommend using `conda <https://docs.conda.io/en/latest/miniconda.html>`_ as the package manager and setting up ZEN-garden as a conda environment (see below). Furthermore, it is helpful to install an integrated development environment (IDE), such as `PyCharm <https://www.jetbrains.com/pycharm/download/>`_. Most users of ZEN-garden use PyCharm, but other IDEs such as `VS Code <https://code.visualstudio.com/>`_ work as well.
-
+If you want to work on the codebase, you can fork and clone the repository from `GitHub <https://github.com/ZEN-universe/ZEN-garden>`_.
 
 Installing ZEN-garden 
-==============
+---------------------
 
 If it's your first time using GitHub, register at `<https://github.com/>`_. Login to Github and create a fork of the ZEN-garden repository. 
 
@@ -32,7 +49,7 @@ Clone your forked repository by running the following lines in `Git-Bash <https:
 Substitute ``<your-username>`` with your Github username. If you gave the forked repository a different name, replace ``ZEN-garden`` with the name of your repository.
 
 .. note::
-    If you get the permissions error "Permission denied (publickey)", you will need to create the SSH key. Follow the instructions on `how to generate an SSH key <https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent#generating-a-new-ssh-key>`_ and then how to add it to your account. You will not need to add the SSH key to the Agent, so only follow the first website until before `Adding your SSH key to the ssh-agent <https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent#adding-your-ssh-key-to-the-ssh-agent>`_
+    If you get the permissions error "Permission denied (publickey)", you will need to create the SSH key. Follow the instructions on `how to generate an SSH key <https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent#generating-a-new-ssh-key>`_ and then `how to add it to your account <https://docs.github.com/en/authentication/connecting-to-github-with-ssh/adding-a-new-ssh-key-to-your-github-account#adding-a-new-ssh-key-to-your-account>`_. You will not need to add the SSH key to the Agent, so only follow the first website until before `Adding your SSH key to the ssh-agent <https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent#adding-your-ssh-key-to-the-ssh-agent>`_
 
 **Track the upstream repository:**
 
