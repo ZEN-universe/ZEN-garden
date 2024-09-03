@@ -7,7 +7,7 @@ dependencies:
   - xarray
   - pytest
   - pip
-  - numpy
+  - numpy<=1.26.4
   - pandas
   - scipy
   - coverage
