@@ -11,6 +11,9 @@ class ComponentType(Enum):
     dual: str = "dual"
     sets: str = "sets"
 
+    @classmethod
+    def get_component_type_names(cls):
+        return [component_type.value for component_type in cls]
 
 class TimestepType(Enum):
     yearly: str = "year"

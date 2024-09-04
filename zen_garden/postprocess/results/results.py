@@ -663,6 +663,14 @@ class Results:
 
         return ans
 
+    def get_component_names(self, component_type:str) -> list[str]:
+        """ Returns the names of all components of a given type
+
+        :param component_type: Type of the component
+        :return: List of component names
+        """
+        assert component_type in ComponentType.get_component_type_names(), f"Invalid component type: {component_type}. Valid types are: {ComponentType.get_component_type_names()}"
+        return [component for component in self.solution_loader.components if self.solution_loader.components[component].component_type.name == component_type]
 
 if __name__ == "__main__":
     try:
