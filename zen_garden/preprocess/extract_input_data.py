@@ -342,12 +342,13 @@ class DataInput:
                     self.system["set_nodes"] = set_nodes_input
                     set_nodes_config = set_nodes_input
                 else:
-                    # assert len(set_nodes_config) > 1, f"ZEN-garden is a spatially distributed model. Please specify at least 2 nodes."
                     missing_nodes = list(set(set_nodes_config).difference(set_nodes_input))
                     assert len(missing_nodes) == 0, f"The nodes {missing_nodes} were declared in the config but do not exist in the input file {self.folder_path + 'set_nodes'}"
                 if not isinstance(set_nodes_config, list):
                     set_nodes_config = set_nodes_config.to_list()
                 set_nodes_config.sort()
+                # assert that no transport technology is selected if only one node is given
+                assert len(set_nodes_config) > 1 or len(self.system["set_transport_technologies"]) == 0, f"Only one node is given in the system file. Transport technologies are not allowed in this case. You selected {self.system['set_transport_technologies']}"
                 return set_nodes_config
         else:
             set_edges_input = self.read_input_csv("set_edges")

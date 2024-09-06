@@ -7,7 +7,7 @@ dependencies:
   - xarray
   - pytest
   - pip
-  - numpy
+  - numpy<=1.26.4
   - pandas
   - scipy
   - coverage
@@ -27,6 +27,12 @@ dependencies:
       - linopy<=0.3.10
       - sphinx
       - myst-parser
+      - uvicorn
+      - fastapi
+      - fastapi-cache2
+      - python-dotenv
+      - sqlmodel
+      - python-multipart
       - -e .
 
 # conda env create -f zen_garden_env.yml
