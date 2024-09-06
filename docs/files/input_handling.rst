@@ -483,8 +483,14 @@ Results of benchmarking
 -----------------------
 The scaling functionality was benchmarked by running the following set of models with various scaling configurations:
 
-The following sections will display the results of the benchmarking analysis and should
-help as an orientation and motivation to use scaling for your own model.
+.. csv-table:: Models used for benchmarking
+    :header-rows: 1
+    :file: tables/benchmarking_model.csv
+    :widths: 10 20 10 10 10 10
+    :delim: ;
+
+Overall, fur the purpose of benchmarking over all models a total number of 3250 runs were collected.
+The following sections will display the results of the benchmarking analysis and should provide insights about the effectiveness and functionality of the scaling algorithm.
 
 **Numerical Range vs. Number of Iterations**
 
@@ -496,7 +502,7 @@ for the model ``PI_small`` for different number of iterations, portrays this res
     :alt: Numerical range vs. number of scaling iterations
 
 The dots indicate the left-hand side (LHS) range, which corresponds to the range of the A-matrix :math:`A`, whereas the crosses represent
-the numerical range of the right-hand side (RHS) vector :math:`b`. The light colors indicate the respective scaling settings without including the right-hand side
+the numerical range of the right-hand side (RHS) vector :math:`b`. Light colors indicate the respective scaling configurations that exclude the right-hand side
 in the derivation of the row scaling vector.
 
 From the plot we can observe:
@@ -507,10 +513,52 @@ From the plot we can observe:
 
 **Net-solving time comparison for multiple scaling configurations**
 
+The following plots show the net-solving time (solving time + scaling time) for the models ``PI_small`` and ``NoErr``. These models were chosen as they represent very different results in terms
+of effectiveness of scaling. The model ``PI_small`` showed mostly a significant decrease in net-solving time when scaling was applied, whereas the model ``NoErr`` showed no significant effect of scaling on the net-solving time or even worse an
+increase in solving-time.
+
+Note, that the notation used for the ticks on the x-axis follows the pattern ``<scaling_algorithm>_<number of iterations>_<include_rhs>``.
+For example, ``geom_3_rhs`` indicates the geometric mean scaling algorithm with three iterations and including the right-hand side vector for deriving the row scaling vector.
+A combination of ``geom`` and ``infnorm``, where geometric mean scaling is followed by infinity norm scaling, is indicated by ``geom_infnorm``.
+
+1. ``PI_small``
+
+.. image:: ../images/PI_small_net_solving_time_plot_violin.png
+    :alt: Net-solving time comparison for PI_small
+
+Note that the ``Base Case`` refers to a configuration where gurobi scaling with a ``NumericFocus`` of ``0`` is applied, but no scaling in ZEN-garden. Since for this model all scaling configurations that use ZEN-garden are run with a fixed ``NumericFocus`` of ``1`` (corresponding to low numeric focus)
+, we also included a ``Base Case`` configuration with a ``NumericFocus`` of ``1`` for comparison. The red dotted line indicates the arithmetic mean of the net-solving time for the base case configuration.
+
+The plot shows:
+
+* a significant decrease in net-solving time for the model ``PI_small`` for a majority of the considered algorithms when ZEN-garden scaling is applied
+* on average configurations that include the right-hand side vector for deriving the row scaling vector indicate a better performance
+* solving times are very inconsistent leading to large variances in the net-solving time for each scaling configuration
+
+2. ``NoErr``
+
+.. image:: ../images/NoErr_errorbar_plot.png
+    :alt: Net-solving time comparison for NoErr
+
+In the analysis of the model ``NoErr`` we set special focus on the interaction and compatibility of ZEN-garden scaling with the numeric settings of gurobi. For this we
+included for each algorithm four configurations with different combinations of ZEN-garden scaling and gurobi's ``ScaleFlag`` and ``NumericFocus``. A ``ScaleFlag`` of ``2`` indicates that gurobi scaling is turned on
+and thus double scaling (ZEN-garden and gurobi) is applied. A ``NumericFocus`` of ``0`` indicates an automatic numeric focus, whereas a ``NumericFocus`` of ``3`` indicates high numeric focus. Again, the base cases correspond to no ZEN-garden scaling.
+
+From the plot we can derive:
+
+* no scaling (neither ZEN-garden nor gurobi) can also lead to the best performance (as indicated by ``Base Case (No Scaling)``)
+* double scaling (ZEN-garden and gurobi scaling) does not seem to be beneficial and rather increases the net-solving time
+* setting a high numeric focus increases the net-solving time significantly for all scaling configurations
+* only for a very few algorithms net-solving time is decreased when ZEN-garden scaling is applied and only for an automatic numeric focus and no gurobi scaling
+
+The two examples shown here, again indicate that deriving a general recommendation for the scaling configuration is difficult and that the performance of the scaling algorithm is highly dependent on the optimization problem at hand.
+Therefore, we recommended to test different scaling algorithms and configurations via trial and error.
+
+
 **Regression Analysis**
 
 Based on the collected data from the benchmarking runs for the models ``PI_small``, ``WES_nofe``, ``WES_nofe_PI``, and ``WES_nofe_PC``, a regression is run with the net-solving time (solving time + scaling time) as
-the dependent variable. The explanatory variables are the models, the ``use_scaling`` boolean, the ``include_rhs`` boolean, the ``NumericFcous`` (:math:`0` or :math:`1`) setting of gurobi as well as an interaction term between ZEN-garden scaling and gurobi's ``ScaleFlag''.
+the dependent variable. The explanatory variables are the models, the ``use_scaling`` boolean, the ``include_rhs`` boolean, the ``NumericFcous`` (:math:`0` or :math:`1`) setting of gurobi as well as an interaction term between ZEN-garden scaling and gurobi's ``ScaleFlag``.
 The results of the regression analysis are the following:
 
 .. image:: ../images/Regression_results.png
