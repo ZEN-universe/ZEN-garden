@@ -18,13 +18,13 @@ The net present cost :math:`NPC_y` of the energy system are minimized over the e
 
 .. math::
     :label: min_cost
-        \sum_{y\in\mathcal{Y}} NPC_y
+    \sum_{y\in\mathcal{Y}} NPC_y
 
 The net present cost :math:`NPC_y` of each year :math:`y\in\mathcal{Y}` are computed by discounting the total energy system cost of each year, :math:`C_y` with a constant discount rate :math:`r`:
 
 .. math::
     :label: net_present_costin\mathcal{Y}
-        NPC_y = \sum_{i \in [0,dy]} \left( \dfrac{1}{1+r}in\mathcal{Y} \right)^(dy (y-y_0) + i) C_y 
+    NPC_y = \sum_{i \in [0,dy]} \left( \dfrac{1}{1+r}in\mathcal{Y} \right)^(dy (y-y_0) + i) C_y 
 
 where :math:`y0` represents the first year of the planning horizon and :math:`dy`` represents the interval between planning periods. E.g., if :math:`dy=2` the optimization is only conducted for every second year. The last period of the planning horizon :math:`Y=\max(y)` is only counted as a single year since we assume that the optimization is only conducted until the end of the first year of the last planning period. 
 
@@ -32,7 +32,6 @@ The total cost :math:`C_y` includes the annual capital expenditures :math:`CAPEX
 
 .. math::
     :label: npc
-
     C_y = CAPEX_y+OPEX_y^\mathrm{t}+OPEX_y^\mathrm{c}+OPEX_y^\mathrm{e}
 
 
@@ -42,7 +41,6 @@ The total cost :math:`C_y` includes the annual capital expenditures :math:`CAPEX
 
 .. math::
     :label: capex_y
-    
     CAPEX_y = \sum_{h\in\mathcal{H}}\sum_{s\in\mathcal{S}}\sum_{p\in\mathcal{P}} A_{h,s,p,y}.
 
 Each technology :math:`h\in\mathcal{H}` is either a conversion technology :math:`i\in\mathcal{I}\subseteq\mathcal{H}`, a transport technology :math:`j\in\mathcal{J}\subseteq\mathcal{H}` or a storage technology :math:`k\in\mathcal{K}\subseteq\mathcal{H}`. For sake of simplicity, we index those variables and parameters that apply to all technology types with :math:`h`. For storage capacities, both the energy and power-rated capacity can be expanded. The capacity type is indicated by :math:`s\in\mathcal{S}`. Conversion and storage technologies are installed and operated on nodes :math:`n\in\mathcal{N}`, and transport technologies are installed and operated on edges :math:`e\in\mathcal{E}`. We summarize nodes and edges to positions :math:`p\in\mathcal{P}=\mathcal{N}\cup\mathcal{E}`. 
@@ -69,7 +67,7 @@ For newly installed conversion technology capacities, the capital investment cos
 
 .. math::
     :label: cost_capex_conversion
-        I_{i,s,n,y} = \alpha_{i,y} \Delta S_{i,s,n,y}
+    I_{i,s,n,y} = \alpha_{i,y} \Delta S_{i,s,n,y}
 
 For existing conversion technology capacities :math:`s_{h,n,y}` that were installed before :math:`y_0`, we assume that they cost the unit cost in the first investment period :math:`\alpha_{h,y_0}`:
 
@@ -81,8 +79,8 @@ Similarly, for storage technologies it follows:
 
 .. math::
     :label: cost_capex_storage
-        I_{k,s,n,y} = \alpha_{k,y} \Delta S_{k,s,n,y}
-        I^\mathrm{ex}_{k,s,n,y} = \alpha_{k,y_0} \Delta s^\mathrm{ex}_{k,s,n,y}
+    I_{k,s,n,y} = \alpha_{k,y} \Delta S_{k,s,n,y}
+    I^\mathrm{ex}_{k,s,n,y} = \alpha_{k,y_0} \Delta s^\mathrm{ex}_{k,s,n,y}
 
 The capital expenditures for transport technologies can be defined either through a fix unit cost, a distance dependent unit cost, or both:
 
@@ -94,8 +92,8 @@ The capital expenditures for transport technologies are as follows:
 
 .. math::
     :label: cost_capex_transport
-        I_{j,s,e,y} = \alpha_{j,e,y} \Delta S_{j,s,e,y}
-        I^\mathrm{ex}_{j,s,e,y} = \alpha_{j,e,y_0} \Delta s^\mathrm{ex}_{j,s,e,y}
+    I_{j,s,e,y} = \alpha_{j,e,y} \Delta S_{j,s,e,y}
+    I^\mathrm{ex}_{j,s,e,y} = \alpha_{j,e,y_0} \Delta s^\mathrm{ex}_{j,s,e,y}
 
 .. note::
     Storage technologies can expand both, their power and energy rated capacities, i.e. :math:`s^\mathrm{ex}_{h,\mathrm{energy},p,y}\geq0` and :math:`S_{h,\mathrm{energy},p,y}\geq0` and thus, :math:`I_{h,\mathrm{energy},p,y}\geq0` :math:`I_{h,s,p,y}^\mathrm{ex}\geq0`. For conversion and transport technologies :math:`s^\mathrm{ex}_{h,\mathrm{energy},p,y}=0` and :math:`S_{h,\mathrm{energy},p,y}=0` and thus, :math:`I_{h,\mathrm{energy},p,y}=0` :math:`I_{h,\mathrm{energy},p,y}^\mathrm{ex}=0`.
@@ -118,28 +116,24 @@ The variable technology operational expenditures :math:`OPEX_y^\mathrm{t,v}` are
 
 .. math::
     :label: opex_v
-
     OPEX_y^\mathrm{t,v} = \sum_{t\in\mathcal{T}}\tau_t \bigg(\sum_{h\in\mathcal{H}} \sum_{s\in\mathcal{S}} \sum_{p\in\mathcal{P}} O^\mathrm{t}_{h,s,p,t,y} \bigg).
 
 For conversion technologies :math:`i \in \mathcal{I}`, the variable operational expenditure are the product of the specific variable operational expenditure :math:`\beta_{h,y}` and the reference flows :math:`G_{i,n,t,y}^\mathrm{r}`:
 
 .. math:: 
     :label: cost_opex_conversion
-
     O^\mathrm{t}_{h,s,\mathrm{power},t,y} = \beta_{i,y} G_{i,n,t,y}^\mathrm{r}
 
 Similarly, for transport technologies :math:`j \in \mathcal{J}`, the variable operational expenditure are the product of the specific variable operational expenditure :math:`\beta_{j,e,y}` and the reference flows :math:`F_{j,e,t,y}`:
 
 .. math:: 
     :label: cost_opex_transport
-    
     O^\mathrm{t}_{j,s,\mathrm{power},t,y} = \beta_{j,y} F_{j,e,t,y}
 
 Finally, for storage technologies :math:`k \in \mathcal{K}`, the variable operational expenditure are the product of the specific variable operational expenditure :math:`\beta_{j,e,y}` and the storage charge :math:`\underline{H}_{k,n,t,y}` and discharge :math:`\overline{H}_{k,n,t,y}`:
 
 .. math:: 
     :label: cost_opex_storage
-
     O^\mathrm{t}_{k,s,\mathrm{power},t,y} = \beta_{k,y} \left(\underline{H}_{k,n,t,y} + \overline{H}_{k,n,t,y}\right)
 
 **Operational expenditures carrier**
@@ -170,13 +164,12 @@ The total annual carbon emissions emissions :math:`E_y` of the energy system are
 
 .. math::
     :label: min_emissions
-        \sum_{y\in\mathcal{Y}} E_y
+    \sum_{y\in\mathcal{Y}} E_y
 
 The total annual carbon emissions :math:`E_y` account for the total operational emissions for importing and exporting carriers :math:`E^\mathrm{carrier}_y` and for operating technologies :math:`E^\mathrm{tech}_y`:
 
 .. math::
     :label: total_annual_carbon_emissions
-
     E_y = E^\mathrm{carrier}_y + E^\mathrm{tech}_y.
 
 The computation of the total operational emissions for importing and exporting carriers, and for operating for operating technologies are described in :ref:`_tech_carrier_emissions`.
@@ -202,7 +195,6 @@ The energy balance for carrier :math:`c\in\mathcal{C}` is then calculated as:
 
 .. math::
     :label: energy_balance
-
     0 = -\left(d_{c,n,t,y}-D_{c,n,t,y}\right) + \sum_{i\in\mathcal{I}}\left(\overline{G}_{c,i,n,t,y}-\underline{G}_{c,i,n,t,y}\right) + \sum_{j\in\mathcal{J}}\left(\sum_{e\in\underline{\mathcal{E}}_n}\left(F_{j,e,t,y} - F^\mathrm{l}_{j,e,t,y}\right)-\sum_{e'\in\overline{\mathcal{E}}_n}F_{j,e',t,y}\right) + \sum_{k\in\mathcal{K}}\left(\overline{H}_{k,n,t,y}-\underline{H}_{k,n,t,y}\right)+ U_{c,n,t,y} - V_{c,n,t,y}.
 
 Note that :math:`\sum_{k\in\mathcal{K}}\left(\overline{H}_{k,n,t,y}-\underline{H}_{k,n,t,y}\right)`are zero if :math:`c\neq c^\mathrm{r}_j` and :math:`c\neq c^\mathrm{r}_k`, respectively.
@@ -256,7 +248,6 @@ The carrier carbon emissions include the operational emissions of importing and 
 
 .. math::
     :label: carbon_emissions_carrier
-
     \theta^\mathrm{carrier}_{c,n,t} = \underline{\epsilon_c} U_{c,n,t,y} - \overline{\epsilon_c} V_{c,n,t,y}.
     
 The total annual technology carbon emissions :math:`E^\mathrm{tech}_y` represent the sum of the technology carbon emissions :math:`\theta^\mathrm{tech}_{h,n,t,y}`:
@@ -310,7 +301,6 @@ The cumulative carbon emissions :math:`E_y^\mathrm{c}` are constrained by the ca
 
 .. math::
     :label: emission_budget
-
     E_y^\mathrm{cum} + \left(\Delta^\mathrm{y}-1\right)E_{y}  - E_{y}^\mathrm{bo} \leq e^\mathrm{b}.
 
 Note that :math:`e^\mathrm{b}` can be infinite, in which case the constraint is skipped. :math:`E_y^\mathrm{o}` is the cumulative carbon emission overshoot and allows exceeding the carbon emission budget :math:`e^\mathrm{b}`. However, exceeding the carbon emission budget in the last year of the planning horizon :math:`\mathrm{Y}=\max(y)` (i.e., :math:`E_\mathrm{Y}^\mathrm{o}>0`) is penalized with the carbon emissions budget overshoot price :math:`\mu^\mathrm{bo}` in the objective function (:eq:`opex_c`).
@@ -363,7 +353,6 @@ The time-coupled equation for the storage level :math:`L_{k,n,t^\mathrm{k},y}` o
 
 .. math::
     :label: storage_level
-
     L_{k,n,t^\mathrm{k},y} = L_{k,n,t^\mathrm{k}-1,y}\left(1-\varphi_k\right)^{\tau^\mathrm{k}_{t^\mathrm{k}}}+\left(\underline{\eta}_k\underline{H}_{k,n,\sigma(t^\mathrm{k}),y}-\frac{\overline{H}_{k,n,\sigma(t^\mathrm{k}),y}}{\overline{\eta}_k}\right)\sum_{\tilde{t}^\mathrm{k}=0}^{\tau^\mathrm{k}_{t^\mathrm{k}}-1}\left(1-\varphi_k\right)^{\tilde{t}^\mathrm{k}},
 
 with the self-discharge rate :math:`\varphi_k`, the charge and discharge efficiency :math:`\underline{\eta}_k` and :math:`\overline{\eta}_k` and the duration of a storage level time step :math:`\tau^\mathrm{k}_{t^\mathrm{k}}`.
@@ -377,7 +366,6 @@ The non-negative :math:`L_{k,n,t^\mathrm{k},y}` is constrained by the energy-rat
 
 .. math::
     :label:limit_storage_level
-
     0\leq L_{k,n,t^\mathrm{k},y}\leq S^\mathrm{e}_{k,s,n,y}.
 
 :math:`L_{k,n,t^\mathrm{k},y}` is monotonous between :math:`t^\mathrm{k}` and :math:`t^\mathrm{k}+1`. Hence, :math:`L_{k,n,t^\mathrm{k},y}` and :math:`L_{k,n,t^\mathrm{k}+1,y}` are the local extreme values and :eq:`limit_storage_level` constrains the entire time interval between :math:`t^\mathrm{k}` and :math:`t^\mathrm{k}+1`. We prove this in :eq:`subsec:proof_storage`.
@@ -409,7 +397,6 @@ The capacity :math:`S_{h,p,y}` of a technology :math:`h\in\mathcal{H}` at a posi
 
 .. math::
     :label: capacity
-
     S_{h,p,y}=\sum_{\tilde{y}=\max\left(y_0,y-\left\lceil\frac{l_h}{\Delta^\mathrm{y}}\right\rceil+1\right)}^y \Delta S_{h,p,\tilde{y}}+\sum_{\hat{y}=\psi\left(\min\left(y_0-1,y-\left\lceil\frac{l_h}{\Delta^\mathrm{y}}\right\rceil+1\right)\right)}^{\psi(y_0)} \Delta s^\mathrm{ex}_{h,p,\hat{y}}.
 
 :math:`S_{h,p,y}` is constrained by the capacity limit :math:`s^\mathrm{max}_{h,p,y}`:
@@ -461,7 +448,6 @@ Neglecting all further indices without loss of generality, the storage level :ma
 
 .. math::
     :label: storage_level_simpl
-
     L(t) = L_0\kappa^t + \Delta H\sum_{\tilde{t}=0}^{t-1}\kappa^{\tilde{t}},
 
 with :math:`\kappa=1-\varphi` and :math:`\Delta H=\left(\underline{\eta}\underline{H}-\frac{\overline{H}}{\overline{\eta}}\right)`. :math:`L_0` is the storage level at the end of the previous storage time step :math:`t^\mathrm{k}-1`.
