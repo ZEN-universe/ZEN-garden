@@ -441,7 +441,7 @@ For example, the following configuration would use a combination of two iteratio
     "scaling_include_rhs": true
   }
 
-The default configuration are three iterations of the geometric mean scaling algorithm without including the values of the right-hand-side.
+The default configuration are three iterations of the geometric mean scaling algorithm with right-hand-side scaling.
 
 Recommendations for using scaling
 -------------------------------

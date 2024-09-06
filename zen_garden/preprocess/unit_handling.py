@@ -900,7 +900,7 @@ class Scaling:
             var_str = var_str[0] + str(list(var_str[1].values()))
             return f"{A_matrix[index]} {var_str} in {cons_str}"
 
-    def print_numerics(self,i,no_scaling = False, benchmarking_output = False, cond_number = False):
+    def print_numerics(self,i,no_scaling = False, benchmarking_output = False, cond_number = False): #ToDo: speed up cond_number; for now should be kept False as computation time too long otherwise
         data_coo = self.A_matrix.tocoo()
         A_abs = np.abs(data_coo.data)
         A_abs_nonzero = np.ma.masked_equal(A_abs,0.0,copy=False)
