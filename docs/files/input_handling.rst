@@ -423,7 +423,7 @@ If included, the chosen algorithm determines the row scaling vector entry for a 
 
 How to use scaling in ZEN-garden?
 ---------------------------------
-As described in, :ref:`Configurations` in the :ref:`Solver` section, the scaling can be activated by adjusting the
+As described in, :ref:`Configurations` in the :ref:`Solver` section, scaling can be activated by adjusting the
 ``analysis.json`` file. The scaling configuration can be chosen through the following three settings:
 
 1. ``use_scaling``: Boolean, whether scaling should be used or not.

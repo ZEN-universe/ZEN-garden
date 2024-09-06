@@ -1,11 +1,7 @@
 .. _optimization_problem
 ################
-Optimization problem
-################
-
-.. _optimization_setup:
 Sets, parameters, variables, and constraints
-==================
+################
 
 .. _energy_system:
 Energy System
@@ -14,25 +10,25 @@ Energy System
 .. csv-table:: Objective Functions
     :header-rows: 1
     :file: tables/objectives.csv
-    :widths: 10 20
+    :widths: 10 20 10
     :delim: ;
 
 .. csv-table:: Energy System Sets
     :header-rows: 1
     :file: tables/sets/energy_system_sets.csv
-    :widths: 10 10 20
+    :widths: 10 10 10 20
     :delim: ;
 
 .. csv-table:: Energy System Parameters
     :header-rows: 1
     :file: tables/parameters/energy_system_parameters.csv
-    :widths: 10 10 20 10
+    :widths: 10 10 10 20 10
     :delim: ;
 
 .. csv-table:: Energy System Variables
     :header-rows: 1
     :file: tables/variables/energy_system_variables.csv
-    :widths: 10 10 30 10
+    :widths: 10 10 10 30 10
     :delim: ;
 
 .. csv-table:: Energy System Constraints
