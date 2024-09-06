@@ -378,6 +378,7 @@ Scaling
 What is scaling and when to use it?
 -----------------------------------
 Simply put, with scaling we aim at enhancing the numeric properties of a given optimization problem, such that solvers can solve it more efficiently and faster. It is generally recommended to include scaling, if the optimization problem at hand faces numerical issues or requires a long time to solve.
+
 Scaling is done by transforming the coefficients of the decision variables in both constraints and objective function to a similar order of magnitude.
 In more mathematical terms, consider an optimization problem of the form:
 
@@ -419,7 +420,7 @@ they can also be combined. In this case, over multiple iterations you can apply 
 **Right-Hand Side Scaling**
 
 Furthermore, for all of the above mentioned algorithms, also the right-hand side vector :math:`b` can be included in the scaling process.
-If included, the chosen algorithm determines the row scaling vector entry for a specific row :math:`ì` over all entries of that row in the constraint matrix :math:`A_{i*}` while also considering the respective right-hand side entry :math:`b_i`.
+If included, the chosen algorithm determines the row scaling vector entry for a specific row :math:`i` over all entries of that row in the constraint matrix :math:`A_{i*}` while also considering the respective right-hand side entry :math:`b_i`.
 
 How to use scaling in ZEN-garden?
 ---------------------------------
@@ -463,7 +464,7 @@ overall best performance across the considered optimization problems. Therefore,
 The benchmarking showed that including the right-hand side vector in the scaling process leads to a better performance of the solver for almost all optimization problems considered.
 Therefore, it is recommended to include the right-hand side vector in the scaling process by setting ``scaling_include_rhs``: ``True``.
 
-**When to not use scaling?**
+**When not to use scaling?**
 
 If the optimization problem already has a good numerical range (which can be checked with ``solver["analyze_numerics"] = True``), scaling might not be necessary. Also if the optimization problem already solves fast, the time necessary for scaling the problem might
 outweigh the time savings from solving the scaled optimization problem. As a rule of thumb, if the time to solve the optimization problem is in similar order of magnitude as the time to scale the problem, scaling should not be applied. The time necessary for scaling can be checked in the output of the optimization problem, if
@@ -509,7 +510,7 @@ From the plot we can observe:
 
 * convergence of the numerical range (of the LHS) is visible for both algorithms after three iterations
 * a trade-off between a lower LHS range and also decreasing the RHS range may exist, which is visible in case of arithmetic mean scaling
-* neglecting the RHS may lead to a significant increase its numerical range, which is visible for both scaling algorithms (as shown in :ref:`Regression Analysis` this also leads on average to longer solving times)
+* neglecting the RHS may lead to a significant increase in its numerical range, which is visible for both scaling algorithms (as shown in :ref:`Regression Analysis` this also leads on average to longer solving times)
 
 **Net-solving time comparison for multiple scaling configurations**
 
@@ -526,30 +527,30 @@ A combination of ``geom`` and ``infnorm``, where geometric mean scaling is follo
 .. image:: ../images/PI_small_net_solving_time_plot_violin.png
     :alt: Net-solving time comparison for PI_small
 
-Note that the ``Base Case`` refers to a configuration where gurobi scaling with a ``NumericFocus`` of ``0`` is applied, but no scaling in ZEN-garden. Since for this model all scaling configurations that use ZEN-garden are run with a fixed ``NumericFocus`` of ``1`` (corresponding to low numeric focus)
+Note that the ``Base Case`` refers to a configuration where Gurobi scaling with a ``NumericFocus`` of ``0`` is applied, but no scaling in ZEN-garden. Since for this model all scaling configurations that use ZEN-garden are run with a fixed ``NumericFocus`` of ``1`` (corresponding to low numeric focus)
 , we also included a ``Base Case`` configuration with a ``NumericFocus`` of ``1`` for comparison. The red dotted line indicates the arithmetic mean of the net-solving time for the base case configuration.
 
 The plot shows:
 
 * a significant decrease in net-solving time for the model ``PI_small`` for a majority of the considered algorithms when ZEN-garden scaling is applied
 * on average configurations that include the right-hand side vector for deriving the row scaling vector indicate a better performance
-* solving times are very inconsistent leading to large variances in the net-solving time for each scaling configuration
+* solving times are very inconsistent leading to large variances in the net-solving time for each scaling algorithm
 
 2. ``NoErr``
 
 .. image:: ../images/NoErr_errorbar_plot.png
     :alt: Net-solving time comparison for NoErr
 
-In the analysis of the model ``NoErr`` we set special focus on the interaction and compatibility of ZEN-garden scaling with the numeric settings of gurobi. For this we
-included for each algorithm four configurations with different combinations of ZEN-garden scaling and gurobi's ``ScaleFlag`` and ``NumericFocus``. A ``ScaleFlag`` of ``2`` indicates that gurobi scaling is turned on
-and thus double scaling (ZEN-garden and gurobi) is applied. A ``NumericFocus`` of ``0`` indicates an automatic numeric focus, whereas a ``NumericFocus`` of ``3`` indicates high numeric focus. Again, the base cases correspond to no ZEN-garden scaling.
+In the analysis of the model ``NoErr`` we set special focus on the interaction and compatibility of ZEN-garden scaling with the numeric settings of Gurobi. For this we
+included for each algorithm four configurations with different combinations of ZEN-garden scaling and Gurobi's ``ScaleFlag`` and ``NumericFocus``. A ``ScaleFlag`` of ``2`` indicates that Gurobi scaling is turned on
+and thus double scaling (ZEN-garden and Gurobi) is applied. A ``NumericFocus`` of ``0`` indicates an automatic numeric focus, whereas a ``NumericFocus`` of ``3`` indicates high numeric focus. Again, the base cases correspond to no ZEN-garden scaling.
 
 From the plot we can derive:
 
-* no scaling (neither ZEN-garden nor gurobi) can also lead to the best performance (as indicated by ``Base Case (No Scaling)``)
-* double scaling (ZEN-garden and gurobi scaling) does not seem to be beneficial and rather increases the net-solving time
+* a configuration where no scaling is applied (neither ZEN-garden nor Gurobi) can also lead to the best performance (as indicated by ``Base Case (No Scaling)``)
+* double scaling (ZEN-garden and Gurobi scaling) does not seem to be beneficial and rather increases the net-solving time
 * setting a high numeric focus increases the net-solving time significantly for all scaling configurations
-* only for a very few algorithms net-solving time is decreased when ZEN-garden scaling is applied and only for an automatic numeric focus and no gurobi scaling
+* only for a very few algorithms net-solving time is decreased when ZEN-garden scaling is applied and only for an automatic numeric focus and no Gurobi scaling
 
 The two examples shown here, again indicate that deriving a general recommendation for the scaling configuration is difficult and that the performance of the scaling algorithm is highly dependent on the optimization problem at hand.
 Therefore, we recommended to test different scaling algorithms and configurations via trial and error.
@@ -558,7 +559,7 @@ Therefore, we recommended to test different scaling algorithms and configuration
 **Regression Analysis**
 
 Based on the collected data from the benchmarking runs for the models ``PI_small``, ``WES_nofe``, ``WES_nofe_PI``, and ``WES_nofe_PC``, a regression is run with the net-solving time (solving time + scaling time) as
-the dependent variable. The explanatory variables are the models, the ``use_scaling`` boolean, the ``include_rhs`` boolean, the ``NumericFcous`` (:math:`0` or :math:`1`) setting of gurobi as well as an interaction term between ZEN-garden scaling and gurobi's ``ScaleFlag``.
+the dependent variable. The explanatory variables are the models, the ``use_scaling`` boolean, the ``include_rhs`` boolean, the ``NumericFcous`` (:math:`0` or :math:`1`) setting of Gurobi as well as an interaction term between ZEN-garden scaling and Gurobi's ``ScaleFlag``.
 The results of the regression analysis are the following:
 
 .. image:: ../images/Regression_results.png
@@ -569,7 +570,7 @@ The key takeaways from the regression analysis are:
 * including ZEN-garden scaling decreases the net-solving time significantly
 * including the RHS for the derivation of the row scaling vectors decreases the net-solving time significantly
 * choosing a low ``NumericFocus`` instead of the automatic one, increases the net-solving time significantly
-* double scaling, which means scaling both in ZEN-garden as well as within the solver (here gurobi), seems to increase the net-solving time significantly
+* double scaling, which means scaling both in ZEN-garden as well as within the solver (here Gurobi), seems to increase the net-solving time significantly
 
 Please note, that these results can not be generalized. They only represent the average effect observed for the models considered here and might vary from case to case.
 
