@@ -562,7 +562,6 @@ the dependent variable. The explanatory variables are the models, the ``use_scal
 The results of the regression analysis are the following:
 
 .. image:: ../images/Regression_results.png
-    :scale: 50%
     :alt: Regression results
 
 The key takeaways from the regression analysis are:
