@@ -172,7 +172,7 @@ The total annual carbon emissions emissions :math:`E_y` of the energy system are
     :label: min_emissions
         \sum_{y\in\mathcal{Y}} E_y
 
-The total annual carbon emissions :math:`E_y` account for the total operational emissions for importing and exporting carriers :math:`E^\mathrm{carrier}_y` and for operating technologies :math:`E_\mathrm{tech}_y`:
+The total annual carbon emissions :math:`E_y` account for the total operational emissions for importing and exporting carriers :math:`E^\mathrm{carrier}_y` and for operating technologies :math:`E^\mathrm{tech}_y`:
 
 .. math::
     :label: total_annual_carbon_emissions
@@ -313,7 +313,7 @@ The cumulative carbon emissions :math:`E_y^\mathrm{c}` are constrained by the ca
 
     E_y^\mathrm{cum} + \left(\Delta^\mathrm{y}-1\right)E_{y}  - E_{y}^\mathrm{bo} \leq e^\mathrm{b}.
 
-Note that :math:`e^\mathrm{b}` can be infinite, in which case the constraint is skipped. :math:`E_y^\mathrm{o}` is the cumulative carbon emission overshoot and allows exceeding the carbon emission budget :math:`e^\mathrm{b}`. However, exceeding the carbon emission budget in the last year of the planning horizon :math:`\mathrm{Y}=\max(y)` (i.e., :math:`E_\mathrm{Y}^\mathrm{o}>0`) is penalized with the carbon emissions budget overshoot price :math:`\mu^\mthrm{bo}` in the objective function (:eq:`opex_c`).
+Note that :math:`e^\mathrm{b}` can be infinite, in which case the constraint is skipped. :math:`E_y^\mathrm{o}` is the cumulative carbon emission overshoot and allows exceeding the carbon emission budget :math:`e^\mathrm{b}`. However, exceeding the carbon emission budget in the last year of the planning horizon :math:`\mathrm{Y}=\max(y)` (i.e., :math:`E_\mathrm{Y}^\mathrm{o}>0`) is penalized with the carbon emissions budget overshoot price :math:`\mu^\mathrm{bo}` in the objective function (:eq:`opex_c`).
 
 By setting the carbon emission budget overshoot price to infinite, we enforce that the cumulative carbon emissions stay below the carbon emission budget :math:`e^\mathrm{b}` across all years (`:math:`E_\mathrm{Y}^\mathrm{o}=0`). By setting the carbon emission budget overshoot price to a real number, we allow overshooting a carbon emission budget overshoot throughout the transition, where overshooting the carbon emission budget in the last year is penalized with the carbon emission budget overshoot costs (i.e. `:math:`E_\mathrm{Y}^\mathrm{o} \geq 0`).
 
