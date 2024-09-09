@@ -56,3 +56,12 @@ Per default, ``compare_model_values`` compares the total annual values of compon
 
 User guide for visualization
 =================
+
+If you have folllowed the steps of chapter :ref:`installation`, you should have a conda environment that contains the necessary python packages run the visualization suite.
+
+To run it, you have to clone the repository `<https://github.com/ZEN-universe/ZEN-temple>`_. If you cloned the ZEN garden repository with the `--recurse-submodules` option, you should already have the repository in the folder `zen_temple`. 
+
+From this folder, you can run the command `python explorer.py` in the activated conda environment, which will start the webserver and open a new tab in your default browser with the correct URL. You will have to reload the page after a few seconds to see the vizualisation.
+
+.. note::
+    By default, the explorer looks for solutions that are stored in the folder `../outputs`. If you cloned ZEN Garden recursively, this will correspond to the default folder for the example datasets. However, you can change this folder by renaming the file `.env.example` to `.env` and change the value of the variable `SOLUTION_FOLDER` in the file to an arbitrary folder where you stored your solutions.

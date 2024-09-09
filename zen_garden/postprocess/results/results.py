@@ -149,7 +149,6 @@ class Results:
             hours_of_year = list(
                 range(year * _total_hours_per_year, (year + 1) * _total_hours_per_year)
             )
-
             output_df = output_df[hours_of_year]
         return output_df
 
@@ -650,9 +649,12 @@ class Results:
                 )
                 full_ts = self.edit_carrier_flows(full_ts, node, "out", scenario_name)
             else:
-                full_ts = self.get_full_ts(
-                    component, scenario_name=scenario_name, year=year
-                )
+                try:
+                    full_ts = self.get_full_ts(
+                        component, scenario_name=scenario_name, year=year
+                    )
+                except KeyError:
+                    continue
             carrier_df = self.extract_carrier(full_ts, carrier, scenario_name)
             if carrier_df is not None:
                 if "node" in carrier_df.index.names:
@@ -661,6 +663,14 @@ class Results:
 
         return ans
 
+    def get_component_names(self, component_type:str) -> list[str]:
+        """ Returns the names of all components of a given type
+
+        :param component_type: Type of the component
+        :return: List of component names
+        """
+        assert component_type in ComponentType.get_component_type_names(), f"Invalid component type: {component_type}. Valid types are: {ComponentType.get_component_type_names()}"
+        return [component for component in self.solution_loader.components if self.solution_loader.components[component].component_type.name == component_type]
 
 if __name__ == "__main__":
     try:

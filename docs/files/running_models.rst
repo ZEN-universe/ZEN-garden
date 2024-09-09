@@ -16,37 +16,40 @@ To run ZEN-garden from a terminal, activate the environment where you installed 
 
     conda activate <your_environment>
 
-If you installed ZEN-garden from the repository, per default, the environment will be called ``zen-garden``::
+If you installed ZEN-garden from the repository and created a new environment (:ref:`For developers`), per default, the environment will be called ``zen-garden``::
 
   conda activate zen-garden
 
-Running an example model
-------------------------
-To run one of the already-built example models (see `Dataset Examples <dataset_examples.rst>`_), execute the following line::
+.. _Run example:
+Run ZEN-garden with an example dataset
+--------------------------------------
 
-    python -m zen_garden --example=<dataset_example_name>
+To run ZEN-garden with an example dataset (see `Dataset Examples <dataset_examples.rst>`_), execute the following line::
 
-This will download the selected example in the folder ``dataset_examples``, and run the optimization. The optimization results will be stored in ``dataset_examples/outputs``, and can be read with the ``TODO`` Jupyter notebook file (see more at `Analyzing a model <analyzing_models.rst>`_).
+  python -m zen_garden --example=<example_name>
+
+This command is particularly useful when you installed ZEN-garden from pip and do not have the repository on your local machine.
 
 .. note::
-    Dataset example are an easy and quick way to get started with your model.
+    Dataset examples are an easy and quick way to get started with your model.
     Find an example that best suits your need and use it as a template to build your own model.
 
-Running your model
------------------
-Make sure to change your path to the working directory, i.e. the directory that contains the ``config.json``. This directory will also be used to save the results::
+The example dataset and the ``config.json`` file will be downloaded, a new folder will be created in the working directory, and the optimization will be run. No prior setup is needed.
+
+The optimization results will be stored in ``dataset_examples/outputs``. A Jupyter notebook will be downloaded to give you fast access to your results (see more at `Analyzing a model <analyzing_models.rst>`_).
+
+.. _Run ZEN-garden with preexisting datasets:
+Run ZEN-garden with preexisting datasets
+----------------------------------------
+If you already have a model that you want to run, change your path to the working directory, i.e. the directory that contains the ``config.json``. This directory will also be used to save the results::
 
   cd /path/to/your/data
 
 .. note::
     You can create the data folder in the ZEN-garden root folder, but it will not be uploaded to Github (it is in the ``.gitignore`` file).
-    This way, you can keep your data separate from the repository. However, we recommend keeping the data folder in a different location.
+    This way, you can keep your data separate from the repository. **However, we recommend keeping the data folder in a different location than the ZEN-garden source code.**
 
-.. _Run ZEN-garden with preexisting datasets:
-Run ZEN-garden with preexisting datasets
-----------------------------------------
-
-Execute the following lines to run ZEN-garden as a module::
+Execute the following lines to run ZEN-garden::
 
   python -m zen_garden
 
@@ -57,20 +60,6 @@ When running the previous line, ZEN-garden will attempt to run the dataset speci
 If you have multiple ``config.json`` files in your working directory, you can specify the file you want to use with the ``config`` argument::
 
   python -m zen_garden --config=<my_config.json> --dataset=<my_dataset>
-
-.. _Run example:
-Run ZEN-garden with an example dataset
---------------------------------------
-
-To run ZEN-garden with an example dataset, execute the following line::
-
-  python -m zen_garden --example=<example_name>
-
-The example dataset will be downloaded, a new folder will be created in the working directory, and the optimization will be run. No prior setup is needed.
-This procedure downloads the example dataset folder and the ``config.json`` file.
-
-This command is particularly useful when you installed ZEN-garden from pip and do not have the repository on your local machine.
-
 
 PyCharm configurations (only for ZEN-garden fork)
 =======
@@ -83,7 +72,7 @@ To execute ZEN-garden with the PyCharm IDE you can use the configuration setup w
 Add a new configuration by clicking on the "+" button on the top left corner of the window. Choose ´´Python´´ as a type. You can name the configuration however you like. The important settings are:
 
 - Change "Script Path" to "Module name" and set it to "zen_garden"
-- Set the Python interpreter to the Conda environment that was used to install the requirements and ZEN-garden as a package. Per default, the environment will be named "zen-garden-env". **Important**: This setup will only work for Conda environments that were also declared as such in PyCharm; if you set the path to the Python executable, you will have to create a new PyCharm interpreter first.
+- Set the Python interpreter to the Conda environment that was used to install the requirements and ZEN-garden as a package. Per default, the environment will be called ``zen-garden``. **Important**: This setup will only work for Conda environments that were also declared as such in PyCharm; if you set the path to the Python executable, you will have to create a new PyCharm interpreter first.
 - Set the "Working directory" to the path that contains the ``config.json``. This directory will also be used to save the results.
 
 In the end, your configuration to run ZEN-garden as a module should look similar to this:
@@ -96,7 +85,7 @@ VS code configuations (only for ZEN-garden fork)
 
 To run ZEN-garden as a module in VS code follow these steps:
 
-- select the correct interpreter: Press ctrl + shift + p to open the command palette (if you're on Windows or Linux), and enter ``Python: Select interpreter`` and make sure that the correct conda environment is selected. Per default, the conda enivronment will be called ``zen-garden-env``.
+- select the correct interpreter: Press ctrl + shift + p to open the command palette (if you're on Windows or Linux), and enter ``Python: Select interpreter`` and make sure that the correct conda environment is selected. Per default, the conda enivronment will be called ``zen-garden``.
 - Create a new file in the folder ``./.vscode/`` called ``launch.json`` with the following content:
 
 .. code-block:: JSON
