@@ -130,28 +130,14 @@ class Postprocess:
                     with open(f_name, f_mode) as outfile:
                         outfile.write(serialized_dict)
 
-        elif format == "gzip" or format == "json":
+        elif format == "json":
             # serialize to string
-            
+
             serialized_dict = json.dumps(dictionary, indent=2)
 
-            # if the string is larger than the max output size we compress anyway
-            force_compression = False
-            if format == "json" and sys.getsizeof(serialized_dict) / 1024 ** 2 > self.analysis["max_output_size_mb"]:
-                print(f"WARNING: The file {name}.json would be larger than the maximum allowed output size of "
-                      f"{self.analysis['max_output_size_mb']}MB, compressing...")
-                force_compression = True
-
-            # prep output file
-            if format == "gzip" or force_compression:
-                # compress
-                f_name = f"{name}.gzip"
-                f_mode = "wb"
-                serialized_dict = zlib.compress(serialized_dict.encode())
-            else:
-                # write normal json
-                f_name = f"{name}.json"
-                f_mode = "w+"
+            # write normal json
+            f_name = f"{name}.json"
+            f_mode = "w+"
 
             # write if necessary
             if self.overwrite or not os.path.exists(f_name):
@@ -402,19 +388,12 @@ class Postprocess:
         :return: #TODO describe parameter/return
         """
         if self.output_format == "h5":
-            # No need to transform the dataframe to json
-            # doc = self._doc_to_df(doc)
             if units is not None:
                 dataframe = {"dataframe": df, "docstring": doc, "units": units}
             else:
                 dataframe = {"dataframe": df, "docstring": doc}
         else:
-            if units is not None:
-                dataframe = {"dataframe": json.loads(df.to_json(orient="table", indent=2)),
-                                                "docstring": doc, "units": units}
-            else:
-                dataframe = {"dataframe": json.loads(df.to_json(orient="table", indent=2)),
-                             "docstring": doc}
+            raise AssertionError(f"The specified output format {self.output_format}, chosen in the config, is not supported")
         return dataframe
 
     def _doc_to_df(self, doc):

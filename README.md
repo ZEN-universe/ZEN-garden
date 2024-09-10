@@ -1,11 +1,15 @@
 # ZEN-garden
+![Python Version from PEP 621 TOML](https://img.shields.io/python/required-version-toml?tomlFilePath=https%3A%2F%2Fraw.githubusercontent.com%2FZEN-universe%2FZEN-garden%2Fmain%2Fpyproject.toml)
 
-<table><tr><td valign="center"> 
-  <img align="left" height="25px" src="https://github.com/RRE-ETH/ZEN-garden/actions/workflows/pytest_with_conda.yml/badge.svg?branch=development"> 
-  <img align="left" height="25px" src="https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/jafluri/5d0d79e86182cd9ccd785d824b1f9ac7/raw/zen_coverage.json">
-  <b> (Development Branch) </b>
-</td></tr></table>
-<hr style="height: 5px; background-color: black;">
+[![GitHub Release](https://img.shields.io/github/v/release/ZEN-universe/ZEN-garden)](https://github.com/ZEN-universe/ZEN-garden/releases)
+[![PyPI - Version](https://img.shields.io/pypi/v/zen-garden)](https://pypi.org/project/zen-garden/)
+
+[![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/ZEN-universe/ZEN-garden/pytest_with_conda.yml)](https://github.com/ZEN-universe/ZEN-garden/actions)
+[![Endpoint Badge](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/jacob-mannhardt/30d479a5b4c591a63b7b0f41abbce6a0/raw/zen_garden_coverage.json)](https://github.com/ZEN-universe/ZEN-garden/actions)
+[![Read the Docs](https://img.shields.io/readthedocs/zen-garden?logo=readthedocs)](https://zen-garden.readthedocs.io/en/latest/index.html)
+
+[![GitHub forks](https://img.shields.io/github/forks/ZEN-universe/ZEN-garden)](https://github.com/ZEN-universe/ZEN-garden/forks)
+
 <img src="https://github.com/ZEN-universe/ZEN-garden/assets/114185605/d6a9aca9-74b0-4a82-8295-43e6a78b8450" alt="drawing" width="200"/>
 
 Welcome to the ZEN-garden! ZEN-garden is an optimization model of energy systems and value chains. 
@@ -15,9 +19,17 @@ However, it is designed to be modular and flexible, and can be extended to model
 ZEN-garden is developed by the [Reliability and Risk Engineering Laboratory](https://www.rre.ethz.ch/) at ETH Zurich.
 <hr style="height: 5px; background-color: black;">
 
+## Quick Start
+To get started with ZEN-garden, you can follow the instructions in the [installation guide](https://zen-garden.readthedocs.io/en/latest/files/installation.html).
+
+If you want to use ZEN-garden without working on the codebase, run the following command:
+```bash
+pip install zen-garden
+```
+If you want to work on the codebase, fork and clone the repository and install the package in editable mode. More information on how to install the package in editable mode can be found in the [installation guide](https://zen-garden.readthedocs.io/en/latest/files/installation.html).
+
 ## Documentation
 Please refer to the documentation of the ZEN-garden framework [on Read-the-Docs](https://zen-garden.readthedocs.io/en/latest/). 
-To get started with ZEN-garden, you can follow the instructions in the [installation guide](https://zen-garden.readthedocs.io/en/latest/files/installation.html).
 
 In the file `documentation/how_to_ZEN-garden.md`, you can find additional information on how to use the framework. 
 The `documentation/dataset_creation_tutorial.md` file contains a tutorial on how to create a simple dataset for the framework. 

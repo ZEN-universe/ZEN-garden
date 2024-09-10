@@ -1,0 +1,14 @@
+Set Name;Index;Symbol;Doc String
+``set_nodes``;--;:math:`\mathcal{N}`;Set of nodes
+``set_edges``;--;:math:`\mathcal{E}`;Set of edges
+``set_nodes_on_edges``;``set_edges``;:math:`\mathcal{N}^\mathcal{E}_{e}`;Set of nodes that constitute an edge
+``set_elements``;--;:math:`\mathcal{A}`;Set of elements
+``set_carriers``;--;:math:`\mathcal{C}`;Set of carriers
+``set_technologies``;--;:math:`\mathcal{H}`;Set of technologies
+``set_base_time_steps``;--;:math:`\mathcal{T}^\mathrm{base}`;Set of base timesteps
+``set_time_steps_yearly``;--;:math:`\mathcal{Y}`;Set of yearly timesteps
+``set_time_steps_yearly_entire_horizon``;--;:math:`\mathcal{Y}^\mathrm{horizon}`;Set of yearly timesteps of entire optimization horizon
+``set_time_steps_operation``;--;:math:`\mathcal{T}`;Set of operational time steps
+``set_time_steps_storage``;--;:math:`\mathcal{T}^\mathrm{storage}`;Set of storage level timesteps
+
+

@@ -86,6 +86,22 @@ test_1e,none,flow_conversion_input,"('natural_gas_boiler', 'oxygen', 'CH', 0)",8
 test_1e,none,flow_conversion_input,"('natural_gas_boiler', 'oxygen', 'DE', 0)",80
 test_1e,none,capacity,"('natural_gas_boiler', 'power', 'CH', 0)",10
 test_1e,none,capacity,"('natural_gas_boiler', 'power', 'DE', 0)",100
+test_1f,none,flow_import,"('natural_gas', 'DE', 0)",120.65362
+test_1f,none,flow_import,"('natural_gas', 'DE', 1)",100
+test_1f,none,storage_level,"('natural_gas_storage', 'DE', 0)",10.30928
+test_1f,none,carbon_emissions_carrier,"('heat', 'DE', 1)",0
+test_1f,none,flow_conversion_output,"('natural_gas_boiler', 'heat', 'DE', 0)",100
+test_1f,none,flow_conversion_output,"('natural_gas_boiler', 'heat', 'DE', 1)",100
+test_1f,none,flow_conversion_input,"('natural_gas_boiler', 'natural_gas', 'DE', 0)",110
+test_1f,none,capacity,"('natural_gas_boiler', 'power', 'DE', 0)",100
+test_1f,none,capacity,"('natural_gas_storage', 'power', 'DE', 0)",10.62812
+test_1f,none,capacity,"('natural_gas_storage', 'energy', 'DE', 0)",10.30928
+test_1f,none,cost_capex,"('natural_gas_boiler', 'power', 'DE', 0)",20
+test_1f,none,cost_capex,"('natural_gas_storage', 'power', 'DE', 0)",0.24265
+test_1f,none,cost_capex,"('natural_gas_storage', 'energy', 'DE', 0)",0.23537
+test_1f,none,cost_opex,"('natural_gas_boiler', 'DE', 1)",0
+test_1f,none,cost_carrier,"('natural_gas', 'DE', 0)",2.77445
+test_1f,none,cost_carrier,"('natural_gas', 'DE', 1)",2.3
 test_2a,none,flow_import,"('natural_gas', 'CH', 0)",11
 test_2a,none,flow_import,"('natural_gas', 'DE', 0)",110
 test_2a,none,cost_carrier,"('natural_gas', 'CH', 0)",0.253

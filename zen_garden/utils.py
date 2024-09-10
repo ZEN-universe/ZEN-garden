@@ -51,42 +51,66 @@ def get_inheritors(klass):
                 work.append(child)
     return subclasses
 
-# This redirects output streams to files
-# --------------------------------------
-# class RedirectStdStreams(object):
-#     """
-#     A context manager that redirects the output to a file
-#     """
-#
-#     def __init__(self, stdout=None, stderr=None):
-#         """
-#         Initializes the context manager
-#
-#         :param stdout: Stream for stdout
-#         :param stderr: Stream for stderr
-#         """
-#         self._stdout = stdout or sys.stdout
-#         self._stderr = stderr or sys.stderr
-#
-#     def __enter__(self):
-#         self.old_stdout, self.old_stderr = sys.stdout, sys.stderr
-#         self.old_stdout.flush()
-#         self.old_stderr.flush()
-#         sys.stdout, sys.stderr = self._stdout, self._stderr
-#
-#     def __exit__(self, exc_type, exc_value, traceback):
-#         """
-#         The exit function of the context manager
-#
-#         :param exc_type: Type of the exit
-#         :param exc_value: Value of the exit
-#         :param traceback:  traceback of the error
-#         """
-#         self._stdout.flush()
-#         self._stderr.flush()
-#         sys.stdout = self.old_stdout
-#         sys.stderr = self.old_stderr
-
+def copy_dataset_example(example):
+    """ copies a dataset example to the current working directory """
+    import requests
+    from importlib.metadata import metadata
+    import zipfile
+    import io
+    url = metadata("zen_garden").get_all("Project-URL")
+    url = [u.split(", ")[1] for u in url if u.split(", ")[0] == "Zenodo"][0]
+    zenodo_meta = requests.get(url,allow_redirects=True)
+    zenodo_meta.raise_for_status()
+    zenodo_data = zenodo_meta.json()
+    zenodo_zip_url = zenodo_data["files"][0]["links"]["self"]
+    zenodo_zip = requests.get(zenodo_zip_url)
+    zenodo_zip = zipfile.ZipFile(io.BytesIO(zenodo_zip.content))
+    base_path = zenodo_zip.filelist[0].filename
+    example_path = f"{base_path}documentation/dataset_examples/{example}/"
+    config_path = f"{base_path}documentation/dataset_examples/config.json"
+    notebook_path = f"{base_path}notebooks/example_notebook.ipynb"
+    local_dataset_path = os.path.join(os.getcwd(), "dataset_examples")
+    if not os.path.exists(local_dataset_path):
+        os.mkdir(local_dataset_path)
+    local_example_path = os.path.join(local_dataset_path, example)
+    if not os.path.exists(local_example_path):
+        os.mkdir(local_example_path)
+    example_found = False
+    config_found = False
+    notebook_found = False
+    for file in zenodo_zip.filelist:
+        if file.filename.startswith(example_path):
+            filename_ending = file.filename.split(example_path)[1]
+            local_folder_path = os.path.join(local_example_path, filename_ending)
+            if file.is_dir():
+                if not os.path.exists(local_folder_path):
+                    os.mkdir(os.path.join(local_example_path, filename_ending))
+            else:
+                local_file_path = os.path.join(local_example_path, filename_ending)
+                with open(local_file_path, "wb") as f:
+                    f.write(zenodo_zip.read(file))
+            example_found = True
+        elif file.filename == config_path:
+            with open(os.path.join(local_dataset_path, "config.json"), "wb") as f:
+                f.write(zenodo_zip.read(file))
+            config_found = True
+        elif file.filename == notebook_path:
+            notebook_path_local = os.path.join(local_dataset_path, "example_notebook.ipynb")
+            notebook = json.loads(zenodo_zip.read(file))
+            for cell in notebook['cells']:
+                if cell['cell_type'] == 'code':  # Check only code cells
+                    for i, line in enumerate(cell['source']):
+                        if "<dataset_name>" in line:
+                            cell['source'][i] = line.replace("<dataset_name>", example)
+            with open(notebook_path_local, "w") as f:
+                json.dump(notebook, f)
+            notebook_found = True
+    assert example_found, f"Example {example} could not be downloaded from the dataset examples!"
+    assert config_found, f"Config.json file could not be downloaded from the dataset examples!"
+    if not notebook_found:
+        logging.warning("Example jupyter notebook could not be downloaded from the dataset examples!")
+    logging.info(f"Example dataset {example} downloaded to {local_example_path}")
+    return local_example_path,os.path.join(local_dataset_path, "config.json")
 
 # This functionality is for the IIS constraints
 # ---------------------------------------------
@@ -618,394 +642,19 @@ def xr_like(fill_value, dtype, other, dims):
 # This is to lazy load h5 file most of it is taken from the hdfdict package
 ###########################################################################
 
-TYPEID = '_type_'
-
-
-@contextmanager
-def hdf_file(hdf, lazy=True, *args, **kwargs):
-    """
-    Context manager yields h5 file if hdf is str,
-    otherwise just yield hdf as is.
-
-    :param hdf: #TODO describe parameter/return
-    :param lazy: #TODO describe parameter/return
-    :param args: #TODO describe parameter/return
-    :param kwargs: #TODO describe parameter/return
-    """
-    if isinstance(hdf, str):
-        if not lazy:
-            with h5py.File(hdf, *args, **kwargs) as hdf:
-                yield hdf
-        else:
-            yield h5py.File(hdf, *args, **kwargs)
-    else:
-        yield hdf
-
-
-def unpack_dataset(item):
-    """
-    Reconstruct a hdfdict dataset.
-    Only some special unpacking for yaml and datetime types.
-
-    :param item: h5py.Dataset
-    :return: Unpacked Data
-    """
-
-    value = item[()]
-    if TYPEID in item.attrs:
-        if item.attrs[TYPEID].astype(str) == 'datetime':
-            if hasattr(value, '__iter__'):
-                value = [datetime.fromtimestamp(
-                    ts) for ts in value]
-            else:
-                value = datetime.fromtimestamp(value)
-
-        if item.attrs[TYPEID].astype(str) == 'yaml':
-            value = yaml.safe_load(value.decode())
-
-    # bytes to strings
-    if isinstance(value, bytes):
-        value = value.decode("utf-8")
-
-    return value
-
-
-class LazyHdfDict(UserDict):
-    """
-    Helps loading data only if values from the dict are requested.
-    This is done by reimplementing the __getitem__ method.
-    """
-
-    def __init__(self, _h5file=None, *args, **kwargs):
-        """
-
-        :param _h5file: #TODO describe parameter/return
-        :param args: #TODO describe parameter/return
-        :param kwargs: #TODO describe parameter/return
-        """
-        super().__init__(*args, **kwargs)
-        self._h5file = _h5file  # used to close the file on deletion.
-
-    def __getitem__(self, key):
-        """Returns item and loads dataset if needed.
-
-        :param key: #TODO describe parameter/return
-        :return: #TODO describe parameter/return
-        """
-        item = super().__getitem__(key)
-        if isinstance(item, h5py.Dataset):
-            item = unpack_dataset(item)
-            self.__setitem__(key, item)
-        return item
-
-    def unlazy(self, return_dict=False):
-        """
-        Unpacks all datasets.
-        You can call dict(this_instance) then to get a real dict.
-
-        :param return_dict: #TODO describe parameter/return
-        :return: #TODO describe parameter/return
-        """
-        load(self, lazy=False)
-
-        # Load loads all the data but we need to transform the lazydict into normal dicts
-        def _recursive(lazy_dict):
-            for k in list(lazy_dict.keys()):
-                if isinstance(lazy_dict[k], LazyHdfDict):
-                    _recursive(lazy_dict[k])
-                    lazy_dict[k] = dict(lazy_dict[k])
-
-        _recursive(self)
-
-        if return_dict:
-            return dict(self)
-
-    def close(self):
-        """
-        Closes the h5file if provided at initialization.
-        """
-        if self._h5file and hasattr(self._h5file, 'close'):
-            self._h5file.close()
-
-    def __del__(self):
-        """
-        delete
-        """
-        self.close()
-
-    def _ipython_key_completions_(self):
-        """
-        Returns a tuple of keys.
-        Special Method for ipython to get key completion
-
-        :return: #TODO describe parameter/return
-        """
-        return tuple(self.keys())
-
-
-def fill_dict(hdfobject, datadict, lazy=True, unpacker=unpack_dataset):
-    """
-    Recursivley unpacks a hdf object into a dict
-
-    :param hdfobject: Object to recursively unpack
-    :param datadict: A dict option to add the unpacked values to
-    :param lazy: If True, the datasets are lazy loaded at the moment an item is requested.
-    :param unpacker: Unpack function gets `value` of type h5py.Dataset. Must return the data you would like to
-                     have it in the returned dict.
-    :return: a dict
-    """
-
-    for key, value in hdfobject.items():
-        if type(value) == h5py.Group or isinstance(value, LazyHdfDict):
-            if lazy:
-                datadict[key] = LazyHdfDict()
-            else:
-                datadict[key] = {}
-            datadict[key] = fill_dict(value, datadict[key], lazy, unpacker)
-        elif isinstance(value, h5py.Dataset):
-            if not lazy:
-                value = unpacker(value)
-            datadict[key] = value
-
-    return datadict
-
-
-def load(hdf, lazy=True, unpacker=unpack_dataset, *args, **kwargs):
-    """
-    Returns a dictionary containing the groups as keys and the datasets as values from given hdf file.
-
-    :param hdf: string (path to file) or `h5py.File()` or `h5py.Group()`
-    :param lazy: If True, the datasets are lazy loaded at the moment an item is requested.
-    :param unpacker: Unpack function gets `value` of type h5py.Dataset. Must return the data you would like to
-                     have it in the returned dict.
-    :param args: Additional arguments for the hdf_file handler
-    :param kwargs: Additional keyword arguments for the hdf_file handler
-    :return: The dictionary containing all groupnames as keys and datasets as values.
-    """
-
-    with hdf_file(hdf, lazy=lazy, *args, **kwargs) as hdf:
-        if lazy:
-            data = LazyHdfDict(_h5file=hdf)
-        else:
-            data = {}
-        return fill_dict(hdf, data, lazy=lazy, unpacker=unpacker)
-
-
-def pack_dataset(hdfobject, key, value):
-    """
-    Packs a given key value pair into a dataset in the given hdfobject.
-
-    :param hdfobject: #TODO describe parameter/return
-    :param key: #TODO describe parameter/return
-    :param value: #TODO describe parameter/return
-    """
-
-    isdt = None
-    if isinstance(value, datetime):
-        value = value.timestamp()
-        isdt = True
-
-    if hasattr(value, '__iter__'):
-        if all(isinstance(i, datetime) for i in value):
-            value = [item.timestamp() for item in value]
-            isdt = True
-
-    try:
-        ds = hdfobject.create_dataset(name=key, data=value)
-        if isdt:
-            ds.attrs.create(
-                name=TYPEID,
-                data=string_("datetime"))
-    except TypeError:
-        # Obviously the data was not serializable. To give it
-        # a last try; serialize it to yaml
-        # and save it to the hdf file:
-        ds = hdfobject.create_dataset(
-            name=key,
-            data=string_(yaml.safe_dump(value))
-        )
-        ds.attrs.create(
-            name=TYPEID,
-            data=string_("yaml"))
-        # if this fails again, restructure your data!
-
-
-def dump(data, hdf, packer=pack_dataset, *args, **kwargs):
-    """
-    Adds keys of given dict as groups and values as datasets to the given hdf-file (by string or object) or group object.
-
-    :param data: The dictionary containing only string keys and data values or dicts again.
-    :param hdf: string (path to file) or `h5py.File()` or `h5py.Group()`
-    :param packer: Callable gets `hdfobject, key, value` as input.
-                   `hdfobject` is considered to be either a h5py.File or a h5py.Group.
-                   `key` is the name of the dataset.
-                   `value` is the dataset to be packed and accepted by h5py.
-    :param args: Additional arguments for the hdf_file handler
-    :param kwargs: Additional keyword arguments for the hdf_file handler
-    :return: `h5py.Group()` or `h5py.File()` instance
-    """
-
-    def _recurse(datadict, hdfobject):
-        for key, value in datadict.items():
-            if isinstance(key, tuple):
-                key = '_'.join((str(i) for i in key))
-            if isinstance(value, (dict, LazyHdfDict)):
-                hdfgroup = hdfobject.create_group(key)
-                _recurse(value, hdfgroup)
-            else:
-                packer(hdfobject, key, value)
-
-    with hdf_file(hdf, *args, **kwargs) as hdf:
-        _recurse(data, hdf)
-        return hdf
-
-
-# This is to lazy load h5 file most
-###################################
-
-class LazyEntry(object):
-    """
-    This is a lazy entry from a store that is loaded only when it is requested.
-    """
-
-    def __init__(self, path, dtype, store, value=None):
-        """
-        Initializes the class.
-
-        :param value: The value to store
-        :param path: The path to the leave of the store
-        :param dtype: The type of the leave
-        :param store: The store to load the data from
-        :param value: The value to store, can be None, if given, this is returned when deserialized and the store is not
-                      accessed.
-        """
-        self.path = path
-        self.dtype = dtype
-        self.store = store
-        self.value = value
-
-    def deserialize(self):
-        """
-        Deserializes the data from the store.
-
-        :return: The deserialized data
-        """
-
-        # if we have a value, return it
-        if self.value is not None:
-            return self.value
-
-        # get the data
-        df = self.store.get(self.path)
-
-        # go through the different types
-        if self.dtype == "pandas":
-            return df
-        elif self.dtype == "scalar":
-            return df.values[0]
-        elif self.dtype == "vector" or self.dtype == "matrix":
-            return df.values
-        else:
-            raise TypeError(f"Unknown type {self.dtype}")
-
-
-class LazyDict(dict):
-    """
-    This class is a dictionary that loads the values lazily.
-    """
-
-    def __getitem__(self, item):
-        """
-        Returns the item from the dictionary.
-
-        :param item: The item to return
-        :return: The item
-        """
-
-        value = super().__getitem__(item)
-
-        if isinstance(value, LazyEntry):
-            value = value.deserialize()
-            super().__setitem__(item, value)
-
-        return value
-
-
-class HDFPandasSerializer(LazyDict):
+class HDFPandasSerializer():
     """
     This class saves dictionaries with a pandas store as a hdf file.
     """
 
-    def __init__(self, file_name, lazy=True):
+    def __init__(self):
         """
         Initializes the class to read a hdf file, potentially lazily. For writing files, use the classmethod
         "serialize_dict".
 
-        :param file_name: The file name of the hdf file.
-        :param lazy: Boolean if lazy selection
         """
 
-        # super init
-        super().__init__()
-
-        # attributes
-        self.file_name = file_name
-        self.store = pd.HDFStore(file_name, mode="r")
-
-        # raise a key error if the file is empty
-        if not self.store.keys():
-            raise KeyError(f"This file does not contain any keys: {file_name}")
-
-        self._lazy = lazy
-
-        # load all keys
-        self._load()
-
-    def _load(self):
-        """
-        Loads the hdf file into the dictionary.
-        """
-
-        for path, groups, leaves in self.store.walk():
-            # get the right dict
-            previous_keys = path.split("/")[1:]
-            current_dict = self
-            for key in previous_keys:
-                current_dict = current_dict[key]
-
-            # create the groups
-            for group_key in groups:
-                current_dict[group_key] = LazyDict()
-
-            # load the leaves
-            for leave_key in leaves:
-                leave_path = f"{path}/{leave_key}"
-                attrs = self.store.get_storer(f"{path}/{leave_key}").attrs
-                dtype = attrs.type
-
-                # if its a scalar we read it out now
-                value = None
-                if dtype == "scalar":
-                    value = attrs.value
-
-                # create the entry
-                entry = LazyEntry(leave_path, dtype, self.store, value=value)
-
-                if self._lazy:
-                    current_dict[leave_key] = entry
-                else:
-                    current_dict[leave_key] = entry.deserialize()
-
-        # no need to keep the file open
-        if not self._lazy:
-            self.close()
-
-    def close(self):
-        """
-        Closes the hdf file.
-        """
-
-        self.store.close()
+        raise NotImplementedError("The HDFPandasSerializer class constructor is not used and so also not implemented. If you arrive here, something went wrong. Please contact the developers.")
 
     @classmethod
     def _recurse(cls, store, dictionary, previous_key=""):
@@ -1045,7 +694,7 @@ class HDFPandasSerializer(LazyDict):
             else:
                 raise TypeError(f"Type {type(value)} is not supported.")
 
-    @classmethod
+    @classmethod #USED
     def serialize_dict(cls, file_name, dictionary, overwrite=True):
         """
         Serialized a dictionary of dataframes and other objects into a hdf file.

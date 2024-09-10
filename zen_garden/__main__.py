@@ -15,7 +15,7 @@ import sys
 import os
 import zen_garden.model.default_config as default_config
 import json
-
+from zen_garden.utils import copy_dataset_example
 
 def run_module(args=None):
     """
@@ -31,7 +31,7 @@ def run_module(args=None):
                   "current working directory. You can specify a config file with the --config argument. However, " \
                   "note that the output directory will always be the current working directory, independent of the " \
                   "dataset specified in the config file."
-    parser = argparse.ArgumentParser(description=description, add_help=True, usage="usage: python -m zen_garden [-h] [--config CONFIG] [--dataset DATASET]")
+    parser = argparse.ArgumentParser(description=description, add_help=True, usage="usage: python -m zen_garden [-h] [--config CONFIG] [--dataset DATASET] [--job_index JOB_INDEX] [--job_index_var JOB_INDEX_VAR] [--example EXAMPLE]")
     # TODO make json config default
     parser.add_argument("--config", required=False, type=str, default="./config.py", help="The config file used to run the pipeline, "
                                                                                         "defaults to config.py in the current directory.")
@@ -44,24 +44,9 @@ def run_module(args=None):
 
     args = parser.parse_args(args)
 
-    # copy example dataset and run example #TODO so far doesn't work because dataset_examples are not part of the package but outside
+    # copy example dataset and run example
     if args.example is not None:
-        import shutil
-        import pkg_resources
-        dataset_examples_path = pkg_resources.resource_filename("zen_garden", f"documentation/dataset_examples")
-        example_path = pkg_resources.resource_filename("zen_garden", f"documentation/dataset_examples/{args.example}")
-        if not os.path.exists(example_path):
-            raise FileNotFoundError(f"Example dataset {args.example} not found in documentation/dataset_examples.")
-        # create new dataset_example folder in current directory
-        if not os.path.exists(os.path.join(os.getcwd(),"dataset_examples")):
-            os.mkdir(os.path.join(os.getcwd(),"dataset_examples"))
-        dataset_examples_path_cwd = os.path.join(os.getcwd(),"dataset_examples")
-        config_path_cwd = os.path.join(dataset_examples_path_cwd, "config.json")
-        example_path_cwd = os.path.join(dataset_examples_path_cwd, args.example)
-        # copy config.json
-        shutil.copyfile(os.path.join(dataset_examples_path, "config.json"), config_path_cwd)
-        # copy example dataset
-        shutil.copytree(example_path, example_path_cwd)
+        example_path_cwd,config_path_cwd = copy_dataset_example(args.example)
         args.dataset = example_path_cwd
         args.config = config_path_cwd
 

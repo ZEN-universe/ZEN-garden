@@ -249,11 +249,40 @@ If the user wants to disable the interpolation for a specific parameter, the use
     The user must specify the file name, i.e., in the example above, the specified file is ``demand_yearly_variation.csv``, not ``demand.csv``.
     Therefore, the interpolation is only disabled for the yearly variation, not for the hourly-dependent data.
 
-
+.. _PWA:
 Piece-wise affine input data
 ----------------------------
-TODO
+In ZEN-garden, we can model the capital expenditure (CAPEX) of conversion technologies either linear or piece-wise affine (PWA).
+In the linear case, the ``capex_specific_conversion`` parameter is treated like every other parameter, i.e., the user can specify a constant value and a ``.csv`` file.
 
+In the PWA case, the user can specify a ``nonlinear_capex.csv`` file that contains the breakpoints and the CAPEX values of the PWA representation.
+A PWA representation is a set of linear functions that are connected at the breakpoints. The breakpoints are the capacity additions :math:`\Delta S_m` with the corresponding CAPEX values :math:`\alpha_m`.
+
+.. image:: ../images/PWA.png
+    :alt: Piece-wise affine representation of CAPEX
+
+The file ``nonlinear_capex.csv`` has the following structure:
+
+.. code-block::
+
+    capacity_addition,capex_specific_conversion
+    0,2000
+    20,1700
+    40,1500
+    60,1350
+    80,1200
+    100,1100
+    120,1010
+    140,940
+    160,890
+    180,860
+    200,840
+    GW,Euro/kW
+
+.. note::
+
+    Each new interval between two breakpoints adds a binary variable to the optimization problem, for each technology, each year, and each node. The binary variable is 1 if the capacity is in the interval and 0 otherwise.
+    The user is advised to keep the number of breakpoints low to avoid a combinatorial explosion of binary variables.
 
 .. _Unit consistency:
 Unit consistency
