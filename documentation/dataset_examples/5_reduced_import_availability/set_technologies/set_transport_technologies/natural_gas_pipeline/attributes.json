@@ -61,8 +61,12 @@
     "unit": "1/km"
   },
   "capex_per_distance_transport": {
+    "default_value": 265000.0,
+    "unit": "Euro/km"
+  },
+  "capex_specific_transport": {
     "default_value": 265.0,
-    "unit": "Euro/km/MW"
+    "unit": "Euro/MW"
   },
   "distance": {
     "default_value": "inf",

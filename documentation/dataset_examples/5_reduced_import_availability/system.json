@@ -20,5 +20,6 @@
     "optimized_years": 3,
     "interval_between_years": 1,
     "use_rolling_horizon": false,
-    "years_in_rolling_horizon": 1
+    "years_in_rolling_horizon": 1,
+    "double_capex_transport": true
 }
