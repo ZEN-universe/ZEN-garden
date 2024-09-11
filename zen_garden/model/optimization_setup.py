@@ -42,15 +42,15 @@ class OptimizationSetup(object):
         :param scenario_dict: dictionary defining the scenario
         :param input_data_checks: input data checks object
         """
-        self.analysis = config.analysis
-        self.system = config.system
-        self.solver = config.solver
+        self.analysis = copy.deepcopy(config.analysis)
+        self.system = copy.deepcopy(config.system)
+        self.solver = copy.deepcopy(config.solver)
         self.input_data_checks = input_data_checks
         self.input_data_checks.optimization_setup = self
         # create a dictionary with the paths to access the model inputs and check if input data exists
         self.create_paths()
         # dict to update elements according to scenario
-        self.scenario_dict = ScenarioDict(scenario_dict, config, self.paths)
+        self.scenario_dict = ScenarioDict(scenario_dict, self, self.paths)
         # check if all needed data inputs for the chosen technologies exist and remove non-existent
         self.input_data_checks.check_existing_technology_data()
         # empty dict of elements (will be filled with class_name: instance_list)
@@ -62,7 +62,6 @@ class OptimizationSetup(object):
         self.parameters = None
         self.constraints = None
         self.sets = None
-
 
         # sorted list of class names
         element_classes = self.dict_element_classes.keys()
