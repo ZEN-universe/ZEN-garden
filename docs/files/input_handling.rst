@@ -524,17 +524,19 @@ A combination of ``geom`` and ``infnorm``, where geometric mean scaling is follo
 
 1. ``PI_small``
 
-.. image:: ../images/PI_small_net_solving_time_plot_violin.png
+.. image:: ../images/PI_small_net_solving_time_plot.png
     :alt: Net-solving time comparison for PI_small
 
 Note that the ``Base Case`` refers to a configuration where Gurobi scaling with a ``NumericFocus`` of ``0`` is applied, but no scaling in ZEN-garden. Since for this model all scaling configurations that use ZEN-garden are run with a fixed ``NumericFocus`` of ``1`` (corresponding to low numeric focus)
 , we also included a ``Base Case`` configuration with a ``NumericFocus`` of ``1`` for comparison. The red dotted line indicates the arithmetic mean of the net-solving time for the base case configuration.
+Red dots represent the solving time without the time spent on scaling the problem, whereas the blue dots represent the net-solving time that includes both.
 
 The plot shows:
 
 * a significant decrease in net-solving time for the model ``PI_small`` for a majority of the considered algorithms when ZEN-garden scaling is applied
 * on average configurations that include the right-hand side vector for deriving the row scaling vector indicate a better performance
 * solving times are very inconsistent leading to large variances in the net-solving time for each scaling algorithm
+* scaling time only makes up a small fraction of the net-solving time
 
 2. ``NoErr``
 
