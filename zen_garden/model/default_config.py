@@ -9,7 +9,7 @@ Default configuration. Changes from the default values are specified in config.p
 
 from pydantic import BaseModel, ConfigDict
 from typing import Any, Optional, Union
-
+import importlib.metadata
 
 class Subscriptable(BaseModel, extra="allow"):
     def __getitem__(self, __name: str) -> Any:
@@ -163,6 +163,7 @@ class Analysis(Subscriptable):
     output_format: str = "h5"
     earliest_year_of_data: int = 1900
     save_benchmarking_results: bool = False
+    zen_garden_version: str = importlib.metadata.version("zen-garden")
 
 class Config(Subscriptable):
     analysis: Analysis = Analysis()
