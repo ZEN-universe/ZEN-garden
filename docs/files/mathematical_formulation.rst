@@ -623,7 +623,7 @@ Furthermore, the following two constraints are added to ensure that the approxim
     :label: binary_constraint_on
 
     S^\mathrm{approx}_{i,s,n,y} \leq S_{i,s,n,y
-    S^\mathrm{approx}_{i,s,n,y} \geq (1-b) M + S_{i,s,n,t}
+    S^\mathrm{approx}_{i,s,n,y} \geq (1-b_{h,s,p,t}) M + S_{i,s,n,t}
 
 Similarly, for transport technologies it follows:
 
@@ -643,4 +643,36 @@ For storage technologies, the minimum load constraint is formulated as the sum o
 Piecewise affine approximation of captial expenditures
 -----------------------------------------------------
 
-The capital expenditures of the conversion technologies can be approximated by a piecewise affine function.
+The capital expenditures of the conversion technologies can be approximated by a piecewise affine (PWA) function to account for non-linearities and e.g., represent economies of scale. To this end, the captial investment unit costs are approximated by segments with different capital unit investment costs. The number of segments is described via the set of segments :math:`x\in\mathcal{X}`. To model the segement selection, the binary variable :math:`d_{i,s,n,y,x}` is introduced. :math:`d_{i,s,n,y,x}` equals one if segement :math:`x` is active, otherwise :math:`d_{i,s,n,y,x}` equals zero. At most, one segment can be active at a time:
+
+.. math::
+
+    \sum_{x\in\mathcal{X}} d_{i,s,n,y,x} \leq 1
+
+Each segment is valid withing a minimum and maximum capacity :math:`s^\mathrm{pwa}_{i,s,n,y,x}`. Furthermore, :math:`A_{i,s,p,y}^\mathrm{approx}` is introduced to approximate the capacity variable and avoid non-linearities.  
+
+For the first segment (i.e., :math:`x=0`), the technology capacitiy is described by the following constraints:
+
+.. math:: 
+
+    0 \leq S_{i,s,n,y,x}^\mathrm{approx}
+    S_{i,s,n,y}^\mathrm{approx} \geq d_{i,s,n,y,x} s^\mathrm{pwa}_{i,s,n,y,x}
+
+For all other segments (i.e., :math:`x>0`), the following constraints must hold:
+
+.. math:: 
+
+    d_{i,s,n,y,x} s^\mathrm{pwa}_{i,s,n,y,x-1} \leq S_{i,s,n,y,x}^\mathrm{approx}
+    S_{i,s,n,y}^\mathrm{approx} \geq d_{i,s,n,y,x} s^\mathrm{pwa}_{i,s,n,y,x}
+
+The capacity approximation variable :math:`S_{i,s,n,y,x}^\mathrm{approx}` and the capacity variables :math:`S_{i,s,n,y}` are linked:
+
+.. math::
+
+    \sum_{x\in\mathcal{X}} S_{i,s,n,y,x}^\mathrm{approx} = S_{i,s,n,y}
+
+Finally, the captial expenditures are described by the following constraint:
+
+.. math::
+    
+    A_{i,s,p,y} = \sum_{x\in\mathcal{X}} \alpha_{i,s,y,x} S_{i,s,n,y,x}^\mathrm{approx}
