@@ -1,10 +1,9 @@
-Variable Name;Time Step Type;Doc String;Unit Category
-``flow_import``;``set_time_steps_operation``;node- and time-dependent carrier import from the grid;{"energy_quantity": 1, "time": -1}
-``flow_export``;``set_time_steps_operation``;node- and time-dependent carrier export from the grid;{"energy_quantity": 1, "time": -1}
-``cost_carrier``;``set_time_steps_operation``;node- and time-dependent carrier cost due to import and export;{"money": 1, "time": -1}
-``cost_carrier_total``;``set_time_steps_yearly``;total carrier cost due to import and export;{"money": 1}
-``carbon_emissions_carrier``;``set_time_steps_operation``;carbon emissions of importing and exporting carriers;{"emissions": 1, "time": -1}
-``carbon_emissions_carrier_total``;``set_time_steps_yearly``;total carbon emissions of importing and exporting carriers;{"emissions": 1}
-``shed_demand``;``set_time_steps_operation``;shed carrier demand;{"energy_quantity": 1, "time": -1}
-``cost_shed_demand``;``set_time_steps_operation``;cost shed carrier demand;{"money": 1, "time": -1}
-
+Variable Name;Time Step Type;Symbol;Doc String;Unit Category
+``flow_import``;``set_time_steps_operation``;:math:`U_{c,n,t,y}`;node- and time-dependent carrier import from the grid;{"energy_quantity": 1, "time": -1}
+``flow_export``;``set_time_steps_operation``;:math:`V_{c,n,t,y}`;node- and time-dependent carrier export from the grid;{"energy_quantity": 1, "time": -1}
+``cost_carrier``;``set_time_steps_operation``;:math:`O^c_{c,n,t,y}`;node- and time-dependent carrier cost due to import and export;{"money": 1, "time": -1}
+``cost_carrier_total``;``set_time_steps_yearly``;:math:`OPEX_y^\mathrm{c}`;total carrier cost due to import and export;{"money": 1}
+``carbon_emissions_carrier``;``set_time_steps_operation``;:math:`-`;carbon emissions of importing and exporting carriers;{"emissions": 1, "time": -1}
+``carbon_emissions_carrier_total``;``set_time_steps_yearly``;:math:`E^\mathrm{carrier}_y`;total carbon emissions of importing and exporting carriers;{"emissions": 1}
+``shed_demand``;``set_time_steps_operation``;:math:`D_{c,n,t,y}`;shed carrier demand;{"energy_quantity": 1, "time": -1}
+``cost_shed_demand``;``set_time_steps_operation``;:math:`-`;cost shed carrier demand;{"money": 1, "time": -1}
