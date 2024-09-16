@@ -194,6 +194,7 @@ The operational emission expenditure :math:`OPEX_y^\mathrm{e}` is composed of th
 
     OPEX_y^\mathrm{e} = E_y \mu + E_y^\mathrm{o}\mu^\mathrm{o}+E_y^\mathrm{bo}\mu^\mathrm{bo}.
 
+.. _emissions_objective
 **Minimizing total emissions**
 
 The total annual carbon emissions emissions :math:`E_y` of the energy system are minimized over the entire planning horizon :math:`y \in {\mathcal{Y}}`. 
