@@ -15,7 +15,7 @@ Scenario definition
 =====================
 Scenarios are defined in the ``scenarios.json``:
 
-.. code-block:: JSON
+.. code-block::
 
     {"scenario_name_1":
         {"element_1": 
@@ -38,7 +38,7 @@ Each scenario has a unique name. For each element of the ``energy_system``, as w
 
 It is also possible to combine the four options. For example, if you would like to change the import price for the element ``natural_gas``the ``scenario.json``would look like this:
 
-.. code-block:: JSON
+.. code-block::
 
     {"high_gas_price":
         {"natural_gas": 
@@ -60,7 +60,7 @@ In this example, first the default value would be read from ``attributes_high.js
 .. note::
     If you want to change the yearly variation of a time-dependent parameter, i.e., adding a file for demand_yearly_variation, please use ``demand_yearly_variation`` directly.
 
-    .. code-block:: JSON
+    .. code-block::
 
         {"example": {
             "electricity": {
@@ -78,7 +78,7 @@ Overwriting entire sets or subsets
 
 In some cases, we would like to change a parameter for all elements of a set. To do this, we use the same syntax, but use the set name instead of the element name:
 
-.. code-block:: JSON
+.. code-block::
 
     {"example": {
         "set_technologies": {
@@ -95,7 +95,7 @@ In some cases, we would like to change a parameter for all elements of a set. To
 
 For sets, an additional key ``"exclude"`` is allowed, which allows us to define a list of set-elements that should not be overwritten. The set expansion works hierarchical, meaning that if we define the same parameter for an element of the set, this parameter will not be touched at all. For example, let's say we have ``set_technologies = ["tech1", "tech2"]`` and
 
-.. code-block:: JSON
+.. code-block::
 
     {"new_example": {
         "set_technologies": {
@@ -113,7 +113,8 @@ For sets, an additional key ``"exclude"`` is allowed, which allows us to define 
 
 after expansion the final scenarios dictionary would be:
 
-.. code-block:: JSON
+.. code-block::
+
     {"new_example": {
         "tech1": {
             "max_load": {
@@ -136,7 +137,7 @@ after expansion the final scenarios dictionary would be:
 
  It is also to define parameters in lists:
 
- .. code-block:: JSON
+ .. code-block::
 
     {"price_range": {
         "natural_gas": {
@@ -152,7 +153,7 @@ Will create 3 new scenarios for all values specified in ``default_op``. All keys
 
 Per default, the names for the generated scenarios are "p{i:02d}_{j:03d}", where i is an int referring to the expanded parameter name (e.g. ``natural_gas``, ``import_price``, ``file``, ``default_op``) and j to its value in the list (e.g. ``[0.25, 0.3, 0.35]``). The mappings of ``i`` and ``j`` to the parameter names and values are written to  ``param_map.json`` in the root directory of the corresponding scenario (see below). It is possible to overwrite this default naming with a formatting key:
 
- .. code-block:: JSON
+ .. code-block::
 
     {"price_range": {
         "natural_gas": {
@@ -186,7 +187,7 @@ Using both, sets and lists
 
 When using both, set and list expansion, list expansion is done first. For example
 
-.. code-block:: JSON
+.. code-block::
 
     {"example": {
         "set_carriers": {
@@ -206,7 +207,7 @@ Overwriting Analysis and System
 
 It is also possible to overwrite entries in the system and analysis settings. The syntax is as follows:
 
-.. code-block:: JSON
+.. code-block::
 
     {"example": {
         "system": {
