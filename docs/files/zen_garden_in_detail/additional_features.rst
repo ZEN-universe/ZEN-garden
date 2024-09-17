@@ -57,6 +57,6 @@ Availability yearly
 ---------------------------------
 
 
-.. _carbon_emission_constraints:
+.. _modeling_carbon_emissions:
 Carbon emission constraints
 ---------------------------------
