@@ -13,9 +13,7 @@ The scenario tool allows the user to overwrite parameter values and run a given 
 .. _scenario_definition:
 Scenario definition 
 =====================
-Scenarios are defined in the ``scenarios.json``:
-
-.. code-block::
+Scenarios are defined in the ``scenarios.json``::
 
     {"scenario_name_1":
         {"element_1": 
@@ -36,9 +34,7 @@ Each scenario has a unique name. For each element of the ``energy_system``, as w
 * ``file``: Change the file name from which the values are taken to overwrite the default values
 * ``file_op``: Multiply the parameter values after reading the default value and overwriting the default values with the file values by a constant factor
 
-It is also possible to combine the four options. For example, if you would like to change the import price for the element ``natural_gas``the ``scenario.json``would look like this:
-
-.. code-block::
+It is also possible to combine the four options. For example, if you would like to change the import price for the element ``natural_gas``the ``scenario.json``would look like this::
 
     {"high_gas_price":
         {"natural_gas": 
@@ -76,9 +72,7 @@ Note that you overwrite the demand_yearly_variation parameter, not demand.
 Overwriting entire sets or subsets
 ==================================
 
-In some cases, we would like to change a parameter for all elements of a set. To do this, we use the same syntax, but use the set name instead of the element name:
-
-.. code-block::
+In some cases, we would like to change a parameter for all elements of a set. To do this, we use the same syntax, but use the set name instead of the element name::
 
     {"example": {
         "set_technologies": {
@@ -93,9 +87,7 @@ In some cases, we would like to change a parameter for all elements of a set. To
         }
     }
 
-For sets, an additional key ``"exclude"`` is allowed, which allows us to define a list of set-elements that should not be overwritten. The set expansion works hierarchical, meaning that if we define the same parameter for an element of the set, this parameter will not be touched at all. For example, let's say we have ``set_technologies = ["tech1", "tech2"]`` and
-
-.. code-block::
+For sets, an additional key ``"exclude"`` is allowed, which allows us to define a list of set-elements that should not be overwritten. The set expansion works hierarchical, meaning that if we define the same parameter for an element of the set, this parameter will not be touched at all. For example, let's say we have ``set_technologies = ["tech1", "tech2"]``::
 
     {"new_example": {
         "set_technologies": {
@@ -111,9 +103,7 @@ For sets, an additional key ``"exclude"`` is allowed, which allows us to define 
         }
     }
 
-after expansion the final scenarios dictionary would be:
-
-.. code-block::
+after expansion the final scenarios dictionary would be::
 
     {"new_example": {
         "tech1": {
@@ -129,15 +119,13 @@ after expansion the final scenarios dictionary would be:
         }
     }
 
- This hierarchy is continued for smaller sets, e.g. defining ``set_transport_technologies`` takes precedence to ``set_technologies``, etc.
+This hierarchy is continued for smaller sets, e.g. defining ``set_transport_technologies`` takes precedence to ``set_technologies``, etc.
 
 .. _defining_scenario_params_with_lists:
  Defining parameters with lists
  ==============================
 
- It is also to define parameters in lists:
-
- .. code-block::
+ It is also to define parameters in lists::
 
     {"price_range": {
         "natural_gas": {
@@ -151,9 +139,7 @@ after expansion the final scenarios dictionary would be:
 
 Will create 3 new scenarios for all values specified in ``default_op``. All keys support the option to pass lists instead of strings or floats, however, it is important that the value is a proper Python list, not an array or something else. To avoid errors, we recommend wrapping your values in ``list(...)``, especially if you generate the iterable with ``np.linspace()``, ``range()`` or similar. If multiple lists are defined within the same scenario, all possible combinations (cartesian product) are investigated, so watch out for combinatorial explosions.
 
-Per default, the names for the generated scenarios are "p{i:02d}_{j:03d}", where i is an int referring to the expanded parameter name (e.g. ``natural_gas``, ``import_price``, ``file``, ``default_op``) and j to its value in the list (e.g. ``[0.25, 0.3, 0.35]``). The mappings of ``i`` and ``j`` to the parameter names and values are written to  ``param_map.json`` in the root directory of the corresponding scenario (see below). It is possible to overwrite this default naming with a formatting key:
-
- .. code-block::
+Per default, the names for the generated scenarios are "p{i:02d}_{j:03d}", where i is an int referring to the expanded parameter name (e.g. ``natural_gas``, ``import_price``, ``file``, ``default_op``) and j to its value in the list (e.g. ``[0.25, 0.3, 0.35]``). The mappings of ``i`` and ``j`` to the parameter names and values are written to  ``param_map.json`` in the root directory of the corresponding scenario (see below). It is possible to overwrite this default naming with a formatting key::
 
     {"price_range": {
         "natural_gas": {
@@ -185,9 +171,7 @@ Here, ``scenario_2`` was defined via lists and its sub-scenarios are now in subf
 Using both, sets and lists
 ==============================
 
-When using both, set and list expansion, list expansion is done first. For example
-
-.. code-block::
+When using both, set and list expansion, list expansion is done first. For example::
 
     {"example": {
         "set_carriers": {
@@ -205,9 +189,7 @@ will only generate 3 scenarios where the ``file_op`` for all technologies (excep
 Overwriting Analysis and System
 ==============================
 
-It is also possible to overwrite entries in the system and analysis settings. The syntax is as follows:
-
-.. code-block::
+It is also possible to overwrite entries in the system and analysis settings. The syntax is as follows::
 
     {"example": {
         "system": {
