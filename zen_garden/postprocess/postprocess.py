@@ -25,6 +25,7 @@ from pydantic import BaseModel
 from ..utils import HDFPandasSerializer
 from ..model.optimization_setup import OptimizationSetup
 
+
 # Warnings
 warnings.filterwarnings('ignore', category=NaturalNameWarning)
 
@@ -55,6 +56,7 @@ class Postprocess:
         self.sets = model.sets
         self.constraints = model.constraints
         self.param_map = param_map
+        self.scaling = model.scaling
 
         # get name or directory
         self.model_name = model_name
@@ -90,6 +92,8 @@ class Postprocess:
         self.save_scenarios()
         self.save_solver()
         self.save_param_map()
+        if self.analysis.save_benchmarking_results:
+            self.save_benchmarking_data()
 
         # extract and save sequence time steps, we transform the arrays to lists
         self.dict_sequence_time_steps = self.flatten_dict(self.energy_system.time_steps.get_sequence_time_steps_dict())
@@ -152,6 +156,29 @@ class Postprocess:
 
         else:
             raise AssertionError(f"The specified output format {format}, chosen in the config, is not supported")
+
+    def save_benchmarking_data(self):
+        #initialize dictionary
+        benchmarking_data = {}
+        # get the benchmarking data
+        benchmarking_data["solving_time"] = self.model.solver_model.Runtime
+        if self.solver.solver_options["Method"] == 2:
+            benchmarking_data["number_iterations"] = self.model.solver_model.BarIterCount
+        else:
+            benchmarking_data["number_iterations"] = self.model.solver_model.IterCount
+        benchmarking_data["solver_status"] = self.model.solver_model.Status
+        benchmarking_data["objective_value"] = self.model.objective_value
+        benchmarking_data["scaling_time"] = self.scaling.scaling_time
+
+        #get numerical range
+        range_lhs, range_rhs, cond = self.scaling.print_numerics(0, False, True)
+        benchmarking_data["numerical_range_lhs"] = range_lhs
+        benchmarking_data["numerical_range_rhs"] = range_rhs
+        benchmarking_data["condition_number"] = cond
+
+
+        fname = self.name_dir.joinpath('benchmarking')
+        self.write_file(fname, benchmarking_data, format="json")
 
     def save_sets(self):
         """ Saves the Set values to a json file which can then be

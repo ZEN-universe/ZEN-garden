@@ -1,4 +1,4 @@
-Variable Name;Time Step Type;Doc String;Unit Category
+Variable Name;Time Step Type;Symbol;Doc String;Unit Category
 ``carbon_emissions_annual``;``set_time_steps_yearly``;:math:`E_y`;annual carbon emissions of energy system;{"emissions": 1}
 ``carbon_emissions_cumulative``;``set_time_steps_yearly``;:math:`E_y^\mathrm{cum}`;cumulative carbon emissions of energy system over time for each year;{"emissions": 1}
 ``carbon_emissions_budget_overshoot``;``set_time_steps_yearly``;:math:`E_y^\mathrm{bo}`;overshoot carbon emissions of energy system at the end of the time horizon;{"emissions": 1}
