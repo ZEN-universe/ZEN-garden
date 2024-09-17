@@ -4,7 +4,7 @@ Key;Type;Default Value;Description
 ``solver``;``str``;``slv.name``;select a solver. Per default the solver specified in the solver settings is used.
 ``hoursPerPeriod``;``int``;``1``;specify the length of a period in hours
 ``extremePeriodMethod``;``Optional[str]``;``"None``;select the extreme period method
-``rescaleClusterPeriods``;``bool``;``False;rescale cluster periods
+``rescaleClusterPeriods``;``bool``;``False``;rescale cluster periods
 ``representationMethod``;``str``;``meanRepresentation``;select the representation method
 ``resolution``;``int``;``1``;select the resolution
 ``segmentation``;``bool``;``False``;use segments to represent the timeseries
