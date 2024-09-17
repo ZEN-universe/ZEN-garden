@@ -505,17 +505,17 @@ Furthermore, for storage technologies the ratios of the energy- and power rated 
 
     \rho^\mathrm{min}_{k} S^\mathrm{e}_{k,n,y} \leq \S_{k,n,y} \rho^\mathrm{max}_{k} S^\mathrm{e}_{k,n,y}
 
-To account for technology construction times :math:`dy^\mathrm{construction}` we introduce an auxiliary variable, :math:`S^\mathrm{invest}_{h,p,y}`, representing the technology investments. The following constraint ensures that the new technology capacities do not become available before the construction time has passed:
+To account for technology construction times :math:`dy^\mathrm{construction}` we introduce an auxiliary variable, :math:`\Delta S^\mathrm{invest}_{h,p,y}`, representing the technology investments. The following constraint ensures that the new technology capacities do not become available before the construction time has passed:
 
 .. math::
 
-    \Delta S_{h,p,y} = S_{h,p,\left(y-dy^\mathrm{construction}\right)}^\mathrm{invest}
+    \Delta S_{h,p,y} = \Delta S_{h,p,\left(y-dy^\mathrm{construction}\right)}^\mathrm{invest}
 
 Furthermore, if :math:`y-dy^\mathrm{construction}}^\mathrm{invest}<0`:
 
 .. math::
 
-    S_{h,p,y} = 0
+    \Delta S_{h,p,y} = 0
 
 **JM START**
 In case you are using constrained technology deployment, :math:`\Delta S_{h,p,y}` is constrained by the existing knowledge of how to install the technology :math:`K_{h,p,y}` with the technology diffusion rate :math:`\vartheta_h`. For node-based technologies, i.e., conversion and storage technologies, spillover effects from other nodes :math:`\tilde{\mathcal{N}} = \mathcal{N}\setminus\{n\}` can be utilized (knowledge spillover rate :math:`\omega`). To allow for an entry into a niche market, we add an unbounded market share :math:`\xi` of the total capacity of all other technologies with the same reference carrier:
