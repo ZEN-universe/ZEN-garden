@@ -176,7 +176,7 @@ The operational carrier cost :math:`OPEX_y^\mathrm{c}` are the sum of the node- 
 
     OPEX_y^\mathrm{c} = \sum_{c\in\mathcal{C}}\sum_{n\in\mathcal{N}}\sum_{t\in\mathcal{T}}\tau_t O^c_{c,n,t,y}.
 
-The node- and time dependent carrier costs :math:`O^c_{c,n,t,y}` are composed of three terms: the carrier import :math:`\underline{U}_{c,n,t,y}` multiplied by the import price :math:`u_{c,n,t,y}`, the carrier export :math:`\overline{U}_{c,n,t,y}` multiplied by the export price :math:`\overline{v}_{c,n,t,y}`, and the shed demand :math:`D_{c,n,t,y}` multiplied by demand shedding price :math:`\n\underline{u}_c`:
+The node- and time dependent carrier costs :math:`O^c_{c,n,t,y}` are composed of three terms: the carrier import :math:`\underline{U}_{c,n,t,y}` multiplied by the import price :math:`u_{c,n,t,y}`, the carrier export :math:`\overline{U}_{c,n,t,y}` multiplied by the export price :math:`\overline{v}_{c,n,t,y}`, and the shed demand :math:`D_{c,n,t,y}` multiplied by demand shedding price :math:`\nu_c`:
 
 .. math:: 
     :label: cost_carrier
@@ -511,7 +511,7 @@ To account for technology construction times :math:`dy^\mathrm{construction}` we
 
     \Delta S_{h,p,y} = \Delta S_{h,p,\left(y-dy^\mathrm{construction}\right)}^\mathrm{invest}
 
-Furthermore, if :math:`y-dy^\mathrm{construction}}^\mathrm{invest}<0`:
+Furthermore, if :math:`y-dy^\mathrm{construction}<0`:
 
 .. math::
 
@@ -587,7 +587,7 @@ For :math:`0<\varphi<1`, :math:`\sum_{\tilde{t}=0}^{t-1}\kappa^{\tilde{t}}` is r
 Eq. :eq:`storage_level_simpl` is reformulated to:
 
 .. math::
-    label: storage_level_selfdisch
+    :label: storage_level_selfdisch
 
     L(t) = L_0\kappa^t + \Delta H\frac{1-\kappa^t}{1-\kappa} = \frac{\Delta H}{1-\kappa}+\left(L_0-\frac{\Delta H}{1-\kappa}\right)\kappa^t.
 
@@ -679,17 +679,19 @@ The capital expenditures of the conversion technologies can be approximated by a
 
 If breakpoint :math:`m` is active, the capacity addition must be within the capacity of the active breakpoint :math:`\Delta s^\mathrm{pwa}_{i,n,y,m}` and the subsequent breakpoint :math:`\Delta s^\mathrm{pwa}_{i,n,y,m+1}`. To avoid bilinearities, the capacity addition is approximated :math:`S_{i,p,y,m}^\mathrm{approx}`. For breakpoints :math:`m \in [0, ..., |\mathcal{M}|-1]` it follows:
 
-.. math:: 
+.. math::
+    :label: pwa_capacity_approximation_1
 
-   d_{i,n,y,m} \Delta s^\mathrm{pwa}_{i,n,y,m} \leq  \Delta S_{i,n,y,m}^\mathrm{approx} \leq d_{i,n,y,m} \Delta  s^\mathrm{pwa}_{i,n,y,m+1}
+    d_{i,n,y,m} \Delta s^\mathrm{pwa}_{i,n,y,m} \leq  \Delta S_{i,n,y,m}^\mathrm{approx} \leq d_{i,n,y,m} \Delta  s^\mathrm{pwa}_{i,n,y,m+1}
 
 while for the last breakpoint :math:`m=|\mathcal{M}|` it follows:
 
 .. math::
+    :label: pwa_capacity_approximation_2
 
-   d_{i,n,y,m} \Delta s^\mathrm{pwa}_{i,n,y,m} \leq \Delta S_{i,n,y,m}^\mathrm{approx} \leq d_{i,n,y,m} \Delta s^\mathrm{pwa}_{i,n,y,m}
+    d_{i,n,y,m} \Delta s^\mathrm{pwa}_{i,n,y,m} \leq \Delta S_{i,n,y,m}^\mathrm{approx} \leq d_{i,n,y,m} \Delta s^\mathrm{pwa}_{i,n,y,m}
 
-Thus, Eq. :eq:`pwa_capacity_approximation_1` and Eq. :ew:`pwa_capacity_approximation_2` ensure that only if a breakpoint is active (i.e., :math:`d_{i,n,y,m}=1`) :math:`\Delta S_{i,n,y,m}^\mathrm{approx}\geq0`, otherwise :math:`\Delta S_{i,n,y,m}^\mathrm{approx}=0`. The approximation of the capacity addition variable :math:`\Delta S_{i,n,y,m}^\mathrm{approx}` and the capacity addition variable :math:`\Delta S_{i,n,y}` are linked:
+Thus, Eq. :eq:`pwa_capacity_approximation_1` and Eq. :eq:`pwa_capacity_approximation_2` ensure that only if a breakpoint is active (i.e., :math:`d_{i,n,y,m}=1`) :math:`\Delta S_{i,n,y,m}^\mathrm{approx}\geq0`, otherwise :math:`\Delta S_{i,n,y,m}^\mathrm{approx}=0`. The approximation of the capacity addition variable :math:`\Delta S_{i,n,y,m}^\mathrm{approx}` and the capacity addition variable :math:`\Delta S_{i,n,y}` are linked:
 
 .. math::
 
