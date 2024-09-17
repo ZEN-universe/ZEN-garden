@@ -20,7 +20,7 @@ The net present cost :math:`NPC_y` of the energy system are minimized over the e
 .. math::
     :label: min_cost
 
-    \sum_{y\in\mathcal{Y}} NPC_y
+    \mathrm{min} \quad \sum_{y\in\mathcal{Y}} NPC_y
 
 The net present cost :math:`NPC_y` of each year :math:`y\in\mathcal{Y}` are computed by discounting the total energy system cost of each year, :math:`C_y` with a constant discount rate :math:`r`:
 
@@ -66,7 +66,7 @@ The annual cash flows accrue over the technology lifetime :math:`l_h` and compri
 
 where :math:`\lceil\cdot\rceil` is the ceiling function and :math:`\psi(y)` is a function that maps the planning period :math:`y` to the actual year.
 
-The capital investment cost :math:`I_{h,p,y}` for conversion technology :math:`i\in\mathcal{I}` is calculated as the product of the unit cost of capital investment :math:`\alpha_{i,y}` and the capacity addition :math:`\Delta S_{i,n,y}` on each node `n\in\mathcal{N}`:
+The capital investment cost :math:`I_{h,p,y}` for conversion technology :math:`i\in\mathcal{I}` is calculated as the product of the unit cost of capital investment :math:`\alpha_{i,y}` and the capacity addition :math:`\Delta S_{i,n,y}` on each node :math:`n\in\mathcal{N}`:
 
 .. math::
     :label: cost_capex_conversion
@@ -121,7 +121,7 @@ For existing storage technology capacities :math:`s_{k,n,y}` that were installed
 
     I^\mathrm{ex}_{k,n,y} = \alpha_{k,y_0} \Delta s^\mathrm{ex}_{k,n,y}
 
-**Operational expenditures technology**
+**Operational expenditures**
 
 The annual operational expenditure for technology operation :math:`OPEX_y^\mathrm{t}` includes the variable operational costs of the technologies :math:`OPEX_y^\mathrm{t,v}` and the fixed operational expenditure for the technology operation :math:`OPEX_y^\mathrm{t,f}`.
 
@@ -129,6 +129,8 @@ The annual operational expenditure for technology operation :math:`OPEX_y^\mathr
     :label: opex_t
 
     OPEX_y^\mathrm{t} = OPEX_y^\mathrm{t,v} + OPEX_y^\mathrm{t,f}.
+
+*Operational expenditures technology*
 
 The fixed technology operational expenditures :math:`OPEX_y^\mathrm{f}` are the product of the specific fixed operational expenditures :math:`\gamma_{h,y}` and the capacity :math:`S_{h,p,y}`, summed over all technologies and positions :math:`p\in\mathcal{P}`:
 
@@ -149,55 +151,59 @@ For conversion technologies :math:`i \in \mathcal{I}`, the variable operational 
 .. math:: 
     :label: cost_opex_conversion
 
-    O^\mathrm{t}_{h,\mathrm{power},t,y} = \beta_{i,y} G_{i,n,t,y}^\mathrm{r}
+    O^\mathrm{t}_{h,t,y} = \beta_{i,y} G_{i,n,t,y}^\mathrm{r}
 
 Similarly, for transport technologies :math:`j \in \mathcal{J}`, the variable operational expenditures are the product of the specific variable operational expenditure :math:`\beta_{j,y}` and the reference flows :math:`F_{j,e,t,y}`:
 
 .. math:: 
     :label: cost_opex_transport
 
-    O^\mathrm{t}_{j,\mathrm{power},t,y} = \beta_{j,y} F_{j,e,t,y}
+    O^\mathrm{t}_{j,t,y} = \beta_{j,y} F_{j,e,t,y}
 
 Finally, for storage technologies :math:`k \in \mathcal{K}`, the variable operational expenditure are the product of the charge and discharge cost :math:`\beta^\mathrm{charge}_{j,e,y}` and :math:`\beta^\mathrm{discharge}_{j,e,y}` multiplied by the storage charge :math:`\underline{H}_{k,n,t,y}` and discharge :math:`\overline{H}_{k,n,t,y}`, respectively:
 
 .. math:: 
     :label: cost_opex_storage
 
-    O^\mathrm{t}_{k,\mathrm{power},t,y} = \beta^\mathrm{charge}_{k,y} \underline{H}_{k,n,t,y} + \beta^\mathrm{discharge}_{k,y} \overline{H}_{k,n,t,y}
+    O^\mathrm{t}_{k,t,y} = \beta^\mathrm{charge}_{k,y} \underline{H}_{k,n,t,y} + \beta^\mathrm{discharge}_{k,y} \overline{H}_{k,n,t,y}
 
-**Operational expenditures carrier**
+*Operational expenditures carrier*
 
-The operational carrier cost :math:`OPEX_y^\mathrm{c}` are the sum of the node- and time dependent carrier cost :math:`O^c_{c,n,t,y}` for all carriers multiplied by the time step duration :math:`\tau_t`:
+The operational carrier cost :math:`OPEX_y^\mathrm{c}` are the sum of the node- and time dependent carrier cost :math:`O^\mathrm{c}_{c,n,t,y}` for all carriers multiplied by the time step duration :math:`\tau_t`:
 
 .. math::
     :label: opex_c
 
     OPEX_y^\mathrm{c} = \sum_{c\in\mathcal{C}}\sum_{n\in\mathcal{N}}\sum_{t\in\mathcal{T}}\tau_t O^c_{c,n,t,y}.
 
-The node- and time dependent carrier cost :math:`O^c_{c,n,t,y}` is composed of three term: 1) the carrier import :math:`U_{c,n,t,y}` multiplied by the import price :math:`u_{c,n,t,y}`, 2) the carrier export :math:`V_{c,n,t,y}` multiplied by the export price :math:`v_{c,n,t,y}`, and 3) the shed demand :math:`D_{c,n,t,y}` multiplied by demand shedding price :math:`\nu_c`:
+The node- and time dependent carrier costs :math:`O^c_{c,n,t,y}` are composed of three terms: the carrier import :math:`\underline{U}_{c,n,t,y}` multiplied by the import price :math:`u_{c,n,t,y}`, the carrier export :math:`\overline{U}_{c,n,t,y}` multiplied by the export price :math:`\overline{v}_{c,n,t,y}`, and the shed demand :math:`D_{c,n,t,y}` multiplied by demand shedding price :math:`\n\underline{u}_c`:
 
 .. math:: 
     :label: cost_carrier
 
-    O^c_{c,n,t,y} = u_{c,n,t,y}U_{c,n,t,y}-v_{c,n,t,y}V_{c,n,t,y}+\nu_c D_{c,n,t,y}
+    O^c_{c,n,t,y} = \underline{u}_{c,n,t,y}\underline{U}_{c,n,t,y}-\overline{v}_{c,n,t,y}\overline{U}_{c,n,t,y}+\nu_c D_{c,n,t,y}
 
 *Operational expenditures emissions*
 
-The operational emission expenditure :math:`OPEX_y^\mathrm{e}` is composed of three terms: 1) the annual carbon emissions :math:`E_y`  multiplied by the carbon emission price :math:`\mu`, 2) the annual carbon emission overshoot :math:`E_y^\mathrm{o}` multiplied by the annual carbon overshoot price :math:`\mu^\mathrm{o}`, and 3) the budget carbon emission overshoot :math:`E_y^\mathrm{o}` multiplied by the carbon emission budget overshoot price :math:`\mu^\mathrm{o}`:
+The annual operational emission expenditures :math:`OPEX_y^\mathrm{e}` are composed of three terms: the annual carbon emissions :math:`E_y`  multiplied by the carbon emission price :math:`\mu`, the annual carbon emission overshoot :math:`E_y^\mathrm{o}` multiplied by the annual carbon overshoot price :math:`\mu^\mathrm{o}`, and the budget carbon emission overshoot :math:`E_y^\mathrm{o}` multiplied by the carbon emission budget overshoot price :math:`\mu^\mathrm{o}`:
 
 .. math::
     :label: opex_e
 
     OPEX_y^\mathrm{e} = E_y \mu + E_y^\mathrm{o}\mu^\mathrm{o}+E_y^\mathrm{bo}\mu^\mathrm{bo}.
 
-.. _emissions_objective
-**Minimizing total emissions**
+For a detailed description on how to use the annual carbon emission overshoot price and the carbon emission budget overshoot price refert to :ref:`_modeling_carbon_emissions`.
+
+.. _emissions_objective:
+Minimizing total emissions
+^^^^^^^^^^^^^^^^^^^^^^^^
 
 The total annual carbon emissions emissions :math:`E_y` of the energy system are minimized over the entire planning horizon :math:`y \in {\mathcal{Y}}`. 
 
 .. math::
     :label: min_emissions
-    \sum_{y\in\mathcal{Y}} E_y
+
+    \mathrm{min} \quad \sum_{y\in\mathcal{Y}} E_y
 
 The total annual carbon emissions :math:`E_y` account for the total operational carbon emissions for importing and exporting carriers :math:`E^\mathrm{carrier}_y` and for operating technologies :math:`E^\mathrm{tech}_y`:
 
@@ -212,54 +218,56 @@ Energy balance
 ---------------
 
 The sources and sinks of a carrier :math:`c\in\mathcal{C}` must be in equilibrium for all carriers at all nodes :math:`n\in\mathcal{N}` and in all time steps :math:`t\in\mathcal{T}`. The source terms for carrier :math:`c` on node :math:`n` are:
+
 * the output flow :math:`\overline{G}_{c,i,n,t,y}` of all conversion technologies :math:`i\in\mathcal{I}` if :math:`c\in\overline{\mathcal{C}}_i`.
 * the transported flow :math:`F_{j,e,t,y}` on ingoing edges :math:`e\in\underline{\mathcal{E}}_n` minus the losses :math:`F^\mathrm{l}_{j,e,t,y}` for all transport technologies :math:`j\in\mathcal{J}` if :math:`c=c_j^\mathrm{r}`.
 * the discharge flow :math:`\overline{H}_{k,n,t,y}` for all storage technologies :math:`k\in\mathcal{K}` if :math:`c=c_k^\mathrm{r}`.
-* the imported flow :math:`U_{c,n,t,y}`.
+* the imported flow :math:`\underline{U}_{c,n,t,y}`.
 
 The sinks of carrier :math:`c` on node :math:`n` are:
+
 * the exogenous demand :math:`d_{c,n,t,y}` minus the shed demand :math:`D_{c,n,t,y}`.
 * the input flow :math:`\underline{G}_{c,i,n,t,y}` of all conversion technologies :math:`i\in\mathcal{I}` if :math:`c\in\underline{\mathcal{C}}_i`.
 * the transported flow :math:`F_{j,e',t,y}` on outgoing edges :math:`e'\in\overline{\mathcal{E}}_n` for all transport technologies :math:`j\in\mathcal{J}` if :math:`c=c_j^\mathrm{r}`.
 * the charge flow :math:`\underline{H}_{k,n,t,y}` for all storage technologies :math:`k\in\mathcal{K}` if :math:`c=c_k^\mathrm{r}`.
-* the exported flow :math:`V_{c,n,t,y}`.
+* the exported flow :math:`\overline{U}_{c,n,t,y}`.
 
 The energy balance for carrier :math:`c\in\mathcal{C}` is then calculated as:
 
 .. math::
     :label: energy_balance
 
-    0 = -\left(d_{c,n,t,y}-D_{c,n,t,y}\right) + \sum_{i\in\mathcal{I}}\left(\overline{G}_{c,i,n,t,y}-\underline{G}_{c,i,n,t,y}\right) + \sum_{j\in\mathcal{J}}\left(\sum_{e\in\underline{\mathcal{E}}_n}\left(F_{j,e,t,y} - F^\mathrm{l}_{j,e,t,y}\right)-\sum_{e'\in\overline{\mathcal{E}}_n}F_{j,e',t,y}\right) + \sum_{k\in\mathcal{K}}\left(\overline{H}_{k,n,t,y}-\underline{H}_{k,n,t,y}\right)+ U_{c,n,t,y} - V_{c,n,t,y}.
+    0 = -\left(d_{c,n,t,y}-D_{c,n,t,y}\right) + \sum_{i\in\mathcal{I}}\left(\overline{G}_{c,i,n,t,y}-\underline{G}_{c,i,n,t,y}\right) + \sum_{j\in\mathcal{J}}\left(\sum_{e\in\underline{\mathcal{E}}_n}\left(F_{j,e,t,y} - F^\mathrm{l}_{j,e,t,y}\right)-\sum_{e'\in\overline{\mathcal{E}}_n}F_{j,e',t,y}\right) + \sum_{k\in\mathcal{K}}\left(\overline{H}_{k,n,t,y}-\underline{H}_{k,n,t,y}\right)+ \underline{U}_{c,n,t,y} - \overline{U}_{c,n,t,y}.
 
 Note that :math:`\sum_{k\in\mathcal{K}}\left(\overline{H}_{k,n,t,y}-\underline{H}_{k,n,t,y}\right)` are zero if :math:`c\neq c^\mathrm{r}_j` and :math:`c\neq c^\mathrm{r}_k`, respectively.
 
-The carrier import :math:`U_{c,n,t,y}` is limited by the carrier import availability :math:`\underline{a}_{c,n,t,y}` for all carriers :math:`c\in\mathcal{C}` in all nodes :math:`n\in\mathcal{N}` and time steps :math:`t\in\mathcal{T}`:
+The carrier import :math:`\underline{U}_{c,n,t,y}` is limited by the carrier import availability :math:`\underline{a}_{c,n,t,y}` for all carriers :math:`c\in\mathcal{C}` in all nodes :math:`n\in\mathcal{N}` and time steps :math:`t\in\mathcal{T}`:
 
 .. math::
     :label: carrier_import
 
-    0 \leq U_{c,n,t,y} \leq \underline{a}_{c,n,t,y}.
+    0 \leq \underline{U}_{c,n,t,y} \leq \underline{a}_{c,n,t,y}.
 
 In addition, annual carrier import limits can be applied:
 
 .. math::
     :label: carrier_import_yearly
 
-    0 \leq \sum_{t\in\mathcal{T}} \tau U_{c,n,t,y} \leq \underline{a}^{Y}_{c,n,t,y}.
+    0 \leq \sum_{t\in\mathcal{T}} \tau \underline{U}_{c,n,t,y} \leq \underline{a}^{Y}_{c,n,t,y}.
 
-Similarly, the carrier export :math:`V_{c,n,t,y}` is limited by the carrier export availability :math:`\overline{a}_{c,n,t,y}` for all carriers :math:`c\in\mathcal{C}` in all nodes :math:`n\in\mathcal{N}` and time steps :math:`t\in\mathcal{T}`:
+Similarly, the carrier export :math:`\overline{U}_{c,n,t,y}` is limited by the carrier export availability :math:`\overline{a}_{c,n,t,y}` for all carriers :math:`c\in\mathcal{C}` in all nodes :math:`n\in\mathcal{N}` and time steps :math:`t\in\mathcal{T}`:
 
 .. math::
     :label: carrier_import
 
-    0 \leq V_{c,n,t,y} \leq \overline{a}_{c,n,t,y}.
+    0 \leq \overline{U}_{c,n,t,y} \leq \overline{a}_{c,n,t,y}.
 
 In addition, annual carrier export limits can be applied:
 
 .. math::
     :label: carrier_export_yearly
 
-    0 \leq \sum_{t\in\mathcal{T}} \tau V_{c,n,t,y} \leq \overline{a}^{Y}_{c,n,t,y}.
+    0 \leq \sum_{t\in\mathcal{T}} \tau \overline{U}_{c,n,t,y} \leq \overline{a}^{Y}_{c,n,t,y}.
 
 .. note:: 
     You can skip the import and export avaialbility constraints by setting the import and export availabilities to infinity.
@@ -289,7 +297,7 @@ The carrier carbon emissions include the operational emissions of importing and 
 .. math::
     :label: carbon_emissions_carrier
 
-    \theta^\mathrm{carrier}_{c,n,t} = \underline{\epsilon_c} U_{c,n,t,y} - \overline{\epsilon_c} V_{c,n,t,y}.
+    \theta^\mathrm{carrier}_{c,n,t} = \underline{\epsilon_c} \underline{U}_{c,n,t,y} - \overline{\epsilon_c} \overline{U}_{c,n,t,y}.
     
 The total annual technology carbon emissions :math:`E^\mathrm{tech}_y` represent the sum of the technology carbon emissions :math:`\theta^\mathrm{tech}_{h,n,t,y}`:
 
