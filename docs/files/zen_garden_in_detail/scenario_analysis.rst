@@ -5,17 +5,18 @@ Scenario analysis
 
 The scenario tool allows the user to overwrite parameter values and run a given model multiple times with slight variations to the input data, the system or analysis settings. In the following we discuss the features of the scenario tool. Specifically, 
 
-* How to define scenarios in the new format
+* How to define scenarios
 * Hierarchical expansion of sets to quickly define parameter changes for multiple elements
-* How to run scenarios in parallel on Euler
 * Defining parameter values in lists to avoid lengthy manual definitions
+* How to overwrite system and analysis settings
 
 .. _scenario_definition:
 Scenario definition 
 =====================
-Scenarios are defined in the scenarios.json:
+Scenarios are defined in the ``scenarios.json``:
 
-.. code-block:: JSON
+.. code-block::
+
     {"scenario_name_1":
         {"element_1": 
             {"param_1": {
@@ -30,14 +31,15 @@ Scenarios are defined in the scenarios.json:
 
 Each scenario has a unique name. For each element of the ``energy_system``, as well as the ``energy_system`` itself, the parameters can be overwritten to perform a different analysis. Four options are available:
 
-* ``default``: Change the filenmae from which the default value is taken 
+* ``default``: Change the filename from which the default value is taken
 * ``default_op``: Multiply default value by a constant factor 
 * ``file``: Change the file name from which the values are taken to overwrite the default values
 * ``file_op``: Multiply the parameter values after reading the default value and overwriting the default values with the file values by a constant factor
 
 It is also possible to combine the four options. For example, if you would like to change the import price for the element ``natural_gas``the ``scenario.json``would look like this:
 
-.. code-block:: JSON
+.. code-block::
+
     {"high_gas_price":
         {"natural_gas": 
             {"price_import": {
@@ -50,13 +52,13 @@ It is also possible to combine the four options. For example, if you would like 
         }
     }
 
-In this example, first the default value would be read from `àttributes_high.json``. Therafter, the default value would be multiplied by 1.5. Now, the values specified in the file ``price_import_high.csv`` are read and overwrite the corresponding default values. Lastly, the parameter values are multiplied by 0.9.
+In this example, first the default value would be read from ``attributes_high.json``. Thereafter, the default value would be multiplied by 1.5. Now, the values specified in the file ``price_import_high.csv`` are read and overwrite the corresponding default values. Lastly, the parameter values are multiplied by 0.9.
 
 .. note:: 
-    ``file_op`` is applied after the file values have replaced the default values and will therefore be applied to **all** paramter values, the default values as well. Thus, setting both ``default_op`` and ``file_op`` will change the default values twice.
+    ``file_op`` is applied after the file values have replaced the default values and will therefore be applied to **all** parameter values, the default values as well. Thus, setting both ``default_op`` and ``file_op`` will change the default values twice.
 
 .. note::
-    If you want to change the yearly variation of a time-dependent parameter, i.e., adding a file for demand_yearly_variation, please refer to ``demand_yearly_variation`` directly.
+    If you want to change the yearly variation of a time-dependent parameter, i.e., adding a file for demand_yearly_variation, please use ``demand_yearly_variation`` directly.
 
     .. code-block::
 
@@ -76,7 +78,8 @@ Overwriting entire sets or subsets
 
 In some cases, we would like to change a parameter for all elements of a set. To do this, we use the same syntax, but use the set name instead of the element name:
 
-.. code-block:: JSON
+.. code-block::
+
     {"example": {
         "set_technologies": {
             "max_load": {
@@ -90,9 +93,10 @@ In some cases, we would like to change a parameter for all elements of a set. To
         }
     }
 
-For sets, an additional key "exclude" is allowed, which allows us to define a list of set-elements that should not be overwritten. The set expansion works hierarchical, meaning that if we define the same parameter for an element of the set, this parameter will not be touched at all. For example, let's say we have set_technologies = ["tech1", "tech2"] and
+For sets, an additional key ``"exclude"`` is allowed, which allows us to define a list of set-elements that should not be overwritten. The set expansion works hierarchical, meaning that if we define the same parameter for an element of the set, this parameter will not be touched at all. For example, let's say we have ``set_technologies = ["tech1", "tech2"]`` and
 
-.. code-block:: JSON
+.. code-block::
+
     {"new_example": {
         "set_technologies": {
             "max_load": {
@@ -109,7 +113,8 @@ For sets, an additional key "exclude" is allowed, which allows us to define a li
 
 after expansion the final scenarios dictionary would be:
 
-.. code-block:: JSON
+.. code-block::
+
     {"new_example": {
         "tech1": {
             "max_load": {
@@ -124,15 +129,16 @@ after expansion the final scenarios dictionary would be:
         }
     }
 
- This hierarchy is continued for smaller sets, e.g. defining "set_transport_technologies" takes precedence to "set_technologies", etc.
+ This hierarchy is continued for smaller sets, e.g. defining ``set_transport_technologies`` takes precedence to ``set_technologies``, etc.
 
 .. _defining_scenario_params_with_lists:
  Defining parameters with lists
  ==============================
 
- It is also to define parameters in lists, e.g. to conduct a sensitivity analysis:
+ It is also to define parameters in lists:
 
- .. code-block:: JSON
+ .. code-block::
+
     {"price_range": {
         "natural_gas": {
             "import_price": {
@@ -143,11 +149,12 @@ after expansion the final scenarios dictionary would be:
         }
     }
 
-Will create 3 new scenarios for all values specified in ``default_op``. All keys support the option to pass lists instead of strings or floats, however, it is important that the value is a proper Python list, not an array or something else. To avoid errors, we recommend wrapping your values in list(...), especially if you generate the iterable with ``np.linspace()``, ``range()`` or similar. If multiple lists are defined within the same scenario, all possible combinations (cartesian product) are investigated, so watch out for combinatorial explosions.
+Will create 3 new scenarios for all values specified in ``default_op``. All keys support the option to pass lists instead of strings or floats, however, it is important that the value is a proper Python list, not an array or something else. To avoid errors, we recommend wrapping your values in ``list(...)``, especially if you generate the iterable with ``np.linspace()``, ``range()`` or similar. If multiple lists are defined within the same scenario, all possible combinations (cartesian product) are investigated, so watch out for combinatorial explosions.
 
 Per default, the names for the generated scenarios are "p{i:02d}_{j:03d}", where i is an int referring to the expanded parameter name (e.g. ``natural_gas``, ``import_price``, ``file``, ``default_op``) and j to its value in the list (e.g. ``[0.25, 0.3, 0.35]``). The mappings of ``i`` and ``j`` to the parameter names and values are written to  ``param_map.json`` in the root directory of the corresponding scenario (see below). It is possible to overwrite this default naming with a formatting key:
 
- .. code-block:: JSON
+ .. code-block::
+
     {"price_range": {
         "natural_gas": {
             "import_price": {
@@ -180,7 +187,8 @@ Using both, sets and lists
 
 When using both, set and list expansion, list expansion is done first. For example
 
-.. code-block:: JSON
+.. code-block::
+
     {"example": {
         "set_carriers": {
             "price_import": {
@@ -199,7 +207,8 @@ Overwriting Analysis and System
 
 It is also possible to overwrite entries in the system and analysis settings. The syntax is as follows:
 
-.. code-block:: JSON
+.. code-block::
+
     {"example": {
         "system": {
             key: value
@@ -226,4 +235,5 @@ Per default, all scenarios are run sequentially, as before. Additionally, one ca
 will run scenarios 1,4,7, where the number is the index of the key (starting with 0), not the key itself (no explicit scenario names).
 
 .. note::
+
     When submitting a job on the cluster per default all scenarios are run sequentially. However, you can also run jobs in parallel by specifying the scenarios via the ``--array=start-stop:step%Nmax`` argument (start and stop are inclusive, Nmax is the max number of concurrent jobs). Other ``--array`` options are e.g. ``--array=1,4,7``, which will run only the specified jobs. Note that the indices start with 0, so running the first four scenarios would be ``--array=0-3`` (per default the step is 1 and Nmax default to the number of submitted jobs). 
