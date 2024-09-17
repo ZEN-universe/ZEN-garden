@@ -14,7 +14,7 @@ Documentation
 ======================================
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
    :caption: Overview
 
    files/functionalities
@@ -22,36 +22,36 @@ Documentation
    files/license
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
    :caption: User guide
 
    files/installation
-   files/running_models
    files/building_models
+   files/running_models
    files/analyzing_models
-   files/mathematical_formulation
    files/troubleshooting
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
    :caption: ZEN-garden in detail
 
    files/input_structure
    files/input_handling
-   files/optimization_problem
+   files/sets_params_constrains
+   files/mathematical_formulation
    files/scenario_analysis
    files/configurations
    files/additional_features
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
    :caption: Dataset Examples
 
    files/dataset_examples
 
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
    :caption: Contributing & Support
 
    files/contributing
@@ -59,7 +59,7 @@ Documentation
 
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
    :caption: References
 
    files/api_reference
