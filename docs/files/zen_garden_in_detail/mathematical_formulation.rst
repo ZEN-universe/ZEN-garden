@@ -27,7 +27,7 @@ The net present cost :math:`NPC_y` of each year :math:`y\in\mathcal{Y}` are comp
 .. math::
     :label: net_present_cost
 
-    NPC_y = \sum_{y \in \mathcal{Y}} \sum_{i \in [0,dy]} \left( \dfrac{1}{1+r} \right)^{left\(dy (y-y_0) + i \right)} C_y
+    NPC_y = \sum_{y \in \mathcal{Y}} \sum_{i \in [0,dy]} \left( \dfrac{1}{1+r} \right)^{\left(dy (y-y_0) + i \right)} C_y
 
 where :math:`y_0` represents the first year of the planning horizon and :math:`dy` represents the interval between planning periods. E.g., if :math:`dy=2` the optimization is conducted for every second year. Moreover, we assume that the optimization is only conducted until the end of the first year of the last planning period. The last period of the planning horizon :math:`Y=\max(y)` is therefore only counted as a single year regardless of the interval between planning periods.
 
@@ -137,7 +137,7 @@ The fixed technology operational expenditures :math:`OPEX_y^\mathrm{f}` are the 
 
     OPEX_y^\mathrm{f} = \sum_{h\in\mathcal{H}}\sum_{p\in\mathcal{P}}\gamma_{h,y}S_{h,p,y}+\sum_{k\in\mathcal{K}}\sum_{n\in\mathcal{N}}\gamma^\mathrm{e}_{k,y}S^\mathrm{e}_{k,n,y}.
 
-The variable technology operational expenditures :math:`OPEX_y^\mathrm{t,v}` are the sum of the variable operational expenditures for each technology over the entire year, where each timestep is multiplied by the time step duration :math:`\tau_t`:
+The variable technology operational expenditures :math:`OPEX_y^\mathrm{t,v}` are the sum of the variable operational expenditures of each technology over the entire year, where each timestep is multiplied by the time step duration :math:`\tau_t`:
 
 .. math::
     :label: opex_v
