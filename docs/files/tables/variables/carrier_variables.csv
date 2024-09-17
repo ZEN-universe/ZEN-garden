@@ -1,6 +1,6 @@
 Variable Name;Time Step Type;Symbol;Doc String;Unit Category
 ``flow_import``;``set_time_steps_operation``;:math:`\underline{U}_{c,n,t,y}`;node- and time-dependent carrier import from the grid;{"energy_quantity": 1, "time": -1}
-``flow_export``;``set_time_steps_operation``;:math:`\overline{V}_{c,n,t,y}`;node- and time-dependent carrier export from the grid;{"energy_quantity": 1, "time": -1}
+``flow_export``;``set_time_steps_operation``;:math:`\overline{U}_{c,n,t,y}`;node- and time-dependent carrier export from the grid;{"energy_quantity": 1, "time": -1}
 ``cost_carrier``;``set_time_steps_operation``;:math:`O^c_{c,n,t,y}`;node- and time-dependent carrier cost due to import and export;{"money": 1, "time": -1}
 ``cost_carrier_total``;``set_time_steps_yearly``;:math:`OPEX_y^\mathrm{c}`;total carrier cost due to import and export;{"money": 1}
 ``carbon_emissions_carrier``;``set_time_steps_operation``;:math:`-`;carbon emissions of importing and exporting carriers;{"emissions": 1, "time": -1}
