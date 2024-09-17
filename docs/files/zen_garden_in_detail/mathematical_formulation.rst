@@ -27,9 +27,9 @@ The net present cost :math:`NPC_y` of each year :math:`y\in\mathcal{Y}` are comp
 .. math::
     :label: net_present_cost
 
-    NPC_y = \sum_{i \in [0,dy]} \left( \dfrac{1}{1+r}in\mathcal{Y} \right)^(dy (y-y_0) + i) C_y 
+    NPC_y = \sum_{y \in \mathcal{Y}} \sum_{i \in [0,dy]} \left( \dfrac{1}{1+r} \right)^{left\(dy (y-y_0) + i \right)} C_y
 
-where :math:`y0` represents the first year of the planning horizon and :math:`dy` represents the interval between planning periods. E.g., if :math:`dy=2` the optimization is only conducted for every second year. We assume that the optimization is only conducted until the end of the first year of the last planning period. The last period of the planning horizon :math:`Y=\max(y)` is therefore only counted as a single year regardless of the interval between planning periods
+where :math:`y_0` represents the first year of the planning horizon and :math:`dy` represents the interval between planning periods. E.g., if :math:`dy=2` the optimization is conducted for every second year. Moreover, we assume that the optimization is only conducted until the end of the first year of the last planning period. The last period of the planning horizon :math:`Y=\max(y)` is therefore only counted as a single year regardless of the interval between planning periods.
 
 The total cost :math:`C_y` includes the annual capital expenditures :math:`CAPEX_y` and the operational expenditures for operating technologies :math:`OPEX_y^{t}`, importing and exporting carriers :math:`OPEX_y^\mathrm{c}`, and the cost of carbon emissions :math:`OPEX_y^\mathrm{e}`. 
 
@@ -41,49 +41,49 @@ The total cost :math:`C_y` includes the annual capital expenditures :math:`CAPEX
 
 **Capital expenditures**
 
-:math:`CAPEX_y` accounts for the annual cash flows due to capacity investments :math:`A_{h,s,p,y}` in technologies:
+:math:`CAPEX_y` accounts for the annual cash flows due to capacity investments :math:`A_{h,p,y}` in technologies:
 
 .. math::
     :label: capex_y
 
-    CAPEX_y = \sum_{h\in\mathcal{H}}\sum_{s\in\mathcal{S}}\sum_{p\in\mathcal{P}} A_{h,s,p,y}.
+    CAPEX_y = \sum_{h\in\mathcal{H}}\sum_{s\in\mathcal{S}}\sum_{p\in\mathcal{P}} A_{h,p,y}.
 
-Each technology :math:`h\in\mathcal{H}` is either a conversion technology :math:`i\in\mathcal{I}\subseteq\mathcal{H}`, a transport technology :math:`j\in\mathcal{J}\subseteq\mathcal{H}` or a storage technology :math:`k\in\mathcal{K}\subseteq\mathcal{H}`. For sake of simplicity, we index those variables and parameters that apply to all technology types with :math:`h`. For storage capacities, both the energy and power-rated capacity can be expanded. The capacity type is indicated by :math:`s\in\mathcal{S}`. Conversion and storage technologies are installed and operated on nodes :math:`n\in\mathcal{N}`, and transport technologies are installed and operated on edges :math:`e\in\mathcal{E}`. We summarize nodes and edges to positions :math:`p\in\mathcal{P}=\mathcal{N}\cup\mathcal{E}`.
+Each technology :math:`h\in\mathcal{H}` is either a conversion technology :math:`i\in\mathcal{I}\subseteq\mathcal{H}`, a transport technology :math:`j\in\mathcal{J}\subseteq\mathcal{H}` or a storage technology :math:`k\in\mathcal{K}\subseteq\mathcal{H}`. For sake of simplicity, we index those variables and parameters that apply to all technology types with :math:`h`. For storage capacities, both the energy and power-rated capacity can be expanded. Conversion and storage technologies are installed and operated on nodes :math:`n\in\mathcal{N}`. Transport technologies are installed and operated on edges :math:`e\in\mathcal{E}`. We summarize nodes and edges to positions :math:`p\in\mathcal{P}=\mathcal{N}\cup\mathcal{E}`.
 
-To annualize the investment, the total investment cost is multiplied by the annuity factor :math:`f_h`, which is a function of the technology lifetime  :math:`l_h` and the discount rate :math:`r`:
+The investment costs are annualized by multiplying the total investment cost with the annuity factor :math:`f_h`, which is a function of the technology lifetime  :math:`l_h` and the discount rate :math:`r`:
 
 .. math::
     :label: annuity
 
     f_h=\frac{\left(1+r\right)^{l_h}r}{\left(1+r\right)^{l_h}-1}.
 
-The annual cash flows accrue over the technology lifetime :math:`l_h` and comprise the capital investment cost of newly installed and existing technology capacities :math:`I_{h,s,p,y}` and :math:`I^\mathrm{ex}_{h,s,p,y}`. For annual capital expenditure :math:`A_{h,s,p,y}` for each technology :math:`h\in\mathcal{H}` in the corresponding position :math:`p\in\mathcal{P}` then follows for period :math:`y\in\mathcal{Y}`:
+The annual cash flows accrue over the technology lifetime :math:`l_h` and comprise the capital investment cost of newly installed and existing technology capacities :math:`I_{h,p,y}` and :math:`I^\mathrm{ex}_{h,p,y}`. The annual capital expenditure :math:`A_{h,p,y}` for technology :math:`h\in\mathcal{H}` in position :math:`p\in\mathcal{P}` and period :math:`y\in\mathcal{Y}` are computed as:
 
 .. math::
     :label: capex_yearly
 
-    A_{h,s,p,y}= f_h\left(\sum_{\tilde{y}=\max\left(y_0,y-\left(\lceil\frac{l_h}{\Delta^\mathrm{y}}\right)\rceil+1\right)}^y I_{h,s,p,\tilde{y}} \right)+\left(\sum_{\hat{y}=\psi \left(y-\left(\lceil\frac{l_h}{\Delta^\mathrm{y}}\right)\rceil+1\right)}^{\psi(y_0-1)} I^\mathrm{ex}_{h,s,p,y}\right),
+    A_{h,p,y}= f_h\left(\sum_{\tilde{y}=\max\left(y_0,y-\left(\lceil\frac{l_h}{\Delta^\mathrm{y}}\right)\rceil+1\right)}^y I_{h,p,\tilde{y}} \right)+\left(\sum_{\hat{y}=\psi \left(y-\left(\lceil\frac{l_h}{\Delta^\mathrm{y}}\right)\rceil+1\right)}^{\psi(y_0-1)} I^\mathrm{ex}_{h,p,y}\right),
 
 where :math:`\lceil\cdot\rceil` is the ceiling function and :math:`\psi(y)` is a function that maps the planning period :math:`y` to the actual year.
 
-The total capital investment cost :math:`A_{h,s,p,y}` for each conversion technology :math:`i\in\mathcal{I}` is calculated as the product of the unit cost of capital investment :math:`\alpha_{i,y}` and the capacity addition :math:`\Delta S_{i,n,y}` on each node `n\in\mathcal{N}`:
+The capital investment cost :math:`I_{h,p,y}` for conversion technology :math:`i\in\mathcal{I}` is calculated as the product of the unit cost of capital investment :math:`\alpha_{i,y}` and the capacity addition :math:`\Delta S_{i,n,y}` on each node `n\in\mathcal{N}`:
 
 .. math::
     :label: cost_capex_conversion
 
-    I_{i,s,n,y} = \alpha_{i,y} \Delta S_{i,s,n,y}
+    I_{i,n,y} = \alpha_{i,y} \Delta S_{i,n,y}
 
 .. note::
-    The capex of conversion technologies can also be approximated by a piecewise linear approximation as described in :ref:`_piecewise_linear_approximation`.
+    The capex of conversion technologies can also be approximated by a piecewise linear approximation as described in :ref:`PWA` and :ref:`PWA_constraints`.
 
-For existing conversion technology capacities :math:`s_{h,n,y}` that were installed before :math:`y_0`, we assume that they cost the unit cost in the first investment period :math:`\alpha_{h,y_0}`:
+For existing conversion technology capacities :math:`s_{h,n,y}` that were installed before :math:`y_0`, we apply the unit cost of the first investment period :math:`\alpha_{h,y_0}`:
 
 .. math::
     :label: cost_capex_conversion_ex
 
-    I^\mathrm{ex}_{i,s,n,y} = \alpha_{i,y_0} \Delta s^\mathrm{ex}_{i,s,n,y}
+    I^\mathrm{ex}_{i,n,y} = \alpha_{i,y_0} \Delta s^\mathrm{ex}_{i,n,y}
 
-The unit investment cost :math:`\alpha_{j,e,y}` for transport technologies :math:`j\in\mathcal{J}` can be defined through a distance independent unit cost of capital investment :math:`\alpha^\mathrm{const}_{j,y}` and a distance dependent unit cost of capital investment :math:`\alpha^\mathrm{dist}_{j,e,y}` which is multiplied by the distance :math:`h_{j,e}` of the corresponding edge :math:`e\in\mathcal{E}`:
+For transport technologies :math:`j\in\mathcal{J}`, the unit investment cost :math:`\alpha_{j,e,y}` can be defined through a distance independent unit cost of capital investment :math:`\alpha^\mathrm{const}_{j,y}` and/or a distance dependent unit cost of capital investment :math:`\alpha^\mathrm{dist}_{j,e,y}` which is multiplied by the distance :math:`h_{j,e}` of the corresponding edge :math:`e\in\mathcal{E}`:
 
 .. math::
     :label: unit_cost_capex_transport
@@ -91,39 +91,35 @@ The unit investment cost :math:`\alpha_{j,e,y}` for transport technologies :math
     \alpha_{j,e,y} = \alpha^\mathrm{const}_{j,y}+\alpha^\mathrm{dist}_{j,e,y} h_{j,e}
 
 .. note::
-    Per default the distance independent unit investment cost is set to zero if a distance dependent cost factor is available. To apply both cost terms, set ``double_capex_transport`` in your ``system.json`` to true.
+    Per default the distance independent unit investment cost is set to zero if a distance dependent cost factor is defined in the input data. To apply both cost terms, set ``double_capex_transport=True`` in your ``system.json``.
 
-The total capital investment cost :math:`A_{h,s,p,y}` for each transport technology :math:`i\in\mathcal{I}` is calculated as the product of the unit cost of capital investment :math:`\alpha_{j,y}` multiplied by the capacity addition :math:`\Delta S_{j,e,y}` on each edge :math:`e\in\mathcal{E}`:
+The total capital investment cost :math:`A_{h,p,y}` for each transport technology :math:`i\in\mathcal{I}` is calculated as the product of the unit cost of capital investment :math:`\alpha_{j,y}` multiplied by the capacity addition :math:`\Delta S_{j,e,y}` on each edge :math:`e\in\mathcal{E}`:
 
 .. math::
     :label: cost_capex_transport
 
-    I_{j,s,e,y} = \alpha_{j,e,y} \Delta S_{j,s,e,y}
+    I_{j,e,y} = \alpha_{j,e,y} \Delta S_{j,e,y}
 
-For existing transport technology capacities :math:`s_{j,e,y}` that were installed before :math:`y_0`, we assume that they cost the unit cost in the first investment period :math:`\alpha_{j,y_0}`:
+For existing transport technology capacities :math:`s_{j,e,y}` that were installed before :math:`y_0`, we apply the unit cost of the first investment period :math:`\alpha_{j,y_0}`:
 
 .. math::
     :label: cost_capex_transport_ex
 
-    I^\mathrm{ex}_{j,s,e,y} = \alpha_{j,e,y_0} \Delta s^\mathrm{ex}_{j,s,e,y}
+    I^\mathrm{ex}_{j,e,y} = \alpha_{j,e,y_0} \Delta s^\mathrm{ex}_{j,e,y}
 
 The total investment cost for each storage technology :math:`k\in\mathcal{K}` is the product of the unit cost of capital investment and the capacity addition for both the power-rated capacity (:math:`\alpha_{k,y}` and :math:`\Delta S_{k,n,y}`) and the energy-rated capacity (:math:`\alpha^\mathrm{e}_{k,y}` and :math:`\Delta S^\mathrm{e}_{k,n,y}`).
 
 .. math::
     :label: cost_capex_storage
 
-    I_{k,s,n,y} = \alpha_{k,y} \Delta S_{k,s,n,y}
+    I_{k,n,y} = \alpha_{k,y} \Delta S_{k,n,y} + \alpha^\mathrm{e}_{k,y} \Delta S^\mathrm{e}_{k,n,y}
 
-For existing storage technology capacities :math:`s_{k,n,y}` that were installed before :math:`y_0`, we assume that they cost the unit cost in the first investment period :math:`\alpha_{k,y_0}`:
+For existing storage technology capacities :math:`s_{k,n,y}` that were installed before :math:`y_0`, we apply the unit cost of the first investment period :math:`\alpha_{k,y_0}` and :math:`\alpha^\mathrm{e}_{k,y_0}`:
 
 .. math::
     :label: cost_capex_storage_ex
 
-    I^\mathrm{ex}_{k,s,n,y} = \alpha_{k,y_0} \Delta s^\mathrm{ex}_{k,s,n,y}
-
-
-.. note::
-    Storage technologies can expand both, their power and energy rated capacities, i.e. :math:`s^\mathrm{ex}_{h,\mathrm{energy},p,y}\geq0` and :math:`S_{h,\mathrm{energy},p,y}\geq0` and thus, :math:`I_{h,\mathrm{energy},p,y}\geq0` :math:`I_{h,s,p,y}^\mathrm{ex}\geq0`. For conversion and transport technologies :math:`s^\mathrm{ex}_{h,\mathrm{energy},p,y}=0` and :math:`S_{h,\mathrm{energy},p,y}=0` and thus, :math:`I_{h,\mathrm{energy},p,y}=0` :math:`I_{h,\mathrm{energy},p,y}^\mathrm{ex}=0`.
+    I^\mathrm{ex}_{k,n,y} = \alpha_{k,y_0} \Delta s^\mathrm{ex}_{k,n,y}
 
 **Operational expenditures technology**
 
@@ -146,28 +142,28 @@ The variable technology operational expenditures :math:`OPEX_y^\mathrm{t,v}` are
 .. math::
     :label: opex_v
 
-    OPEX_y^\mathrm{t,v} = \sum_{t\in\mathcal{T}}\tau_t \bigg(\sum_{h\in\mathcal{H}} \sum_{s\in\mathcal{S}} \sum_{p\in\mathcal{P}} O^\mathrm{t}_{h,s,p,t,y} \bigg).
+    OPEX_y^\mathrm{t,v} = \sum_{t\in\mathcal{T}}\tau_t \bigg(\sum_{h\in\mathcal{H}} \sum_{s\in\mathcal{S}} \sum_{p\in\mathcal{P}} O^\mathrm{t}_{h,p,t,y} \bigg).
 
 For conversion technologies :math:`i \in \mathcal{I}`, the variable operational expenditure are the product of the specific variable operational expenditure :math:`\beta_{h,y}` and the reference flows :math:`G_{i,n,t,y}^\mathrm{r}`:
 
 .. math:: 
     :label: cost_opex_conversion
 
-    O^\mathrm{t}_{h,s,\mathrm{power},t,y} = \beta_{i,y} G_{i,n,t,y}^\mathrm{r}
+    O^\mathrm{t}_{h,\mathrm{power},t,y} = \beta_{i,y} G_{i,n,t,y}^\mathrm{r}
 
 Similarly, for transport technologies :math:`j \in \mathcal{J}`, the variable operational expenditures are the product of the specific variable operational expenditure :math:`\beta_{j,y}` and the reference flows :math:`F_{j,e,t,y}`:
 
 .. math:: 
     :label: cost_opex_transport
 
-    O^\mathrm{t}_{j,s,\mathrm{power},t,y} = \beta_{j,y} F_{j,e,t,y}
+    O^\mathrm{t}_{j,\mathrm{power},t,y} = \beta_{j,y} F_{j,e,t,y}
 
 Finally, for storage technologies :math:`k \in \mathcal{K}`, the variable operational expenditure are the product of the charge and discharge cost :math:`\beta^\mathrm{charge}_{j,e,y}` and :math:`\beta^\mathrm{discharge}_{j,e,y}` multiplied by the storage charge :math:`\underline{H}_{k,n,t,y}` and discharge :math:`\overline{H}_{k,n,t,y}`, respectively:
 
 .. math:: 
     :label: cost_opex_storage
 
-    O^\mathrm{t}_{k,s,\mathrm{power},t,y} = \beta^\mathrm{charge}_{k,y} \underline{H}_{k,n,t,y} + \beta^\mathrm{discharge}_{k,y} \overline{H}_{k,n,t,y}
+    O^\mathrm{t}_{k,\mathrm{power},t,y} = \beta^\mathrm{charge}_{k,y} \underline{H}_{k,n,t,y} + \beta^\mathrm{discharge}_{k,y} \overline{H}_{k,n,t,y}
 
 **Operational expenditures carrier**
 
@@ -422,12 +418,12 @@ If storage periodicity is enforced, the storage level at :math:`t^\mathrm{k}=0` 
 
     L_{k,n,0,y} = L_{k,n,T^\mathrm{k},y}\left(1-\varphi_k\right)^{\tau^\mathrm{k}_{t^\mathrm{k}}}+\left(\underline{\eta}_k\underline{H}_{k,n,\sigma(0),y}-\frac{\overline{H}_{k,n,\sigma(0),y}}{\overline{\eta}_k}\right)\sum_{\tilde{t}^\mathrm{k}=0}^{\tau^\mathrm{k}_{t^\mathrm{k}}-1}\left(1-\varphi_k\right)^{\tilde{t}^\mathrm{k}}.
 
-The non-negative :math:`L_{k,n,t^\mathrm{k},y}` is constrained by the energy-rated storage capacity :math:`S^\mathrm{e}_{k,s,n,y}`:
+The non-negative :math:`L_{k,n,t^\mathrm{k},y}` is constrained by the energy-rated storage capacity :math:`S^\mathrm{e}_{k,n,y}`:
 
 .. math::
     :label:limit_storage_level
 
-    0\leq L_{k,n,t^\mathrm{k},y}\leq S^\mathrm{e}_{k,s,n,y}.
+    0\leq L_{k,n,t^\mathrm{k},y}\leq S^\mathrm{e}_{k,n,y}.
 
 :math:`L_{k,n,t^\mathrm{k},y}` is monotonous between :math:`t^\mathrm{k}` and :math:`t^\mathrm{k}+1`. Hence, :math:`L_{k,n,t^\mathrm{k},y}` and :math:`L_{k,n,t^\mathrm{k}+1,y}` are the local extreme values and :eq:`limit_storage_level` constrains the entire time interval between :math:`t^\mathrm{k}` and :math:`t^\mathrm{k}+1`. We prove this in :eq:`subsec:proof_storage`.
 
@@ -443,13 +439,13 @@ The flow of the reference carrier :math:`c_h^\mathrm{r}` of all technologies :ma
 
 .. math::
 
-    0 \leq G_{i,n,t,y}^\mathrm{r} \leq m^\mathrm{max}_{i,n,t,y}S_{i,s,n,y}.
+    0 \leq G_{i,n,t,y}^\mathrm{r} \leq m^\mathrm{max}_{i,n,t,y}S_{i,n,y}.
 
 Analogously for transport technologies :math:`j\in\mathcal{J}` it follows:
 
 .. math::
 
-    0 \leq F_{j,e,t,y} \leq m^\mathrm{max}_{j,e,t,y}S_{j,s,e,y}.
+    0 \leq F_{j,e,t,y} \leq m^\mathrm{max}_{j,e,t,y}S_{j,e,y}.
 
 Since a storage technology does not charge (:math:`\underline{H}_{k,n,t,y}`) and discharge (:math:`\overline{H}_{k,n,t,y}`) at the same time, the sum of both flows is constrained by the maximum load:
 
@@ -468,28 +464,28 @@ Finally, the reference flow of retrofitting technologies is linked to the refere
 Investment constraints
 ----------------------
 
-The capacity :math:`S_{h,s,p,y}` of a technology :math:`h\in\mathcal{H}` at a position :math:`p\in\mathcal{P}` in period :math:`y` is the sum of all previous capacity additions :math:`\Delta S_{h,s,p,y}` and existing capacities :math:`\Delta s^\mathrm{ex}_{h,s,p,y}`, that are still within their usable technical lifetime :math:`l_h` (compare :eq:`annuity`):
+The capacity :math:`S_{h,p,y}` of a technology :math:`h\in\mathcal{H}` at a position :math:`p\in\mathcal{P}` in period :math:`y` is the sum of all previous capacity additions :math:`\Delta S_{h,p,y}` and existing capacities :math:`\Delta s^\mathrm{ex}_{h,p,y}`, that are still within their usable technical lifetime :math:`l_h` (compare :eq:`annuity`):
 
 .. math::
     :label: capacity
 
     S_{h,p,y}=\sum_{\tilde{y}=\max\left(y_0,y-\left\lceil\frac{l_h}{\Delta^\mathrm{y}}\right\rceil+1\right)}^y \Delta S_{h,p,\tilde{y}}+\sum_{\hat{y}=\psi\left(\min\left(y_0-1,y-\left\lceil\frac{l_h}{\Delta^\mathrm{y}}\right\rceil+1\right)\right)}^{\psi(y_0)} \Delta s^\mathrm{ex}_{h,p,\hat{y}}.
 
-:math:`S_{h,s,p,y}` is constrained by the capacity limit :math:`s^\mathrm{max}_{h,p,y}`:
+:math:`S_{h,p,y}` is constrained by the capacity limit :math:`s^\mathrm{max}_{h,p,y}`:
 
 .. math::
 
     S_{h,p,y} \leq s^\mathrm{max}_{h,p,y}.
 
-The capacity addition is constrained by the minimum and maximum capacity addition :math:`\Delta s^\mathrm{min}_{h,s,p,y}` and :math:`\Delta s^\mathrm{max}_{h,s,p,y}`:
+The capacity addition is constrained by the minimum and maximum capacity addition :math:`\Delta s^\mathrm{min}_{h,p,y}` and :math:`\Delta s^\mathrm{max}_{h,p,y}`:
 
 .. math::
 
-    \Delta s^\mathrm{min}_{h,p,y} \leq \Delta S_{h,s,p,y}
+    \Delta s^\mathrm{min}_{h,p,y} \leq \Delta S_{h,p,y}
 
 .. math::
 
-    \Delta S_{h,s,p,y} \leq \Delta s^\mathrm{max}_{h,s,p,y}
+    \Delta S_{h,p,y} \leq \Delta s^\mathrm{max}_{h,p,y}
 
 .. note::
 
@@ -505,20 +501,20 @@ Furthermore, for storage technologies the ratios of the energy- and power rated 
 
     \rho^\mathrm{max}_{k} S_{k,\mathrm{energy},n,y} \geq \S_{k,\mathrm{power},n,y}
 
-To account for technology construction times :math:`dy^mathrm{construction}` we introduce an auxiliary variable, :math:`S_{h,s,p,y` representing the technology investments. The following constraint ensures that the new technology capacities do not become available before the construction time has passed:
+To account for technology construction times :math:`dy^mathrm{construction}` we introduce an auxiliary variable, :math:`S_{h,p,y` representing the technology investments. The following constraint ensures that the new technology capacities do not become available before the construction time has passed:
 
 .. math::
 
-    \Delta S_{h,s,p,y} = S_{h,s,p,y-dy^mathrm{construction}}^\mathrm{invest}
+    \Delta S_{h,p,y} = S_{h,p,y-dy^mathrm{construction}}^\mathrm{invest}
 
 Furthermore, if :math:`y-dy^mathrm{construction}}^\mathrm{invest}<0`:
 
 .. math::
 
-    S_{h,s,p,y} = 0
+    S_{h,p,y} = 0
 
 **JM START**
-In case you are using constrained technology deployment, :math:`\Delta S_{h,s,p,y}` is constrained by the existing knowledge of how to install the technology :math:`K_{h,p,y}` with the technology diffusion rate :math:`\vartheta_h`. For node-based technologies, i.e., conversion and storage technologies, spillover effects from other nodes :math:`\tilde{\mathcal{N}} = \mathcal{N}\setminus\{n\}` can be utilized (knowledge spillover rate :math:`\omega`). To allow for an entry into a niche market, we add an unbounded market share :math:`\xi` of the total capacity of all other technologies with the same reference carrier:
+In case you are using constrained technology deployment, :math:`\Delta S_{h,p,y}` is constrained by the existing knowledge of how to install the technology :math:`K_{h,p,y}` with the technology diffusion rate :math:`\vartheta_h`. For node-based technologies, i.e., conversion and storage technologies, spillover effects from other nodes :math:`\tilde{\mathcal{N}} = \mathcal{N}\setminus\{n\}` can be utilized (knowledge spillover rate :math:`\omega`). To allow for an entry into a niche market, we add an unbounded market share :math:`\xi` of the total capacity of all other technologies with the same reference carrier:
 
 .. math::
 
@@ -609,71 +605,71 @@ For conversion technologies, the minimum load constraint can be formulated as fo
 .. math::
     :label: min_load_conversion_bilinear
 
-    b_{h,s,p,t} m^\mathrm{min}_{h,n,t,y} S_{h,n,y} \leq G_{h,n,t,y}^\mathrm{r}
+    b_{h,p,t} m^\mathrm{min}_{h,n,t,y} S_{h,n,y} \leq G_{h,n,t,y}^\mathrm{r}
 
-where :math:`b_{h,s,p,t}` represents a binary variable that is one if the technology is on and zero if the technology is off. However, this constraint would introduce a bilinearity. To resolve the bilinearity, we use a big-M formulation and approximate the capacity variable by :math:`S^\mathrm{approx}_{h,s,p,y}`. With that, :eq:`min_load_conversion_bilinear` is rewritten as:
+where :math:`b_{h,p,t}` represents a binary variable that is one if the technology is on and zero if the technology is off. However, this constraint would introduce a bilinearity. To resolve the bilinearity, we use a big-M formulation and approximate the capacity variable by :math:`S^\mathrm{approx}_{h,p,y}`. With that, :eq:`min_load_conversion_bilinear` is rewritten as:
 
 .. math::
     :label: min_load_conversion
 
-    G_{h,n,t,y}^\mathrm{r} \geq m^\mathrm{min}_{h,n,t,y} S^\mathrm{approx}_{h,s,n,y}
+    G_{h,n,t,y}^\mathrm{r} \geq m^\mathrm{min}_{h,n,t,y} S^\mathrm{approx}_{h,n,y}
 
-Furthermore, the following two constraints are added to ensure that the approximated capacity equals the installed capacity if the technology is on (i.e., :math:`b_{h,s,p,t}=1`), and is zero if the technology is off (i.e., :math:`b_{h,s,p,t}=0`):
+Furthermore, the following two constraints are added to ensure that the approximated capacity equals the installed capacity if the technology is on (i.e., :math:`b_{h,p,t}=1`), and is zero if the technology is off (i.e., :math:`b_{h,p,t}=0`):
 
 .. math::
     :label: binary_constraint_on
 
-    S^\mathrm{approx}_{i,s,n,y} \leq S_{i,s,n,y
-    S^\mathrm{approx}_{i,s,n,y} \geq (1-b_{h,s,p,t}) M + S_{i,s,n,t}
+    S^\mathrm{approx}_{i,n,y} \leq S_{i,n,y
+    S^\mathrm{approx}_{i,n,y} \geq (1-b_{h,p,t}) M + S_{i,n,t}
 
 Similarly, for transport technologies it follows:
 
 .. math::
     :label: min_load_transport
 
-    F_{j,e,t,y}^\mathrm{r} \geq m^\mathrm{min}_{j,n,t,y} S^\mathrm{approx}_{j,s,e,y}
+    F_{j,e,t,y}^\mathrm{r} \geq m^\mathrm{min}_{j,n,t,y} S^\mathrm{approx}_{j,e,y}
 
 For storage technologies, the minimum load constraint is formulated as the sum of the charge and discharge flows as storage technologies do not charge and discharge at the same time:
 
 .. math::
     :label: min_load_storage
 
-    \underline{H}_{k,n,t,y} + \overline{H}_{k,n,t,y} \geq m^\mathrm{min}_{k,n,t,y} S^\mathrm{approx}_{k,s,e,y}
+    \underline{H}_{k,n,t,y} + \overline{H}_{k,n,t,y} \geq m^\mathrm{min}_{k,n,t,y} S^\mathrm{approx}_{k,e,y}
 
-.. _piecewise_linear_approximation:
+.. _PWA_constraints:
 Piecewise affine approximation of captial expenditures
 -----------------------------------------------------
 
-The capital expenditures of the conversion technologies can be approximated by a piecewise affine (PWA) function to account for non-linearities and e.g., represent economies of scale. To this end, the captial investment unit costs are approximated by segments with different capital unit investment costs. The number of segments is described via the set of segments :math:`x\in\mathcal{X}`. To model the segement selection, the binary variable :math:`d_{i,s,n,y,x}` is introduced. :math:`d_{i,s,n,y,x}` equals one if segement :math:`x` is active, otherwise :math:`d_{i,s,n,y,x}` equals zero. At most, one segment can be active at a time:
+The capital expenditures of the conversion technologies can be approximated by a piecewise affine (PWA) function to account for non-linearities and e.g., represent economies of scale. To this end, the captial investment unit costs are approximated by segments with different capital unit investment costs. The number of segments is described via the set of segments :math:`x\in\mathcal{X}`. To model the segement selection, the binary variable :math:`d_{i,n,y,x}` is introduced. :math:`d_{i,n,y,x}` equals one if segement :math:`x` is active, otherwise :math:`d_{i,n,y,x}` equals zero. At most, one segment can be active at a time:
 
 .. math::
 
-    \sum_{x\in\mathcal{X}} d_{i,s,n,y,x} \leq 1
+    \sum_{x\in\mathcal{X}} d_{i,n,y,x} \leq 1
 
-Each segment is valid withing a minimum and maximum capacity :math:`s^\mathrm{pwa}_{i,s,n,y,x}`. Furthermore, :math:`A_{i,s,p,y}^\mathrm{approx}` is introduced to approximate the capacity variable and avoid non-linearities.  
+Each segment is valid withing a minimum and maximum capacity :math:`s^\mathrm{pwa}_{i,n,y,x}`. Furthermore, :math:`A_{i,p,y}^\mathrm{approx}` is introduced to approximate the capacity variable and avoid non-linearities.
 
 For the first segment (i.e., :math:`x=0`), the technology capacitiy is described by the following constraints:
 
 .. math:: 
 
-    0 \leq S_{i,s,n,y,x}^\mathrm{approx}
-    S_{i,s,n,y}^\mathrm{approx} \geq d_{i,s,n,y,x} s^\mathrm{pwa}_{i,s,n,y,x}
+    0 \leq S_{i,n,y,x}^\mathrm{approx}
+    S_{i,n,y}^\mathrm{approx} \geq d_{i,n,y,x} s^\mathrm{pwa}_{i,n,y,x}
 
 For all other segments (i.e., :math:`x>0`), the following constraints must hold:
 
 .. math:: 
 
-    d_{i,s,n,y,x} s^\mathrm{pwa}_{i,s,n,y,x-1} \leq S_{i,s,n,y,x}^\mathrm{approx}
-    S_{i,s,n,y}^\mathrm{approx} \geq d_{i,s,n,y,x} s^\mathrm{pwa}_{i,s,n,y,x}
+    d_{i,n,y,x} s^\mathrm{pwa}_{i,n,y,x-1} \leq S_{i,n,y,x}^\mathrm{approx}
+    S_{i,n,y}^\mathrm{approx} \geq d_{i,n,y,x} s^\mathrm{pwa}_{i,n,y,x}
 
-The capacity approximation variable :math:`S_{i,s,n,y,x}^\mathrm{approx}` and the capacity variables :math:`S_{i,s,n,y}` are linked:
+The capacity approximation variable :math:`S_{i,n,y,x}^\mathrm{approx}` and the capacity variables :math:`S_{i,n,y}` are linked:
 
 .. math::
 
-    \sum_{x\in\mathcal{X}} S_{i,s,n,y,x}^\mathrm{approx} = S_{i,s,n,y}
+    \sum_{x\in\mathcal{X}} S_{i,n,y,x}^\mathrm{approx} = S_{i,n,y}
 
 Finally, the captial expenditures are described by the following constraint:
 
 .. math::
     
-    A_{i,s,p,y} = \sum_{x\in\mathcal{X}} \alpha_{i,s,y,x} S_{i,s,n,y,x}^\mathrm{approx}
+    A_{i,p,y} = \sum_{x\in\mathcal{X}} \alpha_{i,y,x} S_{i,n,y,x}^\mathrm{approx}
