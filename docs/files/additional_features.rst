@@ -1,9 +1,15 @@
 ##############
 Additional Features
 ##############
-Besides the main features of ZEN garden, there are some additional features that can be used to enhance the user experience:
+Besides the main features of ZEN-garden, there are some additional features that can be used to enhance the user experience:
 
 1. :ref:`MILP`
+2. :ref:`construction_times`
+3. :ref:`technology_diffusion`
+4. :ref:`retrofitting_technologies`
+5. :ref:`fuel_replacement`
+6. :ref:`availability_yearly`
+7. :ref:`carbon_emission_constraints`
 
 
 .. _MILP:
@@ -26,3 +32,31 @@ If both parameters are set, ZEN-garden will add a mixed-integer linear constrain
 Note that ``capex_specific_transport`` can vary with the length of an edge. In particular, if the user only specifies ``capex_per_distance_transport``, then ZEN-garden multiplies ``capex_per_distance_transport`` with the length of the edge to get the CAPEX per unit of transported good.
 This is the most commonly used case, but it does not account for the fact that there might be an initial investment purely from the installation before adding the cost for the size of the capacity.
 
+.. _construction_times:
+Construction times
+---------------------------------
+:ref:`PWA`
+
+.. _technology_diffusion:
+Technology diffusion
+---------------------------------
+
+
+.. _retrofitting_technologies:
+Retrofitting technologies
+---------------------------------
+
+
+.. _fuel_replacement:
+Fuel replacement
+---------------------------------
+
+
+.. _availability_yearly:
+Availability yearly
+---------------------------------
+
+
+.. _carbon_emission_constraints:
+Carbon emission constraints
+---------------------------------
