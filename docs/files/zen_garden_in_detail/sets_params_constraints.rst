@@ -115,7 +115,7 @@ Conversion Technology
     :widths: 10 10 20
     :delim: ;
 
-*Retrofitting Technology**
+**Retrofitting Technology**
 
 .. csv-table:: Retrofitting Technology Sets
     :header-rows: 1
