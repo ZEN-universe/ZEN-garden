@@ -323,6 +323,13 @@ class ScenarioDict(dict):
                     assert sub_key in value, f"Trying to update {key} with key {sub_key} and value {sub_value}, but the {key} does not have this key!"
                     if type(value[sub_key]) == type(sub_value):
                         value[sub_key] = sub_value
+                    elif isinstance(sub_value, dict): #ToDO check this and make more general -> here only for SolverOptions
+                        try:
+                            for sub_sub_key, sub_sub_value in sub_value.items():
+                                value[sub_key][sub_sub_key] = sub_sub_value
+                        except:
+                            raise ValueError(f"Trying to update {key} with key {sub_key} and value {sub_value} of type {type(sub_value)},"
+                                             f""f"but the {key} has already a value of type {type(value[sub_key])}")
                     else:
                         raise ValueError(f"Trying to update {key} with key {sub_key} and value {sub_value} of type {type(sub_value)}, "
                                          f"but the {key} has already a value of type {type(value[sub_key])}")
