@@ -731,6 +731,11 @@ class Scaling:
         self.model = model
         self.algorithm = algorithm
         self.include_rhs = include_rhs
+        #For Numerical Range Improvement
+        self.last_lhs_range = 0
+        self.last_rhs_range = 0
+        #For benchmarking
+        self.scaling_time = 0
 
     def initiate_A_matrix(self):
         self.A_matrix = self.model.constraints.to_matrix(filter_missings=False)
@@ -760,6 +765,7 @@ class Scaling:
     def analyze_numerics(self):
         #print numerics if no scaling is activated
         self.initiate_A_matrix()
+        self.A_matrix.eliminate_zeros()
         self.print_numerics(0,True)
 
     def run_scaling(self):
@@ -771,6 +777,7 @@ class Scaling:
         self.iter_scaling()
         self.overwrite_problem()
         t1 = time.perf_counter()
+        self.scaling_time = t1 - t0 #for benchmarking
         logging.info(f"\nTime to Scale Problem: {t1 - t0:0.1f} seconds\n")
         #cp.disable()
         #cp.print_stats("cumtime")
@@ -893,7 +900,7 @@ class Scaling:
             var_str = var_str[0] + str(list(var_str[1].values()))
             return f"{A_matrix[index]} {var_str} in {cons_str}"
 
-    def print_numerics(self,i,no_scaling = False):
+    def print_numerics(self,i,no_scaling = False, benchmarking_output = False, cond_number = False): #ToDo: speed up cond_number; for now should be kept False as computation time too long otherwise
         data_coo = self.A_matrix.tocoo()
         A_abs = np.abs(data_coo.data)
         A_abs_nonzero = np.ma.masked_equal(A_abs,0.0,copy=False)
@@ -912,18 +919,47 @@ class Scaling:
         #RHS values
         cons_rhs_max = self.generate_numerics_string(rhs_max_index, is_rhs=True)
         cons_rhs_min = self.generate_numerics_string(rhs_min_index, is_rhs=True)
-        #Prints
-        if no_scaling:
-            logging.info(f"\n--- Analyze Numerics ---\n")
+        #Ranges
+        # LHS
+        range_lhs = np.floor(np.log10(A_abs[index_max]) - np.log10(A_abs[index_min]))
+        # RHS
+        range_rhs = np.floor(np.log10(np.abs(self.rhs[rhs_max_index])) - np.log10(np.abs(self.rhs[rhs_min_index])))
+        if benchmarking_output: #for postprocessing
+            range_lhs = np.log10(A_abs[index_max]) - np.log10(A_abs[index_min])
+            range_rhs = np.log10(np.abs(self.rhs[rhs_max_index])) - np.log10(np.abs(self.rhs[rhs_min_index]))
+            cond = 0
+            if cond_number:
+                try:
+                    cp = cProfile.Profile()
+                    cp.enable()
+                    sv_max = sp.sparse.linalg.svds(data_coo, return_singular_vectors=False, k=1, which='LM')[0]
+                    sv_min = sp.sparse.linalg.svds(data_coo, return_singular_vectors=False, k=1, which='SM')[0]
+                    cond = sv_max / sv_min
+                    cp.disable()
+                    cp.print_stats("cumtime")
+                except:
+                    print("SVD did not converge")
+            return range_lhs, range_rhs, cond
         else:
-            logging.info(f"\n--- Numerics at iteration {i} ---\n")
-        print("Max value of A matrix: " + cons_str_max)
-        print("Min value of A matrix: " + cons_str_min)
-        print("Max value of RHS: " + cons_rhs_max)
-        print("Min value of RHS: " + cons_rhs_min)
-        print("Numerical Range:")
-        print("LHS : {}".format([format(A_abs[index_min],".1e"),format(A_abs[index_max],".1e")]))
-        print("RHS : {}".format([format(np.abs(self.rhs[rhs_min_index]),".1e"),format(np.abs(self.rhs[rhs_max_index]),".1e")]))
+            #Prints
+            if no_scaling:
+                logging.info(f"\n--- Analyze Numerics ---\n")
+            else:
+                logging.info(f"\n--- Numerics at iteration {i} ---\n")
+            print("Max value of A matrix: " + cons_str_max)
+            print("Min value of A matrix: " + cons_str_min)
+            print("Max value of RHS: " + cons_rhs_max)
+            print("Min value of RHS: " + cons_rhs_min)
+            print("Numerical Range:")
+            print("LHS : {}".format([format(A_abs[index_min],".1e"),format(A_abs[index_max],".1e")]))
+            print("RHS : {}".format([format(np.abs(self.rhs[rhs_min_index]),".1e"),format(np.abs(self.rhs[rhs_max_index]),".1e")]))
+            if i>0:
+                print("Numerical Range Improvement:")
+                print("LHS : {}".format(range_lhs - self.last_lhs_range))
+                print("RHS : {}".format(range_rhs - self.last_rhs_range))
+            self.last_lhs_range = range_lhs
+            self.last_rhs_range = range_rhs
+
 
 
 
@@ -1007,12 +1043,14 @@ class Scaling:
                 mean_rows = sp.sparse.linalg.norm(self.A_matrix, ord=1, axis=1)/(np.diff(self.A_matrix.indptr)+np.ones(self.A_matrix.get_shape()[0]))
                 if self.include_rhs:
                     mean_rows = mean_rows + np.abs(self.rhs)/(np.diff(self.A_matrix.indptr)+np.ones(self.A_matrix.get_shape()[0]))
+                mean_rows[mean_rows == 0] = 1 #to avoid warning outputs
                 c_vector = 1/mean_rows
                 c_vector = np.power(2, np.round(np.emath.logn(2, c_vector)))
                 #update A and row scaling matrix
                 self.update_A(c_vector,1)
                 #update column scaling vector
                 mean_cols = sp.sparse.linalg.norm(self.A_matrix, ord=1, axis=0)/np.diff(self.A_matrix.tocsc().indptr)
+                mean_cols[mean_cols == 0] = 1 #to avoid warning outputs
                 r_vector = 1/mean_cols
                 r_vector = np.power(2, np.round(np.emath.logn(2, r_vector)))
                 #update A and column scaling matrix

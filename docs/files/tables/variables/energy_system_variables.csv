@@ -1,8 +1,0 @@
-Variable Name;Time Step Type;Doc String;Unit Category
-``carbon_emissions_annual``;``set_time_steps_yearly``;:math:`E_y`;annual carbon emissions of energy system;{"emissions": 1}
-``carbon_emissions_cumulative``;``set_time_steps_yearly``;:math:`E_y^\mathrm{cum}`;cumulative carbon emissions of energy system over time for each year;{"emissions": 1}
-``carbon_emissions_budget_overshoot``;``set_time_steps_yearly``;:math:`E_y^\mathrm{bo}`;overshoot carbon emissions of energy system at the end of the time horizon;{"emissions": 1}
-``carbon_emissions_annual_overshoot``;``set_time_steps_yearly``;:math:`E_y^\mathrm{o}`;overshoot of the annual carbon emissions limit of energy system;{"emissions": 1}
-``cost_carbon_emissions_total``;``set_time_steps_yearly``;:math:`OPEX_y^{e}`;total cost of carbon emissions of energy system;{"money": 1}
-``cost_total``;``set_time_steps_yearly``;:math:`C_y`;total cost of energy system; {"money": 1}
-``net_present_cost``;``set_time_steps_yearly``;:math:`NPC_y`;net_present_cost of energy system;{"money": 1}

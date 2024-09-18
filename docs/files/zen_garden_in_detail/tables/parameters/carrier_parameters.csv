@@ -1,0 +1,12 @@
+Parameter Name;Time Step Type;Symbol;Doc String;Unit Category
+``demand``;``set_time_steps_operation``;:math:`D_{c,n,t,y}`;Parameter which specifies the carrier demand;{"energy_quantity": 1, "time": -1}
+``availability_import``;``set_time_steps_operation``;:math:`\underline{a}_{c,n,t,y}`;Parameter which specifies the maximum energy that can be imported from outside the system boundaries;{"energy_quantity": 1, "time": -1}
+``availability_export``;``set_time_steps_operation``;:math:`\overline{a}_{c,n,t,y}`;Parameter which specifies the maximum energy that can be exported to outside the system boundaries;{"energy_quantity": 1, "time": -1}
+``availability_import_yearly``;``set_time_steps_yearly``;:math:`\underline{a}^{Y}_{c,n,y}`;Parameter which specifies the maximum energy that can be imported from outside the system boundaries for the entire year;{"energy_quantity": 1}
+``availability_export_yearly``;``set_time_steps_yearly``;:math:`\overline{a}^{Y}_{c,n,y}`;Parameter which specifies the maximum energy that can be exported to outside the system boundaries for the entire year``;{"energy_quantity": 1}
+``price_import``;``set_time_steps_operation``;:math:`\underline{u}_{c,n,t,y}`;Parameter which specifies the import carrier price;{"money": 1, "energy_quantity": -1}
+``price_export``;``set_time_steps_operation``;:math:`\overline{u}_{c,n,t,y}`;Parameter which specifies the export carrier price;{"money": 1, "energy_quantity": -1}
+``price_shed_demand``;``temporal immutable``;:math:`\nu_c`;Parameter which specifies the price to shed demand;{"money": 1, "energy_quantity": -1}
+``carbon_intensity_carrier_import``;``set_time_steps_yearly``;:math:`\underline{\epsilon_c}`;Parameter which specifies the carrier carbon intensity for carrier import flows;{"emissions": 1, "energy_quantity": -1}
+``carbon_intensity_carrier_export``;``set_time_steps_yearly``;:math:`\overline{\epsilon_c}`;Parameter which specifies the carrier carbon intensity  for carrier export flows;{"emissions": 1, "energy_quantity": -1}
+

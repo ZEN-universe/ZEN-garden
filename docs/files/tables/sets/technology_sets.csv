@@ -1,9 +1,0 @@
-Set Name;Index;Doc String
-``set_conversion_technologies``;-;Set of conversion technologies
-``set_retrofitting_technologies``;-;Set of retrofitting technologies
-``set_transport_technologies``;-;Set of transport technologies
-``set_storage_technologies``;-;Set of storage technologies 
-``set_technologies_existing``;-;Set of existing technology capacities
-``set_reference_carriers``;``set_technologies``;Set of reference carriers correspondent to a technology
-
-

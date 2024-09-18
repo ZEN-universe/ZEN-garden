@@ -737,7 +737,7 @@ class TechnologyRules(GenericRule):
 
         # get investment time step
         investment_time = pd.Series(
-            {(t, y,Technology.get_investment_time_step(self.optimization_setup, t, y)): 1 for t, y in itertools.product(self.sets["set_technologies"], self.sets["set_time_steps_yearly"])})
+            {(t, y, Technology.get_investment_time_step(self.optimization_setup, t, y)): 1 for t, y in itertools.product(self.sets["set_technologies"], self.sets["set_time_steps_yearly"])})
         investment_time.index.names = ["set_technologies", "set_time_steps_yearly","set_time_steps_construction"]
 
         # select masks

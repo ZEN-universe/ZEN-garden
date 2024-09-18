@@ -9,7 +9,7 @@ Default configuration. Changes from the default values are specified in config.p
 
 from pydantic import BaseModel, ConfigDict
 from typing import Any, Optional, Union
-
+import importlib.metadata
 
 class Subscriptable(BaseModel, extra="allow"):
     def __getitem__(self, __name: str) -> Any:
@@ -135,7 +135,7 @@ class Solver(Subscriptable):
     rounding_decimal_points_capacity: int = 4
     analyze_numerics: bool = True
     use_scaling: bool = True
-    scaling_include_rhs: bool = False
+    scaling_include_rhs: bool = True
     scaling_algorithm: Union[list[str],str] = ["geom","geom","geom"]
 
 
@@ -162,6 +162,8 @@ class Analysis(Subscriptable):
     overwrite_output: bool = True
     output_format: str = "h5"
     earliest_year_of_data: int = 1900
+    save_benchmarking_results: bool = False
+    zen_garden_version: str = importlib.metadata.version("zen-garden")
 
 class Config(Subscriptable):
     analysis: Analysis = Analysis()
