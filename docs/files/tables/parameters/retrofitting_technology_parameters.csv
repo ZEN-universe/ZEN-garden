@@ -1,2 +1,0 @@
-Parameter Name;Symbol;Time Step Type;Doc String;Unit Category
-``retrofit_flow_coupling_factor``;:math:`\eta^\mathrm{retrofit}_{rt,bt}`;Parameter which specifies the flow coupling between the retrofitting technologies and its base technology;technology,{"energy_quantity": 1, "energy_quantity": -1}
