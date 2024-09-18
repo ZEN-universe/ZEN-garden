@@ -31,12 +31,17 @@ from ..utils import ScenarioDict, IISConstraintParser, StringUtils
 
 
 class OptimizationSetup(object):
-    """setup optimization setup """
+    """ Class defining the optimization model.
+    The class takes as inputs the properties of the optimization problem. The properties are saved in the
+    dictionaries analysis and system which are passed to the class. After initializing the model, the
+    class adds carriers and technologies to the model and returns it.
+    The class also includes a method to solve the optimization problem.
+    """
     # dict of element classes, this dict is filled in the __init__ of the package
     dict_element_classes = {}
 
     def __init__(self, config, scenario_dict: dict, input_data_checks):
-        """setup Pyomo Concrete Model
+        """setup optimization setup of the energy system
 
         :param config: config object used to extract the analysis, system and solver dictionaries
         :param scenario_dict: dictionary defining the scenario
