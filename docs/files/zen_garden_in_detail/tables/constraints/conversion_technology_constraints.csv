@@ -1,0 +1,5 @@
+Constraint Name;Time Step Type;Doc String
+``constraint_capacity_factor_conversion``;``set_time_steps_operation``;provides a lower and upper bound to the reference flow value
+``constraint_opex_emissions_technology_conversion``;``set_time_steps_operation``;compute the opex and carbon emissions of each conversion technology
+``constraint_carrier_conversion``;``set_time_steps_operation``;links the reference carrier flow and the dependent carrier with a conversion factor
+``constraint_capex_pwa``;``set_time_steps_yearly``;piecewise affine approximation of the capex

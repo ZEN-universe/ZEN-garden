@@ -1,0 +1,8 @@
+Parameter Name;Symbol;Time Step Type;Doc String;Unit Category
+``energy_to_power_ratio_min``;:math:`\rho^\mathrm{min}_{k}`;temporal immutable;min power to energy ratio for storage technologies
+``energy_to_power_ratio_max``;:math:`\rho^\mathrm{max}_{k}`;temporal immutable;max power to energy ratio for storage technologies
+``time_steps_storage_level_duration``;:math:`\tau^\mathrm{k}_{t^\mathrm{k}}`;``set_time_steps_storage_level``;Parameter which specifies the time step duration in StorageLevel for all technologies;{"time": 1}
+``efficiency_charge``;:math:`\underline{\eta}_k`;``set_time_steps_yearly``;efficiency during charging for storage technologies;{}
+``efficiency_discharge``;:math:`\overline{\eta}_k`;``set_time_steps_yearly``;efficiency during discharging for storage technologies;{}
+``self_discharge``;:math:`\overline{H}_{k,n,t,y}`;temporal immutable;self-discharge of storage technologies;{}
+``capex_specific_storage``;:math:`\alpha_{k,y}`;``set_time_steps_yearly``;specific capex of storage technologies;{"money": 1, "energy_quantity": -1, "time": 1}

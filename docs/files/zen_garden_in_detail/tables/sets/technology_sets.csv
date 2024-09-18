@@ -1,0 +1,9 @@
+Set Name;Index;Symbol;Doc String
+``set_conversion_technologies``;--;:math:`\mathcal{I}`;Set of conversion technologies
+``set_retrofitting_technologies``;--;:math:`\mathcal{I}^\mathrm{r}`;Set of retrofitting technologies
+``set_transport_technologies``;--;:math:`\mathcal{J}`;Set of transport technologies
+``set_storage_technologies``;--;:math:`\mathcal{K}`;Set of storage technologies
+``set_technologies_existing``;--;:math:`\mathcal{H}`^\mathrm{ex}`;Set of existing technology capacities
+``set_reference_carriers``;``set_technologies``;:math:`\mathcal{C}\mathrm{r}_h`;Set of reference carriers correspondent to a technology
+
+
