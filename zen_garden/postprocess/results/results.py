@@ -149,6 +149,8 @@ class Results:
             hours_of_year = list(
                 range(year * _total_hours_per_year, (year + 1) * _total_hours_per_year)
             )
+            if output_df.empty:
+                return pd.DataFrame(index=[],columns=hours_of_year)
             output_df = output_df[hours_of_year]
         return output_df
 
@@ -639,7 +641,8 @@ class Results:
                 transport_loss = self.get_full_ts(
                     "flow_transport_loss", scenario_name=scenario_name, year=year
                 )
-
+                if full_ts.empty or transport_loss.empty:
+                    continue
                 full_ts = self.edit_carrier_flows(
                     full_ts - transport_loss, node, "in", scenario_name
                 )
@@ -647,6 +650,8 @@ class Results:
                 full_ts = self.get_full_ts(
                     "flow_transport", scenario_name=scenario_name, year=year
                 )
+                if full_ts.empty:
+                    continue
                 full_ts = self.edit_carrier_flows(full_ts, node, "out", scenario_name)
             else:
                 try:
@@ -687,5 +692,6 @@ if __name__ == "__main__":
         out_folder := os.path.join(config.analysis["folder_output"], model_name)
     ):
         r = Results(out_folder)
+        r.get_energy_balance_dataframes("ETH", "heat", 0)
     else:
         logging.critical("No results folder found!")
