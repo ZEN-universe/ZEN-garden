@@ -554,4 +554,4 @@ class EnergySystemRules(GenericRule):
         :return: total carbon emissions objective function
         """
         sets = self.sets
-        return sum(model.variables["carbon_emissions_annual"][year] for year in sets["set_time_steps_yearly"])
+        return model.variables["carbon_emissions_cumulative"][sets["set_time_steps_yearly"][-1]]

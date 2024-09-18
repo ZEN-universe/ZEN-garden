@@ -51,6 +51,10 @@ dev = [
     "coverage",
 ]
 
+vis = [
+    "matplotlib",
+    "seaborn"
+]
 gurobipy = ["gurobipy"]
 
 [project.urls]

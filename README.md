@@ -20,13 +20,13 @@ ZEN-garden is developed by the [Reliability and Risk Engineering Laboratory](htt
 <hr style="height: 5px; background-color: black;">
 
 ## Quick Start
-To get started with ZEN-garden, you can follow the instructions in the [installation guide](https://zen-garden.readthedocs.io/en/latest/files/installation.html).
+To get started with ZEN-garden, you can follow the instructions in the [installation guide](https://zen-garden.readthedocs.io/en/latest/files/user_guide/installation.html).
 
 If you want to use ZEN-garden without working on the codebase, run the following command:
 ```bash
 pip install zen-garden
 ```
-If you want to work on the codebase, fork and clone the repository and install the package in editable mode. More information on how to install the package in editable mode can be found in the [installation guide](https://zen-garden.readthedocs.io/en/latest/files/installation.html).
+If you want to work on the codebase, fork and clone the repository and install the package in editable mode. More information on how to install the package in editable mode can be found in the [installation guide](https://zen-garden.readthedocs.io/en/latest/files/user_guide/installation.html).
 
 ## Documentation
 Please refer to the documentation of the ZEN-garden framework [on Read-the-Docs](https://zen-garden.readthedocs.io/en/latest/). 
