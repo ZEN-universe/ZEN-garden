@@ -57,11 +57,10 @@ Per default, ``compare_model_values`` compares the total annual values of compon
 User guide for visualization
 =================
 
-If you have folllowed the steps of chapter :ref:`installation`, you should have a conda environment that contains the necessary python packages run the visualization suite.
+If you have folllowed the steps of chapter :ref:`installation`, you should have a conda environment or a virtual environment that contains the necessary python packages run the visualization suite.
 
-To run it, you have to clone the repository `<https://github.com/ZEN-universe/ZEN-temple>`_. If you cloned the ZEN garden repository with the `--recurse-submodules` option, you should already have the repository in the folder `zen_temple`. 
+You can then start the visualization with `python -m zen_garden.visualization`. By default, the suite looks for solutions that are contained in the folder `./outputs`, relatively to where you run the command. 
 
-From this folder, you can run the command `python explorer.py` in the activated conda environment, which will start the webserver and open a new tab in your default browser with the correct URL. You will have to reload the page after a few seconds to see the vizualisation.
+Alternatively, you can pass an arbitrary folder with `python -m zen_garden.visualization <path to your solutions folder>` to change the solutions folder.
 
-.. note::
-    By default, the explorer looks for solutions that are stored in the folder `../outputs`. If you cloned ZEN Garden recursively, this will correspond to the default folder for the example datasets. However, you can change this folder by renaming the file `.env.example` to `.env` and change the value of the variable `SOLUTION_FOLDER` in the file to an arbitrary folder where you stored your solutions.
+This command will open a new tab in your default browser with the correct URL. Probably, you will have to reload the website after a few seconds. If the tab does not open automaically, you can open http://localhost:8000/explorer in any browser of your choice.
