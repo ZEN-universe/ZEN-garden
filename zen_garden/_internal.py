@@ -78,7 +78,7 @@ def main(config, dataset_path=None, job_index=None):
             #TODO scaling algorithm
             if config.solver["use_scaling"]:
                 optimization_setup.scaling.run_scaling()
-            else:
+            elif config.solver["analyze_numerics"]:
                 optimization_setup.scaling.analyze_numerics()
             # SOLVE THE OPTIMIZATION PROBLEM
             optimization_setup.solve()

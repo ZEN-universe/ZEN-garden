@@ -1,7 +1,0 @@
-Parameter Name;Time Step Type;Doc String;Unit Category
-``distance``;temporal immutable;distance between two nodes for transport technologies;{"distance": 1}
-``capex_specific_transport``;``set_time_steps_yearly``;capex per unit for transport technologies;{"money": 1, "energy_quantity": -1, "time": 1}
-``capex_per_distance_transport``;``set_time_steps_yearly``;capex per distance for transport technologies;{"money": 1, "distance": -1, "energy_quantity": -1, "time": 1}
-``transport_loss_factor_linear``;temporal immutable;carrier losses due to transport with transport technologies;{"distance": -1}
-``transport_loss_factor_exponential``;temporal immutable;exponential carrier losses due to transport with transport technologies;{"distance": -1}
-

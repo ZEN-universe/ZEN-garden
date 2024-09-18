@@ -1,9 +1,0 @@
-Constraint Name;Time Step Type;Doc String
-``constraint_availability_import_export;``set_time_steps_operation``;node- and time-dependent limits to importing and exporting carriers from outside the system boundaries
-``constraint_availability_import_export_yearly;``set_time_steps_yearly``;node- and time-dependent constraints annual limits limits to importing and exporting carriers carriers from outside the system boundaries
-``constraint_cost_carrier;``set_time_steps_operation``;cost of importing and exporting carrier
-``constraint_cost_limit_shed_demand;``set_time_steps_operation``;costs and limit of shedding carrier demand
-``constraint_cost_carrier_total;``set_time_steps_yearly``;total cost of importing and exporting carriers
-``constraint_carbon_emissions_carrier;``set_time_steps_operation``;carbon emissions of importing and exporting carrier
-``constraint_carbon_emissions_carrier_total;``set_time_steps_yearly``;total carbon emissions of importing and exporting carriers
-``constraint_nodal_energy_balance;``set_time_steps_operation``;node- and time-dependent energy balance for each carrier

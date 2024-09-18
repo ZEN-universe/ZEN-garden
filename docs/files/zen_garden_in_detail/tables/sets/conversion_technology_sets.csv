@@ -1,0 +1,5 @@
+Set Name;Index;Symbol;Doc String
+``set_input_carriers``;``set_conversion_technologies``;:math:`\underline{\mathcal{C}}_{i}`;Set of carriers that are an input to a specific conversion technology
+``set_output_carriers``;``set_conversion_technologies``;:math:`\overline{\mathcal{C}}_{i}`;Set of carriers that are an output to a specific conversion technology
+``set_dependent_carriers``;``set_conversion_technologies``;--;Set of carriers that are an output to a specific conversion technology
+
