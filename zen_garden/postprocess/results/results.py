@@ -692,6 +692,5 @@ if __name__ == "__main__":
         out_folder := os.path.join(config.analysis["folder_output"], model_name)
     ):
         r = Results(out_folder)
-        r.get_energy_balance_dataframes("ETH", "heat", 0)
     else:
         logging.critical("No results folder found!")
