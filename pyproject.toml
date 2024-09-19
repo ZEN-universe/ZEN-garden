@@ -13,7 +13,8 @@ authors = [
   {name = "Lukas Schmidt-Engelbertz"},
   {name = "Giovanni Sansavini"},
   ]
-version = "1.10.1" # don't change this manually, done by bump2version
+# do not change version manually! Done by bump2version
+version = "1.10.2"
 requires-python= ">=3.10"
 description="ZEN-garden is an optimization model of energy systems and value chains."
 readme = "README.md"
