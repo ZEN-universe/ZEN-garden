@@ -6,9 +6,14 @@ build-backend = "flit_core.buildapi"
 name = "zen_garden"
 authors = [
   {name = "Jacob Mannhardt", email = "jmannhardt@ethz.ch"},
-  {name = "Alissa Ganter", email = "aganter@ethz.ch"}
+  {name = "Alissa Ganter"},
+  {name = "Johannes Burger"},
+  {name = "Francesco De Marco"},
+  {name = "Lukas Kunz"},
+  {name = "Lukas Schmidt-Engelbertz"},
+  {name = "Giovanni Sansavini"},
   ]
-version = "1.10.1"
+version = "1.10.1" # don't change this manually, done by bump2version
 requires-python= ">=3.10"
 description="ZEN-garden is an optimization model of energy systems and value chains."
 readme = "README.md"
@@ -53,7 +58,15 @@ dev = [
 
 vis = [
     "matplotlib",
-    "seaborn"
+]
+
+visplatform = [
+    "uvicorn",
+    "fastapi",
+    "fastapi-cache2",
+    "python-dotenv",
+    "sqlmodel",
+    "python-multipart",
 ]
 gurobipy = ["gurobipy"]
 

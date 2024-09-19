@@ -3,37 +3,10 @@ channels:
   - conda-forge
   - gurobi
 dependencies:
-  - python=3.11
-  - xarray
-  - pytest
   - pip
-  - numpy<=1.26.4
-  - pandas
-  - scipy
-  - coverage
-  - pint
-  - gurobi
-  - pytables
-  - pydantic
-  - requests
-  - ipykernel
+  - python=3.11
   - pip:
-      - tsam
-      - h5py
-      - filelock
-      - ordered-set
-      - pyogrio
-      - psutil
-      - linopy<=0.3.10
-      - sphinx
-      - myst-parser
-      - uvicorn
-      - fastapi
-      - fastapi-cache2
-      - python-dotenv
-      - sqlmodel
-      - python-multipart
-      - -e .
+      - -e .[dev,vis,gurobipy,visplatform]
 
 # conda env create -f zen_garden_env.yml
 # conda remove --name zen-garden --all
