@@ -61,14 +61,6 @@ vis = [
     "matplotlib",
 ]
 
-visplatform = [
-    "uvicorn",
-    "fastapi",
-    "fastapi-cache2",
-    "python-dotenv",
-    "sqlmodel",
-    "python-multipart",
-]
 gurobipy = ["gurobipy"]
 
 [project.urls]

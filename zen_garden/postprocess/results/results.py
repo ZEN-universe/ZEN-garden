@@ -658,6 +658,8 @@ class Results:
                     full_ts = self.get_full_ts(
                         component, scenario_name=scenario_name, year=year
                     )
+                    if full_ts.empty:
+                        continue
                 except KeyError:
                     continue
             carrier_df = self.extract_carrier(full_ts, carrier, scenario_name)
