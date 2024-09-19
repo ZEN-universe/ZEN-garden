@@ -63,4 +63,6 @@ You can then start the visualization with `python -m zen_garden.visualization`. 
 
 Alternatively, you can pass an arbitrary folder with `python -m zen_garden.visualization <path to your solutions folder>` to change the solutions folder.
 
-This command will open a new tab in your default browser with the correct URL. Probably, you will have to reload the website after a few seconds. If the tab does not open automaically, you can open http://localhost:8000/explorer in any browser of your choice.
+This command will start a webserver and open a new tab in your default browser with the correct URL. Probably, you will have to reload the website after a few seconds. If the tab does not open automaically, you can open http://localhost:8000/explorer in any browser of your choice.
+
+The best way to quit the webserver is by pressing Ctrl + C in the terminal that is running the webserver.
