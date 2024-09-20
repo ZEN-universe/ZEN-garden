@@ -4,26 +4,9 @@
 .. automodule:: zen_garden.preprocess.time_series_aggregation
 
    
-   
-   
-
-   
-   
-   
-
-   
-   
    .. rubric:: Classes
 
    .. autosummary::
    
       TimeSeriesAggregation
    
-   
-
-   
-   
-   
-
-
-
