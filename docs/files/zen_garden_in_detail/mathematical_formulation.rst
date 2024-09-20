@@ -2,34 +2,39 @@ Mathematical formulation
 ======================
 
 ZEN-garden optimizes the design and operation of energy system models to investigate transition pathways towards decarbonization.
-The optimization problem is formulated as a mixed-integer linear program (MILP). In the following, we provide an overview of the objective function and constraints of the optimization problem.
+The optimization problem is in general formulated as a mixed-integer linear program (MILP), but reduced to a linear program (LP) if the binary variables are not needed.
+In the following, we provide an overview of the objective function and constraints of the optimization problem.
 
 .. _objective-function:
 Objective function
 -----------------
 Two objective functions are available:
 
-1. minimize net present cost
-2. minimize total emissions
+1. minimize cumulative net present cost
+2. minimize cumulative emissions
 
 Minimizing net present cost
 ^^^^^^^^^^^^^^^^^^^^^
 
-The net present cost :math:`NPC_y` of the energy system are minimized over the entire planning horizon :math:`y \in {\mathcal{Y}}`. 
+The net present cost :math:`NPC_y` of the energy system is minimized over the entire planning horizon :math:`y \in {\mathcal{Y}}`.
 
 .. math::
     :label: min_cost
 
     \mathrm{min} \quad \sum_{y\in\mathcal{Y}} NPC_y
 
-The net present cost :math:`NPC_y` of each year :math:`y\in\mathcal{Y}` are computed by discounting the total energy system cost of each year, :math:`C_y` with a constant discount rate :math:`r`:
+The net present cost :math:`NPC_y` of each planning period :math:`y\in\mathcal{Y}` are computed by discounting the total energy system cost of each planning period :math:`C_y` with a constant discount rate :math:`r`:
 
 .. math::
     :label: net_present_cost
 
-    NPC_y = \sum_{y \in \mathcal{Y}} \sum_{i \in [0,dy]} \left( \dfrac{1}{1+r} \right)^{\left(dy (y-y_0) + i \right)} C_y
+    NPC_y = \sum_{i \in [0,dy(y))-1]} \left( \dfrac{1}{1+r} \right)^{\left(dy (y-y_0) + i \right)} C_y
 
-where :math:`y_0` represents the first year of the planning horizon and :math:`dy` represents the interval between planning periods. E.g., if :math:`dy=2` the optimization is conducted for every second year. Moreover, we assume that the optimization is only conducted until the end of the first year of the last planning period. The last period of the planning horizon :math:`Y=\max(y)` is therefore only counted as a single year regardless of the interval between planning periods.
+where :math:`y_0` represents the first planning period and :math:`dy` represents the interval between planning periods, e.g., if :math:`dy=2` the optimization is conducted for every second year.
+Hence, we discount each year of the time horizon, also the years for which the optimization is not conducted.
+The interannual time index :math:`y \in {\mathcal{Y}}` therefore describes the planning periods and not the actual years.
+Moreover, we assume that the optimization is only conducted until the end of the first year of the last planning period.
+The last period of the planning horizon :math:`Y=\max(y)` is therefore only counted as a single year regardless of the interval between planning periods (:math:`dy(Y)=1`).
 
 The total cost :math:`C_y` includes the annual capital expenditures :math:`CAPEX_y` and the operational expenditures for operating technologies :math:`OPEX_y^{t}`, importing and exporting carriers :math:`OPEX_y^\mathrm{c}`, and the cost of carbon emissions :math:`OPEX_y^\mathrm{e}`. 
 
@@ -46,23 +51,25 @@ The total cost :math:`C_y` includes the annual capital expenditures :math:`CAPEX
 .. math::
     :label: capex_y
 
-    CAPEX_y = \sum_{h\in\mathcal{H}}\sum_{s\in\mathcal{S}}\sum_{p\in\mathcal{P}} A_{h,p,y}.
+    CAPEX_y = \sum_{h\in\mathcal{H}}\sum_{s\in\mathcal{S}}\sum_{p\in\mathcal{P}} A_{h,p,y}
 
-Each technology :math:`h\in\mathcal{H}` is either a conversion technology :math:`i\in\mathcal{I}\subseteq\mathcal{H}`, a transport technology :math:`j\in\mathcal{J}\subseteq\mathcal{H}` or a storage technology :math:`k\in\mathcal{K}\subseteq\mathcal{H}`. For sake of simplicity, we index those variables and parameters that apply to all technology types with :math:`h`. For storage capacities, both the energy and power-rated capacity can be expanded. Conversion and storage technologies are installed and operated on nodes :math:`n\in\mathcal{N}`. Transport technologies are installed and operated on edges :math:`e\in\mathcal{E}`. We summarize nodes and edges to positions :math:`p\in\mathcal{P}=\mathcal{N}\cup\mathcal{E}`.
+Each technology :math:`h\in\mathcal{H}` is either a conversion technology :math:`i\in\mathcal{I}\subseteq\mathcal{H}`, a transport technology :math:`j\in\mathcal{J}\subseteq\mathcal{H}` or a storage technology :math:`k\in\mathcal{K}\subseteq\mathcal{H}`.
+**For sake of simplicity, we index those variables and parameters that apply to all technology types with** :math:`h`.
+For storage capacities, both the energy and power-rated capacity can be expanded. Conversion and storage technologies are installed and operated on nodes :math:`n\in\mathcal{N}`. Transport technologies are installed and operated on edges :math:`e\in\mathcal{E}`. We summarize nodes and edges to positions :math:`p\in\mathcal{P}=\mathcal{N}\cup\mathcal{E}`.
 
 The investment costs are annualized by multiplying the total investment cost with the annuity factor :math:`f_h`, which is a function of the technology lifetime  :math:`l_h` and the discount rate :math:`r`:
 
 .. math::
     :label: annuity
 
-    f_h=\frac{\left(1+r\right)^{l_h}r}{\left(1+r\right)^{l_h}-1}.
+    f_h=\frac{\left(1+r\right)^{l_h}r}{\left(1+r\right)^{l_h}-1}
 
-The annual cash flows accrue over the technology lifetime :math:`l_h` and comprise the capital investment cost of newly installed and existing technology capacities :math:`I_{h,p,y}` and :math:`I^\mathrm{ex}_{h,p,y}`. The annual capital expenditure :math:`A_{h,p,y}` for technology :math:`h\in\mathcal{H}` in position :math:`p\in\mathcal{P}` and period :math:`y\in\mathcal{Y}` are computed as:
+The annual cash flows accrue over the technology lifetime :math:`l_h` and comprise the capital investment cost of newly installed and existing technology capacities :math:`I_{h,p,y}` and :math:`i^\mathrm{ex}_{h,p,y}`. The annual capital expenditure :math:`A_{h,p,y}` for technology :math:`h\in\mathcal{H}` in position :math:`p\in\mathcal{P}` and period :math:`y\in\mathcal{Y}` are computed as:
 
 .. math::
     :label: capex_yearly
 
-    A_{h,p,y}= f_h\left(\sum_{\tilde{y}=\max\left(y_0,y-\left(\lceil\frac{l_h}{dy}\right)\rceil+1\right)}^y I_{h,p,\tilde{y}} \right)+\left(\sum_{\hat{y}=\psi \left(y-\left(\lceil\frac{l_h}{dy}\right)\rceil+1\right)}^{\psi(y_0-1)} I^\mathrm{ex}_{h,p,y}\right),
+    A_{h,p,y}= f_h\left(\left(\sum_{\tilde{y}=\max\left(y_0,y-\lceil\frac{l_h}{dy}\rceil+1\right)}^y I_{h,p,\tilde{y}} \right)+\left(\sum_{\hat{y}=\psi \left(y-\lceil\frac{l_h}{dy}\rceil+1\right)}^{\psi(y_0-1)} i^\mathrm{ex}_{h,p,y}\right)\right)
 
 where :math:`\lceil\cdot\rceil` is the ceiling function and :math:`\psi(y)` is a function that maps the planning period :math:`y` to the actual year.
 
@@ -76,12 +83,12 @@ The capital investment cost :math:`I_{h,p,y}` for conversion technology :math:`i
 .. note::
     The capex of conversion technologies can also be approximated by a piecewise linear approximation as described in :ref:`PWA` and :ref:`PWA_constraints`.
 
-For existing conversion technology capacities :math:`s_{h,n,y}` that were installed before :math:`y_0`, we apply the unit cost of the first investment period :math:`\alpha_{h,y_0}`:
+For existing conversion technology capacities :math:`s_{h,n,y}^{ex}` that were installed before :math:`y_0`, we apply the unit cost of the first investment period :math:`\alpha_{h,y_0}`:
 
 .. math::
     :label: cost_capex_conversion_ex
 
-    I^\mathrm{ex}_{i,n,y} = \alpha_{i,y_0} \Delta s^\mathrm{ex}_{i,n,y}
+    i^\mathrm{ex}_{i,n,y} = \alpha_{i,y_0} \Delta s^\mathrm{ex}_{i,n,y}
 
 For transport technologies :math:`j\in\mathcal{J}`, the unit investment cost :math:`\alpha_{j,e,y}` can be defined through a distance independent unit cost of capital investment :math:`\alpha^\mathrm{const}_{j,y}` and/or a distance dependent unit cost of capital investment :math:`\alpha^\mathrm{dist}_{j,e,y}` which is multiplied by the distance :math:`h_{j,e}` of the corresponding edge :math:`e\in\mathcal{E}`:
 
@@ -105,7 +112,7 @@ For existing transport technology capacities :math:`s_{j,e,y}` that were install
 .. math::
     :label: cost_capex_transport_ex
 
-    I^\mathrm{ex}_{j,e,y} = \alpha_{j,e,y_0} \Delta s^\mathrm{ex}_{j,e,y}
+    i^\mathrm{ex}_{j,e,y} = \alpha_{j,e,y_0} \Delta s^\mathrm{ex}_{j,e,y}
 
 The total investment cost for each storage technology :math:`k\in\mathcal{K}` is the product of the unit cost of capital investment and the capacity addition for both the power-rated capacity (:math:`\alpha_{k,y}` and :math:`\Delta S_{k,n,y}`) and the energy-rated capacity (:math:`\alpha^\mathrm{e}_{k,y}` and :math:`\Delta S^\mathrm{e}_{k,n,y}`).
 
@@ -119,7 +126,7 @@ For existing storage technology capacities :math:`s_{k,n,y}` that were installed
 .. math::
     :label: cost_capex_storage_ex
 
-    I^\mathrm{ex}_{k,n,y} = \alpha_{k,y_0} \Delta s^\mathrm{ex}_{k,n,y}
+    i^\mathrm{ex}_{k,n,y} = \alpha_{k,y_0} \Delta s^\mathrm{ex}_{k,n,y}
 
 **Operational expenditures**
 
@@ -426,13 +433,16 @@ Furthermore, the reference flow of retrofitting technologies is linked to the re
 
     G_{i^\mathrm{r},n,t,y}^\mathrm{r} = \eta^\mathrm{retrofit}_{i^\mathrm{r},n,t} G_{i,n,t,y}^\mathrm{r}.
 
-**JM START**
-The temporal representation of storage technologies :math:`k\in\mathcal{K}` is particular because the storage constraints are time-coupled and the sequence of time steps must be preserved. To enable both the modeling of short- and medium-term storage, e.g., pumped hydro storage, and long-term storage, e.g., natural gas storage, we present a novel formulation, where the energy-rated storage variables are resolved on a different time sequence. In particular, each change in the aggregated time sequence for power-rated variables yields an additional time step for the energy-rated storage variables. Assume the representation of the exemplary full time index :math:`\mathcal{T}^\mathrm{full}=[0,...,9]` by four representative time steps :math:`\mathcal{T}=[0,...,3]` with the sequence :math:`\sigma= [0,0,1,2,1,1,3,3,2,0]` for power-rated variables. The resulting sequence for energy-rated storage variables :math:`\sigma^\mathrm{k}:math:` of the storage time steps :math:`\mathcal{T}^\mathrm{k}=[0,...,6]` is then:
+The temporal representation of storage technologies :math:`k\in\mathcal{K}` is particular because the storage constraints are time-coupled and the sequence of time steps must be preserved.
+To enable both the modeling of short- and medium-term storage, e.g., battery and pumped hydro storage, and long-term storage, e.g., natural gas storage, we present a novel formulation, where the energy-rated storage variables are resolved on a different time sequence. The approach is detailed in `Mannhardt et al. 2023 <https://www.sciencedirect.com/science/article/pii/S2589004223008271>`_.
+In particular, each change in the aggregated time sequence for power-rated variables yields an additional time step for the energy-rated storage variables.
+Assume the representation of the exemplary full time index :math:`\mathcal{T}^\mathrm{full}=[0,...,9]` by four representative time steps :math:`\mathcal{T}=[0,...,3]` with the sequence :math:`\sigma= [0,0,1,2,1,1,3,3,2,0]` for power-rated variables.
+The resulting sequence for energy-rated storage variables :math:`\sigma^\mathrm{k}` of the storage time steps :math:`\mathcal{T}^\mathrm{k}=[0,...,6]` is then:
 
 .. math::
     :label: storage_time_sequence
 
-    \sigma^\mathrm{k} = [0,0,1,2,3,3,4,4,5,6].
+    \sigma^\mathrm{k} = [0,0,1,2,3,3,4,4,5,6]
 
 While this formulation enables both the short-term and long-term operation of storages, it increases the number of time steps :math:`\vert \mathcal{T}^\mathrm{k}\vert` and thus the number of variables.
 
@@ -442,34 +452,80 @@ The time-coupled equation for the storage level :math:`L_{k,n,t^\mathrm{k},y}` o
 .. math::
     :label: storage_level
 
-    L_{k,n,t^\mathrm{k},y} = L_{k,n,t^\mathrm{k}-1,y}\left(1-\varphi_k\right)^{\tau^\mathrm{k}_{t^\mathrm{k}}}+\left(\underline{\eta}_k\underline{H}_{k,n,\sigma(t^\mathrm{k}),y}-\frac{\overline{H}_{k,n,\sigma(t^\mathrm{k}),y}}{\overline{\eta}_k}\right)\sum_{\tilde{t}^\mathrm{k}=0}^{\tau^\mathrm{k}_{t^\mathrm{k}}-1}\left(1-\varphi_k\right)^{\tilde{t}^\mathrm{k}},
+    L_{k,n,t^\mathrm{k},y} = L_{k,n,t^\mathrm{k}-1,y}\left(1-\varphi_k\right)^{\tau^\mathrm{k}_{t^\mathrm{k}}}+\left(\underline{\eta}_k\underline{H}_{k,n,\sigma(t^\mathrm{k}),y}-\frac{\overline{H}_{k,n,\sigma(t^\mathrm{k}),y}}{\overline{\eta}_k}\right)\sum_{\tilde{t}^\mathrm{k}=0}^{\tau^\mathrm{k}_{t^\mathrm{k}}-1}\left(1-\varphi_k\right)^{\tilde{t}^\mathrm{k}}
 
 with the self-discharge rate :math:`\varphi_k`, the charge and discharge efficiency, :math:`\underline{\eta}_k` and :math:`\overline{\eta}_k`, and the duration of a storage level time step :math:`\tau^\mathrm{k}_{t^\mathrm{k}}`.
+Note that we reformulate :math:`\sum_{\tilde{t}^\mathrm{k}=0}^{\tau^\mathrm{k}_{t^\mathrm{k}}-1}\left(1-\varphi_k\right)^{\tilde{t}^\mathrm{k}}` in the optimization problem with the partial geometric series to avoid constructing an additional summation term:
 
-If storage periodicity is enforced, the storage level at :math:`t^\mathrm{k}=0` is coupled with the level in the last time step of the period
+.. math::
+    :label: partial_geom_series
+
+    \sum_{\tilde{t}^\mathrm{k}=0}^{\tau^\mathrm{k}_{t^\mathrm{k}}-1}\left(1-\varphi_k\right)^{\tilde{t}^\mathrm{k}} = \frac{1-\left(1-\varphi_k\right)^{\tau^\mathrm{k}_{t^\mathrm{k}}}}{\varphi_k}
+
+If storage periodicity is enforced (``system.storage_periodicity = True``), the storage level at :math:`t^\mathrm{k}=0` is coupled with the level in the last time step of the period
 :math:`t^\mathrm{k}=T^\mathrm{k}`:
 
 .. math::
     :label: storage_level_periodicity
 
-    L_{k,n,0,y} = L_{k,n,T^\mathrm{k},y}\left(1-\varphi_k\right)^{\tau^\mathrm{k}_{t^\mathrm{k}}}+\left(\underline{\eta}_k\underline{H}_{k,n,\sigma(0),y}-\frac{\overline{H}_{k,n,\sigma(0),y}}{\overline{\eta}_k}\right)\sum_{\tilde{t}^\mathrm{k}=0}^{\tau^\mathrm{k}_{t^\mathrm{k}}-1}\left(1-\varphi_k\right)^{\tilde{t}^\mathrm{k}}.
+    L_{k,n,0,y} = L_{k,n,T^\mathrm{k},y}\left(1-\varphi_k\right)^{\tau^\mathrm{k}_{t^\mathrm{k}}}+\left(\underline{\eta}_k\underline{H}_{k,n,\sigma(0),y}-\frac{\overline{H}_{k,n,\sigma(0),y}}{\overline{\eta}_k}\right)\sum_{\tilde{t}^\mathrm{k}=0}^{\tau^\mathrm{k}_{t^\mathrm{k}}-1}\left(1-\varphi_k\right)^{\tilde{t}^\mathrm{k}}
 
 Moreover, the :math:`L_{k,n,t^\mathrm{k},y}` is constrained by the energy-rated storage capacity :math:`S^\mathrm{e}_{k,n,y}`:
 
 .. math::
     :label: limit_storage_level
 
-    0 \leq L_{k,n,t^\mathrm{k},y}\leq S^\mathrm{e}_{k,n,y}.
+    0 \leq L_{k,n,t^\mathrm{k},y}\leq S^\mathrm{e}_{k,n,y}
 
-:math:`L_{k,n,t^\mathrm{k},y}` is monotonous between :math:`t^\mathrm{k}` and :math:`t^\mathrm{k}+1`. Hence, :math:`L_{k,n,t^\mathrm{k},y}` and :math:`L_{k,n,t^\mathrm{k}+1,y}` are the local extreme values and Eq. :eq:`limit_storage_level` constrains the entire time interval between :math:`t^\mathrm{k}` and :math:`t^\mathrm{k}+1`. We prove this in :ref:`storage_level_monotony`.
+:math:`L_{k,n,t^\mathrm{k},y}` is monotonous between :math:`t^\mathrm{k}` and :math:`t^\mathrm{k}+1`. Hence, :math:`L_{k,n,t^\mathrm{k},y}` and :math:`L_{k,n,t^\mathrm{k}+1,y}` are the local extreme values and Eq. :eq:`limit_storage_level` constrains the entire time interval between :math:`t^\mathrm{k}` and :math:`t^\mathrm{k}+1`.
+We prove this below.
 
 The storage level at :math:`t^\mathrm{k}=0` can be set to an initial storage level :math:`\chi_{k,n}` as a share of :math:`S^\mathrm{e}_{k,n,y}`:
 
 .. math::
 
-    L_{k,n,0,y} = \chi_{k,n}S^\mathrm{e}_{k,n,y}.
+    L_{k,n,0,y} = \chi_{k,n}S^\mathrm{e}_{k,n,y}
 
-**JM STOPP**
+
+**Proof of storage level monotony**
+
+We prove that Eq. :eq:`storage_level` is monotonous on the entire time interval that is aggregated to a single storage time step :math:`t^\mathrm{k}`.
+Consider Eq. :eq:`storage_level` for one storage time step :math:`t^\mathrm{k}`, during which :math:`\underline{H}_{k,n,\sigma(t^\mathrm{k}),y}` and :math:`\overline{H}_{k,n,\sigma(t^\mathrm{k}),y}` are constant. Neglecting all further indices without loss of generality, the storage level :math:`L(t)` for the intermediate time steps :math:`t\in[1,\tau^\mathrm{k}_{t^\mathrm{k}}]` follows as:
+
+.. math::
+    :label: storage_level_simpl
+
+    L(t) = L_0\kappa^t + \Delta H\sum_{\tilde{t}=0}^{t-1}\kappa^{\tilde{t}},
+
+with :math:`\kappa=1-\varphi` and :math:`\Delta H=\left(\underline{\eta}\underline{H}-\frac{\overline{H}}{\overline{\eta}}\right)`. :math:`L_0` is the storage level at the end of the previous storage time step :math:`t^\mathrm{k}-1`.
+Without self-discharge (:math:`\varphi=0\Rightarrow\kappa=1`), it follows:
+
+.. math::
+
+    L(t) = L_0 + \Delta Ht \Rightarrow \frac{\mathrm{d}L(t)}{\mathrm{d}t}=\Delta H.
+
+Since :math:`\frac{\mathrm{d}L(t)}{\mathrm{d}t}` is independent of :math:`t`, Eq. :eq:`storage_level_simpl` is monotonous for :math:`\varphi=0`.
+
+For :math:`0<\varphi<1`, :math:`\sum_{\tilde{t}=0}^{t-1}\kappa^{\tilde{t}}` is reformulated as the partial geometric series (compare Eq. :eq:`partial_geom_series`).
+
+.. math::
+
+    \sum_{\tilde{t}=0}^{t-1}\kappa^{\tilde{t}} = \frac{1-\kappa^t}{1-\kappa}.
+
+Eq. :eq:`storage_level_simpl` is reformulated to:
+
+.. math::
+    :label: storage_level_selfdisch
+
+    L(t) = L_0\kappa^t + \Delta H\frac{1-\kappa^t}{1-\kappa} = \frac{\Delta H}{1-\kappa}+\left(L_0-\frac{\Delta H}{1-\kappa}\right)\kappa^t.
+
+The derivative of Eq. :eq:`storage_level_selfdisch` follows as:
+
+.. math::
+
+    \frac{\mathrm{d}L(t)}{\mathrm{d}t} = \underbrace{\left(L_0-\frac{\Delta H}{1-\kappa}\right)\ln(\kappa)}_{= \text{ constant }\forall t\in[1,\tau^\mathrm{k}_{t^\mathrm{k}}]}\kappa^t.
+
+With :math:`\kappa^t>0`, it follows that \cref{eq:storage_level_simpl} is monotonous for :math:`0<\varphi<1`.
 
 Investment constraints
 ----------------------
@@ -497,7 +553,7 @@ The capacity addition :math:`\Delta S_{h,p,y}`  is constrained by the maximum ca
 
     You can skip the maximum capacity addition constraint for a technology by setting the maximum capacity addition to infinity.
 
-You can also introduce a minimum capacity addition :math:`\Delta s^\mathrm{min}_{h,p,y}`. However, please note, that adding a minimum capacity addition :math:`\Delta s^\mathrm{min}_{h,p,y}` introduces binary variables, which can increase the computational complexity of the optimization problem substantially. The min-capacity addition constraints are described in :ref:`_min_capacity_installation`.
+You can also introduce a minimum capacity addition :math:`\Delta s^\mathrm{min}_{h,p,y}`. However, please note, that adding a minimum capacity addition :math:`\Delta s^\mathrm{min}_{h,p,y}` introduces binary variables, which can increase the computational complexity of the optimization problem substantially. The min-capacity addition constraints are described in :ref:`min_capacity_installation`.
 
 Furthermore, for storage technologies the ratios of the energy- and power rated capacity additions are constrained by the energy-to-power ratio :math:`\rho_{k}`. Minimum and maximum energy-to-power ratios can be defined. For infinite power ratios, the constraints are skipped.
 
@@ -517,8 +573,12 @@ Furthermore, if :math:`y-dy^\mathrm{construction}<0`:
 
     \Delta S_{h,p,y} = 0
 
-**JM START**
-In case you are using constrained technology deployment, :math:`\Delta S_{h,p,y}` is constrained by the existing knowledge of how to install the technology :math:`K_{h,p,y}` with the technology diffusion rate :math:`\vartheta_h`. For node-based technologies, i.e., conversion and storage technologies, spillover effects from other nodes :math:`\tilde{\mathcal{N}} = \mathcal{N}\setminus\{n\}` can be utilized (knowledge spillover rate :math:`\omega`). To allow for an entry into a niche market, we add an unbounded market share :math:`\xi` of the total capacity of all other technologies with the same reference carrier:
+**Constrained technology deployment**
+
+In case you are using constrained technology deployment (``max_diffusion_rate != np.inf`` for a technology), :math:`\Delta S_{h,p,y}` is constrained by the existing knowledge of how to install the technology :math:`K_{h,p,y}` with the technology diffusion rate :math:`\vartheta_h`.
+This approach is based on `Leibowicz et al. (2016) <https://www.sciencedirect.com/science/article/pii/S0040162515001675>`_.
+
+For node-based technologies, i.e., conversion and storage technologies, spillover effects from other nodes :math:`\tilde{\mathcal{N}} = \mathcal{N}\setminus\{n\}` can be utilized (knowledge spillover rate :math:`\omega`). To allow for an entry into a niche market, we add an unbounded market share :math:`\xi` of the total capacity of all other technologies with the same reference carrier:
 
 .. math::
 
@@ -527,78 +587,43 @@ In case you are using constrained technology deployment, :math:`\Delta S_{h,p,y}
 With the unbounded capacity addition :math:`\zeta_h`, it follows for the conversion technologies :math:`i\in\mathcal{I}`:
 
 .. math::
+    :label: constrained_technology_deployment_i
 
-    0 \leq \Delta S_{i,n,y}\leq \left((1+\vartheta_i)^{dy}-1\right)\left(K_{i,n,y}+\omega\sum_{\tilde{n}\in\tilde{\mathcal{N}}}K_{i,\tilde{n},y}\right)+dy\left(\xi\sum_{\tilde{i}\in\tilde{\mathcal{I}}}S_{\tilde{i},n,y} + \zeta_i\right).
+    \Delta S_{i,n,y}\leq \left((1+\vartheta_i)^{dy}-1\right)\left(K_{i,n,y}+\omega\sum_{\tilde{n}\in\tilde{\mathcal{N}}}K_{i,\tilde{n},y}\right)+dy\left(\xi\sum_{\tilde{i}\in\tilde{\mathcal{I}}}S_{\tilde{i},n,y} + \zeta_i\right)
 
 Analogously, it follows for the storage technologies :math:`k\in\mathcal{K}`:
 
 .. math::
+    :label: constrained_technology_deployment_k
 
-    0 \leq \Delta S_{k,n,y}\leq \left((1+\vartheta_k)^{dy}-1\right)\left(K_{k,n,y}+\omega\sum_{\tilde{n}\in\tilde{\mathcal{N}}}K_{k,\tilde{n},y}\right)+dy\left(\xi\sum_{\tilde{k}\in\tilde{\mathcal{K}}}S_{\tilde{k},n,y} + \zeta_k\right).
+    \Delta S_{k,n,y}\leq \left((1+\vartheta_k)^{dy}-1\right)\left(K_{k,n,y}+\omega\sum_{\tilde{n}\in\tilde{\mathcal{N}}}K_{k,\tilde{n},y}\right)+dy\left(\xi\sum_{\tilde{k}\in\tilde{\mathcal{K}}}S_{\tilde{k},n,y} + \zeta_k\right)
 
 
 We prohibit spillover effects for transport technologies :math:`j\in\mathcal{J}` from other edges:
 
 .. math::
+    :label: constrained_technology_deployment_j
 
-    0 \leq \Delta S_{j,e,y}\leq \left((1+\vartheta_j)^{dy}-1\right)K_{j,e,y}+dy\left(\xi\sum_{\tilde{j}\in\tilde{\mathcal{J}}}S_{\tilde{j},e,y} + \zeta_j\right).
+    \Delta S_{j,e,y}\leq \left((1+\vartheta_j)^{dy}-1\right)K_{j,e,y}+dy\left(\xi\sum_{\tilde{j}\in\tilde{\mathcal{J}}}S_{\tilde{j},e,y} + \zeta_j\right)
 
 
 To avoid the unrealistically excessive use of spillover effects, we constrain the capacity additions in all positions as follows:
 
 .. math::
+    :label: constrained_technology_deployment_all
 
-    \sum_{p\in\mathcal{P}}\Delta S_{h,p,y}\leq \sum_{p\in\mathcal{P}}\Bigg(\left((1+\vartheta_h)^{dy}-1\right)K_{h,p,y}+dy\left(\xi\sum_{\tilde{h}\in\tilde{\mathcal{H}}}S_{\tilde{h},p,y} + \zeta_h\right)\Bigg).
+    \sum_{p\in\mathcal{P}}\Delta S_{h,p,y}\leq \sum_{p\in\mathcal{P}}\Bigg(\left((1+\vartheta_h)^{dy}-1\right)K_{h,p,y}+dy\left(\xi\sum_{\tilde{h}\in\tilde{\mathcal{H}}}S_{\tilde{h},p,y} + \zeta_h\right)\Bigg)
 
+.. note::
+
+    If you set :math:`\omega=\infty`, we assume infinite spillover effects between nodes and Eqs. :eq:`constrained_technology_deployment_i`-:eq:`constrained_technology_deployment_j` are skipped.
+    Then the constrained technology expansion for the entire energy system is governed by Eq. :eq:`constrained_technology_deployment_all`.
 
 :math:`K_{h,p,y}` is a function of the previous capacity additions :math:`\Delta S_{h,p,y}` and :math:`\Delta s^\mathrm{ex}_{h,p,y}` as it represents the expertise and knowledge of the industry on how to install a certain amount of capacity. This knowledge is depreciated over time with the knowledge depreciation rate :math:`\delta`:
 
 .. math::
 
-    K_{h,p,y} = \sum_{\tilde{y}=y_0}^{y-1}\left(1-\delta\right)^{dy (y-\tilde{y})}\Delta S_{h,p,\tilde{y}} + \sum_{\hat{y}=-\infty}^{\psi(y_0)}\left(1-\delta\right)^{\left(dy(y-y_0) + (\psi(y_0)-\hat{y})\right)}\Delta s^\mathrm{ex}_{h,p,\hat{y}}.
-
-.. _storage_level_monotony:
-**Proof of storage level monotony**
-
-**JM START**
-We prove that Eq. :eq:`storage_level` is monotonous on the entire time interval that is aggregated to a single storage time step :math:`t^\mathrm{k}`.
-Consider Eq. :eq:`storage_level` for one storage time step :math:`t^\mathrm{k}`, during which :math:`\underline{H}_{k,n,\sigma(t^\mathrm{k}),y}` and :math:`\overline{H}_{k,n,\sigma(t^\mathrm{k}),y}` are constant. Neglecting all further indices without loss of generality, the storage level :math:`L(t)` for the intermediate time steps :math:`t\in[1,\tau^\mathrm{k}_{t^\mathrm{k}}]` follows as:
-
-.. math::
-    :label: storage_level_simpl
-
-    L(t) = L_0\kappa^t + \Delta H\sum_{\tilde{t}=0}^{t-1}\kappa^{\tilde{t}},
-
-with :math:`\kappa=1-\varphi` and :math:`\Delta H=\left(\underline{\eta}\underline{H}-\frac{\overline{H}}{\overline{\eta}}\right)`. :math:`L_0` is the storage level at the end of the previous storage time step :math:`t^\mathrm{k}-1`.
-Without self-discharge (:math:`\varphi=0\Rightarrow\kappa=1`), it follows:
-
-.. math::
-
-    L(t) = L_0 + \Delta Ht \Rightarrow \dfrac{L(t)}{t}=\Delta H.
-
-Since :math:`\dfrac*{L(t)}{t}` is independent of :math:`t`, Eq. :eq:`storage_level_simpl` is monotonous for :math:`\varphi=0`.
-
-For :math:`0<\varphi<1`, :math:`\sum_{\tilde{t}=0}^{t-1}\kappa^{\tilde{t}}` is reformulated as the partial geometric series:
-
-.. math::
-
-    \sum_{\tilde{t}=0}^{t-1}\kappa^{\tilde{t}} = \frac{1-\kappa^t}{1-\kappa}.
-
-Eq. :eq:`storage_level_simpl` is reformulated to:
-
-.. math::
-    :label: storage_level_selfdisch
-
-    L(t) = L_0\kappa^t + \Delta H\frac{1-\kappa^t}{1-\kappa} = \frac{\Delta H}{1-\kappa}+\left(L_0-\frac{\Delta H}{1-\kappa}\right)\kappa^t.
-
-The derivative of Eq. :eq:`storage_level_selfdisch` follows as:
-
-.. math::
-
-    \dfrac{L(t)}{t} = \underbrace{\left(L_0-\frac{\Delta H}{1-\kappa}\right)\ln(\kappa)}_{= \text{ constant }\forall t\in[1,\tau^\mathrm{k}_{t^\mathrm{k}}]}\kappa^t.
-
-With :math:`\kappa^t>0`, it follows that \cref{eq:storage_level_simpl} is monotonous for :math:`0<\varphi<1`.
-**JM STOPP**
+    K_{h,p,y} = \sum_{\tilde{y}=y_0}^{y-1}\left(1-\delta\right)^{dy (y-\tilde{y})}\Delta S_{h,p,\tilde{y}} + \sum_{\hat{y}=-\infty}^{\psi(y_0)}\left(1-\delta\right)^{\left(dy(y-y_0) + (\psi(y_0)-\hat{y})\right)}\Delta s^\mathrm{ex}_{h,p,\hat{y}}
 
 .. _min_load_constraints:
 Minimum load constraints

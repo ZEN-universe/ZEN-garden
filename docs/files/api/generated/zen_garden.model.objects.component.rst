@@ -4,15 +4,6 @@
 .. automodule:: zen_garden.model.objects.component
 
    
-   
-   
-
-   
-   
-   
-
-   
-   
    .. rubric:: Classes
 
    .. autosummary::
@@ -26,11 +17,3 @@
       ZenIndex
       ZenSet
    
-   
-
-   
-   
-   
-
-
-

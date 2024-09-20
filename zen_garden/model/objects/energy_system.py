@@ -415,7 +415,7 @@ class EnergySystemRules(GenericRule):
         """ discounts the annual capital flows to calculate the net_present_cost
 
         .. math::
-            NPC_y = C_y \sum_{\\tilde{y} = 1}^{\Delta^\mathrm{y}-1}(\\frac{1}{1+r})^{\Delta^\mathrm{y}(y-y_0)+\\tilde{y}}
+            NPC_y = \sum_{i \in [0,dy(y))-1]} \\left( \dfrac{1}{1+r} \\right)^{\\left(dy (y-y_0) + i \\right)} C_y
 
        """
         factor = pd.Series(index = self.energy_system.set_time_steps_yearly)
