@@ -7,4 +7,4 @@ Key;Type;Default Value;Description
 ``output_format``;``str``;``h5``;output format of the optimization results. Currently only ``h5`` is supported
 ``save_benchmarking_results``;``bool``;``False``;If true, additional data such as solving time, number of iterations etc. will be saved
 ``time_series_aggregation``;``TimeSeriesAggregation``;``TimeSeriesAggregation()``;additional settings for the time series aggregation algorithm
-``earliest_year_of_data``;``int``;``1900``;earliest year of input data
+``earliest_year_of_data``;``int``;``1900``;earliest possible year of input data

@@ -219,9 +219,6 @@ class OptimizationSetup(object):
             element_class = [k for k,v in self.dict_element_classes.items() if v == element.__class__][0]
             logging.info(f"Create {element_class} {element.name}")
             element.store_input_data()
-        if self.solver["recommend_base_units"]:
-            self.energy_system.unit_handling.recommend_base_units(immutable_unit=self.solver["immutable_unit"],
-                                                                  unit_exps=self.solver["range_unit_exponents"])
 
     def add_element(self, element_class, name):
         """
