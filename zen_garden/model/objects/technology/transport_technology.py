@@ -74,7 +74,7 @@ class TransportTechnology(Technology):
         if self.optimization_setup.system["double_capex_transport"]:
             # both capex terms must be specified
             self.capex_specific_transport = self.data_input.extract_input_data("capex_specific_transport", index_sets=["set_edges", "set_time_steps_yearly"], time_steps="set_time_steps_yearly", unit_category={"money": 1, "energy_quantity": -1, "time": 1})
-            self.capex_per_distance_transport = self.data_input.extract_input_data("capex_per_distance_transport", index_sets=["set_edges", "set_time_steps_yearly"], time_steps="set_time_steps_yearly", unit_category={"money": 1, "distance": -1, "energy_quantity": -1, "time": 1})
+            self.capex_per_distance_transport = self.data_input.extract_input_data("capex_per_distance_transport", index_sets=["set_edges", "set_time_steps_yearly"], time_steps="set_time_steps_yearly", unit_category={"money": 1, "distance": -1})
         else:  # Here only capex_specific is used, and capex_per_distance_transport is set to Zero.
             if "capex_per_distance_transport" in self.data_input.attribute_dict:
                 self.capex_per_distance_transport = self.data_input.extract_input_data("capex_per_distance_transport", index_sets=["set_edges", "set_time_steps_yearly"], time_steps="set_time_steps_yearly", unit_category={"money": 1, "distance": -1, "energy_quantity": -1, "time": 1})
@@ -106,9 +106,10 @@ class TransportTechnology(Technology):
         :param index: index of capacity
         :return: capex of single capacity
         """
-        # TODO check existing capex of transport techs -> Hannes
-        if np.isnan(self.capex_specific_transport[index[0]].iloc[0]):
+        if np.isnan(self.capex_specific_transport[index[0]].iloc[0]) and np.isnan(self.capex_per_distance_transport[index[0]].iloc[0]):
             return 0
+        elif self.energy_system.system['double_capex_transport'] and capacity != 0:
+            return self.capex_specific_transport[index[0]].iloc[0] * capacity + self.capex_per_distance_transport[index[0]].iloc[0] * self.distance[index[0]]
         else:
             return self.capex_specific_transport[index[0]].iloc[0] * capacity
 
@@ -251,7 +252,7 @@ class TransportTechnology(Technology):
 
         # since it is an equality con we add lower and upper bounds
         constraints.add_constraint_block(model, name=f"disjunct_transport_technology_off_{tech}_{capacity_type}_{edge}_{time}_lower",
-                                         constraint=(model.variables["flow_transport"][tech, edge, time].to_linexpr()
+                                         constraint=(model.variables["flow_transport"].loc[tech, edge, time].to_linexpr()
                                                      == 0),
                                          disjunction_var=binary_var)
 
