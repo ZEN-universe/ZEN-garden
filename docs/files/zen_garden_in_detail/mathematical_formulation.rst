@@ -671,27 +671,27 @@ Piecewise affine approximation of capital expenditures
 
 .. note:: Please note that the following introduces the mathematical formulation of piecewise affine linearizations, which deviates slightly from the general formulation in ZEN-garden.
 
-The capital expenditures of the conversion technologies can be approximated by a piecewise affine (PWA) function to account for non-linearities and e.g., represent economies of scale. To this end, the capital investment unit costs are approximated by linear functions that are connected by breakpoints (:ref:`eq:PWA`). The breakpoints are summarized in :math:`m\in\mathcal{M}`. The binary variable :math:`d_{i,n,y,m}` is introduced to model the capacity selection, where :math:`d_{i,n,y,x}` equals one if breakpoint :math:`x` is active, otherwise :math:`d_{i,n,y,x}` equals zero. Furthermore, at most one breakpoint can be active at a time:
+The capital expenditures of the conversion technologies can be approximated by a piecewise affine (PWA) function to account for non-linearities and e.g., represent economies of scale. To this end, the capital investment unit costs are approximated by linear functions that are connected by breakpoints (:ref:`eq:PWA`). The breakpoints are summarized in :math:`m\in\mathcal{M}`. The binary variable :math:`f_{i,n,y,m}` is introduced to model the capacity selection, where :math:`f_{i,n,y,m}` equals one if breakpoint :math:`m` is active, otherwise :math:`f_{i,n,y,m}` equals zero. Furthermore, at most one breakpoint can be active at a time:
 
 .. math::
 
-    \sum_{m\in\mathcal{M}} d_{i,n,y,x} \leq 1
+    \sum_{m\in\mathcal{M}} f_{i,n,y,m} \leq 1
 
 If breakpoint :math:`m` is active, the capacity addition must be within the capacity of the active breakpoint :math:`\Delta s^\mathrm{pwa}_{i,n,y,m}` and the subsequent breakpoint :math:`\Delta s^\mathrm{pwa}_{i,n,y,m+1}`. To avoid bilinearities, the capacity addition is approximated :math:`S_{i,p,y,m}^\mathrm{approx}`. For breakpoints :math:`m \in [0, ..., |\mathcal{M}|-1]` it follows:
 
 .. math::
     :label: pwa_capacity_approximation_1
 
-    d_{i,n,y,m} \Delta s^\mathrm{pwa}_{i,n,y,m} \leq  \Delta S_{i,n,y,m}^\mathrm{approx} \leq d_{i,n,y,m} \Delta  s^\mathrm{pwa}_{i,n,y,m+1}
+    f_{i,n,y,m} \Delta s^\mathrm{pwa}_{i,n,y,m} \leq  \Delta S_{i,n,y,m}^\mathrm{approx} \leq f_{i,n,y,m} \Delta  s^\mathrm{pwa}_{i,n,y,m+1}
 
 while for the last breakpoint :math:`m=|\mathcal{M}|` it follows:
 
 .. math::
     :label: pwa_capacity_approximation_2
 
-    d_{i,n,y,m} \Delta s^\mathrm{pwa}_{i,n,y,m} \leq \Delta S_{i,n,y,m}^\mathrm{approx} \leq d_{i,n,y,m} \Delta s^\mathrm{pwa}_{i,n,y,m}
+    f_{i,n,y,m} \Delta s^\mathrm{pwa}_{i,n,y,m} \leq \Delta S_{i,n,y,m}^\mathrm{approx} \leq f_{i,n,y,m} \Delta s^\mathrm{pwa}_{i,n,y,m}
 
-Thus, Eq. :eq:`pwa_capacity_approximation_1` and Eq. :eq:`pwa_capacity_approximation_2` ensure that only if a breakpoint is active (i.e., :math:`d_{i,n,y,m}=1`) :math:`\Delta S_{i,n,y,m}^\mathrm{approx}\geq0`, otherwise :math:`\Delta S_{i,n,y,m}^\mathrm{approx}=0`. The approximation of the capacity addition variable :math:`\Delta S_{i,n,y,m}^\mathrm{approx}` and the capacity addition variable :math:`\Delta S_{i,n,y}` are linked:
+Thus, Eq. :eq:`pwa_capacity_approximation_1` and Eq. :eq:`pwa_capacity_approximation_2` ensure that only if a breakpoint is active (i.e., :math:`f_{i,n,y,m}=1`) :math:`\Delta S_{i,n,y,m}^\mathrm{approx}\geq0`, otherwise :math:`\Delta S_{i,n,y,m}^\mathrm{approx}=0`. The approximation of the capacity addition variable :math:`\Delta S_{i,n,y,m}^\mathrm{approx}` and the capacity addition variable :math:`\Delta S_{i,n,y}` are linked:
 
 .. math::
 
