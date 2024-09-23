@@ -6,9 +6,15 @@ build-backend = "flit_core.buildapi"
 name = "zen_garden"
 authors = [
   {name = "Jacob Mannhardt", email = "jmannhardt@ethz.ch"},
-  {name = "Alissa Ganter", email = "aganter@ethz.ch"}
+  {name = "Alissa Ganter"},
+  {name = "Johannes Burger"},
+  {name = "Francesco De Marco"},
+  {name = "Lukas Kunz"},
+  {name = "Lukas Schmidt-Engelbertz"},
+  {name = "Giovanni Sansavini"},
   ]
-version = "1.9.8"
+# do not change version manually! Done by bump2version
+version = "1.10.4"
 requires-python= ">=3.10"
 description="ZEN-garden is an optimization model of energy systems and value chains."
 readme = "README.md"
@@ -32,6 +38,7 @@ dependencies = [
     "linopy<=0.3.10",
     "requests",
     "ipykernel",
+    "zen-temple"
 ]
 
 [project.optional-dependencies]
@@ -48,6 +55,10 @@ docs = [
 dev = [
     "pytest",
     "coverage",
+]
+
+vis = [
+    "matplotlib",
 ]
 
 gurobipy = ["gurobipy"]

@@ -43,7 +43,7 @@ Navigate to `<https://github.com/ZEN-universe/ZEN-garden>`_ on Github and click 
 
 Clone your forked repository by running the following lines in `Git-Bash <https://git-scm.com/downloads>`_::
 
-    git clone --recurse-submodules git@github.com:<your-username>/ZEN-garden.git
+    git clone git@github.com:<your-username>/ZEN-garden.git
     cd ZEN-garden
 
 Substitute ``<your-username>`` with your Github username. If you gave the forked repository a different name, replace ``ZEN-garden`` with the name of your repository.

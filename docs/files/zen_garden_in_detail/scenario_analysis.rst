@@ -144,7 +144,7 @@ Per default, the names for the generated scenarios are "p{i:02d}_{j:03d}", where
     {"price_range": {
         "natural_gas": {
             "import_price": {
-                "default": "attirbutes_high",
+                "default": "attributes_high",
                 "default_op": [0.25, 0.3, 0.35],
                 "default_op_fmt": "high_gas_price_{}"
                 }
@@ -153,7 +153,7 @@ Per default, the names for the generated scenarios are "p{i:02d}_{j:03d}", where
 
 The formatting key is the original key containing the list followed by "_fmt". The value of the formatting key has to be a string containing the format literal "{}". The formatting string "{}" will then be replaced by each of the values of the list. For example here, we would generate the three scenarios ``high_gas_price_0.25``, ``high_gas_price_0.3`` and ``high_gas_price_0.35``.
 
-Defining parameters in lists changes the output format of ZEN-Garden. Previously, all scenarios were in a single output folder. Now when a scenario contains one or multiple lists, all sub-scenarios are also in a subfolder, for example, the output structure could look something like this::
+When a scenario contains one or multiple lists, all sub-scenarios are also in a subfolder, for example, the output structure could look something like this::
 
     dataset_1/
         scenario_1/
