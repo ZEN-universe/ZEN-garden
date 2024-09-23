@@ -192,7 +192,7 @@ The annual operational emission expenditures :math:`OPEX_y^\mathrm{e}` are compo
 
     OPEX_y^\mathrm{e} = E_y \mu + E_y^\mathrm{o}\mu^\mathrm{o}+E_y^\mathrm{bo}\mu^\mathrm{bo}.
 
-For a detailed description on how to use the annual carbon emission overshoot price and the carbon emission budget overshoot price refert to :ref:`_modeling_carbon_emissions`.
+For a detailed description on how to use the annual carbon emission overshoot price and the carbon emission budget overshoot price refer to :ref:`modeling_carbon_emissions`.
 
 .. _emissions_objective:
 Minimizing total emissions
@@ -211,7 +211,7 @@ The total annual carbon emissions :math:`E_y` account for the total operational 
     :label: total_annual_carbon_emissions
     E_y = E^\mathrm{carrier}_y + E^\mathrm{tech}_y.
 
-For a detailed description of the computation of the total operational emissions for importing and exporting carriers, and for operating for operating technologies refer to :ref:`_tech_carrier_emissions`.
+For a detailed description of the computation of the total operational emissions for importing and exporting carriers, and for operating for operating technologies refer to :ref:`tech_carrier_emissions`.
 
 .. _energy_balance:
 Energy balance
@@ -294,12 +294,12 @@ The total annual carrier carbon emissions :math:`E^\mathrm{carrier}_y` represent
 
     E^\mathrm{carrier}_y = \sum_{t\in\mathcal{T}} \sum_{n\in\mathcal{N}} \sum_{c\in\mathcal{C}} \left( \tau_t \theta^\mathrm{carrier}_{c,n,t,y} \right).
 
-The carrier carbon emissions include the operational emissions of importing and exporting carriers :math:`c\in\mathcal{C}` (carbon intensity :math:`\underline{\epsilon_c}` and :math:`\overline{\epsilon_c}`):
+The carrier carbon emissions include the operational emissions of importing and exporting carriers :math:`c\in\mathcal{C}` (carbon intensity :math:`\underline{\epsilon}_c` and :math:`\overline{\epsilon}_c`):
 
 .. math::
     :label: carbon_emissions_carrier
 
-    \theta^\mathrm{carrier}_{c,n,t} = \underline{\epsilon_c} \underline{U}_{c,n,t,y} - \overline{\epsilon_c} \overline{U}_{c,n,t,y}.
+    \theta^\mathrm{carrier}_{c,n,t} = \underline{\epsilon}_c \underline{U}_{c,n,t,y} - \overline{\epsilon}_c \overline{U}_{c,n,t,y}.
     
 The total annual technology carbon emissions :math:`E^\mathrm{tech}_y` represent the sum of the technology carbon emissions :math:`\theta^\mathrm{tech}_{h,n,t,y}`:
 
@@ -339,7 +339,7 @@ The annual carbon emissions :math:`E_y` are limited by the annual carbon emissio
 
 Note that :math:`e_y` can be infinite, in which case the constraint is skipped.
 
-:math:`E_{y}^\mathrm{o}` is the annual carbon emission limit overshoot and allows exceeding the annual carbon emission limits. However, overshooting the annual carbon emission limits is penalized in the objective function (compare Eq. :eq:`opex_c`). This overshoot cost is computed by multiplying the annual carbon emission limit overshoot :math:`E_{y}^\mathrm{o}` with the annual carbon emission limit overshoot price :math:`\mu_1\mathrm{o}`. To strictly enforce the annual carbon emission limit (i.e., :math:`E_{y}^\mathrm{bo}=0`), use an infinite carbon overshoot price :math:`\mu_1\mathrm{o}`.
+:math:`E_{y}^\mathrm{o}` is the annual carbon emission limit overshoot and allows exceeding the annual carbon emission limits. However, overshooting the annual carbon emission limits is penalized in the objective function (compare Eq. :eq:`opex_c`). This overshoot cost is computed by multiplying the annual carbon emission limit overshoot :math:`E_{y}^\mathrm{o}` with the annual carbon emission limit overshoot price :math:`\mu_1^\mathrm{o}`. To strictly enforce the annual carbon emission limit (i.e., :math:`E_{y}^\mathrm{bo}=0`), use an infinite carbon overshoot price :math:`\mu_1^\mathrm{o}`.
 
 The cumulative carbon emissions :math:`E_y^\mathrm{cum}` are attributed to the end of the year. For the first planning period :math:`y=y_0`, :math:`E_y^\mathrm{cum}` is calculated as:
 
@@ -362,7 +362,7 @@ The cumulative carbon emissions :math:`E_y^\mathrm{c}` are constrained by the ca
 
     E_y^\mathrm{cum} + \left( dy-1 \right) E_{y}  - E_{y}^\mathrm{bo} \leq e^\mathrm{b}.
 
-Note that :math:`e^\mathrm{b}` can be infinite, in which case the constraint is skipped. :math:`E_y^\mathrm{o}` is the cumulative carbon emission overshoot and allows exceeding the carbon emission budget :math:`e^\mathrm{b}`, where exceeding the carbon emission budget in the last year of the planning horizon :math:`\mathrm{Y}=\max(y)` (i.e., :math:`E_\mathrm{Y}^\mathrm{o}>0`) is penalized with the carbon emissions budget overshoot price :math:`\mu^\mathrm{bo}` in the objective function (compare Eq. :eq:`opex_c`). By setting the carbon emission budget overshoot price to infinite, you can enforce that the cumulative carbon emissions stay below the carbon emission budget :math:`e^\mathrm{b}` across all years (i.e.,:math:`E_\mathrm{y}^\mathrm{o}=0, \forall y\in\mathcal{Y}`).
+Note that :math:`e^\mathrm{b}` can be infinite, in which case the constraint is skipped. :math:`E_y^\mathrm{o}` is the cumulative carbon emission overshoot and allows exceeding the carbon emission budget :math:`e^\mathrm{b}`, where exceeding the carbon emission budget in the last year of the planning horizon :math:`\mathrm{Y}=\max(y)` (i.e., :math:`E_\mathrm{Y}^\mathrm{o}>0`) is penalized with the carbon emissions budget overshoot price :math:`\mu^\mathrm{bo}` in the objective function (compare Eq. :eq:`opex_c`). By setting the carbon emission budget overshoot price to infinite, you can enforce that the cumulative carbon emissions stay below the carbon emission budget :math:`e^\mathrm{b}` across all years (i.e., :math:`E_\mathrm{y}^\mathrm{o}=0, \forall y\in\mathcal{Y}`).
 
 .. _operational_constraints:
 Operational constraints
