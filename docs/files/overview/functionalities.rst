@@ -12,6 +12,7 @@ Lightweight and intuitive input datasets and unit consistency checks reduce the 
 
 ZEN-garden is developed in Python and uses the Linopy package to formulate the optimization problem.
 The optimization problem can be solved with open-source and commercial solvers, such as HiGHs and Gurobi.
+ZEN-garden is licensed under the `MIT license <https://github.com/ZEN-universe/ZEN-garden/blob/main/LICENSE.txt>`_.
 
 The key features of ZEN-garden are:
 
