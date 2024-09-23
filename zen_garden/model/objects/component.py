@@ -1051,8 +1051,8 @@ class Constraint(Component):
         # cycle through all indices
         for num, index_val in enumerate(index_values):
             # extract everyting
-            x = xvar[index_val]
-            y = yvar[index_val]
+            x = xvar.at[index_val]
+            y = yvar.at[index_val]
             br = break_points[index_val]
             fv = f_vals[index_val]
             if len(br) != len(fv):

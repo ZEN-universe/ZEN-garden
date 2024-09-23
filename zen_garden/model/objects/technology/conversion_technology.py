@@ -371,7 +371,7 @@ class ConversionTechnology(Technology):
                 tech = index
             # retrieve pwa variables
             pwa_parameter = optimization_setup.get_attribute_of_specific_element(cls, tech, f"pwa_capex")
-            pwa_breakpoints[index] = pwa_parameter["capacity"]
+            pwa_breakpoints[index] = pwa_parameter["capacity_addition"]
             pwa_values[index] = pwa_parameter["capex"]
         return pwa_breakpoints, pwa_values
 

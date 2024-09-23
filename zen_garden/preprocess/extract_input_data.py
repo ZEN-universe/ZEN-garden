@@ -446,7 +446,7 @@ class DataInput:
         time_steps = "set_time_steps_yearly"
         unit_category = {"money": 1, "energy_quantity": -1, "time": 1}
         # import all input data
-        df_input_nonlinear, has_unit_nonlinear = self.read_pwa_capex_files(file_type="nonlinear_")
+        df_input_nonlinear, has_unit_nonlinear = self.read_pwa_capex_files()
         # if nonlinear
         if df_input_nonlinear is not None:
             if not has_unit_nonlinear:
@@ -456,7 +456,7 @@ class DataInput:
             # extract all data values
             nonlinear_values = {}
 
-            df_input_nonlinear["capex"] = df_input_nonlinear["capex"] * df_input_nonlinear["capacity"]
+            df_input_nonlinear["capex"] = df_input_nonlinear["capex_specific_conversion"] * df_input_nonlinear["capacity_addition"]
             for column in df_input_nonlinear.columns:
                 nonlinear_values[column] = df_input_nonlinear[column].to_list()
 
@@ -530,22 +530,18 @@ class DataInput:
                                                            time_steps=time_steps, unit_category=unit_category)
             return linear_dict, is_pwa
 
-    def read_pwa_capex_files(self, file_type=str()):
+    def read_pwa_capex_files(self):
         """ reads pwa files
 
-        :param file_type: either breakpointsPWA, linear, or nonlinear
         :return df_input: raw input file"""
-        df_input = self.read_input_csv(file_type + "capex")
+        df_input = self.read_input_csv("nonlinear_capex")
         has_unit = False
         if df_input is not None:
             string_row = df_input.map(lambda x: pd.to_numeric(x, errors='coerce')).isna().any(axis=1)
             if string_row.any():
                 unit_row = df_input.loc[string_row]
-                #save non-linear capex units for consistency checks
-                if file_type == "nonlinear_":
-                    self.element.units_nonlinear_capex_files = {"nonlinear": unit_row}
-                # elif file_type == "breakpoints_pwa_":
-                #     self.element.units_nonlinear_capex_files["breakpoints"] = unit_row
+                # save non-linear capex units for consistency checks
+                self.element.units_nonlinear_capex_files = {"nonlinear": unit_row}
                 df_input = df_input.loc[~string_row]
                 if isinstance(unit_row, pd.DataFrame):
                     unit_row = unit_row.squeeze()
