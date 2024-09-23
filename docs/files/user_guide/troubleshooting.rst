@@ -132,11 +132,14 @@ Building smaller test models
 ================
 If you have a large model and you are struggling with infeasibilities or unclear problems, it can be helpful to build a smaller test model.
 This way, you can quickly identify the source of the infeasibility or problem and fix it. Once you have a working small model, you can gradually add more complexity until you have the full model again.
-The easiest way to build a smaller model is to reduce the number of time steps, years, regions, or technologies. If you are using time series aggregation (see :ref:`Time series aggregation and representation`), reduce the number of `aggregated_time_steps_per_year`. Refer to :ref:`_system` for the relevant settings.
+
+The easiest way to build a smaller model is to reduce the number of time steps, years, regions, or technologies. If you are using time series aggregation (see :ref:`Time series aggregation and representation`), reduce the number of ``aggregated_time_steps_per_year``.
+Refer to :ref:`system` for the relevant settings.
 
 Improving solution times
 ================
 If you are struggling with long solution times, there are several ways to improve them:
+
 1. build a smaller model
 2. remove constraints that make the problem harder to solve through parameter selection, such as technology expansion constraints, binary constraints, or storage constraints
 3. improve your numerics by scaling your model (see :ref:`Scaling`)
