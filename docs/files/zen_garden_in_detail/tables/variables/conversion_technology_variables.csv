@@ -1,0 +1,5 @@
+Variable Name;Time Step Type;Symbol;Doc String;Unit Category
+``flow_conversion_input``;``set_time_steps_operation``;:math:`\underline{G}_{c,i,n,t,y}`;Carrier input of conversion technologies;{"energy_quantity": 1, "time": -1}
+``flow_conversion_output``;``set_time_steps_operation``;:math:`\overline{G}_{c,i,n,t,y}`;Carrier output of conversion technologies;{"energy_quantity": 1, "time": -1}
+``capacity_approximation``;``set_time_steps_yearly``;:math:`\Delta S_{i,n,y,m}^\mathrm{approx}`;pwa variable for size of installed technology on edge i and time t;{"energy_quantity": 1, "time": -1}
+``capex_approximation``;``set_time_steps_yearly``;:math:`-`;pwa variable for capex for installing technology on edge i and time t;{"money": 1}

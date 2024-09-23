@@ -284,11 +284,11 @@ class ScenarioDict(dict):
     _param_dict_keys = {"file", "file_op", "default", "default_op"}
     _special_elements = ["system", "analysis","solver", "base_scenario", "sub_folder", "param_map"]
 
-    def __init__(self, init_dict, config, paths):
+    def __init__(self, init_dict, optimization_setup, paths):
         """
         Initializes the dictionary from a normal dictionary
         :param init_dict: The dictionary to initialize from
-        :param config: The config to which the dictionary belongs
+        :param optimization_setup: The optimization setup corresponding to the scenario
         :param paths: The paths to the elements
         """
 
@@ -297,9 +297,9 @@ class ScenarioDict(dict):
         self.element_classes = reversed(inheritors.copy())
 
         # set the attributes and expand the dict
-        self.system = config.system
-        self.analysis = config.analysis
-        self.solver = config.solver
+        self.system = optimization_setup.system
+        self.analysis = optimization_setup.analysis
+        self.solver = optimization_setup.solver
         self.init_dict = init_dict
         self.paths = paths
         expanded_dict = self.expand_subsets(init_dict)
@@ -323,6 +323,13 @@ class ScenarioDict(dict):
                     assert sub_key in value, f"Trying to update {key} with key {sub_key} and value {sub_value}, but the {key} does not have this key!"
                     if type(value[sub_key]) == type(sub_value):
                         value[sub_key] = sub_value
+                    elif isinstance(sub_value, dict): #ToDO check this and make more general -> here only for SolverOptions
+                        try:
+                            for sub_sub_key, sub_sub_value in sub_value.items():
+                                value[sub_key][sub_sub_key] = sub_sub_value
+                        except:
+                            raise ValueError(f"Trying to update {key} with key {sub_key} and value {sub_value} of type {type(sub_value)},"
+                                             f""f"but the {key} has already a value of type {type(value[sub_key])}")
                     else:
                         raise ValueError(f"Trying to update {key} with key {sub_key} and value {sub_value} of type {type(sub_value)}, "
                                          f"but the {key} has already a value of type {type(value[sub_key])}")

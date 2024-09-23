@@ -101,6 +101,10 @@ target/
 profile_default/
 ipython_config.py
 
+# condaenv
+# temp requirements condaenv: format: condaenv.*.requirements.txt
+# *.requirements.txt
+condaenv.*.requirements.txt
 # pyenv
 #   For a library or package, you might want to ignore these files since the code is
 #   intended to run in multiple environments; otherwise, check them in:
@@ -170,5 +174,3 @@ dmypy.json
 
 # Cython debug symbols
 cython_debug/
-notebooks/postprocess_results_tutorial.ipynb
-/ZENx_AG/

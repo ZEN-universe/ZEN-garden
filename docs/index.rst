@@ -14,55 +14,54 @@ Documentation
 ======================================
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
    :caption: Overview
 
-   files/functionalities
-   files/dependencies
-   files/license
+   files/overview/functionalities
+   files/overview/license
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
    :caption: User guide
 
-   files/installation
-   files/running_models
-   files/building_models
-   files/analyzing_models
-   files/mathematical_formulation
-   files/troubleshooting
+   files/user_guide/installation
+   files/user_guide/building_models
+   files/user_guide/running_models
+   files/user_guide/analyzing_models
+   files/user_guide/troubleshooting
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
    :caption: ZEN-garden in detail
 
-   files/input_structure
-   files/input_handling
-   files/optimization_problem
-   files/scenario_analysis
-   files/configurations
-   files/additional_features
+   files/zen_garden_in_detail/input_structure
+   files/zen_garden_in_detail/input_handling
+   files/zen_garden_in_detail/sets_params_constraints
+   files/zen_garden_in_detail/mathematical_formulation
+   files/zen_garden_in_detail/scenario_analysis
+   files/zen_garden_in_detail/configurations
+   files/zen_garden_in_detail/additional_features
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
    :caption: Dataset Examples
 
-   files/dataset_examples
+   files/dataset_examples/dataset_examples
 
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
    :caption: Contributing & Support
 
-   files/contributing
-   files/get_help
+   files/contributing_and_support/contributing
+   files/contributing_and_support/get_help
 
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
    :caption: References
 
-   files/api_reference
-   files/release_notes
-   files/citing
-   files/zen_garden_developers
+   files/references/api_reference
+   files/references/release_notes
+   files/references/citing
+   files/references/developers_zen_garden
