@@ -62,6 +62,5 @@ Documentation
    :caption: References
 
    files/references/api_reference
-   files/references/release_notes
    files/references/citing
    files/references/developers_zen_garden

@@ -1,7 +1,8 @@
 Parameter Name;Symbol;Time Step Type;Doc String;Unit Category
 ``capacity_existing``;:math:`\Delta s^\mathrm{ex}_{h,s,p,y}`;temporal immutable;Parameter which specifies the existing technology size;{"energy_quantity": 1, "time": -1}
-``capacity_investment_existing``;:math:`\Delta s^\mathrm{ex}_{h,s,p,y}`;``set_time_steps_yearly``_entire_horizon;Parameter which specifies the size of the previously invested capacities;{"energy_quantity": 1, "time": -1}
-``capacity_addition_min``;:math:`\Delta s^\mathrm{min}_{h,s,p,y}`;:math:`\Delta s^\mathrm{ex,invest}_{h,s,p,y}`;temporal immutable;Parameter which specifies the minimum capacity addition that can be installed;{"energy_quantity": 1, "time": -1}
+``capacity_existing``;:math:`\Delta s^\mathrm{ex}_{h,s,p,y}`;``set_technologies_existing``;Parameter which specifies the size of the previously added capacities;{"energy_quantity": 1, "time": -1}
+``capacity_investment_existing``;:math:`\Delta s^\mathrm{ex,invest}_{h,s,p,y}`;``set_technologies_existing``;Parameter which specifies the size of the previously invested capacities;{"energy_quantity": 1, "time": -1}
+``capacity_addition_min``;:math:`\Delta s^\mathrm{min}_{h,s,p,y}`;temporal immutable;Parameter which specifies the minimum capacity addition that can be installed;{"energy_quantity": 1, "time": -1}
 ``capacity_addition_max``;:math:`\Delta s^\mathrm{max}_{h,s,p,y}`;temporal immutable;Parameter which specifies the maximum capacity addition that can be installed;{"energy_quantity": 1, "time": -1}
 ``capacity_addition_unbounded``;:math:`\zeta_h`;temporal immutable;Parameter which specifies the unbounded capacity addition that can be added each year (only for delayed technology deployment);{"energy_quantity": 1, "time": -1}
 ``lifetime_existing``;:math:`l^\mathrm{ex}_h`;temporal immutable;Parameter which specifies the remaining lifetime of an existing technology;{}
