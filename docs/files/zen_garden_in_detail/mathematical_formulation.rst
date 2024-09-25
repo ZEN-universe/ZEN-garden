@@ -393,7 +393,7 @@ The transport flow losses :math:`F_{j,e,t,y}^\mathrm{l}` through a transport tec
 
     F_{j,e,t,y}^\mathrm{l} = \rho_{j,e} h_{j,e} F_{j,e,t,y}.
 
-The loss function is described through a linear or an exponential loss factor, :math:`\rho^\mathrm{lin}_{j}` and :math:`\rho^\mathrm{exp}_{j}`, respectively. The loss factor is applied to the transport distance :math:`h_{j,e}``. For transport technologies where transport flow losses are approximated by a linear loss factor it follows:
+The loss function is described through a linear or an exponential loss factor, :math:`\rho^\mathrm{lin}_{j}` and :math:`\rho^\mathrm{exp}_{j}`, respectively. The loss factor is applied to the transport distance :math:`h_{j,e}`. For transport technologies where transport flow losses are approximated by a linear loss factor it follows:
 
 .. math::
     :label: transport_flow_loss_linear
