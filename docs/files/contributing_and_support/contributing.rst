@@ -52,7 +52,7 @@ The coverage report is also generated in a similar way by running::
 To run the tests, add another Python configuration. The important settings are:
 
 - Change "Script Path" to "Module name" and set it to "coverage"
-- Set the "Parameters" to: ``´run --source="zen_garden" -m pytest -v run_test.py``
+- Set the "Parameters" to: ``run --source="zen_garden" -m pytest -v run_test.py``
 - Set the python interpreter to the Conda environment that was used to install the requirements and also has the package installed. **Important**: This setup will only work for Conda environments that were also declared as such in PyCharm; if you set the path to the Python executable yourself, you should create a new proper PyCharm interpreter.
 - Set the "Working directory" to the directory ``tests/testcases`` of the repo.
 
