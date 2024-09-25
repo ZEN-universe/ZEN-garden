@@ -6,6 +6,7 @@ If you forked the ZEN-garden repository, you can find the datasets in the `docum
 If you installed ZEN-garden using pip, you can download and execute the datasets with the `--example` flag (see :ref:`Run example`).
 
 The following datasets are available:
+
 1. `1_base_case`
 2. `2_add_photovoltaics`
 3. `3_multi_year_optimization`

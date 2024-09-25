@@ -1,4 +1,3 @@
-.. _running_a_model:
 .. _Running a model:
 ################
 Running a model
@@ -32,7 +31,7 @@ This command is particularly useful when you installed ZEN-garden from pip and d
 
 .. note::
     Dataset examples are an easy and quick way to get started with your model.
-    Find an example that best suits your need and use it as a template to build your own model.
+    Find an example that best suits your need and use it as a template to build your own model (see :ref:`Working with existing models`).
 
 The example dataset and the ``config.json`` file will be downloaded, a new folder will be created in the working directory, and the optimization will be run. No prior setup is needed.
 
