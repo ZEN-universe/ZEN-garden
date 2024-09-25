@@ -1,0 +1,7 @@
+Constraint Name;Time Step Type;Doc String
+``constraint_capacity_factor_storage``;``set_time_steps_storage_level``;limit min and max storage charge and discharge
+``constraint_opex_emissions_technology_storage``;``set_time_steps_storage_level``;storage opex and emissions
+``constraint_storage_level_max``;``set_time_steps_storage_level``;limit maximum storage level to capacity
+``constraint_couple_storage_level``;``set_time_steps_storage_level``;couple subsequent storage levels (time coupling constraints)
+``constraint_capacity_energy_to_power_ratio``;``set_time_steps_storage_level``;couple storage energy and power capacity
+``constraint_storage_technology_capex``;``set_time_steps_yearly``;Capital expenditures for installing storage technology
