@@ -22,7 +22,7 @@ If you want to use ZEN-garden as a black-box optimization tool, you can install 
 
     Replace ``<your_env_name>`` with the name of your environment and check the necessary python version in the `ZEN-garden README <https://github.com/ZEN-universe/ZEN-garden/blob/main/README.md>`_.
 
-To get started with small example models, check out :ref:`Run ZEN-garden with preexisting datasets`.
+To get started with small example models, check out :ref:`Run example`.
 
 .. _For developers:
 For developers (forking the repository)
@@ -72,7 +72,6 @@ The installation may take a couple of minutes. If the installation was successfu
 
 .. note::
     We strongly recommend working with conda environments. When installing the zen-garden conda environment via the ``zen_garden_env.yml``, the zen-garden package, as well as all other dependencies, are installed automatically. 
-    You can also install the zen-garden package directly by running the following command in the root directory of your repository: ``pip install -e``
 
 Solver options
 ==============
