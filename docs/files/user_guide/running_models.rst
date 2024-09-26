@@ -37,9 +37,13 @@ The example dataset and the ``config.json`` file will be downloaded, a new folde
 
 The optimization results will be stored in ``dataset_examples/outputs``. A Jupyter notebook will be downloaded to give you fast access to your results (see more at `Analyzing a model <analyzing_models.rst>`_).
 
-You can also use the visualization platform to analyze the results (see :ref:`Visualization`). To do so, run the following command after the optimization has finished::
+You can also use the visualization platform to analyze the results (see :ref:`Visualization`). To do so, move to the newly created ``dataset_examples`` folder after the optimization has finished::
 
-  python -m zen_garden.visualization
+    cd dataset_examples
+
+and run the visualization platform::
+
+    python -m zen_garden.visualization
 
 .. _Run ZEN-garden with preexisting datasets:
 Run ZEN-garden with preexisting datasets
