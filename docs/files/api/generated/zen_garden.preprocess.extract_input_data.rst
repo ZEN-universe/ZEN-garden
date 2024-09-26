@@ -4,26 +4,9 @@
 .. automodule:: zen_garden.preprocess.extract_input_data
 
    
-   
-   
-
-   
-   
-   
-
-   
-   
    .. rubric:: Classes
 
    .. autosummary::
    
       DataInput
    
-   
-
-   
-   
-   
-
-
-

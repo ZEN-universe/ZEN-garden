@@ -4,15 +4,6 @@
 .. automodule:: zen_garden.model.default_config
 
    
-   
-   
-
-   
-   
-   
-
-   
-   
    .. rubric:: Classes
 
    .. autosummary::
@@ -27,11 +18,3 @@
       System
       TimeSeriesAggregation
    
-   
-
-   
-   
-   
-
-
-

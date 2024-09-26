@@ -65,7 +65,7 @@ PyCharm configurations (only for ZEN-garden fork)
 
 To execute ZEN-garden with the PyCharm IDE you can use the configuration setup which can be found next to the run button, and click on "Edit configurations.." to edit or add a configuration.
 
-.. image:: ../images/pycharm_configuration.png
+.. image:: images/pycharm_configuration.png
     :alt: creating zen-garden configurations in pycharm
 
 Add a new configuration by clicking on the "+" button on the top left corner of the window. Choose ´´Python´´ as a type. You can name the configuration however you like. The important settings are:
@@ -76,7 +76,7 @@ Add a new configuration by clicking on the "+" button on the top left corner of 
 
 In the end, your configuration to run ZEN-garden as a module should look similar to this:
 
-.. image:: ../images/pycharm_run_module.png
+.. image:: images/pycharm_run_module.png
     :alt: run module
 
 VS code configuations (only for ZEN-garden fork)
