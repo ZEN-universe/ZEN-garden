@@ -23,7 +23,7 @@ If you installed ZEN-garden from the repository and created a new environment (:
 Run ZEN-garden with an example dataset
 --------------------------------------
 
-To run ZEN-garden with an example dataset (see `Dataset Examples <dataset_examples.rst>`_), execute the following line::
+To run ZEN-garden with an example dataset (see :ref:`dataset_examples`), execute the following line::
 
   python -m zen_garden --example=<example_name>
 
@@ -36,6 +36,10 @@ This command is particularly useful when you installed ZEN-garden from pip and d
 The example dataset and the ``config.json`` file will be downloaded, a new folder will be created in the working directory, and the optimization will be run. No prior setup is needed.
 
 The optimization results will be stored in ``dataset_examples/outputs``. A Jupyter notebook will be downloaded to give you fast access to your results (see more at `Analyzing a model <analyzing_models.rst>`_).
+
+You can also use the visualization platform to analyze the results (see :ref:`Visualization`). To do so, run the following command after the optimization has finished::
+
+  python -m zen_garden.visualization
 
 .. _Run ZEN-garden with preexisting datasets:
 Run ZEN-garden with preexisting datasets
