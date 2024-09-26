@@ -87,7 +87,7 @@ Conversion Technologies
 The conversion technologies are defined in the folder ``set_conversion_technologies``.
 A conversion technology converts ``0`` to ``n`` input carriers into ``0`` to ``m`` output carriers.
 Note that the conversion factor between the carriers is fixed, e.g., a combined heat and power (CHP) plant cannot sometimes generate more heat and sometimes generate more electricity.
-The file ``attributes.json`` defines the properties of the conversion technology, e.g., the capacity limit, the maximum load, the conversion factor, or the investment cost (see :ref:`_conversion_technology`).
+The file ``attributes.json`` defines the properties of the conversion technology, e.g., the capacity limit, the maximum load, the conversion factor, or the investment cost (see :ref:`conversion_technology`).
 
 A special case of the conversion technologies are retrofitting technologies. These technologies are defined in the folder ``set_conversion_technologies\set_retrofitting_technologies``, if any exist.
 They behave equal to conversion technologies, but they are always connected to a conversion technology. They are coupled to a conversion technology by the attribute ``retrofit_flow_coupling_factor`` in the file ``attributes.json``, which couples the reference carrier flow of the retrofitting technology and the base technology.
