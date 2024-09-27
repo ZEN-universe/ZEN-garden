@@ -9,18 +9,22 @@ We recommend the first option for users who want to use ZEN-garden as a black-bo
 .. _For users:
 For users (direct installation)
 =========
-If you want to use ZEN-garden as a black-box optimization tool, you can install the package via `pip <https://pypi.org/project/zen-garden/>`_:
+If you want to use ZEN-garden as a black-box optimization tool, you can install the package via `pip <https://pypi.org/project/zen-garden/>`_ in a terminal or command prompt.
 
-.. code-block:: bash
+We recommend working from a conda environment for the installation. You can quickly create an environment with the following command::
+
+  conda create -n <your_env_name> python=<python_version>
+
+Replace ``<your_env_name>`` with the name of your environment and replace `<python_version>` with the necessary python version (see `ZEN-garden README <https://github.com/ZEN-universe/ZEN-garden/blob/main/README.md>`_).
+
+Activate the environment with the following command::
+
+  conda activate <your_env_name>
+
+Now you can install the zen-garden package with the following command::
 
     pip install zen-garden
 
-.. note::
-    We recommend working from a conda environment for the installation. You can quickly create an environment with the following command::
-
-      conda create -n <your_env_name> python=<python_version>
-
-    Replace ``<your_env_name>`` with the name of your environment and check the necessary python version in the `ZEN-garden README <https://github.com/ZEN-universe/ZEN-garden/blob/main/README.md>`_.
 
 To get started with small example models, check out :ref:`Run example`.
 

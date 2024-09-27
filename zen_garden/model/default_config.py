@@ -148,7 +148,7 @@ class TimeSeriesAggregation(Subscriptable):
 class Analysis(Subscriptable):
     dataset: str = ""
     objective: str = "total_cost"
-    sense: str = "minimize"
+    sense: str = "min"
     subsets: Subsets = Subsets()
     header_data_inputs: HeaderDataInputs = HeaderDataInputs()
     time_series_aggregation: TimeSeriesAggregation = TimeSeriesAggregation()
