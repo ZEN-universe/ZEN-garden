@@ -4,15 +4,6 @@
 .. automodule:: zen_garden.model.objects.element
 
    
-   
-   
-
-   
-   
-   
-
-   
-   
    .. rubric:: Classes
 
    .. autosummary::
@@ -20,11 +11,3 @@
       Element
       GenericRule
    
-   
-
-   
-   
-   
-
-
-

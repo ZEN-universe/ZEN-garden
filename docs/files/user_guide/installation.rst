@@ -26,7 +26,7 @@ Now you can install the zen-garden package with the following command::
     pip install zen-garden
 
 
-To get started with small example models, check out :ref:`Run ZEN-garden with preexisting datasets`.
+To get started with small example models, check out :ref:`Run example`.
 
 .. _For developers:
 For developers (forking the repository)
@@ -40,7 +40,7 @@ If it's your first time using GitHub, register at `<https://github.com/>`_. Logi
 
 Navigate to `<https://github.com/ZEN-universe/ZEN-garden>`_ on Github and click on the "Fork" button at the top right corner of the page to create a copy of the repository under your account and select yourself as the owner.
 
-.. image:: ../images/create_fork.png
+.. image:: images/create_fork.png
     :alt: creating a fork
 
 **Clone your forked repository:**
@@ -76,7 +76,6 @@ The installation may take a couple of minutes. If the installation was successfu
 
 .. note::
     We strongly recommend working with conda environments. When installing the zen-garden conda environment via the ``zen_garden_env.yml``, the zen-garden package, as well as all other dependencies, are installed automatically. 
-    You can also install the zen-garden package directly by running the following command in the root directory of your repository: ``pip install -e``
 
 Solver options
 ==============

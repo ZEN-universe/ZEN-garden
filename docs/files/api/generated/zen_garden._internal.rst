@@ -4,26 +4,9 @@
 .. automodule:: zen_garden._internal
 
    
-   
-   
-
-   
-   
    .. rubric:: Functions
 
    .. autosummary::
    
       main
    
-   
-
-   
-   
-   
-
-   
-   
-   
-
-
-

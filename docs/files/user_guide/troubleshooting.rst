@@ -2,6 +2,14 @@
 Troubleshooting
 ################
 
+Frequently made mistakes
+================
+We try to make ZEN-garden's error messages as helpful as possible, but sometimes it can be hard to understand what went wrong.
+Here are some common mistakes that can lead:
+
+1. **Comma at the end of a list in a json**: ``"list": [1, 2, 3,]`` is wrong, it should be ``"list": [1, 2, 3]``. This is a common mistake because Python allows it, but JSON does not. The cryptic error message is ``json.decoder.JSONDecodeError: Expecting value: [...]``. Fix: check ``system.json``, ``config.json``, and ``attributes.json`` for commas at the end of lists. When you scroll up in the error message, you can guess what file caused the error.
+
+
 Understanding infeasibilities and numerical instabilities
 ================
 Here, we briefly want to introduce several important concepts around infeasibility.
@@ -144,3 +152,5 @@ If you are struggling with long solution times, there are several ways to improv
 2. remove constraints that make the problem harder to solve through parameter selection, such as technology expansion constraints, binary constraints, or storage constraints
 3. improve your numerics by scaling your model (see :ref:`Scaling`)
 4. improve your numerics by selecting other solver options (if you are using Gurobi see `Guidelines for Numerical Issues <https://www.gurobi.com/documentation/current/refman/guidelines_for_numerical_i.html>`_)
+
+

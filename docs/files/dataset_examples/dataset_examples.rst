@@ -1,3 +1,4 @@
+.. _dataset_examples:
 ################
 Dataset Examples
 ################
