@@ -5,7 +5,7 @@ Variable Name;Time Step Type:Symbol;Doc String;Unit Category
 ``capacity_addition``;``set_time_steps_yearly``;:math:`\Delta S_{h,p,y}`;size of built technology (invested capacity after construction) at location l and time t;{"energy_quantity": 1, "time": -1}
 ``capacity_investment``;``set_time_steps_yearly``;:math:`\Delta S_{h,p,y}^\mathrm{invest}`;size of invested technology at location l and time t;{"energy_quantity": 1, "time": -1}
 ``cost_capex``;``set_time_steps_yearly``;:math:`I_{h,p,y}`;capex for building technology at location l and time t;{"money": 1}
-``capex_yearly``;``set_time_steps_yearly``;:math:`A_{h,p,y}`;annual capex for having technology at location l;{"money": 1}
+``cost_capex_yearly``;``set_time_steps_yearly``;:math:`A_{h,p,y}`;annual capex for having technology at location l;{"money": 1}
 ``cost_capex_total``;``set_time_steps_yearly``;:math:`CAPEX_y`;total capex for installing all technologies in all locations at all times;{"money": 1}
 ``cost_opex_variable``;``set_time_steps_operation``;:math:`OPEX_y^\mathrm{t,v}`;opex for operating technology at location l and time t;{"money": 1, "time": -1}
 ``cost_opex_yearly``;``set_time_steps_yearly``;:math:`-`;yearly opex for operating technology at location l and year y;{"money": 1}
