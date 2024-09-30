@@ -89,7 +89,7 @@ class ConversionTechnology(Technology):
     def convert_to_fraction_of_capex(self):
         """ this method retrieves the total capex and converts it to annualized capex """
         pwa_capex, self.capex_is_pwa = self.data_input.extract_pwa_capex()
-        # annualize cost_capex
+        # annualize cost_capex_overnight
         fraction_year = self.calculate_fraction_of_year()
         self.opex_specific_fixed = self.opex_specific_fixed * fraction_year
         if not self.capex_is_pwa:
@@ -444,7 +444,7 @@ class ConversionTechnologyRules(GenericRule):
         nodes = self.sets["set_nodes"]
         term_reference_flow_opex = self.get_flow_expression_conversion(techs,nodes,factor=self.parameters.opex_specific_variable.rename({"set_technologies": "set_conversion_technologies","set_location":"set_nodes"}))
         term_reference_flow_emissions = self.get_flow_expression_conversion(techs,nodes,factor=self.parameters.carbon_intensity_technology.rename({"set_technologies": "set_conversion_technologies","set_location":"set_nodes"}))
-        lhs_opex = ((1*self.variables["cost_opex"].loc[techs,nodes,:]).rename({"set_technologies": "set_conversion_technologies","set_location":"set_nodes"}) + term_reference_flow_opex)
+        lhs_opex = ((1*self.variables["cost_opex_variable"].loc[techs,nodes,:]).rename({"set_technologies": "set_conversion_technologies","set_location":"set_nodes"}) + term_reference_flow_opex)
         lhs_emissions = ((1*self.variables["carbon_emissions_technology"].loc[techs,nodes,:]).rename({"set_technologies": "set_conversion_technologies","set_location":"set_nodes"}) + term_reference_flow_emissions)
         rhs = 0
         constraints_opex = lhs_opex == rhs
@@ -487,12 +487,12 @@ class ConversionTechnologyRules(GenericRule):
         nodes = self.sets["set_nodes"]
         capacity_addition = self.variables["capacity_addition"].loc[techs,"power",nodes].rename(
             {"set_technologies": "set_conversion_technologies", "set_location": "set_nodes"})
-        cost_capex = self.variables["cost_capex"].loc[techs,"power",nodes].rename(
+        cost_capex_overnight = self.variables["cost_capex_overnight"].loc[techs,"power",nodes].rename(
             {"set_technologies": "set_conversion_technologies", "set_location": "set_nodes"})
 
         ### formulate constraint
         lhs_capacity = capacity_addition - self.variables["capacity_approximation"]
-        lhs_capex = cost_capex - self.variables["capex_approximation"]
+        lhs_capex = cost_capex_overnight - self.variables["capex_approximation"]
         rhs = 0
         constraints_capacity = lhs_capacity == rhs
         constraints_capex = lhs_capex == rhs
