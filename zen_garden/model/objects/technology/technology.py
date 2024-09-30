@@ -421,7 +421,7 @@ class Technology(Element):
         variables.add_variable(model, name="cost_opex", index_sets=cls.create_custom_set(["set_technologies", "set_location", "set_time_steps_operation"], optimization_setup),
             bounds=(0,np.inf), doc="opex for operating technology at location l and time t", unit_category={"money": 1, "time": -1})
         # total opex
-        variables.add_variable(model, name="cost_opex_total", index_sets=sets["set_time_steps_yearly"],
+        variables.add_variable(model, name="cost_opex_yearly_total", index_sets=sets["set_time_steps_yearly"],
             bounds=(0,np.inf), doc="total opex all technologies and locations in year y", unit_category={"money": 1})
         # yearly opex
         variables.add_variable(model, name="cost_opex_yearly", index_sets=cls.create_custom_set(["set_technologies", "set_location", "set_time_steps_yearly"], optimization_setup),
@@ -484,7 +484,7 @@ class Technology(Element):
         rules.constraint_cost_opex_yearly()
 
         # total opex of all technologies
-        rules.constraint_cost_opex_total()
+        rules.constraint_cost_opex_yearly_total()
 
         # total carbon emissions of technologies
         rules.constraint_carbon_emissions_technology_total()
@@ -645,18 +645,18 @@ class TechnologyRules(GenericRule):
 
         self.constraints.add_constraint("constraint_cost_capex_total",constraints)
 
-    def constraint_cost_opex_total(self):
+    def constraint_cost_opex_yearly_total(self):
         """ sums over all technologies to calculate total opex
 
         .. math::
             OPEX_y = \sum_{h\in\mathcal{H}}\sum_{p\in\mathcal{P}} OPEX_{h,p,y}
 
         """
-        lhs = self.variables["cost_opex_total"] - self.variables["cost_opex_yearly"].sum(["set_technologies","set_location"])
+        lhs = self.variables["cost_opex_yearly_total"] - self.variables["cost_opex_yearly"].sum(["set_technologies","set_location"])
         rhs = 0
         constraints = lhs == rhs
 
-        self.constraints.add_constraint("constraint_cost_opex_total",constraints)
+        self.constraints.add_constraint("constraint_cost_opex_yearly_total",constraints)
 
 
     def constraint_technology_capacity_limit(self):
