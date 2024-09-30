@@ -415,7 +415,7 @@ class Technology(Element):
         variables.add_variable(model, name="cost_capex_yearly", index_sets=cls.create_custom_set(["set_technologies", "set_capacity_types", "set_location", "set_time_steps_yearly"], optimization_setup),
             bounds=(0,np.inf), doc='annual capex for having technology at location l', unit_category={"money": 1})
         # total capex
-        variables.add_variable(model, name="cost_capex_total", index_sets=sets["set_time_steps_yearly"],
+        variables.add_variable(model, name="cost_capex_yearly_total", index_sets=sets["set_time_steps_yearly"],
             bounds=(0,np.inf), doc='total capex for installing all technologies in all locations at all times', unit_category={"money": 1})
         # opex
         variables.add_variable(model, name="cost_opex_variable", index_sets=cls.create_custom_set(["set_technologies", "set_location", "set_time_steps_operation"], optimization_setup),
@@ -478,7 +478,7 @@ class Technology(Element):
         rules.constraint_cost_capex_yearly()
 
         # total capex of all technologies
-        rules.constraint_cost_capex_total()
+        rules.constraint_cost_capex_yearly_total()
 
         # yearly opex
         rules.constraint_cost_opex_yearly()
@@ -631,7 +631,7 @@ class TechnologyRules(GenericRule):
     # Normal constraints
     # -----------------------
 
-    def constraint_cost_capex_total(self):
+    def constraint_cost_capex_yearly_total(self):
         """ sums over all technologies to calculate total capex
 
         .. math::
@@ -639,11 +639,11 @@ class TechnologyRules(GenericRule):
 
         """
 
-        lhs = self.variables["cost_capex_total"] - self.variables["cost_capex_yearly"].sum(["set_technologies","set_capacity_types","set_location"])
+        lhs = self.variables["cost_capex_yearly_total"] - self.variables["cost_capex_yearly"].sum(["set_technologies","set_capacity_types","set_location"])
         rhs = 0
         constraints = lhs == rhs
 
-        self.constraints.add_constraint("constraint_cost_capex_total",constraints)
+        self.constraints.add_constraint("constraint_cost_capex_yearly_total",constraints)
 
     def constraint_cost_opex_yearly_total(self):
         """ sums over all technologies to calculate total opex
