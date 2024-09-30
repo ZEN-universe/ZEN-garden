@@ -412,7 +412,7 @@ class Technology(Element):
         variables.add_variable(model, name="cost_capex", index_sets=cls.create_custom_set(["set_technologies", "set_capacity_types", "set_location", "set_time_steps_yearly"], optimization_setup),
             bounds=(0,np.inf), doc='capex for building technology at location l and time t', unit_category={"money": 1})
         # annual capex of having capacity
-        variables.add_variable(model, name="capex_yearly", index_sets=cls.create_custom_set(["set_technologies", "set_capacity_types", "set_location", "set_time_steps_yearly"], optimization_setup),
+        variables.add_variable(model, name="cost_capex_yearly", index_sets=cls.create_custom_set(["set_technologies", "set_capacity_types", "set_location", "set_time_steps_yearly"], optimization_setup),
             bounds=(0,np.inf), doc='annual capex for having technology at location l', unit_category={"money": 1})
         # total capex
         variables.add_variable(model, name="cost_capex_total", index_sets=sets["set_time_steps_yearly"],
@@ -475,7 +475,7 @@ class Technology(Element):
         rules.constraint_technology_diffusion_limit()
 
         # annual capex of having capacity
-        rules.constraint_capex_yearly()
+        rules.constraint_cost_capex_yearly()
 
         # total capex of all technologies
         rules.constraint_cost_capex_total()
@@ -639,7 +639,7 @@ class TechnologyRules(GenericRule):
 
         """
 
-        lhs = self.variables["cost_capex_total"] - self.variables["capex_yearly"].sum(["set_technologies","set_capacity_types","set_location"])
+        lhs = self.variables["cost_capex_total"] - self.variables["cost_capex_yearly"].sum(["set_technologies","set_capacity_types","set_location"])
         rhs = 0
         constraints = lhs == rhs
 
@@ -922,7 +922,7 @@ class TechnologyRules(GenericRule):
             constraints_an = lhs_an <= rhs_an
             self.constraints.add_constraint("constraint_technology_diffusion_limit",constraints_an)
 
-    def constraint_capex_yearly(self):
+    def constraint_cost_capex_yearly(self):
         """ aggregates the capex of built capacity and of existing capacity
 
         .. math::
@@ -956,12 +956,12 @@ class TechnologyRules(GenericRule):
             {"set_time_steps_yearly": "set_time_steps_yearly_prev"})
         cost_capex = cost_capex.broadcast_like(lt_range)
         expr = (lt_range * a * cost_capex).sum("set_time_steps_yearly_prev")
-        lhs = lp.merge(1 * self.variables["capex_yearly"], expr, compat="broadcast_equals")
+        lhs = lp.merge(1 * self.variables["cost_capex_yearly"], expr, compat="broadcast_equals")
         rhs = (a * self.parameters.existing_capex).broadcast_like(lhs.const)
         constraints = lhs == rhs
 
         ### return
-        self.constraints.add_constraint("constraint_capex_yearly",constraints)
+        self.constraints.add_constraint("constraint_cost_capex_yearly",constraints)
 
     def constraint_cost_opex_yearly(self):
         """ yearly opex for a technology at a location in each year
