@@ -382,7 +382,7 @@ class TransportTechnologyRules(GenericRule):
 
         ### auxiliary calculations TODO improve
         term_distance_inf = mask * self.variables["capacity_addition"].loc[coords[0], "power", coords[1], coords[2]]
-        term_distance_not_inf = (1 - mask) * (self.variables["cost_capex"].loc[coords[0], "power", coords[1], coords[2]]
+        term_distance_not_inf = (1 - mask) * (self.variables["cost_capex_overnight"].loc[coords[0], "power", coords[1], coords[2]]
                                               - self.variables["capacity_addition"].loc[coords[0], "power", coords[1], coords[2]] * self.parameters.capex_specific_transport.loc[coords[0], coords[1]])
         # we have an additional check here to avoid binary variables when their coefficient is 0
         if np.any(self.parameters.distance.loc[coords[0], coords[1]] * self.parameters.capex_per_distance_transport.loc[coords[0], coords[1]] != 0):

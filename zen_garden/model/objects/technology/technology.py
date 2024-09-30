@@ -185,7 +185,7 @@ class Technology(Element):
         existing_quantity = 0
         if type_existing_quantity == "capacity":
             existing_variable = params.capacity_existing
-        elif type_existing_quantity == "cost_capex":
+        elif type_existing_quantity == "cost_capex_overnight":
             existing_variable = params.capex_capacity_existing
         else:
             raise KeyError(f"Wrong type of existing quantity {type_existing_quantity}")
@@ -347,7 +347,7 @@ class Technology(Element):
         # calculate additional existing parameters
         optimization_setup.parameters.add_parameter(name="existing_capacities", data=cls.get_existing_quantity(optimization_setup, type_existing_quantity="capacity"),
                                                     doc="Parameter which specifies the total available capacity of existing technologies at the beginning of the optimization", calling_class=cls)
-        optimization_setup.parameters.add_parameter(name="existing_capex", data=cls.get_existing_quantity(optimization_setup,type_existing_quantity="cost_capex"),
+        optimization_setup.parameters.add_parameter(name="existing_capex", data=cls.get_existing_quantity(optimization_setup,type_existing_quantity="cost_capex_overnight"),
                                                     doc="Parameter which specifies the total capex of existing technologies at the beginning of the optimization", calling_class=cls)
         # add pe.Param of the child classes
         for subclass in cls.__subclasses__():
@@ -408,8 +408,8 @@ class Technology(Element):
         # invested_capacity technology
         variables.add_variable(model, name="capacity_investment", index_sets=cls.create_custom_set(["set_technologies", "set_capacity_types", "set_location", "set_time_steps_yearly"], optimization_setup),
             bounds=(0,np.inf), doc='size of invested technology at location l and time t', unit_category={"energy_quantity": 1, "time": -1})
-        # capex of building capacity
-        variables.add_variable(model, name="cost_capex", index_sets=cls.create_custom_set(["set_technologies", "set_capacity_types", "set_location", "set_time_steps_yearly"], optimization_setup),
+        # capex of building capacity overnight
+        variables.add_variable(model, name="cost_capex_overnight", index_sets=cls.create_custom_set(["set_technologies", "set_capacity_types", "set_location", "set_time_steps_yearly"], optimization_setup),
             bounds=(0,np.inf), doc='capex for building technology at location l and time t', unit_category={"money": 1})
         # annual capex of having capacity
         variables.add_variable(model, name="cost_capex_yearly", index_sets=cls.create_custom_set(["set_technologies", "set_capacity_types", "set_location", "set_time_steps_yearly"], optimization_setup),
@@ -563,7 +563,7 @@ class Technology(Element):
         """
         get existing capacities of all technologies
         :param optimization_setup: The OptimizationSetup the element is part of
-        :param type_existing_quantity: capacity or cost_capex
+        :param type_existing_quantity: capacity or cost_capex_overnight
         :return: The existing capacities
         """
 
@@ -952,10 +952,10 @@ class TechnologyRules(GenericRule):
         lt_range.index.names = ["set_technologies", "set_time_steps_yearly", "set_time_steps_yearly_prev"]
         lt_range = lt_range.to_xarray().broadcast_like(self.variables["capacity"].lower).fillna(0)
 
-        cost_capex = self.variables["cost_capex"].rename(
+        cost_capex_overnight = self.variables["cost_capex_overnight"].rename(
             {"set_time_steps_yearly": "set_time_steps_yearly_prev"})
-        cost_capex = cost_capex.broadcast_like(lt_range)
-        expr = (lt_range * a * cost_capex).sum("set_time_steps_yearly_prev")
+        cost_capex_overnight = cost_capex_overnight.broadcast_like(lt_range)
+        expr = (lt_range * a * cost_capex_overnight).sum("set_time_steps_yearly_prev")
         lhs = lp.merge(1 * self.variables["cost_capex_yearly"], expr, compat="broadcast_equals")
         rhs = (a * self.parameters.existing_capex).broadcast_like(lhs.const)
         constraints = lhs == rhs
