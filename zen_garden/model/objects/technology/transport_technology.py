@@ -306,7 +306,7 @@ class TransportTechnologyRules(GenericRule):
         if len(techs) == 0:
             return
         edges = self.sets["set_edges"]
-        lhs_opex = (self.variables["cost_opex"].loc[techs,edges,:]
+        lhs_opex = (self.variables["cost_opex_variable"].loc[techs,edges,:]
                - (self.parameters.opex_specific_variable*self.variables["flow_transport"].rename({"set_transport_technologies":"set_technologies","set_edges":"set_location"})).sel({"set_technologies":techs,"set_location":edges}))
         lhs_emissions = (self.variables["carbon_emissions_technology"].loc[techs,edges,:]
                - (self.parameters.carbon_intensity_technology*self.variables["flow_transport"].rename({"set_transport_technologies":"set_technologies","set_edges":"set_location"})).sel({"set_technologies":techs,"set_location":edges}))

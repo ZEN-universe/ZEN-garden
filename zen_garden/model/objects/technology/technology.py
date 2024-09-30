@@ -418,7 +418,7 @@ class Technology(Element):
         variables.add_variable(model, name="cost_capex_total", index_sets=sets["set_time_steps_yearly"],
             bounds=(0,np.inf), doc='total capex for installing all technologies in all locations at all times', unit_category={"money": 1})
         # opex
-        variables.add_variable(model, name="cost_opex", index_sets=cls.create_custom_set(["set_technologies", "set_location", "set_time_steps_operation"], optimization_setup),
+        variables.add_variable(model, name="cost_opex_variable", index_sets=cls.create_custom_set(["set_technologies", "set_location", "set_time_steps_operation"], optimization_setup),
             bounds=(0,np.inf), doc="opex for operating technology at location l and time t", unit_category={"money": 1, "time": -1})
         # total opex
         variables.add_variable(model, name="cost_opex_yearly_total", index_sets=sets["set_time_steps_yearly"],
@@ -977,8 +977,8 @@ class TechnologyRules(GenericRule):
             self.time_steps.get_time_steps_year2operation(y)].to_series() for y in self.sets["set_time_steps_yearly"]}
         times = pd.concat(times, keys=times.keys())
         times.index.names = ["set_time_steps_yearly", "set_time_steps_operation"]
-        times = times.to_xarray().broadcast_like(self.variables["cost_opex"].mask)
-        term_opex_variable = (self.variables["cost_opex"] * times).sum("set_time_steps_operation")
+        times = times.to_xarray().broadcast_like(self.variables["cost_opex_variable"].mask)
+        term_opex_variable = (self.variables["cost_opex_variable"] * times).sum("set_time_steps_operation")
         term_opex_fixed = (self.parameters.opex_specific_fixed * self.variables["capacity"]).sum("set_capacity_types")
         lhs = self.variables["cost_opex_yearly"] - term_opex_variable - term_opex_fixed
         rhs = 0

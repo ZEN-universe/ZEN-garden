@@ -444,7 +444,7 @@ class ConversionTechnologyRules(GenericRule):
         nodes = self.sets["set_nodes"]
         term_reference_flow_opex = self.get_flow_expression_conversion(techs,nodes,factor=self.parameters.opex_specific_variable.rename({"set_technologies": "set_conversion_technologies","set_location":"set_nodes"}))
         term_reference_flow_emissions = self.get_flow_expression_conversion(techs,nodes,factor=self.parameters.carbon_intensity_technology.rename({"set_technologies": "set_conversion_technologies","set_location":"set_nodes"}))
-        lhs_opex = ((1*self.variables["cost_opex"].loc[techs,nodes,:]).rename({"set_technologies": "set_conversion_technologies","set_location":"set_nodes"}) + term_reference_flow_opex)
+        lhs_opex = ((1*self.variables["cost_opex_variable"].loc[techs,nodes,:]).rename({"set_technologies": "set_conversion_technologies","set_location":"set_nodes"}) + term_reference_flow_opex)
         lhs_emissions = ((1*self.variables["carbon_emissions_technology"].loc[techs,nodes,:]).rename({"set_technologies": "set_conversion_technologies","set_location":"set_nodes"}) + term_reference_flow_emissions)
         rhs = 0
         constraints_opex = lhs_opex == rhs

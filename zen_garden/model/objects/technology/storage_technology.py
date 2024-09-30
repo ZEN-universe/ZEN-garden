@@ -297,7 +297,7 @@ class StorageTechnologyRules(GenericRule):
             return
         nodes = self.sets["set_nodes"]
         lhs_opex = (
-                self.variables["cost_opex"] - (self.parameters.opex_specific_variable * self.get_flow_expression_storage())
+                self.variables["cost_opex_variable"] - (self.parameters.opex_specific_variable * self.get_flow_expression_storage())
         ).sel({"set_technologies":techs,"set_location":nodes})
         lhs_emissions = (self.variables["carbon_emissions_technology"]
                - (self.parameters.carbon_intensity_technology*self.get_flow_expression_storage())).sel({"set_technologies":techs,"set_location":nodes})
