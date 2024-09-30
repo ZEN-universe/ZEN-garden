@@ -83,5 +83,5 @@ jobs:
       - name: Run Tests
         shell: bash -l {0}
         run: |
-          coverage run --source="zen_garden" -m pytest -v documentation/dataset_examples/run_datasets.py
+          coverage run --source="zen_garden" -m pytest -v docs/dataset_examples/run_datasets.py
           coverage report -m

@@ -9,20 +9,24 @@ We recommend the first option for users who want to use ZEN-garden as a black-bo
 .. _For users:
 For users (direct installation)
 =========
-If you want to use ZEN-garden as a black-box optimization tool, you can install the package via `pip <https://pypi.org/project/zen-garden/>`_:
+If you want to use ZEN-garden as a black-box optimization tool, you can install the package via `pip <https://pypi.org/project/zen-garden/>`_ in a terminal or command prompt.
 
-.. code-block:: bash
+We recommend working from a conda environment for the installation. You can quickly create an environment with the following command::
+
+  conda create -n <your_env_name> python=<python_version>
+
+Replace ``<your_env_name>`` with the name of your environment and replace `<python_version>` with the necessary python version (see `ZEN-garden README <https://github.com/ZEN-universe/ZEN-garden/blob/main/README.md>`_).
+
+Activate the environment with the following command::
+
+  conda activate <your_env_name>
+
+Now you can install the zen-garden package with the following command::
 
     pip install zen-garden
 
-.. note::
-    We recommend working from a conda environment for the installation. You can quickly create an environment with the following command::
 
-      conda create -n <your_env_name> python=<python_version>
-
-    Replace ``<your_env_name>`` with the name of your environment and check the necessary python version in the `ZEN-garden README <https://github.com/ZEN-universe/ZEN-garden/blob/main/README.md>`_.
-
-To get started with small example models, check out :ref:`Run ZEN-garden with preexisting datasets`.
+To get started with small example models, check out :ref:`Run example`.
 
 .. _For developers:
 For developers (forking the repository)
@@ -36,7 +40,7 @@ If it's your first time using GitHub, register at `<https://github.com/>`_. Logi
 
 Navigate to `<https://github.com/ZEN-universe/ZEN-garden>`_ on Github and click on the "Fork" button at the top right corner of the page to create a copy of the repository under your account and select yourself as the owner.
 
-.. image:: ../images/create_fork.png
+.. image:: images/create_fork.png
     :alt: creating a fork
 
 **Clone your forked repository:**
@@ -72,7 +76,6 @@ The installation may take a couple of minutes. If the installation was successfu
 
 .. note::
     We strongly recommend working with conda environments. When installing the zen-garden conda environment via the ``zen_garden_env.yml``, the zen-garden package, as well as all other dependencies, are installed automatically. 
-    You can also install the zen-garden package directly by running the following command in the root directory of your repository: ``pip install -e``
 
 Solver options
 ==============
