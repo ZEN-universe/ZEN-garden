@@ -4,8 +4,8 @@ Troubleshooting
 
 Frequently made mistakes
 ================
-We try to make ZEN-garden's error messages as helpful as possible, but sometimes it can be hard to understand what went wrong.
-Here are some common mistakes that can lead:
+We try to make ZEN-garden's error messages as helpful as possible, but sometimes it can be hard to understand what went wrong, especially when the errors occur in other packages.
+Here are some common mistakes that can lead to errors:
 
 1. **Comma at the end of a list in a json**: ``"list": [1, 2, 3,]`` is wrong, it should be ``"list": [1, 2, 3]``. This is a common mistake because Python allows it, but JSON does not. The cryptic error message is ``json.decoder.JSONDecodeError: Expecting value: [...]``. Fix: check ``system.json``, ``config.json``, and ``attributes.json`` for commas at the end of lists. When you scroll up in the error message, you can guess what file caused the error.
 

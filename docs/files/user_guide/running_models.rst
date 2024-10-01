@@ -29,7 +29,7 @@ To run ZEN-garden with an example dataset (see :ref:`dataset_examples`), execute
 
 Substitute ``<example_name>`` with the name of the example dataset you want to run. For example, to run the example dataset ``1_base_case``, execute the following line::
 
-  python -m zen_garden --example=1_base_case
+  python -m zen_garden --example="1_base_case"
 
 This command is particularly useful when you installed ZEN-garden from pip and do not have the repository on your local machine.
 
