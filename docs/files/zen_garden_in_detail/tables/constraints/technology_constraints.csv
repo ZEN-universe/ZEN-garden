@@ -5,10 +5,10 @@ Constraint Name;Time Step Type;Doc String
 ``constraint_technology_construction_time``;``set_time_steps_yearly``;lead time in which invested technology is constructed
 ``constraint_technology_lifetime``;``set_time_steps_yearly``;max capacity of technology that can be installed
 ``constraint_technology_diffusion_limit``;``set_time_steps_yearly``;Limits the newly built capacity by the existing knowledge stock
-``constraint_capex_yearly``;``set_time_steps_yearly``;annual capex of having capacity of technology.
-``constraint_cost_capex_total``;``set_time_steps_yearly``;total capex of all technology that can be installed.
+``constraint_cost_capex_yearly``;``set_time_steps_yearly``;annual capex of having capacity of technology.
+``constraint_cost_capex_yearly_total``;``set_time_steps_yearly``;total capex of all technology that can be installed.
 ``constraint_cost_opex_yearly``;``set_time_steps_yearly``;total opex of all technology that are operated.
-``constraint_cost_opex_total``;``set_time_steps_yearly``;total opex of all technology that are operated.
+``constraint_cost_opex_yearly_total``;``set_time_steps_yearly``;total opex of all technology that are operated.
 ``constraint_carbon_emissions_technology_total``;``set_time_steps_yearly``;total carbon emissions for each technology at each location and time step
 ``disjunct_on_technology``;``set_time_steps_operation``;disjunct to indicate that technology is on
 ``disjunct_off_technology``;``set_time_steps_operation``;disjunct to indicate that technology is off

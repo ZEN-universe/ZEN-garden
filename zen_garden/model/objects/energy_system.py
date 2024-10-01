@@ -517,8 +517,8 @@ class EnergySystemRules(GenericRule):
         """
 
         lhs = (self.variables["cost_total"]
-               - self.variables["cost_capex_total"]
-               - self.variables["cost_opex_total"]
+               - self.variables["cost_capex_yearly_total"]
+               - self.variables["cost_opex_yearly_total"]
                - self.variables["cost_carrier_total"]
                - self.variables["cost_carbon_emissions_total"])
         rhs = 0

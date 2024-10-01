@@ -67,7 +67,7 @@ The investment costs are annualized by multiplying the total investment cost wit
 The annual cash flows accrue over the technology lifetime :math:`l_h` and comprise the capital investment cost of newly installed and existing technology capacities :math:`I_{h,p,y}` and :math:`i^\mathrm{ex}_{h,p,y}`. The annual capital expenditure :math:`A_{h,p,y}` for technology :math:`h\in\mathcal{H}` in position :math:`p\in\mathcal{P}` and period :math:`y\in\mathcal{Y}` are computed as:
 
 .. math::
-    :label: capex_yearly
+    :label: cost_capex_yearly
 
     A_{h,p,y}= f_h\left(\left(\sum_{\tilde{y}=\max\left(y_0,y-\lceil\frac{l_h}{dy}\rceil+1\right)}^y I_{h,p,\tilde{y}} \right)+\left(\sum_{\hat{y}=\psi \left(y-\lceil\frac{l_h}{dy}\rceil+1\right)}^{\psi(y_0-1)} i^\mathrm{ex}_{h,p,y}\right)\right)
 
