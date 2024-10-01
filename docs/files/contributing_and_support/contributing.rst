@@ -150,3 +150,16 @@ We follow the `PEP-8 <https://peps.python.org/pep-0008/)>`_ coding style.
 * the name of the folders should always be lower case
 * the name can be composed by multiple words, separated by underscores
 
+
+Defining the unit dimensions when adding a new parameter/variable to the framework
+====================================================================================
+
+Parameters
+----------
+The argument ``unit_category`` specifies the unit dimensions of the parameter and must be passed to the ``extrect_input_data`` function, e.g., for _capacity_addition_min_ the ``unit_category`` is defined as ``{"energy_quantity": 1, "time": -1}`` since a technology capacity is per definition given as energy_quantity (e.g. MWh) per time (hour), i.e. e.g. MW
+``self.capacity_addition_min = self.data_input.extract_input_data("capacity_addition_min", index_sets=[], unit_category={"energy_quantity": 1, "time": -1})``
+
+Variables
+---------
+Since the units of variables are not defined by the user but are a consequence of the parameter units as explained above, their unit dimensions are specified in the ``add_variable`` functions of the class ``Variable``. Again, the argument ``unit_category`` is used to define the unit dimensionality.
+``variables.add_variable(model, name="capacity", index_sets=cls.create_custom_set(["set_technologies", "set_capacity_types", "set_location", "set_time_steps_yearly"], optimization_setup), bounds=capacity_bounds, doc='size of installed technology at location l and time t', unit_category={"energy_quantity": 1, "time": -1})``
