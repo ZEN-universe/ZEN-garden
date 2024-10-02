@@ -1,3 +1,3 @@
 Objective Name;Symbol;Doc String;Unit Category
 ``total_cost``;:math:`NPC_y`;objective function to minimize total net present energy system cost;{"money": 1}
-``total_carbon_emissions``;:math:`E_y`;objective function to minimize total net present energy system emissions;{"emissions": 1}
+``total_carbon_emissions``;:math:`E_y`;objective function to minimize cumulative energy system emissions;{"emissions": 1}

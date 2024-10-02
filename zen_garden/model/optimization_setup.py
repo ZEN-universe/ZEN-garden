@@ -31,12 +31,17 @@ from ..utils import ScenarioDict, IISConstraintParser, StringUtils
 
 
 class OptimizationSetup(object):
-    """setup optimization setup """
+    """ Class defining the optimization model.
+    The class takes as inputs the properties of the optimization problem. The properties are saved in the
+    dictionaries analysis and system which are passed to the class. After initializing the model, the
+    class adds carriers and technologies to the model and returns it.
+    The class also includes a method to solve the optimization problem.
+    """
     # dict of element classes, this dict is filled in the __init__ of the package
     dict_element_classes = {}
 
     def __init__(self, config, scenario_dict: dict, input_data_checks):
-        """setup Pyomo Concrete Model
+        """setup optimization setup of the energy system
 
         :param config: config object used to extract the analysis, system and solver dictionaries
         :param scenario_dict: dictionary defining the scenario
@@ -214,9 +219,6 @@ class OptimizationSetup(object):
             element_class = [k for k,v in self.dict_element_classes.items() if v == element.__class__][0]
             logging.info(f"Create {element_class} {element.name}")
             element.store_input_data()
-        if self.solver["recommend_base_units"]:
-            self.energy_system.unit_handling.recommend_base_units(immutable_unit=self.solver["immutable_unit"],
-                                                                  unit_exps=self.solver["range_unit_exponents"])
 
     def add_element(self, element_class, name):
         """
@@ -542,20 +544,20 @@ class OptimizationSetup(object):
             if step_horizon != self.energy_system.set_time_steps_yearly_entire_horizon[-1]:
                 capacity_addition = self.model.solution["capacity_addition"].to_series().dropna()
                 invest_capacity = self.model.solution["capacity_investment"].to_series().dropna()
-                cost_capex = self.model.solution["cost_capex"].to_series().dropna()
+                cost_capex_overnight = self.model.solution["cost_capex_overnight"].to_series().dropna()
                 if self.solver["round_parameters"]:
                     rounding_value = 10 ** (-self.solver["rounding_decimal_points_capacity"])
                 else:
                     rounding_value = 0
                 capacity_addition[capacity_addition <= rounding_value] = 0
                 invest_capacity[invest_capacity <= rounding_value] = 0
-                cost_capex[cost_capex <= rounding_value] = 0
+                cost_capex_overnight[cost_capex_overnight <= rounding_value] = 0
                 decision_horizon = self.get_decision_horizon(step_horizon)
                 for tech in self.get_all_elements(Technology):
                     # new capacity
                     capacity_addition_tech = capacity_addition.loc[tech.name].unstack()
                     capacity_investment = invest_capacity.loc[tech.name].unstack()
-                    cost_capex_tech = cost_capex.loc[tech.name].unstack()
+                    cost_capex_tech = cost_capex_overnight.loc[tech.name].unstack()
                     tech.add_new_capacity_addition_tech(capacity_addition_tech, cost_capex_tech, decision_horizon)
                     tech.add_new_capacity_investment(capacity_investment, decision_horizon)
             else:

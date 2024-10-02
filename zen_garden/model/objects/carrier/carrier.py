@@ -384,7 +384,7 @@ class CarrierRules(GenericRule):
                 in_vars_plus = self.variables["flow_transport"].labels.loc[techs, edges_in, :].data
                 in_vars_plus = in_vars_plus.reshape((-1, in_vars_plus.shape[-1])).T
                 in_coefs_plus = np.ones_like(in_vars_plus)
-                in_vars_minus = self.variables["flow_transport_loss"].labels.loc[techs, edges_out, :].data
+                in_vars_minus = self.variables["flow_transport_loss"].labels.loc[techs, edges_in, :].data
                 in_vars_minus = in_vars_minus.reshape((-1, in_vars_minus.shape[-1])).T
                 in_coefs_minus = np.ones_like(in_vars_minus)
                 in_vars = np.concatenate([in_vars_plus, in_vars_minus], axis=1)

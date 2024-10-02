@@ -11,15 +11,16 @@
 #
 import os
 import sys
+from importlib.metadata import version as get_version
 sys.path.insert(0, os.path.abspath('..'))
 
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 project = 'ZEN-garden'
-copyright = '2024, Jacob Mannhardt, Alissa Ganter, Johannes Burger, Francesco de Marco, Giovanni Sansavini'
-author = 'Jacob Mannhardt, Alissa Ganter, Johannes Burger, Francesco de Marco, Giovanni Sansavini'
-release = 'v1.2.0'
+copyright = '2024, Reliability and Risk Engineering lab, ETH Zurich'
+author = 'Jacob Mannhardt, Alissa Ganter, Johannes Burger, Francesco de Marco, Lukas Kunz, Lukas Schmidt-Engelbertz, Giovanni Sansavini'
+release = get_version("zen_garden")
 language = "en"
 
 # -- General configuration ---------------------------------------------------
@@ -81,7 +82,7 @@ html_short_title = "ZEN-garden"
 # The name of an image file (relative to this directory)
 html_logo = "images/zen_garden_logo_text.png"
 
-html_favicon = "images/zen_garden_logo.png"
+html_favicon = "images/zen_garden_logo.svg"
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
