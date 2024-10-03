@@ -44,7 +44,8 @@ extensions = ['sphinx.ext.autodoc',
               'myst_parser',
               "sphinx.ext.imgconverter",  # for SVG conversion
              ]
-
+# allow errors in the notebooks
+nbsphinx_allow_errors = True
 # Specify the special members to include in the documentation
 autodoc_default_options = {
     'special-members': '__init__',
