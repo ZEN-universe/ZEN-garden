@@ -309,7 +309,7 @@ class StorageTechnologyRules(GenericRule):
             return
         nodes = self.sets["set_nodes"]
         lhs_opex = (
-                self.variables["cost_opex"] - (self.parameters.opex_specific_variable * self.get_flow_expression_storage())
+                self.variables["cost_opex_variable"] - (self.parameters.opex_specific_variable * self.get_flow_expression_storage())
         ).sel({"set_technologies":techs,"set_location":nodes})
         lhs_emissions = (self.variables["carbon_emissions_technology"]
                - (self.parameters.carbon_intensity_technology*self.get_flow_expression_storage())).sel({"set_technologies":techs,"set_location":nodes})
@@ -449,7 +449,7 @@ class StorageTechnologyRules(GenericRule):
         coords = [self.variables.coords["set_storage_technologies"], self.variables.coords["set_capacity_types"], self.variables.coords["set_nodes"], self.variables.coords["set_time_steps_yearly"]]
 
         ### formulate constraint
-        lhs = linexpr_from_tuple_np([(1.0, self.variables["cost_capex"].loc[techs, capacity_types, nodes, times]),
+        lhs = linexpr_from_tuple_np([(1.0, self.variables["cost_capex_overnight"].loc[techs, capacity_types, nodes, times]),
                                      (-self.parameters.capex_specific_storage.loc[techs, capacity_types, nodes, times], self.variables["capacity_addition"].loc[techs, capacity_types, nodes, times])],
                                      coords, self.model)
         rhs = 0

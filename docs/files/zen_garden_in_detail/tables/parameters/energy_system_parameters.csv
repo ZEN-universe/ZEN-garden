@@ -1,4 +1,4 @@
-Parameter Name;Symbol;Time Step Type;Symbol;Doc String;Unit Category
+Parameter Name;Time Step Type;Symbol;Doc String;Unit Category
 ``discount_rate``;temporal immutable;:math:`r`;Parameter which specifies the discount rate of the energy system
 ``carbon_emissions_annual_limit``;``set_time_steps_yearly``;:math:`e_y`;Parameter which specifies the total limit on carbon emissions;{"emissions": 1}
 ``carbon_emissions_budget``;temporal immutable;:math:`e^\mathrm{b}`;Parameter which specifies the total budget of carbon emissions until the end of the entire time horizon;{"emissions": 1}

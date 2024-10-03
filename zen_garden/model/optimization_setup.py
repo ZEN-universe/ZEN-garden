@@ -542,20 +542,20 @@ class OptimizationSetup(object):
             if step_horizon != self.energy_system.set_time_steps_yearly_entire_horizon[-1]:
                 capacity_addition = self.model.solution["capacity_addition"].to_series().dropna()
                 invest_capacity = self.model.solution["capacity_investment"].to_series().dropna()
-                cost_capex = self.model.solution["cost_capex"].to_series().dropna()
+                cost_capex_overnight = self.model.solution["cost_capex_overnight"].to_series().dropna()
                 if self.solver["round_parameters"]:
                     rounding_value = 10 ** (-self.solver["rounding_decimal_points_capacity"])
                 else:
                     rounding_value = 0
                 capacity_addition[capacity_addition <= rounding_value] = 0
                 invest_capacity[invest_capacity <= rounding_value] = 0
-                cost_capex[cost_capex <= rounding_value] = 0
+                cost_capex_overnight[cost_capex_overnight <= rounding_value] = 0
                 decision_horizon = self.get_decision_horizon(step_horizon)
                 for tech in self.get_all_elements(Technology):
                     # new capacity
                     capacity_addition_tech = capacity_addition.loc[tech.name].unstack()
                     capacity_investment = invest_capacity.loc[tech.name].unstack()
-                    cost_capex_tech = cost_capex.loc[tech.name].unstack()
+                    cost_capex_tech = cost_capex_overnight.loc[tech.name].unstack()
                     tech.add_new_capacity_addition_tech(capacity_addition_tech, cost_capex_tech, decision_horizon)
                     tech.add_new_capacity_investment(capacity_investment, decision_horizon)
             else:

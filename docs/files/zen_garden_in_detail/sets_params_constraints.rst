@@ -10,7 +10,7 @@ Energy System
 .. csv-table:: Objective Functions
     :header-rows: 1
     :file: tables/objectives.csv
-    :widths: 10 20 10
+    :widths: 10 10 20 10
     :delim: ;
 
 .. csv-table:: Energy System Sets
@@ -141,7 +141,7 @@ Storage Technology
 
 .. csv-table:: Storage Technology Parameters
     :header-rows: 1
-    :file: tables/storage_technology_parameters.csv
+    :file: tables/parameters/storage_technology_parameters.csv
     :widths: 10 10 10 20 10
     :delim: ;
 
@@ -164,7 +164,7 @@ Transport Technology
 
 .. csv-table:: Transport Technology Parameters
     :header-rows: 1
-    :file: tables/transport_technology_parameters.csv
+    :file: tables/parameters/transport_technology_parameters.csv
     :widths: 10 10 10 20 10
     :delim: ;
 
