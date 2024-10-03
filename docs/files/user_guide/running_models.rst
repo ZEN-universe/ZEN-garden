@@ -1,4 +1,3 @@
-.. _running_a_model:
 .. _Running a model:
 ################
 Running a model
@@ -24,19 +23,31 @@ If you installed ZEN-garden from the repository and created a new environment (:
 Run ZEN-garden with an example dataset
 --------------------------------------
 
-To run ZEN-garden with an example dataset (see `Dataset Examples <dataset_examples.rst>`_), execute the following line::
+To run ZEN-garden with an example dataset (see :ref:`dataset_examples`), execute the following line in a terminal or command prompt::
 
   python -m zen_garden --example=<example_name>
+
+Substitute ``<example_name>`` with the name of the example dataset you want to run. For example, to run the example dataset ``1_base_case``, execute the following line::
+
+  python -m zen_garden --example="1_base_case"
 
 This command is particularly useful when you installed ZEN-garden from pip and do not have the repository on your local machine.
 
 .. note::
     Dataset examples are an easy and quick way to get started with your model.
-    Find an example that best suits your need and use it as a template to build your own model.
+    Find an example that best suits your need and use it as a template to build your own model (see :ref:`Working with existing models`).
 
 The example dataset and the ``config.json`` file will be downloaded, a new folder will be created in the working directory, and the optimization will be run. No prior setup is needed.
 
 The optimization results will be stored in ``dataset_examples/outputs``. A Jupyter notebook will be downloaded to give you fast access to your results (see more at `Analyzing a model <analyzing_models.rst>`_).
+
+You can also use the visualization platform to analyze the results (see :ref:`Visualization`). To do so, move to the newly created ``dataset_examples`` folder after the optimization has finished::
+
+    cd dataset_examples
+
+and run the visualization platform::
+
+    python -m zen_garden.visualization
 
 .. _Run ZEN-garden with preexisting datasets:
 Run ZEN-garden with preexisting datasets
@@ -66,7 +77,7 @@ PyCharm configurations (only for ZEN-garden fork)
 
 To execute ZEN-garden with the PyCharm IDE you can use the configuration setup which can be found next to the run button, and click on "Edit configurations.." to edit or add a configuration.
 
-.. image:: ../images/pycharm_configuration.png
+.. image:: images/pycharm_configuration.png
     :alt: creating zen-garden configurations in pycharm
 
 Add a new configuration by clicking on the "+" button on the top left corner of the window. Choose ´´Python´´ as a type. You can name the configuration however you like. The important settings are:
@@ -77,7 +88,7 @@ Add a new configuration by clicking on the "+" button on the top left corner of 
 
 In the end, your configuration to run ZEN-garden as a module should look similar to this:
 
-.. image:: ../images/pycharm_run_module.png
+.. image:: images/pycharm_run_module.png
     :alt: run module
 
 VS code configuations (only for ZEN-garden fork)

@@ -4,12 +4,12 @@ Variable Name;Time Step Type:Symbol;Doc String;Unit Category
 ``capacity_previous``;``set_time_steps_yearly``;:math:`\Delta S^\mathrm{ex}_{h,p,y}`;size of installed technology at location l and before time t;{"energy_quantity": 1, "time": -1}
 ``capacity_addition``;``set_time_steps_yearly``;:math:`\Delta S_{h,p,y}`;size of built technology (invested capacity after construction) at location l and time t;{"energy_quantity": 1, "time": -1}
 ``capacity_investment``;``set_time_steps_yearly``;:math:`\Delta S_{h,p,y}^\mathrm{invest}`;size of invested technology at location l and time t;{"energy_quantity": 1, "time": -1}
-``cost_capex``;``set_time_steps_yearly``;:math:`I_{h,p,y}`;capex for building technology at location l and time t;{"money": 1}
-``capex_yearly``;``set_time_steps_yearly``;:math:`A_{h,p,y}`;annual capex for having technology at location l;{"money": 1}
-``cost_capex_total``;``set_time_steps_yearly``;:math:`CAPEX_y`;total capex for installing all technologies in all locations at all times;{"money": 1}
-``cost_opex``;``set_time_steps_operation``;:math:`OPEX_y^\mathrm{t,v}`;opex for operating technology at location l and time t;{"money": 1, "time": -1}
+``cost_capex_overnight``;``set_time_steps_yearly``;:math:`I_{h,p,y}`;capex for building technology at location l and time t;{"money": 1}
+``cost_capex_yearly``;``set_time_steps_yearly``;:math:`A_{h,p,y}`;annual capex for having technology at location l;{"money": 1}
+``cost_capex_yearly_total``;``set_time_steps_yearly``;:math:`CAPEX_y`;total capex for installing all technologies in all locations at all times;{"money": 1}
+``cost_opex_variable``;``set_time_steps_operation``;:math:`OPEX_y^\mathrm{t,v}`;opex for operating technology at location l and time t;{"money": 1, "time": -1}
 ``cost_opex_yearly``;``set_time_steps_yearly``;:math:`-`;yearly opex for operating technology at location l and year y;{"money": 1}
-``cost_opex_total``;``set_time_steps_yearly``;:math:`OPEX_y^\mathrm{t}`;total opex all technologies and locations in year y;{"money": 1}
+``cost_opex_yearly_total``;``set_time_steps_yearly``;:math:`OPEX_y^\mathrm{t}`;total opex all technologies and locations in year y;{"money": 1}
 ``carbon_emissions_technology``;``set_time_steps_operation``;:math:`\theta^\mathrm{tech}_{h,n,t,y}`;carbon emissions for operating technology at location l and time t;{"emissions": 1, "time": -1}
 ``carbon_emissions_technology_total``;``set_time_steps_yearly``;:math:`E^\mathrm{tech}_y`;total carbon emissions for operating technology at location l and time t;{"emissions": 1}
 ``technology_installation``;``set_time_steps_yearly``;:math:`g_{h,p,y}`;binary variable which equals 1 if technology is installed at location l and time t, else 0;{}

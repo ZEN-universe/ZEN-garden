@@ -327,15 +327,11 @@ class EnergySystem:
             raise KeyError(f"Objective type {self.optimization_setup.analysis['objective']} not known")
 
         # get selected objective sense
-        if self.optimization_setup.analysis["sense"] == "minimize":
-            logging.info("Using sense 'minimize'")
-        elif self.optimization_setup.analysis["sense"] == "maximize":
-            raise NotImplementedError("Currently only minimization supported")
-        else:
-            raise KeyError(f"Objective sense {self.optimization_setup.analysis['sense']} not known")
+        sense = self.optimization_setup.analysis["sense"]
+        assert sense in ["min", "max"], f"Objective sense {sense} not known"
 
         # construct objective
-        self.optimization_setup.model.add_objective(objective.to_linexpr())
+        self.optimization_setup.model.add_objective(objective.to_linexpr(),sense=sense)
 
 
 class EnergySystemRules(GenericRule):
@@ -521,8 +517,8 @@ class EnergySystemRules(GenericRule):
         """
 
         lhs = (self.variables["cost_total"]
-               - self.variables["cost_capex_total"]
-               - self.variables["cost_opex_total"]
+               - self.variables["cost_capex_yearly_total"]
+               - self.variables["cost_opex_yearly_total"]
                - self.variables["cost_carrier_total"]
                - self.variables["cost_carbon_emissions_total"])
         rhs = 0

@@ -68,7 +68,7 @@ def copy_dataset_example(example):
     base_path = zenodo_zip.filelist[0].filename
     example_path = f"{base_path}docs/dataset_examples/{example}/"
     config_path = f"{base_path}docs/dataset_examples/config.json"
-    notebook_path = f"{base_path}notebooks/example_notebook.ipynb"
+    notebook_path = f"{base_path}docs/dataset_examples/example_notebook.ipynb"
     local_dataset_path = os.path.join(os.getcwd(), "dataset_examples")
     if not os.path.exists(local_dataset_path):
         os.mkdir(local_dataset_path)

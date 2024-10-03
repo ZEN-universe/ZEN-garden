@@ -67,7 +67,7 @@ The investment costs are annualized by multiplying the total investment cost wit
 The annual cash flows accrue over the technology lifetime :math:`l_h` and comprise the capital investment cost of newly installed and existing technology capacities :math:`I_{h,p,y}` and :math:`i^\mathrm{ex}_{h,p,y}`. The annual capital expenditure :math:`A_{h,p,y}` for technology :math:`h\in\mathcal{H}` in position :math:`p\in\mathcal{P}` and period :math:`y\in\mathcal{Y}` are computed as:
 
 .. math::
-    :label: capex_yearly
+    :label: cost_capex_yearly
 
     A_{h,p,y}= f_h\left(\left(\sum_{\tilde{y}=\max\left(y_0,y-\lceil\frac{l_h}{dy}\rceil+1\right)}^y I_{h,p,\tilde{y}} \right)+\left(\sum_{\hat{y}=\psi \left(y-\lceil\frac{l_h}{dy}\rceil+1\right)}^{\psi(y_0-1)} i^\mathrm{ex}_{h,p,y}\right)\right)
 
@@ -346,7 +346,9 @@ The annual carbon emissions :math:`E_y` are limited by the annual carbon emissio
 
 Note that :math:`e_y` can be infinite, in which case the constraint is skipped.
 
-:math:`E_{y}^\mathrm{o}` is the annual carbon emission limit overshoot and allows exceeding the annual carbon emission limits. However, overshooting the annual carbon emission limits is penalized in the objective function (compare Eq. :eq:`opex_c`). This overshoot cost is computed by multiplying the annual carbon emission limit overshoot :math:`E_{y}^\mathrm{o}` with the annual carbon emission limit overshoot price :math:`\mu_1\mathrm{o}`. To strictly enforce the annual carbon emission limit (i.e., :math:`E_{y}^\mathrm{bo}=0`), use an infinite carbon overshoot price :math:`\mu_1\mathrm{o}`.
+:math:`E_{y}^\mathrm{o}` is the annual carbon emission limit overshoot and allows exceeding the annual carbon emission limits. However, overshooting the annual carbon emission limits is penalized in the objective function (compare Eq. :eq:`opex_c`).
+This overshoot cost is computed by multiplying the annual carbon emission limit overshoot :math:`E_{y}^\mathrm{o}` with the annual carbon emission limit overshoot price :math:`\mu_1\mathrm{o}`.
+To strictly enforce the annual carbon emission limit (i.e., :math:`E_{y}^\mathrm{bo}=0`), use an infinite carbon overshoot price :math:`\mu_1\mathrm{o}`.
 
 The cumulative carbon emissions :math:`E_y^\mathrm{cum}` are attributed to the end of the year. For the first planning period :math:`y=y_0`, :math:`E_y^\mathrm{cum}` is calculated as:
 
