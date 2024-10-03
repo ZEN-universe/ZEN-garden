@@ -1,11 +1,6 @@
 """
-:Title:        ZEN-GARDEN
-:Created:      October-2021
-:Authors:      Jacob Mannhardt (jmannhardt@ethz.ch),
-               Alissa Ganter (aganter@ethz.ch)
-:Organization: Laboratory of Reliability and Risk Engineering, ETH Zurich
-
 Class defining the optimization model.
+
 The class takes as inputs the properties of the optimization problem. The properties are saved in the
 dictionaries analysis and system which are passed to the class. After initializing the model, the
 class adds carriers and technologies to the model and returns it.
@@ -131,6 +126,7 @@ class OptimizationSetup(object):
 
     def add_folder_paths(self, set_name, path, subsets=[]):
         """ add file paths of element to paths dictionary
+
         :param set_name: name of set
         :param path: path to folder
         :param subsets: list of subsets
@@ -151,8 +147,8 @@ class OptimizationSetup(object):
                 self.paths[element]["folder"] = os.path.join(path, element)
 
     def _find_parent_set(self,dictionary,subset,path=None):
-        """
-        This method finds the parent sets of a subset
+        """This method finds the parent sets of a subset
+
         :param dictionary: dictionary of subsets
         :param subset: subset to find parent sets of
         :param path: path to subset
@@ -531,6 +527,7 @@ class OptimizationSetup(object):
 
     def add_results_of_optimization_step(self, step_horizon):
         """ adds the new capacity additions and the cumulative carbon emissions for next
+
         :param step_horizon: step of the rolling horizon """
         # add newly capacity_addition of first year to existing capacity
         self.add_new_capacity_addition(step_horizon)
@@ -539,6 +536,7 @@ class OptimizationSetup(object):
 
     def add_new_capacity_addition(self, step_horizon):
         """ adds the newly built capacity to the existing capacity
+
         :param step_horizon: step of the rolling horizon """
         if self.system["use_rolling_horizon"]:
             if step_horizon != self.energy_system.set_time_steps_yearly_entire_horizon[-1]:

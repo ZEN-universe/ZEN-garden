@@ -1,9 +1,4 @@
 """
-:Title:        ZEN-GARDEN
-:Created:      October-2021
-:Authors:      Alissa Ganter (aganter@ethz.ch)
-:Organization: Laboratory of Reliability and Risk Engineering, ETH Zurich
-
 Class is defining the postprocessing of the results.
 The class takes as inputs the optimization problem (model) and the system configurations (system).
 The class contains methods to read the results and save them in a result dictionary (resultDict).
@@ -158,6 +153,9 @@ class Postprocess:
             raise AssertionError(f"The specified output format {format}, chosen in the config, is not supported")
 
     def save_benchmarking_data(self):
+        """
+        Saves the benchmarking data to a json file
+        """
         #initialize dictionary
         benchmarking_data = {}
         # get the benchmarking data
@@ -392,7 +390,7 @@ class Postprocess:
     def save_sequence_time_steps(self, scenario=None):
         """Saves the dict_all_sequence_time_steps dict as json
 
-        :param scenario: #TODO describe parameter/return
+        :param scenario: name of scenario for which results are postprocessed
         """
         # add the scenario name
         if scenario is not None:
@@ -410,9 +408,10 @@ class Postprocess:
     def _transform_df(self, df, doc, units=None):
         """we transform the dataframe to a json string and load it into the dictionary as dict
 
-        :param df: #TODO describe parameter/return
-        :param doc: #TODO describe parameter/return
-        :return: #TODO describe parameter/return
+        :param df: dataframe
+        :param doc: doc string
+        :param units: units
+        :return: dictionary
         """
         if self.output_format == "h5":
             if units is not None:
@@ -483,8 +482,8 @@ class Postprocess:
     def get_index_list(self, doc):
         """ get index list from docstring
 
-        :param doc: #TODO describe parameter/return
-        :return: #TODO describe parameter/return
+        :param doc: docstring
+        :return: index list
         """
         split_doc = doc.split(";")
         for string in split_doc:

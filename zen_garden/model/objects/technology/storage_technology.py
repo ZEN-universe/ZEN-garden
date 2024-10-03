@@ -1,10 +1,4 @@
 """
-:Title:          ZEN-GARDEN
-:Created:        October-2021
-:Authors:        Alissa Ganter (aganter@ethz.ch),
-                 Jacob Mannhardt (jmannhardt@ethz.ch)
-:Organization:   Laboratory of Reliability and Risk Engineering, ETH Zurich
-
 Class defining the parameters, variables and constraints that hold for all storage technologies.
 The class takes the abstract optimization model as an input, and returns the parameters, variables and
 constraints that hold for the storage technologies.
@@ -133,6 +127,7 @@ class StorageTechnology(Technology):
 
         def flow_storage_bounds(index_values, index_list):
             """ return bounds of carrier_flow for bigM expression
+
             :param index_values: list of tuples with the index values
             :param index_list: The names of the indices
             :return bounds: bounds of carrier_flow"""
@@ -263,7 +258,13 @@ class StorageTechnologyRules(GenericRule):
         """ Load is limited by the installed capacity and the maximum load factor for storage technologies
 
         .. math::
-            \\underline{H}_{k,n,t,y}+\\overline{H}_{k,n,t,y}\\leq m_{k,n,t,y}S_{k,n,y}
+            \\underline{H}_{k,n,t,y}+\\overline{H}_{k,n,t,y}\\leq m^{\mathrm{max}}_{k,n,t,y}S_{k,n,y}
+
+        :math:`\\underline{H}_{k,n,t,y}`: carrier flow into storage technology :math:`k` on node :math:`n` and time :math:`t` in year :math:`y` \n
+        :math:`\\overline{H}_{k,n,t,y}`: carrier flow out of storage technology :math:`k`on node :math:`n` and time :math:`t` in year :math:`y` \n
+        :math:`m^{\mathrm{max}}_{k,n,t,y}`: maximum load factor for storage technology :math:`k` on node :math:`n` and time :math:`t` in year :math:`y` \n
+        :math:`S_{k,n,y}`: storage capacity of storage technology :math:`k` on node :math:`n` in year :math:`y`
+
 
         """
         techs = self.sets["set_storage_technologies"]
@@ -288,8 +289,19 @@ class StorageTechnologyRules(GenericRule):
         """ calculate opex of each technology
 
         .. math::
-            OPEX_{h,p,t}^\mathrm{cost} = \\beta_{h,p,t} (\\underline{H}_{k,n,t} + \\overline{H}_{k,n,t})
-            E_{h,p,t} = \\epsilon_h (\\underline{H}_{k,n,t} + \\overline{H}_{k,n,t})
+            O_{h,p,t}^\mathrm{t} = \\beta_{h,p,t} (\\underline{H}_{k,n,t} + \\overline{H}_{k,n,t}) \n
+            \\theta_{h,p,t}^{\mathrm{tech}} = \\epsilon_h (\\underline{H}_{k,n,t} + \\overline{H}_{k,n,t})
+
+        :math:`O_{h,p,t}^\mathrm{t}`: variable operational expenditures for storage technology :math:`h` on node :math:`n` and time :math:`t` \n
+        :math:`\\beta_{h,p,t}`: specific variable operational expenditures for storage technology :math:`h` on node :math:`n` and time :math:`t` \n
+        :math:`\\underline{H}_{k,n,t}`: carrier flow into storage technology :math:`k` on node :math:`n` and time :math:`t` \n
+        :math:`\\overline{H}_{k,n,t}`: carrier flow out of storage technology :math:`k` on node :math:`n` and time :math:`t` \n
+        :math:`\\theta_{h,p,t}^{\mathrm{tech}}`: carbon emissions for storage technology :math:`h` on node :math:`n` and time :math:`t` \n
+        :math:`\\epsilon_h`: carbon intensity for operating storage technology :math:`h` on node :math:`n`
+
+
+
+
 
         """
         techs = self.sets["set_storage_technologies"]
@@ -315,6 +327,9 @@ class StorageTechnologyRules(GenericRule):
 
         .. math::
             L_{k,n,t^\mathrm{k}} \le S^\mathrm{e}_{k,n,y}
+
+        :math:`L_{k,n,t^\mathrm{k}}`: storage level of storage technology :math:`k` on node :math:`n` and time :math:`t` \n
+        :math:`S^\mathrm{e}_{k,n,y}`: energy capacity of storage technology :math:`k` on node :math:`n` in year :math:`y`
 
         """
         techs = self.sets["set_storage_technologies"]
@@ -363,6 +378,11 @@ class StorageTechnologyRules(GenericRule):
         .. math::
             L(t) = L_0\\kappa^t + \\Delta H\\frac{1-\\kappa^t}{1-\\kappa} = \\frac{\\Delta H}{1-\\kappa}+(L_0-\\frac{\\Delta H}{1-\\kappa})\\kappa^t
 
+        :math:`L(t)`: storage level at time :math:`t` \n
+        :math:`L_0`: storage level at the end of the previous storage time step \n
+        :math:`\\kappa`: fraction of charge that is not self-discharged \n
+        :math:`\\Delta H`: difference between charge and discharge flow
+
         """
         techs = self.sets["set_storage_technologies"]
         if len(techs) == 0:
@@ -403,7 +423,11 @@ class StorageTechnologyRules(GenericRule):
         """ definition of the capital expenditures for the storage technology
 
         .. math::
-            CAPEX_{y,n,i}^\mathrm{cost} = \\Delta S_{h,p,y} \\alpha_{k,n,y}
+            CAPEX_{y,n,i} = \\Delta S_{h,p,y} \\alpha_{k,n,y}
+
+        :math:`\\Delta S_{h,p,y}`: capacity addition of storage technology :math:`h` on node :math:`n` in year :math:`y` \n
+        :math:`\\alpha_{k,n,y}`: specific capex of storage technology :math:`k` on node :math:`n` in year :math:`y`
+
 
         """
         # TODO clean up

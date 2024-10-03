@@ -1,10 +1,7 @@
 """
-:Title:        ZEN-GARDEN
-:Created:      October-2021
-:Authors:      Alissa Ganter (aganter@ethz.ch)
-:Organization: Laboratory of Reliability and Risk Engineering, ETH Zurich
+Default configuration.
 
-Default configuration. Changes from the default values are specified in config.py (folders data/tests) and system.py (individual datasets)
+Changes from the default values are specified in config.py (folders data/tests) and system.py (individual datasets)
 """
 
 from pydantic import BaseModel, ConfigDict

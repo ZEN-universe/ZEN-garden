@@ -1,11 +1,5 @@
 """
-:Title:        ZEN-GARDEN
-:Created:      September-2022
-:Authors:      Janis Fluri (janis.fluri@id.ethz.ch),
-              Alissa Ganter (aganter@ethz.ch),
-              Jacob Mannhardt (jmannhardt@ethz.ch)
-:Organization: Laboratory of Reliability and Risk Engineering, ETH Zurich
-
+Runs the main function of ZEN-Garden.
 Compilation  of the optimization problem.
 """
 from ._internal import main
