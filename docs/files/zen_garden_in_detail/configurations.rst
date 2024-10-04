@@ -18,7 +18,17 @@ The ``system.json`` defines the structure of the energy system. The following ta
     :delim: ;
 
 
-Per default, the technology selection is empty. You must define the set of technologies you want to investigate in your system. Only technologies selected in ``system.json`` are added to the optimization problem. You can flexibly select any subset of the technologies available in your ``set_technologies`` folder. If a technology is not defined in your input data, it is dropped from the system. Per default, all nodes defined in ``energy_system/set_nodes.csv`` are added. You can reduce the number of nodes by selecting a subset of nodes in your ``system.json``. In addition, you can specify the starting year (``reference_year``), the time horizon (``optimized_years``), and the interyearly resolution (``interval_between_years``) in the ``system.json``. Per default, each year is represented by 8760 timesteps of length 1h. You can change the interyearly resolution by modifying the ``unaggregated_time_steps_per_year`` and ``total_hours_per_year``. To reduce the complexity and reduce the number of time steps, the timeseries aggregation can be used (``conduct_time_series_aggregation``). Per default, the number of timesteps is reduced to 10 (``aggregated_time_steps_per_year``). :ref:`Time series aggregation and representation` and :ref:`time_parameters` provide a detailed description of the time representation and the time parameters.
+Per default, the technology selection is empty. You must define the set of technologies you want to investigate in your system.
+Only technologies selected in ``system.json`` are added to the optimization problem. You can flexibly select any subset of the technologies available in your ``set_technologies`` folder. Selecting a technology that is not defined in your input data will raise an error.
+
+Per default, all nodes defined in ``energy_system/set_nodes.csv`` are added.
+You can reduce the number of nodes by selecting a subset of nodes in your ``system.json``.
+In addition, you can specify the starting year (``reference_year``), the time horizon (``optimized_years``), and the interyearly resolution (``interval_between_years``) in the ``system.json``.
+
+Per default, each year is represented by 8760 timesteps of length 1h.
+You can change the interyearly resolution by modifying the ``unaggregated_time_steps_per_year``.
+To reduce the complexity, timeseries aggregation can be used (``conduct_time_series_aggregation``) to reduce the number of time steps.
+Per default, the number of timesteps is reduced to 10 (``aggregated_time_steps_per_year``). :ref:`Time series aggregation and representation` and :ref:`time_parameters` provide a detailed description of the time representation and the time parameters.
 
 .. _analysis:
 Analysis

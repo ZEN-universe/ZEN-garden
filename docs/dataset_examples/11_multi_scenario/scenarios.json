@@ -1,0 +1,15 @@
+{
+  "1": {"EnergySystem": {"price_carbon_emissions": {"file": "price_carbon_emissions_1"}}},
+  "2": {"EnergySystem": {"price_carbon_emissions": {"file": "price_carbon_emissions_2"}}},
+  "3": {"system": {"optimized_years": 4}},
+  "4": {"analysis":  {"objective": "total_carbon_emissions"}},
+  "5": {"electricity": {"carbon_intensity_carrier_import": {"default": "attributes_low_carbon"}}},
+  "6": {"photovoltaics": {"capacity_existing": {"file_op": 2}}},
+  "7": {"natural_gas_boiler": {"opex_specific_fixed": {"default_op": [0.1, 0.5],
+                                                       "default_op_fmt": "opex_fix_factor_{}"}}},
+  "8": {"set_technologies": {"opex_specific_variable": {"default_op": [0.2, 0.4],
+                                                       "default_op_fmt": "opex_var_factor_{}"},
+                             "carbon_intensity_technology": {"default_op": [0.1, 0.2],
+                                                             "default_op_fmt": "carbon_intensity_{}",
+                                                             "exclude": ["photovoltaics", "heat_pump"]}}}
+}

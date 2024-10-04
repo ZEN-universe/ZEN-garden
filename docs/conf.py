@@ -11,15 +11,16 @@
 #
 import os
 import sys
+from importlib.metadata import version as get_version
 sys.path.insert(0, os.path.abspath('..'))
 
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 project = 'ZEN-garden'
-copyright = '2024, Jacob Mannhardt, Alissa Ganter, Johannes Burger, Francesco de Marco, Giovanni Sansavini'
-author = 'Jacob Mannhardt, Alissa Ganter, Johannes Burger, Francesco de Marco, Giovanni Sansavini'
-release = 'v1.2.0'
+copyright = '2024, Reliability and Risk Engineering lab, ETH Zurich'
+author = 'Jacob Mannhardt, Alissa Ganter, Johannes Burger, Francesco de Marco, Lukas Kunz, Lukas Schmidt-Engelbertz, Giovanni Sansavini'
+release = get_version("zen_garden")
 language = "en"
 
 # -- General configuration ---------------------------------------------------
@@ -43,7 +44,8 @@ extensions = ['sphinx.ext.autodoc',
               'myst_parser',
               "sphinx.ext.imgconverter",  # for SVG conversion
              ]
-
+# allow errors in the notebooks
+nbsphinx_allow_errors = True
 # Specify the special members to include in the documentation
 autodoc_default_options = {
     'special-members': '__init__',
@@ -55,7 +57,8 @@ templates_path = ['_templates']
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
-exclude_patterns = []
+# exclude all jupyter notebooks
+exclude_patterns = ['_build', 'dataset_examples', 'Thumbs.db', '.DS_Store', '**.ipynb_checkpoints']
 
 
 # -- Options for HTML output -------------------------------------------------

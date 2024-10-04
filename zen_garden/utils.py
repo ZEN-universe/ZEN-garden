@@ -66,9 +66,9 @@ def copy_dataset_example(example):
     zenodo_zip = requests.get(zenodo_zip_url)
     zenodo_zip = zipfile.ZipFile(io.BytesIO(zenodo_zip.content))
     base_path = zenodo_zip.filelist[0].filename
-    example_path = f"{base_path}documentation/dataset_examples/{example}/"
-    config_path = f"{base_path}documentation/dataset_examples/config.json"
-    notebook_path = f"{base_path}notebooks/example_notebook.ipynb"
+    example_path = f"{base_path}docs/dataset_examples/{example}/"
+    config_path = f"{base_path}docs/dataset_examples/config.json"
+    notebook_path = f"{base_path}docs/dataset_examples/example_notebook.ipynb"
     local_dataset_path = os.path.join(os.getcwd(), "dataset_examples")
     if not os.path.exists(local_dataset_path):
         os.mkdir(local_dataset_path)

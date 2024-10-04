@@ -294,7 +294,7 @@ In our optimization models, we use a large variety of different technologies and
 Thus, we have to make sure that the numeric values have the same physical base unit, i.e., if our input data for technology A is in GW and for technology B in MW, we want to convert both numeric values to, e.g., GW.
 Another reason for using a base unit is to `keep the numerics of the optimization model in check <https://www.gurobi.com/documentation/9.5/refman/guidelines_for_numerical_i.html>`_.
 
-What is ZEN-garden's approach to convert all numeric values to common base units?
+Convert units to common base units
 -------------------------------------------------------------------------------------
 
 We define a set of base units, which we can combine to represent each dimensionality in our model. Each unit has a certain physical dimensionality:
@@ -364,7 +364,7 @@ Each variable definition (``variable.add_variable()``) has the argument ``unit_c
 
     In the results (:ref:`Accessing results`), you can retrieve the unit of all parameters and variables by calling ``r.get_unit(<variable/parameter name>)``, where ``r`` is a results object.
 
-What are known errors with pint?
+Known issues with pint
 --------------------------------
 
 The ``pint`` package that we use for the unit handling has amazing functionalities but also some hurdles to look out for. The ones we have already found are:
@@ -416,13 +416,14 @@ For a more detailed explanation of each algorithm please see the paper from Elbl
 **Combination of Scaling Algorithms**
 
 While the scaling algorithms can be used individually,
-they can also be combined. In this case, over multiple iterations you can apply a sequence of different scaling algorithms. See :ref: `How to use scaling in ZEN-garden?` for more information.
+they can also be combined. In this case, over multiple iterations you can apply a sequence of different scaling algorithms. See :ref:`How to use scaling in ZEN-garden` for more information.
 
 **Right-Hand Side Scaling**
 
 Furthermore, for all of the above mentioned algorithms, also the right-hand side vector :math:`b` can be included in the scaling process.
 If included, the chosen algorithm determines the row scaling vector entry for a specific row :math:`i` over all entries of that row in the constraint matrix :math:`A_{i*}` while also considering the respective right-hand side entry :math:`b_i`.
 
+.. _How to use scaling in ZEN-garden:
 How to use scaling in ZEN-garden?
 ---------------------------------
 As described in, :ref:`Configurations` in the :ref:`Solver` section, scaling can be activated by adjusting the
@@ -500,7 +501,7 @@ As argued in :ref:`Recommendations for using scaling` the numerical range showed
 in most cases after just three iterations. The following results of running the scaling algorithms geometric mean (``geom``) and arithmetic mean (``arithm``)
 for the model ``PI_small`` for different number of iterations, portrays this result:
 
-.. image:: ../images/PI_small.png
+.. image:: images/PI_small.png
     :alt: Numerical range vs. number of scaling iterations
 
 The dots indicate the left-hand side (LHS) range, which corresponds to the range of the A-matrix :math:`A`, whereas the crosses represent
@@ -525,7 +526,7 @@ A combination of ``geom`` and ``infnorm``, where geometric mean scaling is follo
 
 1. ``PI_small``
 
-.. image:: ../images/PI_small_net_solving_time_plot.png
+.. image:: images/PI_small_net_solving_time_plot.png
     :alt: Net-solving time comparison for PI_small
 
 Note that the ``Base Case`` refers to a configuration where Gurobi scaling with a ``NumericFocus`` of ``0`` is applied, but no scaling in ZEN-garden. Since for this model all scaling configurations that use ZEN-garden are run with a fixed ``NumericFocus`` of ``1`` (corresponding to low numeric focus)
@@ -541,7 +542,7 @@ The plot shows:
 
 2. ``NoErr``
 
-.. image:: ../images/NoErr_errorbar_plot.png
+.. image:: images/NoErr_errorbar_plot.png
     :alt: Net-solving time comparison for NoErr
 
 In the analysis of the model ``NoErr`` we set special focus on the interaction and compatibility of ZEN-garden scaling with the numeric settings of Gurobi. For this we
@@ -565,7 +566,7 @@ Based on the collected data from the benchmarking runs for the models ``PI_small
 the dependent variable. The explanatory variables are the models, the ``use_scaling`` boolean, the ``include_rhs`` boolean, the ``NumericFcous`` (:math:`0` or :math:`1`) setting of Gurobi as well as an interaction term between ZEN-garden scaling and Gurobi's ``ScaleFlag``.
 The results of the regression analysis are the following:
 
-.. image:: ../images/Regression_results.png
+.. image:: images/Regression_results.png
     :alt: Regression results
 
 The key takeaways from the regression analysis are:

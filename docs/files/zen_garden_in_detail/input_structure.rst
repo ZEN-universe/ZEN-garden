@@ -47,6 +47,7 @@ The configuration file ``config.json`` contains more general settings for the op
 
 Depending on your analysis, more files can be added; see :ref:`Attribute.json files` and :ref:`Scenario analysis` for more information.
 
+.. _Energy System:
 Energy System
 ==============
 
@@ -65,6 +66,7 @@ In fact, ``set_edges.csv`` defines the edges by the nodes they connect.
 ``base_units.csv`` define the base units in the model. That means that all units in the model are converted to a combination of base units.
 See :ref:`Unit consistency` for more information.
 
+.. _Technologies:
 Technologies
 ==============
 The ``set_technologies`` folder is specified in three subfolders: ``set_conversion_technologies``, ``set_storage_technologies``, and ``set_transport_technologies``.
@@ -85,7 +87,7 @@ Conversion Technologies
 The conversion technologies are defined in the folder ``set_conversion_technologies``.
 A conversion technology converts ``0`` to ``n`` input carriers into ``0`` to ``m`` output carriers.
 Note that the conversion factor between the carriers is fixed, e.g., a combined heat and power (CHP) plant cannot sometimes generate more heat and sometimes generate more electricity.
-The file ``attributes.json`` defines the properties of the conversion technology, e.g., the capacity limit, the maximum load, the conversion factor, or the investment cost (see :ref:`_conversion_technology`).
+The file ``attributes.json`` defines the properties of the conversion technology, e.g., the capacity limit, the maximum load, the conversion factor, or the investment cost (see :ref:`conversion_technology`).
 
 A special case of the conversion technologies are retrofitting technologies. These technologies are defined in the folder ``set_conversion_technologies\set_retrofitting_technologies``, if any exist.
 They behave equal to conversion technologies, but they are always connected to a conversion technology. They are coupled to a conversion technology by the attribute ``retrofit_flow_coupling_factor`` in the file ``attributes.json``, which couples the reference carrier flow of the retrofitting technology and the base technology.
@@ -110,6 +112,7 @@ A transport technology connects two nodes via an edge. Different to conversion t
 .. note::
     By default, the distance of an edge will be calculated as the `haversine distance <https://www.geeksforgeeks.org/haversine-formula-to-find-distance-between-two-points-on-a-sphere/>`_ between the nodes. This can be overwritten for specific edges in a ``distance.csv`` file (see :ref:`Attribute.json files`)
 
+.. _Carriers:
 Carriers
 ==============
 Each energy carrier is defined in its own folder in ``set_carriers``. You do not need to specify the used energy carriers explicitly in ``system.json``, but the carriers are implied from the used technologies.
