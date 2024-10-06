@@ -350,7 +350,22 @@ class StorageTechnologyRules(GenericRule):
         self.constraints.add_constraint("constraint_storage_level_max",constraints)
 
     def constraint_capacity_energy_to_power_ratio(self):
-        """limit capacity power to energy ratio"""
+        """limit capacity power to energy ratio
+
+        .. math::
+            \\rho_k^{min} S^{e}_{k,n,y} \le S^{\mathrm{power}}_{k,n,y}
+
+        .. math::
+            S^{\mathrm{power}}_{k,n,y} \le \\rho_k^{max} S^{e}_{k,n,y}
+
+        :math:`S^{\mathrm{power}}_{k,n,y}`: installed capacity in terms of power of storage :math:`k` at node :math:`n` in year :math:`y` \n
+        :math:`S^{e}_{k,n,y}`: installed capacity in terms of energy of storage :math:`k` at node :math:`n` in year :math:`y` \n
+        :math:`\\rho_k^{min}`: minimum power-to-energy ratio of storage :math:`k` \n
+        :math:`\\rho_k^{max}`: maximum power-to-energy ratio of storage :math:`k`
+
+        """
+
+
 
         techs = self.sets["set_storage_technologies"]
         if len(techs) == 0:

@@ -385,12 +385,19 @@ class EnergySystemRules(GenericRule):
 
         self.constraints.add_constraint("constraint_carbon_emissions_annual_limit",constraints)
 
+    # TODO check if implemented correctly
     def constraint_carbon_emissions_budget(self):
         """ carbon emissions budget of entire time horizon from technologies and carriers.
         The prediction extends until the end of the horizon, i.e.,
         last optimization time step plus the current carbon emissions until the end of the horizon
 
-        #TODO constraint doesn't match model formulation definition
+        .. math::
+        E_y^\mathrm{cum} + (dy-1)  E_y - E_y^\mathrm{bo} \leq e^b
+
+        :math:`E_y^\mathrm{cum}`: cumulative carbon emissions of energy system in year :math:`y` \n
+        :math:`E_y`: annual carbon emissions of energy system in year :math:`y` \n
+        :math:`E_y^\mathrm{bo}`: cumulative carbon emissions budget overshoot of energy system \n
+        :math:`e^b`: carbon emissions budget of energy system
 
         """
 
