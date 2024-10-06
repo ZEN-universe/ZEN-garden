@@ -413,7 +413,6 @@ class EnergySystemRules(GenericRule):
 
         self.constraints.add_constraint("constraint_carbon_emissions_budget",constraints)
 
-    #ToDo: write such that it fits CoC implementation
     def constraint_net_present_cost(self):
         """ discounts the annual capital flows to calculate the net_present_cost
 
@@ -439,7 +438,7 @@ class EnergySystemRules(GenericRule):
                          for _intermediate_time_step in range(0, interval_between_years))
         term_discounted_cost_total = self.variables["cost_total"] * factor
 
-        lhs = self.variables["net_present_cost_technology"] - term_discounted_cost_total
+        lhs = self.variables["net_present_cost"] - term_discounted_cost_total
         rhs = 0
         constraints = lhs == rhs
 
