@@ -449,7 +449,7 @@ class Results:
                 "set_time_steps_operation",
             ]
             drop_idx = pd.Index(loc_idx + time_idx).intersection(units.index.names)
-            if drop_idx.difference(units.index.names).empty:
+            if len(units.index.names.difference(drop_idx)) == 0:
                 units = units.iloc[0]
             else:
                 units.index = units.index.droplevel(drop_idx.to_list())

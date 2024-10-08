@@ -722,6 +722,7 @@ class InputDataChecks:
     """
     This class checks if the input data (folder/file structure, system.py settings, element definitions, etc.) is defined correctly
     """
+    PROHIBITED_DATASET_CHARACTERS = [" ", ".", ":", ",", ";", "!", "?", "(", ")", "[", "]", "{", "}", "<", ">", "&", "|", "*", "^", "%", "$", "#", "@", "`", "~", "\\", "/"]
 
     def __init__(self, config, optimization_setup):
         """
@@ -828,8 +829,11 @@ class InputDataChecks:
         dirname = os.path.dirname(self.analysis["dataset"])
         assert os.path.exists(dirname),f"Requested folder {dirname} is not a valid path"
         assert os.path.exists(self.analysis["dataset"]),f"The chosen dataset {dataset} does not exist at {self.analysis['dataset']} as it is specified in the config"
+        # check if any character in the dataset name is prohibited
+        for char in self.PROHIBITED_DATASET_CHARACTERS:
+            if char in dataset:
+                raise ValueError(f"Character {char} is not allowed in the dataset name {dataset}\nProhibited characters: {self.PROHIBITED_DATASET_CHARACTERS}")
         # check if chosen dataset contains a system.py file
-
         if not os.path.exists(os.path.join(self.analysis['dataset'], "system.py")) and not os.path.exists(os.path.join(self.analysis['dataset'], "system.json")):
             raise FileNotFoundError(f"Neither system.json nor system.py not found in dataset: {self.analysis['dataset']}")
 
