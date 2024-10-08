@@ -44,6 +44,7 @@ This command will open a new tab in your default browser with the correct URL.
 If the tab does not open automatically, you can open http://localhost:8000/explorer in any browser of your choice.
 
 To interrupt the visualization, you can press `Ctrl+C` in the terminal where you started the visualization.
+
 .. _Comparing results:
 Comparing results
 =================
@@ -68,17 +69,3 @@ Per default, ``compare_model_values`` compares the total annual values of compon
 ``compare_model_values`` also accepts ``component_type = "dual"`` and ``component_type = "sets"``.
 
 ``compare_configs`` compares the configurations of the two datasets.
-
-
-User guide for visualization
-=================
-
-If you have folllowed the steps of chapter :ref:`installation`, you should have a conda environment or a virtual environment that contains the necessary python packages run the visualization suite.
-
-You can then start the visualization with `python -m zen_garden.visualization`. By default, the suite looks for solutions that are contained in the folder `./outputs`, relatively to where you run the command. 
-
-Alternatively, you can pass an arbitrary folder with `python -m zen_garden.visualization <path to your solutions folder>` to change the solutions folder.
-
-This command will start a webserver and open a new tab in your default browser with the correct URL. Probably, you will have to reload the website after a few seconds. If the tab does not open automaically, you can open http://localhost:8000/explorer in any browser of your choice.
-
-The best way to quit the webserver is by pressing Ctrl + C in the terminal that is running the webserver.

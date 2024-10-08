@@ -14,7 +14,7 @@ authors = [
   {name = "Giovanni Sansavini"},
   ]
 # do not change version manually! Done by bump2version
-version = "1.13.1"
+version = "1.13.3"
 requires-python= ">=3.10"
 description="ZEN-garden is an optimization model of energy systems and value chains."
 readme = "README.md"
