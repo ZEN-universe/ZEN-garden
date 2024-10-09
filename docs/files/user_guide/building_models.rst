@@ -15,7 +15,7 @@ Working with existing models
 ============================
 The easiest way to get started with ZEN-garden is to use an existing model, obtained either from a collaborator or from one of the ZEN-garden dataset examples.
 
-To run ZEN-garden with an example dataset (see `Dataset Examples <dataset_examples.rst>`_), execute the following line::
+To run ZEN-garden with an example dataset (see :ref:`dataset_examples`), execute the following line::
 
   python -m zen_garden --example=<example_name>
 

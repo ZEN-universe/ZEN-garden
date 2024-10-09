@@ -5,7 +5,7 @@ build-backend = "flit_core.buildapi"
 [project]
 name = "zen_garden"
 authors = [
-  {name = "Jacob Mannhardt", email = "jmannhardt@ethz.ch"},
+  {name = "Jacob Mannhardt", email = "zen-garden@ethz.ch"},
   {name = "Alissa Ganter"},
   {name = "Johannes Burger"},
   {name = "Francesco De Marco"},
