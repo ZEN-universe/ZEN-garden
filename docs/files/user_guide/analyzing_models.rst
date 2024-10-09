@@ -36,14 +36,14 @@ User guide for visualization
 
 If you have followed the steps of chapter :ref:`installation`, you should have a conda environment or a virtual environment that contains the necessary python packages to run the visualization suite.
 
-You can then start the visualization with ``python -m zen_garden.visualization``. By default, the suite looks for solutions that are contained in the folder ``./outputs``, relatively to where you run the command.
+After successfully running an optimization. you can start the visualization with ``python -m zen_garden.visualization``. By default, the suite looks for solutions that are contained in the folder ``./outputs``, relatively to where you run the command.
 
 Alternatively, you can pass an arbitrary folder with ``python -m zen_garden.visualization <path to your solutions folder>`` to change the solutions folder.
 
 This command will open a new tab in your default browser with the correct URL.
 If the tab does not open automatically, you can open http://localhost:8000/explorer in any browser of your choice.
 
-To interrupt the visualization, you can press `Ctrl+C` in the terminal where you started the visualization.
+To interrupt the visualization, you can press ``Ctrl+C`` in the terminal where you started the visualization.
 
 .. _Comparing results:
 Comparing results
