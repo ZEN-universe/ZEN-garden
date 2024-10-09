@@ -23,7 +23,7 @@ from .preprocess.unit_handling import Scaling
 setup_logger()
 
 
-def main(config, dataset_path=None, job_index=None):
+def main(config, dataset_path=None, job_index=None, folder_output_path=None):
     """
     This function runs ZEN garden,
     it is executed in the __main__.py script
@@ -31,6 +31,7 @@ def main(config, dataset_path=None, job_index=None):
     :param config: A config instance used for the run
     :param dataset_path: If not None, used to overwrite the config.analysis["dataset"]
     :param job_index: The index of the scenario to run or a list of indices, if None, all scenarios are run in sequence
+    :param folder_output_path: If not None, used to overwrite the config.analysis["folder_output"]
     """
 
     # print the version
@@ -44,6 +45,8 @@ def main(config, dataset_path=None, job_index=None):
     if dataset_path is not None:
         # logging.info(f"Overwriting dataset to: {dataset_path}")
         config.analysis["dataset"] = dataset_path
+    if folder_output_path is not None:
+        config.analysis["folder_output"] = folder_output_path
     logging.info(f"Optimizing for dataset {config.analysis['dataset']}")
     # get the abs path to avoid working dir stuff
     config.analysis["dataset"] = os.path.abspath(config.analysis['dataset'])
