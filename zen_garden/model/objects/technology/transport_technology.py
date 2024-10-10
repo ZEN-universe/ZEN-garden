@@ -328,9 +328,9 @@ class TransportTechnologyRules(GenericRule):
         """compute the flow losses for a carrier through a transport technology
 
         .. math::
-            \mathrm{if\ transport\ distance\ set\ to\ inf}\ F^\mathrm{l}_{j,e,t} = 0
+            \mathrm{if\ transport\ distance\ set\ to\ inf:}\ F^\mathrm{l}_{j,e,t} = 0
         .. math::
-            \mathrm{else}\ F^\mathrm{l}_{j,e,t} = h_{j,e} \\rho_{j} F_{j,e,t}
+            \mathrm{else:}\ F^\mathrm{l}_{j,e,t} = h_{j,e} \\rho_{j} F_{j,e,t}
 
         :math:`F^\mathrm{l}_{j,e,t}`: Flow losses of carrier through transport technology :math:`j` on edge :math:`e` at time :math:`t` \n
         :math:`h_{j,e}`: Transport distance for transport technology :math:`j` on edge :math:`e` \n
@@ -364,9 +364,9 @@ class TransportTechnologyRules(GenericRule):
         """ definition of the capital expenditures for the transport technology
 
         .. math::
-            \mathrm{if\ transport\ distance\ set\ to\ inf}\ \Delta S_{j,e,y} = 0
+            \mathrm{if\ transport\ distance\ set\ to\ inf:}\ \Delta S_{j,e,y} = 0
         .. math::
-            \mathrm{else}\ CAPEX_{j,e,y} = \\Delta S_{j,e,y} \\alpha_{j,y}^{\mathrm{const}} + \\Delta S_{j,e,y} h_{j,e} \\alpha^\mathrm{dist}_{j,e,y}
+            \mathrm{else:}\ CAPEX_{j,e,y} = \\Delta S_{j,e,y} \\alpha_{j,y}^{\mathrm{const}} + \\Delta S_{j,e,y} h_{j,e} \\alpha^\mathrm{dist}_{j,e,y}
 
         :math:`\Delta S_{j,e,y}`: Capacity addition of transport technology :math:`j` on edge :math:`e` in year :math:`y` \n
         :math:`CAPEX_{j,e,y}`: Capital expenditures of transport technology :math:`j` on edge :math:`e` in year :math:`y` \n

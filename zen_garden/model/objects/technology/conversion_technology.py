@@ -438,7 +438,7 @@ class ConversionTechnologyRules(GenericRule):
         """ calculate opex and carbon emissions of each technology
 
         .. math::
-            O{h,p,t}^\mathrm{t} = \\beta_{h,p,t} G_{i,n,t,y}^\mathrm{r} \n
+            O_{h,p,t}^\mathrm{t} = \\beta_{h,p,t} G_{i,n,t,y}^\mathrm{r} \n
             \\theta_{h,p,t} = \\epsilon_h G_{i,n,t,y}^\mathrm{r}
 
         :math:`O_{h,p,t}^\mathrm{t}`: variable opex of the technology :math:`h` at node :math:`p` in time step :math:`t` \n

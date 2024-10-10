@@ -392,7 +392,7 @@ class EnergySystemRules(GenericRule):
         last optimization time step plus the current carbon emissions until the end of the horizon
 
         .. math::
-        E_y^\mathrm{cum} + (dy-1)  E_y - E_y^\mathrm{bo} \leq e^b
+            E_y^\mathrm{cum} + (dy-1)  E_y - E_y^\mathrm{bo} \leq e^b
 
         :math:`E_y^\mathrm{cum}`: cumulative carbon emissions of energy system in year :math:`y` \n
         :math:`E_y`: annual carbon emissions of energy system in year :math:`y` \n
@@ -448,9 +448,11 @@ class EnergySystemRules(GenericRule):
         """ ensures carbon emissions overshoot of carbon budget is zero when carbon emissions price for budget overshoot is inf
 
         .. math::
-            E_y^\mathrm{bo} = 0
+            \mathrm{if } \\mu^{bo} =\\infty \mathrm{,then: }E_y^\mathrm{bo} = 0
 
-        :math:`E_y^\mathrm{bo}`: overshoot carbon emissions of energy system at the end of the time horizon
+        :math:`E_y^\mathrm{bo}`: overshoot carbon emissions of energy system at the end of the time horizon \n
+        :math:`\mu^{bo}`: carbon price for budget overshoot
+
 
         """
 
@@ -467,9 +469,10 @@ class EnergySystemRules(GenericRule):
         """ ensures annual carbon emissions overshoot is zero when carbon emissions price for annual overshoot is inf
 
         .. math::
-            E_y^\mathrm{o}
+            \mathrm{if } \\mu^o =\\infty \mathrm{,then: } E_y^\mathrm{o} = 0
 
-        :math:`E_y^\mathrm{o}`: overshoot of the annual carbon emissions limit of energy system
+        :math:`E_y^\mathrm{o}`: overshoot of the annual carbon emissions limit of energy system \n
+        :math:`\mu^o`: carbon price for annual overshoot
 
         """
         no_price = self.parameters.price_carbon_emissions_annual_overshoot == np.inf
@@ -574,7 +577,9 @@ class EnergySystemRules(GenericRule):
         """objective function to minimize total emissions
 
         .. math::
-            J = \sum_{y\in\mathcal{Y}} E_y
+            J = E^{\mathrm{cum}}_Y
+
+        :math:`E^{\mathrm{cum}}_Y`: cumulative carbon emissions at the end of the time horizon
 
         :param model: optimization model
         :return: total carbon emissions objective function

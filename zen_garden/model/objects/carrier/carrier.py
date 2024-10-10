@@ -257,8 +257,10 @@ class CarrierRules(GenericRule):
     def constraint_availability_import_export_yearly(self):
         """node- and year-dependent carrier availability to import/export from outside the system boundaries
 
-         .. math::
-            \\underline{a}_{c,n,y}^\mathrm{Y} \geq \\sum_{t\\in\mathcal{T}}\\tau_t \\underline{U}_{c,n,t} \n
+        .. math::
+            \\underline{a}_{c,n,y}^\mathrm{Y} \geq \\sum_{t\\in\mathcal{T}}\\tau_t \\underline{U}_{c,n,t}
+
+        .. math::
             \\overline{a}_{c,n,y}^\mathrm{Y} \geq \\sum_{t\\in\mathcal{T}}\\tau_t \\overline{U}_{c,n,t}
 
         :math:`\\underline{a}_{c,n,y}^\mathrm{Y}`: yearly availability of carrier :math:`c` to import at node :math:`n`\n
@@ -312,7 +314,7 @@ class CarrierRules(GenericRule):
         """ cost and limit of shedding demand of carrier
 
         .. math::
-           O_{c,n,t}^{\mathrm{shed}\ \mathrm{demand}} = D_{c,n,t} \\nu_c
+           O_{c,n,t}^{\mathrm{shed}\ \mathrm{demand}} = D_{c,n,t} \\nu_c \n
            D_{c,n,t} \leq d_{c,n,t}
 
         :math:`O_{c,n,t}^{\mathrm{shed}\ \mathrm{demand}}`: total cost of shedding demand of carrier :math:`c` at node :math:`n` and time step :math:`t`\n

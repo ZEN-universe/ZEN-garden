@@ -353,10 +353,10 @@ class StorageTechnologyRules(GenericRule):
         """limit capacity power to energy ratio
 
         .. math::
-            \\rho_k^{min} S^{e}_{k,n,y} \le S^{\mathrm{power}}_{k,n,y}
+            \\rho_k^{min} S^{e}_{k,n,y} \le S_{k,n,y}
 
         .. math::
-            S^{\mathrm{power}}_{k,n,y} \le \\rho_k^{max} S^{e}_{k,n,y}
+            S_{k,n,y} \le \\rho_k^{max} S^{e}_{k,n,y}
 
         :math:`S^{\mathrm{power}}_{k,n,y}`: installed capacity in terms of power of storage :math:`k` at node :math:`n` in year :math:`y` \n
         :math:`S^{e}_{k,n,y}`: installed capacity in terms of energy of storage :math:`k` at node :math:`n` in year :math:`y` \n
@@ -391,12 +391,15 @@ class StorageTechnologyRules(GenericRule):
         """couple subsequent storage levels (time coupling constraints)
 
         .. math::
-            L(t) = L_0\\kappa^t + \\Delta H\\frac{1-\\kappa^t}{1-\\kappa} = \\frac{\\Delta H}{1-\\kappa}+(L_0-\\frac{\\Delta H}{1-\\kappa})\\kappa^t
+            L_{k,n,t^k,y} = L_{k,n,t^k-1,y} (1-\\phi_k)^{\\tau_{t^k}^k} + (\\underline{\\eta}_k \\underline{H}_{k,n,\\sigma(t^k),y} - \\frac{\\overline{H}_{k,n,\\sigma(t^k),y}}{\\overline{\\eta}_k}) \sum^{\\tau_{t^k}^k-1}_{\\tilde{t}^k=0} (1-\\phi_k)^{\\tilde{t}^k}
 
-        :math:`L(t)`: storage level at time :math:`t` \n
-        :math:`L_0`: storage level at the end of the previous storage time step \n
-        :math:`\\kappa`: fraction of charge that is not self-discharged \n
-        :math:`\\Delta H`: difference between charge and discharge flow
+        :math:`L_{k,n,t^k,y}`: storage level of storage technology :math:`k` on node :math:`n` and time :math:`t^k` in year :math:`y` \n
+        :math:`\\phi_k`: self discharge rate of storage technology :math:`k` \n
+        :math:`\\tau_{t^k}^k`: duration of storage level time step of storage technology :math:`k` \n
+        :math:`\\underline{\\eta}_k`: efficiency during charging of storage technology :math:`k` \n
+        :math:`\\overline{\\eta}_k`: efficiency during discharging of storage technology :math:`k` \n
+        :math:`\\underline{H}_{k,n,\\sigma(t^k),y}`: charge flow into storage technology :math:`k` on node :math:`n` and time :math:`\\sigma(t^k)` in year :math:`y` \n
+        :math:`\\overline{H}_{k,n,\\sigma(t^k),y}`: discharge flow out of storage technology :math:`k` on node :math:`n` and time :math:`\\sigma(t^k)` in year :math:`y`
 
         """
         techs = self.sets["set_storage_technologies"]
