@@ -1,3 +1,6 @@
+"""
+This module contains the implementation of a SolutionLoader that reads the solution.
+"""
 import re
 
 from zen_garden.postprocess.results.solution_loader import (

@@ -4,6 +4,11 @@
 .. automodule:: zen_garden.utils
 
    
+   
+   
+
+   
+   
    .. rubric:: Functions
 
    .. autosummary::
@@ -16,6 +21,10 @@
       setup_logger
       xr_like
    
+   
+
+   
+   
    .. rubric:: Classes
 
    .. autosummary::
@@ -27,9 +36,17 @@
       ScenarioUtils
       StringUtils
    
+   
+
+   
+   
    .. rubric:: Exceptions
 
    .. autosummary::
    
       OptimizationError
    
+   
+
+
+

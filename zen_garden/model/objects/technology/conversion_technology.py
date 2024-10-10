@@ -1,9 +1,4 @@
 """
-:Title: ZEN-GARDEN
-:Created: October-2021
-:Authors:   Alissa Ganter (aganter@ethz.ch), Jacob Mannhardt (jmannhardt@ethz.ch)
-:Organization: Laboratory of Reliability and Risk Engineering, ETH Zurich
-
 Class defining the parameters, variables, and constraints of the conversion technologies.
 The class takes the abstract optimization model as an input and adds parameters, variables, and
 constraints of the conversion technologies.
@@ -119,13 +114,14 @@ class ConversionTechnology(Technology):
         return capex
 
     ### --- getter/setter classmethods
+    #ToDO: check if description of parameters is correct ->  index_names
     @classmethod
     def get_capex_all_elements(cls, optimization_setup, index_names=None):
         """ similar to Element.get_attribute_of_all_elements but only for capex.
         If select_pwa, extract pwa attributes, otherwise linear.
 
         :param optimization_setup: The OptimizationSetup the element is part of
-        :param select_pwa: boolean if get attributes for pwa
+        :param index_names: list of index names
         :return dict_of_attributes: returns dict of attribute values """
         class_elements = optimization_setup.get_all_elements(cls)
         dict_of_attributes = {}
@@ -208,9 +204,12 @@ class ConversionTechnology(Technology):
         model = optimization_setup.model
         variables = optimization_setup.variables
 
+        #ToDo: check if description of parameters is correct ->  index_names
         def flow_conversion_bounds(index_values, index_names):
             """ return bounds of carrier_flow for bigM expression
+
             :param index_values: list of index values
+            :param index_names: list of index names
             :return bounds: bounds of carrier_flow"""
             params = optimization_setup.parameters
             sets = optimization_setup.sets
@@ -398,8 +397,8 @@ class ConversionTechnologyRules(GenericRule):
     """
 
     def __init__(self, optimization_setup):
-        """
-        Inits the rules for a given EnergySystem
+        """Inits the rules for a given EnergySystem
+
         :param optimization_setup: The OptimizationSetup the element is part of
         """
 
@@ -410,7 +409,12 @@ class ConversionTechnologyRules(GenericRule):
         """ Load is limited by the installed capacity and the maximum load factor
 
         .. math::
-            G_{i,n,t,y}^\mathrm{r} \\leq m_{i,n,t,y}S_{i,n,y}
+            G_{i,n,t,y}^\mathrm{r} \\leq m^{\mathrm{max}}_{i,n,t,y}S_{i,n,y}
+
+        :math:`m_{i,n,t,y}^{\mathrm{max}}`: maximum load factor of the technology :math:`i` at node :math:`n` in time step :math:`t` and year :math:`y` \n
+        :math:`S_{i,n,y}`: installed capacity of the technology :math:`i` at node :math:`n` in year :math:`y` \n
+        :math:`G_{i,n,t,y}^\mathrm{r}`: reference carrier flow of the technology :math:`i` at node :math:`n` in time step :math:`t` and year :math:`y`
+
 
         """
         techs = self.sets["set_conversion_technologies"]
@@ -434,8 +438,15 @@ class ConversionTechnologyRules(GenericRule):
         """ calculate opex and carbon emissions of each technology
 
         .. math::
-            OPEX_{h,p,t}^\mathrm{cost} = \\beta_{h,p,t} G_{i,n,t,y}^\mathrm{r}
-            E_{h,p,t} = \\epsilon_h G_{i,n,t,y}^\mathrm{r}
+            O_{h,p,t}^\mathrm{t} = \\beta_{h,p,t} G_{i,n,t,y}^\mathrm{r} \n
+            \\theta_{h,p,t} = \\epsilon_h G_{i,n,t,y}^\mathrm{r}
+
+        :math:`O_{h,p,t}^\mathrm{t}`: variable opex of the technology :math:`h` at node :math:`p` in time step :math:`t` \n
+        :math:`\\beta_{h,p,t}`: specific variable opex of the technology :math:`h` at node :math:`p` in time step :math:`t` \n
+        :math:`G_{i,n,t,y}^\mathrm{r}`: reference carrier flow of the technology :math:`i` at node :math:`n` in time step :math:`t` and year :math:`y` \n
+        :math:`\\theta^{\mathrm{tech}}_{h,p,t}`: carbon emissions of operating the technology :math:`h` at node :math:`p` in time step :math:`t` \n
+        :math:`\\epsilon_h`: carbon intensity of the reference carrier of technology :math:`h`
+
 
         """
         techs = self.sets["set_conversion_technologies"]
@@ -457,7 +468,11 @@ class ConversionTechnologyRules(GenericRule):
         """ if capacity and capex have a linear relationship
 
         .. math::
-            A_{h,p,y}^{approximation} = \\alpha_{h,n,y} S_{h,p,y}^{approximation}
+            A_{h,p,y}^{approximation} = \\alpha_{h,n,y} \Delta S_{h,p,y}^{approx}
+
+        :math:`A_{h,p,y}^{approx}`: approximated capex of the technology :math:`h` at node :math:`p` in year :math:`y` \n
+        :math:`\\alpha_{h,n,y}`: specific capex of the technology :math:`h` at node :math:`n` in year :math:`y` \n
+        :math:`\Delta S_{h,p,y}^{approx}`: approximated capacity of the technology :math:`h` at node :math:`p` in year :math:`y`
 
         """
         capex_specific_conversion = self.parameters.capex_specific_conversion
@@ -479,7 +494,11 @@ class ConversionTechnologyRules(GenericRule):
         """ couples capacity variables based on modeling technique
 
         .. math::
-            \Delta S_{h,p,y}^\mathrm{power} = S_{h,p,y}^\mathrm{approximation}
+            \Delta S_{h,p,y} = \Delta S_{h,p,y}^\mathrm{approx}
+
+        :math:`\Delta S_{h,p,y}`: capacity addition of the technology :math:`h` at node :math:`p` in year :math:`y` \n
+        :math:`\Delta S_{h,p,y}^\mathrm{approx}`: approximated capacity addition of the technology :math:`h` at node :math:`p` in year :math:`y`
+
 
         """
 
@@ -505,6 +524,10 @@ class ConversionTechnologyRules(GenericRule):
 
         .. math::
             G^\\mathrm{d}_{i,n,t} = \\eta_{i,c,n,y}G^\\mathrm{r}_{i,n,t}
+
+        :math:`G^\\mathrm{d}_{i,n,t}`: dependent carrier flow of the technology :math:`i` at node :math:`n` in time step :math:`t` \n
+        :math:`\\eta_{i,c,n,y}`: conversion factor of the technology :math:`i` from reference carrier to dependent carrier :math:`c` at node :math:`n` in year :math:`y` \n
+        :math:`G^\\mathrm{r}_{i,n,t}`: reference carrier flow of the technology :math:`i` at node :math:`n` in time step :math:`t`
 
         """
         # dependent carriers
