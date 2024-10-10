@@ -1,11 +1,6 @@
 """
-:Title:          ZEN-GARDEN
-:Created:        October-2021
-:Authors:        Alissa Ganter (aganter@ethz.ch),
-                Jacob Mannhardt (jmannhardt@ethz.ch)
-:Organization:   Laboratory of Reliability and Risk Engineering, ETH Zurich
-
 Class defining a generic energy carrier.
+
 The class takes as inputs the abstract optimization model. The class adds parameters, variables and
 constraints of a generic carrier and returns the abstract optimization model.
 """
@@ -22,6 +17,9 @@ from ..element import Element, GenericRule
 
 
 class Carrier(Element):
+    """
+    Class defining a generic energy carrier.
+    """
     # set label
     label = "set_carriers"
     # empty list of elements
@@ -192,7 +190,12 @@ class CarrierRules(GenericRule):
         """ total cost of importing and exporting carrier
 
         .. math::
-            C_y^{\mathcal{C}} = \sum_{c\in\mathcal{C}}\sum_{n\in\mathcal{N}}\sum_{t\in\mathcal{T}} \\tau_t (C_{c,n,t} + C_{c,n,t}^{\mathrm{shed}\ \mathrm{demand}})
+            C_y^{\mathcal{C}} = \sum_{c\in\mathcal{C}}\sum_{n\in\mathcal{N}}\sum_{t\in\mathcal{T}} \\tau_t (O_{c,n,t} + O_{c,n,t}^{\mathrm{shed}\ \mathrm{demand}})
+
+        :math:`O_{c,n,t}`: cost of importing and exporting carrier :math:`c` at node :math:`n` and time step :math:`t`\n
+        :math:`O_{c,n,t}^{\mathrm{shed}\ \mathrm{demand}}`: cost of shedding demand of carrier :math:`c` at node :math:`n` and time step :math:`t`\n
+        :math:`\\tau_t`: duration of time step :math:`t`
+
 
         """
         times = self.get_year_time_step_duration_array()
@@ -209,7 +212,10 @@ class CarrierRules(GenericRule):
         """ total carbon emissions of importing and exporting carrier
 
         .. math::
-            E_y^{\mathcal{C}} = \sum_{c\in\mathcal{C}}\sum_{n\in\mathcal{N}}\sum_{t\in\mathcal{T}} \\tau_t E_{c,n,t}
+            E_y^{\mathcal{C}} = \sum_{c\in\mathcal{C}}\sum_{n\in\mathcal{N}}\sum_{t\in\mathcal{T}} \\tau_t \\theta_{c,n,t}^{\mathrm{carrier}}
+
+        :math:`\\theta_{c,n,t}^{\mathrm{carrier}}`: carbon emissions of importing and exporting carrier :math:`c` at node :math:`n` and time step :math:`t`\n
+        :math:`\\tau_t`: duration of time step :math:`t`
 
         """
         term_summed_carbon_emissions_carrier = (
@@ -225,10 +231,16 @@ class CarrierRules(GenericRule):
         """node- and time-dependent carrier availability to import/export from outside the system boundaries
 
         .. math::
-            U_{c,n,t} \\leq a_{c,n,t}^\mathrm{import}
+            \\underline{U}_{c,n,t} \\leq \\underline{a}_{c,n,t}
 
         .. math::
-            V_{c,n,t} \\leq a_{c,n,t}^\mathrm{export}
+            \\overline{U}_{c,n,t} \\leq \\overline{a}_{c,n,t}
+
+        :math:`\\underline{U}_{c,n,t}`: flow of carrier :math:`c` imported at node :math:`n` and time step :math:`t`\n
+        :math:`\\overline{U}_{c,n,t}`: flow of carrier :math:`c` exported at node :math:`n` and time step :math:`t`\n
+        :math:`\\underline{a}_{c,n,t}`: availability of carrier :math:`c` to import at node :math:`n` and time step :math:`t`\n
+        :math:`\\overline{a}_{c,n,t}`: availability of carrier :math:`c` to export at node :math:`n` and time step :math:`t`
+
         """
 
         lhs_imp = self.variables["flow_import"]
@@ -245,9 +257,18 @@ class CarrierRules(GenericRule):
     def constraint_availability_import_export_yearly(self):
         """node- and year-dependent carrier availability to import/export from outside the system boundaries
 
-         .. math::
-            a_{c,n,y}^\mathrm{import} \geq \\sum_{t\\in\mathcal{T}}\\tau_t U_{c,n,t}
-            a_{c,n,y}^\mathrm{export} \geq \\sum_{t\\in\mathcal{T}}\\tau_t V_{c,n,t}
+        .. math::
+            \\underline{a}_{c,n,y}^\mathrm{Y} \geq \\sum_{t\\in\mathcal{T}}\\tau_t \\underline{U}_{c,n,t}
+
+        .. math::
+            \\overline{a}_{c,n,y}^\mathrm{Y} \geq \\sum_{t\\in\mathcal{T}}\\tau_t \\overline{U}_{c,n,t}
+
+        :math:`\\underline{a}_{c,n,y}^\mathrm{Y}`: yearly availability of carrier :math:`c` to import at node :math:`n`\n
+        :math:`\\overline{a}_{c,n,y}^\mathrm{Y}`: yearly availability of carrier :math:`c` to export at node :math:`n`\n
+        :math:`\\tau_t`: is the duration of time step :math:`t`\n
+        :math:`\\underline{U}_{c,n,t}`: flow of carrier :math:`c` imported at node :math:`n` at time step :math:`t`\n
+        :math:`\\overline{U}_{c,n,t}`: flow of carrier :math:`c` exported at node :math:`n` at time step :math:`t`
+
 
         """
         # The constraint is only constrained if the availability is finite
@@ -271,7 +292,12 @@ class CarrierRules(GenericRule):
         """ cost of importing and exporting carrier
 
         .. math::
-           C_{c,n,t} = u_{c,n,t} U_{c,n,t} - v_{c,n,t} V_{c,n,t}
+           O_{c,n,t} = \\underline{u}_{c,n,t} \\underline{U}_{c,n,t} - \\overline{v}_{c,n,t} \\overline{U}_{c,n,t}
+
+        :math:`\\underline{u}_{c,n,t}`: import price of carrier :math:`c` at node :math:`n` and time step :math:`t`\n
+        :math:`\\overline{v}_{c,n,t}`: export price of carrier :math:`c` at node :math:`n` and time step :math:`t`\n
+        :math:`\\underline{U}_{c,n,t}`: flow of carrier :math:`c` imported at node :math:`n` and time step :math:`t`\n
+        :math:`\\overline{U}_{c,n,t}`: flow of carrier :math:`c` exported at node :math:`n` and time step :math:`t`
 
         """
 
@@ -288,8 +314,14 @@ class CarrierRules(GenericRule):
         """ cost and limit of shedding demand of carrier
 
         .. math::
-           C_{c,n,t}^{\mathrm{shed}\ \mathrm{demand}} = D_{c,n,t} \\nu_c
+           O_{c,n,t}^{\mathrm{shed}\ \mathrm{demand}} = D_{c,n,t} \\nu_c \n
            D_{c,n,t} \leq d_{c,n,t}
+
+        :math:`O_{c,n,t}^{\mathrm{shed}\ \mathrm{demand}}`: total cost of shedding demand of carrier :math:`c` at node :math:`n` and time step :math:`t`\n
+        :math:`\\nu_c`: price to shed demand of carrier :math:`c`\n
+        :math:`D_{c,n,t}`: shed demand of carrier :math:`c` at node :math:`n` and time step :math:`t`\n
+        :math:`d_{c,n,t}`: demand of carrier :math:`c` at node :math:`n` and time step :math:`t`
+
 
         """
 
@@ -313,7 +345,13 @@ class CarrierRules(GenericRule):
         """ carbon emissions of importing and exporting carrier
 
         .. math::
-           E_{c,n,t} = \\epsilon_c (U_{c,n,t} - V_{c,n,t})
+           \\theta_{c,n,t}^{\mathrm{carrier}} = \\underline{\\epsilon_c} \\underline{U}_{c,n,t} - \\overline{\\epsilon_c} \\overline{U}_{c,n,t}
+
+        :math:`\\theta_{c,n,t}^{\mathrm{carrier}}`: carbon emissions of importing and exporting carrier :math:`c` at node :math:`n` and time step :math:`t`\n
+        :math:`\\underline{\\epsilon_c}`: carbon intensity of carrier import :math:`c`\n
+        :math:`\\overline{\\epsilon_c}`: carbon intensity of carrier export :math:`c`\n
+        :math:`\\underline{U}_{c,n,t}`: flow of carrier :math:`c` imported at node :math:`n` and time step :math:`t`\n
+        :math:`\\overline{U}_{c,n,t}`: flow of carrier :math:`c` exported at node :math:`n` and time step :math:`t`
 
         """
         # create times xarray with 1 where the operation time step is in the year
@@ -339,9 +377,23 @@ class CarrierRules(GenericRule):
         .. math::
             0 = -(d_{c,n,t}-D_{c,n,t})
             + \\sum_{i\\in\mathcal{I}}(\\overline{G}_{c,i,n,t}-\\underline{G}_{c,i,n,t})
-            + \\sum_{j\\in\mathcal{J}}\\sum_{e\\in\\underline{\mathcal{E}}}F_{j,e,t}-F^\mathrm{l}_{j,e,t})-\\sum_{e'\\in\\overline{\mathcal{E}}}F_{j,e',t})
+            + \\sum_{j\\in\mathcal{J}}(\\sum_{e\\in\\underline{\mathcal{E}}}(F_{j,e,t}-F^\mathrm{l}_{j,e,t})-\\sum_{e'\\in\\overline{\mathcal{E}}}F_{j,e',t})
             + \\sum_{k\\in\mathcal{K}}(\\overline{H}_{k,n,t}-\\underline{H}_{k,n,t})
-            + U_{c,n,t} - V_{c,n,t}
+            + \\underline{U}_{c,n,t} - \\overline{U}_{c,n,t}
+
+        Sources of carrier :math:`c` at node :math:`n` and time step :math:`t`:\n
+        :math:`\\overline{G}_{c,i,n,t}`: output flow of carrier :math:`c` from all conversion technologies :math:`i` at node :math:`n` at time step :math:`t`\n
+        :math:`F_{j,e,t}`: transported flow of carrier :math:`c` on ingoing edges :math:`e` minues the losses :math:`F^\mathrm{l}_{j,e,t})` of all transport technologies :math:`j` at time step :math:`t`\n
+        :math:`\\overline{H}_{k,n,t}`: output flow of carrier :math:`c` from all storage technologies :math:`k` at node :math:`n` at time step :math:`t`\n
+        :math:`\\underline{U}_{c,n,t}`: flow of carrier :math:`c` imported at node :math:`n` at time step :math:`t`\n
+
+        Sinks of carrier :math:`c` at node :math:`n` and time step :math:`t`:\n
+        :math:`d_{c,n,t}`: demand of carrier :math:`c` at node :math:`n` at time step :math:`t` minus the shed demand :math:`D_{c,n,t}`\n
+        :math:`\\underline{G}_{c,i,n,t}`: input flow of carrier :math:`c` to all conversion technologies :math:`i` at node :math:`n` at time step :math:`t`\n
+        :math:`F_{j,e',t}`: transported flow of carrier :math:`c` on outgoing edges :math:`e'` at time step :math:`t`\n
+        :math:`\\underline{H}_{k,n,t}`: input flow of carrier :math:`c` to all storage technologies :math:`k` at node :math:`n` at time step :math:`t`\n
+        :math:`\\overline{U}_{c,n,t}`: flow of carrier :math:`c` exported at node :math:`n` at time step :math:`t`
+
 
         """
 

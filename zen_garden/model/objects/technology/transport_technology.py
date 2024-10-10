@@ -1,11 +1,5 @@
 
 """
-:Title:          ZEN-GARDEN
-:Created:        October-2021
-:Authors:        Alissa Ganter (aganter@ethz.ch),
-                Jacob Mannhardt (jmannhardt@ethz.ch)
-:Organization:   Laboratory of Reliability and Risk Engineering, ETH Zurich
-
 Class defining the parameters, variables and constraints that hold for all transport technologies.
 The class takes the abstract optimization model as an input, and returns the parameters, variables and
 constraints that hold for the transport technologies.
@@ -59,8 +53,8 @@ class TransportTechnology(Technology):
         self.capex_capacity_existing = self.calculate_capex_of_capacities_existing()
 
     def get_transport_loss_factor(self):
-        """get transport loss factor
-        # check which transport loss factor is used"""
+        """get transport loss factor"""
+        # check which transport loss factor is used
         self.transport_loss_factor_linear = self.data_input.extract_input_data("transport_loss_factor_linear", index_sets=[], unit_category={"distance": -1})
         if self.name in self.optimization_setup.system["set_transport_technologies_loss_exponential"]:
             assert "transport_loss_factor_exponential" in self.data_input.attribute_dict, f"The transport technology {self.name} has no transport_loss_factor_exponential attribute."
@@ -165,6 +159,7 @@ class TransportTechnology(Technology):
 
         def flow_transport_bounds(index_values, index_list):
             """ return bounds of carrier_flow for bigM expression
+
             :param index_values: list of tuples with the index values
             :param index_list: The names of the indices
             :return bounds: bounds of carrier_flow"""
@@ -275,7 +270,13 @@ class TransportTechnologyRules(GenericRule):
         """ Load is limited by the installed capacity and the maximum load factor
 
         .. math::
-            \ F_{j,e,t,y}^\mathrm{r} \\leq m_{j,e,t,y}S_{j,e,y}
+            \ F_{j,e,t,y}^\mathrm{r} \\leq m^{\mathrm{max}}_{j,e,t,y}S_{j,e,y}
+
+
+        :math:`F_{j,e,t,y}^\mathrm{r}`: Reference flow of carrier through transport technology :math:`j` on edge :math:`i` and time :math:`t` in year :math:`y` \n
+        :math:`m^{\mathrm{max}}_{j,e,t,y}`: Maximum load factor of transport technology :math:`j` on edge :math:`i` and time :math:`t` in year :math:`y` \n
+        :math:`S_{j,e,y}`: Capacity of transport technology :math:`j` on edge :math:`i` in year :math:`y`
+
 
         """
         techs = self.sets["set_transport_technologies"]
@@ -299,7 +300,11 @@ class TransportTechnologyRules(GenericRule):
         """ calculate opex of each technology
 
         .. math::
-            OPEX_{h,p,t}^\mathrm{cost} = \\beta_{h,p,t} G_{i,n,t,y}^\mathrm{r}
+            O_{j,t,y}^\mathrm{t} = \\beta_{j,y} F_{j,e,t,y}
+
+        :math:`O_{h,p,t}^\mathrm{t}`: Variable operating expenditures of transport technology :math:`j` on edge :math:`e` at time :math:`t` in year :math:`y` \n
+        :math:`\\beta_{j,y}`: Specific variable operating expenditures of transport technology :math:`j` in year :math:`y` \n
+        :math:`F_{j,e,t,y}`: Reference flow of carrier through transport technology :math:`j` on edge :math:`e` at time :math:`t` in year :math:`y`
 
         """
         techs = self.sets["set_transport_technologies"]
@@ -323,9 +328,14 @@ class TransportTechnologyRules(GenericRule):
         """compute the flow losses for a carrier through a transport technology
 
         .. math::
-            \mathrm{if\ transport\ distance\ set\ to\ inf}\ F^\mathrm{l}_{j,e,t} = 0
+            \mathrm{if\ transport\ distance\ set\ to\ inf:}\ F^\mathrm{l}_{j,e,t} = 0
         .. math::
-            \mathrm{else}\ F^\mathrm{l}_{j,e,t} = h_{j,e} \\rho_{j} F_{j,e,t}
+            \mathrm{else:}\ F^\mathrm{l}_{j,e,t} = h_{j,e} \\rho_{j} F_{j,e,t}
+
+        :math:`F^\mathrm{l}_{j,e,t}`: Flow losses of carrier through transport technology :math:`j` on edge :math:`e` at time :math:`t` \n
+        :math:`h_{j,e}`: Transport distance for transport technology :math:`j` on edge :math:`e` \n
+        :math:`\\rho_{j}`: Loss factor for transport technology :math:`j` \n
+        :math:`F_{j,e,t}`: Reference flow of carrier through transport technology :math:`j` on edge :math:`e` at time :math:`t`
 
         """
 
@@ -354,9 +364,15 @@ class TransportTechnologyRules(GenericRule):
         """ definition of the capital expenditures for the transport technology
 
         .. math::
-            \mathrm{if\ transport\ distance\ set\ to\ inf}\ \Delta S_{h,p,y}^\mathrm{power} = 0
+            \mathrm{if\ transport\ distance\ set\ to\ inf:}\ \Delta S_{j,e,y} = 0
         .. math::
-            \mathrm{else}\ CAPEX_{y,n,i}^\mathrm{cost, power} = \\Delta S_{h,p,y}^\mathrm{power} \\alpha_{j,n,y} + B_{i,p,y} h_{j,e} \\alpha^\mathrm{d}_{j,y}
+            \mathrm{else:}\ CAPEX_{j,e,y} = \\Delta S_{j,e,y} \\alpha_{j,y}^{\mathrm{const}} + \\Delta S_{j,e,y} h_{j,e} \\alpha^\mathrm{dist}_{j,e,y}
+
+        :math:`\Delta S_{j,e,y}`: Capacity addition of transport technology :math:`j` on edge :math:`e` in year :math:`y` \n
+        :math:`CAPEX_{j,e,y}`: Capital expenditures of transport technology :math:`j` on edge :math:`e` in year :math:`y` \n
+        :math:`\\alpha_{j,y}^{\mathrm{const}}`: Specific constant capital expenditures of transport technology :math:`j` in year :math:`y` \n
+        :math:`\\alpha^\mathrm{dist}_{j,e,y}`: Specific capital expenditures per distance of transport technology :math:`j` on edge :math:`e` in year :math:`y` \n
+        :math:`h_{j,e}`: Transport distance for transport technology :math:`j` on edge :math:`e`
 
         """
 

@@ -1,10 +1,4 @@
 """
-:Title:         ZEN-GARDEN
-:Created:       January-2022
-:Authors:       Jacob Mannhardt (jmannhardt@ethz.ch),
-                Alissa Ganter (aganter@ethz.ch)
-:Organization:  Laboratory of Risk and Reliability Engineering, ETH Zurich
-
 Functions to extract the input data from the provided input files
 """
 import copy
@@ -184,8 +178,8 @@ class DataInput:
         return attribute_dict
 
     def _load_attribute_file_json(self, filename):
-        """
-        loads json attributes file
+        """loads json attributes file
+
         :param filename:
         :return: attributes
         """
@@ -270,8 +264,8 @@ class DataInput:
             return None
 
     def _extract_attribute_value(self,attribute_name,attribute_dict):
-        """
-        reads attribute value from dict
+        """reads attribute value from dict
+
         :param attribute_name: name of selected attribute
         :param attribute_dict: name of selected attribute
         :return: attribute value, attribute unit
@@ -299,7 +293,6 @@ class DataInput:
 
         :param file_name: name of selected file.
         :param index_sets: index sets of attribute. Creates (multi)index. Corresponds to order in pe.Set/pe.Param
-        :param scenario: scenario name
         """
         # remove intra-yearly time steps from index set and add inter-yearly time steps
         index_sets = copy.deepcopy(index_sets)
@@ -417,7 +410,6 @@ class DataInput:
 
         :param file_name:  name of selected file
         :param index_sets: index sets of attribute. Creates (multi)index. Corresponds to order in pe.Set/pe.Param
-        :param scenario: scenario name
         :return df_output: return existing capacity and existing lifetime """
         index_list, index_name_list = self.construct_index_list(index_sets, None)
         multiidx = pd.MultiIndex.from_product(index_list, names=index_name_list)
@@ -598,6 +590,7 @@ class DataInput:
 
     def save_unit_of_attribute(self, attribute_name, subelement=None):
         """ saves the unit of an attribute, converted to the base unit
+
         :param attribute_name: name of selected attribute
         :param subelement: dependent element for which data is extracted
         """

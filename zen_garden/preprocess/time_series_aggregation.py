@@ -1,9 +1,4 @@
 """
-:Title:        ZEN-GARDEN
-:Created:      January-2022
-:Authors:      Jacob Mannhardt (jmannhardt@ethz.ch)
-:Organization: Laboratory of Reliability and Risk Engineering, ETH Zurich
-
 Functions to apply time series aggregation to time series
 """
 import copy
@@ -83,7 +78,7 @@ class TimeSeriesAggregation(object):
     def substitute_column_names(self, direction="flatten"):
         """ this method substitutes the column names to have flat columns names (otherwise sklearn warning)
 
-        :param direction: #TODO describe parameter/return
+        :param direction: flatten or raise
         """
         if direction == "flatten":
             if not hasattr(self, "column_names_original"):
@@ -271,6 +266,7 @@ class TimeSeriesAggregation(object):
     def overwrite_ts_with_expanded_timeindex(self, element, old_sequence_time_steps):
         """ this method expands the aggregated time series to match the extended operational time steps because of matching the investment and operational time sequences.
 
+        :param element: element of the optimization
         :param old_sequence_time_steps: old order of operational time steps """
         header_set_time_steps = self.analysis['header_data_inputs']["set_time_steps"]
         idx_old2new = np.array([np.unique(old_sequence_time_steps[np.argwhere(idx == self.time_steps.sequence_time_steps_operation)]) for idx in self.time_steps.time_steps_operation]).squeeze()
@@ -417,6 +413,7 @@ class TimeSeriesAggregation(object):
 
     def set_time_attributes(self,set_time_steps, time_steps_duration, sequence_time_steps):
         """ this method sets the operational time attributes of an element.
+
         :param set_time_steps: set_time_steps of operation
         :param time_steps_duration: time_steps_duration of operation
         :param sequence_time_steps: sequence of operation """

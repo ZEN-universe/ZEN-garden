@@ -1,11 +1,6 @@
 """
-:Title:          ZEN-GARDEN
-:Created:        October-2021
-:Authors:        Alissa Ganter (aganter@ethz.ch),
-                Jacob Mannhardt (jmannhardt@ethz.ch)
-:Organization:   Laboratory of Reliability and Risk Engineering, ETH Zurich
-
-Class defining a standard Element. Contains methods to add parameters, variables and constraints to the
+Class defining a standard Element.
+Contains methods to add parameters, variables and constraints to the
 optimization problem. Parent class of the Carrier and Technology classes .The class takes the concrete
 optimization model as an input.
 """
@@ -299,8 +294,8 @@ class GenericRule(object):
     """
 
     def __init__(self, optimization_setup):
-        """
-        Constructor for generic rule
+        """Constructor for generic rule
+
         :param optimization_setup: The optimization setup to use for the setup
         """
 
@@ -317,7 +312,10 @@ class GenericRule(object):
 
     # helper methods for constraint rules
     def get_year_time_step_array(self,storage = False):
-        """ returns array with year and time steps of each year """
+        """ returns array with year and time steps of each year
+
+        :param storage: boolean indicating if object is a storage object
+        """
         # create times xarray with 1 where the operation time step is in the year
         if storage:
             meth = self.time_steps.get_time_steps_year2storage
@@ -374,7 +372,11 @@ class GenericRule(object):
         return times
 
     def map_and_expand(self, array, mapping):
-        """ maps and expands array """
+        """ maps and expands array
+
+        :param array: xarray to map and expand
+        :param mapping: pd.Series with mapping values
+        """
         assert (isinstance(mapping, pd.Series) or isinstance(mapping.index, pd.Index)), "Mapping must be a pd.Series or with a single-level pd.Index"
         # get mapping values
         array = array.sel({mapping.name: mapping.values})
@@ -385,7 +387,11 @@ class GenericRule(object):
         return array
 
     def align_and_mask(self, expr, mask):
-        """ aligns and masks expr """
+        """ aligns and masks expr
+
+        :param expr: expression to align and mask
+        :param mask: mask to apply
+        """
         if isinstance(expr, xr.DataArray):
             aligner = expr
         elif isinstance(expr, lp.Variable):
