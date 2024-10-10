@@ -102,7 +102,7 @@ class System(Subscriptable):
     reference_year: int = 2024
     unaggregated_time_steps_per_year: int = 8760
     aggregated_time_steps_per_year: int = 10
-    conduct_time_series_aggregation: bool = True
+    conduct_time_series_aggregation: bool = False
     optimized_years: int = 1
     interval_between_years: int = 1
     use_rolling_horizon: bool = False
@@ -125,7 +125,7 @@ class Solver(Subscriptable):
         "eps_intercept": 0.1,
         "epsRvalue": 1 - (1e-5),
     }
-    round_parameters: bool = True
+    round_parameters: bool = False
     rounding_decimal_points_units: int = 6
     rounding_decimal_points_capacity: int = 4
     rounding_decimal_points_tsa: int = 4
