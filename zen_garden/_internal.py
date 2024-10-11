@@ -51,7 +51,7 @@ def main(config, dataset_path=None, job_index=None, folder_output_path=None):
     # get the abs path to avoid working dir stuff
     config.analysis["dataset"] = os.path.abspath(config.analysis['dataset'])
     config.analysis["folder_output"] = os.path.abspath(config.analysis['folder_output'])
-
+    config.analysis["zen_garden_version"] = version
     ### SYSTEM CONFIGURATION
     input_data_checks = InputDataChecks(config=config, optimization_setup=None)
     input_data_checks.check_dataset()
