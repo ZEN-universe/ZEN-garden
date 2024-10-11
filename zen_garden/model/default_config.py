@@ -169,7 +169,7 @@ class Analysis(Subscriptable):
     output_format: str = "h5"
     earliest_year_of_data: int = 1900
     save_benchmarking_results: bool = False
-    zen_garden_version: str = importlib.metadata.version("zen-garden")
+    zen_garden_version: str = None
 
 class Config(Subscriptable):
     """
