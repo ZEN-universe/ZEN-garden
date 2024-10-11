@@ -205,14 +205,14 @@ For a detailed description on how to use the annual carbon emission overshoot pr
 Minimizing total emissions
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
-The total annual carbon emissions emissions :math:`E_y` of the energy system are minimized over the entire planning horizon :math:`y \in {\mathcal{Y}}`. 
+The cumulative carbon emissions at the end of the time horizon :math:`E^{\mathrm{cum}}_Y` of the energy system are minimized.
 
 .. math::
     :label: min_emissions
 
-    \mathrm{min} \quad \sum_{y\in\mathcal{Y}} E_y
+    \mathrm{min} \quad E^{\mathrm{cum}}_Y
 
-The total annual carbon emissions :math:`E_y` account for the total operational carbon emissions for importing and exporting carriers :math:`E^\mathrm{carrier}_y` and for operating technologies :math:`E^\mathrm{tech}_y`:
+The cumulative carbon emissions at the end of the time horizon :math:`E^{\mathrm{cum}}_Y` account for the total operational carbon emissions for importing and exporting carriers :math:`E^\mathrm{carrier}_y` and for operating technologies :math:`E^\mathrm{tech}_y`:
 
 .. math::
     :label: total_annual_carbon_emissions

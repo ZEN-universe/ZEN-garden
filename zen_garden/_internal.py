@@ -1,10 +1,5 @@
 """
-:Title:        ZEN-GARDEN
-:Created:      October-2021
-:Authors:      Alissa Ganter (aganter@ethz.ch),
-               Jacob Mannhardt (jmannhardt@ethz.ch)
-:Organization: Laboratory of Reliability and Risk Engineering, ETH Zurich
-
+This function runs ZEN garden,it is executed in the __main__.py script.
 Compilation  of the optimization problem.
 """
 import cProfile

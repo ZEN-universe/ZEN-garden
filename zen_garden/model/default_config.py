@@ -1,10 +1,7 @@
 """
-:Title:        ZEN-GARDEN
-:Created:      October-2021
-:Authors:      Alissa Ganter (aganter@ethz.ch)
-:Organization: Laboratory of Reliability and Risk Engineering, ETH Zurich
+Default configuration.
 
-Default configuration. Changes from the default values are specified in config.py (folders data/tests) and system.py (individual datasets)
+Changes from the default values are specified in config.py (folders data/tests) and system.py (individual datasets)
 """
 
 from pydantic import BaseModel, ConfigDict
@@ -60,6 +57,9 @@ class Subsets(Subscriptable):
 
 
 class HeaderDataInputs(Subscriptable):
+    """
+    Header data inputs for the model
+    """
     set_nodes: str = "node"
     set_edges: str = "edge"
     set_location: str = "location"
@@ -83,6 +83,9 @@ class HeaderDataInputs(Subscriptable):
     set_capacity_types: str = "capacity_type"
 
 class System(Subscriptable):
+    """
+    Class which contains the system configuration. This defines for example the set of carriers, technologies, etc.
+    """
     set_carriers: list[str] = []
     set_capacity_types: list[str] = ["power", "energy"]
     set_conversion_technologies: list[str] = []
@@ -114,6 +117,9 @@ class SolverOptions(Subscriptable):
     pass
 
 class Solver(Subscriptable):
+    """
+    Class which contains the solver configuration. This defines for example the solver options, scaling, etc.
+    """
     name: str = "highs"
     solver_options: SolverOptions = SolverOptions()
     check_unit_consistency: bool = True
@@ -136,6 +142,9 @@ class Solver(Subscriptable):
 
 
 class TimeSeriesAggregation(Subscriptable):
+    """
+    Class which contains the time series aggregation configuration. This defines for example the clustering method, etc.
+    """
     slv: Solver = Solver()
     clusterMethod: str = "hierarchical"
     solver: str = slv.name
@@ -146,6 +155,9 @@ class TimeSeriesAggregation(Subscriptable):
     resolution: int = 1
 
 class Analysis(Subscriptable):
+    """
+    Class which contains the analysis configuration. This defines for example the objective function, output settings, etc.
+    """
     dataset: str = ""
     objective: str = "total_cost"
     sense: str = "min"
@@ -160,6 +172,9 @@ class Analysis(Subscriptable):
     zen_garden_version: str = None
 
 class Config(Subscriptable):
+    """
+    Class which contains the configuration of the model. This includes the configuratins of the system, solver, and analysis as well as the dictionary of scenarios.
+    """
     analysis: Analysis = Analysis()
     solver: Solver = Solver()
     system: System = System()

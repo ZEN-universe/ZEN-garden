@@ -1,3 +1,6 @@
+"""
+This module defines the abstract classes for the components, scenarios and solution loaders.
+"""
 from abc import ABC, abstractmethod
 from enum import Enum
 from zen_garden.model.default_config import Analysis, System, Solver
