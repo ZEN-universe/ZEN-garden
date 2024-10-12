@@ -192,7 +192,7 @@ Github integration
 -----------------------
 
 ZEN-garden is hosted on `Github <https://github.com/ZEN-universe/ZEN-garden>`_ and is open-source.
-The installation of ZEN-garden is possible via pip or by cloning and forking the repository (:ref:`_installation`).
+The installation of ZEN-garden is possible via pip or by cloning and forking the repository (:ref:`Installation`).
 Users can contribute to the development of ZEN-garden by creating a pull request on Github.
 Automated tests are implement to test the key functionalities of the code. We ask contributors to test their code locally before creating a pull request and add tests for new functionalities.
 

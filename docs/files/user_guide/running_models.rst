@@ -98,7 +98,7 @@ In the end, your configuration to run ZEN-garden as a module should look similar
 .. image:: images/pycharm_run_module.png
     :alt: run module
 
-VS code configuations (only for ZEN-garden fork)
+VS code configurations (only for ZEN-garden fork)
 ==============
 
 To run ZEN-garden as a module in VS code follow these steps:

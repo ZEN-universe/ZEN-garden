@@ -74,7 +74,7 @@ Now you can install the conda environment for zen-garden with the following comm
 
   conda env create -f zen_garden_env.yml
 
-The installation may take a couple of minutes. If the installation was successful, you can see the environment at ``C:\Users\<username>\anaconda3\envs`` or wherever Anaconda is installed
+The installation may take a couple of minutes. If the installation was successful, you can see the environment at ``C:\Users\<username>\anaconda3\envs`` or wherever Anaconda is installed.
 
 .. note::
     We strongly recommend working with conda environments. When installing the zen-garden conda environment via the ``zen_garden_env.yml``, the zen-garden package, as well as all other dependencies, are installed automatically. 
