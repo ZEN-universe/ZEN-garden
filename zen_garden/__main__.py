@@ -1,11 +1,5 @@
 """
-:Title:        ZEN-GARDEN
-:Created:      September-2022
-:Authors:      Janis Fluri (janis.fluri@id.ethz.ch),
-              Alissa Ganter (aganter@ethz.ch),
-              Jacob Mannhardt (jmannhardt@ethz.ch)
-:Organization: Laboratory of Reliability and Risk Engineering, ETH Zurich
-
+Runs the main function of ZEN-Garden.
 Compilation  of the optimization problem.
 """
 from ._internal import main
@@ -37,6 +31,8 @@ def run_module(args=None):
                                                                                         "defaults to config.py in the current directory.")
     parser.add_argument("--dataset", required=False, type=str, default=None, help="Path to the dataset used for the run. IMPORTANT: This will overwrite the "
                                                                                   "config.analysis['dataset'] attribute of the config file!")
+    parser.add_argument("--folder_output", required=False, type=str, default=None, help="Path to the folder where results of the run are stored. IMPORTANT: This will overwrite the "
+                                                                                        "config.analysis['folder_output'] attribute of the config file!")
     parser.add_argument("--job_index", required=False, type=str, default=None, help="A comma separated list (no spaces) of indices of the scenarios to run, if None, all scenarios are run in sequence")
     parser.add_argument("--job_index_var", required=False, type=str, default="SLURM_ARRAY_TASK_ID", help="Try to read out the job index from the environment variable specified here. "
                                                                                                          "If both --job_index and --job_index_var are specified, --job_index will be used.")
@@ -75,7 +71,7 @@ def run_module(args=None):
         job_index = [int(i) for i in job_index.split(",")]
 
     ### run
-    main(config=config, dataset_path=args.dataset, job_index=job_index)
+    main(config=config, dataset_path=args.dataset, job_index=job_index, folder_output_path=args.folder_output)
 
 
 if __name__ == "__main__":

@@ -1,11 +1,6 @@
 """
-:Title:          ZEN-GARDEN
-:Created:        January-2022
-:Authors:        Jacob Mannhardt (jmannhardt@ethz.ch)
-:Organization:   Laboratory of Risk and Reliability Engineering, ETH Zurich
-
-Class defining a standard EnergySystem. Contains methods to add parameters, variables and constraints to the
-optimization problem. Parent class of the Carrier and Technology classes .The class takes the abstract
+Class defining a standard EnergySystem.
+Contains methods to construct the energy system from the given input data and that defines the variables, parameters and constraints which apply to the Energy System. The class takes the abstract
 optimization model as an input.
 """
 import copy
@@ -353,9 +348,13 @@ class EnergySystemRules(GenericRule):
         """ cumulative carbon emissions over time
 
         .. math::
-            \mathrm{First\ planning\ period}\ y = y_0,\quad E_y^\mathrm{c} = E_y
+            \mathrm{First\ planning\ period}\ y = y_0,\quad E_y^\mathrm{cum} = E_y
         .. math::
-            \mathrm{Subsequent\ periods}\ y > y_0, \quad E_y^c = E_{y-1}^c + (\Delta^y-1)E_{y-1}+E_y
+            \mathrm{Subsequent\ periods}\ y > y_0, \quad E_y^{cum} = E_{y-1}^{cum} + (dy-1)E_{y-1}+E_y
+
+        :math:`dy`: interval between planning periods \n
+        :math:`E_y`: annual carbon emissions in year :math:`y` \n
+        :math:`E_y^{cum}`: cumulative carbon emissions in year :math:`y`
 
         """
 
@@ -386,12 +385,19 @@ class EnergySystemRules(GenericRule):
 
         self.constraints.add_constraint("constraint_carbon_emissions_annual_limit",constraints)
 
+    # TODO check if implemented correctly
     def constraint_carbon_emissions_budget(self):
         """ carbon emissions budget of entire time horizon from technologies and carriers.
         The prediction extends until the end of the horizon, i.e.,
         last optimization time step plus the current carbon emissions until the end of the horizon
 
-        #TODO constraint doesn't match model formulation definition
+        .. math::
+            E_y^\mathrm{cum} + (dy-1)  E_y - E_y^\mathrm{bo} \leq e^b
+
+        :math:`E_y^\mathrm{cum}`: cumulative carbon emissions of energy system in year :math:`y` \n
+        :math:`E_y`: annual carbon emissions of energy system in year :math:`y` \n
+        :math:`E_y^\mathrm{bo}`: cumulative carbon emissions budget overshoot of energy system \n
+        :math:`e^b`: carbon emissions budget of energy system
 
         """
 
@@ -413,6 +419,11 @@ class EnergySystemRules(GenericRule):
         .. math::
             NPC_y = \sum_{i \in [0,dy(y))-1]} \\left( \dfrac{1}{1+r} \\right)^{\\left(dy (y-y_0) + i \\right)} C_y
 
+        :math:`NPC_y`: net present cost of energy system in year :math:`y` \n
+        :math:`C_y`: total cost of energy system in year :math:`y` \n
+        :math:`r`: discount rate \n
+        :math:`dy`: interval between planning periods \n
+        
        """
         factor = pd.Series(index = self.energy_system.set_time_steps_yearly)
         for year in self.energy_system.set_time_steps_yearly:
@@ -437,7 +448,11 @@ class EnergySystemRules(GenericRule):
         """ ensures carbon emissions overshoot of carbon budget is zero when carbon emissions price for budget overshoot is inf
 
         .. math::
-            E_y^\mathrm{o} = 0
+            \mathrm{if } \\mu^{bo} =\\infty \mathrm{,then: }E_y^\mathrm{bo} = 0
+
+        :math:`E_y^\mathrm{bo}`: overshoot carbon emissions of energy system at the end of the time horizon \n
+        :math:`\mu^{bo}`: carbon price for budget overshoot
+
 
         """
 
@@ -454,7 +469,10 @@ class EnergySystemRules(GenericRule):
         """ ensures annual carbon emissions overshoot is zero when carbon emissions price for annual overshoot is inf
 
         .. math::
-            E_y^\mathrm{o}
+            \mathrm{if } \\mu^o =\\infty \mathrm{,then: } E_y^\mathrm{o} = 0
+
+        :math:`E_y^\mathrm{o}`: overshoot of the annual carbon emissions limit of energy system \n
+        :math:`\mu^o`: carbon price for annual overshoot
 
         """
         no_price = self.parameters.price_carbon_emissions_annual_overshoot == np.inf
@@ -475,6 +493,9 @@ class EnergySystemRules(GenericRule):
         .. math::
             E_y = E_{y,\mathcal{H}} + E_{y,\mathcal{C}}
 
+        :math:`E_{y,\mathcal{H}}`: carbon emissions from technologies in year :math:`y` \n
+        :math:`E_{y,\mathcal{C}}`: carbon emissions from carriers in year :math
+
         """
 
         lhs = (self.variables["carbon_emissions_annual"]
@@ -490,6 +511,12 @@ class EnergySystemRules(GenericRule):
 
         .. math::
             OPEX_y^\mathrm{c} = E_y\mu + E_y^\mathrm{o}\mu^\mathrm{o}
+
+        :math:`OPEX_y^\mathrm{c}`: cost of carbon emissions in year :math:`y` \n
+        :math:`E_y`: annual carbon emissions of energy system in year :math:`y` \n
+        :math:`\mu`: carbon price \n
+        :math:`E_y^\mathrm{o}`: annual carbon emissions overshoot in year :math:`y` \n
+        :math:`\mu^\mathrm{o}`: carbon price for annual overshoot
 
         """
         mask_last_year = [year == self.energy_system.set_time_steps_yearly[-1] for year in self.energy_system.set_time_steps_yearly]
@@ -512,7 +539,13 @@ class EnergySystemRules(GenericRule):
         """ add up all costs from technologies and carriers
 
         .. math::
-            OPEX_y^\mathrm{c} = E_y\mu + E_y^\mathrm{o}\mu^\mathrm{o}
+            C_y = CAPEX_y + OPEX_y^\mathrm{t} + OPEX_y^\mathrm{c} + OPEX_y^\mathrm{e}
+
+        :math:`C_y`: total cost of energy system in year :math:`y` \n
+        :math:`CAPEX_y`: annual capital expenditures in year :math:`y` \n
+        :math:`OPEX_y^\mathrm{t}`: annual operational expenditures for operating technologies in year :math:`y` \n
+        :math:`OPEX_y^\mathrm{c}`: annual operational expenditures for for importing and exporting carriers in year :math:`y` \n
+        :math:`OPEX_y^\mathrm{e}`: annual operational expenditures for carbon emissions in year :math:`y`
 
         """
 
@@ -544,7 +577,9 @@ class EnergySystemRules(GenericRule):
         """objective function to minimize total emissions
 
         .. math::
-            J = \sum_{y\in\mathcal{Y}} E_y
+            J = E^{\mathrm{cum}}_Y
+
+        :math:`E^{\mathrm{cum}}_Y`: cumulative carbon emissions at the end of the time horizon
 
         :param model: optimization model
         :return: total carbon emissions objective function

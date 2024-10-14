@@ -124,20 +124,20 @@ The resulting sequence of investigated years are:
     [2040,2050]
     [2050]
 
-What is the idea of time series aggregation (TSA)?
+What is the idea of time series aggregation?
 ---------------------------------------------------
 
 Full time series with 8760 time steps per year are often too large so that the optimization takes too long or cannot be solved at all in feasible times.
 Thus, we apply a time series aggregation (TSA) which reduces the number of time steps by aggregating time steps with similar input values to a single time step.
 By doing so, we can represent our full time series (8760 base time steps) by representative time steps, e.g., 200.
 
-I don't investigate hourly behavior or I want to investigate a full time series. What do I do?
+Disabling the time series aggregation
 -------------------------------------------------------------------------------------------
 
 Open the ``system.json`` file and set ``"conduct_time_series_aggregation"=False``. This disables the time series aggregation. If you do not want to investigate a full year, set ``"unaggregated_time_steps_per_year"<8760``
 
 .. _using_the_tsa:
-I want to use the time series aggregation. What do I do?
+Using time series aggregation
 -------------------------------------------------------
 
 Open the ``system.json`` file and set ``"aggregated_time_steps_per_year"`` smaller than ``"unaggregated_time_steps_per_year"``. You are then aggregating ``"unaggregated_time_steps_per_year"`` (e.g., 8760 base time steps) to ``"aggregated_time_steps_per_year"`` (e.g., 200 representative time steps).
@@ -145,7 +145,7 @@ If you mistakingly set ``"aggregated_time_steps_per_year">"unaggregated_time_ste
 
 For an in-depth introduction to TSA, refer to `Hoffmann et al. 2020 <https://www.mdpi.com/1996-1073/13/3/641>`_. The authors at FZ Jülich are also the developers of the TSA package `tsam <https://tsam.readthedocs.io/en/latest/>`_ that we are using in ZEN-garden.
 
-How are short-term and long-term storages modeled?
+Modeling short- and long-term storages?
 --------------------------------------------------
 
 The modeling of storage technologies with TSA is challenging because storages couple time steps (see :ref:`Storage Technologies`).
@@ -155,7 +155,7 @@ In ZEN-garden, we extend the approach by Gabrielli et al. 2018 to model storages
 In short, every time that the sequence of operational time steps changes, the another storage time step is added. This increases the number of variables, but explicitly enables short- and long-term storages.
 In particular, this storage level representation leads to fewer time steps than the full time series without loss of information.
 
-Great, the TSA works. But I want more information!
+Additional information!
 ----------------------------------------------------
 
 1. In the ``default_config.py``, you find the class ``TimeSeriesAggregation`` where you can set the ``clusterMethod``, ``solver``, ``extremePeriodMethod`` and ``representationMethod``. Most importantly, the ``clusterMethod`` selects which algorithm is used to determine the clusters of representative time steps. Probably, the most common ones are `k_means <https://en.wikipedia.org/wiki/K-means_clustering>`_ and `k_medoids <https://en.wikipedia.org/wiki/K-medoids>`_. While it is probably not necessary at this point to understand the difference of k-means and k-medoids in detail, it is important to know that k-means averages the input data over the representative time steps, which reduces the extreme period behavior, thus, peaks are smoothened.

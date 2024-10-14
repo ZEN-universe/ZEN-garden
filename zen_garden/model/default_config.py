@@ -1,10 +1,7 @@
 """
-:Title:        ZEN-GARDEN
-:Created:      October-2021
-:Authors:      Alissa Ganter (aganter@ethz.ch)
-:Organization: Laboratory of Reliability and Risk Engineering, ETH Zurich
+Default configuration.
 
-Default configuration. Changes from the default values are specified in config.py (folders data/tests) and system.py (individual datasets)
+Changes from the default values are specified in config.py (folders data/tests) and system.py (individual datasets)
 """
 
 from pydantic import BaseModel, ConfigDict
@@ -60,6 +57,9 @@ class Subsets(Subscriptable):
 
 
 class HeaderDataInputs(Subscriptable):
+    """
+    Header data inputs for the model
+    """
     set_nodes: str = "node"
     set_edges: str = "edge"
     set_location: str = "location"
@@ -83,6 +83,9 @@ class HeaderDataInputs(Subscriptable):
     set_capacity_types: str = "capacity_type"
 
 class System(Subscriptable):
+    """
+    Class which contains the system configuration. This defines for example the set of carriers, technologies, etc.
+    """
     set_carriers: list[str] = []
     set_capacity_types: list[str] = ["power", "energy"]
     set_conversion_technologies: list[str] = []
@@ -102,7 +105,7 @@ class System(Subscriptable):
     reference_year: int = 2024
     unaggregated_time_steps_per_year: int = 8760
     aggregated_time_steps_per_year: int = 10
-    conduct_time_series_aggregation: bool = True
+    conduct_time_series_aggregation: bool = False
     optimized_years: int = 1
     interval_between_years: int = 1
     use_rolling_horizon: bool = False
@@ -114,6 +117,9 @@ class SolverOptions(Subscriptable):
     pass
 
 class Solver(Subscriptable):
+    """
+    Class which contains the solver configuration. This defines for example the solver options, scaling, etc.
+    """
     name: str = "highs"
     solver_options: SolverOptions = SolverOptions()
     check_unit_consistency: bool = True
@@ -125,7 +131,7 @@ class Solver(Subscriptable):
         "eps_intercept": 0.1,
         "epsRvalue": 1 - (1e-5),
     }
-    round_parameters: bool = True
+    round_parameters: bool = False
     rounding_decimal_points_units: int = 6
     rounding_decimal_points_capacity: int = 4
     rounding_decimal_points_tsa: int = 4
@@ -136,6 +142,9 @@ class Solver(Subscriptable):
 
 
 class TimeSeriesAggregation(Subscriptable):
+    """
+    Class which contains the time series aggregation configuration. This defines for example the clustering method, etc.
+    """
     slv: Solver = Solver()
     clusterMethod: str = "hierarchical"
     solver: str = slv.name
@@ -146,6 +155,9 @@ class TimeSeriesAggregation(Subscriptable):
     resolution: int = 1
 
 class Analysis(Subscriptable):
+    """
+    Class which contains the analysis configuration. This defines for example the objective function, output settings, etc.
+    """
     dataset: str = ""
     objective: str = "total_cost"
     sense: str = "min"
@@ -157,9 +169,12 @@ class Analysis(Subscriptable):
     output_format: str = "h5"
     earliest_year_of_data: int = 1900
     save_benchmarking_results: bool = False
-    zen_garden_version: str = importlib.metadata.version("zen-garden")
+    zen_garden_version: str = None
 
 class Config(Subscriptable):
+    """
+    Class which contains the configuration of the model. This includes the configuratins of the system, solver, and analysis as well as the dictionary of scenarios.
+    """
     analysis: Analysis = Analysis()
     solver: Solver = Solver()
     system: System = System()

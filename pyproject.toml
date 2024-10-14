@@ -5,7 +5,7 @@ build-backend = "flit_core.buildapi"
 [project]
 name = "zen_garden"
 authors = [
-  {name = "Jacob Mannhardt", email = "jmannhardt@ethz.ch"},
+  {name = "Jacob Mannhardt", email = "zen-garden@ethz.ch"},
   {name = "Alissa Ganter"},
   {name = "Johannes Burger"},
   {name = "Francesco De Marco"},
@@ -14,7 +14,7 @@ authors = [
   {name = "Giovanni Sansavini"},
   ]
 # do not change version manually! Done by bump2version
-version = "1.13.1"
+version = "1.13.8"
 requires-python= ">=3.10"
 description="ZEN-garden is an optimization model of energy systems and value chains."
 readme = "README.md"

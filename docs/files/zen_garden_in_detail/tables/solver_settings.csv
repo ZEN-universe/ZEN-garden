@@ -8,10 +8,10 @@ Key;Type;Default Value;Description
 ``check_unit_consistency``;``bool``;``True``;check for unit consistency in the input data
 ``analyze_numerics``;``bool``;``True``;print numerics of the optimization problem
 ``use_scaling``;``bool``;``True``;if true, scaling algorithm is applied to improve the numerics of the optimization problem
-``scaling_include_rhs``;``bool``;``False``;if true, the right-hand-side (rhs) is included in the scaling algorithm
+``scaling_include_rhs``;``bool``;``True``;if true, the right-hand-side (rhs) is included in the scaling algorithm
 ``scaling_algorithm``;``Union[list[str],str]``;``['geom','geom','geom']``;specify how many iterations of the scaling algorithm should be performed. Per default three iterations are conducted
-``rounding_decimal_points_units``;``int``;``6``;specify the rounding decimal points for the unit conversions
-``round_parameters``;``bool``;``True``;specify whether to round parameters
+``round_parameters``;``bool``;``False``;specify whether to round parameters
 ``rounding_decimal_points_capacity``;``int``;``4``;specify the rounding decimal points for capacities value if ``round_parameters`` is ``True``
 ``rounding_decimal_points_tsa``;``int``;``4``;specify the rounding decimal points used in the timeseries aggregation if ``round_parameters`` is ``True``
+``rounding_decimal_points_units``;``int``;``6``;specify the rounding decimal points for the unit conversions
 ``linear_regression_check``;``dict[str, float]``;``{'eps_intercept': 0.1, 'epsRvalue': 1 - (1e-5)}``; settings of the linear regression checking if a piecewise affine linearization is needed

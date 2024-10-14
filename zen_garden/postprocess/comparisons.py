@@ -1,3 +1,6 @@
+"""
+File that contains functions to compare the results of two or more models.
+"""
 from zen_garden.postprocess.results import Results
 from zen_garden.postprocess.results.solution_loader import ComponentType
 from typing import Optional, Any
@@ -16,6 +19,7 @@ def compare_model_values(
     """Compares the input data of two or more results
 
     :param results: list of results
+    :param component_type: component type to compare
     :param compare_total: if True, compare total value, not full time series
     :param scenarios: None, str or tuple of scenarios
     :return: a dictionary with diverging results
@@ -58,9 +62,9 @@ def compare_configs(
     """
     Compares the configs of two results, namely the Analysis-Config and the System-config.
 
-    :param results_1: Results
-    :param results_2: Other results
-    :param scnearios: List of scenarios to filter by
+    :param results: List of results
+    :param scenario_name: List of scenarios to filter by
+    :return: dictionary with diverging configs
     """
     ans: dict[str, Any] = {}
 
@@ -110,7 +114,8 @@ def get_component_diff(
 ) -> list[str]:
     """returns a list with the differences in component names
 
-    :param results: dictionary with results
+    :param results: list with results
+    :param component_type: component type to compare
     :return: list with the common params
     """
     assert len(results) == 2, "Please give exactly two components"
@@ -188,9 +193,9 @@ def check_and_fill_scenario_list(
 ) -> list[str]:
     """Checks if both results have the provided scenarios and otherwise returns a list containing twice one common scenario.
 
-    :param results_1: Result 1
-    :param results_2: Result 2
+    :param results: List of results.
     :param scenarios: List of names of scenario.
+    :return: List of scenario names
     """
     assert len(results) == 2, "Please provide exactly two results"
     assert len(scenarios) <= 2, "Please provide a maximum of two scenarios"
@@ -229,6 +234,7 @@ def get_common_scenario(results_1: Results, results_2: Results) -> str:
 
     :param results_1: Results 1
     :param results_2: Results 2
+    :return: Name of common scenario
     """
     common_scenarios = set(results_1.solution_loader.scenarios.keys()).intersection(
         results_2.solution_loader.scenarios.keys()
@@ -248,7 +254,7 @@ def compare_component_values(
     """Compares component values of two results
 
     :param results: list with results
-    :param component: component name
+    :param component_name: component name
     :param compare_total: if True, compare total value, not full time series
     :param scenarios: None, str or tuple of scenarios
     :param rtol: relative tolerance of equal values
@@ -328,6 +334,8 @@ def _get_different_vals(
     
     :param val_0: first dataframe or series
     :param val_1: second dataframe or series
+    :param result_names: names of the results
+    :param rtol: relative tolerance of equal values
     :return: comparison_df
     """
     is_close = np.isclose(val_0, val_1, rtol=rtol, equal_nan=True)

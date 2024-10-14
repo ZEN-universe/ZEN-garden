@@ -8,7 +8,7 @@ Key;Type;Default Value;Description
 ``double_capex_transport``;``bool``;``False``;per default the capex for transport is not separated into the capacity- and the distance-dependent term, as this introduces binary variables
 ``set_nodes``;``list[str]``;``[]``;per default all nodes are selected, however, by overwriting the empty list value you can conduct the optimization for a subset of subset of nodes
 ``unaggregated_time_steps_per_year``;``int``;``8760``;per default the total hours per year are set to 8760, overwrite this parameter if you want to investigate a shorter period
-``conduct_time_series_aggregation``;``bool``;``True``;per default the time-series-aggregation is conducted, set to ``False`` to skip the timeseries aggregation
+``conduct_time_series_aggregation``;``bool``;``False``;per default the time-series-aggregation is not conducted, set to ``True`` to enable the timeseries aggregation
 ``total_hours_per_year``;``int``;``8760``;defines the definition of a year. Do not change this value unless you know what you are doing
 ``aggregated_time_steps_per_year``;``int``;``10``;per default the timeseries aggregation aggregates the number of time-steps to 10, overwrite this value to increase or decrease the intra-yearly temporal resolution
 ``reference_year``;``int``;``2024``;per default the reference year is set to 2024
