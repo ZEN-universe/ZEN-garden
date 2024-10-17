@@ -9,7 +9,7 @@ Besides the main features of ZEN-garden, there are some additional features that
 4. :ref:`retrofitting_technologies`
 5. :ref:`fuel_replacement`
 6. :ref:`availability_yearly`
-7. :ref:`carbon_emission_constraints`
+7. :ref:`modeling_carbon_emissions`
 8. :ref:`demand_shedding`
 
 
@@ -28,7 +28,7 @@ If the user sets the parameter ``min_load`` to anything other than zero, ZEN-gar
 **Technology installation**
 
 If the user sets the parameter ``capacity_addition_min`` to anything other than zero, ZEN-garden will add a mixed-integer linear constraint that ensures that the capacity addition of a technology is above the minimum capacity addition, otherwise it is zero.
-The associated binary variable ``technology_installation`` is 1 if the technology is installed and 0 otherwise. The constraints are described in :ref:`_min_capacity_installation`.
+The associated binary variable ``technology_installation`` is 1 if the technology is installed and 0 otherwise. The constraints are described in :ref:`min_capacity_installation`.
 
 ``technology_installation`` is also used in determining the CAPEX of transport technologies, which depend both on the distance between nodes and the quantity of the transported good.
 The parameter ``capex_specific_transport`` is the CAPEX per unit of transported good, whereas ``capex_per_distance_transport`` is the CAPEX per unit of distance.

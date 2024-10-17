@@ -77,7 +77,7 @@ In the end, your configuration to run the coverage should look similar to this:
 Coding rules
 =================
 
-We follow the `PEP-8 <https://peps.python.org/pep-0008/)>`_ coding style.
+We follow the `PEP-8 <https://peps.python.org/pep-0008/>`_ coding style.
 
 **Classes**
 
