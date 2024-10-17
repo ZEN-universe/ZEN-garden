@@ -90,15 +90,22 @@ For existing conversion technology capacities :math:`s_{h,n,y}^{ex}` that were i
 
     i^\mathrm{ex}_{i,n,y} = \alpha_{i,y_0} \Delta s^\mathrm{ex}_{i,n,y}
 
-For transport technologies :math:`j\in\mathcal{J}`, the unit investment cost :math:`\alpha_{j,e,y}` can be defined through a distance independent unit cost of capital investment :math:`\alpha^\mathrm{const}_{j,y}` and/or a distance dependent unit cost of capital investment :math:`\alpha^\mathrm{dist}_{j,e,y}` which is multiplied by the distance :math:`h_{j,e}` of the corresponding edge :math:`e\in\mathcal{E}`:
+For transport technologies :math:`j\in\mathcal{J}`, the unit investment cost :math:`\alpha_{j,e,y}` can be defined 1) through a distance independent unit cost of capital investment :math:`\alpha^\mathrm{const}_{j,y}` (:eq:`unit_cost_capex_transport_const`) or 2) a distance dependent unit cost of capital investment :math:`\alpha^\mathrm{dist}_{j,e,y}` which is multiplied by the distance :math:`h_{j,e}` of the corresponding edge :math:`e\in\mathcal{E}` (:eq:`unit_cost_capex_transport_dist`).
 
 .. math::
-    :label: unit_cost_capex_transport
+    :label: unit_cost_capex_transport_const
 
-    \alpha_{j,e,y} = \alpha^\mathrm{const}_{j,y}+\alpha^\mathrm{dist}_{j,e,y} h_{j,e}
+    \alpha_{j,e,y} = \alpha^\mathrm{const}_{j,y}
+
+:math:`\alpha_{j,e,y}`
+
+.. math::
+    :label: unit_cost_capex_transport_dist
+
+    \alpha_{j,e,y} = alpha^\mathrm{dist}_{j,e,y} h_{j,e}
 
 .. note::
-    Per default the distance independent unit investment cost is set to zero if a distance dependent cost factor is defined in the input data. To apply both cost terms, set ``double_capex_transport=True`` in your ``system.json``.
+    Are both, a distance independent and a distance dependent unit cost factor defined, the distance dependent unit cost is used to determine the unit investment cost :math:`\alpha_{j,e,y}`.
 
 The total capital investment cost :math:`A_{h,p,y}` for each transport technology :math:`i\in\mathcal{I}` is calculated as the product of the unit cost of capital investment :math:`\alpha_{j,y}` multiplied by the capacity addition :math:`\Delta S_{j,e,y}` on each edge :math:`e\in\mathcal{E}`:
 
@@ -106,6 +113,8 @@ The total capital investment cost :math:`A_{h,p,y}` for each transport technolog
     :label: cost_capex_transport
 
     I_{j,e,y} = \alpha_{j,e,y} \Delta S_{j,e,y}
+
+It is also possible, to apply both, a distance independent and a distance dependent cost term by setting ``double_capex_transport=True`` in your ``system.json``. Please note that using ``double_capex_transport=True`` introduces binary variables. For more information on the distance dependent unit cost of capital investment refer to :ref:`distance_dependent_transport_capex`.
 
 For existing transport technology capacities :math:`s_{j,e,y}` that were installed before :math:`y_0`, we apply the unit cost of the first investment period :math:`\alpha_{j,y_0}`:
 
@@ -218,7 +227,7 @@ The cumulative carbon emissions at the end of the time horizon :math:`E^{\mathrm
     :label: total_annual_carbon_emissions
     E_y = E^\mathrm{carrier}_y + E^\mathrm{tech}_y.
 
-For a detailed description of the computation of the total operational emissions for importing and exporting carriers, and for operating for operating technologies refer to :ref:`tech_carrier_emissions`.
+For a detailed description of the computation of the total operational emissions for importing and exporting carriers, and for operating for operating technologies refer to :ref:`emissions_constraints`.
 
 .. _energy_balance:
 Energy balance
@@ -427,7 +436,7 @@ Since a storage technology does not charge (:math:`\underline{H}_{k,n,t,y}`) and
 
     0 \leq \underline{H}_{k,n,t,y}+\overline{H}_{k,n,t,y}\leq m_{k,n,t,y}S_{k,n,y}.
 
-In addition, minimum load constraints can be added. Please note, that adding a minimum load :math:`m^\mathrm{min}_{h,p,t,y}` introduces binary variables, which can increase the computational complexity of the optimization problem substantially. The min-load constraints are described in :ref:`_min_load_constraints`.
+In addition, minimum load constraints can be added. Please note, that adding a minimum load :math:`m^\mathrm{min}_{h,p,t,y}` introduces binary variables, which can increase the computational complexity of the optimization problem substantially. The min-load constraints are described in :ref:`min_load_constraints`.
 
 Furthermore, the reference flow of retrofitting technologies is linked to the reference flow of their base technology. The set of base technologies links each retrofitting technology :math:`i^\mathrm{r}` to their base technology :math:`i`. The retrofit flow coupling factor can be interpreted as a conversion factor :math:`\eta^\mathrm{retrofit}_{i^\mathrm{r},n,t}` that describes the ratio between the reference flow of the retrofitting technology and the reference flow of the base technology:
 
@@ -698,7 +707,7 @@ Piecewise affine approximation of capital expenditures
 
 .. note:: Please note that the following introduces the mathematical formulation of piecewise affine linearizations, which deviates slightly from the general formulation in ZEN-garden.
 
-The capital expenditures of the conversion technologies can be approximated by a piecewise affine (PWA) function to account for non-linearities and e.g., represent economies of scale. To this end, the capital investment unit costs are approximated by linear functions that are connected by breakpoints (:ref:`eq:PWA`). The breakpoints are summarized in :math:`m\in\mathcal{M}`. The binary variable :math:`f_{i,n,y,m}` is introduced to model the capacity selection, where :math:`f_{i,n,y,m}` equals one if breakpoint :math:`m` is active, otherwise :math:`f_{i,n,y,m}` equals zero. Furthermore, at most one breakpoint can be active at a time:
+The capital expenditures of the conversion technologies can be approximated by a piecewise affine (PWA) function to account for non-linearities and e.g., represent economies of scale. To this end, the capital investment unit costs are approximated by linear functions that are connected by breakpoints (:ref:`PWA_constraints`). The breakpoints are summarized in :math:`m\in\mathcal{M}`. The binary variable :math:`f_{i,n,y,m}` is introduced to model the capacity selection, where :math:`f_{i,n,y,m}` equals one if breakpoint :math:`m` is active, otherwise :math:`f_{i,n,y,m}` equals zero. Furthermore, at most one breakpoint can be active at a time:
 
 .. math::
 
