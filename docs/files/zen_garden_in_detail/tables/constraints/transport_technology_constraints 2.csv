@@ -1,0 +1,5 @@
+Constraint Name;Time Step Type;Doc String
+``constraint_capacity_factor_transport``;``set_time_steps_operation``;limits min and max transport flow
+``constraint_opex_emissions_technology_transport``;``set_time_steps_operation``;transport technology opex and emissions
+``constraint_transport_technology_losses_flow;``set_time_steps_operation``;loss due to transport with through transport technology
+``constraint_transport_technology_capex;``set_time_steps_yearly``;Capital expenditures for installing transport technology

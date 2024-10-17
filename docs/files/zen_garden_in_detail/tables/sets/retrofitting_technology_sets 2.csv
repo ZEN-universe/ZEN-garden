@@ -1,0 +1,3 @@
+Set Name;Index;Symbol;Doc String
+``set_retrofitting_base_technologies``;``set_retrofitting_technologies``;:math:`\mathcal{I}^\mathrm{r,base}_{i^\mathrm{r}}`;Set of base technologies for a specific retrofitting technology
+

@@ -1,0 +1,3 @@
+Parameter Name;Time Step Type;Symbol;Doc String;Unit Category
+``capex_specific_conversion``;``set_time_steps_yearly``;:math:`\alpha_{i,y}`;Parameter which specifies the slope of the capex if approximated linearly;{"money": 1, "energy_quantity": -1, "time": 1}
+``conversion_factor``;``set_time_steps_yearly``;:math:`\eta_{i,c,t,y}`;Parameter which specifies the slope of the conversion efficiency if approximated linearly;{"energy_quantity": 1, "energy_quantity": -1}
