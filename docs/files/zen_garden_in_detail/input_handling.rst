@@ -512,9 +512,10 @@ From the plot we can observe:
 
 * convergence of the numerical range (of the LHS) is visible for both algorithms after three iterations
 * a trade-off between a lower LHS range and also decreasing the RHS range may exist, which is visible in case of arithmetic mean scaling
-* neglecting the RHS may lead to a significant increase in its numerical range, which is visible for both scaling algorithms (as shown in :ref:`Regression Analysis` this also leads on average to longer solving times)
+* neglecting the RHS may lead to a significant increase in its numerical range, which is visible for both scaling algorithms (as shown in :ref:`regression_analysis` this also leads on average to longer solving times)
 
-**Net-solving time comparison for multiple scaling configurations**
+Net-solving time comparison for multiple scaling configurations
+^^^^^^^^^^^^
 
 The following plots show the net-solving time (solving time + scaling time) for the models ``PI_small`` and ``NoErr``. These models were chosen as they represent very different results in terms
 of effectiveness of scaling. The model ``PI_small`` showed mostly a significant decrease in net-solving time when scaling was applied, whereas the model ``NoErr`` showed no significant effect of scaling on the net-solving time or even worse an
@@ -559,8 +560,9 @@ From the plot we can derive:
 The two examples shown here, again indicate that deriving a general recommendation for the scaling configuration is difficult and that the performance of the scaling algorithm is highly dependent on the optimization problem at hand.
 Therefore, we recommended to test different scaling algorithms and configurations via trial and error.
 
-
-**Regression Analysis**
+.. _regression_analysis:
+Regression Analysis
+^^^^^^^^^^^^
 
 Based on the collected data from the benchmarking runs for the models ``PI_small``, ``WES_nofe``, ``WES_nofe_PI``, and ``WES_nofe_PC``, a regression is run with the net-solving time (solving time + scaling time) as
 the dependent variable. The explanatory variables are the models, the ``use_scaling`` boolean, the ``include_rhs`` boolean, the ``NumericFcous`` (:math:`0` or :math:`1`) setting of Gurobi as well as an interaction term between ZEN-garden scaling and Gurobi's ``ScaleFlag``.

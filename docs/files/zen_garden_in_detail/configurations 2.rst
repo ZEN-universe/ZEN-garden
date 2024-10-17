@@ -32,7 +32,7 @@ The dataset, the objective function and the solver are selected in the ``analysi
     :widths: 10 10 10 20
     :delim: ;
 
-The settings of the timeseries aggregation algorithm are also specified in the ``analysis.json``. The following table summarizes the available timeseries aggregation settings and their default values. For further information on how to use the timeseries aggregation, see :ref:`use_tsa`. Ina addition, :ref:`Time series aggregation and representation` and :ref:`time_parameters` provide helpful information on the time representation and the time parameters in ZEN-garden.
+The settings of the timeseries aggregation algorithm are also specified in the ``analysis.json``. The following table summarizes the available timeseries aggregation settings and their default values. For further information on how to use the timeseries aggregation, see :ref:`Time series aggregation and representation`. Ina addition, :ref:`Time series aggregation and representation` and :ref:`time_parameters` provide helpful information on the time representation and the time parameters in ZEN-garden.
 
 .. csv-table:: Timeseries Aggregation Settings
     :header-rows: 1
