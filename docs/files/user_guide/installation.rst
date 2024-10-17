@@ -11,11 +11,15 @@ For users (direct installation)
 =========
 If you want to use ZEN-garden as a black-box optimization tool, you can install the package via `pip <https://pypi.org/project/zen-garden/>`_ in a terminal or command prompt.
 
-We recommend working from a conda environment for the installation. You can quickly create an environment with the following command::
+We recommend working from a conda environment for the installation. If you have not installed Anaconda, you can download it `here <https://docs.anaconda.com/anaconda/install/>`_. You can check if you have Anaconda installed by running the following command in a terminal (MacOS)/command prompt (Windows)::
+
+    conda --version
+
+You can quickly create an environment with the following command::
 
   conda create -n <your_env_name> python=<python_version>
 
-Replace ``<your_env_name>`` with the name of your environment and replace `<python_version>` with the necessary python version (see `ZEN-garden README <https://github.com/ZEN-universe/ZEN-garden/blob/main/README.md>`_).
+Replace ``<your_env_name>`` with the name of your environment and replace ``<python_version>`` with the necessary python version (see `ZEN-garden README <https://github.com/ZEN-universe/ZEN-garden/blob/main/README.md>`_).
 
 Activate the environment with the following command::
 
@@ -25,18 +29,16 @@ Now you can install the zen-garden package with the following command::
 
     pip install zen-garden
 
+.. note::
 
-To get started with small example models, check out :ref:`Run example`.
+    To get started with small example models, check out :ref:`Running ZEN-garden from a terminal`.
 
 .. _For developers:
 For developers (forking the repository)
 ==============
 If you want to work on the codebase, you can fork and clone the repository from `GitHub <https://github.com/ZEN-universe/ZEN-garden>`_.
 
-Installing ZEN-garden 
----------------------
-
-If it's your first time using GitHub, register at `<https://github.com/>`_. Login to Github and create a fork of the ZEN-garden repository. 
+If it's your first time using GitHub, register at `<https://github.com/>`_. After you have created an account, you can fork and clone the repository.
 
 Navigate to `<https://github.com/ZEN-universe/ZEN-garden>`_ on Github and click on the "Fork" button at the top right corner of the page to create a copy of the repository under your account and select yourself as the owner.
 

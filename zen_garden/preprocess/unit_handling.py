@@ -1,10 +1,5 @@
 """
-:Title:          ZEN-GARDEN
-:Created:        April-2022
-:Authors:        Jacob Mannhardt (jmannhardt@ethz.ch)
-:Organization:   Laboratory of Reliability and Risk Engineering, ETH Zurich
-
-Class containing the unit handling procedure.
+File which contains the unit handling and scaling class.
 """
 import cProfile
 import logging
@@ -172,6 +167,7 @@ class UnitHandling:
         """ calculates the combined unit for a different dimensionality matrix.
         We substitute base units by the dependent units and try again.
         If the matrix is singular we solve the overdetermined problem
+
         :param dim_matrix_reduced: dimensionality matrix without dependent units
         :param dim_vector: dimensionality vector of input unit
         :param input_unit: input unit
@@ -226,12 +222,14 @@ class UnitHandling:
         assert calculated_multiplier, f"Cannot establish base unit conversion for {input_unit} from base units {self.base_units.keys()}"
         return base_combination,combined_unit
 
+    #ToDo: check if combined_unit is described correctly in the header
     def get_unit_multiplier(self, input_unit, attribute_name, path=None, combined_unit=None):
         """ calculates the multiplier for converting an input_unit to the base units
 
         :param input_unit: string of input unit
         :param attribute_name: name of attribute
         :param path: path of element
+        :param combined_unit: input unit expressed in base units
         :return multiplier: multiplication factor """
         # if input unit is already in base units --> the input unit is base unit, multiplier = 1
         if input_unit in self.base_units:
@@ -345,11 +343,11 @@ class UnitHandling:
         logging.info(f"Parameter unit consistency is fulfilled!")
         self.save_carrier_energy_quantities(optimization_setup)
 
+    #ToDo: check if energy_quantity_units is described correctly in the header
     def _check_for_power_power_conversion_factor(self, energy_quantity_units):
-        """
-        if unit consistency is not fulfilled because of conversion factor, try to change "wrong" conversion factor units from power/power to energy/energy (since both is allowed)
-        :param energy_quantity_units:
-        :return:
+        """if unit consistency is not fulfilled because of conversion factor, try to change "wrong" conversion factor units from power/power to energy/energy (since both is allowed)
+
+        :param energy_quantity_units: dict containing attribute names and their energy quantity terms
         """
         if self._is_inconsistent(energy_quantity_units) and not self._is_inconsistent(energy_quantity_units,
                                                                                       exclude_string="conversion_factor"):
@@ -365,6 +363,7 @@ class UnitHandling:
 
     def assert_unit_consistency(self, elements, energy_quantity_units, item,optimization_setup, reference_carrier_name, unit_dict):
         """Asserts that the units of the attributes of an element are consistent
+
         :param elements: list of all elements
         :param energy_quantity_units: dict containing attribute names and their energy quantity terms
         :param item: element or energy system
@@ -417,8 +416,8 @@ class UnitHandling:
                 f"The attribute units defined in the energy_system are not consistent! Most probably, the unit(s) of the attribute(s) {self._get_units_of_wrong_attributes(wrong_atts=energy_quantity_units, unit_dict=unit_dict)} are wrong.")
 
     def _is_inconsistent(self, energy_quantity_units,exclude_string=None):
-        """
-        Checks if the units of the attributes of an element are inconsistent
+        """Checks if the units of the attributes of an element are inconsistent
+
         :param energy_quantity_units: dict containing attribute names and their energy quantity terms
         :param exclude_string: string for which consistency is not checked
         :return: bool whether the units are consistent or not
@@ -426,7 +425,7 @@ class UnitHandling:
         # exclude attributes which are not of interest for consistency
         if exclude_string:
             energy_quantity_units = {key: value for key, value in energy_quantity_units.items() if exclude_string not in key}
-        # check if all energy quantity units are the same
+        # check if all energy quantity units are the sames
         if len(set(energy_quantity_units.values())) > 1:
             return True
         else:
@@ -722,6 +721,13 @@ class Scaling:
     This class scales the optimization model before solving it and rescales the solution
     """
     def __init__(self, model, algorithm=None, include_rhs = True):
+        """ initializes scaling instance
+
+        :param model: optimization model
+        :param algorithm: list of scaling algorithms
+        :param include_rhs: bool whether to include the right hand side in the scaling
+
+        """
         #optimization model to perform scaling on
         if algorithm is None:
             algorithm = ["geom"]
@@ -738,6 +744,10 @@ class Scaling:
         self.scaling_time = 0
 
     def initiate_A_matrix(self):
+        """
+        Constructs the A matrix and the right hand side of the constraints
+
+        """
         self.A_matrix = self.model.constraints.to_matrix(filter_missings=False)
         self.A_matrix_copy = self.A_matrix.copy() #necessary for printing of numerics
         self.D_r_inv = np.ones(self.A_matrix.get_shape()[0])
@@ -756,6 +766,9 @@ class Scaling:
         self.rhs_copy = self.rhs.copy() #necessary for printing of numerics
 
     def re_scale(self):
+        """
+        Rescales the solution of the optimization model
+        """
         model = self.model
         for name_var in model.variables:
             var = model.variables[name_var]
@@ -763,14 +776,18 @@ class Scaling:
             var.solution.data[mask] = var.solution.data[mask] * (self.D_c_inv[var.labels.data[mask]])
 
     def analyze_numerics(self):
+        """
+        Analyzes the numerics of the optimization model
+        """
         #print numerics if no scaling is activated
         self.initiate_A_matrix()
         self.A_matrix.eliminate_zeros()
         self.print_numerics(0,True)
 
     def run_scaling(self):
-        #cp = cProfile.Profile()
-        #cp.enable()
+        """
+        Runs the scaling algorithm. Function called in _internal.py.
+        """
         logging.info(f"\n--- Start Scaling ---\n")
         t0 = time.perf_counter()
         self.initiate_A_matrix()
@@ -779,10 +796,13 @@ class Scaling:
         t1 = time.perf_counter()
         self.scaling_time = t1 - t0 #for benchmarking
         logging.info(f"\nTime to Scale Problem: {t1 - t0:0.1f} seconds\n")
-        #cp.disable()
-        #cp.print_stats("cumtime")
 
     def replace_data(self, name):
+        """
+        Replaces the data (coefficients) of the lhs and rhs of the constraint with the scaled data
+
+        :param name: name of the constraint for which the data is replaced with the scaled data
+        """
         constraint = self.model.constraints[name]
         #Get data
         lhs = constraint.coeffs.data
@@ -804,6 +824,10 @@ class Scaling:
                                         self.D_c_inv[mask_variables[entries_to_overwrite]])
 
     def adjust_upper_lower_bounds_variables(self):
+        """
+        Adjusts the upper and lower bounds of the variables whose coefficients are scaled.
+        If the bounds are not scaled, the problem might get infeasible.
+        """
         vars = self.model.variables
         for var in vars:
             mask = np.where(vars[var].labels.data != -1)
@@ -812,6 +836,12 @@ class Scaling:
             vars[var].lower.data[mask] = vars[var].lower.data[mask] * scaling_factors**(-1)
 
     def adjust_scaling_factors_of_skipped_rows(self, name):
+        """
+        Adjusts the column scaling factors corresponding to variables that are part of rows that are skipped.
+        If the scaling factors are not adjusted, the problem cannot be rescaled to the original problem.
+l
+        :param name: name of the constraint for which the scaling factors are adjusted
+        """
         constraint = self.model.constraints[name]
         #rows -> unnecessary to adjust scaling factor of rows with binary and integer variables as skipped anyways
         #cols
@@ -820,6 +850,10 @@ class Scaling:
         self.D_c_inv[mask_variables[indices]] = 1
 
     def adjust_int_variables(self):
+        """
+        Adjusts the column scaling factors corresponding to binary and integer variables.
+        These columns are skipped in the scaling process since scaling is solely valid for continous variables.
+        """
         vars = self.model.variables
         for var in vars:
             if vars[var].attrs['binary'] or vars[var].attrs['integer']:
@@ -827,6 +861,9 @@ class Scaling:
                 self.D_c_inv[vars[var].labels.data[mask]] = 1
 
     def overwrite_problem(self):
+        """
+        Overwrites the optimization problem with the scaled data.
+        """
         #pre-check variables -> skip binary and integer variables
         self.adjust_int_variables()
         #adjust scaling factors that have inf or nan values -> not really necessary anymore but might be a good security check
@@ -855,6 +892,12 @@ class Scaling:
         self.model.objective.coeffs.data = self.model.objective.coeffs.data * scale_factors
 
     def get_min(self,A_matrix):
+        """
+        Gets the minimum values each column or row of the A matrix
+
+        :param A_matrix: A matrix of the optimization model (scipy.sparse.csr_matrix)
+        :return: minimum values of each column or row (np.array)
+        """
         d = A_matrix.data
         try:
             mins_values = np.minimum.reduceat(np.abs(d), A_matrix.indptr[:-1])
@@ -866,6 +909,14 @@ class Scaling:
         return mins_values
 
     def get_full_geom(self,A_matrix,axis): #Very slow and less effective than simplified geom norm
+        """
+        Gets the full geometric mean of each column or row of the A matrix.
+        Note, this funtcion is very slow and is not yet ready to be used in the scaling process.
+
+        :param A_matrix: A matrix of the optimization model (scipy.sparse.csr_matrix)
+        :param axis: axis along which the geometric mean is calculated
+        :return: geometric mean of each column or row
+        """
         d = A_matrix.data
         geom = np.ones(len(A_matrix.indptr)-1)
         nonzero_entries = np.unique(list(A_matrix.nonzero()[axis]))
@@ -875,6 +926,14 @@ class Scaling:
         return geom
 
     def update_A(self, vector, axis):
+        """
+        Updates the A matrix with the current scaling vector.
+        This function does not overwrite the original optimization model but is used for the scaling process.
+
+        :param vector: vector to update current scaling vectors
+        :param axis: axis for which the scaling vector is updated (0 for rows, 1 for columns)
+
+        """
         if axis == 1:
             self.A_matrix = sp.sparse.diags(vector, 0, format='csr').dot(self.A_matrix)
             self.D_r_inv = self.D_r_inv * vector
@@ -884,11 +943,24 @@ class Scaling:
             self.D_c_inv = self.D_c_inv * vector
 
     def print_numerics_of_last_iteration(self):
+        """
+        Prints the numerics of the last iteration of the scaling process.
+        """
         self.A_matrix =  sp.sparse.diags(self.D_r_inv, 0, format='csr').dot(self.A_matrix_copy).dot(sp.sparse.diags(self.D_c_inv, 0, format='csr'))
         self.rhs = self.rhs_copy * self.D_r_inv
         self.print_numerics(len(self.algorithm))
 
     def generate_numerics_string(self,label,index=None,A_matrix=None,var=None, is_rhs=False):
+        """
+        Generates a string for log-outputs during scaling.
+
+        :param label: label of the constraint
+        :param index: index of the A matrix
+        :param A_matrix: A matrix of the optimization model
+        :param var: variable of the optimization model
+        :param is_rhs: bool whether the string is computed for the right hand side
+        :return: string for log-outputs
+        """
         if is_rhs:
             cons_str = self.model.constraints.get_label_position(label)
             cons_str = cons_str[0] + str(list(cons_str[1].values()))
@@ -901,6 +973,15 @@ class Scaling:
             return f"{A_matrix[index]} {var_str} in {cons_str}"
 
     def print_numerics(self,i,no_scaling = False, benchmarking_output = False, cond_number = False): #ToDo: speed up cond_number; for now should be kept False as computation time too long otherwise
+        """
+        Prints the numerics of the optimization model.
+
+        :param i: iteration of the scaling process
+        :param no_scaling: bool whether no scaling is activated. Then only numerics are printed.
+        :param benchmarking_output: bool whether data for benchmarking is collected
+        :param cond_number: bool whether the condition number of the A matrix is computed
+        :return: numerical range of the A matrix and the right hand side as well as the condition number of the A matrix (if benchmarking_output is True
+        """
         data_coo = self.A_matrix.tocoo()
         A_abs = np.abs(data_coo.data)
         A_abs_nonzero = np.ma.masked_equal(A_abs,0.0,copy=False)
@@ -964,6 +1045,9 @@ class Scaling:
 
 
     def iter_scaling(self):
+        """
+        Generates the row and column scaling factors.
+        """
         #transform A matrix to csr matrix for better computational properties
         self.A_matrix.eliminate_zeros()
         self.A_matrix = sp.sparse.csr_matrix(self.A_matrix)

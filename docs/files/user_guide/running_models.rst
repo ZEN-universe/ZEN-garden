@@ -3,6 +3,7 @@
 Running a model
 ################
 
+.. _Running ZEN-garden from a terminal:
 Running ZEN-garden from a terminal
 ==============
 
@@ -23,7 +24,11 @@ If you installed ZEN-garden from the repository and created a new environment (:
 Run ZEN-garden with an example dataset
 --------------------------------------
 
-To run ZEN-garden with an example dataset (see :ref:`dataset_examples`), execute the following line in a terminal or command prompt::
+To run ZEN-garden with an example dataset (see :ref:`dataset_examples`), first move to the directory where you want to execute the optimization. You can do that with the command ``cd`` in a terminal or command prompt::
+
+    cd /path/to/your/data
+
+Then execute the following line::
 
   python -m zen_garden --example=<example_name>
 
@@ -35,19 +40,21 @@ This command is particularly useful when you installed ZEN-garden from pip and d
 
 .. note::
     Dataset examples are an easy and quick way to get started with your model.
-    Find an example that best suits your need and use it as a template to build your own model (see :ref:`Working with existing models`).
+    Find an example that best suits your need and use it as a template to build your own model (see :ref:`dataset_examples`).
 
 The example dataset and the ``config.json`` file will be downloaded, a new folder will be created in the working directory, and the optimization will be run. No prior setup is needed.
 
 The optimization results will be stored in ``dataset_examples/outputs``. A Jupyter notebook will be downloaded to give you fast access to your results (see more at `Analyzing a model <analyzing_models.rst>`_).
 
-You can also use the visualization platform to analyze the results (see :ref:`Visualization`). To do so, move to the newly created ``dataset_examples`` folder after the optimization has finished::
+.. note::
 
-    cd dataset_examples
+    You can also use the visualization platform to analyze the results (see :ref:`Visualization`). To do so, move to the newly created ``dataset_examples`` folder after the optimization has finished::
 
-and run the visualization platform::
+        cd dataset_examples
 
-    python -m zen_garden.visualization
+    and run the visualization platform::
+
+        python -m zen_garden.visualization
 
 .. _Run ZEN-garden with preexisting datasets:
 Run ZEN-garden with preexisting datasets

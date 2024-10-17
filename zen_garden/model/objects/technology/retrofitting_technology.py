@@ -1,9 +1,4 @@
 """
-:Title: ZEN-GARDEN
-:Created: October-2021
-:Authors:   Alissa Ganter (aganter@ethz.ch), Jacob Mannhardt (jmannhardt@ethz.ch)
-:Organization: Laboratory of Reliability and Risk Engineering, ETH Zurich
-
 Class defining the parameters, variables, and constraints of the retrofitting technologies.
 The class takes the abstract optimization model as an input and adds parameters, variables, and
 constraints of the retrofitting technologies.
@@ -23,7 +18,7 @@ from ..element import GenericRule
 
 class RetrofittingTechnology(ConversionTechnology):
     """
-    Class defining conversion technologies
+    Class defining retrofitting technologies
     """
     # set label
     label = "set_retrofitting_technologies"
@@ -93,8 +88,8 @@ class RetrofittingTechnologyRules(GenericRule):
     """
 
     def __init__(self, optimization_setup):
-        """
-        Inits the rules for a given EnergySystem
+        """Inits the rules for a given EnergySystem
+
         :param optimization_setup: The OptimizationSetup the element is part of
         """
 
