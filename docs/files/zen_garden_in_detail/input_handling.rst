@@ -7,7 +7,7 @@ Input data handling
 Attribute.json files
 ==============
 Each element in the input data folder has an ``attributes.json`` file, as shown in :ref:`Input data structure`, which defines the default values for the element.
-This file must be specified for each element and must contain all parameters that this class of elements (Technology, Carrier, etc.) can have (see :ref:`optimization_problem`).
+This file must be specified for each element and must contain all parameters that this class of elements (Technology, Carrier, etc.) can have (see :ref:`Sets, parameters, variables, and constraints`).
 
 The ``attributes.json`` files have three main purposes:
 
@@ -411,7 +411,7 @@ In ZEN-garden we provide 3 different scaling algorithms, from which the row and 
 The approximated geometric mean is the root of the product of the maximum and minimum absolute values of the respective row or column.
 The arithmetic mean is derived over all absolute values of the respective row or column.
 The infinity norm is the maximum absolute value of the respective row or column.
-For a more detailed explanation of each algorithm please see the paper from Elble and Sahinidis (2012) (https://rdcu.be/dStfc).
+For a more detailed explanation of each algorithm please see the paper from `Elble and Sahinidis (2012) <https://rdcu.be/dStfc>`_.
 
 **Combination of Scaling Algorithms**
 

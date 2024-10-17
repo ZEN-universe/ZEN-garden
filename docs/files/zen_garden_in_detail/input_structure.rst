@@ -101,7 +101,7 @@ A storage technology connects two time steps by charging at ``t=t0`` and dischar
 
 .. note::
     In ZEN-garden, the power-rated (charging-discharging) capacity and energy-rated (storage level) capacity of storage technologies are optimized independently.
-    If you want to fix the energy-to-power ratio, the attribute ``energy_to_power_ratio`` in ``attributes.json`` can be set to anything different than ``inf``
+    If you want to fix the energy-to-power ratio, the attribute ``energy_to_power_ratio`` in ``attributes.json`` can be set to anything different than ``inf``.
 
 Transport Technologies
 ----------------------
@@ -110,7 +110,7 @@ The transport technologies are defined in the folder ``set_transport_technologie
 A transport technology connects two nodes via an edge. Different to conversion technologies or storage technologies, transport technology capacities are built on the edges, not the nodes.
 
 .. note::
-    By default, the distance of an edge will be calculated as the `haversine distance <https://www.geeksforgeeks.org/haversine-formula-to-find-distance-between-two-points-on-a-sphere/>`_ between the nodes. This can be overwritten for specific edges in a ``distance.csv`` file (see :ref:`Attribute.json files`)
+    By default, the distance of an edge will be calculated as the `haversine distance <https://www.geeksforgeeks.org/haversine-formula-to-find-distance-between-two-points-on-a-sphere/>`_ between the nodes. This can be overwritten for specific edges in a ``distance.csv`` file (see :ref:`Attribute.json files`).
 
 .. _Carriers:
 Carriers

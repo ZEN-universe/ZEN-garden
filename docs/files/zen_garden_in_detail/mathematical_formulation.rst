@@ -192,16 +192,16 @@ The operational carrier cost :math:`OPEX_y^\mathrm{c}` are the sum of the node- 
 
     OPEX_y^\mathrm{c} = \sum_{c\in\mathcal{C}}\sum_{n\in\mathcal{N}}\sum_{t\in\mathcal{T}}\tau_t O^c_{c,n,t,y}.
 
-The node- and time dependent carrier costs :math:`O^c_{c,n,t,y}` are composed of three terms: the carrier import :math:`\underline{U}_{c,n,t,y}` multiplied by the import price :math:`u_{c,n,t,y}`, the carrier export :math:`\overline{U}_{c,n,t,y}` multiplied by the export price :math:`\overline{v}_{c,n,t,y}`, and the shed demand :math:`D_{c,n,t,y}` multiplied by demand shedding price :math:`\nu_c`:
+The node- and time dependent carrier costs :math:`O^c_{c,n,t,y}` are composed of three terms: the carrier import :math:`\underline{U}_{c,n,t,y}` multiplied by the import price :math:`\underline{u}_{c,n,t,y}`, the carrier export :math:`\overline{U}_{c,n,t,y}` multiplied by the export price :math:`\overline{u}_{c,n,t,y}`, and the shed demand :math:`D_{c,n,t,y}` multiplied by demand shedding price :math:`\nu_c`:
 
 .. math:: 
     :label: cost_carrier
 
-    O^c_{c,n,t,y} = \underline{u}_{c,n,t,y}\underline{U}_{c,n,t,y}-\overline{v}_{c,n,t,y}\overline{U}_{c,n,t,y}+\nu_c D_{c,n,t,y}
+    O^c_{c,n,t,y} = \underline{u}_{c,n,t,y}\underline{U}_{c,n,t,y}-\overline{u}_{c,n,t,y}\overline{U}_{c,n,t,y}+\nu_c D_{c,n,t,y}
 
 *Operational expenditures emissions*
 
-The annual operational emission expenditures :math:`OPEX_y^\mathrm{e}` are composed of three terms: the annual carbon emissions :math:`E_y`  multiplied by the carbon emission price :math:`\mu`, the annual carbon emission overshoot :math:`E_y^\mathrm{o}` multiplied by the annual carbon overshoot price :math:`\mu^\mathrm{o}`, and the budget carbon emission overshoot :math:`E_y^\mathrm{o}` multiplied by the carbon emission budget overshoot price :math:`\mu^\mathrm{o}`:
+The annual operational emission expenditures :math:`OPEX_y^\mathrm{e}` are composed of three terms: the annual carbon emissions :math:`E_y`  multiplied by the carbon emission price :math:`\mu`, the annual carbon emission overshoot :math:`E_y^\mathrm{o}` multiplied by the annual carbon overshoot price :math:`\mu^\mathrm{o}`, and the budget carbon emission overshoot :math:`E_y^\mathrm{bo}` multiplied by the carbon emission budget overshoot price :math:`\mu^\mathrm{bo}`:
 
 .. math::
     :label: opex_e
@@ -332,7 +332,7 @@ For conversion technologies :math:`i\in\mathcal{I}`, the carbon intensity of ope
 
     \theta^\mathrm{tech}_{i,n,t,y} =  \epsilon_i G_{i,n,t,y}^\mathrm{r}.
 
-For storage technologies :math:`k\in\mathcal{K}`, the carbon intensity of operating the technology is multiplied with the storage charge and discharge flows :math:`\overline{H}_{k,n,t,y}` and :math:`\overline{H}_{k,n,t,y}`:
+For storage technologies :math:`k\in\mathcal{K}`, the carbon intensity of operating the technology is multiplied with the storage charge and discharge flows :math:`\overline{H}_{k,n,t,y}` and :math:`\underline{H}_{k,n,t,y}`:
     
 .. math::
     :label: carbon_emissions_storage
@@ -351,13 +351,13 @@ The annual carbon emissions :math:`E_y` are limited by the annual carbon emissio
 .. math::
     :label: carbon_emissions_annual_limit
 
-    E_y - E_{y}^\mathrm{bo} \leq e_y.
+    E_y - E_{y}^\mathrm{o} \leq e_y.
 
 Note that :math:`e_y` can be infinite, in which case the constraint is skipped.
 
-:math:`E_{y}^\mathrm{o}` is the annual carbon emission limit overshoot and allows exceeding the annual carbon emission limits. However, overshooting the annual carbon emission limits is penalized in the objective function (compare Eq. :eq:`opex_c`).
-This overshoot cost is computed by multiplying the annual carbon emission limit overshoot :math:`E_{y}^\mathrm{o}` with the annual carbon emission limit overshoot price :math:`\mu_1\mathrm{o}`.
-To strictly enforce the annual carbon emission limit (i.e., :math:`E_{y}^\mathrm{bo}=0`), use an infinite carbon overshoot price :math:`\mu_1\mathrm{o}`.
+:math:`E_{y}^\mathrm{o}` is the annual carbon emission limit overshoot and allows exceeding the annual carbon emission limits. However, overshooting the annual carbon emission limits is penalized in the objective function (compare Eq. :eq:`opex_e`).
+This overshoot cost is computed by multiplying the annual carbon emission limit overshoot :math:`E_{y}^\mathrm{o}` with the annual carbon emission limit overshoot price :math:`\mu^\mathrm{o}`.
+To strictly enforce the annual carbon emission limit (i.e., :math:`E_{y}^\mathrm{o}=0`), use an infinite carbon overshoot price :math:`\mu^\mathrm{o}`.
 
 The cumulative carbon emissions :math:`E_y^\mathrm{cum}` are attributed to the end of the year. For the first planning period :math:`y=y_0`, :math:`E_y^\mathrm{cum}` is calculated as:
 
@@ -371,16 +371,16 @@ In the subsequent periods :math:`y>y_0`, :math:`E_y^\mathrm{c}` is calculated as
 .. math::
     :label: carbon_emissions_cum_1
 
-    E_y^\mathrm{c} = E_{y-1}^\mathrm{c} + \left(d\mathrm{y}-1\right)E_{y-1}+E_y.
+    E_y^\mathrm{cum} = E_{y-1}^\mathrm{cum} + \left(d\mathrm{y}-1\right)E_{y-1}+E_y.
 
-The cumulative carbon emissions :math:`E_y^\mathrm{c}` are constrained by the carbon emission budget :math:`e^\mathrm{b}`:
+The cumulative carbon emissions :math:`E_y^\mathrm{cum}` are constrained by the carbon emission budget :math:`e^\mathrm{b}`:
 
 .. math::
     :label: emission_budget
 
     E_y^\mathrm{cum} + \left( dy-1 \right) E_{y}  - E_{y}^\mathrm{bo} \leq e^\mathrm{b}.
 
-Note that :math:`e^\mathrm{b}` can be infinite, in which case the constraint is skipped. :math:`E_y^\mathrm{o}` is the cumulative carbon emission overshoot and allows exceeding the carbon emission budget :math:`e^\mathrm{b}`, where exceeding the carbon emission budget in the last year of the planning horizon :math:`\mathrm{Y}=\max(y)` (i.e., :math:`E_\mathrm{Y}^\mathrm{o}>0`) is penalized with the carbon emissions budget overshoot price :math:`\mu^\mathrm{bo}` in the objective function (compare Eq. :eq:`opex_c`). By setting the carbon emission budget overshoot price to infinite, you can enforce that the cumulative carbon emissions stay below the carbon emission budget :math:`e^\mathrm{b}` across all years (i.e., :math:`E_\mathrm{y}^\mathrm{o}=0, \forall y\in\mathcal{Y}`).
+Note that :math:`e^\mathrm{b}` can be infinite, in which case the constraint is skipped. :math:`E_y^\mathrm{bo}` is the cumulative carbon emission overshoot and allows exceeding the carbon emission budget :math:`e^\mathrm{b}`, where exceeding the carbon emission budget in the last year of the planning horizon :math:`\mathrm{Y}=\max(y)` (i.e., :math:`E_\mathrm{Y}^\mathrm{bo}>0`) is penalized with the carbon emissions budget overshoot price :math:`\mu^\mathrm{bo}` in the objective function (compare Eq. :eq:`opex_c`). By setting the carbon emission budget overshoot price to infinite, you can enforce that the cumulative carbon emissions stay below the carbon emission budget :math:`e^\mathrm{b}` across all years (i.e., :math:`E_\mathrm{y}^\mathrm{bo} = 0 ,\forall y\in\mathcal{Y}`).
 
 .. _operational_constraints:
 Operational constraints
@@ -569,8 +569,10 @@ You can also introduce a minimum capacity addition :math:`\Delta s^\mathrm{min}_
 Furthermore, for storage technologies the ratios of the energy- and power rated capacity additions are constrained by the energy-to-power ratio :math:`\rho_{k}`. Minimum and maximum energy-to-power ratios can be defined. For infinite power ratios, the constraints are skipped.
 
 .. math::
+    \rho_k^{min} S^{e}_{k,n,y} \le S_{k,n,y}
 
-    \rho^\mathrm{min}_{k} S^\mathrm{e}_{k,n,y} \leq \S_{k,n,y} \rho^\mathrm{max}_{k} S^\mathrm{e}_{k,n,y}
+.. math::
+    S_{k,n,y} \le \rho_k^{max} S^{e}_{k,n,y}
 
 To account for technology construction times :math:`dy^\mathrm{construction}` we introduce an auxiliary variable, :math:`\Delta S^\mathrm{invest}_{h,p,y}`, representing the technology investments. The following constraint ensures that the new technology capacities do not become available before the construction time has passed:
 
@@ -673,10 +675,10 @@ Two more constraints are added to ensure that :math:`S^\mathrm{approx}_{h,p,y}` 
 .. math::
     :label: binary_constraint_on
 
-    S^\mathrm{approx}_{i,p,y} \leq S_{i,n,y
+    S^\mathrm{approx}_{i,p,y} \leq S_{i,n,y} \\\\
     S^\mathrm{approx}_{i,p,y} \geq (1-b_{h,p,t}) M + S_{i,p,t}
 
- where a sufficiently large :math:`M` is selected. Here :math:`M` could be represented by the maximum technology capacity :math:`s^\mathrm{max}_{h,p,y}`.
+where a sufficiently large :math:`M` is selected. Here :math:`M` could be represented by the maximum technology capacity :math:`s^\mathrm{max}_{h,p,y}`.
 
 .. _min_capacity_installation:
 Minimum capacity installation
@@ -694,7 +696,7 @@ where :math:`S^\mathrm{approx}_{h,p,y}` approximates the capacity addition to av
 .. math::
     :label: min_capacity_constraint_bigM
 
-    \Delta S^\mathrm{approx}_{i,p,y} \leq S_{i,p,y}
+    \Delta S^\mathrm{approx}_{i,p,y} \leq S_{i,p,y} \\\\
     \Delta  S^\mathrm{approx}_{i,p,y} \geq (1-g_{h,p,t}) M + S_{i,p,t}
 
 Eq. :eq:`min_capacity_constraint_bigM` ensure that :math:`\Delta S^\mathrm{approx}_{h,p,y}` equals the installed capacity if the capacity is expanded (i.e., :math:`g_{h,p,t}=1`), and that :math:`\delta S^\mathrm{approx}_{h,p,y}` equals zero if the technology is off (i.e., :math:`b_{h,p,t}=0`), where a sufficiently large :math:`M` is selected. Here :math:`M` could be represented by the maximum capacity addition for each technology :math:`\Delta s^\mathrm{max}_{h,p,y}`.
