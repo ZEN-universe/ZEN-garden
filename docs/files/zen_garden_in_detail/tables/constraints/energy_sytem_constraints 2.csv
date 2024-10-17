@@ -1,0 +1,10 @@
+Constraint Name;Time Step Type;Doc String
+``constraint_carbon_emissions_annual``;``set_time_steps_yearly``;total annual carbon emissions of energy system
+``constraint_carbon_emissions_cumulative``;``set_time_steps_yearly``;cumulative carbon emissions of energy system over time
+``constraint_carbon_emissions_annual_limit``;``set_time_steps_yearly``;limit of total annual carbon emissions of energy system
+``constraint_carbon_emissions_budget``;``set_time_steps_yearly``;Budget of total carbon emissions of energy system
+``constraint_carbon_emissions_budget_overshoot``;``set_time_steps_yearly``;Disable carbon emissions budget overshoot if carbon emissions budget overshoot price is inf
+``constraint_carbon_emissions_annual_overshoot``;``set_time_steps_yearly``;Disable annual carbon emissions overshoot if annual carbon emissions overshoot price is inf
+``constraint_cost_carbon_emissions_total``;``set_time_steps_yearly``;total carbon emissions cost of energy system
+``constraint_cost_total``;``set_time_steps_yearly``;total cost of energy system
+``constraint_net_present_cost``;``set_time_steps_yearly``;net_present_cost of energy system

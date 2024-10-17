@@ -1,4 +1,3 @@
-.. _Building a model:
 ################
 Building a model
 ################
