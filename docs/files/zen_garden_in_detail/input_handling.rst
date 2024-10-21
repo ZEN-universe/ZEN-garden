@@ -492,7 +492,7 @@ The scaling functionality was benchmarked by running the following set of models
     :widths: 10 20 10 10 10 10
     :delim: ;
 
-Overall, fur the purpose of benchmarking over all models a total number of 3250 runs were collected.
+Overall, for the purpose of benchmarking over all models a total number of 3250 runs were collected.
 The following sections will display the results of the benchmarking analysis and should provide insights about the effectiveness and functionality of the scaling algorithm.
 
 **Numerical Range vs. Number of Iterations**

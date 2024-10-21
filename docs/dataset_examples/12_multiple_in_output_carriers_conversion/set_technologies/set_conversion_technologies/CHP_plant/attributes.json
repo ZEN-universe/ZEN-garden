@@ -68,26 +68,21 @@
       "electricity"
     ]
   },
-  "conversion_factor": [
+  "conversion_factor":
     {
       "heat": {
         "default_value": 1.257,
         "unit": "GWh/GWh"
-      }
-    },
-    {
+      },
       "natural_gas": {
         "default_value": 1.427,
         "unit": "GWh/GWh"
-      }
-    },
-    {
+      },
       "bio_gas": {
         "default_value": 1.427,
         "unit": "GWh/GWh"
       }
-    }
-  ],
+    },
   "capex_specific_conversion": {
     "default_value": 876.0,
     "unit": "Euro/kW"

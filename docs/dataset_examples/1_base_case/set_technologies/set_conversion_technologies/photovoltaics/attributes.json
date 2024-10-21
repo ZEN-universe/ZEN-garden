@@ -24,7 +24,7 @@
     "unit": "1"
   },
   "lifetime": {
-    "default_value": 25.0,
+    "default_value": 24.0,
     "unit": "1"
   },
   "opex_specific_variable": {
@@ -64,14 +64,12 @@
       "electricity"
     ]
   },
-  "conversion_factor": [
-    {
-      "": {
-        "default_value": 1.0,
+  "conversion_factor": {
+    "": {
+        "default_value": 1.1,
         "unit": "GWh/GWh"
-      }
     }
-  ],
+  },
   "capex_specific_conversion": {
     "default_value": 751.0,
     "unit": "Euro/kW"
