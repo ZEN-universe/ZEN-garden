@@ -6,4 +6,4 @@ Variable Name;Time Step Type;Symbol;Doc String;Unit Category
 ``carbon_emissions_carrier``;``set_time_steps_operation``;:math:`\theta^\mathrm{carrier}_{c,n,t,y}`;carbon emissions of importing and exporting carriers;{"emissions": 1, "time": -1}
 ``carbon_emissions_carrier_total``;``set_time_steps_yearly``;:math:`E^\mathrm{carrier}_y`;total carbon emissions of importing and exporting carriers;{"emissions": 1}
 ``shed_demand``;``set_time_steps_operation``;:math:`D_{c,n,t,y}`;shed carrier demand;{"energy_quantity": 1, "time": -1}
-``cost_shed_demand``;``set_time_steps_operation``;--;cost shed carrier demand;{"money": 1, "time": -1}
+``cost_shed_demand``;``set_time_steps_operation``;:math:`O_{c,n,t}^{\mathrm{shed}\ \mathrm{demand}}`;cost shed carrier demand;{"money": 1, "time": -1}

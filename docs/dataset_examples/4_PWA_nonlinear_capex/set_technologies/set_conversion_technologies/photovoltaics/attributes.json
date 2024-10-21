@@ -64,8 +64,7 @@
       "electricity"
     ]
   },
-  "conversion_factor":
-  {
+  "conversion_factor": {
     "": {
         "default_value": 1.1,
         "unit": "GWh/GWh"

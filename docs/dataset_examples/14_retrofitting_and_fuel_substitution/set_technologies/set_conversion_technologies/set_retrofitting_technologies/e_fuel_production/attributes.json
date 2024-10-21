@@ -46,14 +46,12 @@
       "natural_gas"
     ]
   },
-  "conversion_factor": [
-    {
-      "electricity": {
-        "default_value": 5.5,
-        "unit": "GWh/GWh"
-      }
+  "conversion_factor": {
+    "electricity": {
+      "default_value": 5.5,
+      "unit": "GWh/GWh"
     }
-  ],
+  },
   "capacity_limit": {
     "default_value": "inf",
     "unit": "GW"

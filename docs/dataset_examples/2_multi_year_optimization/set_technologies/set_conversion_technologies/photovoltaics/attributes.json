@@ -64,14 +64,12 @@
       "electricity"
     ]
   },
-  "conversion_factor": [
-    {
-      "": {
+  "conversion_factor": {
+    "": {
         "default_value": 1.1,
         "unit": "GWh/GWh"
-      }
     }
-  ],
+  },
   "capex_specific_conversion": {
     "default_value": 751.0,
     "unit": "Euro/kW"

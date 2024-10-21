@@ -10,3 +10,4 @@ Parameter Name;Time Step Type;Symbol;Doc String;Unit Category
 ``knowledge_spillover_rate``;temporal immutable;:math:`\omega`;Parameter which specifies the knowledge spillover rate;{}
 ``time_steps_operation_duration``;``set_time_steps_operation``;:math:`\tau^k_{t^k}`;Parameter which specifies the time step duration in operation for all technologies;"{""time"": 1}"
 ``time_steps_storage_duration``;``set_time_steps_operation``;:math:`\tau_t`;Parameter which specifies the duration of each storage time step;"{""time"": 1}"
+``interval_between_years``;temporal immutable;:math:`dy`;Parameter which specifies the interval between planning periods;"{""time"": 1}"

@@ -46,14 +46,13 @@
       "carbon"
     ]
   },
-  "conversion_factor": [
+  "conversion_factor":
     {
       "electricity": {
         "default_value": 11.25,
         "unit": "GWh/kilotons"
       }
-    }
-  ],
+    },
   "capacity_limit": {
     "default_value": "inf",
     "unit": "kilotons/hour"
