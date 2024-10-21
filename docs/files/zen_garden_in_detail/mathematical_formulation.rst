@@ -64,12 +64,12 @@ The investment costs are annualized by multiplying the total investment cost wit
 
     f_h=\frac{\left(1+r\right)^{l_h}r}{\left(1+r\right)^{l_h}-1}
 
-The annual cash flows accrue over the technology lifetime :math:`l_h` and comprise the capital investment cost of newly installed and existing technology capacities :math:`I_{h,p,y}` and :math:`i^\mathrm{ex}_{h,p,y}`. The annual capital expenditure :math:`A_{h,p,y}` for technology :math:`h\in\mathcal{H}` in position :math:`p\in\mathcal{P}` and period :math:`y\in\mathcal{Y}` are computed as:
+The annual cash flows accrue over the technology lifetime :math:`l_h` and comprise the capital investment cost of newly installed and existing technology capacities :math:`I_{h,p,y}` and :math:`i_{h,p,y}^\mathrm{ex}`. The annual capital expenditure :math:`A_{h,p,y}` for technology :math:`h\in\mathcal{H}` in position :math:`p\in\mathcal{P}` and period :math:`y\in\mathcal{Y}` are computed as:
 
 .. math::
     :label: cost_capex_yearly
 
-    A_{h,p,y}= f_h\left(\left(\sum_{\tilde{y}=\max\left(y_0,y-\lceil\frac{l_h}{dy}\rceil+1\right)}^y I_{h,p,\tilde{y}} \right)+\left(\sum_{\hat{y}=\psi \left(y-\lceil\frac{l_h}{dy}\rceil+1\right)}^{\psi(y_0-1)} i^\mathrm{ex}_{h,p,y}\right)\right)
+    A_{h,p,y}= f_h\left(\left(\sum_{\tilde{y}=\max\left(y_0,y-\lceil\frac{l_h}{dy}\rceil+1\right)}^y I_{h,p,\tilde{y}} \right)+\left(\sum_{\hat{y}=\psi \left(y-\lceil\frac{l_h}{dy}\rceil+1\right)}^{\psi(y_0-1)} i_{h,p,y}^\mathrm{ex}\right)\right)
 
 where :math:`\lceil\cdot\rceil` is the ceiling function and :math:`\psi(y)` is a function that maps the planning period :math:`y` to the actual year.
 
@@ -390,13 +390,15 @@ The conversion factor :math:`\eta_{i,c,t,y}` describes the ratio between the car
 
 .. math::
 
-    \eta_{i,c,t,y} = \frac{\underline{G}_{c,i,n,t,y}}{G_{i,n,t,y}^\mathrm{r}}.
+    \eta_{i,c,t,y} = \frac{\underline{G}_{c,i,n,t,y}^{\mathrm{d}}{G_{i,n,t,y}^\mathrm{r}}.
 
 If the carrier flow is an output carrier, i.e. :math:`c\in\overline{\mathcal{C}}_i`:
 
 .. math::
 
-    \eta_{i,c,t,y} = \frac{\overline{G}_{c,i,n,t,y}}{G_{i,n,t,y}^\mathrm{r}}.
+    \eta_{i,c,t,y} = \frac{\overline{G}_{c,i,n,t,y}^{\mathrm{d}}{G_{i,n,t,y}^\mathrm{r}}.
+
+All carrier flows that are not reference carrier flows are called dependent carrier flows :math:`G_{c,i,n,t,y}^{\mathrm{d}`.
 
 The transport flow losses :math:`F_{j,e,t,y}^\mathrm{l}` through a transport technology :math:`j\in\mathcal{J}` on edge :math:`e\in\mathcal{E}` are expressed by the loss function :math:`\rho_{j,e}` and the transported quantity:
 
