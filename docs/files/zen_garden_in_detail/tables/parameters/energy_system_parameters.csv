@@ -1,12 +1,13 @@
 Parameter Name;Time Step Type;Symbol;Doc String;Unit Category
-``discount_rate``;temporal immutable;:math:`r`;Parameter which specifies the discount rate of the energy system
-``carbon_emissions_annual_limit``;``set_time_steps_yearly``;:math:`e_y`;Parameter which specifies the total limit on carbon emissions;{"emissions": 1}
-``carbon_emissions_budget``;temporal immutable;:math:`e^\mathrm{b}`;Parameter which specifies the total budget of carbon emissions until the end of the entire time horizon;{"emissions": 1}
-``carbon_emissions_cumulative_existing``;temporal immutable;:math:`e_0^\mathrm{o}`;Parameter which specifies the total previous carbon emissions;{"emissions": 1}
-``price_carbon_emissions``;``set_time_steps_yearly``;:math:`\mu`;Parameter which specifies the yearly carbon price;{"money": 1, "emissions": -1}
-``price_carbon_emissions_budget_overshoot``;temporal immutable;:math:`\mu^\mathrm{bo}`;Parameter which specifies the carbon price for budget overshoot;{"money": 1, "emissions": -1}
-``price_carbon_emissions_annual_overshoot``;temporal immutable;:math:`^\mathrm{o}`;Parameter which specifies the carbon price for annual overshoot;{"money": 1, "emissions": -1}
+``discount_rate``;temporal immutable;:math:`r`;Parameter which specifies the discount rate of the energy system;
+``carbon_emissions_annual_limit``;``set_time_steps_yearly``;:math:`e_y`;Parameter which specifies the total limit on carbon emissions;"{""emissions"": 1}"
+``carbon_emissions_budget``;temporal immutable;:math:`e^\mathrm{b}`;Parameter which specifies the total budget of carbon emissions until the end of the entire time horizon;"{""emissions"": 1}"
+``carbon_emissions_cumulative_existing``;temporal immutable;:math:`e_0^\mathrm{o}`;Parameter which specifies the total previous carbon emissions;"{""emissions"": 1}"
+``price_carbon_emissions``;``set_time_steps_yearly``;:math:`\mu`;Parameter which specifies the yearly carbon price;"{""money"": 1, ""emissions"": -1}"
+``price_carbon_emissions_budget_overshoot``;temporal immutable;:math:`\mu^\mathrm{bo}`;Parameter which specifies the carbon price for budget overshoot;"{""money"": 1, ""emissions"": -1}"
+``price_carbon_emissions_annual_overshoot``;temporal immutable;:math:`\mu^\mathrm{o}`;Parameter which specifies the carbon price for annual overshoot;"{""money"": 1, ""emissions"": -1}"
 ``market_share_unbounded``;temporal immutable;:math:`\xi`;Parameter which specifies the unbounded market share;{}
 ``knowledge_spillover_rate``;temporal immutable;:math:`\omega`;Parameter which specifies the knowledge spillover rate;{}
-``time_steps_operation_duration``;``set_time_steps_operation``;:math:`\tau^k_{t^k}`;Parameter which specifies the time step duration in operation for all technologies;{"time": 1}
-``time_steps_storage_duration``;``set_time_steps_operation``;:math:`\tau_t`;Parameter which specifies the duration of each storage time step;{"time": 1}
+``time_steps_operation_duration``;``set_time_steps_operation``;:math:`\tau^k_{t^k}`;Parameter which specifies the time step duration in operation for all technologies;"{""time"": 1}"
+``time_steps_storage_duration``;``set_time_steps_operation``;:math:`\tau_t`;Parameter which specifies the duration of each storage time step;"{""time"": 1}"
+``interval_between_years``;temporal immutable;:math:`dy`;Parameter which specifies the interval between planning periods;"{""time"": 1}"

@@ -64,12 +64,12 @@ The investment costs are annualized by multiplying the total investment cost wit
 
     f_h=\frac{\left(1+r\right)^{l_h}r}{\left(1+r\right)^{l_h}-1}
 
-The annual cash flows accrue over the technology lifetime :math:`l_h` and comprise the capital investment cost of newly installed and existing technology capacities :math:`I_{h,p,y}` and :math:`i^\mathrm{ex}_{h,p,y}`. The annual capital expenditure :math:`A_{h,p,y}` for technology :math:`h\in\mathcal{H}` in position :math:`p\in\mathcal{P}` and period :math:`y\in\mathcal{Y}` are computed as:
+The annual cash flows accrue over the technology lifetime :math:`l_h` and comprise the capital investment cost of newly installed and existing technology capacities :math:`I_{h,p,y}` and :math:`i_{h,p,y}^\mathrm{ex}`. The annual capital expenditure :math:`A_{h,p,y}` for technology :math:`h\in\mathcal{H}` in position :math:`p\in\mathcal{P}` and period :math:`y\in\mathcal{Y}` are computed as:
 
 .. math::
     :label: cost_capex_yearly
 
-    A_{h,p,y}= f_h\left(\left(\sum_{\tilde{y}=\max\left(y_0,y-\lceil\frac{l_h}{dy}\rceil+1\right)}^y I_{h,p,\tilde{y}} \right)+\left(\sum_{\hat{y}=\psi \left(y-\lceil\frac{l_h}{dy}\rceil+1\right)}^{\psi(y_0-1)} i^\mathrm{ex}_{h,p,y}\right)\right)
+    A_{h,p,y}= f_h\left(\left(\sum_{\tilde{y}=\max\left(y_0,y-\lceil\frac{l_h}{dy}\rceil+1\right)}^y I_{h,p,\tilde{y}} \right)+\left(\sum_{\hat{y}=\psi \left(y-\lceil\frac{l_h}{dy}\rceil+1\right)}^{\psi(y_0-1)} i_{h,p,y}^\mathrm{ex}\right)\right)
 
 where :math:`\lceil\cdot\rceil` is the ceiling function and :math:`\psi(y)` is a function that maps the planning period :math:`y` to the actual year.
 
@@ -90,15 +90,22 @@ For existing conversion technology capacities :math:`s_{h,n,y}^{ex}` that were i
 
     i^\mathrm{ex}_{i,n,y} = \alpha_{i,y_0} \Delta s^\mathrm{ex}_{i,n,y}
 
-For transport technologies :math:`j\in\mathcal{J}`, the unit investment cost :math:`\alpha_{j,e,y}` can be defined through a distance independent unit cost of capital investment :math:`\alpha^\mathrm{const}_{j,y}` and/or a distance dependent unit cost of capital investment :math:`\alpha^\mathrm{dist}_{j,e,y}` which is multiplied by the distance :math:`h_{j,e}` of the corresponding edge :math:`e\in\mathcal{E}`:
+For transport technologies :math:`j\in\mathcal{J}`, the unit investment cost :math:`\alpha_{j,e,y}` can be defined 1) through a distance independent unit cost of capital investment :math:`\alpha^\mathrm{const}_{j,y}` (:eq:`unit_cost_capex_transport_const`) or 2) a distance dependent unit cost of capital investment :math:`\alpha^\mathrm{dist}_{j,e,y}` which is multiplied by the distance :math:`h_{j,e}` of the corresponding edge :math:`e\in\mathcal{E}` (:eq:`unit_cost_capex_transport_dist`).
 
 .. math::
-    :label: unit_cost_capex_transport
+    :label: unit_cost_capex_transport_const
 
-    \alpha_{j,e,y} = \alpha^\mathrm{const}_{j,y}+\alpha^\mathrm{dist}_{j,e,y} h_{j,e}
+    \alpha_{j,e,y} = \alpha^\mathrm{const}_{j,y}
+
+:math:`\alpha_{j,e,y}`
+
+.. math::
+    :label: unit_cost_capex_transport_dist
+
+    \alpha_{j,e,y} = alpha^\mathrm{dist}_{j,e,y} h_{j,e}
 
 .. note::
-    Per default the distance independent unit investment cost is set to zero if a distance dependent cost factor is defined in the input data. To apply both cost terms, set ``double_capex_transport=True`` in your ``system.json``.
+    Are both, a distance independent and a distance dependent unit cost factor defined, the distance dependent unit cost is used to determine the unit investment cost :math:`\alpha_{j,e,y}`.
 
 The total capital investment cost :math:`A_{h,p,y}` for each transport technology :math:`i\in\mathcal{I}` is calculated as the product of the unit cost of capital investment :math:`\alpha_{j,y}` multiplied by the capacity addition :math:`\Delta S_{j,e,y}` on each edge :math:`e\in\mathcal{E}`:
 
@@ -106,6 +113,8 @@ The total capital investment cost :math:`A_{h,p,y}` for each transport technolog
     :label: cost_capex_transport
 
     I_{j,e,y} = \alpha_{j,e,y} \Delta S_{j,e,y}
+
+It is also possible, to apply both, a distance independent and a distance dependent cost term by setting ``double_capex_transport=True`` in your ``system.json``. Please note that using ``double_capex_transport=True`` introduces binary variables. For more information on the distance dependent unit cost of capital investment refer to :ref:`distance_dependent_transport_capex`.
 
 For existing transport technology capacities :math:`s_{j,e,y}` that were installed before :math:`y_0`, we apply the unit cost of the first investment period :math:`\alpha_{j,y_0}`:
 
@@ -183,23 +192,23 @@ The operational carrier cost :math:`OPEX_y^\mathrm{c}` are the sum of the node- 
 
     OPEX_y^\mathrm{c} = \sum_{c\in\mathcal{C}}\sum_{n\in\mathcal{N}}\sum_{t\in\mathcal{T}}\tau_t O^c_{c,n,t,y}.
 
-The node- and time dependent carrier costs :math:`O^c_{c,n,t,y}` are composed of three terms: the carrier import :math:`\underline{U}_{c,n,t,y}` multiplied by the import price :math:`u_{c,n,t,y}`, the carrier export :math:`\overline{U}_{c,n,t,y}` multiplied by the export price :math:`\overline{v}_{c,n,t,y}`, and the shed demand :math:`D_{c,n,t,y}` multiplied by demand shedding price :math:`\nu_c`:
+The node- and time dependent carrier costs :math:`O^c_{c,n,t,y}` are composed of three terms: the carrier import :math:`\underline{U}_{c,n,t,y}` multiplied by the import price :math:`\underline{u}_{c,n,t,y}`, the carrier export :math:`\overline{U}_{c,n,t,y}` multiplied by the export price :math:`\overline{u}_{c,n,t,y}`, and the shed demand :math:`D_{c,n,t,y}` multiplied by demand shedding price :math:`\nu_c`:
 
 .. math:: 
     :label: cost_carrier
 
-    O^c_{c,n,t,y} = \underline{u}_{c,n,t,y}\underline{U}_{c,n,t,y}-\overline{v}_{c,n,t,y}\overline{U}_{c,n,t,y}+\nu_c D_{c,n,t,y}
+    O^c_{c,n,t,y} = \underline{u}_{c,n,t,y}\underline{U}_{c,n,t,y}-\overline{u}_{c,n,t,y}\overline{U}_{c,n,t,y}+\nu_c D_{c,n,t,y}
 
 *Operational expenditures emissions*
 
-The annual operational emission expenditures :math:`OPEX_y^\mathrm{e}` are composed of three terms: the annual carbon emissions :math:`E_y`  multiplied by the carbon emission price :math:`\mu`, the annual carbon emission overshoot :math:`E_y^\mathrm{o}` multiplied by the annual carbon overshoot price :math:`\mu^\mathrm{o}`, and the budget carbon emission overshoot :math:`E_y^\mathrm{o}` multiplied by the carbon emission budget overshoot price :math:`\mu^\mathrm{o}`:
+The annual operational emission expenditures :math:`OPEX_y^\mathrm{e}` are composed of three terms: the annual carbon emissions :math:`E_y`  multiplied by the carbon emission price :math:`\mu`, the annual carbon emission overshoot :math:`E_y^\mathrm{o}` multiplied by the annual carbon overshoot price :math:`\mu^\mathrm{o}`, and the budget carbon emission overshoot :math:`E_y^\mathrm{bo}` multiplied by the carbon emission budget overshoot price :math:`\mu^\mathrm{bo}`:
 
 .. math::
     :label: opex_e
 
     OPEX_y^\mathrm{e} = E_y \mu + E_y^\mathrm{o}\mu^\mathrm{o}+E_y^\mathrm{bo}\mu^\mathrm{bo}.
 
-For a detailed description on how to use the annual carbon emission overshoot price and the carbon emission budget overshoot price refert to :ref:`_modeling_carbon_emissions`.
+For a detailed description on how to use the annual carbon emission overshoot price and the carbon emission budget overshoot price refer to :ref:`modeling_carbon_emissions`.
 
 .. _emissions_objective:
 Minimizing total emissions
@@ -218,7 +227,7 @@ The cumulative carbon emissions at the end of the time horizon :math:`E^{\mathrm
     :label: total_annual_carbon_emissions
     E_y = E^\mathrm{carrier}_y + E^\mathrm{tech}_y.
 
-For a detailed description of the computation of the total operational emissions for importing and exporting carriers, and for operating for operating technologies refer to :ref:`_tech_carrier_emissions`.
+For a detailed description of the computation of the total operational emissions for importing and exporting carriers, and for operating for operating technologies refer to :ref:`emissions_constraints`.
 
 .. _energy_balance:
 Energy balance
@@ -301,12 +310,12 @@ The total annual carrier carbon emissions :math:`E^\mathrm{carrier}_y` represent
 
     E^\mathrm{carrier}_y = \sum_{t\in\mathcal{T}} \sum_{n\in\mathcal{N}} \sum_{c\in\mathcal{C}} \left( \tau_t \theta^\mathrm{carrier}_{c,n,t,y} \right).
 
-The carrier carbon emissions include the operational emissions of importing and exporting carriers :math:`c\in\mathcal{C}` (carbon intensity :math:`\underline{\epsilon_c}` and :math:`\overline{\epsilon_c}`):
+The carrier carbon emissions include the operational emissions of importing and exporting carriers :math:`c\in\mathcal{C}` (carbon intensity :math:`\underline{\epsilon}_c` and :math:`\overline{\epsilon}_c`):
 
 .. math::
     :label: carbon_emissions_carrier
 
-    \theta^\mathrm{carrier}_{c,n,t} = \underline{\epsilon_c} \underline{U}_{c,n,t,y} - \overline{\epsilon_c} \overline{U}_{c,n,t,y}.
+    \theta^\mathrm{carrier}_{c,n,t} = \underline{\epsilon}_c \underline{U}_{c,n,t,y} - \overline{\epsilon}_c \overline{U}_{c,n,t,y}.
     
 The total annual technology carbon emissions :math:`E^\mathrm{tech}_y` represent the sum of the technology carbon emissions :math:`\theta^\mathrm{tech}_{h,n,t,y}`:
 
@@ -323,7 +332,7 @@ For conversion technologies :math:`i\in\mathcal{I}`, the carbon intensity of ope
 
     \theta^\mathrm{tech}_{i,n,t,y} =  \epsilon_i G_{i,n,t,y}^\mathrm{r}.
 
-For storage technologies :math:`k\in\mathcal{K}`, the carbon intensity of operating the technology is multiplied with the storage charge and discharge flows :math:`\overline{H}_{k,n,t,y}` and :math:`\overline{H}_{k,n,t,y}`:
+For storage technologies :math:`k\in\mathcal{K}`, the carbon intensity of operating the technology is multiplied with the storage charge and discharge flows :math:`\overline{H}_{k,n,t,y}` and :math:`\underline{H}_{k,n,t,y}`:
     
 .. math::
     :label: carbon_emissions_storage
@@ -342,13 +351,13 @@ The annual carbon emissions :math:`E_y` are limited by the annual carbon emissio
 .. math::
     :label: carbon_emissions_annual_limit
 
-    E_y - E_{y}^\mathrm{bo} \leq e_y.
+    E_y - E_{y}^\mathrm{o} \leq e_y.
 
 Note that :math:`e_y` can be infinite, in which case the constraint is skipped.
 
-:math:`E_{y}^\mathrm{o}` is the annual carbon emission limit overshoot and allows exceeding the annual carbon emission limits. However, overshooting the annual carbon emission limits is penalized in the objective function (compare Eq. :eq:`opex_c`).
-This overshoot cost is computed by multiplying the annual carbon emission limit overshoot :math:`E_{y}^\mathrm{o}` with the annual carbon emission limit overshoot price :math:`\mu_1\mathrm{o}`.
-To strictly enforce the annual carbon emission limit (i.e., :math:`E_{y}^\mathrm{bo}=0`), use an infinite carbon overshoot price :math:`\mu_1\mathrm{o}`.
+:math:`E_{y}^\mathrm{o}` is the annual carbon emission limit overshoot and allows exceeding the annual carbon emission limits. However, overshooting the annual carbon emission limits is penalized in the objective function (compare Eq. :eq:`opex_e`).
+This overshoot cost is computed by multiplying the annual carbon emission limit overshoot :math:`E_{y}^\mathrm{o}` with the annual carbon emission limit overshoot price :math:`\mu^\mathrm{o}`.
+To strictly enforce the annual carbon emission limit (i.e., :math:`E_{y}^\mathrm{o}=0`), use an infinite carbon overshoot price :math:`\mu^\mathrm{o}`.
 
 The cumulative carbon emissions :math:`E_y^\mathrm{cum}` are attributed to the end of the year. For the first planning period :math:`y=y_0`, :math:`E_y^\mathrm{cum}` is calculated as:
 
@@ -362,16 +371,16 @@ In the subsequent periods :math:`y>y_0`, :math:`E_y^\mathrm{c}` is calculated as
 .. math::
     :label: carbon_emissions_cum_1
 
-    E_y^\mathrm{c} = E_{y-1}^\mathrm{c} + \left(d\mathrm{y}-1\right)E_{y-1}+E_y.
+    E_y^\mathrm{cum} = E_{y-1}^\mathrm{cum} + \left(d\mathrm{y}-1\right)E_{y-1}+E_y.
 
-The cumulative carbon emissions :math:`E_y^\mathrm{c}` are constrained by the carbon emission budget :math:`e^\mathrm{b}`:
+The cumulative carbon emissions :math:`E_y^\mathrm{cum}` are constrained by the carbon emission budget :math:`e^\mathrm{b}`:
 
 .. math::
     :label: emission_budget
 
     E_y^\mathrm{cum} + \left( dy-1 \right) E_{y}  - E_{y}^\mathrm{bo} \leq e^\mathrm{b}.
 
-Note that :math:`e^\mathrm{b}` can be infinite, in which case the constraint is skipped. :math:`E_y^\mathrm{o}` is the cumulative carbon emission overshoot and allows exceeding the carbon emission budget :math:`e^\mathrm{b}`, where exceeding the carbon emission budget in the last year of the planning horizon :math:`\mathrm{Y}=\max(y)` (i.e., :math:`E_\mathrm{Y}^\mathrm{o}>0`) is penalized with the carbon emissions budget overshoot price :math:`\mu^\mathrm{bo}` in the objective function (compare Eq. :eq:`opex_c`). By setting the carbon emission budget overshoot price to infinite, you can enforce that the cumulative carbon emissions stay below the carbon emission budget :math:`e^\mathrm{b}` across all years (i.e.,:math:`E_\mathrm{y}^\mathrm{o}=0, \forall y\in\mathcal{Y}`).
+Note that :math:`e^\mathrm{b}` can be infinite, in which case the constraint is skipped. :math:`E_y^\mathrm{bo}` is the cumulative carbon emission overshoot and allows exceeding the carbon emission budget :math:`e^\mathrm{b}`, where exceeding the carbon emission budget in the last year of the planning horizon :math:`\mathrm{Y}=\max(y)` (i.e., :math:`E_\mathrm{Y}^\mathrm{bo}>0`) is penalized with the carbon emissions budget overshoot price :math:`\mu^\mathrm{bo}` in the objective function (compare Eq. :eq:`opex_c`). By setting the carbon emission budget overshoot price to infinite, you can enforce that the cumulative carbon emissions stay below the carbon emission budget :math:`e^\mathrm{b}` across all years (i.e., :math:`E_\mathrm{y}^\mathrm{bo} = 0 ,\forall y\in\mathcal{Y}`).
 
 .. _operational_constraints:
 Operational constraints
@@ -381,13 +390,15 @@ The conversion factor :math:`\eta_{i,c,t,y}` describes the ratio between the car
 
 .. math::
 
-    \eta_{i,c,t,y} = \frac{\underline{G}_{c,i,n,t,y}}{G_{i,n,t,y}^\mathrm{r}}.
+    \eta_{i,c,t,y} = \frac{\underline{G}_{c,i,n,t,y}^{\mathrm{d}}{G_{i,n,t,y}^\mathrm{r}}.
 
 If the carrier flow is an output carrier, i.e. :math:`c\in\overline{\mathcal{C}}_i`:
 
 .. math::
 
-    \eta_{i,c,t,y} = \frac{\overline{G}_{c,i,n,t,y}}{G_{i,n,t,y}^\mathrm{r}}.
+    \eta_{i,c,t,y} = \frac{\overline{G}_{c,i,n,t,y}^{\mathrm{d}}{G_{i,n,t,y}^\mathrm{r}}.
+
+All carrier flows that are not reference carrier flows are called dependent carrier flows :math:`G_{c,i,n,t,y}^{\mathrm{d}`.
 
 The transport flow losses :math:`F_{j,e,t,y}^\mathrm{l}` through a transport technology :math:`j\in\mathcal{J}` on edge :math:`e\in\mathcal{E}` are expressed by the loss function :math:`\rho_{j,e}` and the transported quantity:
 
@@ -395,7 +406,7 @@ The transport flow losses :math:`F_{j,e,t,y}^\mathrm{l}` through a transport tec
 
     F_{j,e,t,y}^\mathrm{l} = \rho_{j,e} h_{j,e} F_{j,e,t,y}.
 
-The loss function is described through a linear or an exponential loss factor, :math:`\rho^\mathrm{lin}_{j}` and :math:`\rho^\mathrm{exp}_{j}`, respectively. The loss factor is applied to the transport distance :math:`h_{j,e}``. For transport technologies where transport flow losses are approximated by a linear loss factor it follows:
+The loss function is described through a linear or an exponential loss factor, :math:`\rho^\mathrm{lin}_{j}` and :math:`\rho^\mathrm{exp}_{j}`, respectively. The loss factor is applied to the transport distance :math:`h_{j,e}`. For transport technologies where transport flow losses are approximated by a linear loss factor it follows:
 
 .. math::
     :label: transport_flow_loss_linear
@@ -427,7 +438,7 @@ Since a storage technology does not charge (:math:`\underline{H}_{k,n,t,y}`) and
 
     0 \leq \underline{H}_{k,n,t,y}+\overline{H}_{k,n,t,y}\leq m_{k,n,t,y}S_{k,n,y}.
 
-In addition, minimum load constraints can be added. Please note, that adding a minimum load :math:`m^\mathrm{min}_{h,p,t,y}` introduces binary variables, which can increase the computational complexity of the optimization problem substantially. The min-load constraints are described in :ref:`_min_load_constraints`.
+In addition, minimum load constraints can be added. Please note, that adding a minimum load :math:`m^\mathrm{min}_{h,p,t,y}` introduces binary variables, which can increase the computational complexity of the optimization problem substantially. The min-load constraints are described in :ref:`min_load_constraints`.
 
 Furthermore, the reference flow of retrofitting technologies is linked to the reference flow of their base technology. The set of base technologies links each retrofitting technology :math:`i^\mathrm{r}` to their base technology :math:`i`. The retrofit flow coupling factor can be interpreted as a conversion factor :math:`\eta^\mathrm{retrofit}_{i^\mathrm{r},n,t}` that describes the ratio between the reference flow of the retrofitting technology and the reference flow of the base technology:
 
@@ -560,8 +571,10 @@ You can also introduce a minimum capacity addition :math:`\Delta s^\mathrm{min}_
 Furthermore, for storage technologies the ratios of the energy- and power rated capacity additions are constrained by the energy-to-power ratio :math:`\rho_{k}`. Minimum and maximum energy-to-power ratios can be defined. For infinite power ratios, the constraints are skipped.
 
 .. math::
+    \rho_k^{min} S^{e}_{k,n,y} \le S_{k,n,y}
 
-    \rho^\mathrm{min}_{k} S^\mathrm{e}_{k,n,y} \leq \S_{k,n,y} \rho^\mathrm{max}_{k} S^\mathrm{e}_{k,n,y}
+.. math::
+    S_{k,n,y} \le \rho_k^{max} S^{e}_{k,n,y}
 
 To account for technology construction times :math:`dy^\mathrm{construction}` we introduce an auxiliary variable, :math:`\Delta S^\mathrm{invest}_{h,p,y}`, representing the technology investments. The following constraint ensures that the new technology capacities do not become available before the construction time has passed:
 
@@ -664,10 +677,10 @@ Two more constraints are added to ensure that :math:`S^\mathrm{approx}_{h,p,y}` 
 .. math::
     :label: binary_constraint_on
 
-    S^\mathrm{approx}_{i,p,y} \leq S_{i,n,y
+    S^\mathrm{approx}_{i,p,y} \leq S_{i,n,y} \\\\
     S^\mathrm{approx}_{i,p,y} \geq (1-b_{h,p,t}) M + S_{i,p,t}
 
- where a sufficiently large :math:`M` is selected. Here :math:`M` could be represented by the maximum technology capacity :math:`s^\mathrm{max}_{h,p,y}`.
+where a sufficiently large :math:`M` is selected. Here :math:`M` could be represented by the maximum technology capacity :math:`s^\mathrm{max}_{h,p,y}`.
 
 .. _min_capacity_installation:
 Minimum capacity installation
@@ -685,7 +698,7 @@ where :math:`S^\mathrm{approx}_{h,p,y}` approximates the capacity addition to av
 .. math::
     :label: min_capacity_constraint_bigM
 
-    \Delta S^\mathrm{approx}_{i,p,y} \leq S_{i,p,y}
+    \Delta S^\mathrm{approx}_{i,p,y} \leq S_{i,p,y} \\\\
     \Delta  S^\mathrm{approx}_{i,p,y} \geq (1-g_{h,p,t}) M + S_{i,p,t}
 
 Eq. :eq:`min_capacity_constraint_bigM` ensure that :math:`\Delta S^\mathrm{approx}_{h,p,y}` equals the installed capacity if the capacity is expanded (i.e., :math:`g_{h,p,t}=1`), and that :math:`\delta S^\mathrm{approx}_{h,p,y}` equals zero if the technology is off (i.e., :math:`b_{h,p,t}=0`), where a sufficiently large :math:`M` is selected. Here :math:`M` could be represented by the maximum capacity addition for each technology :math:`\Delta s^\mathrm{max}_{h,p,y}`.
@@ -698,27 +711,27 @@ Piecewise affine approximation of capital expenditures
 
 .. note:: Please note that the following introduces the mathematical formulation of piecewise affine linearizations, which deviates slightly from the general formulation in ZEN-garden.
 
-The capital expenditures of the conversion technologies can be approximated by a piecewise affine (PWA) function to account for non-linearities and e.g., represent economies of scale. To this end, the capital investment unit costs are approximated by linear functions that are connected by breakpoints (:ref:`eq:PWA`). The breakpoints are summarized in :math:`m\in\mathcal{M}`. The binary variable :math:`d_{i,n,y,m}` is introduced to model the capacity selection, where :math:`d_{i,n,y,x}` equals one if breakpoint :math:`x` is active, otherwise :math:`d_{i,n,y,x}` equals zero. Furthermore, at most one breakpoint can be active at a time:
+The capital expenditures of the conversion technologies can be approximated by a piecewise affine (PWA) function to account for non-linearities and e.g., represent economies of scale. To this end, the capital investment unit costs are approximated by linear functions that are connected by breakpoints (:ref:`PWA_constraints`). The breakpoints are summarized in :math:`m\in\mathcal{M}`. The binary variable :math:`f_{i,n,y,m}` is introduced to model the capacity selection, where :math:`f_{i,n,y,m}` equals one if breakpoint :math:`m` is active, otherwise :math:`f_{i,n,y,m}` equals zero. Furthermore, at most one breakpoint can be active at a time:
 
 .. math::
 
-    \sum_{m\in\mathcal{M}} d_{i,n,y,x} \leq 1
+    \sum_{m\in\mathcal{M}} f_{i,n,y,m} \leq 1
 
 If breakpoint :math:`m` is active, the capacity addition must be within the capacity of the active breakpoint :math:`\Delta s^\mathrm{pwa}_{i,n,y,m}` and the subsequent breakpoint :math:`\Delta s^\mathrm{pwa}_{i,n,y,m+1}`. To avoid bilinearities, the capacity addition is approximated :math:`S_{i,p,y,m}^\mathrm{approx}`. For breakpoints :math:`m \in [0, ..., |\mathcal{M}|-1]` it follows:
 
 .. math::
     :label: pwa_capacity_approximation_1
 
-    d_{i,n,y,m} \Delta s^\mathrm{pwa}_{i,n,y,m} \leq  \Delta S_{i,n,y,m}^\mathrm{approx} \leq d_{i,n,y,m} \Delta  s^\mathrm{pwa}_{i,n,y,m+1}
+    f_{i,n,y,m} \Delta s^\mathrm{pwa}_{i,n,y,m} \leq  \Delta S_{i,n,y,m}^\mathrm{approx} \leq f_{i,n,y,m} \Delta  s^\mathrm{pwa}_{i,n,y,m+1}
 
 while for the last breakpoint :math:`m=|\mathcal{M}|` it follows:
 
 .. math::
     :label: pwa_capacity_approximation_2
 
-    d_{i,n,y,m} \Delta s^\mathrm{pwa}_{i,n,y,m} \leq \Delta S_{i,n,y,m}^\mathrm{approx} \leq d_{i,n,y,m} \Delta s^\mathrm{pwa}_{i,n,y,m}
+    f_{i,n,y,m} \Delta s^\mathrm{pwa}_{i,n,y,m} \leq \Delta S_{i,n,y,m}^\mathrm{approx} \leq f_{i,n,y,m} \Delta s^\mathrm{pwa}_{i,n,y,m}
 
-Thus, Eq. :eq:`pwa_capacity_approximation_1` and Eq. :eq:`pwa_capacity_approximation_2` ensure that only if a breakpoint is active (i.e., :math:`d_{i,n,y,m}=1`) :math:`\Delta S_{i,n,y,m}^\mathrm{approx}\geq0`, otherwise :math:`\Delta S_{i,n,y,m}^\mathrm{approx}=0`. The approximation of the capacity addition variable :math:`\Delta S_{i,n,y,m}^\mathrm{approx}` and the capacity addition variable :math:`\Delta S_{i,n,y}` are linked:
+Thus, Eq. :eq:`pwa_capacity_approximation_1` and Eq. :eq:`pwa_capacity_approximation_2` ensure that only if a breakpoint is active (i.e., :math:`f_{i,n,y,m}=1`) :math:`\Delta S_{i,n,y,m}^\mathrm{approx}\geq0`, otherwise :math:`\Delta S_{i,n,y,m}^\mathrm{approx}=0`. The approximation of the capacity addition variable :math:`\Delta S_{i,n,y,m}^\mathrm{approx}` and the capacity addition variable :math:`\Delta S_{i,n,y}` are linked:
 
 .. math::
 

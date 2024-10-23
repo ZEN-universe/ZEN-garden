@@ -46,14 +46,13 @@
       "carbon"
     ]
   },
-  "conversion_factor": [
+  "conversion_factor":
     {
       "electricity": {
         "default_value": 11.25,
         "unit": "GWh/kilotons"
       }
-    }
-  ],
+    },
   "capacity_limit": {
     "default_value": "inf",
     "unit": "kilotons/hour"
@@ -81,11 +80,6 @@
   "capacity_addition_unbounded": {
     "default_value": 0.0,
     "unit": "kilotons/hour"
-  },
-  "retrofit_base_technology": {
-    "default_value": [
-      "CHP_plant"
-    ]
   },
   "retrofit_flow_coupling_factor": {
     "base_technology": "CHP_plant",

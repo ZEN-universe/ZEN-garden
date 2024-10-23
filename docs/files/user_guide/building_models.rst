@@ -1,4 +1,3 @@
-.. _Building a model:
 ################
 Building a model
 ################
@@ -29,7 +28,7 @@ The following sections describe the necessary steps to build a new model.
 
 1. Define the technology and carrier sets (:ref:`Technologies` and :ref:`Carriers`)
 2. Build the folder structure with ``energy_system``, ``set_technologies``, and ``set_carriers`` folders (:ref:`Input data structure`)
-3. Fill the energy system folder (:ref:`Energy system`)
-4. Create the ``attributes.json`` file for each element (energy system, technology, carrier; :ref:`Attribute.json files`). The ``attributes.json`` files must contain a default value for all parameters of this element type (:ref`optimization_problem`)
+3. Fill the energy system folder (`Energy System <https://zen-garden.readthedocs.io/en/latest/files/zen_garden_in_detail/input_structure.html#energy-system>`_)
+4. Create the ``attributes.json`` file for each element (energy system, technology, carrier; :ref:`Attribute.json files`). The ``attributes.json`` files must contain a default value for all parameters of this element type (:ref:`Sets, parameters, variables, and constraints`)
 5. If necessary, create the ``.csv`` files to specify the data in more detail (:ref:`Overwriting default values`)
 6. Create the ``config.json`` and ``system.json`` files (:ref:`System, analysis, solver settings`)

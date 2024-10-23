@@ -1,7 +1,6 @@
 Parameter Name;Time Step Type;Symbol;Doc String;Unit Category
-``distance``;temporal immutable;:math:`h_{j,e}`;distance between two nodes for transport technologies;{"distance": 1}
-``capex_specific_transport``;``set_time_steps_yearly``;:math:`\alpha^\mathrm{const}_{j,y}`;capex per unit for transport technologies;{"money": 1, "energy_quantity": -1, "time": 1}
-``capex_per_distance_transport``;``set_time_steps_yearly``;:math:`\alpha^\mathrm{dist}``;capex per distance for transport technologies;{"money": 1, "distance": -1, "energy_quantity": -1, "time": 1}
-``transport_loss_factor_linear``;temporal immutable;:math:`\rho^\mathrm{lin}_{j}`;carrier losses due to transport with transport technologies;{"distance": -1}
-``transport_loss_factor_exponential``;temporal immutable;:math:`\rho^\mathrm{exp}_{j}`;exponential carrier losses due to transport with transport technologies;{"distance": -1}
-
+``distance``;temporal immutable;:math:`h_{j,e}`;distance between two nodes for transport technologies;"{""distance"": 1}"
+``capex_specific_transport``;``set_time_steps_yearly``;:math:`\alpha^\mathrm{const}_{j,y}`;capex per unit for transport technologies;"{""money"": 1, ""energy_quantity"": -1, ""time"": 1}"
+``capex_per_distance_transport``;``set_time_steps_yearly``;:math:`\alpha^\mathrm{dist}`;capex per distance for transport technologies;"{""money"": 1, ""distance"": -1, ""energy_quantity"": -1, ""time"": 1}"
+``transport_loss_factor_linear``;temporal immutable;:math:`\rho^\mathrm{lin}_{j}`;carrier losses due to transport with transport technologies;"{""distance"": -1}"
+``transport_loss_factor_exponential``;temporal immutable;:math:`\rho^\mathrm{exp}_{j}`;exponential carrier losses due to transport with transport technologies;"{""distance"": -1}"

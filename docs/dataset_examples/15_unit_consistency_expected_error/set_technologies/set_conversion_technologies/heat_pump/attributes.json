@@ -66,16 +66,15 @@
       "heat"
     ]
   },
-  "conversion_factor": [
+  "conversion_factor":
     {
       "electricity": {
         "default_value": 0.25,
         "unit": "GWh/GWh"
       }
-    }
-  ],
+    },
   "capex_specific_conversion": {
-    "default_value": 6000.0,
+    "default_value": 3600.0,
     "unit": "Euro/kW"
   },
   "capacity_addition_unbounded": {

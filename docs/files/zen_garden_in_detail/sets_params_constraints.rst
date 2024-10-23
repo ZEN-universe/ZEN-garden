@@ -1,4 +1,4 @@
-.. _optimization_problem
+.. _optimization_problem:
 ################
 Sets, parameters, variables, and constraints
 ################

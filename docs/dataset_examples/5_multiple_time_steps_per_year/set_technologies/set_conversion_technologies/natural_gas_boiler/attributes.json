@@ -66,14 +66,13 @@
       "heat"
     ]
   },
-  "conversion_factor": [
+  "conversion_factor":
     {
       "natural_gas": {
         "default_value": 1.1,
         "unit": "GWh/GWh"
       }
-    }
-  ],
+    },
   "capex_specific_conversion": {
     "default_value": 876.0,
     "unit": "Euro/kW"

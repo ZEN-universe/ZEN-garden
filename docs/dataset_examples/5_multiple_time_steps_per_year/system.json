@@ -1,7 +1,8 @@
 {
     "set_conversion_technologies": [
         "natural_gas_boiler",
-        "photovoltaics"
+        "photovoltaics",
+        "heat_pump"
     ],
     "set_storage_technologies": [
         "natural_gas_storage"

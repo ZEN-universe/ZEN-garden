@@ -6,7 +6,9 @@
     "set_storage_technologies": [
         "natural_gas_storage"
     ],
-    "set_transport_technologies": [],
+    "set_transport_technologies": [
+        "natural_gas_pipeline"
+    ],
     "set_nodes": [
         "DE",
         "CH"

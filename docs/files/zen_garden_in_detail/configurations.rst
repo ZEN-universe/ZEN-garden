@@ -42,7 +42,7 @@ The dataset, the objective function and the solver are selected in the ``analysi
     :widths: 10 10 10 20
     :delim: ;
 
-The settings of the timeseries aggregation algorithm are also specified in the ``analysis.json``. The following table summarizes the available timeseries aggregation settings and their default values. For further information on how to use the timeseries aggregation, see :ref:`use_tsa`. Ina addition, :ref:`Time series aggregation and representation` and :ref:`time_parameters` provide helpful information on the time representation and the time parameters in ZEN-garden.
+The settings of the timeseries aggregation algorithm are also specified in the ``analysis.json``. The following table summarizes the available timeseries aggregation settings and their default values. For further information on how to use the timeseries aggregation, see :ref:`use_tsa`. In addition, :ref:`Time series aggregation and representation` and :ref:`time_parameters` provide helpful information on the time representation and the time parameters in ZEN-garden.
 
 .. csv-table:: Timeseries Aggregation Settings
     :header-rows: 1
@@ -86,9 +86,9 @@ The time parameters in ZEN-garden
 * ``aggregated_time_steps_per_year``: number of representative periods per year to aggregate the time series. Thus, all operational components are aggregated to ``aggregated_time_steps_per_year`` time steps. For further information on time series aggregation, see below.
 * ``optimized_years``: number of investigated years.
 * ``interval_between_years``: interval between two optimization years.
-* ``use_rolling_horizon``: if True, we do not optimize all years simultaneously but optimize for a subset of years and afterward move the optimization window to the next year and optimize again. For further information on rolling horizon and myopic foresight versus perfect foresight refer to, e.g., `Poncelet et al. 2016 <10.1109/EEM.2016.7521261>`_.
+* ``use_rolling_horizon``: if True, we do not optimize all years simultaneously but optimize for a subset of years and afterward move the optimization window to the next year and optimize again. For further information on rolling horizon and myopic foresight versus perfect foresight refer to, e.g., `Poncelet et al. 2016 <https://www.sciencedirect.com/science/article/abs/pii/S0306261915013276>`_.
 * ``years_in_rolling_horizon``: number of optimization periods in the subset of the optimization horizon as mentioned above. Only relevant if ``use_rolling_horizon`` is True.
-* ``interval_between_optimizations``: number of optimization periods for which the decisions of each rolling horizon are saved. Must be shorter than ``years_in_rolling_horizon``; default is 1. For an example for varying decision horizon lengths, refer to `Keppo et al. 2010 <10.1016/J.ENERGY.2010.01.019>`_. Only relevant if ``use_rolling_horizon`` is True.
+* ``interval_between_optimizations``: number of optimization periods for which the decisions of each rolling horizon are saved. Must be shorter than ``years_in_rolling_horizon``; default is 1. For an example for varying decision horizon lengths, refer to `Keppo et al. 2010 <https://www.sciencedirect.com/science/article/abs/pii/S0360544210000216>`_. Only relevant if ``use_rolling_horizon`` is True.
 
 Example I, no rolling horizon:
 

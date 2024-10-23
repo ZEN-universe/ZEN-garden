@@ -235,7 +235,7 @@ class ConversionTechnology(Technology):
                         conversion_factor_upper = params.conversion_factor.loc[tech, carrier, node_set].max().data
                         if 0 in conversion_factor_upper:
                             _rounding_tsa = optimization_setup.solver.rounding_decimal_points_tsa
-                            raise ValueError(f"Maximum conversion factor of {tech} for carrier {carrier} is 0.\nOne reason might be that the conversion factor is too small (1e-{_rounding_ts}), so that it is rounded to 0 after the time series aggregation.")
+                            raise ValueError(f"Maximum conversion factor of {tech} for carrier {carrier} is 0.\nOne reason might be that the conversion factor is too small (1e-{_rounding_tsa}), so that it is rounded to 0 after the time series aggregation.")
 
                     lower.loc[tech, carrier, ...] = model.variables["capacity"].lower.loc[tech, "power", node_set, time_step_year].data * conversion_factor_lower
                     upper.loc[tech, carrier, ...] = model.variables["capacity"].upper.loc[tech, "power", node_set, time_step_year].data * conversion_factor_upper
