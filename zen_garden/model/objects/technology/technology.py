@@ -847,7 +847,7 @@ class TechnologyRules(GenericRule):
         # load variables and parameters
         capacity_addition = self.variables["capacity_addition"]
         capacity_existing = self.parameters.capacity_existing
-        knowledge_depreciation_rate = self.system["knowledge_depreciation_rate"]
+        knowledge_depreciation_rate = self.parameters.knowledge_depreciation_rate
         interval_between_years = self.system["interval_between_years"]
         spillover_rate = self.parameters.knowledge_spillover_rate
         # technology diffusion rate per investment period
