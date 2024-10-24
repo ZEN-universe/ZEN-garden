@@ -55,7 +55,7 @@ class Postprocess:
 
         # get name or directory
         self.model_name = model_name
-        self.name_dir = Path(self.analysis["folder_output"]).joinpath(self.model_name)
+        self.name_dir = Path(self.analysis.folder_output).joinpath(self.model_name)
 
         # deal with the subfolder
         self.subfolder = subfolder
@@ -73,9 +73,9 @@ class Postprocess:
         os.makedirs(self.name_dir, exist_ok=True)
 
         # check if we should overwrite output
-        self.overwrite = self.analysis["overwrite_output"]
+        self.overwrite = self.analysis.overwrite_output
         # get the compression param
-        self.output_format = self.analysis["output_format"]
+        self.output_format = self.analysis.output_format
 
         # save everything
         self.save_sets()
@@ -290,7 +290,7 @@ class Postprocess:
     def save_duals(self):
         """ Saves the dual variable values to a json file which can then be
         post-processed immediately or loaded and postprocessed at some other time"""
-        if not self.solver["add_duals"]:
+        if not self.solver.add_duals:
             return
 
         # dataframe serialization
@@ -322,7 +322,7 @@ class Postprocess:
         """
         Saves the system dict as json
         """
-        if self.system["use_rolling_horizon"]:
+        if self.system.use_rolling_horizon:
             fname = self.name_dir.parent.joinpath('system')
         else:
             fname = self.name_dir.joinpath('system')
@@ -332,7 +332,7 @@ class Postprocess:
         """
         Saves the analysis dict as json
         """
-        if self.system["use_rolling_horizon"]:
+        if self.system.use_rolling_horizon:
             fname = self.name_dir.parent.joinpath('analysis')
         else:
             fname = self.name_dir.joinpath('analysis')
@@ -366,7 +366,7 @@ class Postprocess:
         """
 
         # This we only need to save once
-        if self.system["use_rolling_horizon"]:
+        if self.system.use_rolling_horizon:
             fname = self.name_dir.parent.joinpath('solver')
         else:
             fname = self.name_dir.joinpath('solver')
@@ -379,7 +379,7 @@ class Postprocess:
 
         if self.param_map is not None:
             # This we only need to save once
-            if self.system["use_rolling_horizon"] and self.system["conduct_scenario_analysis"]:
+            if self.system.use_rolling_horizon and self.system.conduct_scenario_analysis:
                 fname = self.name_dir.parent.parent.joinpath('param_map')
             elif self.subfolder != Path(""):
                 fname = self.name_dir.parent.joinpath('param_map')
@@ -399,7 +399,7 @@ class Postprocess:
             add_on = ""
 
             # This we only need to save once
-        if self.system["use_rolling_horizon"]:
+        if self.system.use_rolling_horizon:
             fname = self.name_dir.parent.joinpath(f'dict_all_sequence_time_steps{add_on}')
         else:
             fname = self.name_dir.joinpath(f'dict_all_sequence_time_steps{add_on}')
@@ -493,8 +493,8 @@ class Postprocess:
         index_list = string.split(",")
         index_list_final = []
         for index in index_list:
-            if index in self.analysis["header_data_inputs"].keys():
-                index_list_final.append(self.analysis["header_data_inputs"][index])  # else:  #     pass  #     # index_list_final.append(index)
+            if index in self.analysis.header_data_inputs.keys():
+                index_list_final.append(self.analysis.header_data_inputs[index])  # else:  #     pass  #     # index_list_final.append(index)
         return index_list_final
 
     def get_time_steps_year2operation(self):

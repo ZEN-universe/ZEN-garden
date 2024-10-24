@@ -93,7 +93,7 @@ class Technology(Element):
     def calculate_fraction_of_year(self):
         """calculate fraction of year"""
         # only account for fraction of year
-        fraction_year = self.optimization_setup.system["unaggregated_time_steps_per_year"] / self.optimization_setup.system["total_hours_per_year"]
+        fraction_year = self.optimization_setup.system.unaggregated_time_steps_per_year / self.optimization_setup.system.total_hours_per_year
         return fraction_year
 
     def add_new_capacity_addition_tech(self, capacity_addition: pd.Series, capex: pd.Series, step_horizon: list):
@@ -105,7 +105,7 @@ class Technology(Element):
         system = self.optimization_setup.system
         # reduce lifetime of existing capacities and add new remaining lifetime
         delta_lifetime = step_horizon[-1] - step_horizon[0]
-        self.lifetime_existing = (self.lifetime_existing - system["interval_between_years"] * (delta_lifetime + 1)).clip(lower=0)
+        self.lifetime_existing = (self.lifetime_existing - system.interval_between_years * (delta_lifetime + 1)).clip(lower=0)
         # new capacity
         new_capacity_addition = capacity_addition[step_horizon]
         new_capex = capex[step_horizon]
@@ -117,12 +117,12 @@ class Technology(Element):
             self.set_technologies_existing = np.append(self.set_technologies_existing, index_new_technology)
             # add new remaining lifetime
             lifetime = self.lifetime_existing.unstack()
-            lifetime[index_new_technology] = [self.lifetime[0] - system["interval_between_years"]*(delta_lifetime - idx + 1) for idx in index_step_horizon]
+            lifetime[index_new_technology] = [self.lifetime[0] - system.interval_between_years*(delta_lifetime - idx + 1) for idx in index_step_horizon]
             self.lifetime_existing = lifetime.stack()
 
             for type_capacity in list(set(new_capacity_addition.index.get_level_values(0))):
                 # if power
-                if type_capacity == system["set_capacity_types"][0]:
+                if type_capacity == system.set_capacity_types[0]:
                     energy_string = ""
                 # if energy
                 else:
@@ -149,7 +149,7 @@ class Technology(Element):
         if not (new_capacity_investment.stack() == 0).all():
             for type_capacity in list(set(new_capacity_investment.index.get_level_values(0))):
                 # if power
-                if type_capacity == system["set_capacity_types"][0]:
+                if type_capacity == system.set_capacity_types[0]:
                     energy_string = ""
                 # if energy
                 else:
@@ -212,10 +212,10 @@ class Technology(Element):
         # reference year of current optimization horizon
         current_year_horizon = optimization_setup.energy_system.set_time_steps_yearly[0]
         if delta_lifetime >= 0:
-            cutoff_year = (year-current_year_horizon)*system["interval_between_years"]
+            cutoff_year = (year-current_year_horizon)*system.interval_between_years
             return cutoff_year >= delta_lifetime
         else:
-            cutoff_year = (year-current_year_horizon+1)*system["interval_between_years"]
+            cutoff_year = (year-current_year_horizon+1)*system.interval_between_years
             return cutoff_year <= lifetime_existing
 
     @classmethod
@@ -246,7 +246,7 @@ class Technology(Element):
         system = optimization_setup.system
         lifetime = params.lifetime[tech]
         # conservative estimate of lifetime (floor)
-        del_lifetime = int(np.floor(lifetime/system["interval_between_years"])) - 1
+        del_lifetime = int(np.floor(lifetime/system.interval_between_years)) - 1
         return year - del_lifetime
 
     @classmethod
@@ -263,7 +263,7 @@ class Technology(Element):
         system = optimization_setup.system
         construction_time = params.construction_time[tech]
         # conservative estimate of construction time (ceil)
-        del_construction_time = int(np.ceil(construction_time/system["interval_between_years"]))
+        del_construction_time = int(np.ceil(construction_time/system.interval_between_years))
         return year - del_construction_time
 
     ### --- classmethods to construct sets, parameters, variables, and constraints, that correspond to Technology --- ###
@@ -847,8 +847,8 @@ class TechnologyRules(GenericRule):
         # load variables and parameters
         capacity_addition = self.variables["capacity_addition"]
         capacity_existing = self.parameters.capacity_existing
-        knowledge_depreciation_rate = self.system["knowledge_depreciation_rate"]
-        interval_between_years = self.system["interval_between_years"]
+        knowledge_depreciation_rate = self.parameters.knowledge_depreciation_rate
+        interval_between_years = self.system.interval_between_years
         spillover_rate = self.parameters.knowledge_spillover_rate
         # technology diffusion rate per investment period
         tdr = (1 + self.parameters.max_diffusion_rate) ** interval_between_years - 1

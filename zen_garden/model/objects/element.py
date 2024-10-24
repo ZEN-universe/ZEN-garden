@@ -56,7 +56,7 @@ class Element:
         paths = self.optimization_setup.paths
         # check if class is a subset
         if class_label not in paths.keys():
-            subsets = self.optimization_setup.analysis["subsets"]
+            subsets = self.optimization_setup.analysis.subsets
             # iterate through subsets and check if class belongs to any of the subsets
             for set_name, subsets_list in subsets.items():
                 if class_label in subsets_list:
@@ -250,9 +250,9 @@ class Element:
                         elif index == "set_capacity_types":
                             system = optimization_setup.system
                             if element in sets["set_storage_technologies"]:
-                                list_sets.append(system["set_capacity_types"])
+                                list_sets.append(system.set_capacity_types)
                             else:
-                                list_sets.append([system["set_capacity_types"][0]])
+                                list_sets.append([system.set_capacity_types[0]])
                         else:
                             raise NotImplementedError(f"Index <{index}> not known")
                     # append indices to custom_set if element is supposed to be appended
@@ -344,7 +344,7 @@ class GenericRule(object):
         for ts in self.sets["set_time_steps_storage"]:
             ts_end = self.energy_system.time_steps.get_time_steps_storage_startend(ts)
             if ts_end is not None:
-                if self.system["storage_periodicity"]:
+                if self.system.storage_periodicity:
                     times_prev.append(ts_end)
                     mask.append(True)
                 else:

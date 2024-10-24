@@ -101,8 +101,8 @@ class OptimizationSetup(object):
         """
         ## General Paths
         # define path to access dataset related to the current analysis
-        self.path_data = self.analysis['dataset']
-        assert os.path.exists(self.path_data), f"Folder for input data {self.analysis['dataset']} does not exist!"
+        self.path_data = self.analysis.dataset
+        assert os.path.exists(self.path_data), f"Folder for input data {self.analysis.dataset} does not exist!"
         self.input_data_checks.check_primary_folder_structure()
         self.paths = dict()
         # create a dictionary with the keys based on the folders in path_data
@@ -110,7 +110,7 @@ class OptimizationSetup(object):
             self.paths[folder_name] = dict()
             self.paths[folder_name]["folder"] = os.path.join(self.path_data, folder_name)
         # add element paths and their file paths
-        stack = [self.analysis["subsets"]]
+        stack = [self.analysis.subsets]
         while stack:
             cur_dict = stack.pop()
             for set_name, subsets in cur_dict.items():
@@ -139,7 +139,7 @@ class OptimizationSetup(object):
                 for file in next(os.walk(sub_path))[2]:
                     self.paths[set_name][element][file] = os.path.join(sub_path, file)
                 # add element paths to parent sets
-                parent_sets = self._find_parent_set(self.analysis["subsets"],set_name)
+                parent_sets = self._find_parent_set(self.analysis.subsets, set_name)
                 for parent_set in parent_sets:
                     self.paths[parent_set][element] = self.paths[set_name][element]
             else:
@@ -177,20 +177,20 @@ class OptimizationSetup(object):
             # before adding the carriers, get set_carriers and check if carrier data exists
             if element_name == "set_carriers":
                 element_set = self.energy_system.set_carriers
-                self.system["set_carriers"] = element_set
+                self.system.set_carriers = element_set
                 self.input_data_checks.check_existing_carrier_data()
 
             # check if element_set has a subset and remove subset from element_set
-            if element_name in self.analysis["subsets"].keys():
-                if isinstance(self.analysis["subsets"][element_name], list):
-                    subset_names = self.analysis["subsets"][element_name]
-                elif isinstance(self.analysis["subsets"][element_name], dict):
-                    subset_names = self.analysis["subsets"][element_name].keys()
+            if element_name in self.analysis.subsets.keys():
+                if isinstance(self.analysis.subsets[element_name], list):
+                    subset_names = self.analysis.subsets[element_name]
+                elif isinstance(self.analysis.subsets[element_name], dict):
+                    subset_names = self.analysis.subsets[element_name].keys()
                 else:
                     raise ValueError(f"Subset {element_name} has to be either a list or a dict")
                 element_subset = [item for subset in subset_names for item in self.system[subset]]
             else:
-                stack = [_dict for _dict in copy.deepcopy(self.analysis["subsets"]).values() if isinstance(_dict, dict)]
+                stack = [_dict for _dict in copy.deepcopy(self.analysis.subsets).values() if isinstance(_dict, dict)]
                 while stack: # check if element_set is a subset of a subset
                     cur_dict = stack.pop()
                     element_subset = []
@@ -304,9 +304,9 @@ class OptimizationSetup(object):
                     attribute_is_series = attribute_is_series_temp
             # if extracted for both capacity types
             else:
-                for capacity_type in self.system["set_capacity_types"]:
+                for capacity_type in self.system.set_capacity_types:
                     # append energy only for storage technologies
-                    if capacity_type == self.system["set_capacity_types"][0] or element.name in self.system["set_storage_technologies"]:
+                    if capacity_type == self.system.set_capacity_types[0] or element.name in self.system.set_storage_technologies:
                         dict_of_attributes, attribute_is_series_temp, dict_of_units = self.append_attribute_of_element_to_dict(element, attribute_name, dict_of_attributes, dict_of_units, capacity_type)
                         if attribute_is_series_temp:
                             attribute_is_series = attribute_is_series_temp
@@ -326,7 +326,7 @@ class OptimizationSetup(object):
 
         attribute_is_series = False
         # add Energy for energy capacity type
-        if capacity_type == self.system["set_capacity_types"][1]:
+        if capacity_type == self.system.set_capacity_types[1]:
             attribute_name += "_energy"
         # if element does not have attribute
         if not hasattr(element, attribute_name):
@@ -405,9 +405,9 @@ class OptimizationSetup(object):
     def construct_optimization_problem(self):
         """ constructs the optimization problem """
         # create empty ConcreteModel
-        if self.solver["solver_dir"] is not None and not os.path.exists(self.solver["solver_dir"]):
-            os.makedirs(self.solver["solver_dir"])
-        self.model = lp.Model(solver_dir=self.solver["solver_dir"])
+        if self.solver.solver_dir is not None and not os.path.exists(self.solver.solver_dir):
+            os.makedirs(self.solver.solver_dir)
+        self.model = lp.Model(solver_dir=self.solver.solver_dir)
         # we need to reset the components to not carry them over
         self.sets = IndexSet()
         self.variables = Variable(self)
@@ -416,9 +416,9 @@ class OptimizationSetup(object):
         # define and construct components of self.model
         Element.construct_model_components(self)
         # Initiate scaling object
-        self.scaling = Scaling(self.model, self.solver['scaling_algorithm'],self.solver['scaling_include_rhs'])
+        self.scaling = Scaling(self.model, self.solver.scaling_algorithm, self.solver.scaling_include_rhs)
         # find smallest and largest coefficient and RHS
-        #self.analyze_numerics() -> Replaced through scaling
+        # self.analyze_numerics() -> Replaced through scaling
 
     def get_optimization_horizon(self):
         """ returns list of optimization horizon steps """
@@ -462,7 +462,7 @@ class OptimizationSetup(object):
 
         :param step_horizon: step of the rolling horizon """
 
-        if self.system["use_rolling_horizon"]:
+        if self.system.use_rolling_horizon:
             self.step_horizon = step_horizon
             time_steps_yearly_horizon = self.steps_horizon[step_horizon]
             base_time_steps_horizon = self.energy_system.time_steps.decode_yearly_time_steps(time_steps_yearly_horizon)
@@ -489,7 +489,7 @@ class OptimizationSetup(object):
 
     def solve(self):
         """Create model instance by assigning parameter values and instantiating the sets """
-        solver_name = self.solver["name"]
+        solver_name = self.solver.name
         # remove options that are None
         solver_options = {key: self.solver.solver_options[key] for key in self.solver.solver_options if self.solver.solver_options[key] is not None}
 
@@ -498,13 +498,13 @@ class OptimizationSetup(object):
         logging.disable(logging.WARNING)
 
         if solver_name == "gurobi":
-            self.model.solve(solver_name=solver_name, io_api=self.solver["io_api"],
-                             keep_files=self.solver["keep_files"], sanitize_zeros=True,
+            self.model.solve(solver_name=solver_name, io_api=self.solver.io_api,
+                             keep_files=self.solver.keep_files, sanitize_zeros=True,
                              # remaining kwargs are passed to the solver
                              **solver_options)
         else:
-            self.model.solve(solver_name=solver_name, io_api=self.solver["io_api"],
-                             keep_files=self.solver["keep_files"], sanitize_zeros=True)
+            self.model.solve(solver_name=solver_name, io_api=self.solver.io_api,
+                             keep_files=self.solver.keep_files, sanitize_zeros=True)
         # enable logger
         logging.disable(logging.NOTSET)
         if self.model.termination_condition == 'optimal':
@@ -518,7 +518,7 @@ class OptimizationSetup(object):
     def write_IIS(self):
         """ write an ILP file to print the IIS if infeasible. Only possible for gurobi
         """
-        if self.model.termination_condition == 'infeasible' and self.solver["name"] == "gurobi":
+        if self.model.termination_condition == 'infeasible' and self.solver.name == "gurobi":
             output_folder = StringUtils.get_output_folder(self.analysis)
             ilp_file = os.path.join(output_folder,"infeasible_model_IIS.ilp")
             logging.info(f"Writing parsed IIS to {ilp_file}")
@@ -538,13 +538,13 @@ class OptimizationSetup(object):
         """ adds the newly built capacity to the existing capacity
 
         :param step_horizon: step of the rolling horizon """
-        if self.system["use_rolling_horizon"]:
+        if self.system.use_rolling_horizon:
             if step_horizon != self.energy_system.set_time_steps_yearly_entire_horizon[-1]:
                 capacity_addition = self.model.solution["capacity_addition"].to_series().dropna()
                 invest_capacity = self.model.solution["capacity_investment"].to_series().dropna()
                 cost_capex_overnight = self.model.solution["cost_capex_overnight"].to_series().dropna()
-                if self.solver["round_parameters"]:
-                    rounding_value = 10 ** (-self.solver["rounding_decimal_points_capacity"])
+                if self.solver.round_parameters:
+                    rounding_value = 10 ** (-self.solver.rounding_decimal_points_capacity)
                 else:
                     rounding_value = 0
                 capacity_addition[capacity_addition <= rounding_value] = 0
@@ -587,9 +587,9 @@ class OptimizationSetup(object):
         """ overwrite previous carbon emissions with cumulative carbon emissions
 
         :param step_horizon: step of the rolling horizon """
-        if self.system["use_rolling_horizon"]:
+        if self.system.use_rolling_horizon:
             if step_horizon != self.energy_system.set_time_steps_yearly_entire_horizon[-1]:
-                interval_between_years = self.energy_system.system["interval_between_years"]
+                interval_between_years = self.energy_system.system.interval_between_years
                 decision_horizon = self.get_decision_horizon(step_horizon)
                 last_year = decision_horizon[-1]
                 carbon_emissions_cumulative = self.model.solution["carbon_emissions_cumulative"].loc[last_year].item()
@@ -669,7 +669,7 @@ class OptimizationSetup(object):
 
     def analyze_numerics(self):
         """ get largest and smallest matrix coefficients and RHS """
-        if self.solver["analyze_numerics"]:
+        if self.solver.analyze_numerics:
             logging.info("\n--- Analyze Matrix Ranges ---\n")
             flat = self.model.constraints.flat
             # coeffs
