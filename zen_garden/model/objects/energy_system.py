@@ -86,7 +86,7 @@ class EnergySystem:
         # list containing simulated years (needed for convert_real_to_generic_time_indices() in extract_input_data.py)
         self.set_time_steps_years = list(range(self.system.reference_year, self.system.reference_year + self.system.optimized_years * self.system.interval_between_years, self.system.interval_between_years))
         # parameters whose time-dependant data should not be interpolated (for years without data) in the extract_input_data.py convertRealToGenericTimeIndices() function
-        self.parameters_interpolation_off = self.data_input.read_input_csv("parameters_interpolation_off")
+        self.parameters_interpolation_off = self.data_input.read_input_json("parameters_interpolation_off")
         # technology-specific
         self.set_conversion_technologies = self.system.set_conversion_technologies
         self.set_transport_technologies = self.system.set_transport_technologies
