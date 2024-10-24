@@ -239,12 +239,16 @@ So, the user can reduce the number of data points in the ``demand_yearly_variati
     2020,1
     2050,4
 
-If the user wants to disable the interpolation for a specific parameter, the user can create a ``parameters_interpolation_off.csv`` file and specify the parameter names in the file:
+If the user wants to disable the interpolation for a specific parameter, the user can create a ``parameters_interpolation_off.json`` file and specify the parameter names in the file:
 
 .. code-block::
 
-    parameter_name
-    demand_yearly_variation
+    {
+      "parameter_name": [
+        "carbon_emissions_annual_limit",
+        "demand_yearly_variation"
+      ]
+    }
 
 .. note::
     The user must specify the file name, i.e., in the example above, the specified file is ``demand_yearly_variation.csv``, not ``demand.csv``.
