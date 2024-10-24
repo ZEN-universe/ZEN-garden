@@ -138,7 +138,7 @@ class DataInput:
                 index_multi_index = pd.MultiIndex.from_product([index_list], names=[df_input.index.name])
             df_input = pd.Series(index=index_multi_index, data=df_input.to_list(),dtype=float)
         common_index = df_output.index.intersection(df_input.index)
-        assert default_value is not None or len(common_index) == len(df_output.index), f"Input for {file_name} does not provide entire dataset and no default given in attributes.csv"
+        assert default_value is not None or len(common_index) == len(df_output.index), f"Input for {file_name} does not provide entire dataset and no default given in attributes.json"
         df_output.loc[common_index] = df_input.loc[common_index]
         return df_output
 
@@ -552,7 +552,7 @@ class DataInput:
         :param unit_category: dict defining the dimensions of the parameter's unit
         :param file_name: name of selected file.
         :param time_steps: specific time_steps of subelement
-        :param manual_default_value: if given, use manual_default_value instead of searching for default value in attributes.csv
+        :param manual_default_value: if given, use manual_default_value instead of searching for default value in attributes.json
         :param subelement: dependent element for which data is extracted
         """
         # select index
