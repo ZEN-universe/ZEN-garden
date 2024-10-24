@@ -282,7 +282,7 @@ class UnitHandling:
 
         :param optimization_setup: OptimizationSetup object
         """
-        if not optimization_setup.solver["check_unit_consistency"]:
+        if not optimization_setup.solver.check_unit_consistency:
             return
         elements = optimization_setup.dict_elements["Element"]
         items = elements + [optimization_setup.energy_system]
@@ -452,7 +452,7 @@ class UnitHandling:
         :param reference_carrier_name: name of reference carrier if item is a conversion technology
         """
         inconsistent_attributes_dict = {"element_name": item_name, "reference_carrier": reference_carrier_name, "attribute_names": str(inconsistent_attributes.keys())}
-        directory = os.path.join(analysis["folder_output"], os.path.basename(analysis["dataset"]))
+        directory = os.path.join(analysis.folder_output, os.path.basename(analysis.dataset))
         if not os.path.exists(directory):
             os.makedirs(directory)
         path = os.path.join(directory, "inconsistent_units.json")

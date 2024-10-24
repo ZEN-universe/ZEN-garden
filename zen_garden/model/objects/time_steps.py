@@ -170,7 +170,7 @@ class TimeStepsDicts(object):
 
         :param system: dictionary defining the system
         """
-        unaggregated_time_steps = system["unaggregated_time_steps_per_year"]
+        unaggregated_time_steps = system.unaggregated_time_steps_per_year
         sequence_time_steps = self.sequence_time_steps_storage
         counter = 0
         time_steps_start = []
