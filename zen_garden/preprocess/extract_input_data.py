@@ -336,7 +336,7 @@ class DataInput:
                     set_nodes_config = set_nodes_input
                 else:
                     missing_nodes = list(set(set_nodes_config).difference(set_nodes_input))
-                    assert len(missing_nodes) == 0, f"The nodes {missing_nodes} were declared in the config but do not exist in the input file {self.folder_path + 'set_nodes'}"
+                    assert len(missing_nodes) == 0, f"The nodes {missing_nodes} were declared in the config but do not exist in the input file {os.path.join(self.folder_path, 'set_nodes')}"
                 if not isinstance(set_nodes_config, list):
                     set_nodes_config = set_nodes_config.to_list()
                 set_nodes_config.sort()
