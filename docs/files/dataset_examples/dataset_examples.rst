@@ -183,7 +183,7 @@ This example showcases how missing values in input data can be interpolated and 
 Compared to the previous example, an annal limit of carbon emissions is introduced (file ``carbon_emissions_annual_limit.csv``).
 Each of the parameters `carbon_emissions_annual_limit` and `price_carbon_emissions` have yearly values missing.
 Per default, ZEN-garden interpolates the missing values linearly between the two closest known values.
-If this behaviour is not wanted, parameter names can be added to the file ``parameters_interpolation_off.csv`` inside the `energy_system` folder.
+If this behaviour is not wanted, parameter names can be added to the file ``parameters_interpolation_off.json`` inside the `energy_system` folder.
 For the parameter names in this file, the interpolation of missing values is switched off.
 In this case, the default value from the ``attributes.json``file is used for the missing values.
 

@@ -162,6 +162,22 @@ class DataInput:
         else:
             return None
 
+    def read_input_json(self, input_file_name):
+        """ reads json input data and returns a dict
+
+        :param input_file_name: name of selected file
+        :return data: dict with input data """
+
+        input_file_name += ".json"
+
+        file_names = os.listdir(self.folder_path)
+        if input_file_name in file_names:
+            with open(os.path.join(self.folder_path, input_file_name), "r") as file:
+                data = json.load(file)
+            return data
+        else:
+            return None
+
     def load_attribute_file(self, filename="attributes"):
         """
         loads attribute file. Either as csv (old version) or json (new version)
@@ -709,7 +725,7 @@ class DataInput:
             # interpolate missing data
             file_names_int_off = []
             if self.energy_system.parameters_interpolation_off is not None:
-                file_names_int_off = self.energy_system.parameters_interpolation_off.values
+                file_names_int_off = self.energy_system.parameters_interpolation_off['parameter_name']
             if file_name not in file_names_int_off:
                 parameters = df_input.axes[1]
                 for param in parameters:

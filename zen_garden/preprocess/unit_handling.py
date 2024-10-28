@@ -110,7 +110,13 @@ class UnitHandling:
         """ extracts base units of energy system
 
         :return list_base_units: list of base units """
-        list_base_units = pd.read_csv(self.folder_path / "base_units.csv").squeeze().values.tolist()
+        if os.path.exists(os.path.join(self.folder_path / "base_units.csv")):
+            list_base_units = pd.read_csv(self.folder_path / "base_units.csv").squeeze().values.tolist()
+            logging.warning("DeprecationWarning: Specifying the base units in .csv file format is deprecated. Use a .json file format instead.")
+        else:
+            with open(os.path.join(self.folder_path, 'base_units.json'), "r") as f:
+                data = json.load(f)
+            list_base_units = data['unit']
         return list_base_units
 
     def calculate_combined_unit(self, input_unit, return_combination=False):
