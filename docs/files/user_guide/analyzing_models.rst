@@ -22,6 +22,7 @@ To access the data frames containing the raw optimization results of the variabl
 2. ``r.get_full_ts()``: Returns the time series of the component. In case of hourly-resolved data, the time series has a length of 8760 times the number of years simulated.
 3. ``r.get_dual()``: Returns the dual values of the constraints.
 4. ``r.get_unit()``: Returns the units of the component.
+5. ``r.get_doc()``: Returns the documentation string of the component.
 
 The user must pass the name of the ``component`` to the member functions, e.g., ``r.get_total('capacity')`` to access the annual capacity values for all technologies.
 Optional arguments can be passed to the member functions to filter the results. The optional arguments are:
@@ -30,6 +31,11 @@ Optional arguments can be passed to the member functions to filter the results. 
 2. ``year``: A single optimization period for which the results should be returned (0, 1, 2, ...). Not available for ``r.get_unit()``.
 3. ``scenario_name``: A single scenario name for which the results should be returned.
 
+To return the names of all components, the following member function can be used::
+
+    r.get_component_names(<component_type>)
+
+The argument ``<component_type>`` can be one of the following: ``'parameter'``, ``'variable'``, ``'dual'``, ``'sets'``.
 .. _Visualization:
 User guide for visualization
 =================
