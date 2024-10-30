@@ -21,6 +21,7 @@ from .objects.energy_system import EnergySystem
 from .objects.technology.technology import Technology
 from zen_garden.preprocess.time_series_aggregation import TimeSeriesAggregation
 from zen_garden.preprocess.unit_handling import Scaling
+from zen_garden.preprocess.parameter_change_log import parameter_change_log
 
 from ..utils import ScenarioDict, IISConstraintParser, StringUtils
 
@@ -55,6 +56,8 @@ class OptimizationSetup(object):
         self.input_data_checks.check_existing_technology_data()
         # empty dict of elements (will be filled with class_name: instance_list)
         self.dict_elements = defaultdict(list)
+        # read the parameter change log
+        self.parameter_change_log = parameter_change_log()
         # optimization model
         self.model = None
         # the components
