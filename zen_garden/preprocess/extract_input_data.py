@@ -294,10 +294,14 @@ class DataInput:
                 # CASE 1: There is a new attribute
                 if isinstance(parameter_change_log[attribute_name], dict):
                     missing_attribute = parameter_change_log[attribute_name]
+
+                    if missing_attribute['default_value'] not in [0, 1, 'inf']:
+                        raise AttributeError(f"Default value of attribute {attribute_name} must be 0 , 1, or 'inf' but is {missing_attribute['default_value']}")
+
                     attribute_dict[attribute_name] = {"default_value": missing_attribute["default_value"],
                                                       "unit": attribute_dict[missing_attribute["unit"]]['unit']}
 
-                    logging.warning(f"\nDeprecationWarning: Attribute {attribute_name} is not yet included in your model. Automatic assign default_value:{attribute_dict[attribute_name]['default_value']}, unit {attribute_dict[attribute_name]['unit']}\n")
+                    logging.warning(f"\nDeprecationWarning: Attribute {attribute_name} is not yet included in your model. Automatic assign default_value:{attribute_dict[attribute_name]['default_value']}, unit: {attribute_dict[attribute_name]['unit']}\n")
 
                 # CASE 2: The attribute has a new name
                 else:
