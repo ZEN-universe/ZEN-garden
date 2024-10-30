@@ -1,14 +1,3 @@
-"""===========================================================================================================================================================================
-Title:        ZEN-GARDEN
-Created:      September-2022
-Authors:      Janis Fluri (janis.fluri@id.ethz.ch)
-              Alissa Ganter (aganter@ethz.ch)
-              Davide Tonelli (davidetonelli@outlook.com)
-              Jacob Mannhardt (jmannhardt@ethz.ch)
-Organization: Laboratory of Reliability and Risk Engineering, ETH Zurich
-
-Description:  Compilation  of the optimization problem.
-==========================================================================================================================================================================="""
 import os
 import re
 import warnings

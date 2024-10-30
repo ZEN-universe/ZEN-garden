@@ -4,26 +4,9 @@
 .. automodule:: zen_garden.model.optimization_setup
 
    
-   
-   
-
-   
-   
-   
-
-   
-   
    .. rubric:: Classes
 
    .. autosummary::
    
       OptimizationSetup
    
-   
-
-   
-   
-   
-
-
-
