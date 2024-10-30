@@ -1,11 +1,11 @@
 def parameter_change_log():
     log_dict = {
-        "capacity_limit": "capacity_limit_outdated",
+      #  "updated_name": "outdated_name",
 
-        "flow_storage_inflow": {
-            "default_value": 0,
-            "unit": "capacity_addition_min"
-        }
+    #    "new_parameter_name": {
+     #       "default_value": 0, # only 0, 1, or 'inf' are allowed
+     #       "unit": "existing_parameter_name_with_same_unit"
+     #   }
     }
 
     return log_dict

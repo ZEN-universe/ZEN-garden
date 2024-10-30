@@ -119,5 +119,9 @@
   "capacity_addition_unbounded": {
     "default_value": 0.0,
     "unit": "GW"
+  },
+  "flow_storage_inflow": {
+    "default_value": 0.0,
+    "unit": "GW"
   }
 }
