@@ -60,7 +60,7 @@ class EnergySystem:
                                     energy_system=self, unit_handling=self.unit_handling)
         # initialize empty set_carriers list
         self.set_carriers = []
-        #dict to save the parameter units (and save them in the results later on)
+        # dict to save the parameter units (and save them in the results later on)
         self.units = {}
 
     def store_input_data(self):
@@ -85,7 +85,7 @@ class EnergySystem:
         self.time_steps.sequence_time_steps_yearly = self.sequence_time_steps_yearly
         # list containing simulated years (needed for convert_real_to_generic_time_indices() in extract_input_data.py)
         self.set_time_steps_years = list(range(self.system.reference_year, self.system.reference_year + self.system.optimized_years * self.system.interval_between_years, self.system.interval_between_years))
-        # parameters whose time-dependant data should not be interpolated (for years without data) in the extract_input_data.py convertRealToGenericTimeIndices() function
+        # parameters whose time-dependant data should not be interpolated (for years without data) in the extract_input_data.py convert_real_to_generic_time_indices() function
         self.parameters_interpolation_off = self.data_input.read_input_json("parameters_interpolation_off")
         # technology-specific
         self.set_conversion_technologies = self.system.set_conversion_technologies
