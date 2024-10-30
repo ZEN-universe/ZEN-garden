@@ -287,7 +287,27 @@ class DataInput:
         :return: attribute value, attribute unit
         """
         if attribute_name not in attribute_dict:
-            raise AttributeError(f"Attribute {attribute_name} does not exist in input data of {self.element.name}")
+            parameter_change_log = self.energy_system.optimization_setup.parameter_change_log
+
+            # The attribute is not found because of an update
+            if attribute_name in parameter_change_log:
+                # CASE 1: There is a new attribute
+                if isinstance(parameter_change_log[attribute_name], dict):
+                    missing_attribute = parameter_change_log[attribute_name]
+                    attribute_dict[attribute_name] = {"default_value": missing_attribute["default_value"],
+                                                      "unit": attribute_dict[missing_attribute["unit"]]['unit']}
+
+                    logging.warning(f"\nDeprecationWarning: Attribute {attribute_name} is not yet included in your model. Automatic assign default_value:{attribute_dict[attribute_name]['default_value']}, unit {attribute_dict[attribute_name]['unit']}\n")
+
+                # CASE 2: The attribute has a new name
+                else:
+                    old_name = parameter_change_log[attribute_name]
+                    attribute_dict[attribute_name] = attribute_dict.pop(old_name)
+
+                    logging.warning(f"DeprecationWarning: Attribute {old_name} is now called {attribute_name}")
+
+            else:
+                raise AttributeError(f"Attribute {attribute_name} does not exist in input data of {self.element.name}")
         try:
             attribute_value = float(attribute_dict[attribute_name]["default_value"])
             attribute_unit = attribute_dict[attribute_name]["unit"]
