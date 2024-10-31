@@ -1,3 +1,6 @@
+"""
+This module defines the abstract classes for the components, scenarios and solution loaders.
+"""
 from abc import ABC, abstractmethod
 from enum import Enum
 from zen_garden.model.default_config import Analysis, System, Solver
@@ -11,6 +14,9 @@ class ComponentType(Enum):
     dual: str = "dual"
     sets: str = "sets"
 
+    @classmethod
+    def get_component_type_names(cls):
+        return [component_type.value for component_type in cls]
 
 class TimestepType(Enum):
     yearly: str = "year"

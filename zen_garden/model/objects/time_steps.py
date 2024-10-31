@@ -1,9 +1,4 @@
 """
-:Title:        ZEN-GARDEN
-:Created:      October-2021
-:Authors:      Alissa Ganter (aganter@ethz.ch)
-:Organization: Laboratory of Reliability and Risk Engineering, ETH Zurich
-
 This file implements a helper class to deal with timesteps
 """
 
@@ -144,6 +139,7 @@ class TimeStepsDicts(object):
         sequence_operation = self.sequence_time_steps_operation
         sequence_yearly = self.sequence_time_steps_yearly
         time_steps_combi_operation = np.vstack(pd.unique(pd.Series(zip(sequence_operation, sequence_yearly)))).T
+        time_steps_combi_operation = np.sort(time_steps_combi_operation,axis=1)
         # calculate operation2year
         time_steps_operation2year = {key: val for key, val in zip(time_steps_combi_operation[0, :], time_steps_combi_operation[1, :])}
         self.time_steps_operation2year = time_steps_operation2year
@@ -174,7 +170,7 @@ class TimeStepsDicts(object):
 
         :param system: dictionary defining the system
         """
-        unaggregated_time_steps = system["unaggregated_time_steps_per_year"]
+        unaggregated_time_steps = system.unaggregated_time_steps_per_year
         sequence_time_steps = self.sequence_time_steps_storage
         counter = 0
         time_steps_start = []
@@ -247,19 +243,21 @@ class TimeStepsDicts(object):
         return full_base_time_steps
 
     def convert_time_step_energy2power(self, time_step_energy):
+        # ToDo: check if the parameter is correctly described
         """ converts the time step of the energy quantities of a storage technology to the time step of the power quantities
 
-        :param time_step_energy: #TODO describe parameter/return
-        :return: #TODO describe parameter/return
+        :param time_step_energy: time step of energy quantities
+        :return: time step of power quantities
         """
         time_steps_energy2power = self.time_steps_energy2power
         return time_steps_energy2power[time_step_energy]
 
     def convert_time_step_operation2year(self, time_step_operation):
+        #ToDo: check if the parameter is correctly described
         """ converts the operational time step to the invest time step
 
-        :param time_step_operation: #TODO describe parameter/return
-        :return: #TODO describe parameter/return
+        :param time_step_operation: time step of operational time steps
+        :return: time step of invest time steps
         """
         time_steps_operation2year = self.time_steps_operation2year
         return time_steps_operation2year[time_step_operation]

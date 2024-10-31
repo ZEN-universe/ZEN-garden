@@ -1,3 +1,6 @@
+"""
+File that contains functions to compare the results of two or more models.
+"""
 from zen_garden.postprocess.results import Results
 from zen_garden.postprocess.results.solution_loader import ComponentType
 from typing import Optional, Any
@@ -7,12 +10,112 @@ import pandas as pd
 import numpy as np
 
 
+def compare_model_values(
+    results: list[Results],
+    component_type: ComponentType | str,
+    compare_total: bool = True,
+    scenarios: list[str] = [],
+) -> dict[str, pd.DataFrame]:
+    """Compares the input data of two or more results
+
+    :param results: list of results
+    :param component_type: component type to compare
+    :param compare_total: if True, compare total value, not full time series
+    :param scenarios: None, str or tuple of scenarios
+    :return: a dictionary with diverging results
+    """
+
+    scenarios = check_and_fill_scenario_list(results, scenarios)
+
+    if isinstance(component_type, str):
+        component_type = ComponentType(component_type)
+
+    logging.info(
+        f"Comparing the model parameters of {results[0].solution_loader.name, results[1].solution_loader.name} and scenarios {scenarios[0], scenarios[1]}"
+    )
+
+    diff_components = get_component_diff(results, component_type)
+
+    diff_dict = {}
+    # initialize progress bar
+    pbar = tqdm(total=len(diff_components))
+    for component_name in diff_components:
+        # update progress bar
+        pbar.update(1)
+        pbar.set_description(f"Compare parameter {component_name}")
+
+        comparison_df = compare_component_values(
+            results, component_name, compare_total, scenarios
+        )
+
+        if not comparison_df.empty:
+            logging.info(f"Parameter {component_name} has different values")
+            diff_dict[component_name] = comparison_df
+    pbar.close()
+    return diff_dict
+
+
+def compare_configs(
+    results: list[Results],
+    scenario_name: str,
+) -> dict[str, Any]:
+    """
+    Compares the configs of two results, namely the Analysis-Config and the System-config.
+
+    :param results: List of results
+    :param scenario_name: List of scenarios to filter by
+    :return: dictionary with diverging configs
+    """
+    ans: dict[str, Any] = {}
+
+    scenario_names = [scenario_name, scenario_name]
+
+    for i in range(2):
+        if scenario_names[i] not in results[i].solution_loader.scenarios:
+            random_scenario = next(iter(results[i].solution_loader.scenarios.keys()))
+            logging.info(
+                f"{scenario_name} not in {results[i].solution_loader.name}, choosing {random_scenario}."
+            )
+            scenario_names[i] = random_scenario
+
+    results_1, results_2 = results
+    scenario_name_1, scenario_name_2 = scenario_names
+
+    scenario_1 = results_1.solution_loader.scenarios[scenario_name_1]
+    scenario_2 = results_2.solution_loader.scenarios[scenario_name_2]
+
+    names = [results_1.solution_loader.name, results_2.solution_loader.name]
+
+    analysis_diff = compare_dicts(
+        scenario_1.analysis.model_dump(), scenario_2.analysis.model_dump(), names
+    )
+
+    if analysis_diff is not None:
+        ans["analysis"] = analysis_diff
+
+    system_diff = compare_dicts(
+        scenario_1.system.model_dump(), scenario_2.system.model_dump(), names
+    )
+
+    if system_diff is not None:
+        ans["system"] = system_diff
+
+    solver_diff = compare_dicts(
+        scenario_1.solver.model_dump(), scenario_2.solver.model_dump(), names
+    )
+
+    if solver_diff is not None:
+        ans["solver"] = solver_diff
+
+    return ans
+
 def get_component_diff(
     results: list[Results], component_type: ComponentType
 ) -> list[str]:
     """returns a list with the differences in component names
 
-    :param results: dictionary with results
+    :param results: list with results
+    :param component_type: component type to compare
     :return: list with the common params
     """
     assert len(results) == 2, "Please give exactly two components"
@@ -90,9 +193,9 @@ def check_and_fill_scenario_list(
 ) -> list[str]:
     """Checks if both results have the provided scenarios and otherwise returns a list containing twice one common scenario.
 
-    :param results_1: Result 1
-    :param results_2: Result 2
+    :param results: List of results.
     :param scenarios: List of names of scenario.
+    :return: List of scenario names
     """
     assert len(results) == 2, "Please provide exactly two results"
     assert len(scenarios) <= 2, "Please provide a maximum of two scenarios"
@@ -131,6 +234,7 @@ def get_common_scenario(results_1: Results, results_2: Results) -> str:
 
     :param results_1: Results 1
     :param results_2: Results 2
+    :return: Name of common scenario
     """
     common_scenarios = set(results_1.solution_loader.scenarios.keys()).intersection(
         results_2.solution_loader.scenarios.keys()
@@ -138,61 +242,6 @@ def get_common_scenario(results_1: Results, results_2: Results) -> str:
     assert len(common_scenarios) > 0, "No common scenarios between provided scenarios."
 
     return next(iter(common_scenarios))
-
-
-def compare_configs(
-    results: list[Results],
-    scenario_name: str,
-) -> dict[str, Any]:
-    """
-    Compares the configs of two results, namely the Analysis-Config and the System-config.
-
-    :param results_1: Results
-    :param results_2: Other results
-    :param scnearios: List of scenarios to filter by
-    """
-    ans: dict[str, Any] = {}
-
-    scenario_names = [scenario_name, scenario_name]
-
-    for i in range(2):
-        if scenario_names[i] not in results[i].solution_loader.scenarios:
-            random_scenario = next(iter(results[i].solution_loader.scenarios.keys()))
-            logging.info(
-                f"{scenario_name} not in {results[i].solution_loader.name}, choosing {random_scenario}."
-            )
-            scenario_names[i] = random_scenario
-
-    results_1, results_2 = results
-    scenario_name_1, scenario_name_2 = scenario_names
-
-    scenario_1 = results_1.solution_loader.scenarios[scenario_name_1]
-    scenario_2 = results_2.solution_loader.scenarios[scenario_name_2]
-
-    names = [results_1.solution_loader.name, results_2.solution_loader.name]
-
-    analysis_diff = compare_dicts(
-        scenario_1.analysis.model_dump(), scenario_2.analysis.model_dump(), names
-    )
-
-    if analysis_diff is not None:
-        ans["analysis"] = analysis_diff
-
-    system_diff = compare_dicts(
-        scenario_1.system.model_dump(), scenario_2.system.model_dump(), names
-    )
-
-    if system_diff is not None:
-        ans["system"] = system_diff
-
-    solver_diff = compare_dicts(
-        scenario_1.solver.model_dump(), scenario_2.solver.model_dump(), names
-    )
-
-    if solver_diff is not None:
-        ans["solver"] = solver_diff
-
-    return ans
 
 
 def compare_component_values(
@@ -205,7 +254,7 @@ def compare_component_values(
     """Compares component values of two results
 
     :param results: list with results
-    :param component: component name
+    :param component_name: component name
     :param compare_total: if True, compare total value, not full time series
     :param scenarios: None, str or tuple of scenarios
     :param rtol: relative tolerance of equal values
@@ -274,51 +323,6 @@ def compare_component_values(
             return comparison_df
         return _get_different_vals(val_0, val_1, result_names, rtol)
 
-
-def compare_model_values(
-    results: list[Results],
-    component_type: ComponentType | str,
-    compare_total: bool = True,
-    scenarios: list[str] = [],
-) -> dict[str, pd.DataFrame]:
-    """Compares the input data of two or more results
-
-    :param results: list of results
-    :param compare_total: if True, compare total value, not full time series
-    :param scenarios: None, str or tuple of scenarios
-    :return: a dictionary with diverging results
-    """
-
-    scenarios = check_and_fill_scenario_list(results, scenarios)
-
-    if isinstance(component_type, str):
-        component_type = ComponentType(component_type)
-
-    logging.info(
-        f"Comparing the model parameters of {results[0].solution_loader.name, results[1].solution_loader.name} and scenarios {scenarios[0], scenarios[1]}"
-    )
-
-    diff_components = get_component_diff(results, component_type)
-
-    diff_dict = {}
-    # initialize progress bar
-    pbar = tqdm(total=len(diff_components))
-    for component_name in diff_components:
-        # update progress bar
-        pbar.update(1)
-        pbar.set_description(f"Compare parameter {component_name}")
-
-        comparison_df = compare_component_values(
-            results, component_name, compare_total, scenarios
-        )
-
-        if not comparison_df.empty:
-            logging.info(f"Parameter {component_name} has different values")
-            diff_dict[component_name] = comparison_df
-    pbar.close()
-    return diff_dict
-
-
 def _get_different_vals(
     val_0: "pd.DataFrame | pd.Series[Any]",
     val_1: "pd.DataFrame | pd.Series[Any]",
@@ -330,6 +334,8 @@ def _get_different_vals(
     
     :param val_0: first dataframe or series
     :param val_1: second dataframe or series
+    :param result_names: names of the results
+    :param rtol: relative tolerance of equal values
     :return: comparison_df
     """
     is_close = np.isclose(val_0, val_1, rtol=rtol, equal_nan=True)

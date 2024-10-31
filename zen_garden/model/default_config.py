@@ -1,15 +1,12 @@
 """
-:Title:        ZEN-GARDEN
-:Created:      October-2021
-:Authors:      Alissa Ganter (aganter@ethz.ch)
-:Organization: Laboratory of Reliability and Risk Engineering, ETH Zurich
+Default configuration.
 
-Default configuration. Changes from the default values are specified in config.py (folders data/tests) and system.py (individual datasets)
+Changes from the default values are specified in config.py (folders data/tests) and system.py (individual datasets)
 """
 
 from pydantic import BaseModel, ConfigDict
 from typing import Any, Optional, Union
-
+import importlib.metadata
 
 class Subscriptable(BaseModel, extra="allow"):
     def __getitem__(self, __name: str) -> Any:
@@ -60,6 +57,9 @@ class Subsets(Subscriptable):
 
 
 class HeaderDataInputs(Subscriptable):
+    """
+    Header data inputs for the model
+    """
     set_nodes: str = "node"
     set_edges: str = "edge"
     set_super_nodes: str = "super_node"
@@ -87,7 +87,9 @@ class HeaderDataInputs(Subscriptable):
     set_failure_states: str = "failure_state"
 
 class System(Subscriptable):
-    model_config = ConfigDict(extra="allow")
+    """
+    Class which contains the system configuration. This defines for example the set of carriers, technologies, etc.
+    """
     set_carriers: list[str] = []
     set_capacity_types: list[str] = ["power", "energy"]
     set_conversion_technologies: list[str] = []
@@ -106,16 +108,15 @@ class System(Subscriptable):
     clean_sub_scenarios: bool = False
     total_hours_per_year: int = 8760
     knowledge_depreciation_rate: float = 0.1
-    enforce_selfish_behavior: bool = False
-    reference_year: int = 2023
+    reference_year: int = 2024
     unaggregated_time_steps_per_year: int = 8760
     aggregated_time_steps_per_year: int = 10
-    conduct_time_series_aggregation: bool = True
-    optimized_years: int = 3
+    conduct_time_series_aggregation: bool = False
+    optimized_years: int = 1
     interval_between_years: int = 1
     use_rolling_horizon: bool = False
-    years_in_rolling_horizon: int = 5
-    interval_between_optimizations: int = 1
+    years_in_rolling_horizon: int = 1
+    years_in_decision_horizon: int = 1
     use_capacities_existing: bool = True
     load_lca_factors: bool = False
     set_lca_impact_categories: list[str] = []
@@ -124,6 +125,9 @@ class SolverOptions(Subscriptable):
     pass
 
 class Solver(Subscriptable):
+    """
+    Class which contains the solver configuration. This defines for example the solver options, scaling, etc.
+    """
     name: str = "highs"
     solver_options: SolverOptions = SolverOptions()
     check_unit_consistency: bool = True
@@ -131,54 +135,54 @@ class Solver(Subscriptable):
     keep_files: bool = False
     io_api: str = "lp"
     add_duals: bool = False
-    recommend_base_units: bool = False
-    immutable_unit: list[str] = []
-    range_unit_exponents: dict[str, int] = {"min": -1, "max": 1, "step_width": 1}
-    rounding_decimal_points: int = 5
-    rounding_decimal_points_ts: int = 4
     linear_regression_check: dict[str, float] = {
         "eps_intercept": 0.1,
         "epsRvalue": 1 - (1e-5),
     }
+    round_parameters: bool = False
     rounding_decimal_points_units: int = 6
-    round_parameters: bool = True
     rounding_decimal_points_capacity: int = 4
+    rounding_decimal_points_tsa: int = 4
     analyze_numerics: bool = True
     use_scaling: bool = True
-    scaling_include_rhs: bool = False
+    scaling_include_rhs: bool = True
     scaling_algorithm: Union[list[str],str] = ["geom","geom","geom"]
 
 
-
 class TimeSeriesAggregation(Subscriptable):
+    """
+    Class which contains the time series aggregation configuration. This defines for example the clustering method, etc.
+    """
     slv: Solver = Solver()
     clusterMethod: str = "hierarchical"
     solver: str = slv.name
-    hoursPerPeriod: int = 1
+    hoursPerPeriod: int = 1 # keep this at 1
     extremePeriodMethod: Optional[str] = "None"
     rescaleClusterPeriods: bool = False
     representationMethod: str = "meanRepresentation"
     resolution: int = 1
-    segmentation: bool = False
-    noSegments: int = 12
 
 class Analysis(Subscriptable):
+    """
+    Class which contains the analysis configuration. This defines for example the objective function, output settings, etc.
+    """
     dataset: str = ""
     objective: str = "total_cost"
-    sense: str = "minimize"
-    transport_distance: str = "Euclidean"
+    sense: str = "min"
     subsets: Subsets = Subsets()
     header_data_inputs: HeaderDataInputs = HeaderDataInputs()
     time_series_aggregation: TimeSeriesAggregation = TimeSeriesAggregation()
     folder_output: str = "./outputs/"
     overwrite_output: bool = True
     output_format: str = "h5"
-    write_results_yml: bool = False
-    max_output_size_mb: int = 500
-    folder_name_system_specification: str = "system_specification"
     earliest_year_of_data: int = 1900
+    save_benchmarking_results: bool = False
+    zen_garden_version: str = None
 
 class Config(Subscriptable):
+    """
+    Class which contains the configuration of the model. This includes the configuratins of the system, solver, and analysis as well as the dictionary of scenarios.
+    """
     analysis: Analysis = Analysis()
     solver: Solver = Solver()
     system: System = System()

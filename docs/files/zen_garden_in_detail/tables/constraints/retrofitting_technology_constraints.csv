@@ -1,0 +1,2 @@
+Constraint Name;Time Step Type;Doc String
+``constraint_retrofit_flow_coupling``;``set_time_steps_operation``;couples the reference flow of the retrofitting technology with the reference flow of its base technology

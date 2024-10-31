@@ -76,7 +76,11 @@
     "default_value": 0.0,
     "unit": "GWh"
   },
-  "energy_to_power_ratio": {
+  "energy_to_power_ratio_min": {
+    "default_value": 0,
+    "unit": "h"
+  },
+  "energy_to_power_ratio_max": {
     "default_value": "inf",
     "unit": "h"
   },
@@ -113,6 +117,10 @@
     "unit": "Euro/kWh"
   },
   "capacity_addition_unbounded": {
+    "default_value": 0.0,
+    "unit": "GW"
+  },
+  "flow_storage_inflow": {
     "default_value": 0.0,
     "unit": "GW"
   }

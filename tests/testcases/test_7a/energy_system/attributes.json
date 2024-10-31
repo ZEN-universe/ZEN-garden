@@ -23,6 +23,10 @@
     "default_value": "inf",
     "unit": "Euro/tons"
   },
+  "knowledge_depreciation_rate": {
+    "default_value": 0.1,
+    "unit": "1"
+  },
   "knowledge_spillover_rate": {
     "default_value": 0.025,
     "unit": "1"

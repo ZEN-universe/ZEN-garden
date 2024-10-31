@@ -1,8 +1,6 @@
-[
-  {
-    "price_carbon_emissions": {
-      "default_value": 50.0,
-      "unit": "Euro/tons"
-    }
+{
+  "price_carbon_emissions": {
+    "default_value": 50.0,
+    "unit": "Euro/tons"
   }
-]
+}

@@ -1,10 +1,4 @@
 """
-:Title:          ZEN-GARDEN
-:Created:        October-2021
-:Authors:        Alissa Ganter (aganter@ethz.ch),
-                 Jacob Mannhardt (jmannhardt@ethz.ch)
-:Organization:   Laboratory of Reliability and Risk Engineering, ETH Zurich
-
 Class defining the parameters, variables and constraints that hold for all storage technologies.
 The class takes the abstract optimization model as an input, and returns the parameters, variables and
 constraints that hold for the storage technologies.
@@ -64,7 +58,9 @@ class StorageTechnology(Technology):
         self.capacity_limit_super_energy = self.data_input.extract_input_data("capacity_limit_super_energy", index_sets=["set_super_nodes", "set_time_steps_yearly"], time_steps="set_time_steps_yearly", unit_category={"energy_quantity": 1})
         self.capacity_existing_energy = self.data_input.extract_input_data("capacity_existing_energy", index_sets=["set_nodes", "set_technologies_existing"], unit_category={"energy_quantity": 1})
         self.capacity_investment_existing_energy = self.data_input.extract_input_data("capacity_investment_existing_energy", index_sets=["set_nodes", "set_time_steps_yearly"], time_steps="set_time_steps_yearly", unit_category={"energy_quantity": 1})
-        self.energy_to_power_ratio = self.data_input.extract_input_data("energy_to_power_ratio", index_sets=[], unit_category={"time": 1})
+        self.energy_to_power_ratio_min = self.data_input.extract_input_data("energy_to_power_ratio_min", index_sets=[], unit_category={"time": 1})
+        self.energy_to_power_ratio_max = self.data_input.extract_input_data("energy_to_power_ratio_max", index_sets=[],
+                                                                        unit_category={"time": 1})
         self.capex_specific_storage = self.data_input.extract_input_data("capex_specific_storage", index_sets=["set_nodes", "set_time_steps_yearly"], time_steps="set_time_steps_yearly", unit_category={"money": 1, "energy_quantity": -1, "time": -1})
         self.capex_specific_storage_energy = self.data_input.extract_input_data("capex_specific_storage_energy", index_sets=["set_nodes", "set_time_steps_yearly"], time_steps="set_time_steps_yearly", unit_category={"money": 1, "energy_quantity": -1})
         self.opex_specific_fixed = self.data_input.extract_input_data("opex_specific_fixed", index_sets=["set_nodes", "set_time_steps_yearly"], time_steps="set_time_steps_yearly", unit_category={"money": 1, "energy_quantity": -1, "time": 1})
@@ -76,6 +72,8 @@ class StorageTechnology(Technology):
         # add min load max load time series for energy
         self.raw_time_series["min_load_energy"] = self.data_input.extract_input_data("min_load_energy", index_sets=["set_nodes", "set_time_steps"], time_steps="set_base_time_steps_yearly", unit_category={})
         self.raw_time_series["max_load_energy"] = self.data_input.extract_input_data("max_load_energy", index_sets=["set_nodes", "set_time_steps"], time_steps="set_base_time_steps_yearly", unit_category={})
+        # add flow_storage_inflow time series
+        self.raw_time_series["flow_storage_inflow"] = self.data_input.extract_input_data("flow_storage_inflow",index_sets=["set_nodes", "set_time_steps"],time_steps="set_base_time_steps_yearly",unit_category={"energy_quantity": 1, "time": -1})
 
     def convert_to_fraction_of_capex(self):
         """ this method converts the total capex to fraction of capex, depending on how many hours per year are calculated """
@@ -113,11 +111,14 @@ class StorageTechnology(Technology):
 
         :param optimization_setup: The OptimizationSetup the element is part of """
         # energy to power ratio
-        optimization_setup.parameters.add_parameter(name="energy_to_power_ratio", index_names=["set_storage_technologies"], doc='power to energy ratio for storage technologies', calling_class=cls)
+        optimization_setup.parameters.add_parameter(name="energy_to_power_ratio_min", index_names=["set_storage_technologies"], doc='power to energy ratio for storage technologies - lower bound', calling_class=cls)
+        optimization_setup.parameters.add_parameter(name="energy_to_power_ratio_max", index_names=["set_storage_technologies"], doc='power to energy ratio for storage technologies - upper bound', calling_class=cls)
         # efficiency charge
         optimization_setup.parameters.add_parameter(name="efficiency_charge", index_names=["set_storage_technologies", "set_nodes", "set_time_steps_yearly"], doc='efficiency during charging for storage technologies', calling_class=cls)
         # efficiency discharge
         optimization_setup.parameters.add_parameter(name="efficiency_discharge", index_names=["set_storage_technologies", "set_nodes", "set_time_steps_yearly"], doc='efficiency during discharging for storage technologies', calling_class=cls)
+        #  flow_storage_inflow
+        optimization_setup.parameters.add_parameter(name="flow_storage_inflow", index_names=["set_storage_technologies", "set_nodes", "set_time_steps_operation"], doc='energy inflow in storage technologies', calling_class=cls)
         # self discharge
         optimization_setup.parameters.add_parameter(name="self_discharge", index_names=["set_storage_technologies", "set_nodes"], doc='self discharge of storage technologies', calling_class=cls)
         # capex specific
@@ -134,6 +135,7 @@ class StorageTechnology(Technology):
 
         def flow_storage_bounds(index_values, index_list):
             """ return bounds of carrier_flow for bigM expression
+
             :param index_values: list of tuples with the index values
             :param index_list: The names of the indices
             :return bounds: bounds of carrier_flow"""
@@ -157,6 +159,8 @@ class StorageTechnology(Technology):
         # storage level
         variables.add_variable(model, name="storage_level", index_sets=cls.create_custom_set(["set_storage_technologies", "set_nodes", "set_time_steps_storage"], optimization_setup), bounds=(0, np.inf),
             doc='storage level of storage technology ón node in each storage time step', unit_category={"energy_quantity": 1})
+        # energy spillage
+        variables.add_variable(model, name="flow_storage_spillage", index_sets=(index_values, index_names), bounds=(0, np.inf), doc='storage spillage of storage technology on node i in each storage time step', unit_category={"energy_quantity": 1, "time": -1})
 
     @classmethod
     def construct_constraints(cls, optimization_setup):
@@ -175,6 +179,9 @@ class StorageTechnology(Technology):
 
         # couple storage levels
         rules.constraint_couple_storage_level()
+
+        # spillage limit
+        rules.constraint_flow_storage_spillage()
 
         # limit energy to power ratios of capacity additions
         rules.constraint_capacity_energy_to_power_ratio()
@@ -264,7 +271,13 @@ class StorageTechnologyRules(GenericRule):
         """ Load is limited by the installed capacity and the maximum load factor for storage technologies
 
         .. math::
-            \\underline{H}_{k,n,t,y}+\\overline{H}_{k,n,t,y}\\leq m_{k,n,t,y}S_{k,n,y}
+            \\underline{H}_{k,n,t,y}+\\overline{H}_{k,n,t,y}\\leq m^{\mathrm{max}}_{k,n,t,y}S_{k,n,y}
+
+        :math:`\\underline{H}_{k,n,t,y}`: carrier flow into storage technology :math:`k` on node :math:`n` and time :math:`t` in year :math:`y` \n
+        :math:`\\overline{H}_{k,n,t,y}`: carrier flow out of storage technology :math:`k`on node :math:`n` and time :math:`t` in year :math:`y` \n
+        :math:`m^{\mathrm{max}}_{k,n,t,y}`: maximum load factor for storage technology :math:`k` on node :math:`n` and time :math:`t` in year :math:`y` \n
+        :math:`S_{k,n,y}`: storage capacity of storage technology :math:`k` on node :math:`n` in year :math:`y`
+
 
         """
         techs = self.sets["set_storage_technologies"]
@@ -289,8 +302,19 @@ class StorageTechnologyRules(GenericRule):
         """ calculate opex of each technology
 
         .. math::
-            OPEX_{h,p,t}^\mathrm{cost} = \\beta_{h,p,t} (\\underline{H}_{k,n,t} + \\overline{H}_{k,n,t})
-            E_{h,p,t} = \\epsilon_h (\\underline{H}_{k,n,t} + \\overline{H}_{k,n,t})
+            O_{h,p,t}^\mathrm{t} = \\beta_{h,p,t} (\\underline{H}_{k,n,t} + \\overline{H}_{k,n,t}) \n
+            \\theta_{h,p,t}^{\mathrm{tech}} = \\epsilon_h (\\underline{H}_{k,n,t} + \\overline{H}_{k,n,t})
+
+        :math:`O_{h,p,t}^\mathrm{t}`: variable operational expenditures for storage technology :math:`h` on node :math:`n` and time :math:`t` \n
+        :math:`\\beta_{h,p,t}`: specific variable operational expenditures for storage technology :math:`h` on node :math:`n` and time :math:`t` \n
+        :math:`\\underline{H}_{k,n,t}`: carrier flow into storage technology :math:`k` on node :math:`n` and time :math:`t` \n
+        :math:`\\overline{H}_{k,n,t}`: carrier flow out of storage technology :math:`k` on node :math:`n` and time :math:`t` \n
+        :math:`\\theta_{h,p,t}^{\mathrm{tech}}`: carbon emissions for storage technology :math:`h` on node :math:`n` and time :math:`t` \n
+        :math:`\\epsilon_h`: carbon intensity for operating storage technology :math:`h` on node :math:`n`
+
+
+
+
 
         """
         techs = self.sets["set_storage_technologies"]
@@ -298,7 +322,7 @@ class StorageTechnologyRules(GenericRule):
             return
         nodes = self.sets["set_nodes"]
         lhs_opex = (
-                self.variables["cost_opex"] - (self.parameters.opex_specific_variable * self.get_flow_expression_storage())
+                self.variables["cost_opex_variable"] - (self.parameters.opex_specific_variable * self.get_flow_expression_storage())
         ).sel({"set_technologies":techs,"set_location":nodes})
         lhs_emissions = (self.variables["carbon_emissions_technology"]
                - (self.parameters.carbon_intensity_technology*self.get_flow_expression_storage())).sel({"set_technologies":techs,"set_location":nodes})
@@ -316,6 +340,9 @@ class StorageTechnologyRules(GenericRule):
 
         .. math::
             L_{k,n,t^\mathrm{k}} \le S^\mathrm{e}_{k,n,y}
+
+        :math:`L_{k,n,t^\mathrm{k}}`: storage level of storage technology :math:`k` on node :math:`n` and time :math:`t` \n
+        :math:`S^\mathrm{e}_{k,n,y}`: energy capacity of storage technology :math:`k` on node :math:`n` in year :math:`y`
 
         """
         techs = self.sets["set_storage_technologies"]
@@ -336,34 +363,64 @@ class StorageTechnologyRules(GenericRule):
         self.constraints.add_constraint("constraint_storage_level_max",constraints)
 
     def constraint_capacity_energy_to_power_ratio(self):
-        """limit capacity power to energy ratio"""
+        """limit capacity power to energy ratio
+
+        .. math::
+            \\rho_k^{min} S^{e}_{k,n,y} \le S_{k,n,y}
+
+        .. math::
+            S_{k,n,y} \le \\rho_k^{max} S^{e}_{k,n,y}
+
+        :math:`S^{\mathrm{power}}_{k,n,y}`: installed capacity in terms of power of storage :math:`k` at node :math:`n` in year :math:`y` \n
+        :math:`S^{e}_{k,n,y}`: installed capacity in terms of energy of storage :math:`k` at node :math:`n` in year :math:`y` \n
+        :math:`\\rho_k^{min}`: minimum power-to-energy ratio of storage :math:`k` \n
+        :math:`\\rho_k^{max}`: maximum power-to-energy ratio of storage :math:`k`
+
+        """
+
+
 
         techs = self.sets["set_storage_technologies"]
         if len(techs) == 0:
             return None
-        e2p = self.parameters.energy_to_power_ratio
-        mask = e2p != np.inf
+        e2p_min = self.parameters.energy_to_power_ratio_min
+        e2p_max = self.parameters.energy_to_power_ratio_max
+        mask_min = e2p_min != np.inf
+        mask_max = e2p_max != np.inf
 
         capacity_addition = self.variables["capacity_addition"].rename({"set_technologies": "set_storage_technologies"})
         capacity_addition_power = capacity_addition.sel({"set_storage_technologies":techs,"set_capacity_types": "power"})
         capacity_addition_energy = capacity_addition.sel({"set_storage_technologies":techs,"set_capacity_types": "energy"})
-        lhs = (capacity_addition_energy * e2p - capacity_addition_power).where(mask)
+        lhs = (capacity_addition_energy - capacity_addition_power * e2p_min).where(mask_min)
         rhs = 0
-        constraints = lhs == rhs
+        constraints_min = lhs >= rhs
+        lhs = (capacity_addition_energy - capacity_addition_power*e2p_max).where(mask_max)
+        constraints_max = lhs <= rhs
 
-        self.constraints.add_constraint("constraint_capacity_energy_to_power_ratio", constraints)
+        self.constraints.add_constraint("constraint_capacity_energy_to_power_ratio_min", constraints_min)
+        self.constraints.add_constraint("constraint_capacity_energy_to_power_ratio_max", constraints_max)
 
     def constraint_couple_storage_level(self):
         """couple subsequent storage levels (time coupling constraints)
 
         .. math::
-            L(t) = L_0\\kappa^t + \\Delta H\\frac{1-\\kappa^t}{1-\\kappa} = \\frac{\\Delta H}{1-\\kappa}+(L_0-\\frac{\\Delta H}{1-\\kappa})\\kappa^t
+            L_{k,n,t^k,y} = L_{k,n,t^k-1,y} (1-\\phi_k)^{\\tau_{t^k}^k} + (\\underline{\\eta}_k \\underline{H}_{k,n,\\sigma(t^k),y} - \\frac{\\overline{H}_{k,n,\\sigma(t^k),y}}{\\overline{\\eta}_k}) \sum^{\\tau_{t^k}^k-1}_{\\tilde{t}^k=0} (1-\\phi_k)^{\\tilde{t}^k}
+
+        :math:`L_{k,n,t^k,y}`: storage level of storage technology :math:`k` on node :math:`n` and time :math:`t^k` in year :math:`y` \n
+        :math:`\\phi_k`: self discharge rate of storage technology :math:`k` \n
+        :math:`\\tau_{t^k}^k`: duration of storage level time step of storage technology :math:`k` \n
+        :math:`\\underline{\\eta}_k`: efficiency during charging of storage technology :math:`k` \n
+        :math:`\\overline{\\eta}_k`: efficiency during discharging of storage technology :math:`k` \n
+        :math:`\\underline{H}_{k,n,\\sigma(t^k),y}`: charge flow into storage technology :math:`k` on node :math:`n` and time :math:`\\sigma(t^k)` in year :math:`y` \n
+        :math:`\\overline{H}_{k,n,\\sigma(t^k),y}`: discharge flow out of storage technology :math:`k` on node :math:`n` and time :math:`\\sigma(t^k)` in year :math:`y`
 
         """
         techs = self.sets["set_storage_technologies"]
         if len(techs) == 0:
             return
         self_discharge = self.parameters.self_discharge
+        flow_storage_inflow = self.parameters.flow_storage_inflow
+        flow_storage_spillage = self.variables.flow_storage_spillage
         time_steps_storage_duration = self.parameters.time_steps_storage_duration
         # reformulate self discharge multiplier as partial geometric series
         multiplier_w_discharge = (
@@ -384,7 +441,9 @@ class StorageTechnologyRules(GenericRule):
         efficiency_discharge = self.parameters.efficiency_discharge.broadcast_like(times_year_time_step).where(times_year_time_step,0.0).sum("set_time_steps_yearly")
         term_flow_charge_discharge = (
                 self.variables["flow_storage_charge"] * efficiency_charge -
-                self.variables["flow_storage_discharge"] / efficiency_discharge)
+                self.variables["flow_storage_discharge"] / efficiency_discharge +
+                flow_storage_inflow -
+                flow_storage_spillage)
         times_power2energy = self.get_power2energy_time_step_array()
         term_flow_charge_discharge = self.map_and_expand(term_flow_charge_discharge, times_power2energy)
         term_flow_charge_discharge = term_flow_charge_discharge*multiplier
@@ -395,11 +454,33 @@ class StorageTechnologyRules(GenericRule):
 
         self.constraints.add_constraint("constraint_couple_storage_level",constraints)
 
+    def constraint_flow_storage_spillage(self):
+        """Impose that the flow_energy_spillage cannot be greater than the flow_storage_inflow.
+        .. math::
+            TODO
+        """
+        techs = self.sets["set_storage_technologies"]
+        if len(techs) == 0:
+            return
+
+        flow_storage_inflow = self.parameters.flow_storage_inflow
+        flow_storage_spillage = self.variables.flow_storage_spillage
+
+        lhs = flow_storage_spillage - flow_storage_inflow
+        rhs = 0
+        constraints = lhs <= rhs
+
+        self.constraints.add_constraint("constraint_flow_storage_spillage", constraints)
+
     def constraint_storage_technology_capex(self):
         """ definition of the capital expenditures for the storage technology
 
         .. math::
-            CAPEX_{y,n,i}^\mathrm{cost} = \\Delta S_{h,p,y} \\alpha_{k,n,y}
+            CAPEX_{y,n,i} = \\Delta S_{h,p,y} \\alpha_{k,n,y}
+
+        :math:`\\Delta S_{h,p,y}`: capacity addition of storage technology :math:`h` on node :math:`n` in year :math:`y` \n
+        :math:`\\alpha_{k,n,y}`: specific capex of storage technology :math:`k` on node :math:`n` in year :math:`y`
+
 
         """
         # TODO clean up
@@ -421,7 +502,7 @@ class StorageTechnologyRules(GenericRule):
         coords = [self.variables.coords["set_storage_technologies"], self.variables.coords["set_capacity_types"], self.variables.coords["set_nodes"], self.variables.coords["set_time_steps_yearly"]]
 
         ### formulate constraint
-        lhs = linexpr_from_tuple_np([(1.0, self.variables["cost_capex"].loc[techs, capacity_types, nodes, times]),
+        lhs = linexpr_from_tuple_np([(1.0, self.variables["cost_capex_overnight"].loc[techs, capacity_types, nodes, times]),
                                      (-self.parameters.capex_specific_storage.loc[techs, capacity_types, nodes, times], self.variables["capacity_addition"].loc[techs, capacity_types, nodes, times])],
                                      coords, self.model)
         rhs = 0

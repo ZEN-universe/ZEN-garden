@@ -6,10 +6,9 @@ on:
     - cron:  '30 4 1 * *'
   push:
     branches:
-      - development
+      - main
   pull_request:
-    branches:
-      - development
+    branches: ['*']
 
 # Env variables
 env:
@@ -17,12 +16,36 @@ env:
 
 # Jobs
 jobs:
+  check_skiptests:
+    runs-on: ubuntu-latest
+    outputs:
+      skiptests: ${{ steps.check_commit.outputs.skiptests }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check for '#skiptests' in commit messages
+        id: check_commit
+        run: |
+          commit_message="${{ github.event.head_commit.message }}"
+          if [[ "$commit_message" =~ "#skiptests" ]]; then
+            skip="true"
+          else
+            skip="false"
+          fi
+          echo "skiptests=$skip" >> $GITHUB_ENV
+          echo "skiptests=$skip"
+          echo "::set-output name=skiptests::$skip"
+
   matrix_prep:
+    if: ${{ github.repository == 'ZEN-universe/ZEN-garden' && needs.check_skiptests.outputs.skiptests == 'false' }}
+    needs: check_skiptests
     runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
@@ -45,6 +68,7 @@ jobs:
           filter: '[?runs_when==`${{ env.ENV_STATE }}` || runs_when==`${{ github.event_name }}` || runs_when==`always`]'
 
   build:
+    if: ${{ github.repository == 'ZEN-universe/ZEN-garden' && needs.check_skiptests.outputs.skiptests == 'false' }}
     # the testing
     needs: matrix_prep
     strategy:
@@ -55,13 +79,13 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       # checkout the dev branch
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       # setup the conda env
-      - name: Setup Mambaforge
-        uses: conda-incubator/setup-miniconda@v2
+      - name: Setup Miniforge
+        uses: conda-incubator/setup-miniconda@v3
         with:
-            miniforge-variant: Mambaforge
+            miniforge-variant: Miniforge3
             miniforge-version: latest
             activate-environment: zen-garden
             use-mamba: true
@@ -99,37 +123,133 @@ jobs:
           echo "COVERAGE_INT=$(coverage report -m | grep TOTAL | grep -oE '[0-9]+%' | grep -oE '[0-9]+')" >> $GITHUB_ENV
           echo "COVERAGE_FLT=$(coverage report -m --precision=2 | grep TOTAL | grep -oE '[0-9]+\.[0-9]+')" >> $GITHUB_ENV
       # COMMENTED OUT BECAUSE THIS LEAD TO A 400 Bad request ERROR
-      # - name: Create Coverage Badge
-      #   if: ${{ always() && matrix.label == 'linux-64' && github.event_name == 'push' }}
-      #   uses: schneegans/dynamic-badges-action@v1.6.0
-      #   with:
-      #     auth: ${{ secrets.COVERAGE_SECRET }}
-      #     gistID: 5d0d79e86182cd9ccd785d824b1f9ac7
-      #     filename: zen_coverage.json
-      #     label: Coverage
-      #     message: ${{ env.COVERAGE_FLT }}%
-      #     valColorRange: ${{ env.COVERAGE_INT }}
-      #     maxColorRange: 100
-      #     minColorRange: 0
+      - name: Create Coverage Badge
+        if: ${{ always() && matrix.label == 'linux-64' && github.event_name == 'push' }}
+        uses: schneegans/dynamic-badges-action@v1.7.0
+        with:
+          auth: ${{ secrets.GIST_TOKEN }}
+          gistID: 30d479a5b4c591a63b7b0f41abbce6a0
+          filename: zen_garden_coverage.json
+          label: coverage
+          message: ${{ env.COVERAGE_FLT }}%
+          valColorRange: ${{ env.COVERAGE_INT }}
+          maxColorRange: 100
+          minColorRange: 0
 
-
-  # Auto pull request into master if build succeeds
-  auto_pr:
-    name: Auto PR
+  #
+  bump_version:
+    if: ${{ github.repository == 'ZEN-universe/ZEN-garden' && needs.check_skiptests.outputs.skiptests == 'false' && github.event_name == 'push' && github.ref == 'refs/heads/main' }}
     runs-on: ubuntu-latest
     needs: build
-    if: ${{ github.event_name == 'push' }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
-          ref: development
-          fetch-depth: 0
+          ref: main
+      - name: Bump version and push tag
+        uses: jasonamyers/github-bumpversion-action@v1.0.5
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Pull Request develop -> main
-        uses: devops-infra/action-pull-request@v0.5.3
+      - name: Push changes
+        if: env.bump != 'none'
+        uses: ad-m/github-push-action@master
         with:
-          github_token: ${{ github.token }}
-          target_branch: main
-          title: "AUTO PR"
-          body: "**This is an automated pull request triggered by successfull tests of the dev branch!**"
-          label: 'automated pr'
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          tags: true
+
+  release:
+    if: ${{ github.repository == 'ZEN-universe/ZEN-garden' && needs.check_skiptests.outputs.skiptests == 'false' && github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+    name: "Create Github Release"
+    needs: bump_version
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Extract tag version
+        uses: actions-ecosystem/action-get-latest-tag@v1
+        id: get-latest-tag
+        with:
+          semver_only: true
+
+      - name: Check for major/minor version
+        id: check_version
+        run: |
+          TAG=${{ steps.get-latest-tag.outputs.tag }}
+          PATCH_VERSION=$(echo $TAG | cut -d. -f3)
+          echo "tag=$TAG"
+          echo "patch=$PATCH_VERSION"
+          echo "patch=$PATCH_VERSION" >> $GITHUB_ENV
+  
+          if [[ $PATCH_VERSION -eq 0 ]]; then
+            echo "is_major_minor=true" >> $GITHUB_ENV
+          else
+            echo "is_major_minor=false" >> $GITHUB_ENV
+          fi
+
+      - name: Create GitHub Release
+        if: env.is_major_minor == 'true'
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ steps.get-latest-tag.outputs.tag }}
+          release_name: Release ${{ steps.get-latest-tag.outputs.tag }}
+          body: "Automated release for version ${{ steps.get-latest-tag.outputs.tag }} after major/minor version bump."
+          draft: false
+          prerelease: false
+
+  build-package:
+    if: ${{ github.repository == 'ZEN-universe/ZEN-garden' && needs.check_skiptests.outputs.skiptests == 'false' }}
+    name: "Build and verify package"
+    runs-on: ubuntu-latest
+    needs: release
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: hynek/build-and-inspect-python-package@v2
+
+  release-test-pypi:
+    if: ${{ github.repository == 'ZEN-universe/ZEN-garden' && needs.check_skiptests.outputs.skiptests == 'false' }}
+    name: "Release to Test PyPI"
+    runs-on: ubuntu-latest
+    needs: build-package
+    environment:
+      name: test-pypi
+      url: https://test.pypi.org/project/zen-garden/
+    permissions:
+      id-token: write
+    steps:
+      - name: Download packages
+        uses: actions/download-artifact@v4
+        with:
+          name: Packages
+          path: dist
+
+      - name: Publish to Test PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          repository-url: https://test.pypi.org/legacy/
+
+  release-pypi:
+    if: ${{ github.repository == 'ZEN-universe/ZEN-garden' && needs.check_skiptests.outputs.skiptests == 'false' }}
+    name: "Release to PyPI"
+    runs-on: ubuntu-latest
+    needs: build-package
+    environment:
+      name: pypi
+      url: https://pypi.org/project/zen-garden/
+    permissions:
+      id-token: write
+    steps:
+      - name: Download packages
+        uses: actions/download-artifact@v4
+        with:
+          name: Packages
+          path: dist
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1

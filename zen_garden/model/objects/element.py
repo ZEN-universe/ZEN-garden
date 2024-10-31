@@ -1,11 +1,6 @@
 """
-:Title:          ZEN-GARDEN
-:Created:        October-2021
-:Authors:        Alissa Ganter (aganter@ethz.ch),
-                Jacob Mannhardt (jmannhardt@ethz.ch)
-:Organization:   Laboratory of Reliability and Risk Engineering, ETH Zurich
-
-Class defining a standard Element. Contains methods to add parameters, variables and constraints to the
+Class defining a standard Element.
+Contains methods to add parameters, variables and constraints to the
 optimization problem. Parent class of the Carrier and Technology classes .The class takes the concrete
 optimization model as an input.
 """
@@ -61,7 +56,7 @@ class Element:
         paths = self.optimization_setup.paths
         # check if class is a subset
         if class_label not in paths.keys():
-            subsets = self.optimization_setup.analysis["subsets"]
+            subsets = self.optimization_setup.analysis.subsets
             # iterate through subsets and check if class belongs to any of the subsets
             for set_name, subsets_list in subsets.items():
                 if class_label in subsets_list:
@@ -263,9 +258,9 @@ class Element:
                         elif index == "set_capacity_types":
                             system = optimization_setup.system
                             if element in sets["set_storage_technologies"]:
-                                list_sets.append(system["set_capacity_types"])
+                                list_sets.append(system.set_capacity_types)
                             else:
-                                list_sets.append([system["set_capacity_types"][0]])
+                                list_sets.append([system.set_capacity_types[0]])
                         else:
                             raise NotImplementedError(f"Index <{index}> not known")
                     # append indices to custom_set if element is supposed to be appended
@@ -307,8 +302,8 @@ class GenericRule(object):
     """
 
     def __init__(self, optimization_setup):
-        """
-        Constructor for generic rule
+        """Constructor for generic rule
+
         :param optimization_setup: The optimization setup to use for the setup
         """
 
@@ -325,7 +320,10 @@ class GenericRule(object):
 
     # helper methods for constraint rules
     def get_year_time_step_array(self,storage = False):
-        """ returns array with year and time steps of each year """
+        """ returns array with year and time steps of each year
+
+        :param storage: boolean indicating if object is a storage object
+        """
         # create times xarray with 1 where the operation time step is in the year
         if storage:
             meth = self.time_steps.get_time_steps_year2storage
@@ -354,7 +352,7 @@ class GenericRule(object):
         for ts in self.sets["set_time_steps_storage"]:
             ts_end = self.energy_system.time_steps.get_time_steps_storage_startend(ts)
             if ts_end is not None:
-                if self.system["storage_periodicity"]:
+                if self.system.storage_periodicity:
                     times_prev.append(ts_end)
                     mask.append(True)
                 else:
@@ -382,7 +380,11 @@ class GenericRule(object):
         return times
 
     def map_and_expand(self, array, mapping):
-        """ maps and expands array """
+        """ maps and expands array
+
+        :param array: xarray to map and expand
+        :param mapping: pd.Series with mapping values
+        """
         assert (isinstance(mapping, pd.Series) or isinstance(mapping.index, pd.Index)), "Mapping must be a pd.Series or with a single-level pd.Index"
         # get mapping values
         array = array.sel({mapping.name: mapping.values})
@@ -393,7 +395,11 @@ class GenericRule(object):
         return array
 
     def align_and_mask(self, expr, mask):
-        """ aligns and masks expr """
+        """ aligns and masks expr
+
+        :param expr: expression to align and mask
+        :param mask: mask to apply
+        """
         if isinstance(expr, xr.DataArray):
             aligner = expr
         elif isinstance(expr, lp.Variable):
