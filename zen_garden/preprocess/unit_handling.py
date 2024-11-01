@@ -573,7 +573,7 @@ class UnitHandling:
         :return: dict with attribute name and reduced unit
         """
         # dictionary which assigns unit dimensions to corresponding base unit namings
-        distinct_dims = {"money": "[currency]", "distance": "[length]", "time": "[time]", "emissions": "[mass]", "emissions_stored": "[mass_stored]"}
+        distinct_dims = {"money": "[currency]", "distance": "[length]", "time": "[time]", "emissions": "[mass]"}
         unit = unit_specs["unit_in_base_units"]
         unit_category = unit_specs["unit_category"]
         for dim, dim_name in distinct_dims.items():
