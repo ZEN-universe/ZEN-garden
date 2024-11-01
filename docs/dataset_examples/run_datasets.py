@@ -29,7 +29,11 @@ def find_dataset_files():
 def test_dataset(dataset_name):
     dataset_main_path = Path(dataset_name).parent.absolute()
     config = str(dataset_main_path / "config.json")
-    run_module(["--config", config, "--dataset", dataset_name])
+    if dataset_name.replace('_', '').endswith("expectederror"):
+        with pytest.raises(AssertionError):
+            run_module(["--config", config, "--dataset", dataset_name])
+    else:
+        run_module(["--config", config, "--dataset", dataset_name])
 
 
 if __name__ == "__main__":
