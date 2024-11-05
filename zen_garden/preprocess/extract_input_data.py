@@ -36,7 +36,7 @@ class DataInput:
         # extract folder path
         self.folder_path = getattr(self.element, "input_path")
         # get names of indices
-        self.index_names = self.analysis['header_data_inputs']
+        self.index_names = self.analysis.header_data_inputs
         # load attributes file
         self.attribute_dict = self.load_attribute_file()
 
@@ -60,7 +60,7 @@ class DataInput:
             self.extract_yearly_variation(file_name, index_sets)
 
         # if existing capacities and existing capacities not used
-        if (file_name == "capacity_existing" or file_name == "capacity_existing_energy") and not self.system["use_capacities_existing"]:
+        if (file_name == "capacity_existing" or file_name == "capacity_existing_energy") and not self.system.use_capacities_existing:
             df_output, *_ = self.create_default_output(index_sets, unit_category, file_name=file_name, time_steps=time_steps, manual_default_value=0)
             return df_output
         # use distances computed with node coordinates as default values
@@ -138,7 +138,7 @@ class DataInput:
                 index_multi_index = pd.MultiIndex.from_product([index_list], names=[df_input.index.name])
             df_input = pd.Series(index=index_multi_index, data=df_input.to_list(),dtype=float)
         common_index = df_output.index.intersection(df_input.index)
-        assert default_value is not None or len(common_index) == len(df_output.index), f"Input for {file_name} does not provide entire dataset and no default given in attributes.csv"
+        assert default_value is not None or len(common_index) == len(df_output.index), f"Input for {file_name} does not provide entire dataset and no default given in attributes.json"
         df_output.loc[common_index] = df_input.loc[common_index]
         return df_output
 
@@ -159,6 +159,22 @@ class DataInput:
             if any("." in col for col in df_input.columns):
                 raise AssertionError(f"The input data file {input_file_name} at {self.folder_path} contains two identical header names.")
             return df_input
+        else:
+            return None
+
+    def read_input_json(self, input_file_name):
+        """ reads json input data and returns a dict
+
+        :param input_file_name: name of selected file
+        :return data: dict with input data """
+
+        input_file_name += ".json"
+
+        file_names = os.listdir(self.folder_path)
+        if input_file_name in file_names:
+            with open(os.path.join(self.folder_path, input_file_name), "r") as file:
+                data = json.load(file)
+            return data
         else:
             return None
 
@@ -271,7 +287,31 @@ class DataInput:
         :return: attribute value, attribute unit
         """
         if attribute_name not in attribute_dict:
-            raise AttributeError(f"Attribute {attribute_name} does not exist in input data of {self.element.name}")
+            parameter_change_log = self.energy_system.optimization_setup.parameter_change_log
+
+            # The attribute is not found because of an update
+            if attribute_name in parameter_change_log:
+                # CASE 1: There is a new attribute
+                if isinstance(parameter_change_log[attribute_name], dict):
+                    missing_attribute = parameter_change_log[attribute_name]
+
+                    if missing_attribute['default_value'] not in [0, 1, 'inf']:
+                        raise AttributeError(f"Default value of attribute {attribute_name} must be 0 , 1, or 'inf' but is {missing_attribute['default_value']}")
+
+                    attribute_dict[attribute_name] = {"default_value": missing_attribute["default_value"],
+                                                      "unit": attribute_dict[missing_attribute["unit"]]['unit']}
+
+                    logging.warning(f"\nDeprecationWarning: Attribute {attribute_name} is not yet included in your model. Automatic assign default_value:{attribute_dict[attribute_name]['default_value']}, unit: {attribute_dict[attribute_name]['unit']}\n")
+
+                # CASE 2: The attribute has a new name
+                else:
+                    old_name = parameter_change_log[attribute_name]
+                    attribute_dict[attribute_name] = attribute_dict.pop(old_name)
+
+                    logging.warning(f"DeprecationWarning: Attribute {old_name} is now called {attribute_name}")
+
+            else:
+                raise AttributeError(f"Attribute {attribute_name} does not exist in input data of {self.element.name}")
         try:
             attribute_value = float(attribute_dict[attribute_name]["default_value"])
             attribute_unit = attribute_dict[attribute_name]["unit"]
@@ -322,7 +362,7 @@ class DataInput:
         :param extract_coordinates: boolean to switch between nodes and nodes + coordinates
         """
         if extract_nodes:
-            set_nodes_config = self.system["set_nodes"]
+            set_nodes_config = self.system.set_nodes
             df_nodes_w_coords = self.read_input_csv("set_nodes")
             if extract_coordinates:
                 if len(set_nodes_config) != 0:
@@ -332,16 +372,16 @@ class DataInput:
                 set_nodes_input = df_nodes_w_coords["node"].to_list()
                 # if no nodes specified in system, use all nodes
                 if len(set_nodes_config) == 0 and not len(set_nodes_input) == 0:
-                    self.system["set_nodes"] = set_nodes_input
+                    self.system.set_nodes = set_nodes_input
                     set_nodes_config = set_nodes_input
                 else:
                     missing_nodes = list(set(set_nodes_config).difference(set_nodes_input))
-                    assert len(missing_nodes) == 0, f"The nodes {missing_nodes} were declared in the config but do not exist in the input file {self.folder_path + 'set_nodes'}"
+                    assert len(missing_nodes) == 0, f"The nodes {missing_nodes} were declared in the config but do not exist in the input file {os.path.join(self.folder_path, 'set_nodes')}"
                 if not isinstance(set_nodes_config, list):
                     set_nodes_config = set_nodes_config.to_list()
                 set_nodes_config.sort()
                 # assert that no transport technology is selected if only one node is given
-                assert len(set_nodes_config) > 1 or len(self.system["set_transport_technologies"]) == 0, f"Only one node is given in the system file. Transport technologies are not allowed in this case. You selected {self.system['set_transport_technologies']}"
+                assert len(set_nodes_config) > 1 or len(self.system.set_transport_technologies) == 0, f"Only one node is given in the system file. Transport technologies are not allowed in this case. You selected {self.system.set_transport_technologies}"
                 return set_nodes_config
         else:
             set_edges_input = self.read_input_csv("set_edges")
@@ -384,7 +424,7 @@ class DataInput:
         :return set_technologies_existing: return set existing technologies"""
         #TODO merge changes in extract input data and optimization setup
         set_technologies_existing = np.array([0])
-        if self.system["use_capacities_existing"]:
+        if self.system.use_capacities_existing:
             if storage_energy:
                 _energy_string = "_energy"
             else:
@@ -395,7 +435,7 @@ class DataInput:
             df_input = self.read_input_csv(f_name)
             if df_input is None:
                 return [0]
-            if self.element.name in self.system["set_transport_technologies"]:
+            if self.element.name in self.system.set_transport_technologies:
                 location = "edge"
             else:
                 location = "node"
@@ -415,7 +455,7 @@ class DataInput:
         multiidx = pd.MultiIndex.from_product(index_list, names=index_name_list)
         df_output = pd.Series(index=multiidx, data=0,dtype=int)
         # if no existing capacities
-        if not self.system["use_capacities_existing"]:
+        if not self.system.use_capacities_existing:
             return df_output
         f_name, scenario_factor = self.scenario_dict.get_param_file(self.element.name, file_name)
         if f"{f_name}.csv" in os.listdir(self.folder_path):
@@ -423,7 +463,7 @@ class DataInput:
             # fill output dataframe
             df_output = self.extract_general_input_data(df_input, df_output, "year_construction", index_name_list, default_value=0, time_steps=None)
             # get reference year
-            reference_year = self.system["reference_year"]
+            reference_year = self.system.reference_year
             # calculate remaining lifetime
             df_output[df_output > 0] = - reference_year + df_output[df_output > 0] + self.element.lifetime[0]
         # apply scenario factor
@@ -474,8 +514,8 @@ class DataInput:
                     else:
                         relative_intercept = np.abs(linear_regress_object.intercept)
                     # check if to a reasonable degree linear
-                    if relative_intercept <= self.solver["linear_regression_check"]["eps_intercept"] \
-                            and linear_regress_object.rvalue >= self.solver["linear_regression_check"]["epsRvalue"]:
+                    if relative_intercept <= self.solver.linear_regression_check["eps_intercept"] \
+                            and linear_regress_object.rvalue >= self.solver.linear_regression_check["epsRvalue"]:
                         # model as linear function
                         slope_lin_reg = linear_regress_object.slope
                         linear_dict[value_variable] = \
@@ -552,7 +592,7 @@ class DataInput:
         :param unit_category: dict defining the dimensions of the parameter's unit
         :param file_name: name of selected file.
         :param time_steps: specific time_steps of subelement
-        :param manual_default_value: if given, use manual_default_value instead of searching for default value in attributes.csv
+        :param manual_default_value: if given, use manual_default_value instead of searching for default value in attributes.json
         :param subelement: dependent element for which data is extracted
         """
         # select index
@@ -595,7 +635,7 @@ class DataInput:
         :param subelement: dependent element for which data is extracted
         """
         # if numerics analyzed
-        if self.solver["analyze_numerics"] and attribute_name is not None:
+        if self.solver.analyze_numerics and attribute_name is not None:
             input_unit = self.extract_attribute(attribute_name, unit_category=None, subelement=subelement, return_unit=True)
             if subelement is not None:
                 attribute_name = attribute_name + "_" + subelement
@@ -608,7 +648,7 @@ class DataInput:
         :param file_name: name of selected file.
         """
         # if numerics analyzed
-        if self.solver["analyze_numerics"]:
+        if self.solver.analyze_numerics:
             if file_name:
                 df_output_reduced = df_output[(df_output != 0) & (df_output.abs() != np.inf)]
                 if not df_output_reduced.empty:
@@ -680,7 +720,7 @@ class DataInput:
                 df_input = df_input.reset_index()
             # check if input data is still given with generic time indices
             temporal_header = self.index_names["set_time_steps_yearly"]
-            if max(df_input.loc[:, temporal_header]) < self.analysis["earliest_year_of_data"]:
+            if max(df_input.loc[:, temporal_header]) < self.analysis.earliest_year_of_data:
                 logging.warning(f"DeprecationWarning: Generic time indices (used in {file_name}) will not be supported for input data with yearly time steps any longer! Use the corresponding years (e.g. 2022,2023,...) as time indices instead")
                 return df_input
             # assert that correct temporal index_set to get corresponding index_name is given (i.e. set_time_steps_yearly for input data with yearly time steps)(otherwise extract_general_input_data() will find a missing_index)
@@ -709,7 +749,7 @@ class DataInput:
             # interpolate missing data
             file_names_int_off = []
             if self.energy_system.parameters_interpolation_off is not None:
-                file_names_int_off = self.energy_system.parameters_interpolation_off.values
+                file_names_int_off = self.energy_system.parameters_interpolation_off['parameter_name']
             if file_name not in file_names_int_off:
                 parameters = df_input.axes[1]
                 for param in parameters:

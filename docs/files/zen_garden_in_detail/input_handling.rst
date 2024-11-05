@@ -239,12 +239,16 @@ So, the user can reduce the number of data points in the ``demand_yearly_variati
     2020,1
     2050,4
 
-If the user wants to disable the interpolation for a specific parameter, the user can create a ``parameters_interpolation_off.csv`` file and specify the parameter names in the file:
+If the user wants to disable the interpolation for a specific parameter, the user can create a ``parameters_interpolation_off.json`` file and specify the parameter names in the file:
 
 .. code-block::
 
-    parameter_name
-    demand_yearly_variation
+    {
+      "parameter_name": [
+        "carbon_emissions_annual_limit",
+        "demand_yearly_variation"
+      ]
+    }
 
 .. note::
     The user must specify the file name, i.e., in the example above, the specified file is ``demand_yearly_variation.csv``, not ``demand.csv``.
@@ -369,7 +373,8 @@ Known issues with pint
 
 The ``pint`` package that we use for the unit handling has amazing functionalities but also some hurdles to look out for. The ones we have already found are:
 
-* ``ton``: pint uses the keyword ``ton`` for imperial ton, not the metric ton. The keyword for those are ``metric_ton`` or ``tonne``. However, per default, ZEN-garden overwrites the definition of ``ton`` to be the metric ton, so ``ton`` and ``tonne`` can be used interchangeably. If you for some reason want to use imperial tons, set ``solver["define_ton_as_metric_ton"] = False``.
+* ``ton``: pint uses the keyword ``ton`` for imperial ton, not the metric ton. The keyword for those are ``metric_ton`` or ``tonne``. However, per default, ZEN-garden overwrites the definition of ``ton`` to be the metric ton, so ``ton`` and ``tonne`` can be used interchangeably.
+If you for some reason want to use imperial tons, set ``"solver": {"define_ton_as_metric_ton": false}``.
 * ``h``: Until recently, ``h`` was treated as the planck constant, not hour. Fortunately, this has been fixed in Feb 2023. If you encounter this error, please update your pint version.
 
 .. _Scaling:
@@ -468,7 +473,7 @@ Therefore, it is recommended to include the right-hand side vector in the scalin
 
 **When not to use scaling?**
 
-If the optimization problem already has a good numerical range (which can be checked with ``solver["analyze_numerics"] = True``), scaling might not be necessary. Also if the optimization problem already solves fast, the time necessary for scaling the problem might
+If the optimization problem already has a good numerical range (which can be checked with ``"solver": {"analyze_numerics": true}``), scaling might not be necessary. Also if the optimization problem already solves fast, the time necessary for scaling the problem might
 outweigh the time savings from solving the scaled optimization problem. As a rule of thumb, if the time to solve the optimization problem is in similar order of magnitude as the time to scale the problem, scaling should not be applied. The time necessary for scaling can be checked in the output of the optimization problem, if
 scaling is applied.
 

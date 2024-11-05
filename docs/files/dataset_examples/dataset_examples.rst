@@ -2,29 +2,29 @@
 ################
 Dataset Examples
 ################
-ZEN-garden provides a number of small datasets to demonstrate the functionalities of ZEN-garden and to understand the data structure. The datasets are stored in the `datasets` directory of the ZEN-garden repository.
-If you forked the ZEN-garden repository, you can find the datasets in the `documentation/dataset_examples` directory.
-If you installed ZEN-garden using pip, you can download and execute the datasets with the `--example` flag (see :ref:`Run example`).
+ZEN-garden provides a number of small datasets to demonstrate the functionalities of ZEN-garden and to understand the data structure. The datasets are stored in the ``datasets`` directory of the ZEN-garden repository.
+If you forked the ZEN-garden repository, you can find the datasets in the ``documentation/dataset_examples`` directory.
+If you installed ZEN-garden using pip, you can download and execute the datasets with the ``--example`` flag (see :ref:`Run example`).
 
 The following datasets are available:
 
-1. `1_base_case`
-2. `2_multi_year_optimization`
-3. `3_reduced_import_availability`
-4. `4_PWA_nonlinear_capex`
-5. `5_multiple_time_steps_per_year`
-6. `6_reduced_import_availability_yearly`
-7. `7_time_series_aggregation`
-8. `8_yearly_variation`
-9. `9_myopic_foresight`
-10. `10_brown_field`
-11. `11_multi_scenario`
-12. `12_multiple_in_output_carriers_conversion`
-13. `13_yearly_interpolation`
-14. `14_retrofitting_and_fuel_substitution`
-15. `15_unit_consistency_expected_error`
+1. ``1_base_case``
+2. ``2_multi_year_optimization``
+3. ``3_reduced_import_availability``
+4. ``4_PWA_nonlinear_capex``
+5. ``5_multiple_time_steps_per_year``
+6. ``6_reduced_import_availability_yearly``
+7. ``7_time_series_aggregation``
+8. ``8_yearly_variation``
+9. ``9_myopic_foresight``
+10. ``10_brown_field``
+11. ``11_multi_scenario``
+12. ``12_multiple_in_output_carriers_conversion``
+13. ``13_yearly_interpolation``
+14. ``14_retrofitting_and_fuel_substitution``
+15. ``15_unit_consistency_expected_error``
 
-All datasets build upon the dataset `1_base_case` and extend it with additional features. In the following we describe the datasets and highlight the differences to the previous dataset.
+All datasets build upon the dataset ``1_base_case`` and extend it with additional features. In the following we describe the datasets and highlight the differences to the previous dataset.
 
 1_base_case
 -------------
@@ -63,7 +63,7 @@ The heat demand in both nodes is variable over the years and the optimization mo
 
 3_reduced_import_availability
 -------------------------------
-The example is identical to `2_multi_year_optimization`, but with reduced import availability of natural gas in DE (see the file ``availability_import.csv``).
+The example is identical to ``2_multi_year_optimization``, but with reduced import availability of natural gas in DE (see the file ``availability_import.csv``).
 The reduced import availability forces the model to install natural gas pipelines to transport the missing natural gas from CH to DE.
 Additionally in this model, natural gas pipeline capital expenditures consist of two parts, which are independent: distance dependent costs (``capex_per_distance_transport``) and capacity dependent costs (``capex_specific_transport``).
 These costs are specified independently from each other in the ``attributes.json`` file. Note that the units of ``capex_per_distance_transport`` need to be specified as costs per distance without taking into account the capacity.
@@ -72,7 +72,7 @@ Consequently, the model is a mixed integer linear program. This method for calcu
 
 4_PWA_nonlinear_capex
 ------------------------
-In this example, the nonlinear CAPEX for conversion technologies is introduced. The model is the same as `3_reduced_import_availability`, but with piecewise approximation of the capital cost function for natural gas boiler.
+In this example, the nonlinear CAPEX for conversion technologies is introduced. The model is the same as ``3_reduced_import_availability``, but with piecewise approximation of the capital cost function for natural gas boiler.
 The file ``nonlinear_capex.csv`` in the natural gas boiler folder contains breakpoints of the piecewise approximation and the specific CAPEX at the respective breakpoints:
 
 .. csv-table:: Breakpoints and corresponding CAPEX for the natural gas boiler
@@ -121,7 +121,7 @@ Consequently, the shape of the input data is the same for each year, but the sca
 In this example, the price of natural gas and the electricity demand are varied between the years.
 For natural gas, the file ``price_import_yearly_variation.csv`` contains the factor to for each year.
 The factors for the electricity demand are stored in the file ``demand_yearly_variation.csv``.
-For example, the factor for electricity demand in `DE` in year 2029 is 1.2. The electricity demand of each hour is, therefore, multiplied with the factor 1.2 for the entire year 2029 leading to a proportional increase of the electricity demand.
+For example, the factor for electricity demand in ``DE`` in year 2029 is 1.2. The electricity demand of each hour is, therefore, multiplied with the factor 1.2 for the entire year 2029 leading to a proportional increase of the electricity demand.
 Additionally, the example optimizes the full year instead of only the first 96 hours. The parameter ``unaggregated_time_steps_per_year`` is set to 8760 in the ``system.json`` file.
 However, the time series aggregation is still active and the optimization uses 10 representative time steps for the entire year.
 
@@ -144,12 +144,12 @@ Up to this model, all examples have assumed so-called `green field` capacity exp
 In this model, the `brown field` capacity expansion is introduced. Brown field capacity expansion means that some capacities already exist and have to be considered in the optimization.
 ZEN-garden supports existing capacities that are built in the past, i.e., can be used immediately and have a reduced lifetime left.
 Additionally, capacities that will be built in the future, i.e. within the optimization horizon, can be considered. For example, this may cover installations for which the decision to build them has already been made, but the construction has not yet started.
-The model `10_brown_field` builds upon the example `8_yearly_variation`, i.e., with perfect foresight optimization.
+The model ``10_brown_field`` builds upon the example ``8_yearly_variation``, i.e., with perfect foresight optimization.
 For photovoltaic systems, the file ``existing_capacities.csv`` is added which specifies the capacities that exist in the nodes and the year in which they were or will be built.
 
 11_multi_scenario
 -------------------
-The model `11_multi_scenario` showcases the scenario analysis feature of ZEN-garden. The parameter ``conduct_scenario_analysis`` in the ``system.json`` file is set to ``true`` and a new file, ``scenarios.json``, is added to the dataset.
+The model ``11_multi_scenario`` showcases the scenario analysis feature of ZEN-garden. The parameter ``conduct_scenario_analysis`` in the ``system.json`` file is set to ``true`` and a new file, ``scenarios.json``, is added to the dataset.
 The file ``scenarios.json`` contains the different scenarios that are considered in the optimization. In the example, all supported ways of manipulating the input data are demonstrated.
 Additional files are added to the dataset which are used by the different scenarios: different carbon prices and a new attributes file for electricity.
 The files which are to be used by the scenario analysis must have an additional ending in the file name to distinguish them from the standard input data files. The ending is specified in the ``scenarios.json`` file.
@@ -157,9 +157,9 @@ For example, the alternative attributes file for electricity is named ``attribut
 
 12_multiple_in_output_carriers_conversion
 --------------------------------------------
-This model introduces conversion technologies which work with more than one in- or output carrier. For this purpose, the model from example `8_yearly_variation` is extended with a combined heat and power (CHP) technology.
+This model introduces conversion technologies which work with more than one in- or output carrier. For this purpose, the model from example ``8_yearly_variation`` is extended with a combined heat and power (CHP) technology.
 The CHP technology replaces the natural gas boiler and works with natural gas and biogas as input carriers. The carrier biogas is newly introduced as well.
-The output carriers of the CHP plant are heat and electricity. The ratio in which the CHP plant uses natural gas/biogas and produces heat/electricity is specified with the `conversion_factor` parameter of the CHP plant.
+The output carriers of the CHP plant are heat and electricity. The ratio in which the CHP plant uses natural gas/biogas and produces heat/electricity is specified with the ``conversion_factor`` parameter of the CHP plant.
 The respective parameter in the  ``attributes.json`` file of the CHP plant is specified as::
 
     "conversion_factor": {
@@ -181,9 +181,9 @@ The respective parameter in the  ``attributes.json`` file of the CHP plant is sp
 -----------------------------
 This example showcases how missing values in input data can be interpolated and how the interpolation can be switched off.
 Compared to the previous example, an annal limit of carbon emissions is introduced (file ``carbon_emissions_annual_limit.csv``).
-Each of the parameters `carbon_emissions_annual_limit` and `price_carbon_emissions` have yearly values missing.
+Each of the parameters ``carbon_emissions_annual_limit`` and ``price_carbon_emissions`` have yearly values missing.
 Per default, ZEN-garden interpolates the missing values linearly between the two closest known values.
-If this behaviour is not wanted, parameter names can be added to the file ``parameters_interpolation_off.csv`` inside the `energy_system` folder.
+If this behaviour is not wanted, parameter names can be added to the file ``parameters_interpolation_off.json`` inside the ``energy_system`` folder.
 For the parameter names in this file, the interpolation of missing values is switched off.
 In this case, the default value from the ``attributes.json``file is used for the missing values.
 

@@ -56,7 +56,7 @@ class TransportTechnology(Technology):
         """get transport loss factor"""
         # check which transport loss factor is used
         self.transport_loss_factor_linear = self.data_input.extract_input_data("transport_loss_factor_linear", index_sets=[], unit_category={"distance": -1})
-        if self.name in self.optimization_setup.system["set_transport_technologies_loss_exponential"]:
+        if self.name in self.optimization_setup.system.set_transport_technologies_loss_exponential:
             assert "transport_loss_factor_exponential" in self.data_input.attribute_dict, f"The transport technology {self.name} has no transport_loss_factor_exponential attribute."
             self.transport_loss_factor_exponential = self.data_input.extract_input_data("transport_loss_factor_exponential", index_sets=[], unit_category={"distance": -1})
         else:
@@ -65,7 +65,7 @@ class TransportTechnology(Technology):
     def get_capex_transport(self):
         """get capex of transport technology"""
         # check if there are separate capex for capacity and distance
-        if self.optimization_setup.system["double_capex_transport"]:
+        if self.optimization_setup.system.double_capex_transport:
             # both capex terms must be specified
             self.capex_specific_transport = self.data_input.extract_input_data("capex_specific_transport", index_sets=["set_edges", "set_time_steps_yearly"], time_steps="set_time_steps_yearly", unit_category={"money": 1, "energy_quantity": -1, "time": 1})
             self.capex_per_distance_transport = self.data_input.extract_input_data("capex_per_distance_transport", index_sets=["set_edges", "set_time_steps_yearly"], time_steps="set_time_steps_yearly", unit_category={"money": 1, "distance": -1})
@@ -102,7 +102,7 @@ class TransportTechnology(Technology):
         """
         if np.isnan(self.capex_specific_transport[index[0]].iloc[0]) and np.isnan(self.capex_per_distance_transport[index[0]].iloc[0]):
             return 0
-        elif self.energy_system.system['double_capex_transport'] and capacity != 0:
+        elif self.energy_system.system.double_capex_transport and capacity != 0:
             return self.capex_specific_transport[index[0]].iloc[0] * capacity + self.capex_per_distance_transport[index[0]].iloc[0] * self.distance[index[0]]
         else:
             return self.capex_specific_transport[index[0]].iloc[0] * capacity
@@ -345,7 +345,7 @@ class TransportTechnologyRules(GenericRule):
         mask = (~np.isinf(self.parameters.distance)).broadcast_like(flow_transport.lower)
         # select the technologies with exponential and linear losses
         exp_techs = pd.Series(
-            {t: True if t in self.system["set_transport_technologies_loss_exponential"] else False for t in
+            {t: True if t in self.system.set_transport_technologies_loss_exponential else False for t in
              self.sets["set_transport_technologies"]})
         exp_techs.index.name = "set_transport_technologies"
         exp_techs = exp_techs.to_xarray().broadcast_like(flow_transport.lower)

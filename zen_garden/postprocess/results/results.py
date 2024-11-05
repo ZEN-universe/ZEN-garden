@@ -353,7 +353,7 @@ class Results:
             scenario, discount_rate_component
         ).squeeze()
 
-        years = list(range(0, system["optimized_years"]))
+        years = list(range(0, system.optimized_years))
         optimized_years = self.solution_loader.get_optimized_years(scenario)
         annuity = pd.Series(index=years, dtype=float)
         for year in years:
@@ -716,9 +716,9 @@ if __name__ == "__main__":
         with open("config.json") as f:
             config = Config(**json.load(f))
 
-    model_name = os.path.basename(config.analysis["dataset"])
+    model_name = os.path.basename(config.analysis.dataset)
     if os.path.exists(
-        out_folder := os.path.join(config.analysis["folder_output"], model_name)
+        out_folder := os.path.join(config.analysis.folder_output, model_name)
     ):
         r = Results(out_folder)
     else:

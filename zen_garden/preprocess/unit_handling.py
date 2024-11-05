@@ -110,7 +110,13 @@ class UnitHandling:
         """ extracts base units of energy system
 
         :return list_base_units: list of base units """
-        list_base_units = pd.read_csv(self.folder_path / "base_units.csv").squeeze().values.tolist()
+        if os.path.exists(os.path.join(self.folder_path / "base_units.csv")):
+            list_base_units = pd.read_csv(self.folder_path / "base_units.csv").squeeze().values.tolist()
+            logging.warning("DeprecationWarning: Specifying the base units in .csv file format is deprecated. Use a .json file format instead.")
+        else:
+            with open(os.path.join(self.folder_path, 'base_units.json'), "r") as f:
+                data = json.load(f)
+            list_base_units = data['unit']
         return list_base_units
 
     def calculate_combined_unit(self, input_unit, return_combination=False):
@@ -282,7 +288,7 @@ class UnitHandling:
 
         :param optimization_setup: OptimizationSetup object
         """
-        if not optimization_setup.solver["check_unit_consistency"]:
+        if not optimization_setup.solver.check_unit_consistency:
             return
         elements = optimization_setup.dict_elements["Element"]
         items = elements + [optimization_setup.energy_system]
@@ -452,7 +458,7 @@ class UnitHandling:
         :param reference_carrier_name: name of reference carrier if item is a conversion technology
         """
         inconsistent_attributes_dict = {"element_name": item_name, "reference_carrier": reference_carrier_name, "attribute_names": str(inconsistent_attributes.keys())}
-        directory = os.path.join(analysis["folder_output"], os.path.basename(analysis["dataset"]))
+        directory = os.path.join(analysis.folder_output, os.path.basename(analysis.dataset))
         if not os.path.exists(directory):
             os.makedirs(directory)
         path = os.path.join(directory, "inconsistent_units.json")
