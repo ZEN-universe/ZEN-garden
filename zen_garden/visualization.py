@@ -25,12 +25,12 @@ def start(path="./outputs", api_url="http://localhost:8000/", port=8000):
     print(
         f"Starting visualization, looking for solutions in {path}. The frontend uses the API under {api_url}"
     )
-    print(f"Open http://localhost:8000/explorer to look at your solutions.")
+    print(f"Open http://localhost:8000/ to look at your solutions.")
 
     config = uvicorn.Config("zen_temple.main:app", port=int(port), log_level="info")
     server = uvicorn.Server(config)
 
-    webbrowser.open("http://localhost:8000/explorer", new=2)
+    webbrowser.open("http://localhost:8000/", new=2)
     server.run()
 
 
