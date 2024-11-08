@@ -1027,7 +1027,7 @@ l
                     cp.disable()
                     cp.print_stats("cumtime")
                 except:
-                    print("SVD did not converge")
+                    print("Condition Number could not be calculated")
             return range_lhs, range_rhs, cond
         else:
             #Prints
