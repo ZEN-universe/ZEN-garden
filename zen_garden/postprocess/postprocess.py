@@ -169,7 +169,7 @@ class Postprocess:
         benchmarking_data["scaling_time"] = self.scaling.scaling_time
 
         #get numerical range
-        range_lhs, range_rhs, cond = self.scaling.print_numerics(0, False, True)
+        range_lhs, range_rhs, cond = self.scaling.print_numerics(0, False, True, True)
         benchmarking_data["numerical_range_lhs"] = range_lhs
         benchmarking_data["numerical_range_rhs"] = range_rhs
         benchmarking_data["condition_number"] = cond
