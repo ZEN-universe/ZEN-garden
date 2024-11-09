@@ -352,11 +352,12 @@ class ScenarioDict(dict):
         for key, value in config_parts.items():
             if key in self.dict:
                 for sub_key, sub_value in self.dict[key].items():
-                    print("started_here: " + str(sub_key))
+                    print("started_here: " + str(sub_key) + " " + str(sub_value))
                     assert sub_key in value, f"Trying to update {key} with key {sub_key} and value {sub_value}, but the {key} does not have this key!"
                     if type(value[sub_key]) == type(sub_value):
-                        print("got here:" + str(sub_key))
+                        print("got here:" + str(sub_key) + " " + str(sub_value))
                         value[sub_key] = sub_value
+                        print("new value  :" + str(value[sub_key]))
                     elif isinstance(sub_value, dict): #ToDO check this and make more general -> here only for SolverOptions
                         try:
                             for sub_sub_key, sub_sub_value in sub_value.items():

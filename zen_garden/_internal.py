@@ -73,6 +73,7 @@ def main(config, dataset_path=None, job_index=None, folder_output_path=None):
             optimization_setup.overwrite_time_indices(step)
             # create optimization problem
             optimization_setup.construct_optimization_problem()
+            print("Sclaing status: " +str(config.solver.use_scaling))
             if config.solver.use_scaling:
                 optimization_setup.scaling.run_scaling()
             elif config.solver.analyze_numerics:
