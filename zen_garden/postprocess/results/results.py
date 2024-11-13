@@ -35,6 +35,7 @@ class Results:
         self.has_rh = self.solution_loader.has_rh
         first_scenario = next(iter(self.solution_loader.scenarios.values()))
         self.name = Path(first_scenario.analysis.dataset).name
+        self.ureg = first_scenario.ureg
 
     def __str__(self) -> str:
         first_scenario = next(iter(self.solution_loader.scenarios.values()))
@@ -440,6 +441,7 @@ class Results:
         component_name: str,
         scenario_name: Optional[str] = None,
         droplevel: bool = True,
+        is_total: bool = True,
     ) -> Optional[dict[str, "pd.DataFrame | pd.Series[Any]"]]:
         """
         Extracts the unit of a given Component. If no scenario is given, a random one is taken.
@@ -472,6 +474,22 @@ class Results:
             else:
                 units.index = units.index.droplevel(drop_idx.to_list())
                 units = units[~units.index.duplicated()]
+        # convert to pint units
+        for i in units.index:
+            try:
+                u = units[i]
+                u = self.ureg.parse_expression(u)
+                if is_total and self.solution_loader.components[component_name].timestep_type is TimestepType.operational:
+                    u = u * self.ureg.h
+                units[i] = f"{u.u:~D}"
+            # if the unit is not in the pint registry, change the string manually (normally, when the unit_definition.txt is not saved)
+            except Exception:
+                if is_total and self.solution_loader.components[component_name].timestep_type is TimestepType.operational:
+                    if units[i].endswith(" / hour"):
+                        units[i] = units[i].replace(" / hour", "")
+                    else:
+                        units[i] = f"{units[i]} * hour"
+
         return units
 
     def get_system(self, scenario_name: Optional[str] = None) -> System:

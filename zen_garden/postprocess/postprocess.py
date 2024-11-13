@@ -7,8 +7,7 @@ import json
 import logging
 import os
 from pathlib import Path
-import sys
-import zlib
+import pint
 from tables import NaturalNameWarning
 import warnings
 import pandas as pd
@@ -28,7 +27,7 @@ class Postprocess:
     """
     Class is defining the postprocessing of the results
     """
-    def __init__(self, model: OptimizationSetup, scenarios, model_name, subfolder=None, scenario_name=None, param_map=None, include_year2operation=True):
+    def __init__(self, optimization_setup: OptimizationSetup, scenarios, model_name, subfolder=None, scenario_name=None, param_map=None, include_year2operation=True):
         """postprocessing of the results of the optimization
 
         :param model: optimization model
@@ -40,18 +39,19 @@ class Postprocess:
         """
         logging.info("--- Postprocess results ---")
         # get the necessary stuff from the model
-        self.model = model.model
+        self.optimization_setup = optimization_setup
+        self.model = optimization_setup.model
         self.scenarios = scenarios
-        self.system = model.system
-        self.analysis = model.analysis
-        self.solver = model.solver
-        self.energy_system = model.energy_system
-        self.params = model.parameters
-        self.vars = model.variables
-        self.sets = model.sets
-        self.constraints = model.constraints
+        self.system = optimization_setup.system
+        self.analysis = optimization_setup.analysis
+        self.solver = optimization_setup.solver
+        self.energy_system = optimization_setup.energy_system
+        self.params = optimization_setup.parameters
+        self.vars = optimization_setup.variables
+        self.sets = optimization_setup.sets
+        self.constraints = optimization_setup.constraints
         self.param_map = param_map
-        self.scaling = model.scaling
+        self.scaling = optimization_setup.scaling
 
         # get name or directory
         self.model_name = model_name
@@ -86,13 +86,14 @@ class Postprocess:
         self.save_analysis()
         self.save_scenarios()
         self.save_solver()
+        self.save_unit_definitions()
         self.save_param_map()
         if self.analysis.save_benchmarking_results:
             self.save_benchmarking_data()
 
         # extract and save sequence time steps, we transform the arrays to lists
         self.dict_sequence_time_steps = self.flatten_dict(self.energy_system.time_steps.get_sequence_time_steps_dict())
-        self.dict_sequence_time_steps["optimized_time_steps"] = model.optimized_time_steps
+        self.dict_sequence_time_steps["optimized_time_steps"] = optimization_setup.optimized_time_steps
         if include_year2operation:
             self.dict_sequence_time_steps["time_steps_year2operation"] = self.get_time_steps_year2operation()
             self.dict_sequence_time_steps["time_steps_year2storage"] = self.get_time_steps_year2storage()
@@ -149,6 +150,15 @@ class Postprocess:
             with FileLock(f_name + ".lock").acquire(timeout=300):
                 HDFPandasSerializer.serialize_dict(file_name=f_name, dictionary=dictionary, overwrite=self.overwrite)
 
+        elif format == "txt":
+            f_name = f"{name}.txt"
+            f_mode = "w+"
+
+            # write if necessary
+            if self.overwrite or not os.path.exists(f_name):
+                with FileLock(f_name + ".lock").acquire(timeout=300):
+                    with open(f_name, f_mode, encoding="utf-8") as outfile:
+                        outfile.write(dictionary)
         else:
             raise AssertionError(f"The specified output format {format}, chosen in the config, is not supported")
 
@@ -371,6 +381,27 @@ class Postprocess:
         else:
             fname = self.name_dir.joinpath('solver')
         self.write_file(fname, self.solver, format="json")
+
+    def save_unit_definitions(self):
+        """
+        Saves the user-defined units as txt
+        """
+        if self.system.use_rolling_horizon:
+            fname = self.name_dir.parent.joinpath('unit_definitions')
+        else:
+            fname = self.name_dir.joinpath('unit_definitions')
+
+        lines = []
+        ureg = self.energy_system.unit_handling.ureg
+        # Only save user-defined units (skip base units like 'meter')
+        all_units = ureg._units
+        default_units = pint.UnitRegistry()._units
+        user_units = list(set(all_units.items()).difference(default_units.items()))
+        for name, unit in user_units:
+            if hasattr(unit, "raw") and f"{unit.raw}\n" not in lines:
+                lines.append(f"{unit.raw}\n")
+        txt = "".join(lines)
+        self.write_file(fname, txt, format="txt")
 
     def save_param_map(self):
         """

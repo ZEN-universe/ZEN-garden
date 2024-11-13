@@ -5,6 +5,7 @@ from abc import ABC, abstractmethod
 from enum import Enum
 from zen_garden.model.default_config import Analysis, System, Solver
 import pandas as pd
+import pint
 from typing import Optional, Any, Literal
 
 
@@ -109,6 +110,10 @@ class Scenario(ABC):
     def path(self) -> str:
         pass
 
+    @property
+    @abstractmethod
+    def ureg(self) -> pint.UnitRegistry:
+        pass
 
 class SolutionLoader(ABC):
     """
