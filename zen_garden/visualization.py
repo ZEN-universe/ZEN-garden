@@ -4,11 +4,10 @@ import zen_temple.config
 import uvicorn
 import sys
 import os
-import asyncio
 import webbrowser
 
 
-def start(path="./outputs", api_url="http://localhost:8000/", port=8000):
+def start(path="./outputs", api_url="http://localhost:8000/api/", port=8000):
     zen_temple.config.config.SOLUTION_FOLDER = path
     env_path = os.path.join(
         os.path.dirname(zen_temple.__file__), "explorer", "_app", "env.js"
@@ -25,12 +24,12 @@ def start(path="./outputs", api_url="http://localhost:8000/", port=8000):
     print(
         f"Starting visualization, looking for solutions in {path}. The frontend uses the API under {api_url}"
     )
-    print(f"Open http://localhost:8000/explorer to look at your solutions.")
+    print("Open http://localhost:8000/explorer/ to look at your solutions.")
 
     config = uvicorn.Config("zen_temple.main:app", port=int(port), log_level="info")
     server = uvicorn.Server(config)
 
-    webbrowser.open("http://localhost:8000/explorer", new=2)
+    webbrowser.open("http://localhost:8000/explorer/", new=2)
     server.run()
 
 

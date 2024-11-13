@@ -12,7 +12,7 @@ def find_dataset_files():
     folder_path = os.path.dirname(__file__)
     all_entries = os.listdir(folder_path)
     pattern = re.compile(r'^\d+_.+$')
-    filtered_entries = [entry for entry in all_entries if pattern.match(entry) and not entry.endswith("expectedfailure")]
+    filtered_entries = [entry for entry in all_entries if pattern.match(entry)]
     filtered_entries = sorted(filtered_entries, key=extract_number)
     dataset_dirs = []
     for entry in filtered_entries:
@@ -29,7 +29,11 @@ def find_dataset_files():
 def test_dataset(dataset_name):
     dataset_main_path = Path(dataset_name).parent.absolute()
     config = str(dataset_main_path / "config.json")
-    run_module(["--config", config, "--dataset", dataset_name])
+    if dataset_name.replace('_', '').endswith("expectederror"):
+        with pytest.raises(AssertionError):
+            run_module(["--config", config, "--dataset", dataset_name])
+    else:
+        run_module(["--config", config, "--dataset", dataset_name])
 
 
 if __name__ == "__main__":
