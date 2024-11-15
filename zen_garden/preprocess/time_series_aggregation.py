@@ -279,7 +279,8 @@ class TimeSeriesAggregation(object):
                 new_ts = new_ts.stack()
                 # multiply with yearly variation
                 new_ts = self.multiply_yearly_variation(element, ts, new_ts)
-                # overwrite time series
+                #ToDo add extra TSA input data here to new_ts??
+                #overwrite time series
                 setattr(element, ts, new_ts)
 
     def yearly_variation_nonaggregated_ts(self, element):
