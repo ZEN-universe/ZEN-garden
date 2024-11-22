@@ -58,6 +58,8 @@ class DataInput:
         elif time_steps == "set_base_time_steps_yearly":
             yearly_variation = True
             self.extract_yearly_variation(file_name, index_sets)
+            self.extract_year_specific_ts(file_name, index_sets)
+
 
         # if existing capacities and existing capacities not used
         if (file_name == "capacity_existing" or file_name == "capacity_existing_energy") and not self.system.use_capacities_existing:
@@ -327,6 +329,21 @@ class DataInput:
                 attribute_value = attribute_dict[attribute_name]
             attribute_unit = None
         return attribute_value,attribute_unit
+
+    def extract_year_specific_ts(self, file_name, index_sets):
+        """
+        reads the year specific time series data
+        """
+        # years of optimization model
+        years = [str(year) for year in range(self.system.reference_year-1, self.system.reference_year+self.system.optimized_years*self.system.interval_between_years-1, self.system.interval_between_years)]
+        # files to check
+        file_names = os.listdir(self.folder_path)
+        for file in file_names:
+            for year in years:
+                if year in file:
+                    # read input data
+                    df_input = self.read_input_csv(file)
+
 
     def extract_yearly_variation(self, file_name, index_sets):
         """ reads the yearly variation of a time dependent quantity
