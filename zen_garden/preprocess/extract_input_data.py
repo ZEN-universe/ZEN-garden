@@ -17,7 +17,7 @@ class DataInput:
     """
     Class to extract input data
     """
-    def __init__(self, element, system, analysis, solver, energy_system, unit_handling):
+    def __init__(self, element, system, analysis, solver, energy_system, unit_handling, optimization_setup= None):
         """ data input object to extract input data
 
         :param element: element for which data is extracted
@@ -39,6 +39,8 @@ class DataInput:
         self.index_names = self.analysis.header_data_inputs
         # load attributes file
         self.attribute_dict = self.load_attribute_file()
+        #optimization setup
+        self.optimization_setup = optimization_setup
 
     def extract_input_data(self, file_name, index_sets, unit_category, time_steps=None, subelement=None):
         """ reads input data and restructures the dataframe to return (multi)indexed dict
@@ -58,7 +60,7 @@ class DataInput:
         elif time_steps == "set_base_time_steps_yearly":
             yearly_variation = True
             self.extract_yearly_variation(file_name, index_sets)
-            self.extract_year_specific_ts(file_name, index_sets)
+            self.extract_year_specific_ts(file_name, index_sets, time_steps, subelement, unit_category)
 
 
         # if existing capacities and existing capacities not used
@@ -330,7 +332,7 @@ class DataInput:
             attribute_unit = None
         return attribute_value,attribute_unit
 
-    def extract_year_specific_ts(self, file_name, index_sets):
+    def extract_year_specific_ts(self, file_name, index_sets, time_steps, subelement, unit_category):
         """
         reads the year specific time series data
         """
@@ -340,9 +342,23 @@ class DataInput:
         file_names = os.listdir(self.folder_path)
         for file in file_names:
             for year in years:
-                if year in file:
+                filename = file_name + "_" + year
+                if filename in file:
                     # read input data
-                    df_input = self.read_input_csv(file)
+                    df_output, default_value, index_name_list = self.create_default_output(index_sets, unit_category, file_name=file_name,time_steps=time_steps,subelement=subelement)
+                    f_name, scenario_factor = self.scenario_dict.get_param_file(self.element.name, filename)
+                    df_input = self.read_input_csv(f_name)
+                    if df_input is not None and not df_input.empty:
+                        # get subelement dataframe
+                        if subelement is not None and subelement in df_input.columns:
+                            cols = df_input.columns.intersection(index_name_list + [subelement])
+                            df_input = df_input[cols]
+                        df_output = self.extract_general_input_data(df_input, df_output, file_name, index_name_list, default_value, time_steps)
+                    try:
+                        self.optimization_setup.year_specific_ts[year][(self.element._name,file_name)] = df_output*scenario_factor
+                    except:
+                        self.optimization_setup.year_specific_ts[year] = {}
+                        self.optimization_setup.year_specific_ts[year][(self.element._name,file_name)] = df_output*scenario_factor
 
 
     def extract_yearly_variation(self, file_name, index_sets):

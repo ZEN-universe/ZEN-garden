@@ -37,6 +37,8 @@ class TimeSeriesAggregation(object):
         if self.number_typical_periods < np.size(self.set_base_time_steps) and self.system.conduct_time_series_aggregation:
             # select time series
             self.select_ts_of_all_elements()
+            #make copy of raw time series
+            self.df_ts_raw_copy = self.df_ts_raw.copy()
             if not self.df_ts_raw.empty:
                 # run time series aggregation to create typical periods
                 self.run_tsa()
@@ -89,7 +91,7 @@ class TimeSeriesAggregation(object):
             self.typical_periods = self.typical_periods[self.column_names_flat]
             self.typical_periods.columns = self.column_names_original
 
-    def run_tsa(self):
+    def run_tsa(self,year_specific=False):
         """ this method runs the time series aggregation """
         # substitute column names
         self.substitute_column_names(direction="flatten")
@@ -241,6 +243,33 @@ class TimeSeriesAggregation(object):
         df_ts_raw = pd.concat(dict_raw_ts.values(), axis=1, keys=dict_raw_ts.keys())
         return df_ts_raw
 
+    def run_tsa_for_year_specific_ts(self):
+        """ this method runs the time series aggregation for year-specific time series """
+        for year in self.optimization_setup.year_specific_ts:
+            year_raw_ts = self.df_ts_raw_copy.copy()
+            for element, ts in self.optimization_setup.year_specific_ts[year].keys():
+                index_list = []
+                for idx in self.optimization_setup.year_specific_ts[year][(element,ts)].index.levels:
+                    if idx.name != "time":
+                        index_list.append(list(idx))
+                if len(index_list) > 0:
+                    for idx in index_list:
+                        for index in idx:
+                            year_raw_ts[element,ts,index] = self.optimization_setup.year_specific_ts[year][(element,ts)][index]
+                else:
+                    year_raw_ts[element,ts] = self.optimization_setup.year_specific_ts[year][(element,ts)]
+                self.df_ts_raw = year_raw_ts
+                if not self.df_ts_raw.empty:
+                    # run time series aggregation to create typical periods
+                    self.run_tsa(year_specific=True)
+                # nothing to aggregate
+                else:
+                    assert len(self.excluded_ts) == 0, "Do not exclude any time series from aggregation, if there is then nothing else to aggregate!"
+                    # aggregate to single time step
+                    self.single_ts_tsa()
+                continue
+
+
     def link_time_steps(self):
         """ calculates the necessary overlapping time steps of the investment and operation of a technology for all years.
         It sets the union of the time steps for investment, operation and years """
@@ -248,6 +277,7 @@ class TimeSeriesAggregation(object):
                                     self.time_steps.sequence_time_steps_operation]
         old_sequence_time_steps = copy.copy(self.time_steps.sequence_time_steps_operation)
         unique_time_steps_sequences = self.unique_time_steps_multiple_indices(list_sequence_time_steps)
+        self.run_tsa_for_year_specific_ts()
         if unique_time_steps_sequences:
             set_time_steps, time_steps_duration, sequence_time_steps = unique_time_steps_sequences
             # set sequence time steps
