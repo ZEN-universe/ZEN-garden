@@ -35,8 +35,8 @@ jobs:
             skip="false"
           fi
           echo "skiptests=$skip" >> $GITHUB_ENV
+          echo "skiptests=$skip" >> $GITHUB_OUTPUT
           echo "skiptests=$skip"
-          echo "::set-output name=skiptests::$skip"
 
   matrix_prep:
     if: ${{ github.repository == 'ZEN-universe/ZEN-garden' && needs.check_skiptests.outputs.skiptests == 'false' }}
@@ -162,6 +162,8 @@ jobs:
     name: "Create Github Release"
     needs: bump_version
     runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.get-latest-tag.outputs.tag }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -178,9 +180,9 @@ jobs:
         run: |
           TAG=${{ steps.get-latest-tag.outputs.tag }}
           PATCH_VERSION=$(echo $TAG | cut -d. -f3)
-          echo "tag=$TAG"
           echo "patch=$PATCH_VERSION"
           echo "patch=$PATCH_VERSION" >> $GITHUB_ENV
+          echo "tag=$tag" >> $GITHUB_OUTPUT
   
           if [[ $PATCH_VERSION -eq 0 ]]; then
             echo "is_major_minor=true" >> $GITHUB_ENV
@@ -209,7 +211,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ steps.get-latest-tag.outputs.tag }}
+          ref: ${{ needs.release.outputs.tag }}
       - uses: hynek/build-and-inspect-python-package@v2
 
   release-test-pypi:
