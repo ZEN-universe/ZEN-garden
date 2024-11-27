@@ -22,6 +22,8 @@ class TimeSeriesAggregation(object):
 
         :param energy_system: The energy system to use"""
         logging.info("\n--- Time series aggregation ---")
+        #initiate dictionary for saving year specific TSA results
+        self.year_specific_tsa = {}
         self.energy_system = energy_system
         self.time_steps = self.energy_system.time_steps
         self.optimization_setup = energy_system.optimization_setup
@@ -77,7 +79,7 @@ class TimeSeriesAggregation(object):
         else:
             self.df_ts_raw = pd.Series()
 
-    def substitute_column_names(self, direction="flatten"):
+    def substitute_column_names(self, direction="flatten",year_specific=False):
         """ this method substitutes the column names to have flat columns names (otherwise sklearn warning)
 
         :param direction: flatten or raise
@@ -87,14 +89,18 @@ class TimeSeriesAggregation(object):
                 self.column_names_original = self.df_ts_raw.columns
                 self.column_names_flat = [str(index) for index in self.column_names_original]
                 self.df_ts_raw.columns = self.column_names_flat
+            elif year_specific:  # for specific year ts
+                self.column_names_flat = [str(index) for index in self.column_names_original]
+                self.df_ts_raw.columns = self.column_names_flat
         elif direction == "raise":
             self.typical_periods = self.typical_periods[self.column_names_flat]
             self.typical_periods.columns = self.column_names_original
 
+
     def run_tsa(self,year_specific=False):
         """ this method runs the time series aggregation """
         # substitute column names
-        self.substitute_column_names(direction="flatten")
+        self.substitute_column_names(direction="flatten",year_specific=year_specific)
         # create aggregation object
         self.aggregation = tsam.TimeSeriesAggregation(timeSeries=self.df_ts_raw, noTypicalPeriods=self.number_typical_periods,
             hoursPerPeriod=self.analysis.time_series_aggregation.hoursPerPeriod, resolution=self.analysis.time_series_aggregation.resolution,
@@ -106,9 +112,10 @@ class TimeSeriesAggregation(object):
         self.set_time_attributes(self.aggregation.clusterPeriodIdx, self.aggregation.clusterPeriodNoOccur, self.aggregation.clusterOrder)
         # resubstitute column names
         self.substitute_column_names(direction="raise")
-        # set aggregated time series
-        self.set_aggregated_ts_all_elements()
-        self.conducted_tsa = True
+        if not year_specific:
+            # set aggregated time series
+            self.set_aggregated_ts_all_elements()
+            self.conducted_tsa = True
 
     def set_aggregated_ts_all_elements(self):
         """ this method sets the aggregated time series and sets the necessary attributes after the aggregation """
@@ -258,16 +265,18 @@ class TimeSeriesAggregation(object):
                             year_raw_ts[element,ts,index] = self.optimization_setup.year_specific_ts[year][(element,ts)][index]
                 else:
                     year_raw_ts[element,ts] = self.optimization_setup.year_specific_ts[year][(element,ts)]
-                self.df_ts_raw = year_raw_ts
-                if not self.df_ts_raw.empty:
-                    # run time series aggregation to create typical periods
-                    self.run_tsa(year_specific=True)
-                # nothing to aggregate
-                else:
-                    assert len(self.excluded_ts) == 0, "Do not exclude any time series from aggregation, if there is then nothing else to aggregate!"
-                    # aggregate to single time step
-                    self.single_ts_tsa()
-                continue
+            #ToDO add yearly variation of other generic data here (for loop over all elements that are not in year_specific_ts[year]
+            self.df_ts_raw = year_raw_ts
+            if not self.df_ts_raw.empty:
+                # run time series aggregation to create typical periods
+                self.run_tsa(year_specific=True)
+            # nothing to aggregate
+            else:
+                assert len(self.excluded_ts) == 0, "Do not exclude any time series from aggregation, if there is then nothing else to aggregate!"
+                # aggregate to single time step
+                self.single_ts_tsa()
+            self.year_specific_tsa[year] = self.typical_periods
+
 
 
     def link_time_steps(self):
@@ -310,6 +319,19 @@ class TimeSeriesAggregation(object):
                 # multiply with yearly variation
                 new_ts = self.multiply_yearly_variation(element, ts, new_ts)
                 #ToDo add extra TSA input data here to new_ts??
+                for year in self.year_specific_tsa.keys():
+                    try:
+                        year_ts = self.year_specific_tsa[year][element.name,ts]
+                        print("Year specific time series detected")
+                        starting_time_index = int((int(year)-self.system.reference_year)*self.system.aggregated_time_steps_per_year/self.system.interval_between_years)
+                        if starting_time_index<0:
+                            print("Year specific time series must be given within the time horizon of the optimization")
+                            continue
+                        ending_time_index = int((int(year)-self.system.reference_year+1)*self.system.aggregated_time_steps_per_year/self.system.interval_between_years)
+                        for column in year_ts.columns:
+                            new_ts[column][starting_time_index:ending_time_index]=year_ts[column]
+                    except:
+                        continue
                 #overwrite time series
                 setattr(element, ts, new_ts)
 
