@@ -384,6 +384,7 @@ class TimeSeriesAggregation(object):
         # concatenate the order of time steps and link with investment and yearly time steps
         old_sequence_time_steps = self.time_steps.sequence_time_steps_operation
         new_sequence_time_steps = np.hstack([old_sequence_time_steps] * optimized_years)
+        # TODO insert new sequence here
         self.time_steps.sequence_time_steps_operation = new_sequence_time_steps
         # calculate the time steps in operation to link with investment and yearly time steps
         self.link_time_steps()
