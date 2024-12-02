@@ -51,7 +51,7 @@ After successfully running an optimization. you can start the visualization with
     Alternatively, you can pass an arbitrary folder with ``python -m zen_garden.visualization <path to your solutions folder>`` to change the solutions folder.
 
 This command will open a new tab in your default browser with the correct URL.
-If the tab does not open automatically, you can open http://localhost:8000/explorer in any browser of your choice.
+If the tab does not open automatically, you can open http://localhost:8000/explorer/ in any browser of your choice.
 
 To interrupt the visualization, you can press ``Ctrl+C`` in the terminal where you started the visualization.
 
