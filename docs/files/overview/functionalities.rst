@@ -202,7 +202,7 @@ Results analysis & visualization
 The results of the optimization can be analyzed and visualized with the following functionalities:
 
 1. Detailed results analysis with the results class (:ref:`Accessing results`)
-2. Visualization of the results with the ZEN-explorer visualization platform (:ref:`Visualization`), both offline and `online <https://zen-garden.ethz.ch/explorer/>`_.
+2. Visualization of the results with the ZEN-explorer visualization platform (:ref:`Visualization`), both offline and online `<https://zen-garden.ethz.ch/>`_.
 3. Comparison of two different results objects (:ref:`Comparing results`)
 
 
