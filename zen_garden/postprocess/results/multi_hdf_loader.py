@@ -305,12 +305,19 @@ class MultiHdfLoader(AbstractLoader):
         if self.has_rh:
             # If solution has rolling horizon, load the values for all the foresight
             # steps and combine them.
-            pattern = re.compile(r'^MF_\d+$')
+            pattern = re.compile(r'^MF_\d+(_.*)?$')
             subfolder_names = list(filter(lambda x: pattern.match(x), os.listdir(scenario.path)))
             pd_series_dict = {}
 
             for subfolder_name in subfolder_names:
-                mf_idx = int(subfolder_name.replace("MF_", ""))
+                sf_stripped = subfolder_name.replace("MF_", "")
+                if not sf_stripped.isnumeric():
+                    if keep_raw:
+                        mf_idx = subfolder_name.replace("MF_", "")
+                    else:
+                        continue
+                else:
+                    mf_idx = int(subfolder_name.replace("MF_", ""))
                 file_path = os.path.join(
                     scenario.path, subfolder_name, component.file_name
                 )
