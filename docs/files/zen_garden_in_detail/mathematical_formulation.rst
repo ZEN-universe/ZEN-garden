@@ -390,15 +390,15 @@ The conversion factor :math:`\eta_{i,c,t,y}` describes the ratio between the car
 
 .. math::
 
-    \eta_{i,c,t,y} = \frac{\underline{G}_{c,i,n,t,y}^{\mathrm{d}}{G_{i,n,t,y}^\mathrm{r}}.
+    \eta_{i,c,t,y} = \frac{\underline{G}_{c,i,n,t,y}^{\mathrm{d}}}{G_{i,n,t,y}^\mathrm{r}}.
 
 If the carrier flow is an output carrier, i.e. :math:`c\in\overline{\mathcal{C}}_i`:
 
 .. math::
 
-    \eta_{i,c,t,y} = \frac{\overline{G}_{c,i,n,t,y}^{\mathrm{d}}{G_{i,n,t,y}^\mathrm{r}}.
+    \eta_{i,c,t,y} = \frac{\overline{G}_{c,i,n,t,y}^{\mathrm{d}}}{G_{i,n,t,y}^\mathrm{r}}.
 
-All carrier flows that are not reference carrier flows are called dependent carrier flows :math:`G_{c,i,n,t,y}^{\mathrm{d}`.
+All carrier flows that are not reference carrier flows are called dependent carrier flows :math:`G_{c,i,n,t,y}^{\mathrm{d}}`.
 
 The transport flow losses :math:`F_{j,e,t,y}^\mathrm{l}` through a transport technology :math:`j\in\mathcal{J}` on edge :math:`e\in\mathcal{E}` are expressed by the loss function :math:`\rho_{j,e}` and the transported quantity:
 
@@ -538,7 +538,7 @@ The derivative of Eq. :eq:`storage_level_selfdisch` follows as:
 
     \frac{\mathrm{d}L(t)}{\mathrm{d}t} = \underbrace{\left(L_0-\frac{\Delta H}{1-\kappa}\right)\ln(\kappa)}_{= \text{ constant }\forall t\in[1,\tau^\mathrm{k}_{t^\mathrm{k}}]}\kappa^t.
 
-With :math:`\kappa^t>0`, it follows that \cref{eq:storage_level_simpl} is monotonous for :math:`0<\varphi<1`.
+With :math:`\kappa^t>0`, it follows that Eq. :eq:`storage_level_simpl` is monotonous for :math:`0<\varphi<1`.
 
 Investment constraints
 ----------------------
