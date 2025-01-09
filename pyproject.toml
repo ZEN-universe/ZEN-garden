@@ -25,7 +25,7 @@ dependencies = [
     "cython",
     "numpy<=1.26.4",
     "pandas>=2.2",
-    "scipy",
+    "scipy<=1.14",
     "pint",
     "tables",
     "pydantic",
