@@ -92,6 +92,7 @@ class System(Subscriptable):
     set_storage_technologies: list[str] = []
     set_retrofitting_technologies: list[str] = []
     storage_periodicity: bool = True
+    multiyear_periodicity: bool = False
     set_transport_technologies: list[str] = []
     set_transport_technologies_loss_exponential: list[str] = []
     double_capex_transport: bool = False
