@@ -61,7 +61,7 @@
     "unit": "1/km"
   },
   "transport_loss_factor_exponential": {
-    "default_value": 9.9e-3,
+    "default_value": 8e-3,
     "unit": "1/km"
   },
   "capex_per_distance_transport": {
