@@ -342,6 +342,8 @@ class TransportTechnologyRules(GenericRule):
 
         """
 
+        if len(self.sets["set_transport_technologies"]) == 0:
+            return
         flow_transport = self.variables["flow_transport"]
         flow_transport_loss = self.variables["flow_transport_loss"]
         # This mask checks the distance between nodes
