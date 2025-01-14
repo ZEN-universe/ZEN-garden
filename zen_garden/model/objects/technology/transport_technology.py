@@ -146,7 +146,7 @@ class TransportTechnology(Technology):
         optimization_setup.parameters.add_parameter(name="capex_per_distance_transport", index_names=['set_transport_technologies', "set_edges", "set_time_steps_yearly"], doc='capex per distance for transport technologies', calling_class=cls)
         # carrier losses
         optimization_setup.parameters.add_parameter(name="transport_loss_factor_linear", index_names=["set_transport_technologies"], doc='linear carrier losses due to transport with transport technologies', calling_class=cls)
-        optimization_setup.parameters.add_parameter(name="transport_loss_factor_exponential", index_names=["set_transport_technologies"], doc='exponential carrier losses due to transport with transport technologies', calling_class=cls)
+        optimization_setup.parameters.add_parameter(name="transport_loss_factor_exponential", index_names=["set_transport_technologies_loss_exponential"], doc='exponential carrier losses due to transport with transport technologies', calling_class=cls)
 
     @classmethod
     def construct_vars(cls, optimization_setup):
@@ -351,7 +351,10 @@ class TransportTechnologyRules(GenericRule):
         exp_techs = exp_techs.to_xarray().broadcast_like(flow_transport.lower)
         if len(exp_techs) == 0:
             return None
-        exp_loss_factor = (np.exp(-self.parameters.transport_loss_factor_exponential * self.parameters.distance)).broadcast_like(flow_transport.lower)
+        transport_loss_factor_exponential = self.parameters.transport_loss_factor_exponential.rename({
+            "set_transport_technologies_loss_exponential": "set_transport_technologies"})
+        exp_loss_factor = (np.exp(-transport_loss_factor_exponential * self.parameters.distance)).where(transport_loss_factor_exponential>0, 0.0)
+        exp_loss_factor = exp_loss_factor.broadcast_like(flow_transport.lower)
         lin_loss_factor = (self.parameters.transport_loss_factor_linear * self.parameters.distance).broadcast_like(flow_transport.lower)
         loss_factor = exp_loss_factor.where(exp_techs, 0.0) + lin_loss_factor.where(~exp_techs, 0.0)
         lhs = (flow_transport_loss - loss_factor * flow_transport).where(mask, 0.0)

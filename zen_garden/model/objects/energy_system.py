@@ -92,6 +92,7 @@ class EnergySystem:
         self.set_transport_technologies = self.system.set_transport_technologies
         self.set_storage_technologies = self.system.set_storage_technologies
         self.set_retrofitting_technologies= self.system.set_retrofitting_technologies
+        self.set_transport_technologies_loss_exponential = self.system.set_transport_technologies_loss_exponential
         # discount rate
         self.discount_rate = self.data_input.extract_input_data("discount_rate", index_sets=[], unit_category={})
         # carbon emissions limit
