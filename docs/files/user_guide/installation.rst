@@ -17,7 +17,7 @@ We recommend working from a conda environment for the installation. If you have 
 
 You can quickly create an environment with the following command::
 
-  conda create -n <your_env_name> python=<python_version>
+  conda create -n <your_env_name> python==3.12
 
 Replace ``<your_env_name>`` with the name of your environment and replace ``<python_version>`` with the necessary python version (see `ZEN-garden README <https://github.com/ZEN-universe/ZEN-garden/blob/main/README.md>`_).
 
