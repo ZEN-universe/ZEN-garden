@@ -21,6 +21,9 @@ You can quickly create an environment with the following command::
 
 Replace ``<your_env_name>`` with the name of your environment and replace ``<python_version>`` with the necessary python version (see `ZEN-garden README <https://github.com/ZEN-universe/ZEN-garden/blob/main/README.md>`_).
 
+.. warning::
+    Gurobi currently does not support Python version 3.13. We therefore recommend using Python 3.11.
+
 Activate the environment with the following command::
 
   conda activate <your_env_name>
@@ -83,3 +86,6 @@ Solver options
 ==============
 
 ZEN-garden passes the optimization problem to an external solver, per default, the open source solver `HiGHS <https://highs.dev/>`_ is selected. Alternatively, the commercial solver `Gurobi <https://www.gurobi.com/>`_ can be used. Academic licenses are available for free and allow you to access all of Gurobi's functionalities. You can get your Gurobi license `here <https://www.gurobi.com/features/academic-named-user-license/>`_. Follow the instructions to retrieve your Gurobi license key and activate the license for your computer.
+
+.. warning::
+    If you are planning to use Gurobi, make sure that the version of your Gurobi solver license and your Gurobi installation align.
