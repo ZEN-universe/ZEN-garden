@@ -620,7 +620,7 @@ class EnergySystemRules(GenericRule):
         :param model: optimization model
         :return: net present cost objective function
         """
-        return sum([model.variables["net_present_cost"][year] for year in self.energy_system.set_time_steps_yearly])
+        return sum([model.variables["net_present_cost"].at[year] for year in self.energy_system.set_time_steps_yearly])
 
     def objective_total_carbon_emissions(self, model):
         """objective function to minimize total emissions
