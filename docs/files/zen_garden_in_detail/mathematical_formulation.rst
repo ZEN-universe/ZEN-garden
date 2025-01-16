@@ -677,8 +677,8 @@ Two more constraints are added to ensure that :math:`S^\mathrm{approx}_{h,p,y}` 
 .. math::
     :label: binary_constraint_on
 
-    S^\mathrm{approx}_{i,p,y} \leq S_{i,n,y} \\\\
-    S^\mathrm{approx}_{i,p,y} \geq (1-b_{h,p,t}) M + S_{i,p,t}
+    S^\mathrm{approx}_{i,p,y} \leq S_{i,p,y} \\\\
+    S^\mathrm{approx}_{i,p,y} \geq (1-b_{h,p,t}) M + S_{i,p,y}
 
 where a sufficiently large :math:`M` is selected. Here :math:`M` could be represented by the maximum technology capacity :math:`s^\mathrm{max}_{h,p,y}`.
 
