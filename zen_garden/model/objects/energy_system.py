@@ -329,7 +329,7 @@ class EnergySystem:
         assert sense in ["min", "max"], f"Objective sense {sense} not known"
 
         # construct objective
-        self.optimization_setup.model.add_objective(objective.to_linexpr(),sense=sense)
+        self.optimization_setup.model.add_objective(objective,sense=sense)
 
 
 class EnergySystemRules(GenericRule):
@@ -574,7 +574,7 @@ class EnergySystemRules(GenericRule):
         :param model: optimization model
         :return: net present cost objective function
         """
-        return sum([model.variables["net_present_cost"].at[year] for year in self.energy_system.set_time_steps_yearly])
+        return model.variables["net_present_cost"].sum("set_time_steps_yearly")
 
     def objective_total_carbon_emissions(self, model):
         """objective function to minimize total emissions
