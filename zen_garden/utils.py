@@ -1042,7 +1042,10 @@ class StringUtils:
         :return: output folder
         """
         if not os.path.exists(analysis.folder_output):
-            os.mkdir(analysis.folder_output)
+            try:
+                os.mkdir(analysis.folder_output)
+            except FileExistsError:
+                pass
         out_folder = cls.get_output_folder(analysis)
         if not os.path.exists(out_folder):
             os.mkdir(out_folder)
