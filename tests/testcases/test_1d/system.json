@@ -4,14 +4,15 @@
     ],
     "set_storage_technologies": [],
     "set_transport_technologies": [
-        "natural_gas_pipeline"
-    ],
-    "set_transport_technologies_loss_exponential": [
-        "natural_gas_pipeline"
+        "natural_gas_pipeline_exp",
+        "natural_gas_pipeline_exp_2",
+        "natural_gas_pipeline_lin"
     ],
     "set_nodes": [
         "DE",
-        "CH"
+        "CH",
+        "FR",
+        "AT"
     ],
     "reference_year": 2022,
     "unaggregated_time_steps_per_year": 1,
