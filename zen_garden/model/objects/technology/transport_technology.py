@@ -267,7 +267,7 @@ class TransportTechnologyRules(GenericRule):
         super().__init__(optimization_setup)
 
     def constraint_capacity_factor_transport(self):
-        """ Load is limited by the installed capacity and the maximum load factor
+        r""" Load is limited by the installed capacity and the maximum load factor
 
         .. math::
             \ F_{j,e,t,y}^\mathrm{r} \\leq m^{\mathrm{max}}_{j,e,t,y}S_{j,e,y}
@@ -297,7 +297,7 @@ class TransportTechnologyRules(GenericRule):
         self.constraints.add_constraint("constraint_capacity_factor_transport", constraints)
 
     def constraint_opex_emissions_technology_transport(self):
-        """ calculate opex of each technology
+        r""" calculate opex of each technology
 
         .. math::
             O_{j,t,y}^\mathrm{t} = \\beta_{j,y} F_{j,e,t,y}
@@ -325,7 +325,7 @@ class TransportTechnologyRules(GenericRule):
         self.constraints.add_constraint("constraint_carbon_emissions_technology_transport",constraints_emissions)
 
     def constraint_transport_technology_losses_flow(self):
-        """compute the flow losses for a carrier through a transport technology
+        r"""compute the flow losses for a carrier through a transport technology
 
         .. math::
             \mathrm{if\ transport\ distance\ set\ to\ inf:}\ F^\mathrm{l}_{j,e,t} = 0
@@ -361,7 +361,7 @@ class TransportTechnologyRules(GenericRule):
         self.constraints.add_constraint("constraint_transport_technology_losses_flow",constraints)
 
     def constraint_transport_technology_capex(self):
-        """ definition of the capital expenditures for the transport technology
+        r""" definition of the capital expenditures for the transport technology
 
         .. math::
             \mathrm{if\ transport\ distance\ set\ to\ inf:}\ \Delta S_{j,e,y} = 0
