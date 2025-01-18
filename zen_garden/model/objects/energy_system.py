@@ -9,6 +9,7 @@ import logging
 import numpy as np
 import pandas as pd
 import xarray as xr
+from linopy import LinearExpression
 
 from zen_garden.model.objects.element import GenericRule,Element
 from zen_garden.preprocess.extract_input_data import DataInput
@@ -588,4 +589,4 @@ class EnergySystemRules(GenericRule):
         :return: total carbon emissions objective function
         """
         sets = self.sets
-        return model.variables["carbon_emissions_cumulative"][sets["set_time_steps_yearly"][-1]]
+        return model.variables["carbon_emissions_cumulative"][sets["set_time_steps_yearly"][-1]].to_linexpr()
