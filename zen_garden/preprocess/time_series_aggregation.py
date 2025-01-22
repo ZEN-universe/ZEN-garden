@@ -97,7 +97,7 @@ class TimeSeriesAggregation(object):
             self.typical_periods.columns = self.column_names_original
 
 
-    def run_tsa(self,year_specific=False):
+    def run_tsa(self,year_specific=None):
         """ this method runs the time series aggregation """
         # substitute column names
         self.substitute_column_names(direction="flatten",year_specific=year_specific)
@@ -112,8 +112,8 @@ class TimeSeriesAggregation(object):
         self.set_time_attributes(self.aggregation.clusterPeriodIdx, self.aggregation.clusterPeriodNoOccur, self.aggregation.clusterOrder)
         # resubstitute column names
         self.substitute_column_names(direction="raise")
-        if not year_specific:
-            # set aggregated time series
+        # set aggregated time series
+        if year_specific == None:
             self.set_aggregated_ts_all_elements()
             self.conducted_tsa = True
 
@@ -153,8 +153,12 @@ class TimeSeriesAggregation(object):
                 df_aggregated_ts.columns.names = index_names
                 df_aggregated_ts = df_aggregated_ts.stack(index_names,future_stack=True)
                 df_aggregated_ts.index = df_aggregated_ts.index.reorder_levels(index_names + [self.header_set_time_steps])
+                # here if statement for year specific data
+                #if year == None: #ToDo back to this here???
                 setattr(element, ts, df_aggregated_ts)
                 element.aggregated = True
+                #else: #ToDo back to this here???
+                #    self.year_specific_tsa[year][element.name,ts] = df_aggregated_ts
                 # self.set_aggregation_indicators(element)
 
     def get_excluded_ts(self):
@@ -251,41 +255,35 @@ class TimeSeriesAggregation(object):
         return df_ts_raw
 
     def run_tsa_for_year_specific_ts(self,new_sequence_time_steps):
-        """ this method runs the time series aggregation for year-specific time series """
+        """ this method runs the time series aggregation for year-specific time series
+
+        :param new_sequence_time_steps: old sequence of time steps that is now overwritten with new sequence of year specific TSA for respective year
+        :return new_sequence_time_steps: new sequence of time steps updated with year specific TSA sequence
+        """
         header_set_time_steps = self.analysis.header_data_inputs.set_time_steps
         #only run specific TSA if TSA is activated and set_base_time_steps > aggregated_time_steps
         if self.number_typical_periods < np.size(self.set_base_time_steps) and self.system.conduct_time_series_aggregation:
             for year in self.optimization_setup.year_specific_ts:
+                #create empty dictionary for saving year specific TSA results
+                self.year_specific_tsa[year] = {}
+                #make copy of raw time series
                 year_raw_ts = self.df_ts_raw_copy.copy()
                 elements = year_raw_ts.columns.get_level_values(0).unique()
                 time_series = year_raw_ts.columns.get_level_values(1).unique()
-                #for element in self.optimization_setup.get_all_elements(Element):
                 for element,ts in zip(elements,time_series):
                     unstacked = year_raw_ts.unstack(header_set_time_steps)
-                    if (element,ts) in self.optimization_setup.year_specific_ts[year].keys(): #ToDo is this too hard coded? Is there a better way to do this????
-                #ToDo could we just do this part below through year_raw_ts.unstack(header_set_time_steps)? But, then it is necessary that the entire time series for all indices is given for the specific year!
-                #index_list = []
-                #for idx in self.optimization_setup.year_specific_ts[year][(element,ts)].index.levels:
-                #    if idx.name != header_set_time_steps:
-                #        index_list.append(list(idx))
-                #if len(index_list) > 0:
-                #    for idx in index_list:
-                #        for index in idx:
-                #            year_raw_ts[element,ts,index] = self.optimization_setup.year_specific_ts[year][(element,ts)][index]
-                #else:
-                #    year_raw_ts[element,ts] = self.optimization_setup.year_specific_ts[year][(element,ts)]
+                    if (element,ts) in self.optimization_setup.year_specific_ts[year].keys():
                         unstacked[element,ts] = self.optimization_setup.year_specific_ts[year][(element,ts)]
-                    # ToDO add yearly variation of other generic data here (for loop over all elements that are not in year_specific_ts[year]
                     else:
                         ts_adjusted = self.multiply_yearly_variation(self.optimization_setup.get_element(Element,element), ts, year_raw_ts.unstack(header_set_time_steps)[element,ts], year)
-                        unstacked[element,ts][element,ts] = ts_adjusted
+                        unstacked[element,ts] = ts_adjusted
                     year_raw_ts = unstacked.unstack(level=header_set_time_steps).T
                 self.df_ts_raw = year_raw_ts
                 if not self.df_ts_raw.empty:
                     # run time series aggregation to create typical periods
-                    self.run_tsa(year_specific=True)
+                    self.run_tsa(year_specific=year)
                 # nothing to aggregate
-                else:
+                else: #ToDo can this be removed?
                     assert len(self.excluded_ts) == 0, "Do not exclude any time series from aggregation, if there is then nothing else to aggregate!"
                     # aggregate to single time step
                     self.single_ts_tsa()
@@ -314,7 +312,6 @@ class TimeSeriesAggregation(object):
             # time series parameters
             for element in self.optimization_setup.get_all_elements(Element):
                 self.overwrite_ts_with_expanded_timeindex(element, old_sequence_time_steps)
-
         else:
             for element in self.optimization_setup.get_all_elements(Element):
                 # check to multiply the time series with the yearly variation
@@ -336,8 +333,7 @@ class TimeSeriesAggregation(object):
                 new_ts = new_ts.stack()
                 # multiply with yearly variation
                 new_ts = self.multiply_yearly_variation(element, ts, new_ts)
-                #ToDo add if statemnet for ts in year_specific_ts !!!!!
-                    #ToDo add extra TSA input data here to new_ts??
+                #insert year specific TSA output
                 if self.conducted_tsa:
                     for year in self.year_specific_tsa.keys():
                         if (element.name,ts) in self.year_specific_tsa[year].keys():
@@ -345,10 +341,9 @@ class TimeSeriesAggregation(object):
                             element_time_steps = self.energy_system.time_steps.encode_time_step(base_time_steps,time_step_type="operation")
                             year_ts = self.year_specific_tsa[year][element.name,ts]
                             #ToDO better assignment of values?
-                            #ToDo fix warning from pandas
                             for column in year_ts.columns:
-                                #new_ts.loc[(column, element_time_steps)] = year_ts[column]
-                                new_ts[column][element_time_steps]=year_ts[column]
+                                new_ts.loc[column,element_time_steps] = year_ts[column].values
+                #insert year specific TS if not aggregated
                 else:
                     for year in self.optimization_setup.year_specific_ts.keys():
                         if (element.name,ts) in self.optimization_setup.year_specific_ts[year].keys():
@@ -356,11 +351,8 @@ class TimeSeriesAggregation(object):
                             element_time_steps = self.energy_system.time_steps.encode_time_step(base_time_steps,time_step_type="operation")
                             year_ts = self.optimization_setup.year_specific_ts[year][(element.name,ts)].unstack(header_set_time_steps).T
                             #ToDO better assignment of values?
-                            #ToDo fix warning from pandas
                             for column in year_ts.columns:
-                                #new_ts.loc[(column, element_time_steps)] = year_ts[column]
-                                new_ts[column][element_time_steps]=year_ts[column]
-
+                                new_ts.loc[column, element_time_steps] = year_ts[column].values
                 #overwrite time series
                 setattr(element, ts, new_ts)
 
@@ -419,7 +411,6 @@ class TimeSeriesAggregation(object):
         # concatenate the order of time steps and link with investment and yearly time steps
         old_sequence_time_steps = self.time_steps.sequence_time_steps_operation
         new_sequence_time_steps = np.hstack([old_sequence_time_steps] * optimized_years)
-        # TODO insert new sequence here
         # Run year specific TSA
         new_sequence_time_steps = self.run_tsa_for_year_specific_ts(new_sequence_time_steps)
         self.time_steps.sequence_time_steps_operation = new_sequence_time_steps

@@ -60,7 +60,6 @@ class DataInput:
         elif time_steps == "set_base_time_steps_yearly":
             yearly_variation = True
             self.extract_yearly_variation(file_name, index_sets)
-            self.extract_year_specific_ts(file_name, index_sets, time_steps, subelement, unit_category)
 
 
         # if existing capacities and existing capacities not used
@@ -90,7 +89,12 @@ class DataInput:
         # save parameter values for analysis of numerics
         self.save_values_of_attribute(df_output=df_output, file_name=file_name)
         # finally apply the scenario_factor
-        return df_output*scenario_factor
+        df_output = df_output * scenario_factor
+        #copy output data as otherwise overwritten
+        df_output_generic = df_output.copy()
+        if time_steps == "set_base_time_steps_yearly":
+            self.extract_year_specific_ts(file_name, index_name_list, time_steps, subelement, default_value,df_output_generic=df_output)
+        return df_output_generic*scenario_factor
 
     def extract_general_input_data(self, df_input, df_output, file_name, index_name_list, default_value, time_steps):
         """ fills df_output with data from df_input
@@ -332,11 +336,11 @@ class DataInput:
             attribute_unit = None
         return attribute_value,attribute_unit
 
-    def extract_year_specific_ts(self, file_name, index_sets, time_steps, subelement, unit_category):
+    def extract_year_specific_ts(self, file_name, index_name_list, time_steps, subelement,default_value,df_output_generic):
         """
         reads the year specific time series data
         """
-        # years of optimization model
+        #years of optimization model
         years = [str(year) for year in range(self.system.reference_year, self.system.reference_year+self.system.optimized_years*self.system.interval_between_years, self.system.interval_between_years)]
         # files to check
         file_names = os.listdir(self.folder_path)
@@ -345,7 +349,7 @@ class DataInput:
                 filename = file_name + "_" + year
                 if filename in file:
                     # read input data
-                    df_output, default_value, index_name_list = self.create_default_output(index_sets, unit_category, file_name=file_name,time_steps=time_steps,subelement=subelement)
+                    #ToDo add here that year specific input ts are also available scenario specific
                     f_name, scenario_factor = self.scenario_dict.get_param_file(self.element.name, filename)
                     df_input = self.read_input_csv(f_name)
                     if df_input is not None and not df_input.empty:
@@ -353,12 +357,12 @@ class DataInput:
                         if subelement is not None and subelement in df_input.columns:
                             cols = df_input.columns.intersection(index_name_list + [subelement])
                             df_input = df_input[cols]
-                        df_output = self.extract_general_input_data(df_input, df_output, file_name, index_name_list, default_value, time_steps)
+                        df_output_specific = self.extract_general_input_data(df_input, df_output_generic, file_name, index_name_list, default_value, time_steps)
                     try:
-                        self.optimization_setup.year_specific_ts[i][(self.element._name,file_name)] = df_output*scenario_factor
+                        self.optimization_setup.year_specific_ts[i][(self.element._name,file_name)] = df_output_specific*scenario_factor
                     except:
                         self.optimization_setup.year_specific_ts[i] = {}
-                        self.optimization_setup.year_specific_ts[i][(self.element._name,file_name)] = df_output*scenario_factor
+                        self.optimization_setup.year_specific_ts[i][(self.element._name,file_name)] = df_output_specific*scenario_factor
 
 
     def extract_yearly_variation(self, file_name, index_sets):
