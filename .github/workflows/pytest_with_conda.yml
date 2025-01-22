@@ -213,28 +213,28 @@ jobs:
         with:
           ref: ${{ needs.release.outputs.tag }}
       - uses: hynek/build-and-inspect-python-package@v2
-
-  release-test-pypi:
-    if: ${{ github.repository == 'ZEN-universe/ZEN-garden' && needs.check_skiptests.outputs.skiptests == 'false' }}
-    name: "Release to Test PyPI"
-    runs-on: ubuntu-latest
-    needs: build-package
-    environment:
-      name: test-pypi
-      url: https://test.pypi.org/project/zen-garden/
-    permissions:
-      id-token: write
-    steps:
-      - name: Download packages
-        uses: actions/download-artifact@v4
-        with:
-          name: Packages
-          path: dist
-
-      - name: Publish to Test PyPI
-        uses: pypa/gh-action-pypi-publish@release/v1
-        with:
-          repository-url: https://test.pypi.org/legacy/
+#
+#  release-test-pypi:
+#    if: ${{ github.repository == 'ZEN-universe/ZEN-garden' && needs.check_skiptests.outputs.skiptests == 'false' }}
+#    name: "Release to Test PyPI"
+#    runs-on: ubuntu-latest
+#    needs: build-package
+#    environment:
+#      name: test-pypi
+#      url: https://test.pypi.org/project/zen-garden/
+#    permissions:
+#      id-token: write
+#    steps:
+#      - name: Download packages
+#        uses: actions/download-artifact@v4
+#        with:
+#          name: Packages
+#          path: dist
+#
+#      - name: Publish to Test PyPI
+#        uses: pypa/gh-action-pypi-publish@release/v1
+#        with:
+#          repository-url: https://test.pypi.org/legacy/
 
   release-pypi:
     if: ${{ github.repository == 'ZEN-universe/ZEN-garden' && needs.check_skiptests.outputs.skiptests == 'false' }}
