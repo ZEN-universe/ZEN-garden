@@ -1058,6 +1058,15 @@ class TechnologyRules(GenericRule):
             constraints_an = lhs_an <= rhs_an
             self.constraints.add_constraint("constraint_technology_diffusion_limit",constraints_an)
 
+    def constraint_technology_diffusion_limit_super(self):
+        r"""limited technology diffusion based on the existing capacity in the previous year for super locations"""
+
+
+
+        lhs
+        rhs = 0
+        constraints = lhs <= rhs
+
     def constraint_cost_capex_yearly(self):
         r""" aggregates the capex of built capacity and of existing capacity
 

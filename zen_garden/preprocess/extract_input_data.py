@@ -383,21 +383,22 @@ class DataInput:
             if extract_nodes:
                 bool_set_super_locations = set_super_locations_input[loc].isin(self.system["set_nodes"])
             else:
-                bool_set_super_locations = set_super_locations_input["super_node_from"].isin(self.system["set_super_nodes"]) & \
-                                           set_super_locations_input["super_node_to"].isin(self.system["set_super_nodes"])
+                # bool_set_super_locations = set_super_locations_input["super_node_from"].isin(self.system["set_super_nodes"]) & \
+                #                            set_super_locations_input["super_node_to"].isin(self.system["set_super_nodes"])
+                bool_set_super_locations = set_super_locations_input[loc].isin(self.energy_system.set_edges)
             if not bool_set_super_locations.all():
                 logging.warning(f"The following {super_loc} are dropped from the super sets as they are not in the set of nodes: \n {set_super_locations_input[~bool_set_super_locations]}")
                 set_super_locations_input = set_super_locations_input[bool_set_super_locations]
             self.system[set_super_locations] = list(set_super_locations_input.index.unique())
             # create dict assigning locations to super locations
             super_locations_dict = dict()
-            for l in set_super_locations_input.index.unique():
-                if isinstance(set_super_locations_input.loc[l, loc], pd.Series):
-                    super_locations_dict[l] = set_super_locations_input.loc[l, loc]
-                elif pd.isna(set_super_locations_input.loc[l, loc]):
-                    super_locations_dict[l] = []
+            for s_loc in set_super_locations_input.index.unique():
+                if isinstance(set_super_locations_input.loc[s_loc, loc], pd.Series):
+                    super_locations_dict[s_loc] = set_super_locations_input.loc[s_loc, loc]
+                elif pd.isna(set_super_locations_input.loc[s_loc, loc]):
+                    super_locations_dict[s_loc] = []
                 else:
-                    super_locations_dict[l] = [set_super_locations_input.loc[l, loc]]
+                    super_locations_dict[s_loc] = [set_super_locations_input.loc[s_loc, loc]]
             return super_locations_dict
         elif extract_nodes:
             set_nodes_config = self.system.set_nodes
