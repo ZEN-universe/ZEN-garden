@@ -1,43 +1,17 @@
-name: zen-garden
+name: zen-garden_Jan2025
 channels:
   - conda-forge
   - gurobi
 dependencies:
-  - python=3.11
-  - xarray
-  - cython
-  - pytest
   - pip
-  - numpy
-  - pandas=2.0.*
-  - pyarrow
+  - python=3.12
   - geopandas
-  - scipy
-  - coverage
-  - glpk
-  - pint
-  - matplotlib
-  - entsoe-py
-  - gurobi
-  - pytables
-  - pydantic
-  - tqdm
   - ipython
-  - jupyter
   - utm
   - grid-strategy
   - openpyxl
   - pip:
-      - tsam
-      - h5py
-      - filelock
-      - ordered-set
-      - pyogrio
-      - psutil
-      - linopy<=0.3.10
-      - sphinx
-      - myst-parser
-      - -e .
+      - -e .[dev,vis,gurobipy,docs]
 
 # conda env create -f zen_garden_env.yml
 # conda remove --name zen-garden --all
