@@ -187,13 +187,13 @@ class CarrierRules(GenericRule):
     # ----------------------
 
     def constraint_cost_carrier_total(self):
-        r""" total cost of importing and exporting carrier
+        """ total cost of importing and exporting carrier
 
         .. math::
-            C_y^{\mathcal{C}} = \sum_{c\in\mathcal{C}}\sum_{n\in\mathcal{N}}\sum_{t\in\mathcal{T}} \\tau_t (O_{c,n,t} + O_{c,n,t}^{\mathrm{shed}\ \mathrm{demand}})
+            C_y^{\\mathcal{C}} = \\sum_{c\\in\\mathcal{C}}\\sum_{n\\in\\mathcal{N}}\\sum_{t\\in\\mathcal{T}} \\tau_t (O_{c,n,t} + O_{c,n,t}^{\\mathrm{shed}\\ \\mathrm{demand}})
 
         :math:`O_{c,n,t}`: cost of importing and exporting carrier :math:`c` at node :math:`n` and time step :math:`t`\n
-        :math:`O_{c,n,t}^{\mathrm{shed}\ \mathrm{demand}}`: cost of shedding demand of carrier :math:`c` at node :math:`n` and time step :math:`t`\n
+        :math:`O_{c,n,t}^{\\mathrm{shed}\\ \\mathrm{demand}}`: cost of shedding demand of carrier :math:`c` at node :math:`n` and time step :math:`t`\n
         :math:`\\tau_t`: duration of time step :math:`t`
 
 
@@ -209,12 +209,12 @@ class CarrierRules(GenericRule):
         self.constraints.add_constraint("constraint_cost_carrier_total",constraints)
 
     def constraint_carbon_emissions_carrier_total(self):
-        r""" total carbon emissions of importing and exporting carrier
+        """ total carbon emissions of importing and exporting carrier
 
         .. math::
-            E_y^{\mathcal{C}} = \sum_{c\in\mathcal{C}}\sum_{n\in\mathcal{N}}\sum_{t\in\mathcal{T}} \\tau_t \\theta_{c,n,t}^{\mathrm{carrier}}
+            E_y^{\\mathcal{C}} = \\sum_{c\\in\\mathcal{C}}\\sum_{n\\in\\mathcal{N}}\\sum_{t\\in\\mathcal{T}} \\tau_t \\theta_{c,n,t}^{\\mathrm{carrier}}
 
-        :math:`\\theta_{c,n,t}^{\mathrm{carrier}}`: carbon emissions of importing and exporting carrier :math:`c` at node :math:`n` and time step :math:`t`\n
+        :math:`\\theta_{c,n,t}^{\\mathrm{carrier}}`: carbon emissions of importing and exporting carrier :math:`c` at node :math:`n` and time step :math:`t`\n
         :math:`\\tau_t`: duration of time step :math:`t`
 
         """
@@ -228,7 +228,7 @@ class CarrierRules(GenericRule):
         self.constraints.add_constraint("constraint_carbon_emissions_carrier_total",constraints)
 
     def constraint_availability_import_export(self):
-        r"""node- and time-dependent carrier availability to import/export from outside the system boundaries
+        """node- and time-dependent carrier availability to import/export from outside the system boundaries
 
         .. math::
             \\underline{U}_{c,n,t} \\leq \\underline{a}_{c,n,t}
@@ -255,16 +255,16 @@ class CarrierRules(GenericRule):
         self.constraints.add_constraint("constraint_availability_export",constraints_exp)
 
     def constraint_availability_import_export_yearly(self):
-        r"""node- and year-dependent carrier availability to import/export from outside the system boundaries
+        """node- and year-dependent carrier availability to import/export from outside the system boundaries
 
         .. math::
-            \\underline{a}_{c,n,y}^\mathrm{Y} \geq \\sum_{t\\in\mathcal{T}}\\tau_t \\underline{U}_{c,n,t}
+            \\underline{a}_{c,n,y}^\\mathrm{Y} \\geq \\sum_{t\\in\\mathcal{T}}\\tau_t \\underline{U}_{c,n,t}
 
         .. math::
-            \\overline{a}_{c,n,y}^\mathrm{Y} \geq \\sum_{t\\in\mathcal{T}}\\tau_t \\overline{U}_{c,n,t}
+            \\overline{a}_{c,n,y}^\\mathrm{Y} \\geq \\sum_{t\\in\\mathcal{T}}\\tau_t \\overline{U}_{c,n,t}
 
-        :math:`\\underline{a}_{c,n,y}^\mathrm{Y}`: yearly availability of carrier :math:`c` to import at node :math:`n`\n
-        :math:`\\overline{a}_{c,n,y}^\mathrm{Y}`: yearly availability of carrier :math:`c` to export at node :math:`n`\n
+        :math:`\\underline{a}_{c,n,y}^\\mathrm{Y}`: yearly availability of carrier :math:`c` to import at node :math:`n`\n
+        :math:`\\overline{a}_{c,n,y}^\\mathrm{Y}`: yearly availability of carrier :math:`c` to export at node :math:`n`\n
         :math:`\\tau_t`: is the duration of time step :math:`t`\n
         :math:`\\underline{U}_{c,n,t}`: flow of carrier :math:`c` imported at node :math:`n` at time step :math:`t`\n
         :math:`\\overline{U}_{c,n,t}`: flow of carrier :math:`c` exported at node :math:`n` at time step :math:`t`
@@ -289,7 +289,7 @@ class CarrierRules(GenericRule):
         self.constraints.add_constraint("constraint_availability_export_yearly",constraints_exp)
 
     def constraint_cost_carrier(self):
-        r""" cost of importing and exporting carrier
+        """ cost of importing and exporting carrier
 
         .. math::
            O_{c,n,t} = \\underline{u}_{c,n,t} \\underline{U}_{c,n,t} - \\overline{v}_{c,n,t} \\overline{U}_{c,n,t}
@@ -311,13 +311,13 @@ class CarrierRules(GenericRule):
         self.constraints.add_constraint("constraint_cost_carrier",constraints)
 
     def constraint_cost_limit_shed_demand(self):
-        r""" cost and limit of shedding demand of carrier
+        """ cost and limit of shedding demand of carrier
 
         .. math::
-           O_{c,n,t}^{\mathrm{shed}\ \mathrm{demand}} = D_{c,n,t} \\nu_c \n
-           D_{c,n,t} \leq d_{c,n,t}
+           O_{c,n,t}^{\\mathrm{shed}\\ \\mathrm{demand}} = D_{c,n,t} \\nu_c \n
+           D_{c,n,t} \\leq d_{c,n,t}
 
-        :math:`O_{c,n,t}^{\mathrm{shed}\ \mathrm{demand}}`: total cost of shedding demand of carrier :math:`c` at node :math:`n` and time step :math:`t`\n
+        :math:`O_{c,n,t}^{\\mathrm{shed}\\ \\mathrm{demand}}`: total cost of shedding demand of carrier :math:`c` at node :math:`n` and time step :math:`t`\n
         :math:`\\nu_c`: price to shed demand of carrier :math:`c`\n
         :math:`D_{c,n,t}`: shed demand of carrier :math:`c` at node :math:`n` and time step :math:`t`\n
         :math:`d_{c,n,t}`: demand of carrier :math:`c` at node :math:`n` and time step :math:`t`
@@ -342,12 +342,12 @@ class CarrierRules(GenericRule):
         self.constraints.add_constraint("constraint_limit_shed_demand",constraints_shed_demand)
 
     def constraint_carbon_emissions_carrier(self):
-        r""" carbon emissions of importing and exporting carrier
+        """ carbon emissions of importing and exporting carrier
 
         .. math::
-           \\theta_{c,n,t}^{\mathrm{carrier}} = \\underline{\\epsilon_c} \\underline{U}_{c,n,t} - \\overline{\\epsilon_c} \\overline{U}_{c,n,t}
+           \\theta_{c,n,t}^{\\mathrm{carrier}} = \\underline{\\epsilon_c} \\underline{U}_{c,n,t} - \\overline{\\epsilon_c} \\overline{U}_{c,n,t}
 
-        :math:`\\theta_{c,n,t}^{\mathrm{carrier}}`: carbon emissions of importing and exporting carrier :math:`c` at node :math:`n` and time step :math:`t`\n
+        :math:`\\theta_{c,n,t}^{\\mathrm{carrier}}`: carbon emissions of importing and exporting carrier :math:`c` at node :math:`n` and time step :math:`t`\n
         :math:`\\underline{\\epsilon_c}`: carbon intensity of carrier import :math:`c`\n
         :math:`\\overline{\\epsilon_c}`: carbon intensity of carrier export :math:`c`\n
         :math:`\\underline{U}_{c,n,t}`: flow of carrier :math:`c` imported at node :math:`n` and time step :math:`t`\n
@@ -371,19 +371,19 @@ class CarrierRules(GenericRule):
         self.constraints.add_constraint("constraint_carbon_emissions_carrier",constraints)
 
     def constraint_nodal_energy_balance(self):
-        r"""
+        """
         nodal energy balance for each time step
 
         .. math::
             0 = -(d_{c,n,t}-D_{c,n,t})
-            + \\sum_{i\\in\mathcal{I}}(\\overline{G}_{c,i,n,t}-\\underline{G}_{c,i,n,t})
-            + \\sum_{j\\in\mathcal{J}}(\\sum_{e\\in\\underline{\mathcal{E}}}(F_{j,e,t}-F^\mathrm{l}_{j,e,t})-\\sum_{e'\\in\\overline{\mathcal{E}}}F_{j,e',t})
-            + \\sum_{k\\in\mathcal{K}}(\\overline{H}_{k,n,t}-\\underline{H}_{k,n,t})
+            + \\sum_{i\\in\\mathcal{I}}(\\overline{G}_{c,i,n,t}-\\underline{G}_{c,i,n,t})
+            + \\sum_{j\\in\\mathcal{J}}(\\sum_{e\\in\\underline{\\mathcal{E}}}(F_{j,e,t}-F^\\mathrm{l}_{j,e,t})-\\sum_{e'\\in\\overline{\\mathcal{E}}}F_{j,e',t})
+            + \\sum_{k\\in\\mathcal{K}}(\\overline{H}_{k,n,t}-\\underline{H}_{k,n,t})
             + \\underline{U}_{c,n,t} - \\overline{U}_{c,n,t}
 
         Sources of carrier :math:`c` at node :math:`n` and time step :math:`t`:\n
         :math:`\\overline{G}_{c,i,n,t}`: output flow of carrier :math:`c` from all conversion technologies :math:`i` at node :math:`n` at time step :math:`t`\n
-        :math:`F_{j,e,t}`: transported flow of carrier :math:`c` on ingoing edges :math:`e` minues the losses :math:`F^\mathrm{l}_{j,e,t})` of all transport technologies :math:`j` at time step :math:`t`\n
+        :math:`F_{j,e,t}`: transported flow of carrier :math:`c` on ingoing edges :math:`e` minues the losses :math:`F^\\mathrm{l}_{j,e,t})` of all transport technologies :math:`j` at time step :math:`t`\n
         :math:`\\overline{H}_{k,n,t}`: output flow of carrier :math:`c` from all storage technologies :math:`k` at node :math:`n` at time step :math:`t`\n
         :math:`\\underline{U}_{c,n,t}`: flow of carrier :math:`c` imported at node :math:`n` at time step :math:`t`\n
 

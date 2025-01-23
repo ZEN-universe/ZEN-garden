@@ -406,14 +406,14 @@ class ConversionTechnologyRules(GenericRule):
 
 
     def constraint_capacity_factor_conversion(self):
-        r""" Load is limited by the installed capacity and the maximum load factor
+        """ Load is limited by the installed capacity and the maximum load factor
 
         .. math::
-            G_{i,n,t,y}^\mathrm{r} \\leq m^{\mathrm{max}}_{i,n,t,y}S_{i,n,y}
+            G_{i,n,t,y}^\\mathrm{r} \\leq m^{\\mathrm{max}}_{i,n,t,y}S_{i,n,y}
 
-        :math:`m_{i,n,t,y}^{\mathrm{max}}`: maximum load factor of the technology :math:`i` at node :math:`n` in time step :math:`t` and year :math:`y` \n
+        :math:`m_{i,n,t,y}^{\\mathrm{max}}`: maximum load factor of the technology :math:`i` at node :math:`n` in time step :math:`t` and year :math:`y` \n
         :math:`S_{i,n,y}`: installed capacity of the technology :math:`i` at node :math:`n` in year :math:`y` \n
-        :math:`G_{i,n,t,y}^\mathrm{r}`: reference carrier flow of the technology :math:`i` at node :math:`n` in time step :math:`t` and year :math:`y`
+        :math:`G_{i,n,t,y}^\\mathrm{r}`: reference carrier flow of the technology :math:`i` at node :math:`n` in time step :math:`t` and year :math:`y`
 
 
         """
@@ -435,16 +435,16 @@ class ConversionTechnologyRules(GenericRule):
         self.constraints.add_constraint("constraint_capacity_factor_conversion", constraints)
 
     def constraint_opex_emissions_technology_conversion(self):
-        r""" calculate opex and carbon emissions of each technology
+        """ calculate opex and carbon emissions of each technology
 
         .. math::
-            O_{h,p,t}^\mathrm{t} = \\beta_{h,p,t} G_{i,n,t,y}^\mathrm{r} \n
-            \\theta_{h,p,t} = \\epsilon_h G_{i,n,t,y}^\mathrm{r}
+            O_{h,p,t}^\\mathrm{t} = \\beta_{h,p,t} G_{i,n,t,y}^\\mathrm{r} \n
+            \\theta_{h,p,t} = \\epsilon_h G_{i,n,t,y}^\\mathrm{r}
 
-        :math:`O_{h,p,t}^\mathrm{t}`: variable opex of the technology :math:`h` at node :math:`p` in time step :math:`t` \n
+        :math:`O_{h,p,t}^\\mathrm{t}`: variable opex of the technology :math:`h` at node :math:`p` in time step :math:`t` \n
         :math:`\\beta_{h,p,t}`: specific variable opex of the technology :math:`h` at node :math:`p` in time step :math:`t` \n
-        :math:`G_{i,n,t,y}^\mathrm{r}`: reference carrier flow of the technology :math:`i` at node :math:`n` in time step :math:`t` and year :math:`y` \n
-        :math:`\\theta^{\mathrm{tech}}_{h,p,t}`: carbon emissions of operating the technology :math:`h` at node :math:`p` in time step :math:`t` \n
+        :math:`G_{i,n,t,y}^\\mathrm{r}`: reference carrier flow of the technology :math:`i` at node :math:`n` in time step :math:`t` and year :math:`y` \n
+        :math:`\\theta^{\\mathrm{tech}}_{h,p,t}`: carbon emissions of operating the technology :math:`h` at node :math:`p` in time step :math:`t` \n
         :math:`\\epsilon_h`: carbon intensity of the reference carrier of technology :math:`h`
 
 
@@ -465,14 +465,14 @@ class ConversionTechnologyRules(GenericRule):
         self.constraints.add_constraint("constraint_carbon_emissions_technology_conversion", constraints_emissions)
 
     def constraint_linear_capex(self):
-        r""" if capacity and capex have a linear relationship
+        """ if capacity and capex have a linear relationship
 
         .. math::
-            A_{h,p,y}^{approximation} = \\alpha_{h,n,y} \Delta S_{h,p,y}^{approx}
+            A_{h,p,y}^{approximation} = \\alpha_{h,n,y} \\Delta S_{h,p,y}^{approx}
 
         :math:`A_{h,p,y}^{approx}`: approximated capex of the technology :math:`h` at node :math:`p` in year :math:`y` \n
         :math:`\\alpha_{h,n,y}`: specific capex of the technology :math:`h` at node :math:`n` in year :math:`y` \n
-        :math:`\Delta S_{h,p,y}^{approx}`: approximated capacity of the technology :math:`h` at node :math:`p` in year :math:`y`
+        :math:`\\Delta S_{h,p,y}^{approx}`: approximated capacity of the technology :math:`h` at node :math:`p` in year :math:`y`
 
         """
         capex_specific_conversion = self.parameters.capex_specific_conversion
@@ -491,13 +491,13 @@ class ConversionTechnologyRules(GenericRule):
         self.constraints.add_constraint("constraint_linear_capex", constraints)
 
     def constraint_capacity_capex_coupling(self):
-        r""" couples capacity variables based on modeling technique
+        """ couples capacity variables based on modeling technique
 
         .. math::
-            \Delta S_{h,p,y} = \Delta S_{h,p,y}^\mathrm{approx}
+            \\Delta S_{h,p,y} = \\Delta S_{h,p,y}^\\mathrm{approx}
 
-        :math:`\Delta S_{h,p,y}`: capacity addition of the technology :math:`h` at node :math:`p` in year :math:`y` \n
-        :math:`\Delta S_{h,p,y}^\mathrm{approx}`: approximated capacity addition of the technology :math:`h` at node :math:`p` in year :math:`y`
+        :math:`\\Delta S_{h,p,y}`: capacity addition of the technology :math:`h` at node :math:`p` in year :math:`y` \n
+        :math:`\\Delta S_{h,p,y}^\\mathrm{approx}`: approximated capacity addition of the technology :math:`h` at node :math:`p` in year :math:`y`
 
 
         """
@@ -520,7 +520,7 @@ class ConversionTechnologyRules(GenericRule):
         self.constraints.add_constraint("constraint_capex_coupling", constraints_capex)
 
     def constraint_carrier_conversion(self):
-        r""" conversion factor between reference carrier and dependent carrier
+        """ conversion factor between reference carrier and dependent carrier
 
         .. math::
             G^\\mathrm{d}_{i,n,t} = \\eta_{i,c,n,y}G^\\mathrm{r}_{i,n,t}

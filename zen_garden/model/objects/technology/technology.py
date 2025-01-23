@@ -627,10 +627,10 @@ class TechnologyRules(GenericRule):
     # -----------------------
 
     def constraint_cost_capex_yearly_total(self):
-        r""" sums over all technologies to calculate total capex
+        """ sums over all technologies to calculate total capex
 
         .. math::
-            CAPEX_y = \\sum_{h\\in\mathcal{H}}\\sum_{p\\in\mathcal{P}}A_{h,p,y}+\\sum_{k\\in\mathcal{K}}\\sum_{n\\in\mathcal{N}}A^\mathrm{e}_{k,n,y}
+            CAPEX_y = \\sum_{h\\in\\mathcal{H}}\\sum_{p\\in\\mathcal{P}}A_{h,p,y}+\\sum_{k\\in\\mathcal{K}}\\sum_{n\\in\\mathcal{N}}A^\\mathrm{e}_{k,n,y}
 
         :math:`A_{h,p,y}`: annual capex of technology :math:`h` at location :math:`p` in year :math:`y`
 
@@ -643,10 +643,10 @@ class TechnologyRules(GenericRule):
         self.constraints.add_constraint("constraint_cost_capex_yearly_total",constraints)
 
     def constraint_cost_opex_yearly_total(self):
-        r""" sums over all technologies to calculate total opex
+        """ sums over all technologies to calculate total opex
 
         .. math::
-            OPEX_y = \sum_{h\in\mathcal{H}}\sum_{p\in\mathcal{P}} OPEX_{h,p,y}
+            OPEX_y = \\sum_{h\\in\\mathcal{H}}\\sum_{p\\in\\mathcal{P}} OPEX_{h,p,y}
 
         :math:`OPEX_{h,p,y}`: opex of operating technology :math:`h` at location :math:`p` in year :math:`y`
 
@@ -659,16 +659,16 @@ class TechnologyRules(GenericRule):
 
 
     def constraint_technology_capacity_limit(self):
-        r"""limited capacity_limit of technology
+        """limited capacity_limit of technology
 
         .. math::
-            \mathrm{if\ existing\ capacities\ < capacity\ limit:}\ s^\mathrm{max}_{h,p,y} \geq S_{h,p,y}
+            \\mathrm{if\\ existing\\ capacities\\ < capacity\\ limit:}\\ s^\\mathrm{max}_{h,p,y} \\geq S_{h,p,y}
         .. math::
-            \mathrm{else:}\ \Delta S_{h,p,y} = 0
+            \\mathrm{else:}\\ \\Delta S_{h,p,y} = 0
 
         :math:`S_{h,p,y}`: installed capacity of technology :math:`h` at location :math:`p` in year :math:`y` \n
-        :math:`s^\mathrm{max}_{h,p,y}`: capacity limit of technology :math:`h` at location :math:`p` in year :math:`y` \n
-        :math:`\Delta S_{h,p,y}`: size of built technology :math:`h` (invested capacity after construction) at location :math:`p` in year :math:`y`
+        :math:`s^\\mathrm{max}_{h,p,y}`: capacity limit of technology :math:`h` at location :math:`p` in year :math:`y` \n
+        :math:`\\Delta S_{h,p,y}`: size of built technology :math:`h` (invested capacity after construction) at location :math:`p` in year :math:`y`
 
         """
         # if the capacity limit is not reached by the existing capacities, the capacity is constrained by the capacity limit.
@@ -688,14 +688,14 @@ class TechnologyRules(GenericRule):
         self.constraints.add_constraint("constraint_technology_capacity_limit_reached",constraints_reached)
 
     def constraint_technology_min_capacity_addition(self):
-        r""" min capacity addition of technology
+        """ min capacity addition of technology
 
         .. math::
-            \Delta s^\mathrm{min}_{h} g_{i,p,y} \le \Delta S_{h,p,y}
+            \\Delta s^\\mathrm{min}_{h} g_{i,p,y} \\le \\Delta S_{h,p,y}
 
-        :math:`\Delta s^\mathrm{min}_{h}`: minimum capacity addition of technology :math:`h` \n
+        :math:`\\Delta s^\\mathrm{min}_{h}`: minimum capacity addition of technology :math:`h` \n
         :math:`g_{i,p,y}`: binary variable which equals 1 if technology is installed at location :math:`p` in year :math:`y` \n
-        :math:`\Delta S_{h,p,y}`: size of built technology :math:`h` (invested capacity after construction) at location :math:`p` in year :math:`y`
+        :math:`\\Delta S_{h,p,y}`: size of built technology :math:`h` (invested capacity after construction) at location :math:`p` in year :math:`y`
 
         """
         capacity_addition_min = self.parameters.capacity_addition_min
@@ -714,14 +714,14 @@ class TechnologyRules(GenericRule):
 
     #TODO check if binary is necessary when capacity_addition_max is < inf but capacity_addition_min = 0
     def constraint_technology_max_capacity_addition(self):
-        r"""max capacity addition of technology
+        """max capacity addition of technology
 
         .. math::
-            s^\mathrm{max}_{h} g_{i,p,y} \ge \Delta S_{h,p,y}
+            s^\\mathrm{max}_{h} g_{i,p,y} \\ge \\Delta S_{h,p,y}
 
-        :math:`s^\mathrm{add, max}_{h}`: maximum capacity addition of technology :math:`h`  \n
+        :math:`s^\\mathrm{add, max}_{h}`: maximum capacity addition of technology :math:`h`  \n
         :math:`g_{i,p,y}`: binary variable which equals 1 if technology is installed at location :math:`p` in year :math:`y` \n
-        :math:`\Delta S_{h,p,y}`: size of built technology :math:`h` (invested capacity after construction) at location :math:`p` in year :math:`y`
+        :math:`\\Delta S_{h,p,y}`: size of built technology :math:`h` (invested capacity after construction) at location :math:`p` in year :math:`y`
 
         """
         capacity_addition_max = self.parameters.capacity_addition_max
@@ -737,18 +737,18 @@ class TechnologyRules(GenericRule):
         self.constraints.add_constraint("constraint_technology_max_capacity_addition",constraints)
 
     def constraint_technology_construction_time(self):
-        r""" construction time of technology, i.e., time that passes between investment and availability
+        """ construction time of technology, i.e., time that passes between investment and availability
 
         .. math::
-            \mathrm{if\ start\ time\ step\ in\ set\ time\ steps\ yearly:}\ \Delta S_{h,p,y} = \Delta S_{h,p,(y-dy^{\mathrm{construction}})}^\mathrm{invest}
+            \\mathrm{if\\ start\\ time\\ step\\ in\\ set\\ time\\ steps\\ yearly:}\\ \\Delta S_{h,p,y} = \\Delta S_{h,p,(y-dy^{\\mathrm{construction}})}^\\mathrm{invest}
         .. math::
-            \mathrm{elif\ start\ time\ step\ in\ set\ time\ steps\ yearly\ entire\ horizon:}\ \Delta S_{h,p,y} = \Delta s^\mathrm{ex,invest}_{h,p,(y-dy^{\mathrm{construction}})}
+            \\mathrm{elif\\ start\\ time\\ step\\ in\\ set\\ time\\ steps\\ yearly\\ entire\\ horizon:}\\ \\Delta S_{h,p,y} = \\Delta s^\\mathrm{ex,invest}_{h,p,(y-dy^{\\mathrm{construction}})}
         .. math::
-            \mathrm{else:}\ \Delta S_{h,p,y} = 0
+            \\mathrm{else:}\\ \\Delta S_{h,p,y} = 0
 
-        :math:`\Delta S_{h,p,y}`: size of built technology :math:`h` (invested capacity after construction) at location :math:`p` in year :math:`y` \n
-        :math:`\Delta S_{h,p,y}^\mathrm{invest}`: size of invested technology at location :math:`p` in year :math:`y` \n
-        :math:`\Delta s^\mathrm{ex,invest}_{h,p,y}`: size of the previously invested capacities at location :math:`p` in year :math:`y` \n
+        :math:`\\Delta S_{h,p,y}`: size of built technology :math:`h` (invested capacity after construction) at location :math:`p` in year :math:`y` \n
+        :math:`\\Delta S_{h,p,y}^\\mathrm{invest}`: size of invested technology at location :math:`p` in year :math:`y` \n
+        :math:`\\Delta s^\\mathrm{ex,invest}_{h,p,y}`: size of the previously invested capacities at location :math:`p` in year :math:`y` \n
 
         """
 
@@ -789,16 +789,16 @@ class TechnologyRules(GenericRule):
         self.constraints.add_constraint("constraint_technology_construction_time_outside",constraints_outside)
 
     def constraint_technology_lifetime(self):
-        r""" limited lifetime of the technologies. calculates 'capacity', i.e., the capacity at the end of the year and
+        """ limited lifetime of the technologies. calculates 'capacity', i.e., the capacity at the end of the year and
         'capacity_previous', i.e., the capacity at the beginning of the year
 
         .. math::
-            S_{h,p,y} = \\sum_{\\tilde{y}=\\max(y_0,y-\\lceil\\frac{l_h}{\\Delta^\mathrm{y}}\\rceil+1)}^y \\Delta S_{h,p,\\tilde{y}}
-            + \\sum_{\\hat{y}=\\psi(\\min(y_0-1,y-\\lceil\\frac{l_h}{\\Delta^\mathrm{y}}\\rceil+1))}^{\\psi(y_0)} \\Delta s^\mathrm{ex}_{h,p,\\hat{y}}
+            S_{h,p,y} = \\sum_{\\tilde{y}=\\max(y_0,y-\\lceil\\frac{l_h}{\\Delta^\\mathrm{y}}\\rceil+1)}^y \\Delta S_{h,p,\\tilde{y}}
+            + \\sum_{\\hat{y}=\\psi(\\min(y_0-1,y-\\lceil\\frac{l_h}{\\Delta^\\mathrm{y}}\\rceil+1))}^{\\psi(y_0)} \\Delta s^\\mathrm{ex}_{h,p,\\hat{y}}
 
         :math:`S_{h,p,y}`: installed capacity of technology :math:`h` at location :math:`p` in year :math:`y` \n
         :math:`\\Delta S_{h,p,y}`: size of built technology :math:`h` (invested capacity after construction) at location :math:`p` in year :math:`y` \n
-        :math:`\\Delta s^\mathrm{ex}_{h,p,y}`: size of the previously invested capacities at location :math:`p` in year :math:`y`
+        :math:`\\Delta s^\\mathrm{ex}_{h,p,y}`: size of the previously invested capacities at location :math:`p` in year :math:`y`
         """
 
         lt_range = pd.MultiIndex.from_tuples(
@@ -823,17 +823,17 @@ class TechnologyRules(GenericRule):
         self.constraints.add_constraint("constraint_technology_lifetime_previous",constraints_previous)
 
     def constraint_technology_diffusion_limit(self):
-        r"""limited technology diffusion based on the existing capacity in the previous year
+        """limited technology diffusion based on the existing capacity in the previous year
 
         For storage and conversion technologies: \n
         .. math::
-               \\Delta S_{k,n,y}\\leq ((1+\\vartheta_k)^{\mathrm{dy}}-1)(K_{k,n,y}+\omega \sum_{\\tilde{n}\\in\\tilde{\mathcal{N}}}K_{k,\\tilde{n},y})
-                +\mathrm{dy}(\\xi\\sum_{\\tilde{k}\\in\\tilde{\mathcal{K}}}S_{\\tilde{k},n,y} + \\zeta_k)
+               \\Delta S_{k,n,y}\\leq ((1+\\vartheta_k)^{\\mathrm{dy}}-1)(K_{k,n,y}+\\omega \\sum_{\\tilde{n}\\in\\tilde{\\mathcal{N}}}K_{k,\\tilde{n},y})
+                +\\mathrm{dy}(\\xi\\sum_{\\tilde{k}\\in\\tilde{\\mathcal{K}}}S_{\\tilde{k},n,y} + \\zeta_k)
 
         For transport technologies: \n
         .. math::
-                \\Delta S_{j,e,y}\\leq ((1+\\vartheta_j)^{\mathrm{dy}}-1)K_{j,e,y}
-                +\mathrm{dy}(\\xi\\sum_{\\tilde{j}\\in\\tilde{\mathcal{J}}}S_{\\tilde{j},e,y} + \\zeta_j)
+                \\Delta S_{j,e,y}\\leq ((1+\\vartheta_j)^{\\mathrm{dy}}-1)K_{j,e,y}
+                +\\mathrm{dy}(\\xi\\sum_{\\tilde{j}\\in\\tilde{\\mathcal{J}}}S_{\\tilde{j},e,y} + \\zeta_j)
 
         :math:`\\Delta S_{j,e,y}`: size of built technology :math:`j` (invested capacity after construction) at location :math:`e` in year :math:`y` \n
         :math:`\\vartheta_j`: maximum diffusion rate of technology :math:`j` which is the maximum increase in capacity between investment steps \n
@@ -841,7 +841,7 @@ class TechnologyRules(GenericRule):
         :math:`\\xi`: parameter which specifies the unbounded market share \n
         :math:`\\zeta_j`: parameter which specifies the unbounded capacity addition that can be added each year (only for delayed technology deployment) \n
         :math:`dy`: interval between planning periods\n
-        :math:`\omega`: parameter which specifies the knowledge spillover rate
+        :math:`\\omega`: parameter which specifies the knowledge spillover rate
 
         """
         # load variables and parameters
@@ -958,17 +958,17 @@ class TechnologyRules(GenericRule):
             self.constraints.add_constraint("constraint_technology_diffusion_limit",constraints_an)
 
     def constraint_cost_capex_yearly(self):
-        r""" aggregates the capex of built capacity and of existing capacity
+        """ aggregates the capex of built capacity and of existing capacity
 
         .. math::
-            A_{h,p,y} = f_h (\\sum_{\\tilde{y} = \\max(y_0,y-\\lceil\\frac{l_h}{\mathrm{dy}}\\rceil+1)}^y \\alpha_{h,y}\\Delta S_{h,p,\\tilde{y}}
-            + \\sum_{\\hat{y}=\\psi(\\min(y_0-1,y-\\lceil\\frac{l_h}{\mathrm{dy}}\\rceil+1))}^{\\psi(y_0)} \\alpha_{h,y_0}\\Delta s^\mathrm{ex}_{h,p,\\hat{y}})
+            A_{h,p,y} = f_h (\\sum_{\\tilde{y} = \\max(y_0,y-\\lceil\\frac{l_h}{\\mathrm{dy}}\\rceil+1)}^y \\alpha_{h,y}\\Delta S_{h,p,\\tilde{y}}
+            + \\sum_{\\hat{y}=\\psi(\\min(y_0-1,y-\\lceil\\frac{l_h}{\\mathrm{dy}}\\rceil+1))}^{\\psi(y_0)} \\alpha_{h,y_0}\\Delta s^\\mathrm{ex}_{h,p,\\hat{y}})
 
         :math:`A_{h,p,y}`: annual capex of technology :math:`h` at location :math:`p` in year :math:`y` \n
         :math:`f_h`: annuity factor of technology :math:`h` \n
         :math:`\\alpha_{h,y}`: unit cost of capital investment of technology :math:`h` in year :math:`y` \n
         :math:`\\Delta S_{h,p,y}`: size of built technology :math:`h` (invested capacity after construction) at location :math:`p` in year :math:`y` \n
-        :math:`\\Delta s^\mathrm{ex}_{h,p,y}`: size of the previously added capacities at location :math:`p` in year :math:`y` \n
+        :math:`\\Delta s^\\mathrm{ex}_{h,p,y}`: size of the previously added capacities at location :math:`p` in year :math:`y` \n
         :math:`l_h`: lifetime of technology :math:`h`   \n
         :math:`\\mathrm{dy}`: interval between planning periods
 
@@ -1009,19 +1009,19 @@ class TechnologyRules(GenericRule):
 
     # TODO complete constraint (second summation symbol) - is this implemented correctly?
     def constraint_cost_opex_yearly(self):
-        r""" yearly opex for a technology at a location in each year
+        """ yearly opex for a technology at a location in each year
 
         .. math::
-            OPEX_{h,p,y} = \sum_{t\in\mathcal{T}}\\tau_t O_{h,p,t}^t
-            + \gamma_{h,y} S_{h,p,y} + \gamma_{k,y}^\mathrm{e} S_{k,n,y}^\mathrm{e}
+            OPEX_{h,p,y} = \\sum_{t\\in\\mathcal{T}}\\tau_t O_{h,p,t}^t
+            + \\gamma_{h,y} S_{h,p,y} + \\gamma_{k,y}^\\mathrm{e} S_{k,n,y}^\\mathrm{e}
 
         :math:`OPEX_{h,p,y}`: opex of operating technology :math:`h` at location :math:`p` in year :math:`y` \n
         :math:`\\tau_t`: duration of time step :math:`t` \n
         :math:`O_{h,p,t}^t`: variable opex of operating technology :math:`h` at location :math:`p` in time step :math:`t` \n
-        :math:`\gamma_{h,y}`: specific fixed opex of technology :math:`h` in year :math:`y` \n
+        :math:`\\gamma_{h,y}`: specific fixed opex of technology :math:`h` in year :math:`y` \n
         :math:`S_{h,p,y}`: installed capacity of technology :math:`h` at location :math:`p` in year :math:`y` \n
-        :math:`\gamma_{k,y}^\mathrm{e}`: specific fixed opex of storage technology :math:`k` in year :math:`y` \n
-        :math:`S_{k,n,y}^\mathrm{e}`: installed capacity of storage technology :math:`k` at node :math:`n` in year :math:`y`
+        :math:`\\gamma_{k,y}^\\mathrm{e}`: specific fixed opex of storage technology :math:`k` in year :math:`y` \n
+        :math:`S_{k,n,y}^\\mathrm{e}`: installed capacity of storage technology :math:`k` at node :math:`n` in year :math:`y`
 
 
         """
@@ -1041,12 +1041,12 @@ class TechnologyRules(GenericRule):
         self.constraints.add_constraint("constraint_cost_opex_yearly",constraints)
 
     def constraint_carbon_emissions_technology_total(self):
-        r""" calculate total carbon emissions of each technology
+        """ calculate total carbon emissions of each technology
 
         .. math::
-            E_y^{\mathcal{H}} = \sum_{p\in\mathcal{P}} \sum_{t\in\mathcal{T}}\sum_{h\in\mathcal{H}} \\theta_{h,p,t} \\tau_{t}
+            E_y^{\\mathcal{H}} = \\sum_{p\\in\\mathcal{P}} \\sum_{t\\in\\mathcal{T}}\\sum_{h\\in\\mathcal{H}} \\theta_{h,p,t} \\tau_{t}
 
-        :math:`E_y^{\mathcal{H}}`: total carbon emissions of each technology in year :math:`y` \n
+        :math:`E_y^{\\mathcal{H}}`: total carbon emissions of each technology in year :math:`y` \n
         :math:`\\theta_{h,p,t}`: carbon emissions of technology :math:`h` at location :math:`p` in time step :math:`t` \n
         :math:`\\tau_{t}`: duration of time step :math:`t`
 
