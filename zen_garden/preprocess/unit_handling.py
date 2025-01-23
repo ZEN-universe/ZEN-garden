@@ -344,24 +344,22 @@ class UnitHandling:
             # remove attributes whose units became dimensionless since they don't have an energy quantity
             energy_quantity_units = {key: value for key, value in energy_quantity_units.items() if value != self.ureg("dimensionless")}
             # check if conversion factor units are consistent
-            self._check_for_power_power_conversion_factor(energy_quantity_units)
+            self._check_for_power_power(energy_quantity_units)
             # check if units are consistent
             self.assert_unit_consistency(elements, energy_quantity_units, item,optimization_setup, reference_carrier.name, unit_dict)
         logging.info(f"Parameter unit consistency is fulfilled!")
         self.save_carrier_energy_quantities(optimization_setup)
 
-    #ToDo: check if energy_quantity_units is described correctly in the header
-    def _check_for_power_power_conversion_factor(self, energy_quantity_units):
-        """if unit consistency is not fulfilled because of conversion factor, try to change "wrong" conversion factor units from power/power to energy/energy (since both is allowed)
+    def _check_for_power_power(self, energy_quantity_units):
+        """if unit consistency is not fulfilled because of conversion factor or retrofit_flow_coupling_factor,
+        try to change "wrong" conversion factor or retrofit_flow_coupling_factor units from power/power to energy/energy (since both is allowed)
 
-        :param energy_quantity_units: dict containing attribute names and their energy quantity terms
+        :param energy_quantity_units: dict containing attribute names and their energy quantity units
         """
-        if self._is_inconsistent(energy_quantity_units) and not self._is_inconsistent(energy_quantity_units,
-                                                                                      exclude_string="conversion_factor"):
-            non_cf_energy_quantity_unit = \
-            [value for key, value in energy_quantity_units.items() if "conversion_factor" not in key][0]
-            cf_energy_quantity_units = {key: value for key, value in energy_quantity_units.items() if
-                                        "conversion_factor" in key}
+        exclude_strings = ["conversion_factor", "retrofit_flow_coupling_factor"]
+        if self._is_inconsistent(energy_quantity_units) and not self._is_inconsistent(energy_quantity_units,exclude_strings=exclude_strings):
+            non_cf_energy_quantity_unit = [value for key, value in energy_quantity_units.items() if all(es not in key for es in exclude_strings)][0]
+            cf_energy_quantity_units = {key: value for key, value in energy_quantity_units.items() if any(es in key for es in exclude_strings)}
             time_base_unit = [key for key, value in self.base_units.items() if value == "[time]"][0]
             for key, value in cf_energy_quantity_units.items():
                 # if conversion factor unit is in not in energy units, try to convert it to energy units by multiplying with time base unit
@@ -422,7 +420,7 @@ class UnitHandling:
             raise AssertionError(
                 f"The attribute units defined in the energy_system are not consistent! Most probably, the unit(s) of the attribute(s) {self._get_units_of_wrong_attributes(wrong_atts=energy_quantity_units, unit_dict=unit_dict)} are wrong.")
 
-    def _is_inconsistent(self, energy_quantity_units,exclude_string=None):
+    def _is_inconsistent(self, energy_quantity_units,exclude_strings=None):
         """Checks if the units of the attributes of an element are inconsistent
 
         :param energy_quantity_units: dict containing attribute names and their energy quantity terms
@@ -430,8 +428,8 @@ class UnitHandling:
         :return: bool whether the units are consistent or not
         """
         # exclude attributes which are not of interest for consistency
-        if exclude_string:
-            energy_quantity_units = {key: value for key, value in energy_quantity_units.items() if exclude_string not in key}
+        if exclude_strings:
+            energy_quantity_units = {key: value for key, value in energy_quantity_units.items() if all(es not in key for es in exclude_strings)}
         # check if all energy quantity units are the sames
         if len(set(energy_quantity_units.values())) > 1:
             return True
@@ -516,8 +514,8 @@ class UnitHandling:
             correct_unit_string = [("*" in u and u[0] == "(" and u[1] == ")") or ("*" not in u) for u in units]
             assert all(correct_unit_string), f"The conversion factor string(s) {[u for u,s in zip(units,correct_unit_string) if not s]} of technology {conversion_element.name} must not contain an asterisk '*' unless it is enclosed in parentheses '()'"
 
-            #problem: we don't know which parts of cf unit belong to which carrier for units of format different from "unit/unit" (e.g. kg/h/kW)
-            #method: compare number of division signs of conversion factor unit with number  of division signs of corresponding carrier element energy/power quantity
+            # problem: we don't know which parts of cf unit belong to which carrier for units of format different from "unit/unit" (e.g. kg/h/kW)
+            # method: compare number of division signs of conversion factor unit with number of division signs of corresponding carrier element energy/power quantity
             dependent_carrier = [carrier for carrier in elements if carrier.name == dependent_carrier_name][0]
 
             div_signs_dependent_carrier_energy = self._get_number_of_division_signs_energy_quantity(dependent_carrier.units)
@@ -528,28 +526,28 @@ class UnitHandling:
             div_signs_ref_carrier_power = self._get_number_of_division_signs_energy_quantity(reference_carrier.units, power=True)
             number_of_division_signs_power = div_signs_ref_carrier_power + div_signs_dependent_carrier_power
 
-            #conversion factor unit must be defined as energy/energy or power/power in the corresponding carrier energy quantity units
-            #Check if the conversion factor is defined as energy/energy
+            # conversion factor unit must be defined as energy/energy or power/power in the corresponding carrier energy quantity units
+            # Check if the conversion factor is defined as energy/energy
             factor_units = {}
             if len(units) - 2 == number_of_division_signs_energy:
-                #assign the unit parts to the corresponding carriers
+                # assign the unit parts to the corresponding carriers
                 factor_units[dependent_carrier_name] = units[0:div_signs_dependent_carrier_energy + 1]
                 factor_units[reference_carrier.name] = units[div_signs_dependent_carrier_energy + 1:]
-            #check if the conversion factor is defined as power/power
+            # check if the conversion factor is defined as power/power
             elif len(units) - 2 == number_of_division_signs_power:
-                #assign the unit parts to the corresponding carriers
+                # assign the unit parts to the corresponding carriers
                 factor_units[dependent_carrier_name] = units[0:div_signs_dependent_carrier_power + 1]
                 factor_units[reference_carrier.name] = units[div_signs_dependent_carrier_power + 1:]
             else:
                 raise AssertionError(f"The conversion factor units of technology {conversion_element.name} must be defined as power/power or energy/energy of input/output carrier divided by reference carrier, e.g. MW/MW, MW/kg/s or GWh/GWh, kg/MWh etc.")
-            #recombine the separated units carrier-wise to the initial fraction
+            # recombine the separated units carrier-wise to the initial fraction
             for key, value in factor_units.items():
                 factor_units[key] = "/".join(value)
             conversion_factor_units[dependent_carrier_name] = factor_units
         return conversion_factor_units
 
     def _get_number_of_division_signs_energy_quantity(self, carrier_units, power=False):
-        """Finds the most common energy quantity of a carrier and counts its number of division signs (or the number of division signs of the resulting power unit)
+        """ Finds the most common energy quantity of a carrier and counts its number of division signs (or the number of division signs of the resulting power unit)
 
         :param carrier_units: unit attribute of the underlying carrier element
         :param power: bool to get the number of division signs of the most common power quantity (energy quantity divided by time)

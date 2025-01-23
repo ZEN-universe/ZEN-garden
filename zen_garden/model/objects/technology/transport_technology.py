@@ -59,12 +59,16 @@ class TransportTechnology(Technology):
     def get_transport_loss_factor(self):
         """get transport loss factor"""
         # check which transport loss factor is used
-        self.transport_loss_factor_linear = self.data_input.extract_input_data("transport_loss_factor_linear", index_sets=[], unit_category={"distance": -1})
-        if self.name in self.optimization_setup.system.set_transport_technologies_loss_exponential:
-            assert "transport_loss_factor_exponential" in self.data_input.attribute_dict, f"The transport technology {self.name} has no transport_loss_factor_exponential attribute."
-            self.transport_loss_factor_exponential = self.data_input.extract_input_data("transport_loss_factor_exponential", index_sets=[], unit_category={"distance": -1})
+        assert not ("transport_loss_factor_linear" in self.data_input.attribute_dict and "transport_loss_factor_exponential" in self.data_input.attribute_dict), "Only one transport loss factor can be specified."
+        if "transport_loss_factor_linear" in self.data_input.attribute_dict:
+            self.transport_loss_factor = self.data_input.extract_input_data("transport_loss_factor_linear", index_sets=[], unit_category={"distance": -1})
+            self.transport_loss_factor = self.transport_loss_factor[0] * self.distance
+        elif "transport_loss_factor_exponential" in self.data_input.attribute_dict:
+            self.transport_loss_factor = self.data_input.extract_input_data("transport_loss_factor_exponential", index_sets=[], unit_category={"distance": -1})
+            self.transport_loss_factor = 1-np.exp(-self.transport_loss_factor[0] * self.distance)
+            self.energy_system.system.set_transport_technologies_loss_exponential.append(self.name)
         else:
-            self.transport_loss_factor_exponential = np.nan
+            raise AttributeError(f"The transport technology {self.name} has neither transport_loss_factor_linear nor transport_loss_factor_exponential attribute.")
 
     def get_capex_transport(self):
         """get capex of transport technology"""
@@ -158,8 +162,7 @@ class TransportTechnology(Technology):
         # capital cost per distance
         optimization_setup.parameters.add_parameter(name="capex_per_distance_transport", index_names=['set_transport_technologies', "set_edges", "set_time_steps_yearly"], doc='capex per distance for transport technologies', calling_class=cls)
         # carrier losses
-        optimization_setup.parameters.add_parameter(name="transport_loss_factor_linear", index_names=["set_transport_technologies"], doc='linear carrier losses due to transport with transport technologies', calling_class=cls)
-        optimization_setup.parameters.add_parameter(name="transport_loss_factor_exponential", index_names=["set_transport_technologies"], doc='exponential carrier losses due to transport with transport technologies', calling_class=cls)
+        optimization_setup.parameters.add_parameter(name="transport_loss_factor", index_names=["set_transport_technologies", "set_edges"], doc='linear carrier losses due to transport with transport technologies', calling_class=cls)
 
     @classmethod
     def construct_vars(cls, optimization_setup):
@@ -352,21 +355,13 @@ class TransportTechnologyRules(GenericRule):
 
         """
 
+        if len(self.sets["set_transport_technologies"]) == 0:
+            return
         flow_transport = self.variables["flow_transport"]
         flow_transport_loss = self.variables["flow_transport_loss"]
         # This mask checks the distance between nodes
         mask = (~np.isinf(self.parameters.distance)).broadcast_like(flow_transport.lower)
-        # select the technologies with exponential and linear losses
-        exp_techs = pd.Series(
-            {t: True if t in self.system.set_transport_technologies_loss_exponential else False for t in
-             self.sets["set_transport_technologies"]})
-        exp_techs.index.name = "set_transport_technologies"
-        exp_techs = exp_techs.to_xarray().broadcast_like(flow_transport.lower)
-        if len(exp_techs) == 0:
-            return None
-        exp_loss_factor = (np.exp(-self.parameters.transport_loss_factor_exponential * self.parameters.distance)).broadcast_like(flow_transport.lower)
-        lin_loss_factor = (self.parameters.transport_loss_factor_linear * self.parameters.distance).broadcast_like(flow_transport.lower)
-        loss_factor = exp_loss_factor.where(exp_techs, 0.0) + lin_loss_factor.where(~exp_techs, 0.0)
+        loss_factor = self.parameters.transport_loss_factor.broadcast_like(flow_transport.lower)
         lhs = (flow_transport_loss - loss_factor * flow_transport).where(mask, 0.0)
         rhs = 0
         constraints = lhs == rhs
