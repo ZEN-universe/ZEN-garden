@@ -275,7 +275,7 @@ In addition, annual carrier import limits can be applied:
 Similarly, the carrier export :math:`\overline{U}_{c,n,t,y}` is limited by the carrier export availability :math:`\overline{a}_{c,n,t,y}` for all carriers :math:`c\in\mathcal{C}` in all nodes :math:`n\in\mathcal{N}` and time steps :math:`t\in\mathcal{T}`:
 
 .. math::
-    :label: carrier_import
+    :label: carrier_export
 
     0 \leq \overline{U}_{c,n,t,y} \leq \overline{a}_{c,n,t,y}.
 
