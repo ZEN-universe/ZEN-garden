@@ -9,6 +9,7 @@ import logging
 import numpy as np
 import pandas as pd
 import xarray as xr
+from linopy import LinearExpression
 
 from zen_garden.model.objects.element import GenericRule,Element
 from zen_garden.preprocess.extract_input_data import DataInput
@@ -329,7 +330,7 @@ class EnergySystem:
         assert sense in ["min", "max"], f"Objective sense {sense} not known"
 
         # construct objective
-        self.optimization_setup.model.add_objective(objective.to_linexpr(),sense=sense)
+        self.optimization_setup.model.add_objective(objective,sense=sense)
 
 
 class EnergySystemRules(GenericRule):
@@ -574,7 +575,7 @@ class EnergySystemRules(GenericRule):
         :param model: optimization model
         :return: net present cost objective function
         """
-        return sum([model.variables["net_present_cost"].at[year] for year in self.energy_system.set_time_steps_yearly])
+        return model.variables["net_present_cost"].sum("set_time_steps_yearly")
 
     def objective_total_carbon_emissions(self, model):
         """objective function to minimize total emissions
@@ -588,4 +589,4 @@ class EnergySystemRules(GenericRule):
         :return: total carbon emissions objective function
         """
         sets = self.sets
-        return model.variables["carbon_emissions_cumulative"][sets["set_time_steps_yearly"][-1]]
+        return model.variables["carbon_emissions_cumulative"][sets["set_time_steps_yearly"][-1]].to_linexpr()

@@ -60,16 +60,16 @@ test_1c,none,flow_transport_loss,"('natural_gas_pipeline', 'CH-DE', 0)",0
 test_1c,none,flow_transport_loss,"('natural_gas_pipeline', 'DE-CH', 0)",0
 test_1c,none,flow_conversion_input,"('natural_gas_boiler', 'natural_gas', 'CH', 0)",11
 test_1c,none,flow_conversion_input,"('natural_gas_boiler', 'natural_gas', 'DE', 0)",110
-test_1d,none,flow_import,"('natural_gas', 'CH', 0)",30.97454
-test_1d,none,flow_import,"('natural_gas', 'DE', 0)",100.0
-test_1d,none,flow_transport,"('natural_gas_pipeline', 'CH-DE', 0)",10.0
-test_1d,none,flow_transport,"('natural_gas_pipeline', 'DE-CH', 0)",0.0
-test_1d,none,flow_transport_loss,"('natural_gas_pipeline', 'CH-DE', 0)",9.97454
-test_1d,none,flow_transport_loss,"('natural_gas_pipeline', 'DE-CH', 0)",0.0
-test_1d,none,capacity,"('natural_gas_boiler', 'power', 'CH', 0)",10
+test_1d,none,flow_transport_loss,"('natural_gas_pipeline_exp', 'DE-CH', 0)",0.05001
+test_1d,none,flow_transport_loss,"('natural_gas_pipeline_exp_2', 'DE-FR', 0)",0
+test_1d,none,flow_transport_loss,"('natural_gas_pipeline_lin', 'DE-AT', 0)",0.05003
+test_1d,none,capacity,"('natural_gas_boiler', 'power', 'CH', 0)",100
 test_1d,none,capacity,"('natural_gas_boiler', 'power', 'DE', 0)",100
-test_1d,none,capacity,"('natural_gas_pipeline', 'power', 'CH-DE', 0)",10
-test_1d,none,capacity,"('natural_gas_pipeline', 'power', 'DE-CH', 0)",0
+test_1d,none,capacity,"('natural_gas_boiler', 'power', 'AT', 0)",100
+test_1d,none,capacity,"('natural_gas_boiler', 'power', 'FR', 0)",100
+test_1d,none,capacity,"('natural_gas_pipeline_exp', 'power', 'DE-CH', 0)",100.05001
+test_1d,none,capacity,"('natural_gas_pipeline_exp_2', 'power', 'DE-FR', 0)",10
+test_1d,none,capacity,"('natural_gas_pipeline_lin', 'power', 'DE-AT', 0)",100.05003
 test_1e,none,flow_import,"('natural_gas', 'CH', 0)",11
 test_1e,none,flow_import,"('natural_gas', 'DE', 0)",110
 test_1e,none,flow_import,"('oxygen', 'CH', 0)",8

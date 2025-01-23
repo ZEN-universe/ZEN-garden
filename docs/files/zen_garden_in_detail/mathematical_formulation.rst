@@ -411,14 +411,14 @@ The loss function is described through a linear or an exponential loss factor, :
 .. math::
     :label: transport_flow_loss_linear
 
-    \rho_{j,e} = h_{j,e} \rho^\mathrm{exp}_{j,e}
+    \rho_{j,e} = h_{j,e} \rho^\mathrm{lin}_{j}
 
-For transport technologies where transport flow losses are approximated by an exponential loss factor it follows:
+For transport technologies where transport flow losses are approximated by an exponential loss factor following `Gabrielli et al. (2020) <https://doi.org/10.1016/j.apenergy.2020.115245>`_:
 
 .. math::
     :label: transport_flow_loss_exponential
 
-    \rho_{j,e} =  h_{j,e}^{\rho^\mathrm{exp}_{j,e}}
+    \rho_{j,e} =  1-e^{-h_{j,e} \rho^\mathrm{exp}_{j}}
 
 The flow of the reference carrier :math:`c_h^\mathrm{r}` of all technologies :math:`h\in\mathcal{H}` is constrained by the maximum load :math:`m^\mathrm{max}_{h,p,t,y}` and the installed capacity :math:`S_{h,p,y}`. For conversion technologies :math:`i\in\mathcal{I}`, it follows:
 

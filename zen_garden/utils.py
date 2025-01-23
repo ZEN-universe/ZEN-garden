@@ -567,6 +567,7 @@ class ScenarioDict(dict):
             default_f_name = param_dict.get("default", default_f_name)
             default_f_name = self.validate_file_name(default_f_name)
             default_factor = param_dict.get("default_op", default_factor)
+            self._check_if_numeric_default_factor(default_factor,element=element,param=param,default_f_name=default_f_name,op_type="default_op")
 
         return default_f_name, default_factor
 
@@ -588,9 +589,17 @@ class ScenarioDict(dict):
             default_f_name = param_dict.get("file", default_f_name)
             default_f_name = self.validate_file_name(default_f_name)
             default_factor = param_dict.get("file_op", default_factor)
+            self._check_if_numeric_default_factor(default_factor,element=element,param=param,default_f_name=default_f_name,op_type="file_op")
 
         return default_f_name, default_factor
 
+    def _check_if_numeric_default_factor(self, default_factor,element,param,default_f_name,op_type):
+        """Check if the default factor is numeric
+
+        :param default_factor: The default factor to check
+        """
+        if not isinstance(default_factor, (int, float)):
+            raise ValueError(f"Default factor {default_factor} of type {type(default_factor)} in {op_type} ({element} -> {param} -> {default_f_name}) is not numeric!")
 
 # linopy helpers
 # --------------
