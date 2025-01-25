@@ -88,12 +88,11 @@ class DataInput:
             df_output = self.extract_general_input_data(df_input, df_output, file_name, index_name_list, default_value, time_steps)
         # save parameter values for analysis of numerics
         self.save_values_of_attribute(df_output=df_output, file_name=file_name)
-        # finally apply the scenario_factor
-        df_output = df_output * scenario_factor
         #copy output data as otherwise overwritten
         df_output_generic = df_output.copy()
         if time_steps == "set_base_time_steps_yearly":
             self.extract_year_specific_ts(file_name, index_name_list, time_steps, subelement, default_value,df_output_generic=df_output)
+        # finally apply the scenario_factor and return df_output
         return df_output_generic*scenario_factor
 
     def extract_general_input_data(self, df_input, df_output, file_name, index_name_list, default_value, time_steps):
@@ -338,7 +337,14 @@ class DataInput:
 
     def extract_year_specific_ts(self, file_name, index_name_list, time_steps, subelement,default_value,df_output_generic):
         """
-        reads the year specific time series data
+        reads and saves the year specific time series data. The year specific time series are saved in the dictionary self.optimization_setup.year_specific_ts
+
+        :param file_name: name of selected file
+        :param index_name_list: list of name of indices
+        :param default_value: default for dataframe
+        :param time_steps: specific time_steps of element
+        :param subelement: string specifying dependent element
+        :param df_output_generic: original/generic time series data (base case)
         """
         #years of optimization model
         years = [str(year) for year in range(self.system.reference_year, self.system.reference_year+self.system.optimized_years*self.system.interval_between_years, self.system.interval_between_years)]
