@@ -153,12 +153,8 @@ class TimeSeriesAggregation(object):
                 df_aggregated_ts.columns.names = index_names
                 df_aggregated_ts = df_aggregated_ts.stack(index_names,future_stack=True)
                 df_aggregated_ts.index = df_aggregated_ts.index.reorder_levels(index_names + [self.header_set_time_steps])
-                # here if statement for year specific data
-                #if year == None: #ToDo back to this here???
                 setattr(element, ts, df_aggregated_ts)
                 element.aggregated = True
-                #else: #ToDo back to this here???
-                #    self.year_specific_tsa[year][element.name,ts] = df_aggregated_ts
                 # self.set_aggregation_indicators(element)
 
     def get_excluded_ts(self):
