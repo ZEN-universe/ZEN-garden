@@ -352,9 +352,9 @@ class EnergySystemRules(GenericRule):
         """ cumulative carbon emissions over time
 
         .. math::
-            \mathrm{First\ planning\ period}\ y = y_0,\quad E_y^\mathrm{cum} = E_y
+            \\mathrm{First\\ planning\\ period}\\ y = y_0,\\quad E_y^\\mathrm{cum} = E_y
         .. math::
-            \mathrm{Subsequent\ periods}\ y > y_0, \quad E_y^{cum} = E_{y-1}^{cum} + (dy-1)E_{y-1}+E_y
+            \\mathrm{Subsequent\\ periods}\\ y > y_0, \\quad E_y^{cum} = E_{y-1}^{cum} + (dy-1)E_{y-1}+E_y
 
         :math:`dy`: interval between planning periods \n
         :math:`E_y`: annual carbon emissions in year :math:`y` \n
@@ -379,7 +379,7 @@ class EnergySystemRules(GenericRule):
         """ time dependent carbon emissions limit from technologies and carriers
 
         .. math::
-            E_y\leq e_y
+            E_y\\leq e_y
 
         """
 
@@ -396,11 +396,11 @@ class EnergySystemRules(GenericRule):
         last optimization time step plus the current carbon emissions until the end of the horizon
 
         .. math::
-            E_y^\mathrm{cum} + (dy-1)  E_y - E_y^\mathrm{bo} \leq e^b
+            E_y^\\mathrm{cum} + (dy-1)  E_y - E_y^\\mathrm{bo} \\leq e^b
 
-        :math:`E_y^\mathrm{cum}`: cumulative carbon emissions of energy system in year :math:`y` \n
+        :math:`E_y^\\mathrm{cum}`: cumulative carbon emissions of energy system in year :math:`y` \n
         :math:`E_y`: annual carbon emissions of energy system in year :math:`y` \n
-        :math:`E_y^\mathrm{bo}`: cumulative carbon emissions budget overshoot of energy system \n
+        :math:`E_y^\\mathrm{bo}`: cumulative carbon emissions budget overshoot of energy system \n
         :math:`e^b`: carbon emissions budget of energy system
 
         """
@@ -421,7 +421,7 @@ class EnergySystemRules(GenericRule):
         """ discounts the annual capital flows to calculate the net_present_cost
 
         .. math::
-            NPC_y = \sum_{i \in [0,dy(y))-1]} \\left( \dfrac{1}{1+r} \\right)^{\\left(dy (y-y_0) + i \\right)} C_y
+            NPC_y = \\sum_{i \\in [0,dy(y))-1]} \\left( \\dfrac{1}{1+r} \\right)^{\\left(dy (y-y_0) + i \\right)} C_y
 
         :math:`NPC_y`: net present cost of energy system in year :math:`y` \n
         :math:`C_y`: total cost of energy system in year :math:`y` \n
@@ -452,10 +452,10 @@ class EnergySystemRules(GenericRule):
         """ ensures carbon emissions overshoot of carbon budget is zero when carbon emissions price for budget overshoot is inf
 
         .. math::
-            \mathrm{if } \\mu^{bo} =\\infty \mathrm{,then: }E_y^\mathrm{bo} = 0
+            \\mathrm{if } \\mu^{bo} =\\infty \\mathrm{,then: }E_y^\\mathrm{bo} = 0
 
-        :math:`E_y^\mathrm{bo}`: overshoot carbon emissions of energy system at the end of the time horizon \n
-        :math:`\mu^{bo}`: carbon price for budget overshoot
+        :math:`E_y^\\mathrm{bo}`: overshoot carbon emissions of energy system at the end of the time horizon \n
+        :math:`\\mu^{bo}`: carbon price for budget overshoot
 
 
         """
@@ -473,10 +473,10 @@ class EnergySystemRules(GenericRule):
         """ ensures annual carbon emissions overshoot is zero when carbon emissions price for annual overshoot is inf
 
         .. math::
-            \mathrm{if } \\mu^o =\\infty \mathrm{,then: } E_y^\mathrm{o} = 0
+            \\mathrm{if } \\mu^o =\\infty \\mathrm{,then: } E_y^\\mathrm{o} = 0
 
-        :math:`E_y^\mathrm{o}`: overshoot of the annual carbon emissions limit of energy system \n
-        :math:`\mu^o`: carbon price for annual overshoot
+        :math:`E_y^\\mathrm{o}`: overshoot of the annual carbon emissions limit of energy system \n
+        :math:`\\mu^o`: carbon price for annual overshoot
 
         """
         no_price = self.parameters.price_carbon_emissions_annual_overshoot == np.inf
@@ -495,10 +495,10 @@ class EnergySystemRules(GenericRule):
         """ add up all carbon emissions from technologies and carriers
 
         .. math::
-            E_y = E_{y,\mathcal{H}} + E_{y,\mathcal{C}}
+            E_y = E_{y,\\mathcal{H}} + E_{y,\\mathcal{C}}
 
-        :math:`E_{y,\mathcal{H}}`: carbon emissions from technologies in year :math:`y` \n
-        :math:`E_{y,\mathcal{C}}`: carbon emissions from carriers in year :math
+        :math:`E_{y,\\mathcal{H}}`: carbon emissions from technologies in year :math:`y` \n
+        :math:`E_{y,\\mathcal{C}}`: carbon emissions from carriers in year :math
 
         """
 
@@ -514,13 +514,13 @@ class EnergySystemRules(GenericRule):
         """ carbon cost associated with the carbon emissions of the system in each year
 
         .. math::
-            OPEX_y^\mathrm{c} = E_y\mu + E_y^\mathrm{o}\mu^\mathrm{o}
+            OPEX_y^\\mathrm{c} = E_y\\mu + E_y^\\mathrm{o}\\mu^\\mathrm{o}
 
-        :math:`OPEX_y^\mathrm{c}`: cost of carbon emissions in year :math:`y` \n
+        :math:`OPEX_y^\\mathrm{c}`: cost of carbon emissions in year :math:`y` \n
         :math:`E_y`: annual carbon emissions of energy system in year :math:`y` \n
-        :math:`\mu`: carbon price \n
-        :math:`E_y^\mathrm{o}`: annual carbon emissions overshoot in year :math:`y` \n
-        :math:`\mu^\mathrm{o}`: carbon price for annual overshoot
+        :math:`\\mu`: carbon price \n
+        :math:`E_y^\\mathrm{o}`: annual carbon emissions overshoot in year :math:`y` \n
+        :math:`\\mu^\\mathrm{o}`: carbon price for annual overshoot
 
         """
         mask_last_year = [year == self.energy_system.set_time_steps_yearly[-1] for year in self.energy_system.set_time_steps_yearly]
@@ -543,13 +543,13 @@ class EnergySystemRules(GenericRule):
         """ add up all costs from technologies and carriers
 
         .. math::
-            C_y = CAPEX_y + OPEX_y^\mathrm{t} + OPEX_y^\mathrm{c} + OPEX_y^\mathrm{e}
+            C_y = CAPEX_y + OPEX_y^\\mathrm{t} + OPEX_y^\\mathrm{c} + OPEX_y^\\mathrm{e}
 
         :math:`C_y`: total cost of energy system in year :math:`y` \n
         :math:`CAPEX_y`: annual capital expenditures in year :math:`y` \n
-        :math:`OPEX_y^\mathrm{t}`: annual operational expenditures for operating technologies in year :math:`y` \n
-        :math:`OPEX_y^\mathrm{c}`: annual operational expenditures for for importing and exporting carriers in year :math:`y` \n
-        :math:`OPEX_y^\mathrm{e}`: annual operational expenditures for carbon emissions in year :math:`y`
+        :math:`OPEX_y^\\mathrm{t}`: annual operational expenditures for operating technologies in year :math:`y` \n
+        :math:`OPEX_y^\\mathrm{c}`: annual operational expenditures for for importing and exporting carriers in year :math:`y` \n
+        :math:`OPEX_y^\\mathrm{e}`: annual operational expenditures for carbon emissions in year :math:`y`
 
         """
 
@@ -570,7 +570,7 @@ class EnergySystemRules(GenericRule):
         """objective function to minimize the total net present cost
 
         .. math::
-            J = \sum_{y\in\mathcal{Y}} NPC_y
+            J = \\sum_{y\\in\\mathcal{Y}} NPC_y
 
         :param model: optimization model
         :return: net present cost objective function
@@ -581,9 +581,9 @@ class EnergySystemRules(GenericRule):
         """objective function to minimize total emissions
 
         .. math::
-            J = E^{\mathrm{cum}}_Y
+            J = E^{\\mathrm{cum}}_Y
 
-        :math:`E^{\mathrm{cum}}_Y`: cumulative carbon emissions at the end of the time horizon
+        :math:`E^{\\mathrm{cum}}_Y`: cumulative carbon emissions at the end of the time horizon
 
         :param model: optimization model
         :return: total carbon emissions objective function

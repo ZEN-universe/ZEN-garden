@@ -4,6 +4,15 @@
 .. automodule:: zen_garden.model.objects.technology.retrofitting_technology
 
    
+   
+   
+
+   
+   
+   
+
+   
+   
    .. rubric:: Classes
 
    .. autosummary::
@@ -11,3 +20,11 @@
       RetrofittingTechnology
       RetrofittingTechnologyRules
    
+   
+
+   
+   
+   
+
+
+

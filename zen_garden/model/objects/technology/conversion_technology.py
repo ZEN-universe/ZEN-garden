@@ -241,7 +241,7 @@ class ConversionTechnology(Technology):
                     upper.loc[tech, carrier, ...] = model.variables["capacity"].upper.loc[tech, "power", node_set, time_step_year].data * conversion_factor_upper
 
             # make sure lower is never below 0
-            return (lower, upper)
+            return lower, upper
 
         ## Flow variables
         # input flow of carrier into technology
@@ -254,10 +254,10 @@ class ConversionTechnology(Technology):
             bounds=flow_conversion_bounds(index_values, index_names), doc='Carrier output of conversion technologies', unit_category={"energy_quantity": 1, "time": -1})
         ## pwa Variables - Capex
         # pwa capacity
-        variables.add_variable(model, name="capacity_approximation", index_sets=cls.create_custom_set(["set_conversion_technologies", "set_nodes", "set_time_steps_yearly"], optimization_setup), bounds=(0,np.inf),
+        variables.add_variable(model, name="capacity_approximation", index_sets=cls.create_custom_set(["set_conversion_technologies", "set_nodes", "set_time_steps_yearly"], optimization_setup), bounds=(0, np.inf),
             doc='pwa variable for size of installed technology on edge i and time t', unit_category={"energy_quantity": 1, "time": -1})
         # pwa capex technology
-        variables.add_variable(model, name="capex_approximation", index_sets=cls.create_custom_set(["set_conversion_technologies", "set_nodes", "set_time_steps_yearly"], optimization_setup), bounds=(0,np.inf),
+        variables.add_variable(model, name="capex_approximation", index_sets=cls.create_custom_set(["set_conversion_technologies", "set_nodes", "set_time_steps_yearly"], optimization_setup), bounds=(0, np.inf),
             doc='pwa variable for capex for installing technology on edge i and time t', unit_category={"money": 1})
 
     @classmethod
@@ -292,7 +292,7 @@ class ConversionTechnology(Technology):
 
         # add constraints of the child classes
         for subclass in cls.__subclasses__():
-           if np.size(optimization_setup.system[subclass.label]):
+            if np.size(optimization_setup.system[subclass.label]):
                 subclass.construct_constraints(optimization_setup)
 
     # defines disjuncts if technology on/off
@@ -321,7 +321,7 @@ class ConversionTechnology(Technology):
         # get invest time step
         time_step_year = energy_system.time_steps.convert_time_step_operation2year(time)
         # formulate constraint
-        lhs = reference_flow - params.min_load.loc[tech, capacity_type, node, time]* model.variables["capacity"].loc[tech, capacity_type, node, time_step_year]
+        lhs = reference_flow - params.min_load.loc[tech, capacity_type, node, time] * model.variables["capacity"].loc[tech, capacity_type, node, time_step_year]
         rhs = 0
         constraint = lhs >= rhs
         # disjunct constraints min load
@@ -409,11 +409,11 @@ class ConversionTechnologyRules(GenericRule):
         """ Load is limited by the installed capacity and the maximum load factor
 
         .. math::
-            G_{i,n,t,y}^\mathrm{r} \\leq m^{\mathrm{max}}_{i,n,t,y}S_{i,n,y}
+            G_{i,n,t,y}^\\mathrm{r} \\leq m^{\\mathrm{max}}_{i,n,t,y}S_{i,n,y}
 
-        :math:`m_{i,n,t,y}^{\mathrm{max}}`: maximum load factor of the technology :math:`i` at node :math:`n` in time step :math:`t` and year :math:`y` \n
+        :math:`m_{i,n,t,y}^{\\mathrm{max}}`: maximum load factor of the technology :math:`i` at node :math:`n` in time step :math:`t` and year :math:`y` \n
         :math:`S_{i,n,y}`: installed capacity of the technology :math:`i` at node :math:`n` in year :math:`y` \n
-        :math:`G_{i,n,t,y}^\mathrm{r}`: reference carrier flow of the technology :math:`i` at node :math:`n` in time step :math:`t` and year :math:`y`
+        :math:`G_{i,n,t,y}^\\mathrm{r}`: reference carrier flow of the technology :math:`i` at node :math:`n` in time step :math:`t` and year :math:`y`
 
 
         """
@@ -426,25 +426,25 @@ class ConversionTechnologyRules(GenericRule):
         term_capacity = (
                 self.parameters.max_load.loc[techs, "power", nodes, :]
                 * self.variables["capacity"].loc[techs, "power", nodes, time_step_year]
-            ).rename({"set_technologies": "set_conversion_technologies","set_location": "set_nodes"})
-        term_reference_flow = self.get_flow_expression_conversion(techs,nodes)
+            ).rename({"set_technologies": "set_conversion_technologies", "set_location": "set_nodes"})
+        term_reference_flow = self.get_flow_expression_conversion(techs,  nodes)
         lhs = term_capacity + term_reference_flow
         rhs = 0
         constraints = lhs >= rhs
 
-        self.constraints.add_constraint("constraint_capacity_factor_conversion",constraints)
+        self.constraints.add_constraint("constraint_capacity_factor_conversion", constraints)
 
     def constraint_opex_emissions_technology_conversion(self):
         """ calculate opex and carbon emissions of each technology
 
         .. math::
-            O_{h,p,t}^\mathrm{t} = \\beta_{h,p,t} G_{i,n,t,y}^\mathrm{r} \n
-            \\theta_{h,p,t} = \\epsilon_h G_{i,n,t,y}^\mathrm{r}
+            O_{h,p,t}^\\mathrm{t} = \\beta_{h,p,t} G_{i,n,t,y}^\\mathrm{r} \n
+            \\theta_{h,p,t} = \\epsilon_h G_{i,n,t,y}^\\mathrm{r}
 
-        :math:`O_{h,p,t}^\mathrm{t}`: variable opex of the technology :math:`h` at node :math:`p` in time step :math:`t` \n
+        :math:`O_{h,p,t}^\\mathrm{t}`: variable opex of the technology :math:`h` at node :math:`p` in time step :math:`t` \n
         :math:`\\beta_{h,p,t}`: specific variable opex of the technology :math:`h` at node :math:`p` in time step :math:`t` \n
-        :math:`G_{i,n,t,y}^\mathrm{r}`: reference carrier flow of the technology :math:`i` at node :math:`n` in time step :math:`t` and year :math:`y` \n
-        :math:`\\theta^{\mathrm{tech}}_{h,p,t}`: carbon emissions of operating the technology :math:`h` at node :math:`p` in time step :math:`t` \n
+        :math:`G_{i,n,t,y}^\\mathrm{r}`: reference carrier flow of the technology :math:`i` at node :math:`n` in time step :math:`t` and year :math:`y` \n
+        :math:`\\theta^{\\mathrm{tech}}_{h,p,t}`: carbon emissions of operating the technology :math:`h` at node :math:`p` in time step :math:`t` \n
         :math:`\\epsilon_h`: carbon intensity of the reference carrier of technology :math:`h`
 
 
@@ -453,26 +453,26 @@ class ConversionTechnologyRules(GenericRule):
         if len(techs) == 0:
             return
         nodes = self.sets["set_nodes"]
-        term_reference_flow_opex = self.get_flow_expression_conversion(techs,nodes,factor=self.parameters.opex_specific_variable.rename({"set_technologies": "set_conversion_technologies","set_location":"set_nodes"}))
-        term_reference_flow_emissions = self.get_flow_expression_conversion(techs,nodes,factor=self.parameters.carbon_intensity_technology.rename({"set_technologies": "set_conversion_technologies","set_location":"set_nodes"}))
-        lhs_opex = ((1*self.variables["cost_opex_variable"].loc[techs,nodes,:]).rename({"set_technologies": "set_conversion_technologies","set_location":"set_nodes"}) + term_reference_flow_opex)
-        lhs_emissions = ((1*self.variables["carbon_emissions_technology"].loc[techs,nodes,:]).rename({"set_technologies": "set_conversion_technologies","set_location":"set_nodes"}) + term_reference_flow_emissions)
+        term_reference_flow_opex = self.get_flow_expression_conversion(techs, nodes, factor=self.parameters.opex_specific_variable.rename({"set_technologies": "set_conversion_technologies", "set_location": "set_nodes"}))
+        term_reference_flow_emissions = self.get_flow_expression_conversion(techs, nodes, factor=self.parameters.carbon_intensity_technology.rename({"set_technologies": "set_conversion_technologies", "set_location": "set_nodes"}))
+        lhs_opex = ((1*self.variables["cost_opex_variable"].loc[techs, nodes, :]).rename({"set_technologies": "set_conversion_technologies", "set_location": "set_nodes"}) + term_reference_flow_opex)
+        lhs_emissions = ((1*self.variables["carbon_emissions_technology"].loc[techs, nodes, :]).rename({"set_technologies": "set_conversion_technologies", "set_location": "set_nodes"}) + term_reference_flow_emissions)
         rhs = 0
         constraints_opex = lhs_opex == rhs
         constraints_emissions = lhs_emissions == rhs
 
-        self.constraints.add_constraint("constraint_opex_technology_conversion",constraints_opex)
-        self.constraints.add_constraint("constraint_carbon_emissions_technology_conversion",constraints_emissions)
+        self.constraints.add_constraint("constraint_opex_technology_conversion", constraints_opex)
+        self.constraints.add_constraint("constraint_carbon_emissions_technology_conversion", constraints_emissions)
 
     def constraint_linear_capex(self):
         """ if capacity and capex have a linear relationship
 
         .. math::
-            A_{h,p,y}^{approximation} = \\alpha_{h,n,y} \Delta S_{h,p,y}^{approx}
+            A_{h,p,y}^{approximation} = \\alpha_{h,n,y} \\Delta S_{h,p,y}^{approx}
 
         :math:`A_{h,p,y}^{approx}`: approximated capex of the technology :math:`h` at node :math:`p` in year :math:`y` \n
         :math:`\\alpha_{h,n,y}`: specific capex of the technology :math:`h` at node :math:`n` in year :math:`y` \n
-        :math:`\Delta S_{h,p,y}^{approx}`: approximated capacity of the technology :math:`h` at node :math:`p` in year :math:`y`
+        :math:`\\Delta S_{h,p,y}^{approx}`: approximated capacity of the technology :math:`h` at node :math:`p` in year :math:`y`
 
         """
         capex_specific_conversion = self.parameters.capex_specific_conversion
@@ -488,25 +488,25 @@ class ConversionTechnologyRules(GenericRule):
         rhs = 0
         constraints = lhs == rhs
 
-        self.constraints.add_constraint("constraint_linear_capex",constraints)
+        self.constraints.add_constraint("constraint_linear_capex", constraints)
 
     def constraint_capacity_capex_coupling(self):
         """ couples capacity variables based on modeling technique
 
         .. math::
-            \Delta S_{h,p,y} = \Delta S_{h,p,y}^\mathrm{approx}
+            \\Delta S_{h,p,y} = \\Delta S_{h,p,y}^\\mathrm{approx}
 
-        :math:`\Delta S_{h,p,y}`: capacity addition of the technology :math:`h` at node :math:`p` in year :math:`y` \n
-        :math:`\Delta S_{h,p,y}^\mathrm{approx}`: approximated capacity addition of the technology :math:`h` at node :math:`p` in year :math:`y`
+        :math:`\\Delta S_{h,p,y}`: capacity addition of the technology :math:`h` at node :math:`p` in year :math:`y` \n
+        :math:`\\Delta S_{h,p,y}^\\mathrm{approx}`: approximated capacity addition of the technology :math:`h` at node :math:`p` in year :math:`y`
 
 
         """
 
         techs = self.sets["set_conversion_technologies"]
         nodes = self.sets["set_nodes"]
-        capacity_addition = self.variables["capacity_addition"].loc[techs,"power",nodes].rename(
+        capacity_addition = self.variables["capacity_addition"].loc[techs, "power", nodes].rename(
             {"set_technologies": "set_conversion_technologies", "set_location": "set_nodes"})
-        cost_capex_overnight = self.variables["cost_capex_overnight"].loc[techs,"power",nodes].rename(
+        cost_capex_overnight = self.variables["cost_capex_overnight"].loc[techs, "power", nodes].rename(
             {"set_technologies": "set_conversion_technologies", "set_location": "set_nodes"})
 
         ### formulate constraint
@@ -516,7 +516,7 @@ class ConversionTechnologyRules(GenericRule):
         constraints_capacity = lhs_capacity == rhs
         constraints_capex = lhs_capex == rhs
         ### return
-        self.constraints.add_constraint("constraint_capacity_coupling",constraints_capacity)
+        self.constraints.add_constraint("constraint_capacity_coupling", constraints_capacity)
         self.constraints.add_constraint("constraint_capex_coupling", constraints_capex)
 
     def constraint_carrier_conversion(self):
@@ -572,9 +572,9 @@ class ConversionTechnologyRules(GenericRule):
         rhs = 0
         constraints = lhs == rhs
 
-        self.constraints.add_constraint("constraint_carrier_conversion",constraints)
+        self.constraints.add_constraint("constraint_carrier_conversion", constraints)
 
-    def get_flow_expression_conversion(self,techs,nodes,factor=None, rename =False):
+    def get_flow_expression_conversion(self, techs, nodes, factor=None, rename=False):
         """ return the flow expression for conversion technologies """
         reference_flows = []
         for t in techs:
@@ -589,7 +589,7 @@ class ConversionTechnologyRules(GenericRule):
             else:
                 reference_flows.append(-mult * self.variables["flow_conversion_output"].loc[t, rc, nodes, :])
         if rename:
-            term_reference_flow = lp.merge(reference_flows, dim="set_technologies").rename({"set_nodes":"set_location"})
+            term_reference_flow = lp.merge(reference_flows, dim="set_technologies").rename({"set_nodes": "set_location"})
         else:
             term_reference_flow = lp.merge(reference_flows, dim="set_conversion_technologies")
         return term_reference_flow
