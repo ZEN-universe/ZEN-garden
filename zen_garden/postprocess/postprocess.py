@@ -3,10 +3,13 @@ Class is defining the postprocessing of the results.
 The class takes as inputs the optimization problem (model) and the system configurations (system).
 The class contains methods to read the results and save them in a result dictionary (resultDict).
 """
+import copy
 import json
 import logging
 import os
 from pathlib import Path
+
+import numpy as np
 import pint
 from tables import NaturalNameWarning
 import warnings
@@ -434,7 +437,18 @@ class Postprocess:
             fname = self.name_dir.parent.joinpath(f'dict_all_sequence_time_steps{add_on}')
         else:
             fname = self.name_dir.joinpath(f'dict_all_sequence_time_steps{add_on}')
-        self.write_file(fname, self.dict_sequence_time_steps)
+        dict_sequence_time_steps = self.dict_sequence_time_steps
+        dict_formatted = {}
+        for k,v in dict_sequence_time_steps.items():
+            if isinstance(v, np.ndarray):
+                dict_formatted[k] = v.tolist()
+            elif isinstance(v, dict):
+                dict_formatted[k] = {kk: vv.tolist() for kk, vv in v.items()}
+            elif isinstance(v, list):
+                dict_formatted[k] = v
+            else:
+                NotImplementedError(f"Type {type(v)} not supported for key {k}")
+        self.write_file(fname, dict_formatted, format="json")
 
     def _transform_df(self, df, doc, units=None):
         """we transform the dataframe to a json string and load it into the dictionary as dict
