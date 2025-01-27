@@ -764,7 +764,7 @@ class HDFPandasSerializer:
 
         if not overwrite and os.path.exists(file_name):
             raise FileExistsError("File already exists. Please set overwrite=True to overwrite the file.")
-        with pd.HDFStore(file_name, mode='w', complevel=9) as store:
+        with pd.HDFStore(file_name, mode='w', complevel=4,complib="blosc") as store:
             cls._recurse(store, dictionary)
 
     @staticmethod

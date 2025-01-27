@@ -191,6 +191,10 @@ class Results:
         else:
             scenario_names = [scenario_name]
 
+        if component_name not in self.solution_loader.components:
+            logging.warning(f"Component {component_name} not found. If you expected this component to be present, the solution is probably empty and therefore skipped.")
+            return None
+
         component = self.solution_loader.components[component_name]
 
         scenarios_dict: dict[str, "pd.DataFrame | pd.Series[Any]"] = {}
@@ -292,6 +296,10 @@ class Results:
             scenario_names = list(self.solution_loader.scenarios)
         else:
             scenario_names = [scenario_name]
+
+        if component_name not in self.solution_loader.components:
+            logging.warning(f"Component {component_name} not found. If you expected this component to be present, the solution is probably empty and therefore skipped.")
+            return None
 
         component = self.solution_loader.components[component_name]
 

@@ -3,7 +3,6 @@ Class is defining the postprocessing of the results.
 The class takes as inputs the optimization problem (model) and the system configurations (system).
 The class contains methods to read the results and save them in a result dictionary (resultDict).
 """
-import copy
 import json
 import logging
 import os

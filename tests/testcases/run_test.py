@@ -1,3 +1,4 @@
+import json
 import os
 import re
 import warnings
@@ -57,47 +58,47 @@ def str2tuple(string):
     return indices
 
 
-def compare_variables(test_model, optimization_setup, folder_path):
-    """assertion test: compare model variables to desired values
-    :param test_model: The model to test (name of the data set)
-    :param optimization_setup: optimization setup with model of tested model
-    :param folder_path: The path to the folder containing the file with the correct variables
-    """
-    # skip for models with scenario analysis
-    if optimization_setup.system.conduct_scenario_analysis:
-        return
-    # import csv file containing selected variable values of test model collection
-    test_variables = pd.read_csv(
-        os.path.join(folder_path, "test_variables_readable.csv"),
-        header=0,
-        index_col=None,
-    )
-    # dictionary to store variable names, indices, values and test values of variables which don't match the test values
-    failed_variables = defaultdict(dict)
-    # iterate through dataframe rows
-    for _, data_row in test_variables[test_variables["test"] == test_model].iterrows():
-        # get variable attribute of optimization_setup object by using string of the variable's name (e.g. optimization_setup.model.variables["importCarrierFLow"])
-        variable_attribute = optimization_setup.model.solution[
-            data_row["variable_name"]
-        ]
+# def compare_variables(test_model, optimization_setup, folder_path):
+#     """assertion test: compare model variables to desired values
+#     :param test_model: The model to test (name of the data set)
+#     :param optimization_setup: optimization setup with model of tested model
+#     :param folder_path: The path to the folder containing the file with the correct variables
+#     """
+#     # skip for models with scenario analysis
+#     if optimization_setup.system.conduct_scenario_analysis:
+#         return
+#     # import csv file containing selected variable values of test model collection
+#     test_variables = pd.read_csv(
+#         os.path.join(folder_path, "test_variables_readable.csv"),
+#         header=0,
+#         index_col=None,
+#     )
+#     # dictionary to store variable names, indices, values and test values of variables which don't match the test values
+#     failed_variables = defaultdict(dict)
+#     # iterate through dataframe rows
+#     for _, data_row in test_variables[test_variables["test"] == test_model].iterrows():
+#         # get variable attribute of optimization_setup object by using string of the variable's name (e.g. optimization_setup.model.variables["importCarrierFLow"])
+#         variable_attribute = optimization_setup.model.solution[
+#             data_row["variable_name"]
+#         ]
+#
+#         # extract the values
+#         index = str2tuple(data_row["index"])
+#         variable_value = variable_attribute.loc[*index].item()
+#
+#         if not np.isclose(variable_value, data_row["value"], rtol=1e-3):
+#             failed_variables[data_row["variable_name"]][data_row["index"]] = {"computed_value": variable_value,
+#                                                           "test_value": data_row["value"]}
+#     assertion_string = str()
+#     for failed_var in failed_variables:
+#         assertion_string += f"\n{failed_var}{failed_variables[failed_var]}"
+#
+#     assert (
+#         len(failed_variables) == 0
+#     ), f"The variables {assertion_string} don't match their test values"
 
-        # extract the values
-        index = str2tuple(data_row["index"])
-        variable_value = variable_attribute.loc[*index].item()
 
-        if not np.isclose(variable_value, data_row["value"], rtol=1e-3):
-            failed_variables[data_row["variable_name"]][data_row["index"]] = {"computed_value": variable_value,
-                                                          "test_value": data_row["value"]}
-    assertion_string = str()
-    for failed_var in failed_variables:
-        assertion_string += f"\n{failed_var}{failed_variables[failed_var]}"
-
-    assert (
-        len(failed_variables) == 0
-    ), f"The variables {assertion_string} don't match their test values"
-
-
-def compare_variables_results(test_model: str, results: Results, folder_path: str):
+def compare_variables_results_old(test_model: str, results: Results, folder_path: str):
     """
     Compares the variables of a Results object from the test run to precomputed values
     :param test_model: The model to test (name of the data set)
@@ -137,6 +138,57 @@ def compare_variables_results(test_model: str, results: Results, folder_path: st
                         "test_value": data_row["value"],
                     }
                 compare_counter += 1
+    # create the string of all failed variables
+    assertion_string = ""
+    for failed_var, failed_value in failed_variables.items():
+        assertion_string += f"\n{failed_var}: {failed_value}"
+
+    assert (
+        len(failed_variables) == 0
+    ), f"The variables {assertion_string} don't match their test values"
+    if compare_counter == 0:
+        warnings.warn(UserWarning(f"No variables have been compared in {test_model}. If not intended, check the test_variables_readable.csv file."))
+
+
+def compare_variables_results(test_model: str, results: Results, folder_path: str):
+    """
+    Compares the variables of a Results object from the test run to precomputed values
+    :param test_model: The model to test (name of the data set)
+    :param results: The Results object
+    :param folder_path: The path to the folder containing the file with the correct variables
+    """
+    # import json file containing selected variable values of test model collection
+    with open(os.path.join(folder_path, "test_variables.json")) as f:
+        test_variables = json.load(f)
+    # dictionary to store variable names, indices, values and test values of variables which don't match the test values
+    failed_variables = defaultdict(dict)
+    compare_counter = 0
+    # iterate through dataframe rows
+    if test_model in test_variables:
+        for s in test_variables[test_model]:
+            if s in results.solution_loader.scenarios:
+                test_values = test_variables[test_model][s]
+                for c in test_values:
+                    if c in results.solution_loader.components:
+                        values = results.get_df(c)[s]
+                        for test_value in test_values[c]:
+                            if isinstance(test_value["index"],list):
+                                test_index = tuple(test_value["index"])
+                            else:
+                                test_index = test_value["index"]
+                            if test_index in values.index:
+                                if not np.isclose(values[test_index], test_value["value"], rtol=1e-3):
+                                    failed_variables[c][test_index] = {
+                                        "computed_values": values[test_index],
+                                        "test_value": test_value["value"],
+                                    }
+                                compare_counter += 1
+                            else:
+                                print(f"Index {test_value['index']} not found in results for component {c}")
+                    else:
+                        print(f"Component {c} not found in results")
+            else:
+                print(f"Scenario {s} not found in results")
     # create the string of all failed variables
     assertion_string = ""
     for failed_var, failed_value in failed_variables.items():
@@ -206,8 +258,6 @@ def test_1a(config, folder_path):
         config=config, dataset_path=os.path.join(folder_path, data_set_name)
     )
 
-    # compare the variables of the optimization setup
-    compare_variables(data_set_name, optimization_setup, folder_path)
     # read the results and check again
     res = Results(os.path.join("outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
@@ -222,8 +272,6 @@ def test_1b(config, folder_path):
         config=config, dataset_path=os.path.join(folder_path, data_set_name)
     )
 
-    # compare the variables of the optimization setup
-    compare_variables(data_set_name, optimization_setup, folder_path)
     # read the results and check again
     res = Results(os.path.join("outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
@@ -236,8 +284,6 @@ def test_1c(config, folder_path):
         config=config, dataset_path=os.path.join(folder_path, data_set_name)
     )
 
-    # compare the variables of the optimization setup
-    compare_variables(data_set_name, optimization_setup, folder_path)
     # read the results and check again
     res = Results(os.path.join("outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
@@ -248,8 +294,6 @@ def test_1d(config, folder_path):
     data_set_name = "test_1d"
     optimization_setup = main(config=config, dataset_path=os.path.join(folder_path, data_set_name))
 
-    # compare the variables of the optimization setup
-    compare_variables(data_set_name, optimization_setup, folder_path)
     # read the results and check again
     res = Results(os.path.join("outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
@@ -259,8 +303,6 @@ def test_1e(config, folder_path):
     data_set_name = "test_1e"
     optimization_setup = main(config=config, dataset_path=os.path.join(folder_path, data_set_name))
 
-    # compare the variables of the optimization setup
-    compare_variables(data_set_name, optimization_setup, folder_path)
     # read the results and check again
     res = Results(os.path.join("outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
@@ -273,8 +315,6 @@ def test_1f(config, folder_path):
     data_set_name = "test_1f"
     optimization_setup = main(config=config, dataset_path=os.path.join(folder_path, data_set_name))
 
-    # compare the variables of the optimization setup
-    compare_variables(data_set_name, optimization_setup, folder_path)
     # read the results and check again
     res = Results(os.path.join("outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
@@ -290,8 +330,6 @@ def test_2a(config, folder_path):
         config=config, dataset_path=os.path.join(folder_path, data_set_name)
     )
 
-    # compare the variables of the optimization setup
-    compare_variables(data_set_name, optimization_setup, folder_path)
     # read the results and check again
     res = Results(os.path.join("outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
@@ -304,8 +342,6 @@ def test_2b(config, folder_path):
         config=config, dataset_path=os.path.join(folder_path, data_set_name)
     )
 
-    # compare the variables of the optimization setup
-    compare_variables(data_set_name, optimization_setup, folder_path)
     # read the results and check again
     res = Results(os.path.join("outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
@@ -318,8 +354,6 @@ def test_2c(config, folder_path):
         config=config, dataset_path=os.path.join(folder_path, data_set_name)
     )
 
-    # compare the variables of the optimization setup
-    compare_variables(data_set_name, optimization_setup, folder_path)
     # read the results and check again
     res = Results(os.path.join("outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
@@ -332,8 +366,6 @@ def test_3a(config, folder_path):
         config=config, dataset_path=os.path.join(folder_path, data_set_name)
     )
 
-    # compare the variables of the optimization setup
-    compare_variables(data_set_name, optimization_setup, folder_path)
     # read the results and check again
     res = Results(os.path.join("outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
@@ -346,8 +378,6 @@ def test_3b(config, folder_path):
         config=config, dataset_path=os.path.join(folder_path, data_set_name)
     )
 
-    # compare the variables of the optimization setup
-    compare_variables(data_set_name, optimization_setup, folder_path)
     # read the results and check again
     res = Results(os.path.join("outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
@@ -362,8 +392,6 @@ def test_3c(config, folder_path):
         config=config, dataset_path=os.path.join(folder_path, data_set_name)
     )
 
-    # compare the variables of the optimization setup
-    compare_variables(data_set_name, optimization_setup, folder_path)
     # read the results and check again
     res = Results(os.path.join("outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
@@ -422,8 +450,6 @@ def test_3g(config, folder_path):
         config=config, dataset_path=os.path.join(folder_path, data_set_name)
     )
 
-    # compare the variables of the optimization setup
-    compare_variables(data_set_name, optimization_setup, folder_path)
     # read the results and check again
     res = Results(os.path.join("outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
@@ -438,8 +464,6 @@ def test_3h(config, folder_path):
         config=config, dataset_path=os.path.join(folder_path, data_set_name)
     )
 
-    # compare the variables of the optimization setup
-    compare_variables(data_set_name, optimization_setup, folder_path)
     # read the results and check again
     res = Results(os.path.join("outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
@@ -454,8 +478,6 @@ def test_3i(config, folder_path):
         config=config, dataset_path=os.path.join(folder_path, data_set_name)
     )
 
-    # compare the variables of the optimization setup
-    compare_variables(data_set_name, optimization_setup, folder_path)
     # read the results and check again
     res = Results(os.path.join("outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
@@ -470,8 +492,6 @@ def test_4a(config, folder_path):
         config=config, dataset_path=os.path.join(folder_path, data_set_name)
     )
 
-    # compare the variables of the optimization setup
-    compare_variables(data_set_name, optimization_setup, folder_path)
     # read the results and check again
     res = Results(os.path.join("outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
@@ -486,8 +506,6 @@ def test_4b(config, folder_path):
         config=config, dataset_path=os.path.join(folder_path, data_set_name)
     )
 
-    # compare the variables of the optimization setup
-    compare_variables(data_set_name, optimization_setup, folder_path)
     # read the results and check again
     res = Results(os.path.join("outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
@@ -502,8 +520,6 @@ def test_4c(config, folder_path):
         config=config, dataset_path=os.path.join(folder_path, data_set_name)
     )
 
-    # compare the variables of the optimization setup
-    compare_variables(data_set_name, optimization_setup, folder_path)
     # read the results and check again
     res = Results(os.path.join("outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
@@ -516,8 +532,6 @@ def test_4d(config, folder_path):
         config=config, dataset_path=os.path.join(folder_path, data_set_name)
     )
 
-    # compare the variables of the optimization setup
-    compare_variables(data_set_name, optimization_setup, folder_path)
     # read the results and check again
     res = Results(os.path.join("outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
@@ -530,8 +544,6 @@ def test_5a(config, folder_path):
         config=config, dataset_path=os.path.join(folder_path, data_set_name)
     )
 
-    # compare the variables of the optimization setup
-    compare_variables(data_set_name, optimization_setup, folder_path)
     # read the results and check again
     res = Results(os.path.join("outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
@@ -546,8 +558,6 @@ def test_5b(config, folder_path):
         config=config, dataset_path=os.path.join(folder_path, data_set_name)
     )
 
-    # compare the variables of the optimization setup
-    compare_variables(data_set_name, optimization_setup, folder_path)
     # read the results and check again
     res = Results(os.path.join("outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
@@ -560,8 +570,6 @@ def test_5c(config, folder_path):
         config=config, dataset_path=os.path.join(folder_path, data_set_name)
     )
 
-    # compare the variables of the optimization setup
-    compare_variables(data_set_name, optimization_setup, folder_path)
     # read the results and check again
     res = Results(os.path.join("outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
@@ -574,8 +582,6 @@ def test_5d(config, folder_path):
         config=config, dataset_path=os.path.join(folder_path, data_set_name)
     )
 
-    # compare the variables of the optimization setup
-    compare_variables(data_set_name, optimization_setup, folder_path)
     # read the results and check again
     res = Results(os.path.join("outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
@@ -588,8 +594,6 @@ def test_6a(config, folder_path):
         config=config, dataset_path=os.path.join(folder_path, data_set_name)
     )
 
-    # compare the variables of the optimization setup
-    compare_variables(data_set_name, optimization_setup, folder_path)
     # read the results and check again
     res = Results(os.path.join("outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
@@ -603,8 +607,6 @@ def test_7a(config, folder_path):
     config.analysis.objective = "total_carbon_emissions"
     optimization_setup = main(config=config, dataset_path=os.path.join(folder_path, data_set_name))
 
-    # compare the variables of the optimization setup
-    compare_variables(data_set_name, optimization_setup, folder_path)
     # read the results and check again
     res = Results(os.path.join("outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
@@ -615,4 +617,4 @@ if __name__ == "__main__":
 
     config.solver.keep_files = False
     folder_path = os.path.dirname(__file__)
-    test_7a(config, folder_path)
+    test_3h(config, folder_path)

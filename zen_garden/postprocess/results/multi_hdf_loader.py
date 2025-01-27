@@ -34,6 +34,29 @@ time_steps_map: dict[str | None, TimestepType] = {
     "time_storage_level": TimestepType.storage,
 }
 
+def get_first_scenario(scenarios: dict[str, AbstractScenario]) -> AbstractScenario:
+    """
+    Helper-function that returns the first scenario of a dictionary of scenarios.
+    :param scenarios: The dictionary of scenarios.
+
+    :return: The first scenario of the dictionary.
+    """
+    return scenarios[next(iter(scenarios.keys()))]
+
+def get_solution_version(scenario: AbstractScenario) -> str:
+    """
+    Helper-function that checks the version of the solution.
+    :param scenario: The scenario for which the version should be checked.
+
+    :return: The version of the solution.
+    """
+    versions = {"v1":"2.0.13"}
+    version = "v0"
+    if hasattr(scenario.analysis,"zen_garden_version"):
+        for k,v in versions.items():
+            if _compare_versions(scenario.analysis.zen_garden_version,v):
+                version = k
+    return version
 
 def get_index_names(h5_file: h5py.File,component_name: str,version: str) -> list[str]:
     """
@@ -123,29 +146,6 @@ def get_df_from_path(path: str, component_name: str, version: str, data_type: Li
 
     return ans
 
-def get_first_scenario(scenarios: dict[str, AbstractScenario]) -> AbstractScenario:
-    """
-    Helper-function that returns the first scenario of a dictionary of scenarios.
-    :param scenarios: The dictionary of scenarios.
-
-    :return: The first scenario of the dictionary.
-    """
-    return scenarios[next(iter(scenarios.keys()))]
-
-def get_solution_version(scenario: AbstractScenario) -> str:
-    """
-    Helper-function that checks the version of the solution.
-    :param scenario: The scenario for which the version should be checked.
-
-    :return: The version of the solution.
-    """
-    versions = {"v1":"2.0.12"}
-    version = "v0"
-    if hasattr(scenario.analysis,"zen_garden_version"):
-        for k,v in versions.items():
-            if _compare_versions(scenario.analysis.zen_garden_version,v):
-                version = k
-    return version
 
 def _compare_versions(version1: str, version2: str) -> bool:
     """
