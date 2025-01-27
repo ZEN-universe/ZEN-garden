@@ -175,11 +175,15 @@ class TimeStepsDicts(object):
         counter = 0
         time_steps_start = []
         time_steps_end = []
-        while counter < len(sequence_time_steps):
-            time_steps_start.append(sequence_time_steps[counter])
-            counter += unaggregated_time_steps
-            time_steps_end.append(sequence_time_steps[counter - 1])
-        self.time_steps_storage_level_startend_year = {start: end for start, end in zip(time_steps_start, time_steps_end)}
+        assert system.interval_between_years == 1 or not system.multiyear_periodicity, "The interval between years should be 1 for multiyear storage periodicity."
+        if not system.multiyear_periodicity:
+            while counter < len(sequence_time_steps):
+                time_steps_start.append(sequence_time_steps[counter])
+                counter += unaggregated_time_steps
+                time_steps_end.append(sequence_time_steps[counter - 1])
+            self.time_steps_storage_level_startend_year = {start: end for start, end in zip(time_steps_start, time_steps_end)}
+        else:
+            self.time_steps_storage_level_startend_year = {self.sequence_time_steps_storage[0]: self.sequence_time_steps_storage[-1]}
 
     def get_time_steps_year2operation(self, year=None):
         """ gets the dict of converting the invest time steps to the operation time steps of technologies

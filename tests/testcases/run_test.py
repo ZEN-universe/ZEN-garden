@@ -447,6 +447,22 @@ def test_3h(config, folder_path):
     check_get_total_get_full_ts(res)
 
 
+def test_3i(config, folder_path):
+    # run the test
+    data_set_name = "test_3i"
+    optimization_setup = main(
+        config=config, dataset_path=os.path.join(folder_path, data_set_name)
+    )
+
+    # compare the variables of the optimization setup
+    compare_variables(data_set_name, optimization_setup, folder_path)
+    # read the results and check again
+    res = Results(os.path.join("outputs", data_set_name))
+    compare_variables_results(data_set_name, res, folder_path)
+    # test functions get_total() and get_full_ts()
+    check_get_total_get_full_ts(res)
+
+
 def test_4a(config, folder_path):
     # run the test
     data_set_name = "test_4a"

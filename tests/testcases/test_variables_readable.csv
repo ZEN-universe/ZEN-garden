@@ -219,6 +219,8 @@ test_3h,none,capacity_addition,"('natural_gas_boiler', 'power', 'DE', 0)",100
 test_3h,none,capacity_addition,"('natural_gas_boiler', 'power', 'CH', 1)",0
 test_3h,none,capacity_addition,"('natural_gas_boiler', 'power', 'DE', 1)",0
 test_3h,none,carbon_emissions_cumulative,"(2)",0.121
+test_3i,none,flow_import,"('natural_gas','DE',11)",0
+test_3i,none,capacity,"('natural_gas_storage','energy','DE',0)",5875.263057
 test_4a,scenario_,price_import,"('natural_gas', 'CH', 0)",0.023
 test_4a,scenario_1,price_import,"('natural_gas', 'CH', 0)",0.031
 test_4a,scenario_1,flow_import,"('natural_gas', 'CH', 0)",22

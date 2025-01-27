@@ -73,9 +73,9 @@ def main(config, dataset_path=None, job_index=None, folder_output_path=None):
             optimization_setup.overwrite_time_indices(step)
             # create optimization problem
             optimization_setup.construct_optimization_problem()
-            if config.solver.use_scaling:
+            if optimization_setup.solver.use_scaling:
                 optimization_setup.scaling.run_scaling()
-            elif config.solver.analyze_numerics:
+            elif optimization_setup.solver.analyze_numerics:
                 optimization_setup.scaling.analyze_numerics()
             # SOLVE THE OPTIMIZATION PROBLEM
             optimization_setup.solve()
@@ -84,7 +84,7 @@ def main(config, dataset_path=None, job_index=None, folder_output_path=None):
                 # write IIS
                 optimization_setup.write_IIS()
                 raise OptimizationError(optimization_setup.model.termination_condition)
-            if config.solver.use_scaling:
+            if optimization_setup.solver.use_scaling:
                 optimization_setup.scaling.re_scale()
             # save new capacity additions and cumulative carbon emissions for next time step
             optimization_setup.add_results_of_optimization_step(step)
