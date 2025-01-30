@@ -263,7 +263,7 @@ In the linear case, the ``capex_specific_conversion`` parameter is treated like 
 In the PWA case, the user can specify a ``nonlinear_capex.csv`` file that contains the breakpoints and the CAPEX values of the PWA representation.
 A PWA representation is a set of linear functions that are connected at the breakpoints. The breakpoints are the capacity additions :math:`\Delta S_m` with the corresponding CAPEX values :math:`\alpha_m`.
 
-.. image:: ../images/PWA.png
+.. image:: images/PWA.png
     :alt: Piece-wise affine representation of CAPEX
 
 The file ``nonlinear_capex.csv`` has the following structure:
@@ -373,8 +373,7 @@ Known issues with pint
 
 The ``pint`` package that we use for the unit handling has amazing functionalities but also some hurdles to look out for. The ones we have already found are:
 
-* ``ton``: pint uses the keyword ``ton`` for imperial ton, not the metric ton. The keyword for those are ``metric_ton`` or ``tonne``. However, per default, ZEN-garden overwrites the definition of ``ton`` to be the metric ton, so ``ton`` and ``tonne`` can be used interchangeably.
-If you for some reason want to use imperial tons, set ``"solver": {"define_ton_as_metric_ton": false}``.
+* ``ton``: pint uses the keyword ``ton`` for imperial ton, not the metric ton. The keyword for those are ``metric_ton`` or ``tonne``. However, per default, ZEN-garden overwrites the definition of ``ton`` to be the metric ton, so ``ton`` and ``tonne`` can be used interchangeably. If you for some reason want to use imperial tons, set ``"solver": {"define_ton_as_metric_ton": false}``.
 * ``h``: Until recently, ``h`` was treated as the planck constant, not hour. Fortunately, this has been fixed in Feb 2023. If you encounter this error, please update your pint version.
 
 .. _Scaling:

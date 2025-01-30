@@ -750,32 +750,27 @@ class HDFPandasSerializer:
         for key, value in dictionary.items():
             if not isinstance(key, str):
                 raise TypeError("All dictionary keys must be strings!")
-
             key = f"{previous_key}/{key}"
             if isinstance(value, dict):
-                cls._recurse(store, value, key)
-            elif isinstance(value, (pd.DataFrame, pd.Series)):
-                # make a proper multi index to save memory
-                store.put(key, value)
-                store.get_storer(key).attrs.type = "pandas"
-            elif isinstance(value, (float, str, int)):
-                store.put(key, pd.Series([], dtype=int))
-                store.get_storer(key).attrs.value = value
-                store.get_storer(key).attrs.type = "scalar"
-            # elif isinstance(value,str):
-            #     # encode string to bytes
-            #     store.put(key, pd.Series([np.char.encode(value)], dtype=type(value)))
-            #     store.get_storer(key).attrs.type = "scalar"
-            elif isinstance(value, (list, tuple)) or isinstance(value, np.ndarray) and value.ndim == 1:
-                store.put(key, pd.Series(value))
-                store.get_storer(key).attrs.type = "vector"
-            elif isinstance(value, np.ndarray) and value.ndim == 2:
-                store.put(key, pd.DataFrame(value))
-                store.get_storer(key).attrs.type = "matrix"
+                input_dict, docstring, has_units = cls._format_dict(value)
+                if not input_dict["dataframe"].empty:
+                    store.put(key, input_dict["dataframe"], format='table')
+                    # add additional attributes
+                    store.get_storer(key).attrs.docstring = docstring
+                    store.get_storer(key).attrs["name"] = key
+                    store.get_storer(key).attrs["has_units"] = has_units
+                    index_names = input_dict["dataframe"].index.names
+                    index_names = ",".join([str(name) for name in index_names])
+                    store.get_storer(key).attrs["index_names"] = index_names
+                    # remove "_i_table" to reduce file size
+                    try:
+                        store.remove(key + "/_i_table")
+                    except KeyError:
+                        pass
             else:
                 raise TypeError(f"Type {type(value)} is not supported.")
 
-    @classmethod #USED
+    @classmethod
     def serialize_dict(cls, file_name, dictionary, overwrite=True):
         """
         Serialized a dictionary of dataframes and other objects into a hdf file.
@@ -787,10 +782,41 @@ class HDFPandasSerializer:
 
         if not overwrite and os.path.exists(file_name):
             raise FileExistsError("File already exists. Please set overwrite=True to overwrite the file.")
-
-        with pd.HDFStore(file_name, mode='w', complevel=4) as store:
+        with pd.HDFStore(file_name, mode='w', complevel=4,complib="blosc") as store:
             cls._recurse(store, dictionary)
 
+    @staticmethod
+    def _format_dict(input_dict):
+        """ format the dictionary to be saved in the hdf file
+        :param input_dict: The dictionary to format
+        """
+        expected_keys = ["dataframe", "docstring"]
+        if "dataframe" in input_dict:
+            df = input_dict["dataframe"]
+            if not isinstance(df, pd.Series):
+                if df.shape[1]:
+                    df = df.squeeze(axis=1)
+                else:
+                    a=1
+            input_dict["dataframe"] = df
+        if "docstring" in input_dict:
+            docstring = input_dict["docstring"]
+        else:
+            docstring = None
+        if "units" in input_dict:
+            units = input_dict["units"]
+            assert isinstance(units, pd.Series), f"Units must be a pandas Series, but is {type(units)}"
+            df = input_dict["dataframe"]
+            assert units.index.intersection(df.index).equals(units.index), f"Units index {units.index} does not match dataframe index {df.index}"
+            units.name = "units"
+            df = pd.concat([df, units], axis=1)
+            input_dict["dataframe"] = df
+            has_units = True
+        else:
+            has_units = False
+        if not (set(input_dict.keys()) == set(expected_keys) or set(input_dict.keys()) == set(expected_keys).union(["units"])):
+            raise ValueError(f"Expected keys are {expected_keys}, but got {input_dict.keys()}")
+        return input_dict, docstring, has_units
 
 class InputDataChecks:
     """

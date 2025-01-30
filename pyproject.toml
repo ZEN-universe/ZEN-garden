@@ -11,10 +11,11 @@ authors = [
   {name = "Francesco De Marco"},
   {name = "Lukas Kunz"},
   {name = "Lukas Schmidt-Engelbertz"},
+  {name = "Paolo Gabrielli"},
   {name = "Giovanni Sansavini"},
   ]
 # do not change version manually! Done by bump2version
-version = "2.0.11"
+version = "2.0.17"
 requires-python= ">=3.11"
 description="ZEN-garden is an optimization model of energy systems and value chains."
 readme = "README.md"
