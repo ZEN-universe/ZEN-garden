@@ -373,19 +373,6 @@ class Results:
                 interval_between_years_this_year = 1
             else:
                 interval_between_years_this_year = system.interval_between_years
-            # if self.solution_loader.has_rh:
-            #     if discount_to_first_step:
-            #         annuity[year] = interval_between_years_this_year * (
-            #             1 / (1 + discount_rate)
-            #         )
-            #     else:
-            #         annuity[year] = sum(
-            #             ((1 / (1 + discount_rate)) ** (_intermediate_time_step))
-            #             for _intermediate_time_step in range(
-            #                 0, interval_between_years_this_year
-            #             )
-            #         )
-            # else:
             if discount_to_first_step:
                 annuity[year] = interval_between_years_this_year * (
                     (1 / (1 + discount_rate))
@@ -425,7 +412,7 @@ class Results:
         :param keep_raw: Keep the raw values of the rolling horizon optimization
         :return: Duals of the component
         """
-        if not self.get_solver(scenario_name=scenario_name).add_duals:
+        if not self.get_solver(scenario_name=scenario_name).save_duals:
             logging.warning("Duals are not calculated. Skip.")
             return None
 

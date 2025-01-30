@@ -139,7 +139,7 @@ def check_get_total_get_full_ts(
 
 def test_1a(config, folder_path):
     # add duals for this test
-    config.solver.add_duals = True
+    config.solver.save_duals = True
 
     # run the test
     data_set_name = "test_1a"
