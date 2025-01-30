@@ -11,6 +11,7 @@ authors = [
   {name = "Francesco De Marco"},
   {name = "Lukas Kunz"},
   {name = "Lukas Schmidt-Engelbertz"},
+  {name = "Paolo Gabrielli"},
   {name = "Giovanni Sansavini"},
   ]
 # do not change version manually! Done by bump2version

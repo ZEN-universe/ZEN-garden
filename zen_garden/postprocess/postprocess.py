@@ -96,6 +96,8 @@ class Postprocess:
         # extract and save sequence time steps, we transform the arrays to lists
         self.dict_sequence_time_steps = self.flatten_dict(self.energy_system.time_steps.get_sequence_time_steps_dict())
         self.dict_sequence_time_steps["optimized_time_steps"] = optimization_setup.optimized_time_steps
+        self.dict_sequence_time_steps["time_steps_operation_duration"] = self.energy_system.time_steps.time_steps_operation_duration
+        self.dict_sequence_time_steps["time_steps_storage_duration"] = self.energy_system.time_steps.time_steps_storage_duration
         if include_year2operation:
             self.dict_sequence_time_steps["time_steps_year2operation"] = self.get_time_steps_year2operation()
             self.dict_sequence_time_steps["time_steps_year2storage"] = self.get_time_steps_year2storage()
@@ -245,10 +247,15 @@ class Postprocess:
     def save_param(self):
         """ Saves the Param values to a json file which can then be
         post-processed immediately or loaded and postprocessed at some other time"""
+        if not self.solver.save_parameters:
+            logging.info("Parameters are not saved")
+            return
 
         # dataframe serialization
         data_frames = {}
         for param in self.params.docs.keys():
+            if self.solver.selected_saved_parameters and param not in self.solver.selected_saved_parameters:
+                continue
             # get the values
             vals = getattr(self.params, param)
             doc = self.params.docs[param]
@@ -279,6 +286,8 @@ class Postprocess:
         # dataframe serialization
         data_frames = {}
         for name, arr in self.model.solution.items():
+            if self.solver.selected_saved_variables and name not in self.solver.selected_saved_variables:
+                continue
             if name in self.vars.docs:
                 doc = self.vars.docs[name]
                 units = self.vars.units[name]
@@ -305,7 +314,8 @@ class Postprocess:
     def save_duals(self):
         """ Saves the dual variable values to a json file which can then be
         post-processed immediately or loaded and postprocessed at some other time"""
-        if not self.solver.add_duals:
+        if not self.solver.save_duals:
+            logging.info("Duals are not saved")
             return
 
         # dataframe serialization
@@ -445,7 +455,7 @@ class Postprocess:
             if isinstance(v, np.ndarray):
                 dict_formatted[k] = v.tolist()
             elif isinstance(v, dict):
-                dict_formatted[k] = {kk: vv.tolist() for kk, vv in v.items()}
+                dict_formatted[k] = {str(kk): vv.tolist() if isinstance(vv, np.ndarray) else str(vv) for kk, vv in v.items()}
             elif isinstance(v, list):
                 dict_formatted[k] = v
             else:

@@ -169,6 +169,22 @@ def _compare_versions(version1: str, version2: str) -> bool:
             return False
     return True
 
+def _get_time_steps_file(scenario):
+    """
+    Helper-function that returns the name of the time steps file of a scenario.
+    :param scenario:
+    :return: time_steps_file_name
+    """
+    time_steps_file_name = [
+        i.split(".")[0]
+        for i in os.listdir(scenario.path)
+        if "dict_all_sequence_time_steps" in i and ".lock" not in i
+    ]
+    time_steps_file_name = np.unique(time_steps_file_name)
+    assert len(time_steps_file_name) == 1, f"Multiple time steps files found: {time_steps_file_name}"
+    time_steps_file_name = time_steps_file_name[0]
+    return time_steps_file_name
+
 class Component(AbstractComponent):
     """
     Implementation of the abstract component. It uses the
@@ -317,7 +333,14 @@ class MultiHdfLoader(AbstractLoader):
     @property
     def has_duals(self) -> bool:
         first_scenario = get_first_scenario(self._scenarios)
-        return first_scenario.system.use_duals
+        return first_scenario.solver.save_duals
+
+    @property
+    def has_parameters(self) -> bool:
+        first_scenario = get_first_scenario(self._scenarios)
+        if not hasattr(first_scenario.solver, "save_parameters"):
+            return True
+        return first_scenario.solver.save_parameters
 
     def _combine_dataseries(
         self,
@@ -532,13 +555,28 @@ class MultiHdfLoader(AbstractLoader):
             timestep_duration_name = "time_steps_operation_duration"
         else:
             timestep_duration_name = "time_steps_storage_duration"
+        version = get_solution_version(scenario)
+        if version == "v0":
+            time_step_duration = self.get_component_data(
+                scenario, self.components[timestep_duration_name]
+            )
+        elif version == "v1":
+            time_steps_file_name = _get_time_steps_file(scenario)
+            time_steps_file_name = time_steps_file_name + ".json"
+            dict_path = os.path.join(scenario.path, time_steps_file_name, )
+            with open(dict_path) as json_file:
+                ans = json.load(json_file)
+            time_step_duration = pd.Series(ans[timestep_duration_name])
+            time_step_duration.index = time_step_duration.index.astype(int)
+            time_step_duration = time_step_duration.astype(int)
+        else:
+            raise ValueError(f"Solution version {version} not supported.")
 
-        time_step_duration = self.get_component_data(
-            scenario, self.components[timestep_duration_name]
-        )
         assert type(time_step_duration) is pd.Series
 
         return time_step_duration
+
+
 
     @cache
     def get_timesteps(
@@ -548,14 +586,7 @@ class MultiHdfLoader(AbstractLoader):
         THe timesteps are stored in a file HDF-File called dict_all_sequence_time_steps
         saved for each scenario. The name of the dataframe depends on the timestep type.
         """
-        time_steps_file_name = [
-            i.split(".")[0]
-            for i in os.listdir(scenario.path)
-            if "dict_all_sequence_time_steps" in i and ".lock" not in i
-        ]
-        time_steps_file_name = np.unique(time_steps_file_name)
-        assert len(time_steps_file_name) == 1, f"Multiple time steps files found: {time_steps_file_name}"
-        time_steps_file_name = time_steps_file_name[0]
+        time_steps_file_name = _get_time_steps_file(scenario)
 
         timesteps_name = (
             "time_steps_year2operation"
@@ -573,7 +604,8 @@ class MultiHdfLoader(AbstractLoader):
             with open(dict_path) as json_file:
                 ans = json.load(json_file)
             ans = pd.Series(ans[timesteps_name][str(year)])
-
+        else:
+            raise ValueError(f"Solution version {version} not supported.")
         assert type(ans) is pd.Series
 
         return ans
@@ -585,17 +617,15 @@ class MultiHdfLoader(AbstractLoader):
         """
         Method that returns the timesteps of the scenario for a given year.
         """
-        sequence_time_steps_name = [
-            i
-            for i in os.listdir(scenario.path)
-            if "dict_all_sequence_time_steps" in i and ".lock" not in i
-        ][0]
-
-        time_step_path = os.path.join(scenario.path, sequence_time_steps_name)
+        sequence_time_steps_name = _get_time_steps_file(scenario)
         version = get_solution_version(scenario)
         if version == "v0":
+            sequence_time_steps_name = sequence_time_steps_name + ".h5"
+            time_step_path = os.path.join(scenario.path, sequence_time_steps_name)
             time_step_file = h5py.File(time_step_path)
         elif version == "v1":
+            sequence_time_steps_name = sequence_time_steps_name + ".json"
+            time_step_path = os.path.join(scenario.path, sequence_time_steps_name)
             with open(time_step_path) as json_file:
                 time_step_file = json.load(json_file)
         else:
@@ -623,16 +653,7 @@ class MultiHdfLoader(AbstractLoader):
     def get_sequence_time_steps(
         self, scenario: AbstractScenario, timestep_type: TimestepType
     ) -> "pd.Series[Any]":
-        time_steps_file_name = [
-            i
-            for i in os.listdir(scenario.path)
-            if "dict_all_sequence_time_steps" in i and ".lock" not in i
-        ][0]
-
-        dict_path = os.path.join(
-            scenario.path,
-            time_steps_file_name,
-        )
+        time_steps_file_name = _get_time_steps_file(scenario)
 
         if timestep_type is TimestepType.operational:
             sequence_timesteps_name = "operation"
@@ -642,8 +663,12 @@ class MultiHdfLoader(AbstractLoader):
             sequence_timesteps_name = "yearly"
         version = get_solution_version(scenario)
         if version == "v0":
+            time_steps_file_name = time_steps_file_name + ".h5"
+            dict_path = os.path.join(scenario.path, time_steps_file_name, )
             ans = pd.read_hdf(dict_path, sequence_timesteps_name)
         elif version == "v1":
+            time_steps_file_name = time_steps_file_name + ".json"
+            dict_path = os.path.join(scenario.path, time_steps_file_name, )
             with open(dict_path) as json_file:
                 ans = json.load(json_file)
             ans = pd.Series(ans[sequence_timesteps_name])
@@ -657,21 +682,17 @@ class MultiHdfLoader(AbstractLoader):
         """
         Method that returns the years for which the solution was optimized.
         """
-        time_steps_file_name = [
-            i
-            for i in os.listdir(scenario.path)
-            if "dict_all_sequence_time_steps" in i and ".lock" not in i
-        ][0]
+        time_steps_file_name = _get_time_steps_file(scenario)
 
-        dict_path = os.path.join(
-            scenario.path,
-            time_steps_file_name,
-        )
         try:
             version = get_solution_version(scenario)
             if version == "v0":
+                time_steps_file_name = time_steps_file_name + ".h5"
+                dict_path = os.path.join(scenario.path, time_steps_file_name, )
                 ans = pd.read_hdf(dict_path, "optimized_time_steps").tolist()
             elif version == "v1":
+                time_steps_file_name = time_steps_file_name + ".json"
+                dict_path = os.path.join(scenario.path, time_steps_file_name, )
                 with open(dict_path) as json_file:
                     ans = json.load(json_file)
                 ans = ans["optimized_time_steps"]
