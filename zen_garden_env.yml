@@ -1,10 +1,10 @@
-name: zen-garden2
+name: zen-garden
 channels:
   - conda-forge
   - gurobi
 dependencies:
   - pip
-  - python
+  - python==3.12
   - pip:
       - -e .[dev,vis,gurobipy,docs]
 
