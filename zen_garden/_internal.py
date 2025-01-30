@@ -54,11 +54,11 @@ def main(config, dataset_path=None, job_index=None, folder_output_path=None):
     input_data_checks.check_technology_selections()
     input_data_checks.check_year_definitions()
     # overwrite default system and scenario dictionaries
-    scenarios,elements = ScenarioUtils.get_scenarios(config,job_index)
+    scenarios, elements = ScenarioUtils.get_scenarios(config, job_index)
     # get the name of the dataset
-    model_name, out_folder = StringUtils.setup_model_folder(config.analysis,config.system)
+    model_name, out_folder = StringUtils.setup_model_folder(config.analysis, config.system)
     # clean sub-scenarios if necessary
-    ScenarioUtils.clean_scenario_folder(config,out_folder)
+    ScenarioUtils.clean_scenario_folder(config, out_folder)
     ### ITERATE THROUGH SCENARIOS
     for scenario, scenario_dict in zip(scenarios, elements):
         # FORMULATE THE OPTIMIZATION PROBLEM
@@ -68,7 +68,7 @@ def main(config, dataset_path=None, job_index=None, folder_output_path=None):
         steps_horizon = optimization_setup.get_optimization_horizon()
         # iterate through horizon steps
         for step in steps_horizon:
-            StringUtils.print_optimization_progress(scenario,steps_horizon,step,system=config.system)
+            StringUtils.print_optimization_progress(scenario, steps_horizon, step, system=config.system)
             # overwrite time indices
             optimization_setup.overwrite_time_indices(step)
             # create optimization problem
@@ -91,10 +91,10 @@ def main(config, dataset_path=None, job_index=None, folder_output_path=None):
             # EVALUATE RESULTS
             # create scenario name, subfolder and param_map for postprocessing
             scenario_name, subfolder, param_map = StringUtils.generate_folder_path(
-                config = config,scenario = scenario,scenario_dict=scenario_dict,steps_horizon=steps_horizon,step=step
+                config=config, scenario=scenario, scenario_dict=scenario_dict, steps_horizon=steps_horizon, step=step
             )
             # write results
             Postprocess(optimization_setup, scenarios=config.scenarios, subfolder=subfolder,
-                            model_name=model_name, scenario_name=scenario_name, param_map=param_map)
+                        model_name=model_name, scenario_name=scenario_name, param_map=param_map)
     logging.info("--- Optimization finished ---")
     return optimization_setup

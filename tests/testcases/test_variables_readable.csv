@@ -285,70 +285,72 @@ test_4c,scenario_1,capacity,"('natural_gas_boiler', 'power', 'CH', 0)",0.0011415
 test_4c,scenario_1,capacity,"('natural_gas_boiler', 'power', 'DE', 0)",0.01141553
 test_4d,scenario_,opex_specific_fixed,"('natural_gas_boiler', 'power', 'CH', 0)",0.01
 test_4d,scenario_,opex_specific_fixed,"('natural_gas_boiler', 'power', 'DE', 0)",0.01
-test_4d,scenario_1_p00_000_price_import_1,flow_import,"('natural_gas', 'CH', 0)",11
-test_4d,scenario_1_p00_000_price_import_1,flow_import,"('natural_gas', 'DE', 0)",110
-test_4d,scenario_1_p00_000_price_import_1,cost_carrier,"('natural_gas', 'CH', 0)",0.253
-test_4d,scenario_1_p00_000_price_import_1,cost_carrier,"('natural_gas', 'DE', 0)",2.53
-test_4d,scenario_1_p00_000_price_import_1,carbon_emissions_carrier,"('natural_gas', 'CH', 0)",0.0022
-test_4d,scenario_1_p00_000_price_import_1,carbon_emissions_carrier,"('natural_gas', 'DE', 0)",0.022
-test_4d,scenario_1_p00_000_price_import_1,carbon_emissions_carrier,"('heat', 'CH', 0)",0
-test_4d,scenario_1_p00_000_price_import_1,carbon_emissions_carrier,"('heat', 'DE', 0)",0
-test_4d,scenario_1_p00_000_price_import_1,carbon_intensity_carrier_import,"('heat', 'CH', 0)",0
-test_4d,scenario_1_p00_000_price_import_1,carbon_intensity_carrier_import,"('heat', 'DE', 0)",0
-test_4d,scenario_1_p00_000_price_import_1,carbon_intensity_carrier_export,"('heat', 'CH', 0)",0
-test_4d,scenario_1_p00_000_price_import_1,carbon_intensity_carrier_export,"('heat', 'DE', 0)",0
-test_4d,scenario_1_p00_000_price_import_1,flow_conversion_output,"('natural_gas_boiler', 'heat', 'CH', 0)",10
-test_4d,scenario_1_p00_000_price_import_1,flow_conversion_output,"('natural_gas_boiler', 'heat', 'DE', 0)",100
-test_4d,scenario_1_p00_000_price_import_1,capacity,"('natural_gas_boiler', 'power', 'CH', 0)",10
-test_4d,scenario_1_p00_000_price_import_1,capacity,"('natural_gas_boiler', 'power', 'DE', 0)",100
-test_4d,scenario_1_p00_000_price_import_1,cost_capex_overnight,"('natural_gas_boiler', 'power', 'CH', 0)",1
-test_4d,scenario_1_p00_000_price_import_1,cost_capex_overnight,"('natural_gas_boiler', 'power', 'DE', 0)",10
-test_4d,scenario_1_p00_000_price_import_1,cost_opex_variable,"('natural_gas_boiler', 'CH', 0)",0
-test_4d,scenario_1_p00_000_price_import_1,cost_opex_variable,"('natural_gas_boiler', 'DE', 0)",0
-test_4d,scenario_1_p00_000_price_import_1,flow_export,"('natural_gas', 'CH', 0)",0
-test_4d,scenario_1_p00_000_price_import_1,flow_export,"('natural_gas', 'DE', 0)",0
-test_4d,scenario_1_p00_000_price_import_1,price_import,"('heat', 'CH', 0)",0.01
-test_4d,scenario_1_p00_000_price_import_1,price_import,"('heat', 'DE', 0)",0.01
-test_4d,scenario_1_p00_000_price_import_1,price_import,"('natural_gas', 'CH', 0)",0.023
-test_4d,scenario_1_p00_000_price_import_1,price_import,"('natural_gas', 'DE', 0)",0.023
-test_4d,scenario_1_p00_000_price_import_1,capex_specific_conversion,"('natural_gas_boiler', 'CH', 0)",0.1
-test_4d,scenario_1_p00_000_price_import_1,capex_specific_conversion,"('natural_gas_boiler', 'DE', 0)",0.1
-test_4d,scenario_1_p00_000_price_import_1,opex_specific_fixed,"('natural_gas_boiler', 'power', 'CH', 0)",0.008
-test_4d,scenario_1_p00_000_price_import_1,opex_specific_fixed,"('natural_gas_boiler', 'power', 'DE', 0)",0.008
-test_4d,scenario_1_p00_000_price_import_1.3,cost_carrier,"('natural_gas', 'CH', 0)",0.3289
-test_4d,scenario_1_p00_000_price_import_1.3,cost_carrier,"('natural_gas', 'DE', 0)",3.289
-test_4d,scenario_1_p00_000_price_import_1.3,price_import,"('natural_gas', 'CH', 0)",0.0299
-test_4d,scenario_1_p00_000_price_import_1.3,price_import,"('natural_gas', 'DE', 0)",0.0299
-test_4d,scenario_1_p00_000_price_import_1.3,price_import,"('heat', 'CH', 0)",0.01
-test_4d,scenario_1_p00_000_price_import_1.3,price_import,"('heat', 'DE', 0)",0.01
-test_4d,scenario_1_p00_000_price_import_1.3,opex_specific_fixed,"('natural_gas_boiler', 'power', 'CH', 0)",0.008
-test_4d,scenario_1_p00_000_price_import_1.3,opex_specific_fixed,"('natural_gas_boiler', 'power', 'DE', 0)",0.008
-test_4d,scenario_1_p00_000_price_import_1.6,cost_carrier,"('natural_gas', 'CH', 0)",0.4048
-test_4d,scenario_1_p00_000_price_import_1.6,cost_carrier,"('natural_gas', 'DE', 0)",4.048
-test_4d,scenario_1_p00_000_price_import_1.6,price_import,"('natural_gas', 'CH', 0)",0.0368
-test_4d,scenario_1_p00_000_price_import_1.6,price_import,"('natural_gas', 'DE', 0)",0.0368
-test_4d,scenario_1_p00_000_price_import_1.6,opex_specific_fixed,"('natural_gas_boiler', 'power', 'CH', 0)",0.008
-test_4d,scenario_1_p00_000_price_import_1.6,opex_specific_fixed,"('natural_gas_boiler', 'power', 'DE', 0)",0.008
-test_4d,scenario_1_p00_001_price_import_1,cost_carrier,"('natural_gas', 'CH', 0)",0.253
-test_4d,scenario_1_p00_001_price_import_1,cost_carrier,"('natural_gas', 'DE', 0)",2.53
-test_4d,scenario_1_p00_001_price_import_1,price_import,"('natural_gas', 'CH', 0)",0.023
-test_4d,scenario_1_p00_001_price_import_1,price_import,"('natural_gas', 'DE', 0)",0.023
-test_4d,scenario_1_p00_001_price_import_1,opex_specific_fixed,"('natural_gas_boiler', 'power', 'CH', 0)",0.015
-test_4d,scenario_1_p00_001_price_import_1,opex_specific_fixed,"('natural_gas_boiler', 'power', 'DE', 0)",0.015
-test_4d,scenario_1_p00_001_price_import_1.3,cost_carrier,"('natural_gas', 'CH', 0)",0.3289
-test_4d,scenario_1_p00_001_price_import_1.3,cost_carrier,"('natural_gas', 'DE', 0)",3.289
-test_4d,scenario_1_p00_001_price_import_1.3,price_import,"('natural_gas', 'CH', 0)",0.0299
-test_4d,scenario_1_p00_001_price_import_1.3,price_import,"('natural_gas', 'DE', 0)",0.0299
-test_4d,scenario_1_p00_001_price_import_1.3,price_import,"('heat', 'CH', 0)",0.01
-test_4d,scenario_1_p00_001_price_import_1.3,price_import,"('heat', 'DE', 0)",0.01
-test_4d,scenario_1_p00_001_price_import_1.3,opex_specific_fixed,"('natural_gas_boiler', 'power', 'CH', 0)",0.015
-test_4d,scenario_1_p00_001_price_import_1.3,opex_specific_fixed,"('natural_gas_boiler', 'power', 'DE', 0)",0.015
-test_4d,scenario_1_p00_001_price_import_1.6,cost_carrier,"('natural_gas', 'CH', 0)",0.4048
-test_4d,scenario_1_p00_001_price_import_1.6,cost_carrier,"('natural_gas', 'DE', 0)",4.048
-test_4d,scenario_1_p00_001_price_import_1.6,price_import,"('natural_gas', 'CH', 0)",0.0368
-test_4d,scenario_1_p00_001_price_import_1.6,price_import,"('natural_gas', 'DE', 0)",0.0368
-test_4d,scenario_1_p00_001_price_import_1.6,opex_specific_fixed,"('natural_gas_boiler', 'power', 'CH', 0)",0.015
-test_4d,scenario_1_p00_001_price_import_1.6,opex_specific_fixed,"('natural_gas_boiler', 'power', 'DE', 0)",0.015
+test_4d,scenario_1_p00_000_price_import_1_reference_year_2023,flow_import,"('natural_gas', 'CH', 0)",11
+test_4d,scenario_1_p00_000_price_import_1_reference_year_2023,flow_import,"('natural_gas', 'DE', 0)",110
+test_4d,scenario_1_p00_000_price_import_1_reference_year_2023,cost_carrier,"('natural_gas', 'CH', 0)",0.253
+test_4d,scenario_1_p00_000_price_import_1_reference_year_2023,cost_carrier,"('natural_gas', 'DE', 0)",2.53
+test_4d,scenario_1_p00_000_price_import_1_reference_year_2023,carbon_emissions_carrier,"('natural_gas', 'CH', 0)",0.0022
+test_4d,scenario_1_p00_000_price_import_1_reference_year_2023,carbon_emissions_carrier,"('natural_gas', 'DE', 0)",0.022
+test_4d,scenario_1_p00_000_price_import_1_reference_year_2023,carbon_emissions_carrier,"('heat', 'CH', 0)",0
+test_4d,scenario_1_p00_000_price_import_1_reference_year_2023,carbon_emissions_carrier,"('heat', 'DE', 0)",0
+test_4d,scenario_1_p00_000_price_import_1_reference_year_2023,carbon_intensity_carrier_import,"('heat', 'CH', 0)",0
+test_4d,scenario_1_p00_000_price_import_1_reference_year_2023,carbon_intensity_carrier_import,"('heat', 'DE', 0)",0
+test_4d,scenario_1_p00_000_price_import_1_reference_year_2023,carbon_intensity_carrier_export,"('heat', 'CH', 0)",0
+test_4d,scenario_1_p00_000_price_import_1_reference_year_2023,carbon_intensity_carrier_export,"('heat', 'DE', 0)",0
+test_4d,scenario_1_p00_000_price_import_1_reference_year_2023,flow_conversion_output,"('natural_gas_boiler', 'heat', 'CH', 0)",10
+test_4d,scenario_1_p00_000_price_import_1_reference_year_2023,flow_conversion_output,"('natural_gas_boiler', 'heat', 'DE', 0)",100
+test_4d,scenario_1_p00_000_price_import_1_reference_year_2023,capacity,"('natural_gas_boiler', 'power', 'CH', 0)",10
+test_4d,scenario_1_p00_000_price_import_1_reference_year_2023,capacity,"('natural_gas_boiler', 'power', 'DE', 0)",100
+test_4d,scenario_1_p00_000_price_import_1_reference_year_2023,cost_capex_overnight,"('natural_gas_boiler', 'power', 'CH', 0)",1
+test_4d,scenario_1_p00_000_price_import_1_reference_year_2023,cost_capex_overnight,"('natural_gas_boiler', 'power', 'DE', 0)",10
+test_4d,scenario_1_p00_000_price_import_1_reference_year_2023,cost_opex_variable,"('natural_gas_boiler', 'CH', 0)",0
+test_4d,scenario_1_p00_000_price_import_1_reference_year_2023,cost_opex_variable,"('natural_gas_boiler', 'DE', 0)",0
+test_4d,scenario_1_p00_000_price_import_1_reference_year_2023,flow_export,"('natural_gas', 'CH', 0)",0
+test_4d,scenario_1_p00_000_price_import_1_reference_year_2023,flow_export,"('natural_gas', 'DE', 0)",0
+test_4d,scenario_1_p00_000_price_import_1_reference_year_2023,price_import,"('heat', 'CH', 0)",0.01
+test_4d,scenario_1_p00_000_price_import_1_reference_year_2023,price_import,"('heat', 'DE', 0)",0.01
+test_4d,scenario_1_p00_000_price_import_1_reference_year_2023,price_import,"('natural_gas', 'CH', 0)",0.023
+test_4d,scenario_1_p00_000_price_import_1_reference_year_2023,price_import,"('natural_gas', 'DE', 0)",0.023
+test_4d,scenario_1_p00_000_price_import_1_reference_year_2023,capex_specific_conversion,"('natural_gas_boiler', 'CH', 0)",0.1
+test_4d,scenario_1_p00_000_price_import_1_reference_year_2023,capex_specific_conversion,"('natural_gas_boiler', 'DE', 0)",0.1
+test_4d,scenario_1_p00_000_price_import_1_reference_year_2023,opex_specific_fixed,"('natural_gas_boiler', 'power', 'CH', 0)",0.008
+test_4d,scenario_1_p00_000_price_import_1_reference_year_2023,opex_specific_fixed,"('natural_gas_boiler', 'power', 'DE', 0)",0.008
+test_4d,scenario_1_p00_000_price_import_1.3_reference_year_2023,cost_carrier,"('natural_gas', 'CH', 0)",0.3289
+test_4d,scenario_1_p00_000_price_import_1.3_reference_year_2023,cost_carrier,"('natural_gas', 'DE', 0)",3.289
+test_4d,scenario_1_p00_000_price_import_1.3_reference_year_2023,price_import,"('natural_gas', 'CH', 0)",0.0299
+test_4d,scenario_1_p00_000_price_import_1.3_reference_year_2023,price_import,"('natural_gas', 'DE', 0)",0.0299
+test_4d,scenario_1_p00_000_price_import_1.3_reference_year_2023,price_import,"('heat', 'CH', 0)",0.01
+test_4d,scenario_1_p00_000_price_import_1.3_reference_year_2023,price_import,"('heat', 'DE', 0)",0.01
+test_4d,scenario_1_p00_000_price_import_1.3_reference_year_2023,opex_specific_fixed,"('natural_gas_boiler', 'power', 'CH', 0)",0.008
+test_4d,scenario_1_p00_000_price_import_1.3_reference_year_2023,opex_specific_fixed,"('natural_gas_boiler', 'power', 'DE', 0)",0.008
+test_4d,scenario_1_p00_000_price_import_1.6_reference_year_2023,cost_carrier,"('natural_gas', 'CH', 0)",0.4048
+test_4d,scenario_1_p00_000_price_import_1.6_reference_year_2023,cost_carrier,"('natural_gas', 'DE', 0)",4.048
+test_4d,scenario_1_p00_000_price_import_1.6_reference_year_2023,price_import,"('natural_gas', 'CH', 0)",0.0368
+test_4d,scenario_1_p00_000_price_import_1.6_reference_year_2023,price_import,"('natural_gas', 'DE', 0)",0.0368
+test_4d,scenario_1_p00_000_price_import_1.6_reference_year_2023,opex_specific_fixed,"('natural_gas_boiler', 'power', 'CH', 0)",0.008
+test_4d,scenario_1_p00_000_price_import_1.6_reference_year_2023,opex_specific_fixed,"('natural_gas_boiler', 'power', 'DE', 0)",0.008
+test_4d,scenario_1_p00_001_price_import_1_reference_year_2023,cost_carrier,"('natural_gas', 'CH', 0)",0.253
+test_4d,scenario_1_p00_001_price_import_1_reference_year_2023,cost_carrier,"('natural_gas', 'DE', 0)",2.53
+test_4d,scenario_1_p00_001_price_import_1_reference_year_2023,price_import,"('natural_gas', 'CH', 0)",0.023
+test_4d,scenario_1_p00_001_price_import_1_reference_year_2023,price_import,"('natural_gas', 'DE', 0)",0.023
+test_4d,scenario_1_p00_001_price_import_1_reference_year_2023,opex_specific_fixed,"('natural_gas_boiler', 'power', 'CH', 0)",0.015
+test_4d,scenario_1_p00_001_price_import_1_reference_year_2023,opex_specific_fixed,"('natural_gas_boiler', 'power', 'DE', 0)",0.015
+test_4d,scenario_1_p00_001_price_import_1.3_reference_year_2023,cost_carrier,"('natural_gas', 'CH', 0)",0.3289
+test_4d,scenario_1_p00_001_price_import_1.3_reference_year_2023,cost_carrier,"('natural_gas', 'DE', 0)",3.289
+test_4d,scenario_1_p00_001_price_import_1.3_reference_year_2023,price_import,"('natural_gas', 'CH', 0)",0.0299
+test_4d,scenario_1_p00_001_price_import_1.3_reference_year_2023,price_import,"('natural_gas', 'DE', 0)",0.0299
+test_4d,scenario_1_p00_001_price_import_1.3_reference_year_2023,price_import,"('heat', 'CH', 0)",0.01
+test_4d,scenario_1_p00_001_price_import_1.3_reference_year_2023,price_import,"('heat', 'DE', 0)",0.01
+test_4d,scenario_1_p00_001_price_import_1.3_reference_year_2023,opex_specific_fixed,"('natural_gas_boiler', 'power', 'CH', 0)",0.015
+test_4d,scenario_1_p00_001_price_import_1.3_reference_year_2023,opex_specific_fixed,"('natural_gas_boiler', 'power', 'DE', 0)",0.015
+test_4d,scenario_1_p00_001_price_import_1.6_reference_year_2023,cost_carrier,"('natural_gas', 'CH', 0)",0.4048
+test_4d,scenario_1_p00_001_price_import_1.6_reference_year_2023,cost_carrier,"('natural_gas', 'DE', 0)",4.048
+test_4d,scenario_1_p00_001_price_import_1.6_reference_year_2023,price_import,"('natural_gas', 'CH', 0)",0.0368
+test_4d,scenario_1_p00_001_price_import_1.6_reference_year_2023,price_import,"('natural_gas', 'DE', 0)",0.0368
+test_4d,scenario_1_p00_001_price_import_1.6_reference_year_2023,opex_specific_fixed,"('natural_gas_boiler', 'power', 'CH', 0)",0.015
+test_4d,scenario_1_p00_001_price_import_1.6_reference_year_2023,opex_specific_fixed,"('natural_gas_boiler', 'power', 'DE', 0)",0.015
+test_4d,scenario_1_p00_000_price_import_1_reference_year_2024,capacity,"('natural_gas_boiler', 'power', 'CH', 0)",20
+test_4d,scenario_1_p00_000_price_import_1_reference_year_2024,capacity,"('natural_gas_boiler', 'power', 'DE', 0)",200
 test_5a,none,capacity,"('natural_gas_boiler', 'power', 'CH', 0)",10
 test_5a,none,capacity,"('natural_gas_boiler', 'power', 'DE', 0)",131.8
 test_5a,none,capacity,"('natural_gas_pipeline', 'power', 'CH-DE', 0)",7.2
