@@ -1,8 +1,6 @@
-[
-  {
+{
     "opex_specific_fixed": {
       "default_value": 131.4,
       "unit": "Euro/kW"
     }
-  }
-]
+}

@@ -312,8 +312,9 @@ class ScenarioDict(dict):
     This is a dictionary for the scenario analysis that has some convenience functions
     """
 
-    _param_dict_keys = {"file", "file_op", "default", "default_op"}
-    _special_elements = ["system", "analysis", "solver", "base_scenario", "sub_folder", "param_map"]
+    _param_dict_keys = {"file", "file_op", "default", "default_op", "value"}
+    _special_elements = ["base_scenario", "sub_folder", "param_map"]
+    _setting_elements = ["system", "analysis", "solver"]
 
     def __init__(self, init_dict, optimization_setup, paths):
         """Initializes the dictionary from a normal dictionary
@@ -415,8 +416,18 @@ class ScenarioDict(dict):
             # we do not expand these
             if element in ScenarioDict._special_elements:
                 continue
+            # check for dict items in settings elements
+            # if element in ScenarioDict._setting_elements and dict not in [type(v) for v in element_dict.values()]:
+            #     continue
 
+            # check for 'system' analysis' and 'solver' keys and see whether they are dicts and have a list in them,
+            # on ly then do the list expansion, otherwise proceed as always.
             for param, param_dict in sorted(element_dict.items(), key=lambda x: x[0]):
+                if element in ScenarioDict._setting_elements:
+                    if not isinstance(param_dict, dict):
+                        continue
+                    elif isinstance(param_dict, dict) and not isinstance(param_dict['value'], list):
+                        scenario[element][param] = param_dict['value']
                 for key in sorted(ScenarioDict._param_dict_keys):
                     if key in param_dict and isinstance(param_dict[key], list):
                         # get the old param dict entry
@@ -431,7 +442,10 @@ class ScenarioDict(dict):
                             new_scenario = deepcopy(scenario)
 
                             # set the new value
-                            new_scenario[element][param][key] = value
+                            if element in ScenarioDict._setting_elements:
+                                new_scenario[element][param] = value
+                            else:
+                                new_scenario[element][param][key] = value
 
                             # create the name
                             if key + "_fmt" in param_dict:
@@ -440,7 +454,8 @@ class ScenarioDict(dict):
                                                       "placeholder '{}' for its value! No placeholder found in "
                                                       f"for {key} in {param} in {element} in {scenario['base_scenario']}")
                                 name = param_dict[key + "_fmt"].format(value)
-                                del new_scenario[element][param][key + "_fmt"]
+                                if element not in ScenarioDict._setting_elements:
+                                    del new_scenario[element][param][key + "_fmt"]
                                 # we don't need to increment the param for the next expansion
                                 param_up = 0
                             else:
@@ -460,7 +475,10 @@ class ScenarioDict(dict):
                                 param_map[new_scenario["sub_folder"]][element] = dict()
                             if param not in param_map[new_scenario["sub_folder"]][element]:
                                 param_map[new_scenario["sub_folder"]][element][param] = dict()
-                            param_map[new_scenario["sub_folder"]][element][param][key] = value
+                            if element in ScenarioDict._setting_elements:
+                                param_map[new_scenario["sub_folder"]][element][param] = value
+                            else:
+                                param_map[new_scenario["sub_folder"]][element][param][key] = value
 
                             # set the param_map of the scenario
                             new_scenario["param_map"] = param_map
@@ -520,7 +538,7 @@ class ScenarioDict(dict):
         """
 
         for element, element_dict in vali_dict.items():
-            if element in self._special_elements:
+            if element in self._special_elements or element in self._setting_elements:
                 continue
 
             if not isinstance(element_dict, dict):
@@ -562,7 +580,7 @@ class ScenarioDict(dict):
             default_f_name = param_dict.get("default", default_f_name)
             default_f_name = self.validate_file_name(default_f_name)
             default_factor = param_dict.get("default_op", default_factor)
-            self._check_if_numeric_default_factor(default_factor,element=element,param=param,default_f_name=default_f_name,op_type="default_op")
+            self._check_if_numeric_default_factor(default_factor, element=element, param=param, default_f_name=default_f_name, op_type="default_op")
 
         return default_f_name, default_factor
 
@@ -584,11 +602,11 @@ class ScenarioDict(dict):
             default_f_name = param_dict.get("file", default_f_name)
             default_f_name = self.validate_file_name(default_f_name)
             default_factor = param_dict.get("file_op", default_factor)
-            self._check_if_numeric_default_factor(default_factor,element=element,param=param,default_f_name=default_f_name,op_type="file_op")
+            self._check_if_numeric_default_factor(default_factor, element=element, param=param, default_f_name=default_f_name, op_type="file_op")
 
         return default_f_name, default_factor
 
-    def _check_if_numeric_default_factor(self, default_factor,element,param,default_f_name,op_type):
+    def _check_if_numeric_default_factor(self, default_factor, element, param, default_f_name, op_type):
         """Check if the default factor is numeric
 
         :param default_factor: The default factor to check

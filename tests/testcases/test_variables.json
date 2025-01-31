@@ -1367,7 +1367,7 @@
                 }
             ]
         },
-        "scenario_1_p00_000_price_import_1": {
+        "scenario_1_p00_000_price_import_1_reference_year_2023": {
             "flow_import": [
                 {
                     "index": ["natural_gas", "CH", 0],
@@ -1515,7 +1515,7 @@
                 }
             ]
         },
-        "scenario_1_p00_000_price_import_1.3": {
+        "scenario_1_p00_000_price_import_1.3_reference_year_2023": {
             "cost_carrier": [
                 {
                     "index": ["natural_gas", "CH", 0],
@@ -1555,7 +1555,7 @@
                 }
             ]
         },
-        "scenario_1_p00_000_price_import_1.6": {
+        "scenario_1_p00_000_price_import_1.6_reference_year_2023": {
             "cost_carrier": [
                 {
                     "index": ["natural_gas", "CH", 0],
@@ -1587,7 +1587,7 @@
                 }
             ]
         },
-        "scenario_1_p00_001_price_import_1": {
+        "scenario_1_p00_001_price_import_1_reference_year_2023": {
             "cost_carrier": [
                 {
                     "index": ["natural_gas", "CH", 0],
@@ -1619,7 +1619,7 @@
                 }
             ]
         },
-        "scenario_1_p00_001_price_import_1.3": {
+        "scenario_1_p00_001_price_import_1.3_reference_year_2023": {
             "cost_carrier": [
                 {
                     "index": ["natural_gas", "CH", 0],
@@ -1659,7 +1659,7 @@
                 }
             ]
         },
-        "scenario_1_p00_001_price_import_1.6": {
+        "scenario_1_p00_001_price_import_1.6_reference_year_2023": {
             "cost_carrier": [
                 {
                     "index": ["natural_gas", "CH", 0],
@@ -1688,6 +1688,18 @@
                 {
                     "index": ["natural_gas_boiler", "power", "DE", 0],
                     "value": 0.015
+                }
+            ]
+        },
+        "scenario_1_p00_000_price_import_1_reference_year_2024": {
+            "capacity": [
+                {
+                    "index": ["natural_gas_boiler", "power", "CH", 0],
+                    "value": 20.0
+                },
+                {
+                    "index": ["natural_gas_boiler", "power", "DE", 0],
+                    "value": 200.0
                 }
             ]
         }
