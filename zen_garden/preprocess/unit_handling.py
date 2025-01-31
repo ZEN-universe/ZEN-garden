@@ -1018,13 +1018,15 @@ l
                 try:
                     cp = cProfile.Profile()
                     cp.enable()
-                    sv_max = sp.sparse.linalg.svds(data_coo, return_singular_vectors=False, k=1, which='LM')[0]
-                    sv_min = sp.sparse.linalg.svds(data_coo, return_singular_vectors=False, k=1, which='SM')[0]
+                    #sv_max = sp.sparse.linalg.svds(data_coo, return_singular_vectors=False, k=1, which='LM')[0]
+                    #sv_min = sp.sparse.linalg.svds(data_coo, return_singular_vectors=False, k=1, which='SM')[0]
+                    sv_max = sp.sparse.eigs(data_coo, k=1, which='LM')[0]
+                    sv_min = sp.sparse.eigs(data_coo, k=1, which='SM')[0]
                     cond = sv_max / sv_min
                     cp.disable()
                     cp.print_stats("cumtime")
                 except:
-                    print("SVD did not converge")
+                    print("Condition Number could not be calculated")
             return range_lhs, range_rhs, cond
         else:
             #Prints

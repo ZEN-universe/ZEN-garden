@@ -66,6 +66,9 @@ class OptimizationSetup(object):
         self.constraints = None
         self.sets = None
 
+        # initiate dictionary for storing extra year data
+        self.year_specific_ts = {}
+
         # sorted list of class names
         element_classes = self.dict_element_classes.keys()
         carrier_classes = [element_name for element_name in element_classes if "Carrier" in element_name]

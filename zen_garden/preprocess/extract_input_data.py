@@ -17,7 +17,7 @@ class DataInput:
     """
     Class to extract input data
     """
-    def __init__(self, element, system, analysis, solver, energy_system, unit_handling):
+    def __init__(self, element, system, analysis, solver, energy_system, unit_handling, optimization_setup= None):
         """ data input object to extract input data
 
         :param element: element for which data is extracted
@@ -39,6 +39,8 @@ class DataInput:
         self.index_names = self.analysis.header_data_inputs
         # load attributes file
         self.attribute_dict = self.load_attribute_file()
+        #optimization setup
+        self.optimization_setup = optimization_setup
 
     def extract_input_data(self, file_name, index_sets, unit_category, time_steps=None, subelement=None):
         """ reads input data and restructures the dataframe to return (multi)indexed dict
@@ -58,6 +60,7 @@ class DataInput:
         elif time_steps == "set_base_time_steps_yearly":
             yearly_variation = True
             self.extract_yearly_variation(file_name, index_sets)
+
 
         # if existing capacities and existing capacities not used
         if (file_name == "capacity_existing" or file_name == "capacity_existing_energy") and not self.system.use_capacities_existing:
@@ -85,8 +88,12 @@ class DataInput:
             df_output = self.extract_general_input_data(df_input, df_output, file_name, index_name_list, default_value, time_steps)
         # save parameter values for analysis of numerics
         self.save_values_of_attribute(df_output=df_output, file_name=file_name)
-        # finally apply the scenario_factor
-        return df_output*scenario_factor
+        #copy output data as otherwise overwritten
+        df_output_generic = df_output.copy()
+        if time_steps == "set_base_time_steps_yearly":
+            self.extract_year_specific_ts(file_name, index_name_list, time_steps, subelement, default_value,df_output_generic=df_output)
+        # finally apply the scenario_factor and return df_output
+        return df_output_generic*scenario_factor
 
     def extract_general_input_data(self, df_input, df_output, file_name, index_name_list, default_value, time_steps):
         """ fills df_output with data from df_input
@@ -327,6 +334,42 @@ class DataInput:
                 attribute_value = attribute_dict[attribute_name]
             attribute_unit = None
         return attribute_value,attribute_unit
+
+    def extract_year_specific_ts(self, file_name, index_name_list, time_steps, subelement,default_value,df_output_generic):
+        """
+        reads and saves the year specific time series data. The year specific time series are saved in the dictionary self.optimization_setup.year_specific_ts
+
+        :param file_name: name of selected file
+        :param index_name_list: list of name of indices
+        :param default_value: default for dataframe
+        :param time_steps: specific time_steps of element
+        :param subelement: string specifying dependent element
+        :param df_output_generic: original/generic time series data (base case)
+        """
+        #years of optimization model
+        years = [str(year) for year in range(self.system.reference_year, self.system.reference_year+self.system.optimized_years*self.system.interval_between_years, self.system.interval_between_years)]
+        # files to check
+        file_names = os.listdir(self.folder_path)
+        for file in file_names:
+            for i,year in enumerate(years):
+                filename = file_name + "_" + year
+                if filename in file:
+                    # read input data
+                    #ToDo add here that year specific input ts are also available scenario specific
+                    f_name, scenario_factor = self.scenario_dict.get_param_file(self.element.name, filename)
+                    df_input = self.read_input_csv(f_name)
+                    if df_input is not None and not df_input.empty:
+                        # get subelement dataframe
+                        if subelement is not None and subelement in df_input.columns:
+                            cols = df_input.columns.intersection(index_name_list + [subelement])
+                            df_input = df_input[cols]
+                        df_output_specific = self.extract_general_input_data(df_input, df_output_generic, file_name, index_name_list, default_value, time_steps)
+                    try:
+                        self.optimization_setup.year_specific_ts[i][(self.element._name,file_name)] = df_output_specific*scenario_factor
+                    except:
+                        self.optimization_setup.year_specific_ts[i] = {}
+                        self.optimization_setup.year_specific_ts[i][(self.element._name,file_name)] = df_output_specific*scenario_factor
+
 
     def extract_yearly_variation(self, file_name, index_sets):
         """ reads the yearly variation of a time dependent quantity

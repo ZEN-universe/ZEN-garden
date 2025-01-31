@@ -319,8 +319,9 @@ class ScenarioDict(dict):
     This is a dictionary for the scenario analysis that has some convenience functions
     """
 
-    _param_dict_keys = {"file", "file_op", "default", "default_op"}
-    _special_elements = ["system", "analysis", "solver", "base_scenario", "sub_folder", "param_map"]
+    _param_dict_keys = {"file", "file_op", "default", "default_op", "value"}
+    _special_elements = ["base_scenario", "sub_folder", "param_map"]
+    _setting_elements = ["system", "analysis", "solver"]
 
     def __init__(self, init_dict, optimization_setup, paths):
         """Initializes the dictionary from a normal dictionary
@@ -422,8 +423,18 @@ class ScenarioDict(dict):
             # we do not expand these
             if element in ScenarioDict._special_elements:
                 continue
+            # check for dict items in settings elements
+            # if element in ScenarioDict._setting_elements and dict not in [type(v) for v in element_dict.values()]:
+            #     continue
 
+            # check for 'system' analysis' and 'solver' keys and see whether they are dicts and have a list in them,
+            # on ly then do the list expansion, otherwise proceed as always.
             for param, param_dict in sorted(element_dict.items(), key=lambda x: x[0]):
+                if element in ScenarioDict._setting_elements:
+                    if not isinstance(param_dict, dict):
+                        continue
+                    elif isinstance(param_dict, dict) and not isinstance(param_dict['value'], list):
+                        scenario[element][param] = param_dict['value']
                 for key in sorted(ScenarioDict._param_dict_keys):
                     if key in param_dict and isinstance(param_dict[key], list):
                         # get the old param dict entry
@@ -438,7 +449,10 @@ class ScenarioDict(dict):
                             new_scenario = deepcopy(scenario)
 
                             # set the new value
-                            new_scenario[element][param][key] = value
+                            if element in ScenarioDict._setting_elements:
+                                new_scenario[element][param] = value
+                            else:
+                                new_scenario[element][param][key] = value
 
                             # create the name
                             if key + "_fmt" in param_dict:
@@ -447,7 +461,8 @@ class ScenarioDict(dict):
                                                       "placeholder '{}' for its value! No placeholder found in "
                                                       f"for {key} in {param} in {element} in {scenario['base_scenario']}")
                                 name = param_dict[key + "_fmt"].format(value)
-                                del new_scenario[element][param][key + "_fmt"]
+                                if element not in ScenarioDict._setting_elements:
+                                    del new_scenario[element][param][key + "_fmt"]
                                 # we don't need to increment the param for the next expansion
                                 param_up = 0
                             else:
@@ -467,7 +482,10 @@ class ScenarioDict(dict):
                                 param_map[new_scenario["sub_folder"]][element] = dict()
                             if param not in param_map[new_scenario["sub_folder"]][element]:
                                 param_map[new_scenario["sub_folder"]][element][param] = dict()
-                            param_map[new_scenario["sub_folder"]][element][param][key] = value
+                            if element in ScenarioDict._setting_elements:
+                                param_map[new_scenario["sub_folder"]][element][param] = value
+                            else:
+                                param_map[new_scenario["sub_folder"]][element][param][key] = value
 
                             # set the param_map of the scenario
                             new_scenario["param_map"] = param_map
@@ -527,7 +545,7 @@ class ScenarioDict(dict):
         """
 
         for element, element_dict in vali_dict.items():
-            if element in self._special_elements:
+            if element in self._special_elements or element in self._setting_elements:
                 continue
 
             if not isinstance(element_dict, dict):
@@ -569,7 +587,7 @@ class ScenarioDict(dict):
             default_f_name = param_dict.get("default", default_f_name)
             default_f_name = self.validate_file_name(default_f_name)
             default_factor = param_dict.get("default_op", default_factor)
-            self._check_if_numeric_default_factor(default_factor,element=element,param=param,default_f_name=default_f_name,op_type="default_op")
+            self._check_if_numeric_default_factor(default_factor, element=element, param=param, default_f_name=default_f_name, op_type="default_op")
 
         return default_f_name, default_factor
 
@@ -591,11 +609,11 @@ class ScenarioDict(dict):
             default_f_name = param_dict.get("file", default_f_name)
             default_f_name = self.validate_file_name(default_f_name)
             default_factor = param_dict.get("file_op", default_factor)
-            self._check_if_numeric_default_factor(default_factor,element=element,param=param,default_f_name=default_f_name,op_type="file_op")
+            self._check_if_numeric_default_factor(default_factor, element=element, param=param, default_f_name=default_f_name, op_type="file_op")
 
         return default_f_name, default_factor
 
-    def _check_if_numeric_default_factor(self, default_factor,element,param,default_f_name,op_type):
+    def _check_if_numeric_default_factor(self, default_factor, element, param, default_f_name, op_type):
         """Check if the default factor is numeric
 
         :param default_factor: The default factor to check
@@ -734,32 +752,27 @@ class HDFPandasSerializer:
         for key, value in dictionary.items():
             if not isinstance(key, str):
                 raise TypeError("All dictionary keys must be strings!")
-
             key = f"{previous_key}/{key}"
             if isinstance(value, dict):
-                cls._recurse(store, value, key)
-            elif isinstance(value, (pd.DataFrame, pd.Series)):
-                # make a proper multi index to save memory
-                store.put(key, value)
-                store.get_storer(key).attrs.type = "pandas"
-            elif isinstance(value, (float, str, int)) or value is None:
-                store.put(key, pd.Series([], dtype=int))
-                store.get_storer(key).attrs.value = value
-                store.get_storer(key).attrs.type = "scalar"
-            # elif isinstance(value,str):
-            #     # encode string to bytes
-            #     store.put(key, pd.Series([np.char.encode(value)], dtype=type(value)))
-            #     store.get_storer(key).attrs.type = "scalar"
-            elif isinstance(value, (list, tuple)) or isinstance(value, np.ndarray) and value.ndim == 1:
-                store.put(key, pd.Series(value))
-                store.get_storer(key).attrs.type = "vector"
-            elif isinstance(value, np.ndarray) and value.ndim == 2:
-                store.put(key, pd.DataFrame(value))
-                store.get_storer(key).attrs.type = "matrix"
+                input_dict, docstring, has_units = cls._format_dict(value)
+                if not input_dict["dataframe"].empty:
+                    store.put(key, input_dict["dataframe"], format='table')
+                    # add additional attributes
+                    store.get_storer(key).attrs.docstring = docstring
+                    store.get_storer(key).attrs["name"] = key
+                    store.get_storer(key).attrs["has_units"] = has_units
+                    index_names = input_dict["dataframe"].index.names
+                    index_names = ",".join([str(name) for name in index_names])
+                    store.get_storer(key).attrs["index_names"] = index_names
+                    # remove "_i_table" to reduce file size
+                    try:
+                        store.remove(key + "/_i_table")
+                    except KeyError:
+                        pass
             else:
                 raise TypeError(f"Type {type(value)} is not supported.")
 
-    @classmethod #USED
+    @classmethod
     def serialize_dict(cls, file_name, dictionary, overwrite=True):
         """
         Serialized a dictionary of dataframes and other objects into a hdf file.
@@ -771,10 +784,41 @@ class HDFPandasSerializer:
 
         if not overwrite and os.path.exists(file_name):
             raise FileExistsError("File already exists. Please set overwrite=True to overwrite the file.")
-
-        with pd.HDFStore(file_name, mode='w', complevel=4) as store:
+        with pd.HDFStore(file_name, mode='w', complevel=4,complib="blosc") as store:
             cls._recurse(store, dictionary)
 
+    @staticmethod
+    def _format_dict(input_dict):
+        """ format the dictionary to be saved in the hdf file
+        :param input_dict: The dictionary to format
+        """
+        expected_keys = ["dataframe", "docstring"]
+        if "dataframe" in input_dict:
+            df = input_dict["dataframe"]
+            if not isinstance(df, pd.Series):
+                if df.shape[1]:
+                    df = df.squeeze(axis=1)
+                else:
+                    a=1
+            input_dict["dataframe"] = df
+        if "docstring" in input_dict:
+            docstring = input_dict["docstring"]
+        else:
+            docstring = None
+        if "units" in input_dict:
+            units = input_dict["units"]
+            assert isinstance(units, pd.Series), f"Units must be a pandas Series, but is {type(units)}"
+            df = input_dict["dataframe"]
+            assert units.index.intersection(df.index).equals(units.index), f"Units index {units.index} does not match dataframe index {df.index}"
+            units.name = "units"
+            df = pd.concat([df, units], axis=1)
+            input_dict["dataframe"] = df
+            has_units = True
+        else:
+            has_units = False
+        if not (set(input_dict.keys()) == set(expected_keys) or set(input_dict.keys()) == set(expected_keys).union(["units"])):
+            raise ValueError(f"Expected keys are {expected_keys}, but got {input_dict.keys()}")
+        return input_dict, docstring, has_units
 
 class InputDataChecks:
     """

@@ -1,7 +1,9 @@
 {
   "1": {"EnergySystem": {"price_carbon_emissions": {"file": "price_carbon_emissions_1"}}},
   "2": {"EnergySystem": {"price_carbon_emissions": {"file": "price_carbon_emissions_2"}}},
-  "3": {"system": {"optimized_years": 4}},
+  "3": {"system": {"optimized_years": 4,
+                   "aggregated_time_steps_per_year": {"value":  [10, 100],
+                                                      "value_fmt": "tsa_steps_{}"}}},
   "4": {"analysis":  {"objective": "total_carbon_emissions"}},
   "5": {"electricity": {"carbon_intensity_carrier_import": {"default": "attributes_low_carbon"}}},
   "6": {"photovoltaics": {"capacity_existing": {"file_op": 2}}},

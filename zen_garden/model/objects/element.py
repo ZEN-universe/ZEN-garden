@@ -44,7 +44,8 @@ class Element:
         # create DataInput object
         self.data_input = DataInput(element=self, system=self.optimization_setup.system,
                                     analysis=self.optimization_setup.analysis, solver=self.optimization_setup.solver,
-                                    energy_system=self.energy_system, unit_handling=self.energy_system.unit_handling)
+                                    energy_system=self.energy_system, unit_handling=self.energy_system.unit_handling,
+                                    optimization_setup=self.optimization_setup)
         # dict to save the parameter units element-wise (and save them in the results later on)
         self.units = {}
 

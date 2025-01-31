@@ -1,11 +1,14 @@
 Key;Type;Default Value;Description
 ``name``;``str``;``highs``;select solver
 ``solver_options``;``SolverOptions``;``SolverOptions()``;pass solver options to the selected solver
-``add_duals``;``bool``;``False``;if true, dual variables are computed, otherwise, computation of dual variables is skipped
+``save_duals``;``bool``;``False``;if true, dual variables are computed, otherwise, computation of dual variables is skipped
+``save_parameters``;``bool``;``False``;if true, parameters are saved, otherwise, parameters are not saved
+``selected_saved_parameters``;``list[str]``;[];if not empty, only the selected parameters are saved
+``selected_saved_variables``;``list[str]``;[];if not empty, only the selected variables are saved
 ``solver_dir``;``str``;``.//outputs//solver_files``;folder path where solver log files are (temporarily) saved
 ``keep_files``;``bool``;``False``;if true, solver log files are saved, otherwise solver log files are deleted after each run
 ``io_api``;``str``;``lp``;api that is used to pass the optimization problem to the solver, must be ``lp``, ``mps``, or ``direct``
-``check_unit_consistency``;``bool``;``True``;check for unit consistency in the input data
+``check_unit_consistency``;``bool``;``True``;check for unit consistency in the input data. IMPORTANT: Only disable, if you know exactly what you are doing
 ``analyze_numerics``;``bool``;``True``;print numerics of the optimization problem
 ``use_scaling``;``bool``;``True``;if true, scaling algorithm is applied to improve the numerics of the optimization problem
 ``scaling_include_rhs``;``bool``;``True``;if true, the right-hand-side (rhs) is included in the scaling algorithm

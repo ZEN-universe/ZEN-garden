@@ -1,4 +1,4 @@
-name: zen-garden_Jan2025
+name: zen-garden
 channels:
   - conda-forge
   - gurobi
