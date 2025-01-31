@@ -17,6 +17,7 @@ import xarray as xr
 from filelock import FileLock
 import yaml
 from pydantic import BaseModel
+import cProfile
 
 from ..utils import HDFPandasSerializer
 from ..model.optimization_setup import OptimizationSetup
@@ -39,6 +40,8 @@ class Postprocess:
         :param param_map: A dictionary mapping the parameters to the scenario names
         :param include_year2operation: Specify if the year2operation dict should be included in the results file
         """
+        cp = cProfile.Profile()
+        cp.enable()
         logging.info("--- Postprocess results ---")
         # get the necessary stuff from the model
         self.optimization_setup = optimization_setup
@@ -103,6 +106,8 @@ class Postprocess:
             self.dict_sequence_time_steps["time_steps_year2storage"] = self.get_time_steps_year2storage()
 
         self.save_sequence_time_steps(scenario=scenario_name)
+        cp.disable()
+        cp.print_stats(sort='cumtime')
 
     def write_file(self, name, dictionary, format=None):
         """Writes the dictionary to file as json, if compression attribute is True, the serialized json is compressed

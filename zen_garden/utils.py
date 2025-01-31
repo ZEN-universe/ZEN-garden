@@ -731,7 +731,7 @@ class HDFPandasSerializer:
             if isinstance(value, dict):
                 input_dict, docstring, has_units = cls._format_dict(value)
                 if not input_dict["dataframe"].empty:
-                    store.put(key, input_dict["dataframe"], format='fixed',data_columns=True)
+                    store.put(key, input_dict["dataframe"], format='table')
                     # add additional attributes
                     store.get_storer(key).attrs.docstring = docstring
                     store.get_storer(key).attrs["name"] = key
@@ -761,18 +761,6 @@ class HDFPandasSerializer:
             raise FileExistsError("File already exists. Please set overwrite=True to overwrite the file.")
         with pd.HDFStore(file_name, mode='w') as store:
             cls._recurse(store, dictionary)
-        # use ptrepack to reduce file size
-        try:
-            tmp_file = file_name.split(".h5")[0] + "_tmp.h5"
-            tmp_file = Path(tmp_file)
-            file = Path(file_name)
-            tmp_file = tmp_file.relative_to(Path(os.getcwd()))
-            file = file.relative_to(Path(os.getcwd()))
-            os.system(f"ptrepack --chunkshape=auto --propindexes --complevel={complevel} --complib={complib} {file} {tmp_file}")
-            os.remove(file_name)
-            os.rename(tmp_file, file_name)
-        except:
-            pass
 
     @staticmethod
     def _format_dict(input_dict):
