@@ -7,22 +7,17 @@ import os
 import sys
 import warnings
 import importlib.util
-from collections import UserDict,defaultdict
-from contextlib import contextmanager
-from datetime import datetime
+from collections import defaultdict
 import re
 from ordered_set import OrderedSet
-import h5py
 import linopy as lp
 import numpy as np
 import pandas as pd
 import xarray as xr
-import yaml
 import shutil
-from numpy import string_
 from copy import deepcopy
 from pathlib import Path
-
+import tables
 
 def setup_logger(level=logging.INFO):
     """ set up logger
@@ -736,7 +731,7 @@ class HDFPandasSerializer:
             if isinstance(value, dict):
                 input_dict, docstring, has_units = cls._format_dict(value)
                 if not input_dict["dataframe"].empty:
-                    store.put(key, input_dict["dataframe"], format='table')
+                    store.put(key, input_dict["dataframe"], format='fixed',data_columns=True)
                     # add additional attributes
                     store.get_storer(key).attrs.docstring = docstring
                     store.get_storer(key).attrs["name"] = key
@@ -753,7 +748,7 @@ class HDFPandasSerializer:
                 raise TypeError(f"Type {type(value)} is not supported.")
 
     @classmethod
-    def serialize_dict(cls, file_name, dictionary, overwrite=True):
+    def serialize_dict(cls, file_name, dictionary, overwrite=True,complevel=4,complib="blosc"):
         """
         Serialized a dictionary of dataframes and other objects into a hdf file.
 
@@ -764,8 +759,20 @@ class HDFPandasSerializer:
 
         if not overwrite and os.path.exists(file_name):
             raise FileExistsError("File already exists. Please set overwrite=True to overwrite the file.")
-        with pd.HDFStore(file_name, mode='w', complevel=4,complib="blosc") as store:
+        with pd.HDFStore(file_name, mode='w') as store:
             cls._recurse(store, dictionary)
+        # use ptrepack to reduce file size
+        try:
+            tmp_file = file_name.split(".h5")[0] + "_tmp.h5"
+            tmp_file = Path(tmp_file)
+            file = Path(file_name)
+            tmp_file = tmp_file.relative_to(Path(os.getcwd()))
+            file = file.relative_to(Path(os.getcwd()))
+            os.system(f"ptrepack --chunkshape=auto --propindexes --complevel={complevel} --complib={complib} {file} {tmp_file}")
+            os.remove(file_name)
+            os.rename(tmp_file, file_name)
+        except:
+            pass
 
     @staticmethod
     def _format_dict(input_dict):
