@@ -43,21 +43,20 @@ Review recent modifications outlined in the [changelog](https://github.com/ZEN-u
 ## Citing ZEN-garden
 If you use ZEN-garden for research please cite
 
-Ganter Alissa, Gabrielli Paolo, Sansavini, Giovanni (2024).
-Near-term infrastructure rollout and investment strategies for net-zero hydrogen supply chains 
-2024. https://doi.org/10.1016/j.rser.2024.114314
+Jacob Mannhardt, Alissa Ganter, Johannes Burger, Francesco De Marco, Lukas Kunz, Lukas Schmidt-Engelbertz, Paolo Gabrielli, Giovanni Sansavini (2025).
+ZEN-garden: Optimizing energy transition pathways with user-oriented data handling
+5https://www.sciencedirect.com/science/article/pii/S2352711025000263
 
 and use the following BibTeX:
 ```
-@article{GANTER2024114314,
-author = {Alissa Ganter and Paolo Gabrielli and Giovanni Sansavini}
-title = {Near-term infrastructure rollout and investment strategies for net-zero hydrogen supply chains},
-journal = {Renewable and Sustainable Energy Reviews},
-volume = {194},
-pages = {114314},
-year = {2024},
-issn = {1364-0321},
-doi = {https://doi.org/10.1016/j.rser.2024.114314},
-url = {https://www.sciencedirect.com/science/article/pii/S1364032124000376},
+@article{ZENgarden2025,
+title = {ZEN-garden: Optimizing Energy Transition Pathways with User-Oriented Data Handling},
+author = {Mannhardt, Jacob and Ganter, Alissa and Burger, Johannes and De Marco, Francesco and Kunz, Lukas and {Schmidt-Engelbertz}, Lukas and Gabrielli, Paolo and Sansavini, Giovanni},
+year = {2025},
+journal = {SoftwareX},
+volume = {29},
+pages = {102059},
+issn = {2352-7110},
+doi = {10.1016/j.softx.2025.102059},
 }
 ```
