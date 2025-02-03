@@ -733,9 +733,9 @@ class TechnologyRules(GenericRule):
         """limited capacity_limit of technology for super locations
 
         .. math::
-            \mathrm{if\ existing\ capacities\ < capacity\ limit}\ s^\mathrm{max}_{h,sp} \geq \sum_{p \in \script{SP}_sp} S_{h,p,y}
+            \\mathrm{if\\ existing\\ capacities\\ < capacity\\ limit}\\ s^\\mathrm{max}_{h,sp} \\geq \\sum_{p \\in \\script{SP}_sp} S_{h,p,y}
         .. math::
-            \mathrm{else}\ 0 \geq \sum_{p \in \script{SP}_sp} \Delta S_{h,p,y}
+            \\mathrm{else}\\ 0 \\geq \\sum_{p \\in \\script{SP}_sp} \\Delta S_{h,p,y}
 
         :return: #TODO describe parameter/return
         """
@@ -1162,17 +1162,12 @@ class TechnologyRules(GenericRule):
                 kdr = kdr.sel(set_location=self.energy_system.set_nodes[0]).drop_vars('set_location')
                 term_knowledge = capacity_addition_years.sum("set_location") + sr * term_spillover
                 term_knowledge = tdr * (term_knowledge * kdr).sum("set_time_steps_yearly_prev")
-        # ## ## ## ## ## ## ## ## ## ## ## ## done until here!!!!!1 ## ## ## ## ## ## ## ## ## ## ## #### ## ## ##
-        # unbounded market share --> not used for CCS techs so far.
-
 
         # existing capacities
         delta_years = interval_between_years * (capacity_addition.coords["set_time_steps_yearly"] - 1 - self.energy_system.set_time_steps_yearly[0])
         lifetime_existing = self.parameters.lifetime_existing
         lifetime = self.parameters.lifetime
         kdr_existing = (1 - knowledge_depreciation_rate) ** (delta_years + lifetime - lifetime_existing)
-
-        # with knowledge existing, the knowledge has to be determined first per location and only afterwards summed up for the super locations
 
         capacity_existing_total_nosr = capacity_existing
         capacity_existing_total_nosr = (capacity_existing_total_nosr * kdr_existing).sum("set_technologies_existing")
@@ -1187,7 +1182,7 @@ class TechnologyRules(GenericRule):
         rhs_sn = (tdr * capacity_existing_total_nosr_super + capacity_addition_unbounded_super).sum("set_super_location")
         rhs_sn = rhs_sn.broadcast_like(lhs_sn.const)
         # mask for tdr == inf
-        lhs_sn = self.align_and_mask(lhs_sn, mask_inf_tdr_sum) # todo: check for indices
+        lhs_sn = self.align_and_mask(lhs_sn, mask_inf_tdr_sum)
         rhs_sn = self.align_and_mask(rhs_sn, mask_inf_tdr_sum)
         # combine constraint
         constraints_sn = lhs_sn <= rhs_sn
@@ -1195,14 +1190,11 @@ class TechnologyRules(GenericRule):
         # build constraints for all nodes ("an") if spillover rate is not inf
         if spillover_rate != np.inf:
             # existing capacities with spillover
-            # capacity_existing_super = capacity_existing.broadcast_like(super_loc).where(super_loc).sum("set_location")
             capacity_existing_kdr = (capacity_existing * kdr_existing).sum("set_technologies_existing")
             capacity_existing_kdr_sr = ((capacity_existing.sum("set_location") - capacity_existing).where(mask_technology_type, 0) *
                                         kdr_existing).sum("set_technologies_existing")
             capacity_existing_total_kdr = capacity_existing_kdr + spillover_rate * capacity_existing_kdr_sr
             capacity_existing_total_kdr = capacity_existing_total_kdr.broadcast_like(super_loc).where(super_loc).sum("set_location")
-            # capacity_existing_super_total = capacity_existing_super + spillover_rate * (
-            #         capacity_existing_super.sum("set_super_location") - capacity_existing_super).where(mask_technology_type, 0)
 
             lhs_an = lp.merge(1 * capacity_addition_super, -1 * term_knowledge, compat="broadcast_equals")
             rhs_an = tdr * capacity_existing_total_kdr + capacity_addition_unbounded_super
@@ -1212,7 +1204,7 @@ class TechnologyRules(GenericRule):
             rhs_an = self.align_and_mask(rhs_an, mask_inf_tdr)
             # combine constraint
             constraints_an = lhs_an <= rhs_an
-            self.constraints.add_constraint("constraint_technology_diffusion_limit_super", constraints_an) # weird error here.
+            self.constraints.add_constraint("constraint_technology_diffusion_limit_super", constraints_an)
 
     def constraint_cost_capex_yearly(self):
         """ aggregates the capex of built capacity and of existing capacity
