@@ -17,7 +17,6 @@ import xarray as xr
 import shutil
 from copy import deepcopy
 from pathlib import Path
-import tables
 
 def setup_logger(level=logging.INFO):
     """ set up logger
@@ -777,7 +776,7 @@ class HDFPandasSerializer:
 
         if not overwrite and os.path.exists(file_name):
             raise FileExistsError("File already exists. Please set overwrite=True to overwrite the file.")
-        with pd.HDFStore(file_name, mode='w') as store:
+        with pd.HDFStore(file_name, mode='w',complevel=complevel,complib=complib) as store:
             cls._recurse(store, dictionary)
 
     @staticmethod
