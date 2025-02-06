@@ -7,22 +7,16 @@ import os
 import sys
 import warnings
 import importlib.util
-from collections import UserDict,defaultdict
-from contextlib import contextmanager
-from datetime import datetime
+from collections import defaultdict
 import re
 from ordered_set import OrderedSet
-import h5py
 import linopy as lp
 import numpy as np
 import pandas as pd
 import xarray as xr
-import yaml
 import shutil
-from numpy import string_
 from copy import deepcopy
 from pathlib import Path
-
 
 def setup_logger(level=logging.INFO):
     """ set up logger
@@ -771,7 +765,7 @@ class HDFPandasSerializer:
                 raise TypeError(f"Type {type(value)} is not supported.")
 
     @classmethod
-    def serialize_dict(cls, file_name, dictionary, overwrite=True):
+    def serialize_dict(cls, file_name, dictionary, overwrite=True,complevel=4,complib="blosc"):
         """
         Serialized a dictionary of dataframes and other objects into a hdf file.
 
@@ -782,7 +776,7 @@ class HDFPandasSerializer:
 
         if not overwrite and os.path.exists(file_name):
             raise FileExistsError("File already exists. Please set overwrite=True to overwrite the file.")
-        with pd.HDFStore(file_name, mode='w', complevel=4,complib="blosc") as store:
+        with pd.HDFStore(file_name, mode='w',complevel=complevel,complib=complib) as store:
             cls._recurse(store, dictionary)
 
     @staticmethod
