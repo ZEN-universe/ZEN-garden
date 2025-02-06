@@ -423,7 +423,7 @@ class EnergySystemRules(GenericRule):
         """ semi-hardcoded minimum boundary on CO2 stored in the system.
         The emergency_storage technology is used as option for the optimizer to breach the limit at a high cost.
         .. math::
-            \\sum_{t\\in\mathcal{T}} \\sum_{n\\in\\mathcal{N}} \\tau_t a_{c,n,y}^\mathrm{export} \\geq a_{y}^\mathrm{min_{CO2}}, c=CO2-stored
+            \\sum_{t\\in\\mathcal{T}} \\sum_{n\\in\\mathcal{N}} \\tau_t a_{c,n,y}^\\mathrm{export} \\geq a_{y}^\\mathrm{min_{CO2}}, c=CO2-stored
 
         """
         m = xr.DataArray([carrier == 'co2_stored' for carrier in self.energy_system.set_carriers],
