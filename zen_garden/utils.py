@@ -1104,7 +1104,10 @@ class StringUtils:
                 pass
         out_folder = cls.get_output_folder(analysis)
         if not os.path.exists(out_folder):
-            os.mkdir(out_folder)
+            try:
+                os.mkdir(out_folder)
+            except FileExistsError:
+                pass
         else:
             logging.warning(f"The output folder '{out_folder}' already exists")
             if analysis.overwrite_output:
