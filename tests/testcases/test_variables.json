@@ -2419,5 +2419,37 @@
                 {"index": ["natural_gas_boiler", "power", "DE", 0], "value": 10.0}
             ]
         }
+    },
+    "test_8a": {
+        "none": {
+            "storage_level": [
+                {
+                    "index": ["pumped_hydro", "CH", 24],
+                    "value": 16.497116733349316
+                },
+                {
+                    "index": ["pumped_hydro", "DE", 24],
+                    "value": 8.282054767449226
+                },
+                {
+                    "index": ["pumped_hydro", "CH", 34],
+                    "value": 5.466846608730022
+                },
+                {
+                    "index": ["pumped_hydro", "DE", 34],
+                    "value": 2.8877739123695734
+                }
+            ],
+            "capacity": [
+                {
+                    "index": ["photovoltaics", "power", "CH", 0],
+                    "value": 5.5942395853585865
+                },
+                {
+                    "index": ["photovoltaics", "power", "DE", 0],
+                    "value": 57.938932604018206
+                }
+            ]
+        }
     }
 }
