@@ -159,6 +159,8 @@ def _compare_versions(version1: str, version2: str) -> bool:
 
     :return: True if the version1 >= version2.
     """
+    if version1 is None:
+        return False
     v1 = version1.split(".")
     v2 = version2.split(".")
 
