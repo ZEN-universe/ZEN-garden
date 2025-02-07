@@ -54,16 +54,21 @@ class Results:
         :scenario_name: Which scenario to take. If none is specified, all are returned.
         :return: The corresponding dataframe
         """
-        component = self.solution_loader.components[component_name]
-
-        if data_type == "units" and not component.has_units:
-            return None
-
         scenario_names = (
             self.solution_loader.scenarios.keys()
             if scenario_name is None
             else [scenario_name]
         )
+
+        if component_name not in self.solution_loader.components:
+            logging.warning(f"Component {component_name} not found. If you expected this component to be present, the solution is probably empty and therefore skipped.")
+            return {s:pd.Series() for s in scenario_names}
+
+        component = self.solution_loader.components[component_name]
+
+        if data_type == "units" and not component.has_units:
+            return None
+
 
         ans = {}
 
@@ -193,7 +198,7 @@ class Results:
 
         if component_name not in self.solution_loader.components:
             logging.warning(f"Component {component_name} not found. If you expected this component to be present, the solution is probably empty and therefore skipped.")
-            return None
+            return pd.Series()
 
         component = self.solution_loader.components[component_name]
 
@@ -299,7 +304,7 @@ class Results:
 
         if component_name not in self.solution_loader.components:
             logging.warning(f"Component {component_name} not found. If you expected this component to be present, the solution is probably empty and therefore skipped.")
-            return None
+            return pd.Series()
 
         component = self.solution_loader.components[component_name]
 
@@ -734,5 +739,6 @@ if __name__ == "__main__":
         out_folder := os.path.join(config.analysis.folder_output, model_name)
     ):
         r = Results(out_folder)
+        r.get_total("flow_transport")
     else:
         logging.critical("No results folder found!")
