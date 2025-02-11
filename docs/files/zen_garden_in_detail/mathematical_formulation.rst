@@ -644,43 +644,43 @@ To avoid the unrealistically excessive use of spillover effects, we constrain th
 Minimum load constraints
 ------------------------
 
-A binary variable :math:`b_{h,p,t}` is introduced to model the on-, and off- behaviour of a technology. If :math:`b_{h,p,t}=1`, the technology is on, if :math:`b_{h,p,t}=0` the technology is considered off. With :math:`b_{h,p,t}` the minimum load constraint of a conversion technology can be formulated as follows:
+A binary variable :math:`B_{h,n,t}` is introduced to model the on-, and off- behaviour of a technology. If :math:`B_{h,p,t}=1`, the technology is on, if :math:`B_{h,p,t}=0` the technology is considered off. With :math:`B_{h,p,t}` the minimum load constraint of a conversion technology can be formulated as follows:
 
 .. math::
     :label: min_load_conversion_bilinear
 
-    m^\mathrm{min}_{h,p,t,y} b_{h,p,t}  S_{h,p,y} \leq G_{h,p,t,y}^\mathrm{r}
+    m^\mathrm{min}_{i,p,t,y} B_{i,p,t}  S_{i,p,y} \leq G_{i,p,t,y}^\mathrm{r} \leq B_{i,p,t}  S_{i,p,y}
 
-However, this constraint would introduce a bilinearity. To resolve the bilinearity, we use a big-M formulation and approximate :math:`b_{h,p,t} S_{h,n,y}` with :math:`S^\mathrm{approx}_{h,p,y}`. Thus, Eq. :eq:`min_load_conversion_bilinear` can be rewritten as:
+However, this constraint would introduce a bilinearity. To resolve the bilinearity, we use a big-M formulation and approximate :math:`B_{h,p,t} S_{h,n,y}` with :math:`S^\mathrm{approx}_{h,p,t,y}`. Thus, Eq. :eq:`min_load_conversion_bilinear` can be rewritten as:
 
 .. math::
     :label: min_load_conversion
 
-    G_{h,n,t,y}^\mathrm{r} \geq m^\mathrm{min}_{h,n,t,y} S^\mathrm{approx}_{h,n,y}
+    m^\mathrm{min}_{i,n,t,y} S^\mathrm{approx}_{i,n,t,y} \leq G_{i,n,t,y}^\mathrm{r} \leq S^\mathrm{approx}_{i,n,t,y}
 
 Similarly, for transport technologies it follows:
 
 .. math::
     :label: min_load_transport
 
-    F_{j,e,t,y}^\mathrm{r} \geq m^\mathrm{min}_{j,n,t,y} S^\mathrm{approx}_{j,e,y}
+    m^\mathrm{min}_{j,e,t,y} S^\mathrm{approx}_{j,e,t,y} \leq F_{j,e,t,y}^\mathrm{r} \leq S^\mathrm{approx}_{j,e,t,y}
 
 For storage technologies, the minimum load constraint is formulated as the sum of the charge and discharge flows as storage technologies do not charge and discharge at the same time:
 
 .. math::
     :label: min_load_storage
 
-    \underline{H}_{k,n,t,y} + \overline{H}_{k,n,t,y} \geq m^\mathrm{min}_{k,n,t,y} S^\mathrm{approx}_{k,e,y}
+    m^\mathrm{min}_{k,n,t,y} S^\mathrm{approx}_{k,e,t,y} \leq \underline{H}_{k,n,t,y} + \overline{H}_{k,n,t,y} \leq S^\mathrm{approx}_{k,n,t,y}
 
-Two more constraints are added to ensure that :math:`S^\mathrm{approx}_{h,p,y}` equals the installed capacity if the technology is on (i.e., :math:`b_{h,p,t}=1`), and that :math:`S^\mathrm{approx}_{h,p,y}` equals zero if the technology is off (i.e., :math:`b_{h,p,t}=0`):
+Two more constraints are added to ensure that :math:`S^\mathrm{approx}_{h,p,t,y}` equals the installed capacity if the technology is on (i.e., :math:`B_{h,p,t}=1`), and that :math:`S^\mathrm{approx}_{h,p,t,y}` equals zero if the technology is off (i.e., :math:`B_{h,p,t}=0`):
 
 .. math::
     :label: binary_constraint_on
 
-    S^\mathrm{approx}_{i,p,y} \leq S_{i,p,y} \\\\
-    S^\mathrm{approx}_{i,p,y} \geq (1-b_{h,p,t}) M + S_{i,p,y}
+    0 \leq S^\mathrm{approx}_{h,p,t,y} \leq s^\mathrm{max}_{h,p,y} B_{h,p,t}\\\\
+    S_{h,p,y} + (1-B_{h,p,t}) s^\mathrm{max}_{h,p,y} \leq S^\mathrm{approx}_{h,p,t,y} \leq S_{h,p,y}
 
-where a sufficiently large :math:`M` is selected. Here :math:`M` could be represented by the maximum technology capacity :math:`s^\mathrm{max}_{h,p,y}`.
+If no physically motivated capacity limit :math:`s^\mathrm{max}_{h,p,y}` exists, :math:`s^\mathrm{max}_{h,p,y}` must be large enough to ensure that the technology is not constrained by the capacity limit (Big-M parameter).
 
 .. _min_capacity_installation:
 Minimum capacity installation

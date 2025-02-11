@@ -204,56 +204,6 @@ class TransportTechnology(Technology):
         # capex of transport technologies
         rules.constraint_transport_technology_capex()
 
-    # defines disjuncts if technology on/off
-    @classmethod
-    def disjunct_on_technology(cls, optimization_setup, tech, capacity_type, edge, time, binary_var):
-        """definition of disjunct constraints if technology is on
-
-        :param optimization_setup: optimization setup
-        :param tech: technology
-        :param capacity_type: type of capacity (power, energy)
-        :param node: node
-        :param time: yearly time step
-        :param binary_var: binary disjunction variable
-        """
-        model = optimization_setup.model
-        # get parameter object
-        params = optimization_setup.parameters
-        constraints = optimization_setup.constraints
-        # get invest time step
-        time_step_year = optimization_setup.energy_system.time_steps.convert_time_step_operation2year(time)
-        # TODO make to constraint rule or integrate in new structure!!
-        # formulate constraint
-        lhs = model.variables["flow_transport"].loc[tech, edge, time]\
-                - params.min_load.loc[tech, capacity_type, edge, time] * model.variables["capacity"].loc[tech, capacity_type, edge, time_step_year]
-        rhs = 0
-        constraint = lhs >= rhs
-
-        # disjunct constraints min load
-        constraints.add_constraint_block(model, name=f"disjunct_transport_technology_min_load_{tech}_{capacity_type}_{edge}_{time}",
-                                         constraint=constraint,
-                                         disjunction_var=binary_var)
-
-    @classmethod
-    def disjunct_off_technology(cls, optimization_setup, tech, capacity_type, edge, time, binary_var):
-        """definition of disjunct constraints if technology is off
-
-        :param optimization_setup: optimization setup
-        :param tech: technology
-        :param capacity_type: type of capacity (power, energy)
-        :param node: node
-        :param time: yearly time step
-        :param binary_var: binary disjunction variable
-        """
-        model = optimization_setup.model
-        constraints = optimization_setup.constraints
-
-        # since it is an equality con we add lower and upper bounds
-        constraints.add_constraint_block(model, name=f"disjunct_transport_technology_off_{tech}_{capacity_type}_{edge}_{time}_lower",
-                                         constraint=(model.variables["flow_transport"].loc[tech, edge, time].to_linexpr()
-                                                     == 0),
-                                         disjunction_var=binary_var)
-
 
 class TransportTechnologyRules(GenericRule):
     """
