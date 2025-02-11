@@ -44,8 +44,7 @@ Review recent modifications outlined in the [changelog](https://github.com/ZEN-u
 If you use ZEN-garden for research please cite
 
 Jacob Mannhardt, Alissa Ganter, Johannes Burger, Francesco De Marco, Lukas Kunz, Lukas Schmidt-Engelbertz, Paolo Gabrielli, Giovanni Sansavini (2025).
-ZEN-garden: Optimizing energy transition pathways with user-oriented data handling
-5https://www.sciencedirect.com/science/article/pii/S2352711025000263
+ZEN-garden: Optimizing energy transition pathways with user-oriented data handling. https://www.sciencedirect.com/science/article/pii/S2352711025000263
 
 and use the following BibTeX:
 ```
