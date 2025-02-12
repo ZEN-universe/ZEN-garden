@@ -5,3 +5,4 @@ Constraint Name;Time Step Type;Doc String
 ``constraint_couple_storage_level``;``set_time_steps_storage_level``;couple subsequent storage levels (time coupling constraints)
 ``constraint_capacity_energy_to_power_ratio``;``set_time_steps_storage_level``;couple storage energy and power capacity
 ``constraint_storage_technology_capex``;``set_time_steps_yearly``;Capital expenditures for installing storage technology
+``constraint_flow_storage_spillage``;``set_time_steps_storage_level``; Limit spillage for storage technologies
