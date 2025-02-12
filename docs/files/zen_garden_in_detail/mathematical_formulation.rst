@@ -503,6 +503,7 @@ The spillage is a non-negative variable that is constrained by the inflow :math:
 
 .. math::
     :label: spillage_limit
+
     0 \leq Y_{k,n,t^\mathrm{k},y} \leq \xi_{k,n,t^\mathrm{k},y}
 
 
