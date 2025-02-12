@@ -676,11 +676,11 @@ class Variable(Component):
         :param doc: docstring of variable
         :param mask: mask of variable
         """
-
         if name not in self.docs.keys():
             index_values, index_list = self.get_index_names_data(index_sets)
             mask_index, lower, upper = self.index_sets.indices_to_mask(index_values, index_list, bounds, model)
             if mask is not None:
+                mask = mask.reindex_like(mask_index,fill_value=False)
                 mask_index = mask_index & mask
             model.add_variables(lower=lower, upper=upper, integer=integer, binary=binary, name=name, mask=mask_index, coords=mask_index.coords)
 
@@ -699,25 +699,26 @@ class Variable(Component):
                 else:
                     domain = "Reals"
             self.docs[name] = self.compile_doc_string(doc, index_list, name, domain)
-            self.units[name] = self.get_var_units(unit_category, index_values, index_list)
+            self.units[name] = self.get_var_units(unit_category, index_values, index_list,mask_index)
         else:
             logging.warning(f"Variable {name} already added. Can only be added once")
 
-    def get_var_units(self, unit_category, var_index_values, index_list):
+    def get_var_units(self, unit_category, var_index_values, index_list,mask=None):
         """
          creates series of units with identical multi-index as variable has
 
         :param unit_category: dict defining the dimensionality of the variable's unit
         :param var_index_values: list of variable index values
         :param index_list: list of index names
+        :param mask: mask of variable
         :return: series of variable units
         """
         # if not check_unit_consistency
         if not self.optimization_setup.solver.check_unit_consistency:
-            return
+            return None
         # binary variables
         if not unit_category:
-            return
+            return None
         if all(isinstance(item, tuple) for item in var_index_values):
             index = pd.MultiIndex.from_tuples(var_index_values, names=index_list)
         else:
@@ -752,7 +753,7 @@ class Variable(Component):
         # variable has constant unit
         else:
             var_units[:] = str(unit.units)
-        return var_units
+        return var_units[mask.to_series()]
 
 class Constraint(Component):
     def __init__(self, index_sets,model):
@@ -770,7 +771,7 @@ class Constraint(Component):
         """ initialization of a constraint
 
         :param name: name of variable
-        :param constraint: either a linopy constraint or a dictionary of constraints or None TODO
+        :param constraint: either a linopy constraint or a dictionary of constraints or None
         :param doc: docstring of variable"""
 
         if name not in self.docs.keys():
