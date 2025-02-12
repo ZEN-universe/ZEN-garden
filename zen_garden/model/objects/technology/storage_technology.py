@@ -185,70 +185,6 @@ class StorageTechnology(Technology):
         # Linear Capex
         rules.constraint_storage_technology_capex()
 
-    # defines disjuncts if technology on/off
-    @classmethod
-    def disjunct_on_technology(cls, optimization_setup, tech, capacity_type, node, time, binary_var):
-        """definition of disjunct constraints if technology is on
-
-        :param optimization_setup: optimization setup
-        :param tech: technology
-        :param capacity_type: type of capacity (power, energy)
-        :param node: node
-        :param time: yearly time step
-        :param binary_var: binary disjunction variable
-        """
-        params = optimization_setup.parameters
-        constraints = optimization_setup.constraints
-        model = optimization_setup.model
-        energy_system = optimization_setup.energy_system
-        # get invest time step
-        # TODO make to constraint rule or integrate in new structure!!!
-        time_step_year = energy_system.time_steps.convert_time_step_operation2year(time)
-        # get min load limit
-        min_load = params.min_load.loc[tech, capacity_type, node, time] * model.variables["capacity"].loc[tech, capacity_type, node, time_step_year]
-        # formulate constraint
-        lhs = model.variables["flow_storage_charge"].loc[tech, node, time] - min_load
-        rhs = 0
-        constraint = lhs >= rhs
-        # disjunct constraints min load charge
-        constraints.add_constraint_block(model, name=f"disjunct_storage_technology_min_load_charge_{tech}_{capacity_type}_{node}_{time}",
-                                         constraint=constraint, disjunction_var=binary_var)
-        # formulate constraint
-        lhs = model.variables["flow_storage_discharge"].loc[tech, node, time] - min_load
-        rhs = 0
-        constraint = lhs >= rhs
-        # disjunct constraints min load discharge
-        constraints.add_constraint_block(model, name=f"disjunct_storage_technology_min_load_discharge_{tech}_{capacity_type}_{node}_{time}",
-                                         constraint=constraint, disjunction_var=binary_var)
-
-    @classmethod
-    def disjunct_off_technology(cls, optimization_setup, tech, capacity_type, node, time, binary_var):
-        """definition of disjunct constraints if technology is off
-
-        :param optimization_setup: optimization setup
-        :param tech: technology
-        :param capacity_type: type of capacity (power, energy)
-        :param node: node
-        :param time: yearly time step
-        :param binary_var: binary disjunction variable
-        """
-        model = optimization_setup.model
-        constraints = optimization_setup.constraints
-
-        # for equality constraints we need to add upper and lower bounds
-        # off charging
-        constraints.add_constraint_block(model, name=f"disjunct_storage_technology_off_charge_{tech}_{capacity_type}_{node}_{time}",
-                                         constraint=(model.variables["flow_storage_charge"].loc[tech, node, time]
-                                                     == 0),
-                                         disjunction_var=binary_var)
-
-        # off discharging
-        constraints.add_constraint_block(model, name=f"disjunct_storage_technology_off_discharge_{tech}_{capacity_type}_{node}_{time}",
-                                         constraint=(model.variables["flow_storage_discharge"].loc[tech, node, time]
-                                                     == 0),
-                                         disjunction_var=binary_var)
-
-
 class StorageTechnologyRules(GenericRule):
     """
     Rules for the StorageTechnology class
@@ -502,10 +438,4 @@ class StorageTechnologyRules(GenericRule):
 
         self.constraints.add_constraint("constraint_storage_technology_capex", constraints)
 
-    def get_flow_expression_storage(self, rename=True):
-        """ return the flow expression for storage technologies """
-        term = (self.variables["flow_storage_charge"] + self.variables["flow_storage_discharge"])
-        if rename:
-            return term.rename({"set_storage_technologies": "set_technologies", "set_nodes": "set_location"})
-        else:
-            return term
+
