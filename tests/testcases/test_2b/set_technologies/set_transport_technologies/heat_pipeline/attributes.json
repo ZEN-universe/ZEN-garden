@@ -16,7 +16,7 @@
     "unit": "GW"
   },
   "min_load": {
-    "default_value": 0.2,
+    "default_value": 0.5,
     "unit": "1"
   },
   "max_load": {
@@ -33,7 +33,7 @@
   },
   "reference_carrier": {
     "default_value": [
-      "natural_gas"
+      "heat"
     ]
   },
   "carbon_intensity_technology": {
@@ -57,7 +57,7 @@
     "unit": "1"
   },
   "transport_loss_factor_linear": {
-    "default_value": 5e-05,
+    "default_value": 0,
     "unit": "1/km"
   },
   "capex_per_distance_transport": {

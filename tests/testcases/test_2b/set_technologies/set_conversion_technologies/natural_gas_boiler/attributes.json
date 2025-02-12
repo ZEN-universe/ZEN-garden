@@ -12,7 +12,7 @@
     "unit": "GW"
   },
   "capacity_limit": {
-    "default_value": 150,
+    "default_value": 300,
     "unit": "GW"
   },
   "min_load": {
