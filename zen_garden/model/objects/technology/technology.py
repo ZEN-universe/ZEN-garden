@@ -3,7 +3,6 @@ Class defining the parameters, variables and constraints that hold for all techn
 The class takes the abstract optimization model as an input, and returns the parameters, variables and
 constraints that hold for all technologies.
 """
-import cProfile
 import itertools
 import logging
 
@@ -388,7 +387,6 @@ class Technology(Element):
             :return bounds: bounds of capacity"""
             # bounds only needed for Big-M formulation, thus if any technology is modeled with on-off behavior
             if tech in techs_on_off:
-                system = optimization_setup.system
                 params = optimization_setup.parameters.dict_parameters
                 capacity_existing = params.capacity_existing
                 capacity_addition_max = params.capacity_addition_max
@@ -416,7 +414,7 @@ class Technology(Element):
             bounds=capacity_bounds, doc='size of installed technology at location l and time t', unit_category={"energy_quantity": 1, "time": -1})
         # capacity technology before current year
         variables.add_variable(model, name="capacity_previous", index_sets=cls.create_custom_set(["set_technologies", "set_capacity_types", "set_location", "set_time_steps_yearly"], optimization_setup),
-            bounds=capacity_bounds, doc='size of installed technology at location l and BEFORE time t', unit_category={"energy_quantity": 1, "time": -1})
+            bounds=(0,np.inf), doc='size of installed technology at location l and BEFORE time t', unit_category={"energy_quantity": 1, "time": -1})
         # built_capacity technology
         variables.add_variable(model, name="capacity_addition", index_sets=cls.create_custom_set(["set_technologies", "set_capacity_types", "set_location", "set_time_steps_yearly"], optimization_setup),
             bounds=(0,np.inf), doc='size of built technology (invested capacity after construction) at location l and time t', unit_category={"energy_quantity": 1, "time": -1})
@@ -465,6 +463,13 @@ class Technology(Element):
         if mask.any():
             variables.add_variable(model, name="technology_installation", index_sets=cls.create_custom_set(["set_technologies", "set_capacity_types", "set_location", "set_time_steps_yearly"], optimization_setup),
                                    binary=True, doc='installment of a technology at location l and time t', mask=mask, unit_category=None)
+
+        # on-off variables
+        # We remove the binary variables if there are any no constraints that use them
+        index_vals, _ = cls.create_custom_set(["set_technologies", "set_on_off", "set_location", "set_time_steps_operation"], optimization_setup)
+        index_names = ["set_technologies", "set_location", "set_time_steps_operation"]
+        variables.add_variable(model, name="tech_on_var", index_sets=(index_vals, index_names),doc="Binary variable which equals 1 when technology is switched on at location l and time t", binary=True, unit_category=None)
+        variables.add_variable(model, name="capacity_on_off_helper_var",index_sets=(index_vals, index_names), bounds=(0, np.inf),doc="Helper variable that substitutes the product of capacity and tech_on_var",unit_category={"energy_quantity": 1, "time": -1})
 
         # add pe.Vars of the child classes
         for subclass in cls.__subclasses__():
@@ -524,37 +529,14 @@ class Technology(Element):
             constraints.add_constraint_block(model, name='constraint_technology_lca_impacts_total', constraint=rules.constraint_technology_lca_impacts_total_block(),
                                              doc='total lca impacts of all technologies per year')
 
-        # disjunct if technology is on
-        # the disjunction variables
-        variables = optimization_setup.variables
-        index_vals, _ = cls.create_custom_set(["set_technologies", "set_on_off", "set_capacity_types", "set_location", "set_time_steps_operation"], optimization_setup)
-        index_names = ["on_off_technologies", "on_off_capacity_types", "on_off_locations",
-                       "on_off_time_steps_operation"]
-        variables.add_variable(model, name="tech_on_var",
-                               index_sets=(index_vals, index_names),
-                               doc="Binary variable which equals 1 when technology is switched on at location l and time t",
-                               binary=True, unit_category=None)
-        variables.add_variable(model, name="tech_off_var",
-                               index_sets=(index_vals, index_names),
-                               doc="Binary variable which equals 1 when technology is switched off at location l and time t",
-                               binary=True, unit_category=None)
-        model.add_constraints(model.variables["tech_on_var"] + model.variables["tech_off_var"] == 1, name="tech_on_off_cons")
+        # min load constraints
         n_cons = len(model.constraints.items())
-
-        # disjunct if technology is on
-        constraints.add_constraint_rule(model, name="disjunct_on_technology",
-            index_sets=cls.create_custom_set(["set_technologies", "set_on_off", "set_capacity_types", "set_location", "set_time_steps_operation"], optimization_setup), rule=rules.disjunct_on_technology,
-            doc="disjunct to indicate that technology is on")
-        # disjunct if technology is off
-        constraints.add_constraint_rule(model, name="disjunct_off_technology",
-            index_sets=cls.create_custom_set(["set_technologies", "set_on_off", "set_capacity_types", "set_location", "set_time_steps_operation"], optimization_setup), rule=rules.disjunct_off_technology,
-            doc="disjunct to indicate that technology is off")
+        rules.constraint_technology_on_off()
 
         # if nothing was added we can remove the tech vars again
         if len(model.constraints.items()) == n_cons:
-            model.constraints.remove("tech_on_off_cons")
             model.variables.remove("tech_on_var")
-            model.variables.remove("tech_off_var")
+            model.variables.remove("capacity_on_off_helper_var")
 
         # add pe.Constraints of the child classes
         for subclass in cls.__subclasses__():
@@ -630,41 +612,6 @@ class TechnologyRules(GenericRule):
         """
 
         super().__init__(optimization_setup)
-
-    # Disjunctive Constraints
-    # -----------------------
-    def disjunct_on_technology(self, tech, capacity_type, loc, time):
-        """definition of disjunct constraints if technology is On
-        iterate through all subclasses to find corresponding implementation of disjunct constraints
-
-        :param tech: technology
-        :param capacity_type: capacity type
-        :param loc: location
-        :param time: time step
-        """
-        for subclass in Technology.__subclasses__():
-            if tech in self.optimization_setup.get_all_names_of_elements(subclass):
-                # extract the relevant binary variable (not scalar, .loc is necessary)
-                binary_var = self.optimization_setup.model.variables["tech_on_var"].loc[tech, capacity_type, loc, time]
-                subclass.disjunct_on_technology(self.optimization_setup, tech, capacity_type, loc, time, binary_var)
-                return None
-
-    def disjunct_off_technology(self, tech, capacity_type, loc, time):
-        """definition of disjunct constraints if technology is off
-        iterate through all subclasses to find corresponding implementation of disjunct constraints
-
-        :param tech: technology
-        :param capacity_type: capacity type
-        :param loc: location
-        :param time: time step
-        """
-        for subclass in Technology.__subclasses__():
-            if tech in self.optimization_setup.get_all_names_of_elements(subclass):
-                # extract the relevant binary variable (not scalar, .loc is necessary)
-                binary_var = self.optimization_setup.model.variables["tech_off_var"].loc[tech, capacity_type, loc, time]
-                subclass.disjunct_off_technology(self.optimization_setup, tech, capacity_type, loc, time, binary_var)
-                return None
-
     # Normal constraints
     # -----------------------
 
@@ -1308,6 +1255,84 @@ class TechnologyRules(GenericRule):
 
         self.constraints.add_constraint("constraint_carbon_emissions_technology_total",constraints)
 
+    def constraint_technology_on_off(self):
+        """ if technology is on, the binary variable is 1, else 0
+
+        The min load constraint is expressed as six constraints (here for conversion technologies):
+
+        .. math::
+             m^\\mathrm{min}_{i,n,t}S^\\mathrm{approx}_{i,n,t}\\leq G^\\mathrm{r}_{i,n,t} \\leq S^\\mathrm{approx}_{i,n,t} \n
+             0 \\leq S^\\mathrm{approx}_{i,n,t} \\leq s^\\mathrm{max}_{i,n,y} B_{i,n,t} \n
+             S_{i,n,y} - s^\\mathrm{max}_{i,n,y}(1-B_{i,n,t}) \\leq S^\\mathrm{approx}_{i,n,t} \\leq S_{i,n,y}
+
+        :math:`m^\\mathrm{min}_{i,n,t}`: minimum load parameter for technology :math:`i`, node :math:`n`, time step :math:`t` \n
+        :math:`G_{i,n,t}^\\mathrm{r}`: reference carrier flow of the technology :math:`i` at node :math:`n` in time step :math:`t` \n
+        :math:`S_{h,p,y}`: installed capacity of technology :math:`h` at location :math:`p` in year :math:`y` \n
+        :math:`B_{i,n,t}`: binary variable indicating whether the technology is on or off for technology :math:`i`, node :math:`n`, time step :math:`t` \n
+        :math:`S^\\mathrm{approx}_{i,n,t}`: helper variable that represents the product of :math:`S_{i,n,y}` and :math:`B_{i,n,t}` \n
+        :math:`s^\\mathrm{max}_{i,n,y}`: Big-M limit on :math:`S_{h,p,y}`
+        """
+        # sets
+        conversion_techs = self.sets["set_conversion_technologies"]
+        storage_techs = self.sets["set_storage_technologies"]
+        transport_techs = self.sets["set_transport_technologies"]
+        nodes = self.sets["set_nodes"]
+        times = self.sets["set_time_steps_operation"]
+        time_step_year = xr.DataArray(
+            [self.optimization_setup.energy_system.time_steps.convert_time_step_operation2year(t) for t in times.data],
+            coords=[times],dims=["set_time_steps_operation"])
+        techs_on_off = Technology.create_custom_set(["set_technologies", "set_on_off"], self.optimization_setup)[0]
+        if len(techs_on_off) == 0:
+            return None
+        # params and variables
+        min_load = self.parameters.min_load.sel({"set_capacity_types":"power"})
+        capacity = self.variables["capacity"].sel({"set_capacity_types":"power","set_time_steps_yearly":time_step_year})
+        big_M = capacity.upper
+        binary = self.variables["tech_on_var"]
+        capacity_on_off_helper = self.variables["capacity_on_off_helper_var"]
+        mask_on_off = binary.mask
+        # assert that no big-M is inf
+        sel_big_M = (big_M.where(mask_on_off) == np.inf).to_series()
+        assert ~sel_big_M.any(), f"Big-M is inf for {sel_big_M[sel_big_M].index.droplevel(2).unique().to_list()}. Please set finite capacity limits of the technologies."
+        # flows
+        list_flow_reference = []
+        if len(conversion_techs) > 0:
+            list_flow_reference.append(self.get_flow_expression_conversion(conversion_techs,nodes).rename({"set_conversion_technologies": "set_technologies", "set_nodes": "set_location"}))
+        if len(storage_techs) > 0:
+            list_flow_reference.append(self.get_flow_expression_storage(rename=True))
+        if len(transport_techs) > 0:
+            list_flow_reference.append(self.variables["flow_transport"].rename({"set_transport_technologies": "set_technologies", "set_edges": "set_location"}).to_linexpr())
+        flow_reference = lp.merge(list_flow_reference, compat="broadcast_equals")
+        flow_reference = flow_reference.reindex_like(mask_on_off)
+        # constraints
+        # constraint 1, operational limit
+        # 1a, lower bound
+        lhs_1a = self.align_and_mask(min_load * capacity_on_off_helper - flow_reference,mask_on_off)
+        rhs_1a = 0
+        constraints_1a = lhs_1a <= rhs_1a
+        self.constraints.add_constraint("constraint_technology_on_off_operation_lower_bound",constraints_1a)
+        # 1a, upper bound
+        lhs_1b = self.align_and_mask(- capacity_on_off_helper + flow_reference,mask_on_off)
+        rhs_1b = 0
+        constraints_1b = lhs_1b <= rhs_1b
+        self.constraints.add_constraint("constraint_technology_on_off_operation_upper_bound",constraints_1b)
+        # constraint 2, limit capacity helper (lower bound already given by variable definition)
+        lhs_2 = self.align_and_mask(capacity_on_off_helper - big_M * binary,mask_on_off)
+        rhs_2 = 0
+        constraints_2 = lhs_2 <= rhs_2
+        self.constraints.add_constraint("constraint_technology_on_off_capacity_helper",constraints_2)
+        # constraint 3, capacity helper bounds
+        # 3a, lower bound
+        lhs_3a = self.align_and_mask(capacity + big_M * binary - capacity_on_off_helper,mask_on_off)
+        rhs_3a = big_M
+        constraints_3a = lhs_3a <= rhs_3a
+        self.constraints.add_constraint("constraint_technology_on_off_capacity_helper_lower_bound",constraints_3a)
+        # 3b, upper bound
+        lhs_3b = self.align_and_mask(capacity_on_off_helper - capacity,mask_on_off)
+        rhs_3b = 0
+        constraints_3b = lhs_3b <= rhs_3b
+        self.constraints.add_constraint("constraint_technology_on_off_capacity_helper_upper_bound",constraints_3b)
+
     def constraint_technology_lca_impacts_block(self):
         """ lca impacts of all technologies per location and year"""
 
@@ -1357,10 +1382,6 @@ class TechnologyRules(GenericRule):
             constraints[tech] = lhs == rhs
 
         self.constraints.return_contraints('constraint_technology_lca_impacts', constraints)
-        ### return
-        # return self.constraints.return_contraints(constraints, model=self.model,
-        #                                           index_values=index.get_unique(["set_technologies"]),
-        #                                           index_names=["set_technologies"])
 
     def constraint_technology_lca_impacts_total_block(self):
         """ calculate total lca impacts of each technology """
@@ -1395,8 +1416,3 @@ class TechnologyRules(GenericRule):
             constraints[year] = lhs == rhs
 
         self.constraints.return_contraints('constraint_technology_lca_impacts_total', constraints)
-        ### return
-        # return self.constraints.return_contraints(constraints,
-        #                                           model=self.model,
-        #                                           index_values=years,
-        #                                           index_names=["set_time_steps_yearly"])

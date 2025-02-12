@@ -410,3 +410,32 @@ class GenericRule(object):
         mask = xr.align(mask, aligner, join="right")[0]
         expr = expr.where(mask)
         return expr
+
+    def get_flow_expression_conversion(self,techs, nodes, factor=None, rename=False):
+        """ return the flow expression for conversion technologies """
+        reference_flows = []
+        for t in techs:
+            rc = self.sets["set_reference_carriers"][t][0]
+            if factor is not None:
+                mult = factor.loc[t, nodes]
+            else:
+                mult = 1
+            # TODO can we avoid the indexing here?
+            if rc in self.sets["set_input_carriers"][t]:
+                reference_flows.append(mult * self.variables["flow_conversion_input"].loc[t, rc, nodes, :])
+            else:
+                reference_flows.append(mult * self.variables["flow_conversion_output"].loc[t, rc, nodes, :])
+        if rename:
+            term_reference_flow = lp.merge(reference_flows, dim="set_technologies").rename(
+                {"set_nodes": "set_location"})
+        else:
+            term_reference_flow = lp.merge(reference_flows, dim="set_conversion_technologies")
+        return term_reference_flow
+
+    def get_flow_expression_storage(self,rename=True):
+        """ return the flow expression for storage technologies """
+        term = (self.variables["flow_storage_charge"] + self.variables["flow_storage_discharge"])
+        if rename:
+            return term.rename({"set_storage_technologies": "set_technologies", "set_nodes": "set_location"})
+        else:
+            return term
