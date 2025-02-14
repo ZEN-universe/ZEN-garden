@@ -52,7 +52,7 @@ After successfully running an optimization. you can start the visualization with
 .. note::
 
     By default, the suite looks for solutions that are contained in the folder ``./outputs``, relatively to where you run the command. If you are copying results from somewhere else, make sure to create a folder called ``outputs`` and copy the results there.
-    Alternatively, you can pass an arbitrary folder with ``python -m zen_garden.visualization <path to your solutions folder>`` to change the solutions folder.
+    Alternatively, you can pass an arbitrary folder with ``python -m zen_garden.visualization -o <path to your solutions folder>`` to change the solutions folder.
 
 This command will open a new tab in your default browser with the correct URL.
 If the tab does not open automatically, you can open http://localhost:8000/ in any browser of your choice.
