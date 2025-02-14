@@ -7,6 +7,8 @@ import json
 import logging
 import os
 from pathlib import Path
+
+import numpy as np
 import pint
 from tables import NaturalNameWarning
 import warnings
@@ -27,7 +29,7 @@ class Postprocess:
     """
     Class is defining the postprocessing of the results
     """
-    def __init__(self, optimization_setup: OptimizationSetup, scenarios, model_name, subfolder=None, scenario_name=None, param_map=None, include_year2operation=True):
+    def __init__(self, optimization_setup: OptimizationSetup, scenarios, model_name, subfolder=None, scenario_name=None, param_map=None):
         """postprocessing of the results of the optimization
 
         :param model: optimization model
@@ -35,7 +37,6 @@ class Postprocess:
         :param subfolder: The subfolder used for the results
         :param scenario_name: The name of the current scenario
         :param param_map: A dictionary mapping the parameters to the scenario names
-        :param include_year2operation: Specify if the year2operation dict should be included in the results file
         """
         logging.info("--- Postprocess results ---")
         # get the necessary stuff from the model
@@ -94,9 +95,10 @@ class Postprocess:
         # extract and save sequence time steps, we transform the arrays to lists
         self.dict_sequence_time_steps = self.flatten_dict(self.energy_system.time_steps.get_sequence_time_steps_dict())
         self.dict_sequence_time_steps["optimized_time_steps"] = optimization_setup.optimized_time_steps
-        if include_year2operation:
-            self.dict_sequence_time_steps["time_steps_year2operation"] = self.get_time_steps_year2operation()
-            self.dict_sequence_time_steps["time_steps_year2storage"] = self.get_time_steps_year2storage()
+        self.dict_sequence_time_steps["time_steps_operation_duration"] = self.energy_system.time_steps.time_steps_operation_duration
+        self.dict_sequence_time_steps["time_steps_storage_duration"] = self.energy_system.time_steps.time_steps_storage_duration
+        self.dict_sequence_time_steps["time_steps_year2operation"] = self.get_time_steps_year2operation()
+        self.dict_sequence_time_steps["time_steps_year2storage"] = self.get_time_steps_year2storage()
 
         self.save_sequence_time_steps(scenario=scenario_name)
 
@@ -179,10 +181,13 @@ class Postprocess:
         benchmarking_data["scaling_time"] = self.scaling.scaling_time
 
         #get numerical range
-        range_lhs, range_rhs, cond = self.scaling.print_numerics(0, False, True)
+        range_lhs, range_rhs, cond = self.scaling.print_numerics(0, False, True, False)
         benchmarking_data["numerical_range_lhs"] = range_lhs
         benchmarking_data["numerical_range_rhs"] = range_rhs
         benchmarking_data["condition_number"] = cond
+        #for this crossover must be on!
+        #edited out for now as this can be very slow
+        #benchmarking_data["condition_number_gurobi"] = self.model.solver_model.Kappa
 
 
         fname = self.name_dir.joinpath('benchmarking')
@@ -240,10 +245,15 @@ class Postprocess:
     def save_param(self):
         """ Saves the Param values to a json file which can then be
         post-processed immediately or loaded and postprocessed at some other time"""
+        if not self.solver.save_parameters:
+            logging.info("Parameters are not saved")
+            return
 
         # dataframe serialization
         data_frames = {}
         for param in self.params.docs.keys():
+            if self.solver.selected_saved_parameters and param not in self.solver.selected_saved_parameters:
+                continue
             # get the values
             vals = getattr(self.params, param)
             doc = self.params.docs[param]
@@ -274,11 +284,13 @@ class Postprocess:
         # dataframe serialization
         data_frames = {}
         for name, arr in self.model.solution.items():
+            if self.solver.selected_saved_variables and name not in self.solver.selected_saved_variables:
+                continue
             if name in self.vars.docs:
                 doc = self.vars.docs[name]
                 units = self.vars.units[name]
                 index_list = self.get_index_list(doc)
-            elif name.startswith("sos2_var") or name in ["tech_on_var", "tech_off_var"]:
+            elif name.startswith("sos2_var"):
                 continue
             else:
                 index_list = []
@@ -300,7 +312,8 @@ class Postprocess:
     def save_duals(self):
         """ Saves the dual variable values to a json file which can then be
         post-processed immediately or loaded and postprocessed at some other time"""
-        if not self.solver.add_duals:
+        if not self.solver.save_duals:
+            logging.info("Duals are not saved")
             return
 
         # dataframe serialization
@@ -434,7 +447,18 @@ class Postprocess:
             fname = self.name_dir.parent.joinpath(f'dict_all_sequence_time_steps{add_on}')
         else:
             fname = self.name_dir.joinpath(f'dict_all_sequence_time_steps{add_on}')
-        self.write_file(fname, self.dict_sequence_time_steps)
+        dict_sequence_time_steps = self.dict_sequence_time_steps
+        dict_formatted = {}
+        for k,v in dict_sequence_time_steps.items():
+            if isinstance(v, np.ndarray):
+                dict_formatted[k] = v.tolist()
+            elif isinstance(v, dict):
+                dict_formatted[k] = {str(kk): vv.tolist() if isinstance(vv, np.ndarray) else str(vv) for kk, vv in v.items()}
+            elif isinstance(v, list):
+                dict_formatted[k] = v
+            else:
+                NotImplementedError(f"Type {type(v)} not supported for key {k}")
+        self.write_file(fname, dict_formatted, format="json")
 
     def _transform_df(self, df, doc, units=None):
         """we transform the dataframe to a json string and load it into the dictionary as dict

@@ -42,7 +42,7 @@ The dataset, the objective function and the solver are selected in the ``analysi
     :widths: 10 10 10 20
     :delim: ;
 
-The settings of the timeseries aggregation algorithm are also specified in the ``analysis.json``. The following table summarizes the available timeseries aggregation settings and their default values. For further information on how to use the timeseries aggregation, see :ref:`use_tsa`. In addition, :ref:`Time series aggregation and representation` and :ref:`time_parameters` provide helpful information on the time representation and the time parameters in ZEN-garden.
+The settings of the timeseries aggregation algorithm are also specified in the ``analysis.json``. The following table summarizes the available timeseries aggregation settings and their default values. For further information on how to use the timeseries aggregation, see :ref:`using_the_tsa`. In addition, :ref:`Time series aggregation and representation` and :ref:`time_parameters` provide helpful information on the time representation and the time parameters in ZEN-garden.
 
 .. csv-table:: Timeseries Aggregation Settings
     :header-rows: 1
@@ -64,7 +64,16 @@ Solver settings are also specified in the ``analysis.json``. The following table
 
 Per default the open-source solver `HiGHS <https://highs.dev/>`_ is used. You can change the solver by modifying the ``solver`` key. Solver-specific settings are passed via the ``solver_settings``. Please refer to the solver documentation for the available solver settings for the solver that you are using.
 
-For linear optimization problems, the dual variables can be computed by selecting ``duals=True``. You can analyze the numerics of your optimization problem via ``analyze_numerics`` and get recommendations on how to improve the selection of your base units ``recommend_base_units``. In addition, a scaling algorithm is available. Per default, four iterations of the scaling algorithm are conducted without including the values of the right-hand-side. :ref:`Scaling` provides a detailed description of the scaling algorithm.
+For linear optimization problems, the dual variables can be computed and saved by selecting ``save_duals=True``. Saving the duals helps understand the optimality of the solution, but it also strongly increases the file size of the output files.
+The parameters of the optimization problem can be saved by selecting ``save_parameters=True``. If you only want to save specific parameters, you can specify them in the ``selected_saved_parameters`` list. The same applies to the variables, which can be specified in the ``selected_saved_variables`` list.
+
+.. note::
+
+    Non-selected parameters and variables are not saved. We recommend to only use the option to skip saving parameters and variables if you are sure that you do not need them.
+    The visualization platform may not work properly if you do not save the parameters and variables.
+
+You can analyze the numerics of your optimization problem via ``analyze_numerics``.
+In addition, a scaling algorithm is available. Per default, four iterations of the scaling algorithm are conducted without including the values of the right-hand-side. :ref:`Scaling` provides a detailed description of the scaling algorithm.
 
 .. _Time series aggregation and representation:
 Time series aggregation and representation

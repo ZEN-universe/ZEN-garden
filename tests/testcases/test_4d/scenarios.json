@@ -11,6 +11,12 @@
       "opex_specific_fixed": {
         "default": ["attributes_cheap","attributes_expensive"]
       }
+    },
+    "system": {
+      "reference_year": {
+        "value": [2023, 2024],
+        "value_fmt": "reference_year_{}"
+      }
     }
   }
 }

@@ -175,6 +175,14 @@ class SolutionLoader(ABC):
         """
         pass
 
+    @property
+    @abstractmethod
+    def has_parameters(self) -> bool:
+        """
+        Abstract boolean property specifying if a solution has parameters or not.
+        """
+        pass
+
     @abstractmethod
     def get_component_data(
         self,

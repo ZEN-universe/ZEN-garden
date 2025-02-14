@@ -12,7 +12,7 @@
     "unit": "GW"
   },
   "capacity_limit": {
-    "default_value": 150,
+    "default_value": 300,
     "unit": "GW"
   },
   "min_load": {
@@ -66,14 +66,12 @@
       "heat"
     ]
   },
-  "conversion_factor": [
-    {
+  "conversion_factor": {
       "natural_gas": {
         "default_value": 1.1,
         "unit": "GWh/GWh"
       }
-    }
-  ],
+  },
   "capex_specific_conversion": {
     "default_value": 876.0,
     "unit": "Euro/kW"

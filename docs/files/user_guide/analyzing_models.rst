@@ -31,11 +31,15 @@ Optional arguments can be passed to the member functions to filter the results. 
 2. ``year``: A single optimization period for which the results should be returned (0, 1, 2, ...). Not available for ``r.get_unit()``.
 3. ``scenario_name``: A single scenario name for which the results should be returned.
 
-To return the names of all components, the following member function can be used::
+To return the names of all components in the results, the following member function can be used::
 
     r.get_component_names(<component_type>)
 
 The argument ``<component_type>`` can be one of the following: ``'parameter'``, ``'variable'``, ``'dual'``, ``'sets'``.
+
+.. note::
+    The result class can only identify the components present in the result files. Please refer to :ref:`solver` on how to only save selected parameters and variables.
+    If the user wants to access a component that was not saved, the user must add the component to the ``selected_saved_parameters`` or ``selected_saved_variables`` in the solver settings.
 
 .. _Visualization:
 User guide for visualization
@@ -72,7 +76,7 @@ Let's assume you have the following two result objects::
 
 Then you can compare the two result objects with the following code::
 
-    from zen_garden.postprocess.results.comparisons import compare_model_values, compare_configs
+    from zen_garden.postprocess.comparisons import compare_model_values, compare_configs
     compare_parameters = compare_model_values([r1, r2], component_type = 'parameter')
     compare_variables = compare_model_values([r1, r2], component_type = 'variable')
     compare_config = compare_configs([r1, r2])

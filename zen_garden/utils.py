@@ -7,19 +7,14 @@ import os
 import sys
 import warnings
 import importlib.util
-from collections import UserDict,defaultdict
-from contextlib import contextmanager
-from datetime import datetime
+from collections import defaultdict
 import re
 from ordered_set import OrderedSet
-import h5py
 import linopy as lp
 import numpy as np
 import pandas as pd
 import xarray as xr
-import yaml
 import shutil
-from numpy import string_
 from copy import deepcopy
 from pathlib import Path
 
@@ -30,6 +25,7 @@ def setup_logger(level=logging.INFO):
     """
     logging.basicConfig(stream=sys.stdout, level=level,format="%(message)s",datefmt='%Y-%m-%d %H:%M:%S')
     logging.captureWarnings(True)
+
 
 def get_inheritors(klass):
     """
@@ -48,6 +44,7 @@ def get_inheritors(klass):
                 subclasses.add(child)
                 work.append(child)
     return subclasses
+
 
 def copy_dataset_example(example):
     """ copies a dataset example to the current working directory
@@ -113,10 +110,11 @@ def copy_dataset_example(example):
     if not notebook_found:
         logging.warning("Example jupyter notebook could not be downloaded from the dataset examples!")
     logging.info(f"Example dataset {example} downloaded to {local_example_path}")
-    return local_example_path,os.path.join(local_dataset_path, "config.json")
+    return local_example_path, os.path.join(local_dataset_path, "config.json")
 
 # This functionality is for the IIS constraints
 # ---------------------------------------------
+
 
 class IISConstraintParser(object):
     """
@@ -144,7 +142,7 @@ class IISConstraintParser(object):
         # write gurobi IIS to file
         self.write_gurobi_iis()
         # get the labels
-        self.constraint_labels,self.var_labels, self.var_lines = self.read_labels()
+        self.constraint_labels, self.var_labels, self.var_lines = self.read_labels()
         # enable logger again
         logging.disable(logging.NOTSET)
 
@@ -313,8 +311,9 @@ class ScenarioDict(dict):
     This is a dictionary for the scenario analysis that has some convenience functions
     """
 
-    _param_dict_keys = {"file", "file_op", "default", "default_op"}
-    _special_elements = ["system", "analysis","solver", "base_scenario", "sub_folder", "param_map"]
+    _param_dict_keys = {"file", "file_op", "default", "default_op", "value"}
+    _special_elements = ["base_scenario", "sub_folder", "param_map"]
+    _setting_elements = ["system", "analysis", "solver"]
 
     def __init__(self, init_dict, optimization_setup, paths):
         """Initializes the dictionary from a normal dictionary
@@ -416,8 +415,18 @@ class ScenarioDict(dict):
             # we do not expand these
             if element in ScenarioDict._special_elements:
                 continue
+            # check for dict items in settings elements
+            # if element in ScenarioDict._setting_elements and dict not in [type(v) for v in element_dict.values()]:
+            #     continue
 
+            # check for 'system' analysis' and 'solver' keys and see whether they are dicts and have a list in them,
+            # on ly then do the list expansion, otherwise proceed as always.
             for param, param_dict in sorted(element_dict.items(), key=lambda x: x[0]):
+                if element in ScenarioDict._setting_elements:
+                    if not isinstance(param_dict, dict):
+                        continue
+                    elif isinstance(param_dict, dict) and not isinstance(param_dict['value'], list):
+                        scenario[element][param] = param_dict['value']
                 for key in sorted(ScenarioDict._param_dict_keys):
                     if key in param_dict and isinstance(param_dict[key], list):
                         # get the old param dict entry
@@ -432,7 +441,10 @@ class ScenarioDict(dict):
                             new_scenario = deepcopy(scenario)
 
                             # set the new value
-                            new_scenario[element][param][key] = value
+                            if element in ScenarioDict._setting_elements:
+                                new_scenario[element][param] = value
+                            else:
+                                new_scenario[element][param][key] = value
 
                             # create the name
                             if key + "_fmt" in param_dict:
@@ -441,7 +453,8 @@ class ScenarioDict(dict):
                                                       "placeholder '{}' for its value! No placeholder found in "
                                                       f"for {key} in {param} in {element} in {scenario['base_scenario']}")
                                 name = param_dict[key + "_fmt"].format(value)
-                                del new_scenario[element][param][key + "_fmt"]
+                                if element not in ScenarioDict._setting_elements:
+                                    del new_scenario[element][param][key + "_fmt"]
                                 # we don't need to increment the param for the next expansion
                                 param_up = 0
                             else:
@@ -461,7 +474,10 @@ class ScenarioDict(dict):
                                 param_map[new_scenario["sub_folder"]][element] = dict()
                             if param not in param_map[new_scenario["sub_folder"]][element]:
                                 param_map[new_scenario["sub_folder"]][element][param] = dict()
-                            param_map[new_scenario["sub_folder"]][element][param][key] = value
+                            if element in ScenarioDict._setting_elements:
+                                param_map[new_scenario["sub_folder"]][element][param] = value
+                            else:
+                                param_map[new_scenario["sub_folder"]][element][param][key] = value
 
                             # set the param_map of the scenario
                             new_scenario["param_map"] = param_map
@@ -521,7 +537,7 @@ class ScenarioDict(dict):
         """
 
         for element, element_dict in vali_dict.items():
-            if element in self._special_elements:
+            if element in self._special_elements or element in self._setting_elements:
                 continue
 
             if not isinstance(element_dict, dict):
@@ -563,6 +579,7 @@ class ScenarioDict(dict):
             default_f_name = param_dict.get("default", default_f_name)
             default_f_name = self.validate_file_name(default_f_name)
             default_factor = param_dict.get("default_op", default_factor)
+            self._check_if_numeric_default_factor(default_factor, element=element, param=param, default_f_name=default_f_name, op_type="default_op")
 
         return default_f_name, default_factor
 
@@ -584,9 +601,17 @@ class ScenarioDict(dict):
             default_f_name = param_dict.get("file", default_f_name)
             default_f_name = self.validate_file_name(default_f_name)
             default_factor = param_dict.get("file_op", default_factor)
+            self._check_if_numeric_default_factor(default_factor, element=element, param=param, default_f_name=default_f_name, op_type="file_op")
 
         return default_f_name, default_factor
 
+    def _check_if_numeric_default_factor(self, default_factor, element, param, default_f_name, op_type):
+        """Check if the default factor is numeric
+
+        :param default_factor: The default factor to check
+        """
+        if not isinstance(default_factor, (int, float)):
+            raise ValueError(f"Default factor {default_factor} of type {type(default_factor)} in {op_type} ({element} -> {param} -> {default_f_name}) is not numeric!")
 
 # linopy helpers
 # --------------
@@ -608,28 +633,32 @@ def lp_sum(exprs, dim='_term'):
     # normal sum
     return lp.expressions.merge(exprs, dim=dim)
 
-def align_like(da, other,fillna=0.0,astype=None):
+
+def align_like(da, other, fillna=0.0, astype=None):
     """Aligns a data array like another data array
 
     :param da: The data array to align
     :param other: The data array to align to
+    :param fillna: The value to fill na values with
+    :param astype: The type to cast the data array to
     :return: The aligned data array
     """
-    if isinstance(other,lp.Variable):
+    if isinstance(other, lp.Variable):
         other = other.lower
-    elif isinstance(other,lp.LinearExpression):
+    elif isinstance(other, lp.LinearExpression):
         other = other.const
-    elif isinstance(other,xr.DataArray):
+    elif isinstance(other, xr.DataArray):
         other = other
     else:
         raise TypeError(f"other must be a Variable, LinearExpression or DataArray, not {type(other)}")
-    da = xr.align(da, other,join="right")[0]
+    da = xr.align(da, other, join="right")[0]
     da = da.broadcast_like(other)
     if fillna is not None:
         da = da.fillna(fillna)
     if astype is not None:
         da = da.astype(astype)
     return da
+
 
 def linexpr_from_tuple_np(tuples, coords, model):
     """Transforms tuples of (coeff, var) into a linopy linear expression, but uses numpy broadcasting
@@ -688,7 +717,7 @@ def xr_like(fill_value, dtype, other, dims):
 # This is to lazy load h5 file most of it is taken from the hdfdict package
 ###########################################################################
 
-class HDFPandasSerializer():
+class HDFPandasSerializer:
     """
     This class saves dictionaries with a pandas store as a hdf file.
     """
@@ -715,33 +744,28 @@ class HDFPandasSerializer():
         for key, value in dictionary.items():
             if not isinstance(key, str):
                 raise TypeError("All dictionary keys must be strings!")
-
             key = f"{previous_key}/{key}"
             if isinstance(value, dict):
-                cls._recurse(store, value, key)
-            elif isinstance(value, (pd.DataFrame, pd.Series)):
-                # make a proper multi index to save memory
-                store.put(key, value)
-                store.get_storer(key).attrs.type = "pandas"
-            elif isinstance(value, (float,str,int)):
-                store.put(key, pd.Series([], dtype=int))
-                store.get_storer(key).attrs.value = value
-                store.get_storer(key).attrs.type = "scalar"
-            # elif isinstance(value,str):
-            #     # encode string to bytes
-            #     store.put(key, pd.Series([np.char.encode(value)], dtype=type(value)))
-            #     store.get_storer(key).attrs.type = "scalar"
-            elif isinstance(value, (list, tuple)) or isinstance(value, np.ndarray) and value.ndim == 1:
-                store.put(key, pd.Series(value))
-                store.get_storer(key).attrs.type = "vector"
-            elif isinstance(value, np.ndarray) and value.ndim == 2:
-                store.put(key, pd.DataFrame(value))
-                store.get_storer(key).attrs.type = "matrix"
+                input_dict, docstring, has_units = cls._format_dict(value)
+                if not input_dict["dataframe"].empty:
+                    store.put(key, input_dict["dataframe"], format='table')
+                    # add additional attributes
+                    store.get_storer(key).attrs.docstring = docstring
+                    store.get_storer(key).attrs["name"] = key
+                    store.get_storer(key).attrs["has_units"] = has_units
+                    index_names = input_dict["dataframe"].index.names
+                    index_names = ",".join([str(name) for name in index_names])
+                    store.get_storer(key).attrs["index_names"] = index_names
+                    # remove "_i_table" to reduce file size
+                    try:
+                        store.remove(key + "/_i_table")
+                    except KeyError:
+                        pass
             else:
                 raise TypeError(f"Type {type(value)} is not supported.")
 
-    @classmethod #USED
-    def serialize_dict(cls, file_name, dictionary, overwrite=True):
+    @classmethod
+    def serialize_dict(cls, file_name, dictionary, overwrite=True,complevel=4,complib="blosc"):
         """
         Serialized a dictionary of dataframes and other objects into a hdf file.
 
@@ -752,10 +776,41 @@ class HDFPandasSerializer():
 
         if not overwrite and os.path.exists(file_name):
             raise FileExistsError("File already exists. Please set overwrite=True to overwrite the file.")
-
-        with pd.HDFStore(file_name, mode='w', complevel=4) as store:
+        with pd.HDFStore(file_name, mode='w',complevel=complevel,complib=complib) as store:
             cls._recurse(store, dictionary)
 
+    @staticmethod
+    def _format_dict(input_dict):
+        """ format the dictionary to be saved in the hdf file
+        :param input_dict: The dictionary to format
+        """
+        expected_keys = ["dataframe", "docstring"]
+        if "dataframe" in input_dict:
+            df = input_dict["dataframe"]
+            if not isinstance(df, pd.Series):
+                if df.shape[1]:
+                    df = df.squeeze(axis=1)
+                else:
+                    a=1
+            input_dict["dataframe"] = df
+        if "docstring" in input_dict:
+            docstring = input_dict["docstring"]
+        else:
+            docstring = None
+        if "units" in input_dict:
+            units = input_dict["units"]
+            assert isinstance(units, pd.Series), f"Units must be a pandas Series, but is {type(units)}"
+            df = input_dict["dataframe"]
+            assert units.index.intersection(df.index).equals(units.index), f"Units index {units.index} does not match dataframe index {df.index}"
+            units.name = "units"
+            df = pd.concat([df, units], axis=1)
+            input_dict["dataframe"] = df
+            has_units = True
+        else:
+            has_units = False
+        if not (set(input_dict.keys()) == set(expected_keys) or set(input_dict.keys()) == set(expected_keys).union(["units"])):
+            raise ValueError(f"Expected keys are {expected_keys}, but got {input_dict.keys()}")
+        return input_dict, docstring, has_units
 
 class InputDataChecks:
     """
@@ -864,8 +919,8 @@ class InputDataChecks:
         """
         dataset = os.path.basename(self.analysis.dataset)
         dirname = os.path.dirname(self.analysis.dataset)
-        assert os.path.exists(dirname),f"Requested folder {dirname} is not a valid path"
-        assert os.path.exists(self.analysis.dataset),f"The chosen dataset {dataset} does not exist at {self.analysis.dataset} as it is specified in the config"
+        assert os.path.exists(dirname), f"Requested folder {dirname} is not a valid path"
+        assert os.path.exists(self.analysis.dataset), f"The chosen dataset {dataset} does not exist at {self.analysis.dataset} as it is specified in the config"
         # check if any character in the dataset name is prohibited
         for char in self.PROHIBITED_DATASET_CHARACTERS:
             if char in dataset:
@@ -952,6 +1007,7 @@ class InputDataChecks:
             system = module.system
         config.system.update(system)
 
+
 class StringUtils:
     """
     This class handles some strings for logging and filenames to tidy up scripts
@@ -961,7 +1017,7 @@ class StringUtils:
         pass
 
     @classmethod
-    def print_optimization_progress(cls,scenario, steps_horizon,step,system):
+    def print_optimization_progress(cls, scenario, steps_horizon, step, system):
         """ prints the current optimization progress
 
         :param scenario: string of scenario name
@@ -978,7 +1034,7 @@ class StringUtils:
                 f"\n--- Conduct optimization for rolling horizon step for {corresponding_year} ({steps_horizon.index(step) + 1} of {len(steps_horizon)}) {scenario_string}--- \n")
 
     @classmethod
-    def generate_folder_path(cls,config,scenario,scenario_dict,steps_horizon, step):
+    def generate_folder_path(cls, config, scenario, scenario_dict, steps_horizon, step):
         """ generates the folder path for the results
 
         :param config: config of optimization
@@ -1016,10 +1072,10 @@ class StringUtils:
             else:
                 subfolder = Path(mf_f_string)
 
-        return scenario_name,subfolder,param_map
+        return scenario_name, subfolder, param_map
 
     @classmethod
-    def setup_model_folder(cls,analysis,system):
+    def setup_model_folder(cls, analysis, system):
         """return model name while conducting some tests
 
         :param analysis: analysis of optimization
@@ -1028,11 +1084,11 @@ class StringUtils:
         :return: output folder
         """
         model_name = os.path.basename(analysis.dataset)
-        out_folder = cls.setup_output_folder(analysis,system)
-        return model_name,out_folder
+        out_folder = cls.setup_output_folder(analysis, system)
+        return model_name, out_folder
 
     @classmethod
-    def setup_output_folder(cls,analysis,system):
+    def setup_output_folder(cls, analysis, system):
         """return model name while conducting some tests
 
         :param analysis: analysis of optimization
@@ -1040,7 +1096,10 @@ class StringUtils:
         :return: output folder
         """
         if not os.path.exists(analysis.folder_output):
-            os.mkdir(analysis.folder_output)
+            try:
+                os.mkdir(analysis.folder_output)
+            except FileExistsError:
+                pass
         out_folder = cls.get_output_folder(analysis)
         if not os.path.exists(out_folder):
             os.mkdir(out_folder)
@@ -1068,6 +1127,7 @@ class StringUtils:
         model_name = os.path.basename(analysis.dataset)
         out_folder = os.path.join(analysis.folder_output, model_name)
         return out_folder
+
 
 class ScenarioUtils:
     """
@@ -1121,7 +1181,7 @@ class ScenarioUtils:
                             os.remove(sub_folder_path)
 
     @staticmethod
-    def get_scenarios(config,job_index):
+    def get_scenarios(config, job_index):
         """ retrieves and overwrites the scenario dicts
 
         :param config: config of optimization
@@ -1170,6 +1230,7 @@ class ScenarioUtils:
             elements = [{}]
         return scenarios, elements
 
+
 class OptimizationError(RuntimeError):
     """
     Exception raised when the optimization problem is infeasible
@@ -1179,7 +1240,7 @@ class OptimizationError(RuntimeError):
         """
         Initializes the class
 
-        :param message: The message to display
+        :param status: The message to display
         """
         self.message = f"The termination condition was {status}"
         super().__init__(self.message)

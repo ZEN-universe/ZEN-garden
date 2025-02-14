@@ -137,13 +137,14 @@ It is also possible to define parameters in lists::
         }
     }
 
-This will create 3 new scenarios for all values specified in ``default_op``. All keys support the option to pass lists instead of strings or floats, however, it is important that the value is a proper Python list, not an array or something else. To avoid errors, we recommend wrapping your values in ``list(...)``, especially if you generate the iterable with ``np.linspace()``, ``range()`` or similar.
+This will create 3 new scenarios for all values specified in ``default_op``. All keys support the option to pass lists instead of strings, floats, or ints.
 
 .. note::
 
     If multiple lists are defined within the same scenario, all possible combinations (cartesian product) are investigated, so watch out for combinatorial explosions.
 
-Per default, the names for the generated scenarios are ``p{i:02d}_{j:03d}``, where ``i`` is an int referring to the expanded parameter name (e.g. ``natural_gas``, ``import_price``, ``file``, ``default_op``) and ``j`` to its value in the list (e.g. ``[0.25, 0.3, 0.35]``). The mappings of ``i`` and ``j`` to the parameter names and values are written to  ``param_map.json`` in the root directory of the corresponding scenario (see below). It is possible to overwrite this default naming with a formatting key::
+Per default, the names for the generated scenarios are ``p{i:02d}_{j:03d}``, where ``i`` is an int referring to the expanded parameter name (e.g. ``natural_gas``, ``import_price``, ``file``, ``default_op``) and ``j`` to its value in the list (e.g. ``[0.25, 0.3, 0.35]``).
+The mappings of ``i`` and ``j`` to the parameter names and values are written to  ``param_map.json`` in the root directory of the corresponding scenario (see below). It is possible to overwrite this default naming with a formatting key::
 
     {"price_range": {
         "natural_gas": {
@@ -154,8 +155,10 @@ Per default, the names for the generated scenarios are ``p{i:02d}_{j:03d}``, whe
                 }
             }
         }
+    }
 
-The formatting key is the original key containing the list followed by `_fmt`. The value of the formatting key has to be a string containing the format literal ``{}``. The formatting string ``{}`` will then be replaced by each of the values of the list. For example here, we would generate the three scenarios ``high_gas_price_0.25``, ``high_gas_price_0.3`` and ``high_gas_price_0.35``.
+The formatting key is the original key containing the list followed by `_fmt`. The value of the formatting key has to be a string containing the format literal ``{}``.
+The formatting string ``{}`` will then be replaced by each of the values of the list. For example here, we would generate the three scenarios ``high_gas_price_0.25``, ``high_gas_price_0.3`` and ``high_gas_price_0.35``.
 
 When a scenario contains one or multiple lists, all sub-scenarios are also in a subfolder, for example, the output structure could look something like this::
 
@@ -197,7 +200,7 @@ It is also possible to overwrite entries in the system and analysis settings. Th
 
     {"example": {
         "system": {
-            "key": "value"
+            "key": "new_value"
             },
         "natural_gas": {
             "price_import": {
@@ -209,6 +212,18 @@ It is also possible to overwrite entries in the system and analysis settings. Th
     }
 
 Note that there is a strict type check when overwriting the system or analysis, i.e. the value used for ``value`` must have the same type as the value already in the dictionary.
+
+Similarly to parameters, it is also possible to use list expansion for system and analysis settings. As no files are read for system and analysis settings, the syntax is slightly different::
+
+    {"example": {
+        "system": {
+            "key": {
+                "value": [1, 2, 3],
+                "value_fmt": "new_value_{}"
+                }
+            }
+        }
+    }
 
 .. _scenarios_running_the_analysis:
 Running the analysis
