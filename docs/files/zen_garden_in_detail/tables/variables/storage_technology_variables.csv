@@ -2,4 +2,4 @@ Variable Name;Time Step Type;Symbol;Doc String;Unit Category
 ``flow_storage_charge``;``set_time_steps_operation``;:math:`\underline{H}_{k,n,t,y}`;carrier flow into storage technology on node i and time t;{"energy_quantity": 1, "time": -1}
 ``flow_storage_discharge``;``set_time_steps_operation``;:math:`\overline{H}_{k,n,t,y}`;carrier flow out of storage technology on node i and time t;{"energy_quantity": 1, "time": -1}
 ``storage_level``;``set_time_steps_storage_level``;:math:`L_{k,n,t,y}`;storage level of storage technology on node in each storage time step;{"energy_quantity": 1}
-``flow_storage_spillage``;``set_time_steps_operation``;:math:`??`;energy spillage for storage technology;{"energy_quantity": 1, "time": -1}
+``flow_storage_spillage``;``set_time_steps_operation``;:math:`Y_{k,n,t,y}`;energy spillage for storage technology;{"energy_quantity": 1, "time": -1}

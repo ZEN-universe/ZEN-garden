@@ -503,9 +503,23 @@ def test_7a(config, folder_path):
     compare_variables_results(data_set_name, res, folder_path)
 
 
+def test_8a(config, folder_path):
+    # run the test
+    data_set_name = "test_8a"
+    optimization_setup = main(
+        config=config, dataset_path=os.path.join(folder_path, data_set_name)
+    )
+
+    # read the results and check again
+    res = Results(os.path.join("outputs", data_set_name))
+    compare_variables_results(data_set_name, res, folder_path)
+    check_get_total_get_full_ts(res)
+
+
 if __name__ == "__main__":
     from config import config
 
     config.solver.keep_files = False
     folder_path = os.path.dirname(__file__)
-    test_2b(config, folder_path)
+    test_8a(config, folder_path)
+    a=1
