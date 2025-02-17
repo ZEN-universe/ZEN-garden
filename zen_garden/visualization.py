@@ -55,7 +55,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--api_url",
         required=False,
-        type=Optional[str],
+        type=str,
         default=None,
         help="Overwrite the URL for the API server. This means that the temple only serves as a webserver for the ZEN Explorer files.",
     )
