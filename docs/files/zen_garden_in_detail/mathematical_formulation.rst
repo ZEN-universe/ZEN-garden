@@ -465,9 +465,9 @@ The time-coupled equation for the storage level :math:`L_{k,n,t^\mathrm{k},y}` o
 .. math::
     :label: storage_level
 
-    L_{k,n,t^\mathrm{k},y} = L_{k,n,t^\mathrm{k}-1,y}\left(1-\varphi_k\right)^{\tau^\mathrm{k}_{t^\mathrm{k}}}+\left(\underline{\eta}_k\underline{H}_{k,n,\sigma(t^\mathrm{k}),y}-\frac{\overline{H}_{k,n,\sigma(t^\mathrm{k}),y}}{\overline{\eta}_k}\right)\sum_{\tilde{t}^\mathrm{k}=0}^{\tau^\mathrm{k}_{t^\mathrm{k}}-1}\left(1-\varphi_k\right)^{\tilde{t}^\mathrm{k}}
+    L_{k,n,t^\mathrm{k},y} = L_{k,n,t^\mathrm{k}-1,y}\left(1-\varphi_k\right)^{\tau^\mathrm{k}_{t^\mathrm{k}}}+\left(\underline{\eta}_k\underline{H}_{k,n,\sigma(t^\mathrm{k}),y}-\frac{\overline{H}_{k,n,\sigma(t^\mathrm{k}),y}}{\overline{\eta}_k} + \xi_{k,n,\sigma(t^\mathrm{k}),y} - Y_{k,n,\sigma(t^\mathrm{k}),y} \right)\sum_{\tilde{t}^\mathrm{k}=0}^{\tau^\mathrm{k}_{t^\mathrm{k}}-1}\left(1-\varphi_k\right)^{\tilde{t}^\mathrm{k}}
 
-with the self-discharge rate :math:`\varphi_k`, the charge and discharge efficiency, :math:`\underline{\eta}_k` and :math:`\overline{\eta}_k`, and the duration of a storage level time step :math:`\tau^\mathrm{k}_{t^\mathrm{k}}`.
+with the self-discharge rate :math:`\varphi_k`, the charge and discharge efficiency, :math:`\underline{\eta}_k` and :math:`\overline{\eta}_k`, the duration of a storage level time step :math:`\tau^\mathrm{k}_{t^\mathrm{k}}`, the inflow in the storage :math:`\xi_{k,n,\sigma(t^\mathrm{k}),y}`, and the spillage out of the storage :math:`Y_{k,n,\sigma(t^\mathrm{k}),y}`.
 Note that we reformulate :math:`\sum_{\tilde{t}^\mathrm{k}=0}^{\tau^\mathrm{k}_{t^\mathrm{k}}-1}\left(1-\varphi_k\right)^{\tilde{t}^\mathrm{k}}` in the optimization problem with the partial geometric series to avoid constructing an additional summation term:
 
 .. math::
@@ -481,7 +481,7 @@ If storage periodicity is enforced (``system.storage_periodicity = True``), the 
 .. math::
     :label: storage_level_periodicity
 
-    L_{k,n,0,y} = L_{k,n,T^\mathrm{k},y}\left(1-\varphi_k\right)^{\tau^\mathrm{k}_{t^\mathrm{k}}}+\left(\underline{\eta}_k\underline{H}_{k,n,\sigma(0),y}-\frac{\overline{H}_{k,n,\sigma(0),y}}{\overline{\eta}_k}\right)\sum_{\tilde{t}^\mathrm{k}=0}^{\tau^\mathrm{k}_{t^\mathrm{k}}-1}\left(1-\varphi_k\right)^{\tilde{t}^\mathrm{k}}
+    L_{k,n,0,y} = L_{k,n,T^\mathrm{k},y}\left(1-\varphi_k\right)^{\tau^\mathrm{k}_{t^\mathrm{k}}}+\left(\underline{\eta}_k\underline{H}_{k,n,\sigma(0),y}-\frac{\overline{H}_{k,n,\sigma(0),y}}{\overline{\eta}_k} + \xi_{k,n,\sigma(0),y} - Y_{k,n,\sigma(0),y} \right)\sum_{\tilde{t}^\mathrm{k}=0}^{\tau^\mathrm{k}_{t^\mathrm{k}}-1}\left(1-\varphi_k\right)^{\tilde{t}^\mathrm{k}}
 
 Moreover, the :math:`L_{k,n,t^\mathrm{k},y}` is constrained by the energy-rated storage capacity :math:`S^\mathrm{e}_{k,n,y}`:
 
@@ -498,6 +498,13 @@ The storage level at :math:`t^\mathrm{k}=0` can be set to an initial storage lev
 .. math::
 
     L_{k,n,0,y} = \chi_{k,n}S^\mathrm{e}_{k,n,y}
+
+The spillage is a non-negative variable that is constrained by the inflow :math:`\xi_{k,n,t^\mathrm{k},y}`:
+
+.. math::
+    :label: spillage_limit
+
+    0 \leq Y_{k,n,t^\mathrm{k},y} \leq \xi_{k,n,t^\mathrm{k},y}
 
 
 **Proof of storage level monotony**

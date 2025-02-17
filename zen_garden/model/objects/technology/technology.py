@@ -466,10 +466,11 @@ class Technology(Element):
 
         # on-off variables
         # We remove the binary variables if there are any no constraints that use them
-        index_vals, _ = cls.create_custom_set(["set_technologies", "set_on_off", "set_location", "set_time_steps_operation"], optimization_setup)
-        index_names = ["set_technologies", "set_location", "set_time_steps_operation"]
-        variables.add_variable(model, name="tech_on_var", index_sets=(index_vals, index_names),doc="Binary variable which equals 1 when technology is switched on at location l and time t", binary=True, unit_category=None)
-        variables.add_variable(model, name="capacity_on_off_helper_var",index_sets=(index_vals, index_names), bounds=(0, np.inf),doc="Helper variable that substitutes the product of capacity and tech_on_var",unit_category={"energy_quantity": 1, "time": -1})
+        techs_on_off,index_list = cls.create_custom_set(["set_technologies", "set_on_off", "set_location", "set_time_steps_operation"],optimization_setup)
+        index_list.pop(1)
+        mask_on_off = optimization_setup.variables.index_sets.indices_to_mask(techs_on_off, index_list, (0, 0))[0]
+        variables.add_variable(model, name="tech_on_var", index_sets=cls.create_custom_set(["set_technologies", "set_location", "set_time_steps_operation"],optimization_setup),mask=mask_on_off,doc="Binary variable which equals 1 when technology is switched on at location l and time t", binary=True, unit_category=None)
+        variables.add_variable(model, name="capacity_on_off_helper_var",index_sets=cls.create_custom_set(["set_technologies", "set_location", "set_time_steps_operation"],optimization_setup), bounds=(0, np.inf),mask=mask_on_off,doc="Helper variable that substitutes the product of capacity and tech_on_var",unit_category={"energy_quantity": 1, "time": -1})
 
         # add pe.Vars of the child classes
         for subclass in cls.__subclasses__():
@@ -1290,6 +1291,7 @@ class TechnologyRules(GenericRule):
         big_M = capacity.upper
         binary = self.variables["tech_on_var"]
         capacity_on_off_helper = self.variables["capacity_on_off_helper_var"]
+        # mask for on_off variables
         mask_on_off = binary.mask
         # assert that no big-M is inf
         sel_big_M = (big_M.where(mask_on_off) == np.inf).to_series()
