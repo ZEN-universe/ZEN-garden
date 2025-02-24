@@ -355,7 +355,6 @@ class DataInput:
                 filename = file_name + "_" + year
                 if filename in file:
                     # read input data
-                    #ToDo add here that year specific input ts are also available scenario specific
                     f_name, scenario_factor = self.scenario_dict.get_param_file(self.element.name, filename)
                     df_input = self.read_input_csv(f_name)
                     if df_input is not None and not df_input.empty:

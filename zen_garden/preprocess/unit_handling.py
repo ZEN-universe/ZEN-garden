@@ -977,7 +977,7 @@ l
             var_str = var_str[0] + str(list(var_str[1].values()))
             return f"{A_matrix[index]} {var_str} in {cons_str}"
 
-    def print_numerics(self,i,no_scaling = False, benchmarking_output = False, cond_number = False): #ToDo: speed up cond_number; for now should be kept False as computation time too long otherwise
+    def print_numerics(self,i,no_scaling = False, benchmarking_output = False):
         """
         Prints the numerics of the optimization model.
 
@@ -1013,21 +1013,7 @@ l
         if benchmarking_output: #for postprocessing
             range_lhs = np.log10(A_abs[index_max]) - np.log10(A_abs[index_min])
             range_rhs = np.log10(np.abs(self.rhs[rhs_max_index])) - np.log10(np.abs(self.rhs[rhs_min_index]))
-            cond = 0
-            if cond_number:
-                try:
-                    cp = cProfile.Profile()
-                    cp.enable()
-                    #sv_max = sp.sparse.linalg.svds(data_coo, return_singular_vectors=False, k=1, which='LM')[0]
-                    #sv_min = sp.sparse.linalg.svds(data_coo, return_singular_vectors=False, k=1, which='SM')[0]
-                    sv_max = sp.sparse.eigs(data_coo, k=1, which='LM')[0]
-                    sv_min = sp.sparse.eigs(data_coo, k=1, which='SM')[0]
-                    cond = sv_max / sv_min
-                    cp.disable()
-                    cp.print_stats("cumtime")
-                except:
-                    print("Condition Number could not be calculated")
-            return range_lhs, range_rhs, cond
+            return range_lhs, range_rhs
         else:
             #Prints
             if no_scaling:
@@ -1085,23 +1071,6 @@ l
                 if i < len(self.algorithm):
                     self.print_numerics(i)
 
-            #ToDo add rhs to row scaling
-            elif algo == "full_geom":
-                #update row scaling vector
-                geom = self.get_full_geom(self.A_matrix, 0)
-                r_vector = 1 / geom
-                r_vector = np.power(2, np.round(np.emath.logn(2, r_vector)))
-                #update A and row scaling matrix
-                self.update_A(r_vector,1)
-                #update column scaling vector
-                geom = self.get_full_geom(self.A_matrix.tocsc(), 1)
-                c_vector = 1 / geom
-                c_vector = np.power(2, np.round(np.emath.logn(2, c_vector)))
-                #update A and column scaling matrix
-                self.update_A(c_vector,0)
-                # Print Numerics
-                if i < len(self.algorithm):
-                    self.print_numerics(i)
 
             elif algo == "geom":
                 # update row scaling vector

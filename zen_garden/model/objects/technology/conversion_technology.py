@@ -119,7 +119,6 @@ class ConversionTechnology(Technology):
         return capex
 
     ### --- getter/setter classmethods
-    #ToDO: check if description of parameters is correct ->  index_names
     @classmethod
     def get_capex_all_elements(cls, optimization_setup, index_names=None):
         """ similar to Element.get_attribute_of_all_elements but only for capex.
@@ -209,7 +208,6 @@ class ConversionTechnology(Technology):
         model = optimization_setup.model
         variables = optimization_setup.variables
 
-        #ToDo: check if description of parameters is correct ->  index_names
         def flow_conversion_bounds(index_values, index_names):
             """ return bounds of carrier_flow for bigM expression
 

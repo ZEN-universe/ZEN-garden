@@ -5,12 +5,14 @@ Besides the main features of ZEN-garden, there are some additional features that
 
 1. :ref:`MILP`
 2. :ref:`construction_times`
-3. :ref:`technology_diffusion`
-4. :ref:`retrofitting_technologies`
-5. :ref:`fuel_replacement`
-6. :ref:`availability_yearly`
-7. :ref:`modeling_carbon_emissions`
-8. :ref:`demand_shedding`
+3. :ref:`Year-specific hourly time series`
+4. :ref:`multi_year_storage_periodicity`
+5. :ref:`technology_diffusion`
+6. :ref:`retrofitting_technologies`
+7. :ref:`fuel_replacement`
+8. :ref:`availability_yearly`
+9. :ref:`modeling_carbon_emissions`
+10. :ref:`demand_shedding`
 
 
 
@@ -45,6 +47,26 @@ Moreover, :ref:`PWA_constraints` outlines the mathematical constraints that are 
 .. _construction_times:
 Construction times
 ---------------------------------
+
+.. _year-specific_input_data:
+Year-specific hourly time series
+---------------------------------
+ZEN-garden allows to provide input hourly time series that are specific to a certain year. It overwrites the default values or the given csv file for the respective year. This can be useful for example to model dark doldrums in the electricity sector, where the solar and wind generation is lower than usual.
+The additional csv file can be given as a ``<parameter_name>_<year>.csv`` file, where ``<parameter_name>`` is the name of the parameter whose default values should be overwritten and ``<year>`` is the year for which the data is specific (e.g. ``demand_2023.csv`` if we want to provide demand data for the year 2023).
+Note that the input data structure stays the same as described in the :ref:`Overwriting default values` section.
+
+**Year-specific time series aggregation**
+
+Furthermore, if time series aggregation is activated (see :ref:`using_the_tsa`), for each year with year-specific input data, the time series aggregation is performed separately.
+
+.. _multi_year_storage_periodicity:
+Multi-year storage periodicity
+---------------------------------
+The user can choose to enable storage level periodicity over multiple years, instead of just within single years (see ``storage_periodicity`` and ``multiyear_periodicity`` in :ref:`system`).
+This can be very useful when modeling inter-annual variability. For instance, years with high natural gas supply can be followed by years with low availability, where a storage can be filled in the high supply years and used in the low supply years.
+To use this feature, the user has to set ``multiyear_periodicity`` to ``TRUE`` in the ``system.json`` file (see :ref:`system`).
+The multiyear periodicity enforces the storage level at the beginning of the planning horizon to be equal to the storage level at the end of the planning horizon.
+Note that as of now the multi-year periodicity is only usable if the interval between years of the planning horizon is one year, i.e. the parameter ``interval_between_years`` in ``system.json``is set to 1.
 
 
 .. _distance_dependent_transport_capex:

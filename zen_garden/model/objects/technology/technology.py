@@ -765,7 +765,6 @@ class TechnologyRules(GenericRule):
         ### return
         self.constraints.add_constraint("constraint_technology_min_capacity_addition",constraints)
 
-    #TODO check if binary is necessary when capacity_addition_max is < inf but capacity_addition_min = 0
     def constraint_technology_max_capacity_addition(self):
         """max capacity addition of technology
 
@@ -1204,7 +1203,6 @@ class TechnologyRules(GenericRule):
         ### return
         self.constraints.add_constraint("constraint_cost_capex_yearly",constraints)
 
-    # TODO complete constraint (second summation symbol) - is this implemented correctly?
     def constraint_cost_opex_yearly(self):
         """ yearly opex for a technology at a location in each year
 
