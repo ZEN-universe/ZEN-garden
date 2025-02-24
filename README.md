@@ -41,7 +41,7 @@ More in-depth manuals are available in the [discussions forum](https://github.co
 Review recent modifications outlined in the [changelog](https://github.com/ZEN-universe/ZEN-garden/blob/main/CHANGELOG.md).
 
 ## Citing ZEN-garden
-If you use ZEN-garden for research please cite
+If you use ZEN-garden for research, please cite
 
 Jacob Mannhardt, Alissa Ganter, Johannes Burger, Francesco De Marco, Lukas Kunz, Lukas Schmidt-Engelbertz, Paolo Gabrielli, Giovanni Sansavini (2025).
 ZEN-garden: Optimizing energy transition pathways with user-oriented data handling. https://www.sciencedirect.com/science/article/pii/S2352711025000263
