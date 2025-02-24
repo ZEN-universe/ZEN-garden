@@ -58,7 +58,7 @@ Natural gas pipeline and storage are not installed as the natural gas can be imp
 2_multi_year_optimization
 ---------------------------
 The model builds upon the base case by extending the optimization over multiple years. The parameter ``optimized_years`` in the ``system.json`` file defines the number of years to optimize.
-Additionally, the optmization only runs for every second year, thus, aggregating two years in each optimized year. This setting can be controlled with the ``interval_between_years`` parameter in the ``system.json`` file.
+Additionally, the optimization only runs for every second year, thus, aggregating two years in each optimized year. This setting can be controlled with the ``interval_between_years`` parameter in the ``system.json`` file.
 The heat demand in both nodes is variable over the years and the optimization model must fulfil them in all years. The adjusted heat demand is specified in the ``demand.csv`` file of the ``heat`` folder.
 
 3_reduced_import_availability
@@ -129,7 +129,7 @@ However, the time series aggregation is still active and the optimization uses 1
 ---------------------
 All the previous datasets are optimized using so-called perfect foresight, i.e., all years are optimized at once with the assumption that all the future parameter data are known at the time the optimization is conducted.
 In this example, however, `myopic foresight` is demonstrated, where the knowledge of future parameter data, the foresight horizon, is limited.
-To activate this feature, the parameter ``use_rolling_horizon`` in the ``system.json`` file is set to ``true``. Simulatenously, the ``years_in_rolling_horizon`` parameter needs to be specified to set the length of the foresight horizon.
+To activate this feature, the parameter ``use_rolling_horizon`` in the ``system.json`` file is set to ``true``. Simultaneously, the ``years_in_rolling_horizon`` parameter needs to be specified to set the length of the foresight horizon.
 In this example, the foresight horizon is set to 1.
 
 The difference between perfect and myopic foresight is illustrated in the following figure, where the lengths of the decision horizon and the foresight horizon are visualized:
@@ -180,12 +180,12 @@ The respective parameter in the  ``attributes.json`` file of the CHP plant is sp
 13_yearly_interpolation
 -----------------------------
 This example showcases how missing values in input data can be interpolated and how the interpolation can be switched off.
-Compared to the previous example, an annal limit of carbon emissions is introduced (file ``carbon_emissions_annual_limit.csv``).
+Compared to the previous example, an annual limit of carbon emissions is introduced (file ``carbon_emissions_annual_limit.csv``).
 Each of the parameters ``carbon_emissions_annual_limit`` and ``price_carbon_emissions`` have yearly values missing.
 Per default, ZEN-garden interpolates the missing values linearly between the two closest known values.
 If this behaviour is not wanted, parameter names can be added to the file ``parameters_interpolation_off.json`` inside the ``energy_system`` folder.
 For the parameter names in this file, the interpolation of missing values is switched off.
-In this case, the default value from the ``attributes.json``file is used for the missing values.
+In this case, the default value from the ``attributes.json`` file is used for the missing values.
 
 14_retrofitting_and_fuel_substitution
 -----------------------------
