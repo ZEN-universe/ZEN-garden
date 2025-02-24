@@ -389,7 +389,6 @@ class EnergySystemRules(GenericRule):
 
         self.constraints.add_constraint("constraint_carbon_emissions_annual_limit",constraints)
 
-    # TODO check if implemented correctly
     def constraint_carbon_emissions_budget(self):
         """ carbon emissions budget of entire time horizon from technologies and carriers.
         The prediction extends until the end of the horizon, i.e.,

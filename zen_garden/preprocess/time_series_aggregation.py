@@ -381,7 +381,6 @@ class TimeSeriesAggregation(object):
             # if only one unique value
             if len(np.unique(yearly_variation)) == 1:
                 ts = ts_df.stack() * np.unique(yearly_variation)[0]
-            # ToDo add here elif for specific year application
             elif year_specific != None:
                 base_time_steps = self.energy_system.time_steps.decode_time_step(year_specific, "yearly")
                 element_time_steps = self.energy_system.time_steps.encode_time_step(base_time_steps,time_step_type="operation")
