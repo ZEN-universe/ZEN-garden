@@ -290,6 +290,9 @@ class Technology(Element):
         # transport technologies
         optimization_setup.sets.add_set(name="set_transport_technologies", data=energy_system.set_transport_technologies,
                                         doc="Set of transport technologies")
+        # flexible transport technologies
+        optimization_setup.sets.add_set(name="set_flexible_transport_technologies", data=energy_system.set_flexible_transport_technologies,
+                                        doc="Set of flexible transport technologies")
         # storage technologies
         optimization_setup.sets.add_set(name="set_storage_technologies", data=energy_system.set_storage_technologies,
                                         doc="Set of storage technologies")

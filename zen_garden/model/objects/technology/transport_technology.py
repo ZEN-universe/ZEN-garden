@@ -246,21 +246,44 @@ class TransportTechnologyRules(GenericRule):
 
         """
         techs = self.sets["set_transport_technologies"]
+        flexible_techs = self.sets["set_flexible_transport_technologies"]
         if len(techs) == 0:
             return
         edges = self.sets["set_edges"]
         times = self.variables["flow_transport"].coords["set_time_steps_operation"]
         time_step_year = xr.DataArray([self.optimization_setup.energy_system.time_steps.convert_time_step_operation2year(t) for t in times.data], coords=[times])
+        # get the mask for the flexible transport technologies
+        mask_flexible_techs = pd.Series(index=xr.DataArray(self.sets['set_transport_technologies']), data=False)
+        mask_flexible_techs.index.name = "set_transport_technologies"
+        mask_flexible_techs[mask_flexible_techs.index.isin(self.sets["set_flexible_transport_technologies"])] = True
+        mask_flexible_techs = mask_flexible_techs.to_xarray()
         term_capacity = (
                 self.parameters.max_load.loc[techs, "power", edges, :]
                 * self.variables["capacity"].loc[techs, "power", edges, time_step_year]
         ).rename({"set_technologies":"set_transport_technologies","set_location": "set_edges"})
 
-        lhs = term_capacity - self.variables["flow_transport"].loc[techs, edges, :]
+        lhs = term_capacity - self.variables["flow_transport"].loc[techs, edges, :].where(~mask_flexible_techs)
         rhs = 0
         constraints = lhs >= rhs
         ### return
         self.constraints.add_constraint("constraint_capacity_factor_transport", constraints)
+        if mask_flexible_techs.any():
+            super_edges = pd.concat(self.energy_system.set_edges_in_super_edges.values())
+            super_loc_index = pd.MultiIndex.from_frame(super_edges.reset_index().rename({'super_edge': 'set_super_edges', 'edge': 'set_location'}, axis=1))
+            super_loc = pd.Series(1, index=super_loc_index).unstack(fill_value=0).stack().to_xarray()
+            term_capacity_flexible = (self.parameters.max_load.loc[techs, "power", edges, :].broadcast_like(super_loc).where(super_loc).fillna(0)
+                                      * self.variables["capacity"].loc[techs, "power", edges, time_step_year].broadcast_like(super_loc)).sum('set_location').rename({"set_technologies": "set_transport_technologies"})
+            term_flow_transport = self.variables["flow_transport"].rename({'set_edges': 'set_location'}).loc[techs, edges, :].where(mask_flexible_techs).broadcast_like(super_loc).where(super_loc).sum('set_location')
+            lhs = term_capacity_flexible - term_flow_transport
+            rhs = 0
+            constraints_flexible = lhs >= rhs
+            self.constraints.add_constraint("constraint_capacity_factor_flexible_transport", constraints_flexible)
+            # additionally, the flow of the flexible transport modes is limited by the maximum capacity limit on each node
+            lhs = self.variables["flow_transport"].loc[flexible_techs, edges, :]
+            rhs = self.parameters.capacity_limit.loc[flexible_techs, "power", edges, time_step_year].rename({"set_technologies":"set_transport_technologies","set_location": "set_edges"})
+            constraints_flexible_capacity_limit = lhs <= rhs
+            self.constraints.add_constraint("constraint_capacity_limit_flexible_transport", constraints_flexible_capacity_limit)
+
 
     def constraint_opex_emissions_technology_transport(self):
         r""" calculate opex of each technology

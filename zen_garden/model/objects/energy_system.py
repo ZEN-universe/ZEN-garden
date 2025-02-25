@@ -95,6 +95,7 @@ class EnergySystem:
         # technology-specific
         self.set_conversion_technologies = self.system.set_conversion_technologies
         self.set_transport_technologies = self.system.set_transport_technologies
+        self.set_flexible_transport_technologies = self.system.set_flexible_transport_technologies
         self.set_storage_technologies = self.system.set_storage_technologies
         self.set_retrofitting_technologies= self.system.set_retrofitting_technologies
         # discount rate
