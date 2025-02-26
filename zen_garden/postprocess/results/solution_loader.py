@@ -238,5 +238,9 @@ class SolutionLoader(ABC):
     ) -> "pd.DataFrame | pd.Series[Any]":
         pass
 
+    @abstractmethod
+    def get_time_steps_storage_level_startend_year(self, scenario: Scenario) -> dict[int, int]:
+        pass
+
     def has_scenarios(self) -> bool:
         return len(self.scenarios) > 1
