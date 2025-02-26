@@ -52,7 +52,7 @@ def get_solution_version(scenario: AbstractScenario) -> str:
 
     :return: The version of the solution.
     """
-    versions = {"v1":"2.0.14","v2":"2.2.7"}
+    versions = {"v1":"2.0.14","v2":"2.2.9"}
     version = "v0"
     if hasattr(scenario.analysis,"zen_garden_version"):
         for k,v in versions.items():
