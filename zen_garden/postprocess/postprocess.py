@@ -181,13 +181,10 @@ class Postprocess:
         benchmarking_data["scaling_time"] = self.scaling.scaling_time
 
         #get numerical range
-        range_lhs, range_rhs, cond = self.scaling.print_numerics(0, False, True, False)
+        range_lhs, range_rhs = self.scaling.print_numerics(0, False, True)
         benchmarking_data["numerical_range_lhs"] = range_lhs
         benchmarking_data["numerical_range_rhs"] = range_rhs
-        benchmarking_data["condition_number"] = cond
-        #for this crossover must be on!
-        #edited out for now as this can be very slow
-        #benchmarking_data["condition_number_gurobi"] = self.model.solver_model.Kappa
+
 
 
         fname = self.name_dir.joinpath('benchmarking')

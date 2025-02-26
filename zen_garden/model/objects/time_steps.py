@@ -247,7 +247,6 @@ class TimeStepsDicts(object):
         return full_base_time_steps
 
     def convert_time_step_energy2power(self, time_step_energy):
-        # ToDo: check if the parameter is correctly described
         """ converts the time step of the energy quantities of a storage technology to the time step of the power quantities
 
         :param time_step_energy: time step of energy quantities
@@ -257,7 +256,6 @@ class TimeStepsDicts(object):
         return time_steps_energy2power[time_step_energy]
 
     def convert_time_step_operation2year(self, time_step_operation):
-        #ToDo: check if the parameter is correctly described
         """ converts the operational time step to the invest time step
 
         :param time_step_operation: time step of operational time steps

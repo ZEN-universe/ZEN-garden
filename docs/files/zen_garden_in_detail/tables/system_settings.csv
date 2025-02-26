@@ -23,5 +23,6 @@ Key;Type;Default Value;Description
 ``set_transport_technologies_loss_exponential``;``list[str]``;``[]``;list of transport technologies for which exponential transport loss function is used
 ``double_capex_transport``;``bool``;``False``;per default only distance dependent capital expenditures are applied to transport tech, if true, apply both fix capital expenditures (capex) and distance dependent capex to installation of transport technologies
 ``storage_periodicity``;``bool``;``True``;enable storage periodicity
+``multiyear_periodicity``;``bool``;``False``;enable storage periodicity over multiple years
 ``exclude_parameters_from_TSA``;``bool``;``True``;exclude selected parameters from the timeseries aggregation
 ``knowledge_depreciation_rate``;``float``;``0.1``;knowledge deprecation rate to be used in the technology expansion constraint
