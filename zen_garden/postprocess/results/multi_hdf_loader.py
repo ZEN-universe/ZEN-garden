@@ -294,6 +294,10 @@ class Scenario(AbstractScenario):
         return self._path
 
     @property
+    def has_rh(self) -> bool:
+        return self.system.use_rolling_horizon
+
+    @property
     def system(self) -> System:
         return self._system
 
@@ -326,11 +330,6 @@ class MultiHdfLoader(AbstractLoader):
         scenario = get_first_scenario(self._scenarios)
         name = scenario.analysis.dataset.split("/")[-1]
         return name
-
-    @property
-    def has_rh(self) -> bool:
-        first_scenario = get_first_scenario(self._scenarios)
-        return first_scenario.system.use_rolling_horizon
 
     @property
     def has_duals(self) -> bool:
@@ -420,7 +419,7 @@ class MultiHdfLoader(AbstractLoader):
         not use perfect foresight, unless explicitly desired otherwise (keep_raw = True).
         """
         version = get_solution_version(scenario)
-        if self.has_rh:
+        if scenario.has_rh:
             # If solution has rolling horizon, load the values for all the foresight
             # steps and combine them.
             pattern = re.compile(r'^MF_\d+(_.*)?$')
@@ -509,7 +508,7 @@ class MultiHdfLoader(AbstractLoader):
         ans: dict[str, AbstractComponent] = {}
         first_scenario = get_first_scenario(self.scenarios)
 
-        if self.has_rh:
+        if first_scenario.has_rh:
             mf_name = [i for i in os.listdir(first_scenario.path) if "MF_" in i][0]
             component_folder = os.path.join(first_scenario.path, mf_name)
         else:
@@ -702,7 +701,7 @@ class MultiHdfLoader(AbstractLoader):
                 raise ValueError(f"Solution version {version} not supported.")
         # if old version of the solution
         except:
-            if self.has_rh:
+            if scenario.has_rh:
                 pattern = re.compile(r'^MF_\d+$')
                 subfolder_names = list(filter(lambda x: pattern.match(x), os.listdir(scenario.path)))
                 ans = [int(subfolder_name.replace("MF_", "")) for subfolder_name in subfolder_names]

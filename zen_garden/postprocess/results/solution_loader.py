@@ -107,6 +107,14 @@ class Scenario(ABC):
 
     @property
     @abstractmethod
+    def has_rh(self) -> bool:
+        """
+        Abstract boolean property specifying if a scenario has rolling horizon or not.
+        """
+        pass
+
+    @property
+    @abstractmethod
     def path(self) -> str:
         pass
 
@@ -156,14 +164,6 @@ class SolutionLoader(ABC):
         """
         Abstract property should define a dictionary with the names of the components as
         keys and the implementations of the Components as values.
-        """
-        pass
-
-    @property
-    @abstractmethod
-    def has_rh(self) -> bool:
-        """
-        Abstract boolean property specifying if a solution has rolling horizon or not.
         """
         pass
 
