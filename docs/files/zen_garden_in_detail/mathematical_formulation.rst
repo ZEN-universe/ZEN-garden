@@ -28,7 +28,7 @@ The net present cost :math:`NPC_y` of each planning period :math:`y\in\mathcal{Y
 .. math::
     :label: net_present_cost
 
-    NPC_y = \sum_{i \in [0,dy(y))-1]} \left( \dfrac{1}{1+r} \right)^{\left(dy (y-y_0) + i \right)} C_y
+    NPC_y = \sum_{i \in [0,dy(Y)-1]} \left( \dfrac{1}{1+r} \right)^{\left(dy (y-y_0) + i \right)} C_y
 
 where :math:`y_0` represents the first planning period and :math:`dy` represents the interval between planning periods, e.g., if :math:`dy=2` the optimization is conducted for every second year.
 Hence, we discount each year of the time horizon, also the years for which the optimization is not conducted.
