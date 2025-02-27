@@ -5,6 +5,7 @@
                      "carbon_intensity_carrier_export": {"default_op": 2}},
     "heat": {"carbon_intensity_carrier_import": {"default": "attributes_1"},
                "carbon_intensity_carrier_export": {"default": "attributes_1"}},
-    "set_technologies": {"capex_specific_conversion": {"default_op": 1.1}}
+    "set_technologies": {"capex_specific_conversion": {"default_op": 1.1}},
+    "solver": {"scaling_algorithm": ["infnorm", "infnorm"]}
   }
 }
