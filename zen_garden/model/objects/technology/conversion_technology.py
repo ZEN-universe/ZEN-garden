@@ -323,22 +323,6 @@ class ConversionTechnology(Technology):
             pwa_values[index] = pwa_parameter["capex"]
         return pwa_breakpoints, pwa_values
 
-    @classmethod
-    def get_flow_term_reference_carrier(cls, optimization_setup, tech):
-        """ get reference carrier flow term of conversion technology
-
-        :param optimization_setup: The OptimizationSetup the element is part of
-        :param tech: conversion technology
-        :return term_flow: return reference carrier flow term """
-        model = optimization_setup.model
-        sets = optimization_setup.sets
-        reference_carrier = sets["set_reference_carriers"][tech][0]
-        if reference_carrier in sets["set_input_carriers"][tech]:
-            term_flow = model.variables["flow_conversion_input"].loc[tech, reference_carrier]
-        else:
-            term_flow = model.variables["flow_conversion_output"].loc[tech, reference_carrier]
-        return term_flow
-
 
 class ConversionTechnologyRules(GenericRule):
     """

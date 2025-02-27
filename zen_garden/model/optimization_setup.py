@@ -348,7 +348,7 @@ class OptimizationSetup(object):
             return dict_of_attributes, False, dict_of_units
         elif isinstance(attribute, dict):
             dict_of_attributes.update({(element.name,) + (key,): val for key, val in attribute.items()})
-        elif isinstance(attribute, pd.Series) and "pwa" not in attribute_name:
+        elif isinstance(attribute, pd.Series):
             if capacity_type:
                 combined_key = (element.name, capacity_type)
             else:
@@ -425,8 +425,6 @@ class OptimizationSetup(object):
         Element.construct_model_components(self)
         # Initiate scaling object
         self.scaling = Scaling(self.model, self.solver.scaling_algorithm, self.solver.scaling_include_rhs)
-        # find smallest and largest coefficient and RHS
-        # self.analyze_numerics() -> Replaced through scaling
 
     def get_optimization_horizon(self):
         """ returns list of optimization horizon steps """
@@ -674,28 +672,6 @@ class OptimizationSetup(object):
                 return component_data
             except KeyError:
                 raise KeyError(f"the custom set {custom_set} cannot be used as a subindex of {component_data.index}")
-
-    def analyze_numerics(self):
-        """ get largest and smallest matrix coefficients and RHS """
-        if self.solver.analyze_numerics:
-            logging.info("\n--- Analyze Matrix Ranges ---\n")
-            flat = self.model.constraints.flat
-            # coeffs
-            coeffs = flat["coeffs"].abs()
-            coeffs = coeffs[coeffs > 0]
-            rhs = flat["rhs"].abs()
-            rhs = rhs[rhs > 0]
-            min_coeff = flat.loc[coeffs.idxmin()]
-            max_coeff = flat.loc[coeffs.idxmax()]
-            min_rhs = flat.loc[rhs.idxmin()]
-            max_rhs = flat.loc[rhs.idxmax()]
-            # print coeffs
-            max_coeff_str = f"Largest Matrix Coefficient: {self.create_cons_var_string(max_coeff)}"
-            min_coeff_str = f"Smallest Matrix Coefficient: {self.create_cons_var_string(min_coeff)}"
-            # print rhs
-            max_rhs_str = f"Largest RHS: {self.create_cons_var_string(max_rhs,is_coeff=False)}"
-            min_rhs_str = f"Smallest RHS: {self.create_cons_var_string(min_rhs,is_coeff=False)}"
-            logging.info(f"Numeric Range Statistics:\n{max_coeff_str}\n{min_coeff_str}\n{max_rhs_str}\n{min_rhs_str}")
 
     def create_cons_var_string(self, cons_series, is_coeff=True):
         """ create a string of constraints or variables

@@ -1,4 +1,4 @@
-name: zen-garden
+name: zen-garden-env
 channels:
   - conda-forge
   - gurobi

@@ -627,64 +627,6 @@ class UnitHandling:
         if attribute in self.dict_attribute_values.keys():
             self.dict_attribute_values[attribute]["values"] = df_output
 
-    def recommend_base_units(self, immutable_unit, unit_exps):
-        """ gets the best base units based on the input parameter values
-
-        :param immutable_unit: base units which must not be changed to recommend a better set of base units
-        :param unit_exps: exponent range inbetween which the base units can be scaled by 10^exponent
-        """
-        logging.info(f"Check for best base unit combination between 10^{unit_exps['min']} and 10^{unit_exps['max']}")
-        dict_values = {}
-        dict_units = {}
-        base_units = self.dim_matrix.columns.copy()
-        for item in self.dict_attribute_values:
-            if self.dict_attribute_values[item]["values"] is not None:
-                _df_values_temp = self.dict_attribute_values[item]["values"].reset_index(drop=True)
-                _df_units_temp = pd.DataFrame(index=_df_values_temp.index, columns=base_units)
-                _df_units_temp.loc[_df_values_temp.index, :] = self.dict_attribute_values[item]["base_combination"][base_units].values
-                dict_values[item] = _df_values_temp
-                dict_units[item] = _df_units_temp
-        df_values = pd.concat(dict_values, ignore_index=True).abs()
-        df_units = pd.concat(dict_units, ignore_index=True)
-        mutable_unit = self.dim_matrix.columns[self.dim_matrix.columns.isin(base_units.difference(immutable_unit))]
-        df_units = df_units.loc[:, mutable_unit].values
-
-        # remove rows of df_units which contain only zeros since they cannot be scaled anyway and may influence minimization convergence
-        zero_rows_mask = np.all(df_units == 0, axis=1)
-        A = df_units[~zero_rows_mask]
-        b = df_values[~zero_rows_mask]
-
-        def fun_LSE(x):
-            """
-            function to compute the least square error of the individual coefficients compared to their mean value
-
-            :param x: array of exponents the coefficients get scaled with (b_tilde = b * 10^(A*x))
-            :return: square error evaluated at x
-            """
-            b_tilde_log = np.log10(b) - np.dot(A, x)
-            b_avg = b.sum() / b.size
-            return ((b_tilde_log - np.log10(b_avg)) ** 2).sum()
-
-        x0 = np.ones(A.shape[1])
-        result = sp.optimize.minimize(fun_LSE, x0, method='L-BFGS-B', bounds=[(unit_exps["min"], unit_exps["max"]) for i in range(df_units.shape[1])])
-
-        if not result.success:
-            logging.info(f"Minimization for better base units was not successful, initial base units will therefore be used.")
-
-        #cast solution array to integers since base units should be scaled by factors of 10, 100, etc.
-        x_int = result.x.astype(int)
-
-        lse_initial_base_units = fun_LSE(np.zeros(df_units.shape[1]))
-        lse = fun_LSE(x_int)
-        if lse >= lse_initial_base_units:
-            logging.info("The current base unit setting is the best in the given search interval")
-        else:
-            list_units = []
-            for exp, unit in zip(x_int, mutable_unit):
-                if exp != 0:
-                    list_units.append(str(self.ureg(f"{10.0 ** exp} {unit}").to_compact()))
-            logging.info(f"A better base unit combination is {', '.join(list_units)}. This reduces the square error of the coefficients compared to their mean by {'{:e}'.format(lse_initial_base_units-lse)}")
-
     def check_if_invalid_hourstring(self, input_unit):
         """
         checks if "h" and thus "planck_constant" in input_unit
@@ -1118,7 +1060,3 @@ l
                 # Print Numerics
                 if i < len(self.algorithm):
                     self.print_numerics(i)
-
-
-
-

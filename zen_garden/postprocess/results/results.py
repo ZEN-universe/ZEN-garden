@@ -32,7 +32,6 @@ class Results:
         """
         self.solution_loader: SolutionLoader = MultiHdfLoader(path)
         self.has_scenarios = len(self.solution_loader.scenarios) > 1
-        self.has_rh = self.solution_loader.has_rh
         first_scenario = next(iter(self.solution_loader.scenarios.values()))
         self.name = Path(first_scenario.analysis.dataset).name
         self.ureg = first_scenario.ureg
@@ -104,9 +103,7 @@ class Results:
         series = self.solution_loader.get_component_data(
             scenario, component, keep_raw=keep_raw
         )
-        if element_name is not None and element_name in series.index.get_level_values(
-            0
-        ):
+        if element_name is not None and element_name in series.index.get_level_values(0):
             series = series.loc[element_name]
 
         if year is None:
@@ -155,7 +152,26 @@ class Results:
                 )
                 series[time_steps_year] = series[time_steps_year] / annuity[year_temp]
         try:
-            output_df = series[sequence_timesteps]
+            if component.timestep_type is TimestepType.operational:
+                output_df = series[sequence_timesteps]
+            elif component.timestep_type is TimestepType.storage:
+                # for storage components, the last timestep is the final state, linear interpolation is used
+                last_occurrences = sequence_timesteps.groupby(sequence_timesteps).apply(lambda x: x.index[-1])
+                first_occurrences = sequence_timesteps.groupby(sequence_timesteps).apply(lambda x: x.index[0])
+                output_df = pd.DataFrame(columns=sequence_timesteps.index,index=series.index,dtype=float)
+                output_df[last_occurrences.values] = series[last_occurrences.index]
+                time_steps_start_end = self.solution_loader.get_time_steps_storage_level_startend_year(scenario)
+                for tstart,tend in time_steps_start_end.items():
+                    tstart_reconstructed = first_occurrences[tstart]
+                    first_valid_timestep = output_df.loc[:,tstart_reconstructed:].T.first_valid_index()
+                    df_temp = pd.DataFrame(index=series.index,columns=range(tstart_reconstructed-1,first_valid_timestep+1),dtype=float)
+                    df_temp.loc[:,tstart_reconstructed-1] = series.loc[:,tend]
+                    df_temp.loc[:,first_valid_timestep] = series.loc[:,sequence_timesteps[first_valid_timestep]]
+                    df_temp = df_temp.interpolate(method='index',axis=1)
+                    output_df.loc[:,first_occurrences[tstart]:last_occurrences[tstart]] = df_temp.loc[:,tstart_reconstructed:first_valid_timestep]
+                output_df = output_df.interpolate(method='index',axis=1)
+            else:
+                raise ValueError(f"Invalid timestep type {component.timestep_type} for component {component}")
         except KeyError:
             output_df = series
 

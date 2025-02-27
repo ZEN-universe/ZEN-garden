@@ -52,7 +52,7 @@ def get_solution_version(scenario: AbstractScenario) -> str:
 
     :return: The version of the solution.
     """
-    versions = {"v1":"2.0.14"}
+    versions = {"v1":"2.0.14","v2":"2.2.9"}
     version = "v0"
     if hasattr(scenario.analysis,"zen_garden_version"):
         for k,v in versions.items():
@@ -76,12 +76,10 @@ def get_index_names(h5_file: h5py.File,component_name: str,version: str) -> list
 
             if name != "N.":
                 ans.append(name)
-    elif version == "v1":
+    else:
         h5_group = h5_file[component_name]
         index_names = h5_group.attrs["index_names"].decode()
         ans = index_names.split(",")
-    else:
-        raise ValueError(f"Solution version {version} not supported.")
     return ans
 
 def get_doc(h5_file: h5py.File,component_name: str,version: str) -> str:
@@ -90,10 +88,8 @@ def get_doc(h5_file: h5py.File,component_name: str,version: str) -> str:
     """
     if version == "v0":
         doc = str(np.char.decode(h5_file[component_name + "/docstring"].attrs.get("value")))
-    elif version == "v1":
-        doc = h5_file[component_name].attrs["docstring"].decode()
     else:
-        raise ValueError(f"Solution version {version} not supported.")
+        doc = h5_file[component_name].attrs["docstring"].decode()
     if ";" in doc and ":" in doc:
         doc = '\n'.join([f'{v.split(":")[0]}: {v.split(":")[1]}' for v in doc.split(";")])
     return doc
@@ -104,10 +100,8 @@ def get_has_units(h5_file: h5py.File,component_name: str,version: str) -> bool:
     """
     if version == "v0":
         has_units = "units" in h5_file[component_name]
-    elif version == "v1":
-        has_units = h5_file[component_name].attrs["has_units"]
     else:
-        raise ValueError(f"Solution version {version} not supported.")
+        has_units = h5_file[component_name].attrs["has_units"]
     if has_units == 1:
         has_units = True
     elif has_units == 0:
@@ -124,7 +118,7 @@ def get_df_from_path(path: str, component_name: str, version: str, data_type: Li
     """
     if version == "v0":
         pd_read = pd.read_hdf(path, component_name + f"/{data_type}")
-    elif version == "v1":
+    else:
         if data_type == "dataframe":
             pd_read = pd.read_hdf(path, component_name)
             if isinstance(pd_read, pd.DataFrame):
@@ -133,8 +127,6 @@ def get_df_from_path(path: str, component_name: str, version: str, data_type: Li
             pd_read = pd.read_hdf(path, component_name)["units"]
         else:
             raise ValueError(f"Data type {data_type} not supported.")
-    else:
-        raise ValueError(f"Solution version {version} not supported.")
 
     if isinstance(pd_read, pd.DataFrame):
         ans = pd_read.squeeze()
@@ -294,6 +286,10 @@ class Scenario(AbstractScenario):
         return self._path
 
     @property
+    def has_rh(self) -> bool:
+        return self.system.use_rolling_horizon
+
+    @property
     def system(self) -> System:
         return self._system
 
@@ -326,11 +322,6 @@ class MultiHdfLoader(AbstractLoader):
         scenario = get_first_scenario(self._scenarios)
         name = scenario.analysis.dataset.split("/")[-1]
         return name
-
-    @property
-    def has_rh(self) -> bool:
-        first_scenario = get_first_scenario(self._scenarios)
-        return first_scenario.system.use_rolling_horizon
 
     @property
     def has_duals(self) -> bool:
@@ -420,7 +411,7 @@ class MultiHdfLoader(AbstractLoader):
         not use perfect foresight, unless explicitly desired otherwise (keep_raw = True).
         """
         version = get_solution_version(scenario)
-        if self.has_rh:
+        if scenario.has_rh:
             # If solution has rolling horizon, load the values for all the foresight
             # steps and combine them.
             pattern = re.compile(r'^MF_\d+(_.*)?$')
@@ -509,7 +500,7 @@ class MultiHdfLoader(AbstractLoader):
         ans: dict[str, AbstractComponent] = {}
         first_scenario = get_first_scenario(self.scenarios)
 
-        if self.has_rh:
+        if first_scenario.has_rh:
             mf_name = [i for i in os.listdir(first_scenario.path) if "MF_" in i][0]
             component_folder = os.path.join(first_scenario.path, mf_name)
         else:
@@ -562,7 +553,7 @@ class MultiHdfLoader(AbstractLoader):
             time_step_duration = self.get_component_data(
                 scenario, self.components[timestep_duration_name]
             )
-        elif version == "v1":
+        else:
             time_steps_file_name = _get_time_steps_file(scenario)
             time_steps_file_name = time_steps_file_name + ".json"
             dict_path = os.path.join(scenario.path, time_steps_file_name, )
@@ -571,8 +562,6 @@ class MultiHdfLoader(AbstractLoader):
             time_step_duration = pd.Series(ans[timestep_duration_name])
             time_step_duration.index = time_step_duration.index.astype(int)
             time_step_duration = time_step_duration.astype(int)
-        else:
-            raise ValueError(f"Solution version {version} not supported.")
 
         assert type(time_step_duration) is pd.Series
 
@@ -600,14 +589,13 @@ class MultiHdfLoader(AbstractLoader):
             time_steps_file_name = time_steps_file_name + ".h5"
             dict_path = os.path.join(scenario.path,time_steps_file_name,)
             ans = pd.read_hdf(dict_path, f"{timesteps_name}/{year}")
-        elif version == "v1":
+        else:
             time_steps_file_name = time_steps_file_name + ".json"
             dict_path = os.path.join(scenario.path, time_steps_file_name, )
             with open(dict_path) as json_file:
                 ans = json.load(json_file)
             ans = pd.Series(ans[timesteps_name][str(year)])
-        else:
-            raise ValueError(f"Solution version {version} not supported.")
+
         assert type(ans) is pd.Series
 
         return ans
@@ -625,13 +613,11 @@ class MultiHdfLoader(AbstractLoader):
             sequence_time_steps_name = sequence_time_steps_name + ".h5"
             time_step_path = os.path.join(scenario.path, sequence_time_steps_name)
             time_step_file = h5py.File(time_step_path)
-        elif version == "v1":
+        else:
             sequence_time_steps_name = sequence_time_steps_name + ".json"
             time_step_path = os.path.join(scenario.path, sequence_time_steps_name)
             with open(time_step_path) as json_file:
                 time_step_file = json.load(json_file)
-        else:
-            raise ValueError(f"Solution version {version} not supported.")
 
         if ts_type is TimestepType.storage:
             time_step_name = "time_steps_year2storage"
@@ -645,16 +631,21 @@ class MultiHdfLoader(AbstractLoader):
             year_series = time_step_yearly[str(year)]
             if version == "v0":
                 time_steps.append(pd.read_hdf(time_step_path, year_series.name))
-            elif version == "v1":
-                time_steps.append(pd.Series(time_step_yearly[str(year)]))
             else:
-                raise ValueError(f"Solution version {version} not supported.")
+                time_steps.append(pd.Series(time_step_yearly[str(year)]))
+
         time_steps = pd.concat(time_steps).reset_index(drop=True)
         return time_steps
 
     def get_sequence_time_steps(
         self, scenario: AbstractScenario, timestep_type: TimestepType
     ) -> "pd.Series[Any]":
+        """
+        Method that returns the sequence time steps of a scenario.
+        :param scenario:
+        :param timestep_type:
+        :return:
+        """
         time_steps_file_name = _get_time_steps_file(scenario)
 
         if timestep_type is TimestepType.operational:
@@ -668,14 +659,12 @@ class MultiHdfLoader(AbstractLoader):
             time_steps_file_name = time_steps_file_name + ".h5"
             dict_path = os.path.join(scenario.path, time_steps_file_name, )
             ans = pd.read_hdf(dict_path, sequence_timesteps_name)
-        elif version == "v1":
+        else:
             time_steps_file_name = time_steps_file_name + ".json"
             dict_path = os.path.join(scenario.path, time_steps_file_name, )
             with open(dict_path) as json_file:
                 ans = json.load(json_file)
             ans = pd.Series(ans[sequence_timesteps_name])
-        else:
-            raise ValueError(f"Solution version {version} not supported.")
         return ans
 
     def get_optimized_years(
@@ -692,17 +681,16 @@ class MultiHdfLoader(AbstractLoader):
                 time_steps_file_name = time_steps_file_name + ".h5"
                 dict_path = os.path.join(scenario.path, time_steps_file_name, )
                 ans = pd.read_hdf(dict_path, "optimized_time_steps").tolist()
-            elif version == "v1":
+            else:
                 time_steps_file_name = time_steps_file_name + ".json"
                 dict_path = os.path.join(scenario.path, time_steps_file_name, )
                 with open(dict_path) as json_file:
                     ans = json.load(json_file)
                 ans = ans["optimized_time_steps"]
-            else:
-                raise ValueError(f"Solution version {version} not supported.")
+
         # if old version of the solution
         except:
-            if self.has_rh:
+            if scenario.has_rh:
                 pattern = re.compile(r'^MF_\d+$')
                 subfolder_names = list(filter(lambda x: pattern.match(x), os.listdir(scenario.path)))
                 ans = [int(subfolder_name.replace("MF_", "")) for subfolder_name in subfolder_names]
@@ -711,3 +699,24 @@ class MultiHdfLoader(AbstractLoader):
 
         return ans
 
+    def get_time_steps_storage_level_startend_year(self,
+        scenario: AbstractScenario,
+    ) -> dict[int, int]:
+        """
+        Method that returns time steps that define the start and end of the storage level
+        :param scenario:
+        :return:
+        """
+        version = get_solution_version(scenario)
+        if version == "v0" or version == "v1":
+            sequence = self.get_sequence_time_steps(scenario,TimestepType.storage)
+            dict_startend = {sequence.iloc[0]:sequence.iloc[-1]}
+        else:
+            time_steps_file_name = _get_time_steps_file(scenario)
+            time_steps_file_name = time_steps_file_name + ".json"
+            dict_path = os.path.join(scenario.path, time_steps_file_name, )
+            with open(dict_path) as json_file:
+                ans = json.load(json_file)
+            dict_startend = ans["time_steps_storage_level_startend_year"]
+            dict_startend = {int(k):int(v) for k,v in dict_startend.items()}
+        return dict_startend

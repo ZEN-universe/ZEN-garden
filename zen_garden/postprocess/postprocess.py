@@ -97,6 +97,7 @@ class Postprocess:
         self.dict_sequence_time_steps["optimized_time_steps"] = optimization_setup.optimized_time_steps
         self.dict_sequence_time_steps["time_steps_operation_duration"] = self.energy_system.time_steps.time_steps_operation_duration
         self.dict_sequence_time_steps["time_steps_storage_duration"] = self.energy_system.time_steps.time_steps_storage_duration
+        self.dict_sequence_time_steps["time_steps_storage_level_startend_year"] = self.energy_system.time_steps.time_steps_storage_level_startend_year
         self.dict_sequence_time_steps["time_steps_year2operation"] = self.get_time_steps_year2operation()
         self.dict_sequence_time_steps["time_steps_year2storage"] = self.get_time_steps_year2storage()
 

@@ -45,7 +45,7 @@ jobs:
         with:
             miniforge-variant: Miniforge3
             miniforge-version: latest
-            activate-environment: zen-garden
+            activate-environment: zen-garden-env
             use-mamba: true
 
       # date for the cache
@@ -55,7 +55,7 @@ jobs:
       # reset cache if env file changed
       - uses: actions/cache@v3
         with:
-          path: /usr/share/miniconda3/envs/zen-garden
+          path: /usr/share/miniconda3/envs/zen-garden-env
           key: linux-64-conda-${{ hashFiles('zen_garden_env.yml') }}-${{ env.DATE }}-${{ env.CACHE_NUMBER }}
         id: cache
 
