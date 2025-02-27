@@ -348,7 +348,7 @@ class OptimizationSetup(object):
             return dict_of_attributes, False, dict_of_units
         elif isinstance(attribute, dict):
             dict_of_attributes.update({(element.name,) + (key,): val for key, val in attribute.items()})
-        elif isinstance(attribute, pd.Series) and "pwa" not in attribute_name:
+        elif isinstance(attribute, pd.Series):
             if capacity_type:
                 combined_key = (element.name, capacity_type)
             else:
