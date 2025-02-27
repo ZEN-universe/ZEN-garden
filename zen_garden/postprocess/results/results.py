@@ -32,7 +32,6 @@ class Results:
         """
         self.solution_loader: SolutionLoader = MultiHdfLoader(path)
         self.has_scenarios = len(self.solution_loader.scenarios) > 1
-        self.has_rh = self.solution_loader.has_rh
         first_scenario = next(iter(self.solution_loader.scenarios.values()))
         self.name = Path(first_scenario.analysis.dataset).name
         self.ureg = first_scenario.ureg
