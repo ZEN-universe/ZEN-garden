@@ -38,7 +38,7 @@
   },
   "carbon_intensity_technology": {
     "default_value": 0.0,
-    "unit": "kilotons/kilotons"
+    "unit": "kilotons/kilotons/km"
   },
   "construction_time": {
     "default_value": 0.0,

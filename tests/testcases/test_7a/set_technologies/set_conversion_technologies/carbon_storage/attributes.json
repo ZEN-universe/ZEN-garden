@@ -45,14 +45,12 @@
   "output_carrier": {
     "default_value": []
   },
-  "conversion_factor": [
-    {
-      "electricity": {
-        "default_value": 37.71,
-        "unit": "MWh/kton"
-      }
+  "conversion_factor": {
+    "electricity": {
+      "default_value": 37.71,
+      "unit": "MWh/kton"
     }
-  ],
+  },
   "capacity_limit": {
     "default_value": "inf",
     "unit": "kton/h"

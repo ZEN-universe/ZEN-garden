@@ -87,7 +87,7 @@ jobs:
         with:
             miniforge-variant: Miniforge3
             miniforge-version: latest
-            activate-environment: zen-garden
+            activate-environment: zen-garden-env
             use-mamba: true
 
       # date for the cache
