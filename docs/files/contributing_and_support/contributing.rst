@@ -52,7 +52,7 @@ The coverage report is also generated in a similar way by running::
 
 To run the tests, add another Python configuration. The important settings are:
 
-- Change "Script Path" to "Module name" and set it to "coverage"
+- Change "script" to "module" and set it to "coverage"
 - Set the "Parameters" to: ``run --source="zen_garden" -m pytest -v run_test.py``
 - Set the python interpreter to the Conda environment that was used to install the requirements and also has the package installed. **Important**: This setup will only work for Conda environments that were also declared as such in PyCharm; if you set the path to the Python executable yourself, you should create a new proper PyCharm interpreter.
 - Set the "Working directory" to the directory ``tests/testcases`` of the repo.
@@ -64,11 +64,10 @@ In the end, your configuration to run the tests should look similar to this:
 
 To run the test and also get the coverage report, we use the pipeline settings of the configuration. Add another Python configuration and use the following settings:
 
-- Change "Script Path" to "Module name" and set it to "coverage"
-- Set the "Parameters" to ``report -m``
-- Set the python interpreter to the Conda environment that was used to install the requirements and also has the package installed. *Important*: This setup will only work for Conda environments that were also declared as such in PyCharm; if you set the path to the Python executable yourself, you should create a new proper PyCharm interpreter.
-- Set the "Working directory" to the base directory of the repo.
-- Click on "Modify options", go to the section "Before launch", and select "Add run before launch" where you can now add the "Run Tests" configuration from above.
+- Add a new configuration "Python tests/pytest"
+- Change "script" to "module" and set it to "run_test"
+- Set the python interpreter to the Conda environment that was used to install the requirements and also has the package installed. **Important**: This setup will only work for Conda environments that were also declared as such in PyCharm; if you set the path to the Python executable yourself, you should create a new proper PyCharm interpreter.
+- Set the "Working directory" to the directory ``tests/testcases`` of the repo.
 
 In the end, your configuration to run the coverage should look similar to this:
 
