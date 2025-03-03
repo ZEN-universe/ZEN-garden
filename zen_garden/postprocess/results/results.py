@@ -10,7 +10,6 @@ from zen_garden.postprocess.results.solution_loader import (
     TimestepType,
     ComponentType,
 )
-from zen_garden.postprocess.results.multi_hdf_loader import MultiHdfLoader
 from functools import cache
 from zen_garden.model.default_config import Config, Analysis, Solver, System
 import importlib
@@ -30,7 +29,7 @@ class Results:
 
         :param path: Path to the results folder
         """
-        self.solution_loader: SolutionLoader = MultiHdfLoader(path)
+        self.solution_loader = SolutionLoader(path)
         self.has_scenarios = len(self.solution_loader.scenarios) > 1
         first_scenario = next(iter(self.solution_loader.scenarios.values()))
         self.name = Path(first_scenario.analysis.dataset).name

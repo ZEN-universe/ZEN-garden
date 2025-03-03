@@ -790,8 +790,6 @@ class HDFPandasSerializer:
             if not isinstance(df, pd.Series):
                 if df.shape[1]:
                     df = df.squeeze(axis=1)
-                else:
-                    a=1
             input_dict["dataframe"] = df
         if "docstring" in input_dict:
             docstring = input_dict["docstring"]
