@@ -169,7 +169,7 @@ class Postprocess:
         """
         Saves the benchmarking data to a json file
         """
-        #initialize dictionary
+        # initialize dictionary
         benchmarking_data = {}
         # get the benchmarking data
         benchmarking_data["solving_time"] = self.model.solver_model.Runtime

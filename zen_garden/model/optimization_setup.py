@@ -670,21 +670,3 @@ class OptimizationSetup(object):
                 return component_data
             except KeyError:
                 raise KeyError(f"the custom set {custom_set} cannot be used as a subindex of {component_data.index}")
-
-    def create_cons_var_string(self, cons_series, is_coeff=True):
-        """ create a string of constraints or variables
-
-        :param cons_series: pd.Series of constraints or variables
-        :param is_coeff: boolean if coefficients, else rhs
-        :return cons_str: string of maximum coefficient or rhs"""
-        cons_str = self.model.constraints.get_label_position(cons_series["labels"])
-        cons_str = cons_str[0] + str(list(cons_str[1].values()))
-
-        if is_coeff:
-            var_str = self.model.variables.get_label_position(cons_series["vars"])
-            var_str = var_str[0] + str(list(var_str[1].values()))
-            coeff_str = abs(cons_series["coeffs"])
-            cons_str = f"{coeff_str} {var_str} in {cons_str}"
-        else:
-            cons_str = f"{abs(cons_series['rhs'])} in {cons_str}"
-        return cons_str
