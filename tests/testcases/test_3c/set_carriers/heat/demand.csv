@@ -1,2 +1,3 @@
-time,CH,DE
-0,10,100
+node,demand
+CH,10
+DE,100

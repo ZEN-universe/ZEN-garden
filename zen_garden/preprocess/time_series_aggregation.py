@@ -96,7 +96,6 @@ class TimeSeriesAggregation(object):
             self.typical_periods = self.typical_periods[self.column_names_flat]
             self.typical_periods.columns = self.column_names_original
 
-
     def run_tsa(self,year_specific=None):
         """ this method runs the time series aggregation """
         # substitute column names
@@ -155,7 +154,6 @@ class TimeSeriesAggregation(object):
                 df_aggregated_ts.index = df_aggregated_ts.index.reorder_levels(index_names + [self.header_set_time_steps])
                 setattr(element, ts, df_aggregated_ts)
                 element.aggregated = True
-                # self.set_aggregation_indicators(element)
 
     def get_excluded_ts(self):
         """ gets the names of all elements and parameter ts that shall be excluded from the time series aggregation """
@@ -165,8 +163,8 @@ class TimeSeriesAggregation(object):
             # exclude file exists
             if excluded_parameters is not None:
                 for _,vals in excluded_parameters.iterrows():
-                    element_name = vals[0]
-                    parameter = vals[1]
+                    element_name = vals.iloc[0]
+                    parameter = vals.iloc[1]
                     element = self.optimization_setup.get_element(cls=Element, name=element_name)
                     # specific element
                     if element is not None:
@@ -257,12 +255,12 @@ class TimeSeriesAggregation(object):
         :return new_sequence_time_steps: new sequence of time steps updated with year specific TSA sequence
         """
         header_set_time_steps = self.analysis.header_data_inputs.set_time_steps
-        #only run specific TSA if TSA is activated and set_base_time_steps > aggregated_time_steps
+        # only run specific TSA if TSA is activated and set_base_time_steps > aggregated_time_steps
         if self.number_typical_periods < np.size(self.set_base_time_steps) and self.system.conduct_time_series_aggregation:
             for year in self.optimization_setup.year_specific_ts:
                 #create empty dictionary for saving year specific TSA results
                 self.year_specific_tsa[year] = {}
-                #make copy of raw time series
+                # make copy of raw time series
                 year_raw_ts = self.df_ts_raw_copy.copy()
                 elements = year_raw_ts.columns.get_level_values(0).unique()
                 time_series = year_raw_ts.columns.get_level_values(1).unique()
@@ -280,17 +278,15 @@ class TimeSeriesAggregation(object):
                     self.run_tsa(year_specific=year)
                 # nothing to aggregate
                 else: #ToDo can this be removed?
-                    assert len(self.excluded_ts) == 0, "Do not exclude any time series from aggregation, if there is then nothing else to aggregate!"
+                    assert len(self.excluded_ts) == 0, "Do not exclude any time series from aggregation if there is then nothing else to aggregate!"
                     # aggregate to single time step
                     self.single_ts_tsa()
-                #overwrite time_step_seqeunce here
+                # overwrite time_step_sequence here
                 base_time_steps = self.energy_system.time_steps.decode_time_step(year, "yearly")
                 new_sequence_time_steps[base_time_steps][:,0] = self.sequence_time_steps
-                #save year specific TSA results
+                # save year specific TSA results
                 self.year_specific_tsa[year] = self.typical_periods
         return new_sequence_time_steps
-
-
 
     def link_time_steps(self):
         """ calculates the necessary overlapping time steps of the investment and operation of a technology for all years.
