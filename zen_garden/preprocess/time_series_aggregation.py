@@ -39,7 +39,7 @@ class TimeSeriesAggregation(object):
         if self.number_typical_periods < np.size(self.set_base_time_steps) and self.system.conduct_time_series_aggregation:
             # select time series
             self.select_ts_of_all_elements()
-            #make copy of raw time series
+            # make copy of raw time series
             self.df_ts_raw_copy = self.df_ts_raw.copy()
             if not self.df_ts_raw.empty:
                 # run time series aggregation to create typical periods
