@@ -78,7 +78,7 @@ The capital investment cost for transport technologies can be determined based o
 .. math::
     :label: cost_capex_transport
 
-    I_{j,e,y} = \alpha^\mathrm{const}_{j,y} \Delta S_{j,e,y} + alpha^\mathrm{dist}_{j,e,y} h_{j,e} q_{j,e,y}
+    I_{j,e,y} = \alpha^\mathrm{const}_{j,y} \Delta S_{j,e,y} + \alpha^\mathrm{dist}_{j,e,y} h_{j,e} q_{j,e,y}
 
 .. _technology_diffusion:
 Technology diffusion
