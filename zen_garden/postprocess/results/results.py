@@ -573,6 +573,26 @@ class Results:
         scenario = self.solution_loader.scenarios[scenario_name]
         return scenario.system.use_rolling_horizon
 
+    def get_coords(self, scenario_name: Optional[str] = None) -> Optional[pd.DataFrame]:
+        """
+        Extracts the coordinates of the nodes of a given Scenario. If no scenario is given, a random one is taken.
+
+        :param scenario_name: Name of the scenario
+        :return: The corresponding coordinates
+        """
+        if scenario_name is None:
+            scenario_name = next(iter(self.solution_loader.scenarios.keys()))
+        system = self.get_system(scenario_name)
+        if hasattr(system,"coords"):
+            coords = pd.DataFrame(system.coords).T
+            if coords.empty:
+                print(f"Coordinates of nodes are not saved for version {self.get_analysis().zen_garden_version}.")
+                return None
+            return pd.DataFrame(system.coords).T
+        else:
+            print(f"Coordinates of nodes are not saved for version {self.get_analysis().zen_garden_version}.")
+            return None
+
     def calculate_connected_edges(
         self, node: str, direction: str, set_nodes_on_edges: dict[str, str]
     ):
