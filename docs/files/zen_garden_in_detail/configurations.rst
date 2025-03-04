@@ -152,6 +152,29 @@ Using time series aggregation
 Open the ``system.json`` file and set ``"aggregated_time_steps_per_year"`` smaller than ``"unaggregated_time_steps_per_year"``. You are then aggregating ``"unaggregated_time_steps_per_year"`` (e.g., 8760 base time steps) to ``"aggregated_time_steps_per_year"`` (e.g., 200 representative time steps).
 If you mistakingly set ``"aggregated_time_steps_per_year">"unaggregated_time_steps_per_year"``, don't worry, the TSA is disabled and it behaves as if ``"aggregated_time_steps_per_year"="unaggregated_time_steps_per_year"``.
 
+Additionally, you can exclude parameters for specific elements from the clustering process. This is useful if you have time series that should not influence the clustering process. This could, for example, a helper time series to artificially decrease the capacity factor of a technology.
+To exclude parameters from the TSA, create a csv file named ``exclude_parameter_from_TSA.csv`` in the ``energy_system`` folder. In this file, you can specify the elements and parameters that should be excluded from the TSA.
+For example, you can exclude the parameter ``availability_import`` for the element ``natural_gas`` by adding the following line to the ``exclude_parameter_from_TSA.csv`` file:
+
+.. code-block::
+
+    element,parameter
+    natural_gas,availability_import
+
+If you want to exclude the parameter of all elements of a class, e.g., ``set_technologies``, you can use the class name as the element. For example, to exclude the parameter ``max_load`` for all technologies, add the following line to the ``exclude_parameter_from_TSA.csv`` file:
+
+.. code-block::
+
+    element,parameter
+    set_technologies,max_load
+
+Furthermore, you can exclude all parameters for a specific element by setting the parameter to ``nan``. For example, to exclude all parameters for the element ``natural_gas_boiler``, add the following line to the ``exclude_parameter_from_TSA.csv`` file:
+
+.. code-block::
+
+    element,parameter
+    natural_gas_boiler,nan
+
 For an in-depth introduction to TSA, refer to `Hoffmann et al. 2020 <https://www.mdpi.com/1996-1073/13/3/641>`_. The authors at FZ Jülich are also the developers of the TSA package `tsam <https://tsam.readthedocs.io/en/latest/>`_ that we are using in ZEN-garden.
 
 Modeling short- and long-term storages?
@@ -164,7 +187,7 @@ In ZEN-garden, we extend the approach by Gabrielli et al. 2018 to model storages
 In short, every time that the sequence of operational time steps changes, the another storage time step is added. This increases the number of variables, but explicitly enables short- and long-term storages.
 In particular, this storage level representation leads to fewer time steps than the full time series without loss of information.
 
-Additional information!
+Additional information
 ----------------------------------------------------
 
 1. In the ``default_config.py``, you find the class ``TimeSeriesAggregation`` where you can set the ``clusterMethod``, ``solver``, ``extremePeriodMethod`` and ``representationMethod``. Most importantly, the ``clusterMethod`` selects which algorithm is used to determine the clusters of representative time steps. Probably, the most common ones are `k_means <https://en.wikipedia.org/wiki/K-means_clustering>`_ and `k_medoids <https://en.wikipedia.org/wiki/K-medoids>`_. While it is probably not necessary at this point to understand the difference of k-means and k-medoids in detail, it is important to know that k-means averages the input data over the representative time steps, which reduces the extreme period behavior, thus, peaks are smoothened.

@@ -89,7 +89,7 @@ class Postprocess:
         self.save_solver()
         self.save_unit_definitions()
         self.save_param_map()
-        if self.analysis.save_benchmarking_results:
+        if self.solver.run_diagnostics:
             self.save_benchmarking_data()
 
         # extract and save sequence time steps, we transform the arrays to lists
@@ -170,24 +170,32 @@ class Postprocess:
         Saves the benchmarking data to a json file
         """
         # initialize dictionary
-        benchmarking_data = {}
+        benchmarking_data = dict()
         # get the benchmarking data
-        benchmarking_data["solving_time"] = self.model.solver_model.Runtime
-        if self.solver.solver_options["Method"] == 2:
-            benchmarking_data["number_iterations"] = self.model.solver_model.BarIterCount
+        benchmarking_data["objective_value"] = self.model.objective.value
+        if self.solver.name == "gurobi":
+            benchmarking_data["solving_time"] = self.model.solver_model.Runtime
+            if self.solver.solver_options["Method"] == 2:
+                benchmarking_data["number_iterations"] = self.model.solver_model.BarIterCount
+            else:
+                benchmarking_data["number_iterations"] = self.model.solver_model.IterCount
+            benchmarking_data["solver_status"] = self.model.solver_model.Status
+            benchmarking_data["number_constraints"] = self.model.solver_model.NumConstrs
+            benchmarking_data["number_variables"] = self.model.solver_model.NumVars
+        elif self.solver.name == "highs":
+            benchmarking_data["solver_status"] = self.model.solver_model.getModelStatus().name
+            benchmarking_data["solving_time"] = self.model.solver_model.getRunTime()
+            benchmarking_data["number_iterations"] = self.model.solver_model.getInfo().simplex_iteration_count
+            benchmarking_data["number_constraints"] = self.model.solver_model.getNumRow()
+            benchmarking_data["number_variables"] = self.model.solver_model.getNumCol()
         else:
-            benchmarking_data["number_iterations"] = self.model.solver_model.IterCount
-        benchmarking_data["solver_status"] = self.model.solver_model.Status
-        benchmarking_data["objective_value"] = self.model.objective_value
-        benchmarking_data["scaling_time"] = self.scaling.scaling_time
+            logging.info(f"Saving benchmarking data for solver {self.solver.name} has not been implemented yet")
 
-        #get numerical range
-        range_lhs, range_rhs = self.scaling.print_numerics(0, False, True)
+        benchmarking_data["scaling_time"] = self.scaling.scaling_time
+        # get numerical range
+        range_lhs, range_rhs = self.scaling.print_numerics(0, no_scaling=False,benchmarking_output= True)
         benchmarking_data["numerical_range_lhs"] = range_lhs
         benchmarking_data["numerical_range_rhs"] = range_rhs
-
-
-
         fname = self.name_dir.joinpath('benchmarking')
         self.write_file(fname, benchmarking_data, format="json")
 
