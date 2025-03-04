@@ -39,7 +39,7 @@ class DataInput:
         self.index_names = self.analysis.header_data_inputs
         # load attributes file
         self.attribute_dict = self.load_attribute_file()
-        #optimization setup
+        # optimization setup
         self.optimization_setup = optimization_setup
 
     def extract_input_data(self, file_name, index_sets, unit_category, time_steps=None, subelement=None):
@@ -86,9 +86,7 @@ class DataInput:
                 df_input = df_input[cols]
             # fill output dataframe
             df_output = self.extract_general_input_data(df_input, df_output, file_name, index_name_list, default_value, time_steps)
-        # save parameter values for analysis of numerics
-        self.save_values_of_attribute(df_output=df_output, file_name=file_name)
-        #copy output data as otherwise overwritten
+        # copy output data as otherwise overwritten
         df_output_generic = df_output.copy()
         if time_steps == "set_base_time_steps_yearly":
             self.extract_year_specific_ts(file_name, index_name_list, time_steps, subelement, default_value,df_output_generic=df_output)
@@ -666,35 +664,7 @@ class DataInput:
                 df_output[key] = value
         else:
             df_output = pd.Series(index=index_multi_index, data=default_value["value"], dtype=float)
-        # save unit of attribute of element converted to base unit
-        self.save_unit_of_attribute(default_name, subelement)
         return df_output, default_value, index_name_list
-
-    def save_unit_of_attribute(self, attribute_name, subelement=None):
-        """ saves the unit of an attribute, converted to the base unit
-
-        :param attribute_name: name of selected attribute
-        :param subelement: dependent element for which data is extracted
-        """
-        # if numerics analyzed
-        if self.solver.analyze_numerics and attribute_name is not None:
-            input_unit = self.extract_attribute(attribute_name, unit_category=None, subelement=subelement, return_unit=True)
-            if subelement is not None:
-                attribute_name = attribute_name + "_" + subelement
-            self.unit_handling.set_base_unit_combination(input_unit=input_unit, attribute=(self.element.name, attribute_name))
-
-    def save_values_of_attribute(self, df_output, file_name):
-        """ saves the values of an attribute
-
-        :param df_output: default output dataframe
-        :param file_name: name of selected file.
-        """
-        # if numerics analyzed
-        if self.solver.analyze_numerics:
-            if file_name:
-                df_output_reduced = df_output[(df_output != 0) & (df_output.abs() != np.inf)]
-                if not df_output_reduced.empty:
-                    self.unit_handling.set_attribute_values(df_output=df_output_reduced, attribute=(self.element.name, file_name))
 
     def construct_index_list(self, index_sets, time_steps):
         """ constructs index list from index sets and returns list of indices and list of index names

@@ -67,7 +67,6 @@ class Results:
         if data_type == "units" and not component.has_units:
             return None
 
-
         ans = {}
 
         for scenario_name in scenario_names:

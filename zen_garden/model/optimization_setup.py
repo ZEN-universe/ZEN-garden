@@ -401,11 +401,11 @@ class OptimizationSetup(object):
         :param attribute_name: str name of attribute
         :return attribute_value: value of attribute"""
         # get element
-        _element = self.get_element(cls, element_name)
+        element = self.get_element(cls, element_name)
         # assert that _element exists and has attribute
-        assert _element, f"Element {element_name} not in class {cls.__name__}"
-        assert hasattr(_element, attribute_name), f"Element {element_name} does not have attribute {attribute_name}"
-        attribute_value = getattr(_element, attribute_name)
+        assert element, f"Element {element_name} not in class {cls.__name__}"
+        assert hasattr(element, attribute_name), f"Element {element_name} does not have attribute {attribute_name}"
+        attribute_value = getattr(element, attribute_name)
         return attribute_value
 
     def construct_optimization_problem(self):

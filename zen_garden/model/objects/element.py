@@ -84,30 +84,35 @@ class Element:
         t_start = time.perf_counter()
         cls.construct_sets(optimization_setup)
         t1 = time.perf_counter()
-        logging.info(f"Time to construct Sets: {t1 - t_start:0.1f} seconds")
-        logging.info(f"Memory usage: {psutil.Process(pid).memory_info().rss / 1024 ** 2:0.1f} MB")
+        if optimization_setup.solver.run_diagnostics:
+            logging.info(f"Time to construct Sets: {t1 - t_start:0.1f} seconds")
+            logging.info(f"Memory usage: {psutil.Process(pid).memory_info().rss / 1024 ** 2:0.1f} MB")
         # construct Params
         t0 = time.perf_counter()
         cls.construct_params(optimization_setup)
         t1 = time.perf_counter()
-        logging.info(f"Time to construct Params: {t1 - t0:0.1f} seconds")
-        logging.info(f"Memory usage: {psutil.Process(pid).memory_info().rss / 1024 ** 2:0.1f} MB")
+        if optimization_setup.solver.run_diagnostics:
+            logging.info(f"Time to construct Params: {t1 - t0:0.1f} seconds")
+            logging.info(f"Memory usage: {psutil.Process(pid).memory_info().rss / 1024 ** 2:0.1f} MB")
         # construct Vars
         t0 = time.perf_counter()
         cls.construct_vars(optimization_setup)
         t1 = time.perf_counter()
-        logging.info(f"Time to construct Vars: {t1 - t0:0.1f} seconds")
-        logging.info(f"Memory usage: {psutil.Process(pid).memory_info().rss / 1024 ** 2:0.1f} MB")
+        if optimization_setup.solver.run_diagnostics:
+            logging.info(f"Time to construct Vars: {t1 - t0:0.1f} seconds")
+            logging.info(f"Memory usage: {psutil.Process(pid).memory_info().rss / 1024 ** 2:0.1f} MB")
         # construct Constraints
         t0 = time.perf_counter()
         cls.construct_constraints(optimization_setup)
         t1 = time.perf_counter()
-        logging.info(f"Time to construct Constraints: {t1 - t0:0.1f} seconds")
-        logging.info(f"Memory usage: {psutil.Process(pid).memory_info().rss / 1024 ** 2:0.1f} MB")
+        if optimization_setup.solver.run_diagnostics:
+            logging.info(f"Time to construct Constraints: {t1 - t0:0.1f} seconds")
+            logging.info(f"Memory usage: {psutil.Process(pid).memory_info().rss / 1024 ** 2:0.1f} MB")
         # construct Objective
         optimization_setup.energy_system.construct_objective()
         t_end = time.perf_counter()
-        logging.info(f"Total time to construct model components: {t_end - t_start:0.1f} seconds")
+        if optimization_setup.solver.run_diagnostics:
+            logging.info(f"Total time to construct model components: {t_end - t_start:0.1f} seconds")
 
     @classmethod
     def construct_sets(cls, optimization_setup):

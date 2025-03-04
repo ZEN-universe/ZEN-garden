@@ -10,6 +10,7 @@ Key;Type;Default Value;Description
 ``io_api``;``str``;``lp``;api that is used to pass the optimization problem to the solver, must be ``lp``, ``mps``, or ``direct``
 ``check_unit_consistency``;``bool``;``True``;check for unit consistency in the input data. IMPORTANT: Only disable, if you know exactly what you are doing
 ``analyze_numerics``;``bool``;``True``;print numerics of the optimization problem
+``run_diagnostics``;``bool``;``False``;If true, additional data such as solving time, number of iterations etc. will be saved and model creation data will be printed
 ``use_scaling``;``bool``;``True``;if true, scaling algorithm is applied to improve the numerics of the optimization problem
 ``scaling_include_rhs``;``bool``;``True``;if true, the right-hand-side (rhs) is included in the scaling algorithm
 ``scaling_algorithm``;``Union[list[str],str]``;``['geom','geom','geom']``;specify which scaling algorithms should be used. The length of the list defines the number of iterations. Per default three iterations of ``geom`` are conducted
