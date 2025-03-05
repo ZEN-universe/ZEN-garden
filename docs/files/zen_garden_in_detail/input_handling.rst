@@ -199,7 +199,7 @@ The file is much shorter and easier to read. ZEN-garden will automatically fill 
 Yearly variation
 ----------------
 We specify hourly-dependent data for each hour of the year.
-However, some parameters might have a yearly variation, e.g., the overall demand may increase or decrease over the year.
+However, some parameters might have a yearly variation, e.g., the overall demand may increase or decrease over the years.
 
 To this end, the user can specify a file ``<parameter_name>_yearly_variation.csv`` that multiplies the hourly-dependent data with a factor for each hour of the year.
 ZEN-garden therefore assumes the same time series for each year but allows for the scaling of the time series with the yearly variation.
@@ -314,7 +314,7 @@ We make use of the fact, that we can combine the base units to any unit by compa
 .. code-block::
 
     Euro/MWh
-    => [currency]^1 [mass]^-1 [length]-2 [time]^2
+    => [currency]^1 [mass]^-1 [length]^-2 [time]^2
     = [currency]^1 [[mass]^1 [length]^2 [time]^-3]^-1 [time]^-1
     => Euro/GW/hour
 
@@ -412,9 +412,9 @@ In ZEN-garden we provide 3 different scaling algorithms, from which the row and 
 2. Arithmetic Mean (``"arithm"``)
 3. Infinity Norm (``"infnorm"``)
 
-The approximated geometric mean is the root of the product of the maximum and minimum absolute values of the respective row or column.
-The arithmetic mean is derived over all absolute values of the respective row or column.
-The infinity norm is the maximum absolute value of the respective row or column.
+The approximated geometric mean is the root of the product of the maximum and minimum absolute values of the respective row or column of the constraint matrix :math:`A`.
+The arithmetic mean is derived over all absolute values of the respective row or column of the constraint matrix :math:`A`.
+The infinity norm is the maximum absolute value of the respective row or column of the constraint matrix :math:`A`.
 For a more detailed explanation of each algorithm please see the paper from `Elble and Sahinidis (2012) <https://rdcu.be/dStfc>`_.
 
 **Combination of Scaling Algorithms**
