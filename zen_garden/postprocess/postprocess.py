@@ -88,20 +88,10 @@ class Postprocess:
         self.save_scenarios()
         self.save_solver()
         self.save_unit_definitions()
+        self.save_sequence_time_steps(scenario=scenario_name)
         self.save_param_map()
         if self.solver.run_diagnostics:
             self.save_benchmarking_data()
-
-        # extract and save sequence time steps, we transform the arrays to lists
-        self.dict_sequence_time_steps = self.flatten_dict(self.energy_system.time_steps.get_sequence_time_steps_dict())
-        self.dict_sequence_time_steps["optimized_time_steps"] = optimization_setup.optimized_time_steps
-        self.dict_sequence_time_steps["time_steps_operation_duration"] = self.energy_system.time_steps.time_steps_operation_duration
-        self.dict_sequence_time_steps["time_steps_storage_duration"] = self.energy_system.time_steps.time_steps_storage_duration
-        self.dict_sequence_time_steps["time_steps_storage_level_startend_year"] = self.energy_system.time_steps.time_steps_storage_level_startend_year
-        self.dict_sequence_time_steps["time_steps_year2operation"] = self.get_time_steps_year2operation()
-        self.dict_sequence_time_steps["time_steps_year2storage"] = self.get_time_steps_year2storage()
-
-        self.save_sequence_time_steps(scenario=scenario_name)
 
     def write_file(self, name, dictionary, format=None):
         """Writes the dictionary to file as json, if compression attribute is True, the serialized json is compressed
@@ -351,6 +341,10 @@ class Postprocess:
         """
         Saves the system dict as json
         """
+        if hasattr(self.system,"fix_keys"):
+            del self.system.fix_keys
+        if hasattr(self.system,"i"):
+            del self.system.i
         if self.system.use_rolling_horizon:
             fname = self.name_dir.parent.joinpath('system')
         else:
@@ -361,15 +355,34 @@ class Postprocess:
         """
         Saves the analysis dict as json
         """
+        if hasattr(self.analysis,"fix_keys"):
+            del self.analysis.fix_keys
+        if hasattr(self.analysis,"i"):
+            del self.analysis.i
         if self.system.use_rolling_horizon:
             fname = self.name_dir.parent.joinpath('analysis')
         else:
             fname = self.name_dir.joinpath('analysis')
         self.write_file(fname, self.analysis, format="json")
 
+    def save_solver(self):
+        """
+        Saves the solver dict as json
+        """
+        if hasattr(self.solver,"fix_keys"):
+            del self.solver.fix_keys
+        if hasattr(self.solver,"i"):
+            del self.solver.i
+        # This we only need to save once
+        if self.system.use_rolling_horizon:
+            fname = self.name_dir.parent.joinpath('solver')
+        else:
+            fname = self.name_dir.joinpath('solver')
+        self.write_file(fname, self.solver, format="json")
+
     def save_scenarios(self):
         """
-        Saves the analysis dict as json
+        Saves the scenario dict as json
         """
 
         # This we only need to save once
@@ -389,17 +402,6 @@ class Postprocess:
             fname = self.name_dir.joinpath('scenarios')
         self.write_file(fname, self.scenarios, format="json")
 
-    def save_solver(self):
-        """
-        Saves the solver dict as json
-        """
-
-        # This we only need to save once
-        if self.system.use_rolling_horizon:
-            fname = self.name_dir.parent.joinpath('solver')
-        else:
-            fname = self.name_dir.joinpath('solver')
-        self.write_file(fname, self.solver, format="json")
 
     def save_unit_definitions(self):
         """
@@ -442,6 +444,15 @@ class Postprocess:
 
         :param scenario: name of scenario for which results are postprocessed
         """
+        # extract and save sequence time steps, we transform the arrays to lists
+        self.dict_sequence_time_steps = self.flatten_dict(self.energy_system.time_steps.get_sequence_time_steps_dict())
+        self.dict_sequence_time_steps["optimized_time_steps"] = self.optimization_setup.optimized_time_steps
+        self.dict_sequence_time_steps["time_steps_operation_duration"] = self.energy_system.time_steps.time_steps_operation_duration
+        self.dict_sequence_time_steps["time_steps_storage_duration"] = self.energy_system.time_steps.time_steps_storage_duration
+        self.dict_sequence_time_steps["time_steps_storage_level_startend_year"] = self.energy_system.time_steps.time_steps_storage_level_startend_year
+        self.dict_sequence_time_steps["time_steps_year2operation"] = self.get_time_steps_year2operation()
+        self.dict_sequence_time_steps["time_steps_year2storage"] = self.get_time_steps_year2storage()
+
         # add the scenario name
         if scenario is not None:
             add_on = f"_{scenario}"

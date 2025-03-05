@@ -501,6 +501,8 @@ class SolutionLoader():
             time_step_name = "time_steps_year2storage"
         elif ts_type is TimestepType.operational:
             time_step_name = "time_steps_year2operation"
+        else:
+            raise KeyError(f"Time step type {ts_type} not found.")
 
         time_step_yearly = time_step_file[time_step_name]
 
@@ -600,9 +602,6 @@ class SolutionLoader():
         return dict_startend
 
 #### Helper functions
-
-
-
 def get_first_scenario(scenarios: dict[str, Scenario]) -> Scenario:
     """
     Helper-function that returns the first scenario of a dictionary of scenarios.
@@ -621,7 +620,7 @@ def get_solution_version(scenario: Scenario) -> str:
 
     :return: The version of the solution.
     """
-    versions = {"v1":"2.0.14","v2":"2.2.9"}
+    versions = {"v1":"2.0.14","v2":"2.2.15"}
     version = "v0"
     if hasattr(scenario.analysis,"zen_garden_version"):
         for k,v in versions.items():
@@ -725,6 +724,8 @@ def get_df_from_path(path: str, component_name: str, version: str, data_type: Li
         ans = pd_read.squeeze()
     elif isinstance(pd_read, pd.Series):
         ans = pd_read
+    else:
+        raise ValueError(f"Data type {type(pd_read)} not supported.")
 
     if isinstance(ans, (np.float_, str)):
         ans = pd.Series([ans], index=pd_read.index)
@@ -732,7 +733,6 @@ def get_df_from_path(path: str, component_name: str, version: str, data_type: Li
     assert type(ans) is pd.Series
 
     return ans
-
 
 def _get_time_steps_file(scenario):
     """

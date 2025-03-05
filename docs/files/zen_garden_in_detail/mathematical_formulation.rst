@@ -102,7 +102,7 @@ For transport technologies :math:`j\in\mathcal{J}`, the unit investment cost :ma
 .. math::
     :label: unit_cost_capex_transport_dist
 
-    \alpha_{j,e,y} = alpha^\mathrm{dist}_{j,e,y} h_{j,e}
+    \alpha_{j,e,y} = \alpha^\mathrm{dist}_{j,e,y} h_{j,e}
 
 .. note::
     Are both, a distance independent and a distance dependent unit cost factor defined, the distance dependent unit cost is used to determine the unit investment cost :math:`\alpha_{j,e,y}`.
