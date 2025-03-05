@@ -727,7 +727,7 @@ def get_df_from_path(path: str, component_name: str, version: str, data_type: Li
     else:
         raise ValueError(f"Data type {type(pd_read)} not supported.")
 
-    if isinstance(ans, (np.float_, str)):
+    if isinstance(ans, (np.float64, str)):
         ans = pd.Series([ans], index=pd_read.index)
 
     assert type(ans) is pd.Series

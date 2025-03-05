@@ -11,6 +11,7 @@ import json
 import os
 import linopy as lp
 import re
+import itertools
 from pint import UnitRegistry
 from pint.util import column_echelon_form
 from pathlib import Path
@@ -169,7 +170,7 @@ class UnitHandling:
         else:
             return combined_unit
 
-    def _get_combined_unit_of_different_matrix(self,dim_matrix_reduced,dim_vector,input_unit):
+    def _get_combined_unit_of_different_matrix(self, dim_matrix_reduced, dim_vector, input_unit):
         """ calculates the combined unit for a different dimensionality matrix.
         We substitute base units by the dependent units and try again.
         If the matrix is singular we solve the overdetermined problem
@@ -184,47 +185,43 @@ class UnitHandling:
         combined_unit = self.ureg(input_unit).units
         base_combination = pd.Series(index=self.dim_matrix.columns, data=0)
         # try to substitute unit by a dependent unit
-        for unit in dim_matrix_reduced.columns:
-            if not calculated_multiplier:
-                # iterate through dependent units
-                for dependent_unit, dependent_dim in zip(self.dim_analysis["dependent_units"],
-                                                         self.dim_analysis["dependent_dims"]):
-                    # substitute current unit with dependent unit
-                    dim_matrix_reduced_temp = dim_matrix_reduced.drop(unit, axis=1)
-                    dim_matrix_reduced_temp[dependent_unit] = self.dim_matrix[dependent_unit]
-                    # if full rank
-                    if np.linalg.matrix_rank == np.size(dim_matrix_reduced_temp, 1):
-                        combination_solution_temp = np.linalg.solve(dim_matrix_reduced_temp, dim_vector)
-                    # if singular, check if zero row in matrix corresponds to zero row in unit dimensionality
-                    else:
-                        zero_row = dim_matrix_reduced_temp.index[~dim_matrix_reduced_temp.any(axis=1)]
-                        if (dim_vector[zero_row] == 0).all():
-                            # remove zero row
-                            dim_matrix_reduced_temp_reduced = dim_matrix_reduced_temp.drop(zero_row, axis=0)
-                            dim_vector_reduced = dim_vector.drop(zero_row, axis=0)
-                            # formulate as optimization problem with 1,-1 bounds
-                            # to determine solution of overdetermined matrix
-                            ub = np.array([1] * len(dim_matrix_reduced_temp_reduced.columns))
-                            lb = np.array([-1] * len(dim_matrix_reduced_temp_reduced.columns))
-                            res = sp.optimize.lsq_linear(
-                                dim_matrix_reduced_temp_reduced, dim_vector_reduced,
-                                bounds=(lb, ub))
-                            # if an exact solution is found (after rounding)
-                            if np.round(res.cost, 4) == 0:
-                                combination_solution_temp = np.round(res.x, 4)
-                            # if not solution is found
-                            else:
-                                continue
-                        # definitely not a solution because zero row corresponds to nonzero dimensionality
+        for unit_combination in itertools.combinations(self.dim_matrix.columns, len(self.dim_matrix.index)):
+            if not calculated_multiplier and len(set(unit_combination).difference(set(dim_matrix_reduced.columns))) != 0:
+                # use reduced matrix based on the unit_combination
+                dim_matrix_reduced_temp = self.dim_matrix.loc[:, unit_combination]
+                # if full rank
+                if np.linalg.matrix_rank(dim_matrix_reduced_temp) == np.size(dim_matrix_reduced_temp, 1):
+                    combination_solution_temp = np.linalg.solve(dim_matrix_reduced_temp, dim_vector)
+                # if singular, check if zero row in matrix corresponds to zero row in unit dimensionality
+                else:
+                    zero_row = dim_matrix_reduced_temp.index[~dim_matrix_reduced_temp.any(axis=1)]
+                    if (dim_vector[zero_row] == 0).all():
+                        # remove zero row
+                        dim_matrix_reduced_temp_reduced = dim_matrix_reduced_temp.drop(zero_row, axis=0)
+                        dim_vector_reduced = dim_vector.drop(zero_row, axis=0)
+                        # formulate as optimization problem with 1,-1 bounds
+                        # to determine solution of overdetermined matrix
+                        ub = np.array([1] * len(dim_matrix_reduced_temp_reduced.columns))
+                        lb = np.array([-1] * len(dim_matrix_reduced_temp_reduced.columns))
+                        res = sp.optimize.lsq_linear(
+                            dim_matrix_reduced_temp_reduced, dim_vector_reduced,
+                            bounds=(lb, ub))
+                        # if an exact solution is found (after rounding)
+                        if np.round(res.cost, 4) == 0:
+                            combination_solution_temp = np.round(res.x, 4)
+                        # if not solution is found
                         else:
                             continue
-                    if UnitHandling.check_pos_neg_boolean(combination_solution_temp):
-                        # compose relevant units to dimensionless combined unit
-                        base_combination[dim_matrix_reduced_temp.columns] = combination_solution_temp
-                        for unit_temp, power_temp in zip(dim_matrix_reduced_temp.columns, combination_solution_temp):
-                            combined_unit *= self.ureg(unit_temp) ** (-1 * power_temp)
-                        calculated_multiplier = True
-                        break
+                    # definitely not a solution because zero row corresponds to nonzero dimensionality
+                    else:
+                        continue
+                if UnitHandling.check_pos_neg_boolean(combination_solution_temp):
+                    # compose relevant units to dimensionless combined unit
+                    base_combination[dim_matrix_reduced_temp.columns] = combination_solution_temp
+                    for unit_temp, power_temp in zip(dim_matrix_reduced_temp.columns, combination_solution_temp):
+                        combined_unit *= self.ureg(unit_temp) ** (-1 * power_temp)
+                    calculated_multiplier = True
+                    break
         assert calculated_multiplier, f"Cannot establish base unit conversion for {input_unit} from base units {self.base_units.keys()}"
         return base_combination,combined_unit
 
@@ -341,22 +338,25 @@ class UnitHandling:
                 elif attribute_name not in ["input_carrier", "output_carrier", "reference_carrier"]:
                     energy_quantity_units.update(self._remove_non_energy_units(unit_specs, attribute_name))
             # remove attributes whose units became dimensionless since they don't have an energy quantity
+            energy_quantity_units_check = {key: value.to_base_units().units for key, value in energy_quantity_units.items()
+                                           if value.to_base_units().units != self.ureg("dimensionless")}
             energy_quantity_units = {key: value for key, value in energy_quantity_units.items() if value != self.ureg("dimensionless")}
             # check if conversion factor units are consistent
-            self._check_for_power_power(energy_quantity_units)
+            self._check_for_power_power(energy_quantity_units, energy_quantity_units_check)
             # check if units are consistent
-            self.assert_unit_consistency(elements, energy_quantity_units, item,optimization_setup, reference_carrier.name, unit_dict)
+            self.assert_unit_consistency(elements, energy_quantity_units, energy_quantity_units_check, item, optimization_setup, reference_carrier.name, unit_dict)
         logging.info(f"Parameter unit consistency is fulfilled!")
         self.save_carrier_energy_quantities(optimization_setup)
 
-    def _check_for_power_power(self, energy_quantity_units):
+    def _check_for_power_power(self, energy_quantity_units, energy_quantity_units_check):
         """if unit consistency is not fulfilled because of conversion factor or retrofit_flow_coupling_factor,
         try to change "wrong" conversion factor or retrofit_flow_coupling_factor units from power/power to energy/energy (since both is allowed)
 
         :param energy_quantity_units: dict containing attribute names and their energy quantity units
+        :param energy_quantity_units_check: dict containing the energy quantity terms in base units for checking consistency
         """
         exclude_strings = ["conversion_factor", "retrofit_flow_coupling_factor"]
-        if self._is_inconsistent(energy_quantity_units) and not self._is_inconsistent(energy_quantity_units,exclude_strings=exclude_strings):
+        if self._is_inconsistent(energy_quantity_units_check) and not self._is_inconsistent(energy_quantity_units_check, exclude_strings=exclude_strings):
             non_cf_energy_quantity_unit = [value for key, value in energy_quantity_units.items() if all(es not in key for es in exclude_strings)][0]
             cf_energy_quantity_units = {key: value for key, value in energy_quantity_units.items() if any(es in key for es in exclude_strings)}
             time_base_unit = [key for key, value in self.base_units.items() if value == "[time]"][0]
@@ -365,11 +365,12 @@ class UnitHandling:
                 if value != non_cf_energy_quantity_unit:
                     energy_quantity_units[key] = value * self.ureg(time_base_unit)
 
-    def assert_unit_consistency(self, elements, energy_quantity_units, item,optimization_setup, reference_carrier_name, unit_dict):
+    def assert_unit_consistency(self, elements, energy_quantity_units, energy_quantity_units_check, item, optimization_setup, reference_carrier_name, unit_dict):
         """Asserts that the units of the attributes of an element are consistent
 
         :param elements: list of all elements
         :param energy_quantity_units: dict containing attribute names and their energy quantity terms
+        :param energy_quantity_units_check: dict containing the energy quantity terms in base units for checking consistency
         :param item: element or energy system
         :param optimization_setup: OptimizationSetup object
         :param reference_carrier_name: name of reference carrier if item is a conversion technology
@@ -377,7 +378,7 @@ class UnitHandling:
         """
         attributes_with_lowest_appearance = self._get_attributes_with_least_often_appearing_unit(energy_quantity_units)
         # assert unit consistency
-        if item in elements and self._is_inconsistent(energy_quantity_units):
+        if item in elements and self._is_inconsistent(energy_quantity_units_check):
             # check if there is a conversion factor with wrong units
             wrong_cf_atts = {att: unit for att, unit in attributes_with_lowest_appearance.items() if
                              "conversion_factor" in att}
@@ -423,7 +424,7 @@ class UnitHandling:
         """Checks if the units of the attributes of an element are inconsistent
 
         :param energy_quantity_units: dict containing attribute names and their energy quantity terms
-        :param exclude_string: string for which consistency is not checked
+        :param exclude_strings: string for which consistency is not checked
         :return: bool whether the units are consistent or not
         """
         # exclude attributes which are not of interest for consistency
