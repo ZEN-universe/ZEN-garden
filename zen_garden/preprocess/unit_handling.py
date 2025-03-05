@@ -415,7 +415,7 @@ class UnitHandling:
                 raise AssertionError(
                     f"The attribute units of the {item.__class__.__name__} {item.name} and its reference carrier {reference_carrier_name} are not consistent! Most propably, the unit(s) of the attribute(s) {self._get_units_of_wrong_attributes(wrong_atts=attributes_with_lowest_appearance, unit_dict=unit_dict)} are wrong.")
         # since energy system doesn't have any attributes with energy dimension, its dict must be empty
-        elif item not in elements and len(energy_quantity_units) != 0:
+        elif item not in elements and len(energy_quantity_units_check) != 0:
             self._write_inconsistent_units_file(energy_quantity_units, item.name, analysis=optimization_setup.analysis)
             raise AssertionError(
                 f"The attribute units defined in the energy_system are not consistent! Most probably, the unit(s) of the attribute(s) {self._get_units_of_wrong_attributes(wrong_atts=energy_quantity_units, unit_dict=unit_dict)} are wrong.")
