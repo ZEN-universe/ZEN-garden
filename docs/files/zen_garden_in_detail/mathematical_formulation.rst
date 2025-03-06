@@ -23,18 +23,25 @@ The net present cost :math:`NPC_y` of the energy system is minimized over the en
 
     \mathrm{min} \quad \sum_{y\in\mathcal{Y}} NPC_y
 
-The net present cost :math:`NPC_y` of each planning period :math:`y\in\mathcal{Y}` are computed by discounting the total energy system cost of each planning period :math:`C_y` with a constant discount rate :math:`r`:
+We define :math:`y` as a planning period rather than an actual year and :math:`dy` as the interval between planning periods. For example, if :math:`dy=2` the optimization is conducted every second year. The net present cost :math:`NPC_y` of each planning period :math:`y\in[y_0,\mathcal{Y}-1]`, where :math:`y_0` is the first planning period, are computed by discounting the total energy system cost of each planning period :math:`C_y` with a constant discount rate :math:`r`:
 
 .. math::
-    :label: net_present_cost
+    :label: net_present_cost_before_last_year
 
-    NPC_y = \sum_{i \in [0,dy(Y)-1]} \left( \dfrac{1}{1+r} \right)^{\left(dy (y-y_0) + i \right)} C_y
+    NPC_y = \sum_{i \in [0,dy-1]} \left( \dfrac{1}{1+r} \right)^{\left(dy (y-y_0) + i \right)} C_y
 
-where :math:`y_0` represents the first planning period and :math:`dy` represents the interval between planning periods, e.g., if :math:`dy=2` the optimization is conducted for every second year.
 Hence, we discount each year of the time horizon, also the years for which the optimization is not conducted.
-The interannual time index :math:`y \in {\mathcal{Y}}` therefore describes the planning periods and not the actual years.
 Moreover, we assume that the optimization is only conducted until the end of the first year of the last planning period.
-The last period of the planning horizon :math:`Y=\max(y)` is therefore only counted as a single year regardless of the interval between planning periods (:math:`dy(Y)=1`).
+The last period of the planning horizon :math:`Y=\max(y)` is therefore only counted as a single year regardless of the interval between planning periods and the net present cost :math:`NPC_{\mathcal{Y}}` is defined as:
+
+.. math::
+    :label: net_present_cost_last_year
+
+    NPC_{\mathcal{Y}} = \left( \dfrac{1}{1+r} \right)^{\left(dy (\mathcal{Y}-y_0) \right)} C_{\mathcal{Y}}
+
+For example, suppose :math:`dy=2` meaning that every planning period is 2 years long.
+With an initial planning period :math:`y_0=0`, the energy system costs :math:`C_1` occur in planning period 1, meaning in years 2 and 3.
+Therefore, :math:`C_1` must be discounted according to the years they are incurred, relative to the initial time start, which are years 2 and 3.
 
 The total cost :math:`C_y` includes the annual capital expenditures :math:`CAPEX_y` and the operational expenditures for operating technologies :math:`OPEX_y^{t}`, importing and exporting carriers :math:`OPEX_y^\mathrm{c}`, and the cost of carbon emissions :math:`OPEX_y^\mathrm{e}`. 
 
@@ -97,12 +104,11 @@ For transport technologies :math:`j\in\mathcal{J}`, the unit investment cost :ma
 
     \alpha_{j,e,y} = \alpha^\mathrm{const}_{j,y}
 
-:math:`\alpha_{j,e,y}`
 
 .. math::
     :label: unit_cost_capex_transport_dist
 
-    \alpha_{j,e,y} = alpha^\mathrm{dist}_{j,e,y} h_{j,e}
+    \alpha_{j,e,y} = \alpha^\mathrm{dist}_{j,e,y} h_{j,e}
 
 .. note::
     Are both, a distance independent and a distance dependent unit cost factor defined, the distance dependent unit cost is used to determine the unit investment cost :math:`\alpha_{j,e,y}`.
@@ -176,7 +182,7 @@ Similarly, for transport technologies :math:`j \in \mathcal{J}`, the variable op
 
     O^\mathrm{t}_{j,t,y} = \beta_{j,y} F_{j,e,t,y}
 
-Finally, for storage technologies :math:`k \in \mathcal{K}`, the variable operational expenditure are the product of the charge and discharge cost :math:`\beta^\mathrm{charge}_{j,e,y}` and :math:`\beta^\mathrm{discharge}_{j,e,y}` multiplied by the storage charge :math:`\underline{H}_{k,n,t,y}` and discharge :math:`\overline{H}_{k,n,t,y}`, respectively:
+Finally, for storage technologies :math:`k \in \mathcal{K}`, the variable operational expenditure are the product of the charge and discharge cost :math:`\beta^\mathrm{charge}_{k,y}` and :math:`\beta^\mathrm{discharge}_{k,y}` multiplied by the storage charge :math:`\underline{H}_{k,n,t,y}` and discharge :math:`\overline{H}_{k,n,t,y}`, respectively:
 
 .. math:: 
     :label: cost_opex_storage

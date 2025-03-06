@@ -75,7 +75,7 @@ def main(config, dataset_path=None, job_index=None, folder_output_path=None):
             optimization_setup.construct_optimization_problem()
             if optimization_setup.solver.use_scaling:
                 optimization_setup.scaling.run_scaling()
-            elif optimization_setup.solver.analyze_numerics:
+            elif optimization_setup.solver.analyze_numerics or optimization_setup.solver.run_diagnostics:
                 optimization_setup.scaling.analyze_numerics()
             # SOLVE THE OPTIMIZATION PROBLEM
             optimization_setup.solve()

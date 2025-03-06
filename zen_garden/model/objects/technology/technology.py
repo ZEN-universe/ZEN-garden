@@ -616,8 +616,6 @@ class TechnologyRules(GenericRule):
         """
 
         super().__init__(optimization_setup)
-    # Normal constraints
-    # -----------------------
 
     def constraint_cost_capex_yearly_total(self):
         """ sums over all technologies to calculate total capex

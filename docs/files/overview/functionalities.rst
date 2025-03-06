@@ -105,7 +105,7 @@ The decarbonization of the energy system can be modelled via annual carbon emiss
 It is also possible, to combine annual carbon emission targets with a carbon emission budget.
 Furthermore, a carbon emission price can be introduced as a market-based instrument to reduce carbon emissions.
 
-The annual emission target and the emission budget can be relaxed by introducing an carbon emission overshoot price for the annual carbon emissions targets, or the carbon emission budget, respectively.
+The annual emission target and the emission budget can be relaxed by introducing a carbon emission overshoot price for the annual carbon emissions targets, or the carbon emission budget, respectively.
 The overshoot price determines the penalty term that is added to the objective function.
 
 For more information see :ref:`emissions_constraints`.

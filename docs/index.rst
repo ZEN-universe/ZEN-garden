@@ -8,7 +8,7 @@ ZEN-garden: Zero emissions Energy Networks
 
 ZEN-garden is an open-source linear optimization model. Due to its modular and flexible design, ZEN-garden can be used to optimize different types of energy systems, value chains, or other network-based systems.
 
-ZEN-garden is developed and maintained by the `Reliability and Risk Engineering Labratory at ETH Zurich <https://rre.ethz.ch/>`_ at `Eidgenossische Technische Hochschule Zurich <https://ethz.ch/de.html>`_.
+ZEN-garden is developed and maintained by the `Reliability and Risk Engineering Laboratory <https://rre.ethz.ch/>`_ at `Eidgenössische Technische Hochschule Zürich (ETHZ) <https://ethz.ch/de.html>`_.
 
 Documentation
 ======================================

@@ -403,11 +403,11 @@ class OptimizationSetup(object):
         :param attribute_name: str name of attribute
         :return attribute_value: value of attribute"""
         # get element
-        _element = self.get_element(cls, element_name)
+        element = self.get_element(cls, element_name)
         # assert that _element exists and has attribute
-        assert _element, f"Element {element_name} not in class {cls.__name__}"
-        assert hasattr(_element, attribute_name), f"Element {element_name} does not have attribute {attribute_name}"
-        attribute_value = getattr(_element, attribute_name)
+        assert element, f"Element {element_name} not in class {cls.__name__}"
+        assert hasattr(element, attribute_name), f"Element {element_name} does not have attribute {attribute_name}"
+        attribute_value = getattr(element, attribute_name)
         return attribute_value
 
     def construct_optimization_problem(self):
@@ -672,21 +672,3 @@ class OptimizationSetup(object):
                 return component_data
             except KeyError:
                 raise KeyError(f"the custom set {custom_set} cannot be used as a subindex of {component_data.index}")
-
-    def create_cons_var_string(self, cons_series, is_coeff=True):
-        """ create a string of constraints or variables
-
-        :param cons_series: pd.Series of constraints or variables
-        :param is_coeff: boolean if coefficients, else rhs
-        :return cons_str: string of maximum coefficient or rhs"""
-        cons_str = self.model.constraints.get_label_position(cons_series["labels"])
-        cons_str = cons_str[0] + str(list(cons_str[1].values()))
-
-        if is_coeff:
-            var_str = self.model.variables.get_label_position(cons_series["vars"])
-            var_str = var_str[0] + str(list(var_str[1].values()))
-            coeff_str = abs(cons_series["coeffs"])
-            cons_str = f"{coeff_str} {var_str} in {cons_str}"
-        else:
-            cons_str = f"{abs(cons_series['rhs'])} in {cons_str}"
-        return cons_str

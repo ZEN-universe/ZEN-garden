@@ -10,7 +10,6 @@ from zen_garden.postprocess.results.solution_loader import (
     TimestepType,
     ComponentType,
 )
-from zen_garden.postprocess.results.multi_hdf_loader import MultiHdfLoader
 from functools import cache
 from zen_garden.model.default_config import Config, Analysis, Solver, System
 import importlib
@@ -30,7 +29,7 @@ class Results:
 
         :param path: Path to the results folder
         """
-        self.solution_loader: SolutionLoader = MultiHdfLoader(path)
+        self.solution_loader = SolutionLoader(path)
         self.has_scenarios = len(self.solution_loader.scenarios) > 1
         first_scenario = next(iter(self.solution_loader.scenarios.values()))
         self.name = Path(first_scenario.analysis.dataset).name
@@ -67,7 +66,6 @@ class Results:
 
         if data_type == "units" and not component.has_units:
             return None
-
 
         ans = {}
 
@@ -574,6 +572,26 @@ class Results:
             scenario_name = next(iter(self.solution_loader.scenarios.keys()))
         scenario = self.solution_loader.scenarios[scenario_name]
         return scenario.system.use_rolling_horizon
+
+    def get_coords(self, scenario_name: Optional[str] = None) -> Optional[pd.DataFrame]:
+        """
+        Extracts the coordinates of the nodes of a given Scenario. If no scenario is given, a random one is taken.
+
+        :param scenario_name: Name of the scenario
+        :return: The corresponding coordinates
+        """
+        if scenario_name is None:
+            scenario_name = next(iter(self.solution_loader.scenarios.keys()))
+        system = self.get_system(scenario_name)
+        if hasattr(system,"coords"):
+            coords = pd.DataFrame(system.coords).T
+            if coords.empty:
+                print(f"Coordinates of nodes are not saved for version {self.get_analysis().zen_garden_version}.")
+                return None
+            return pd.DataFrame(system.coords).T
+        else:
+            print(f"Coordinates of nodes are not saved for version {self.get_analysis().zen_garden_version}.")
+            return None
 
     def calculate_connected_edges(
         self, node: str, direction: str, set_nodes_on_edges: dict[str, str]

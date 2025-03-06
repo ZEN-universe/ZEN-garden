@@ -103,6 +103,7 @@ class System(Subscriptable):
     set_transport_technologies_loss_exponential: list[str] = []
     double_capex_transport: bool = False
     set_nodes: list[str] = []
+    coords: dict[str, dict[str, float]] = {}
     set_super_nodes: list[str] = []
     set_super_edges: list[str] = []
     exclude_parameters_from_TSA: bool = True
@@ -150,6 +151,7 @@ class Solver(Subscriptable):
     rounding_decimal_points_capacity: int = 4
     rounding_decimal_points_tsa: int = 4
     analyze_numerics: bool = True
+    run_diagnostics: bool = False
     use_scaling: bool = True
     scaling_include_rhs: bool = True
     scaling_algorithm: Union[list[str],str] = ["geom","geom","geom"]
@@ -182,7 +184,6 @@ class Analysis(Subscriptable):
     overwrite_output: bool = True
     output_format: str = "h5"
     earliest_year_of_data: int = 1900
-    save_benchmarking_results: bool = False
     zen_garden_version: str = None
 
 class Config(Subscriptable):
