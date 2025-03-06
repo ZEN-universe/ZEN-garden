@@ -741,7 +741,7 @@ def _get_time_steps_file(scenario):
     :return: time_steps_file_name
     """
     time_steps_file_name = [
-        i.split(".")[0]
+        '.'.join(i.split(".")[:-1])
         for i in os.listdir(scenario.path)
         if "dict_all_sequence_time_steps" in i and ".lock" not in i
     ]

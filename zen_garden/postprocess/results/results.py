@@ -484,7 +484,7 @@ class Results:
             ]
             drop_idx = pd.Index(loc_idx + time_idx).intersection(units.index.names)
             if len(units.index.names.difference(drop_idx)) == 0:
-                units = units.iloc[0]
+                units = pd.Series(units.iloc[0], index=[units.index[0]])
             else:
                 units.index = units.index.droplevel(drop_idx.to_list())
                 units = units[~units.index.duplicated()]
