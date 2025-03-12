@@ -1,20 +1,21 @@
 Mathematical formulation
-======================
+========================
 
 ZEN-garden optimizes the design and operation of energy system models to investigate transition pathways towards decarbonization.
 The optimization problem is in general formulated as a mixed-integer linear program (MILP), but reduced to a linear program (LP) if the binary variables are not needed.
 In the following, we provide an overview of the objective function and constraints of the optimization problem.
 
 .. _objective-function:
+
 Objective function
------------------
+-------------------
 Two objective functions are available:
 
 1. minimize cumulative net present cost
 2. minimize cumulative emissions
 
 Minimizing net present cost
-^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The net present cost :math:`NPC_y` of the energy system is minimized over the entire planning horizon :math:`y \in {\mathcal{Y}}`.
 
@@ -217,8 +218,9 @@ The annual operational emission expenditures :math:`OPEX_y^\mathrm{e}` are compo
 For a detailed description on how to use the annual carbon emission overshoot price and the carbon emission budget overshoot price refer to :ref:`modeling_carbon_emissions`.
 
 .. _emissions_objective:
+
 Minimizing total emissions
-^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The cumulative carbon emissions at the end of the time horizon :math:`E^{\mathrm{cum}}_Y` of the energy system are minimized.
 
@@ -231,11 +233,14 @@ The cumulative carbon emissions at the end of the time horizon :math:`E^{\mathrm
 
 .. math::
     :label: total_annual_carbon_emissions
+
     E_y = E^\mathrm{carrier}_y + E^\mathrm{tech}_y.
+
 
 For a detailed description of the computation of the total operational emissions for importing and exporting carriers, and for operating for operating technologies refer to :ref:`emissions_constraints`.
 
 .. _energy_balance:
+
 Energy balance
 ---------------
 
@@ -306,6 +311,7 @@ Lastly, the following constraint ensures that the shed demand :math:`D_{c,n,t,y}
     Setting the shed demand cost to infinity forces :math:`D_{c,n,t,y}=0` and demand shedding will not be possible. :ref:`demand_shedding` provides a more detailed description on demand shedding.
 
 .. _emissions_constraints:
+
 Emissions constraints
 -----------------------
 
@@ -389,8 +395,9 @@ The cumulative carbon emissions :math:`E_y^\mathrm{cum}` are constrained by the 
 Note that :math:`e^\mathrm{b}` can be infinite, in which case the constraint is skipped. :math:`E_y^\mathrm{bo}` is the cumulative carbon emission overshoot and allows exceeding the carbon emission budget :math:`e^\mathrm{b}`, where exceeding the carbon emission budget in the last year of the planning horizon :math:`\mathrm{Y}=\max(y)` (i.e., :math:`E_\mathrm{Y}^\mathrm{bo}>0`) is penalized with the carbon emissions budget overshoot price :math:`\mu^\mathrm{bo}` in the objective function (compare Eq. :eq:`opex_c`). By setting the carbon emission budget overshoot price to infinite, you can enforce that the cumulative carbon emissions stay below the carbon emission budget :math:`e^\mathrm{b}` across all years (i.e., :math:`E_\mathrm{y}^\mathrm{bo} = 0 ,\forall y\in\mathcal{Y}`).
 
 .. _operational_constraints:
+
 Operational constraints
------------------------
+----------------------------
 
 The conversion factor :math:`\eta_{i,c,t,y}` describes the ratio between the carrier flow :math:`c\in\mathcal{C}` and the reference carrier flow :math:`G_{i,n,t,y}^\mathrm{r}` of a conversion technology :math:`i\in\mathcal{I}`. If the carrier flow is an input carrier, i.e. :math:`c\in\underline{\mathcal{C}}_i`:
 
@@ -654,6 +661,7 @@ To avoid the unrealistically excessive use of spillover effects, we constrain th
     K_{h,p,y} = \sum_{\tilde{y}=y_0}^{y-1}\left(1-\delta\right)^{dy (y-\tilde{y})}\Delta S_{h,p,\tilde{y}} + \sum_{\hat{y}=-\infty}^{\psi(y_0)}\left(1-\delta\right)^{\left(dy(y-y_0) + (\psi(y_0)-\hat{y})\right)}\Delta s^\mathrm{ex}_{h,p,\hat{y}}
 
 .. _min_load_constraints:
+
 Minimum load constraints
 ------------------------
 
@@ -696,6 +704,7 @@ Two more constraints are added to ensure that :math:`S^\mathrm{approx}_{h,p,t,y}
 If no physically motivated capacity limit :math:`s^\mathrm{max}_{h,p,y}` exists, :math:`s^\mathrm{max}_{h,p,y}` must be large enough to ensure that the technology is not constrained by the capacity limit (Big-M parameter).
 
 .. _min_capacity_installation:
+
 Minimum capacity installation
 -----------------------------
 
@@ -718,8 +727,9 @@ Eq. :eq:`min_capacity_constraint_bigM` ensure that :math:`\Delta S^\mathrm{appro
 
 
 .. _PWA_constraints:
+
 Piecewise affine approximation of capital expenditures
------------------------------------------------------
+------------------------------------------------------
 
 
 .. note:: Please note that the following introduces the mathematical formulation of piecewise affine linearizations, which deviates slightly from the general formulation in ZEN-garden.

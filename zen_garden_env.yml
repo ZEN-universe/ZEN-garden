@@ -9,6 +9,6 @@ dependencies:
       - -e .[dev,vis,gurobipy,docs]
 
 # conda env create -f zen_garden_env.yml
-# conda remove --name zen-garden --all
+# conda remove --name zen-garden-env --all
 # -channels --> gurobi
 #,gurobipy

@@ -1,6 +1,6 @@
-################
+################################
 Target group and functionalities
-################
+################################
 
 **Welcome to the ZEN-garden!**
 ZEN-garden is an open-source optimization framework designed to model long-term energy system transition pathways.
@@ -197,7 +197,7 @@ Users can contribute to the development of ZEN-garden by creating a pull request
 Automated tests are implement to test the key functionalities of the code. We ask contributors to test their code locally before creating a pull request and add tests for new functionalities.
 
 Results analysis & visualization
------------------------
+--------------------------------
 
 The results of the optimization can be analyzed and visualized with the following functionalities:
 

@@ -3,7 +3,8 @@ Troubleshooting
 ################
 
 Frequently made mistakes
-================
+========================
+
 We try to make ZEN-garden's error messages as helpful as possible, but sometimes it can be hard to understand what went wrong, especially when the errors occur in other packages.
 Here are some common mistakes that can lead to errors:
 
@@ -11,11 +12,13 @@ Here are some common mistakes that can lead to errors:
 
 
 Understanding infeasibilities and numerical instabilities
-================
+=========================================================
+
 Here, we briefly want to introduce several important concepts around infeasibility.
 
 What is an infeasible model?
 -----------------------------
+
 An optimization problem is infeasible if no feasible solution can be found. That means that some constraints are mutually exclusive.
 Assume an optimization problem with the variables ``x`` and ``y`` and the following constraints:
 
@@ -32,6 +35,7 @@ This problem is obviously infeasible because it enforces ``x >= 5`` and ``x <= y
 
 How do I see that my model is infeasible?
 ------------------------------------------
+
 The output of your optimization tells you the termination condition of your problem. A successful optimization looks like this:
 
 .. code-block::
@@ -73,6 +77,7 @@ This should give you a definite answer if your problem is infeasible. If not, yo
 
 How can I find out what constraint led to the infeasibility?
 ------------------------------------------------------------
+
 Finding the source of the infeasibility can become tricky, especially in large models with a lot of parameters and constraints. You will need to use your knowledge of your own model to understand where you made a mistake. Unfortunately, the solver does not know which parameter value is "right" and which one is "wrong", it only knows that some constraints are conflicting.
 
 Fortunately, Gurobi has a fantastic tool that is helpful in finding the conflicting constraints that make the problem infeasible: The `Irreducible Inconsistent Subsystem <https://www.gurobi.com/documentation/current/refman/py_model_computeiis.html>`_ (IIS). The IIS is a subproblem of the original problem with two properties:
@@ -96,6 +101,7 @@ Constraints (IV, V, and VI) do not further constrain the problem, and (I, II, an
 
 How is the IIS handled in ZEN-garden?
 --------------------------------------
+
 In ZEN-garden, we automatically write the IIS if you are using Gurobi and the termination condition is infeasible (not infeasible_or_unbounded!). **It is written to the output folder of the dataset.**
 
 Take the following example, which is ``test_1a`` but without the option to import natural gas. Clearly, if no gas can be imported, the heat demand cannot be supplied and the problem becomes infeasible. The resulting IIS is the following:
@@ -137,7 +143,8 @@ Then, if you would relax the technology constraints ``constraint_carrier_convers
 All of these constraints behave as expected and desired. Now, if you consider ``constraint_availability_import``, you see that neither heat nor natural gas can be imported ``(flow_import <= 0)``, and so the problem becomes infeasible. This simple example can help you to understand the IIS and thereby find infeasibilities in your problem.
 
 Building smaller test models
-================
+============================
+
 If you have a large model and you are struggling with infeasibilities or unclear problems, it can be helpful to build a smaller test model.
 This way, you can quickly identify the source of the infeasibility or problem and fix it. Once you have a working small model, you can gradually add more complexity until you have the full model again.
 
@@ -145,7 +152,8 @@ The easiest way to build a smaller model is to reduce the number of time steps, 
 Refer to :ref:`system` for the relevant settings.
 
 Improving solution times
-================
+========================
+
 If you are struggling with long solution times, there are several ways to improve them:
 
 1. build a smaller model

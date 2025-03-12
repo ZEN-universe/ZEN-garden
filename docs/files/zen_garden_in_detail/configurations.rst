@@ -1,11 +1,16 @@
+.. _Configurations:
+
 ################
 Configurations
 ################
+
 .. _System, analysis, solver settings:
+
 System, analysis, solver settings
-========
+=================================
 
 .. _system:
+
 System
 ------
 
@@ -31,8 +36,9 @@ To reduce the complexity, timeseries aggregation can be used (``conduct_time_ser
 Per default, the number of timesteps is reduced to 10 (``aggregated_time_steps_per_year``). :ref:`Time series aggregation and representation` and :ref:`time_parameters` provide a detailed description of the time representation and the time parameters.
 
 .. _analysis:
+
 Analysis
--------
+--------
 
 The dataset, the objective function and the solver are selected in the ``analysis.json``. The following table summarizes the settings of the ``analysis.json`` and their default values:
 
@@ -51,6 +57,7 @@ The settings of the timeseries aggregation algorithm are also specified in the `
     :delim: ;
 
 .. _solver:
+
 Solver
 ------
 
@@ -76,8 +83,9 @@ You can analyze the numerics of your optimization problem via ``analyze_numerics
 In addition, a scaling algorithm is available. Per default, four iterations of the scaling algorithm are conducted without including the values of the right-hand-side. :ref:`Scaling` provides a detailed description of the scaling algorithm.
 
 .. _Time series aggregation and representation:
+
 Time series aggregation and representation
-========
+==========================================
 Time steps in ZEN-garden
 ------------------------
 ZEN-garden is a temporally resolved investment and operation optimization model. That means that in general we have three different time indices:
@@ -87,6 +95,7 @@ ZEN-garden is a temporally resolved investment and operation optimization model.
 3. ``set_time_steps_operation``: The operation of built capacities is resolved on a higher resolution than the yearly time steps. For the technologies and the carriers, this is the index ``set_time_steps_operation``.
 
 .. _time_parameters:
+
 The time parameters in ZEN-garden
 ---------------------------------
 
@@ -146,6 +155,7 @@ Disabling the time series aggregation
 Open the ``system.json`` file and set ``"conduct_time_series_aggregation"=False``. This disables the time series aggregation. If you do not want to investigate a full year, set ``"unaggregated_time_steps_per_year"<8760``
 
 .. _using_the_tsa:
+
 Using time series aggregation
 -------------------------------------------------------
 
