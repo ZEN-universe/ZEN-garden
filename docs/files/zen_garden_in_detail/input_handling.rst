@@ -1,11 +1,13 @@
 .. _input_data_handling:
-################
+
+####################
 Input data handling
-################
+####################
 
 .. _Attribute.json files:
+
 Attribute.json files
-==============
+=========================
 Each element in the input data folder has an ``attributes.json`` file, as shown in :ref:`Input data structure`, which defines the default values for the element.
 This file must be specified for each element and must contain all parameters that this class of elements (Technology, Carrier, etc.) can have (see :ref:`Sets, parameters, variables, and constraints`).
 
@@ -41,7 +43,7 @@ Make sure to have the correct positioning of the brackets.
 * Inside the curly brackets are in most cases a ``default_value`` as a ``float`` or ``"inf"`` and a ``unit`` as a ``string`` (see :ref:`Unit consistency`).
 
 What are particular parameters in the ``attributes.json`` file?
--------------------------------------------------------------
+---------------------------------------------------------------
 Some parameters do not have the structure above. These are the carriers of technologies (``"reference_carrier"``, ``"input_carrier"``, and ``"output_carrier"``), the ``"conversion_factor"`` of conversion technologies, and the ``"retrofit_flow_coupling_factor"`` of retrofitting technologies.
 
 **Input, output, and reference carriers**
@@ -90,6 +92,7 @@ The default conversion factor is defined in ``attributes.json`` as:
         }
       }
     ]
+
 The conversion factor is **a list ``[...]`` with each dependent carrier wrapped in curly brackets**. Inside each curly bracket, there are the ``default_value`` and the ``unit``.
 
 **Retrofitting flow coupling factor**
@@ -107,8 +110,9 @@ The retrofitting flow coupling factor couples the reference carrier flow of the 
 The retrofitting flow coupling factor is a single parameter with the base technology as a string and the default value and unit as usual.
 
 .. _Overwriting default values:
+
 Overwriting default values
-==========================
+===========================
 The paradigm of ZEN-garden is that the user only has to specify those input data that they want to specify.
 Therefore, the user defines default values for all parameters in the ``attributes.json`` files.
 Whenever more information is required, the user can overwrite the default values by providing a ``<parameter_name>.csv`` file in the same folder as the ``attributes.json`` file.
@@ -127,7 +131,7 @@ Let's assume the following example: The purpose of the energy system is to provi
 The energy system is modeled for two nodes, ``CH`` and ``DE`` and spans one year with 8760 time steps.
 
 .. note::
-    To retrieve the dimensions of a parameter, please refer to :ref:`optimization_problem` and to the ``index_names`` attribute in the parameter definition.
+    To retrieve the dimensions of a parameter, please refer to :ref:`Sets, parameters, variables, and constraints` and to the ``index_names`` attribute in the parameter definition.
 
 Providing extra .csv files
 --------------------------
@@ -196,10 +200,11 @@ This is a very long file, and it is hard to see the structure of the data. Furth
 The file is much shorter and easier to read. ZEN-garden will automatically fill in the missing dimensions with the constant value.
 
 .. _Yearly variation:
+
 Yearly variation
 ----------------
 We specify hourly-dependent data for each hour of the year.
-However, some parameters might have a yearly variation, e.g., the overall demand may increase or decrease over the year.
+However, some parameters might have a yearly variation, e.g., the overall demand may increase or decrease over the years.
 
 To this end, the user can specify a file ``<parameter_name>_yearly_variation.csv`` that multiplies the hourly-dependent data with a factor for each hour of the year.
 ZEN-garden therefore assumes the same time series for each year but allows for the scaling of the time series with the yearly variation.
@@ -228,7 +233,7 @@ If all nodes have the same yearly variation, the file can be shortened to:
     So far, ZEN-garden does not allow for different time series for each year but only for the scaling while keeping the same shape of the time series.
 
 Data interpolation
--------------
+------------------
 To reduce the number of data points, ZEN-garden per-default interpolates the data points linearly between the given data points.
 As an example, in :ref:`Yearly variation`, the demand increase or decrease is linear over the years.
 So, the user can reduce the number of data points in the ``demand_yearly_variation.csv`` file:
@@ -255,6 +260,7 @@ If the user wants to disable the interpolation for a specific parameter, the use
     Therefore, the interpolation is only disabled for the yearly variation, not for the hourly-dependent data.
 
 .. _PWA:
+
 Piece-wise affine input data
 ----------------------------
 In ZEN-garden, we can model the capital expenditure (CAPEX) of conversion technologies either linear or piece-wise affine (PWA).
@@ -290,6 +296,7 @@ The file ``nonlinear_capex.csv`` has the following structure:
     The user is advised to keep the number of breakpoints low to avoid a combinatorial explosion of binary variables.
 
 .. _Unit consistency:
+
 Unit consistency
 ================
 Our models describe physical processes, whose numeric values are always connected to a physical unit. For example, the capacity of a coal power plant is a power, thus the unit is, e.g., GW.
@@ -309,12 +316,13 @@ We define a set of base units, which we can combine to represent each dimensiona
     hour => [time]
     Euro => [currency]
     GW => [mass]^1 [length]^2 [time]^-3
+
 We make use of the fact, that we can combine the base units to any unit by comparing the dimensionalities. For example, Euro/MWh can be converted to:
 
 .. code-block::
 
     Euro/MWh
-    => [currency]^1 [mass]^-1 [length]-2 [time]^2
+    => [currency]^1 [mass]^-1 [length]^-2 [time]^2
     = [currency]^1 [[mass]^1 [length]^2 [time]^-3]^-1 [time]^-1
     => Euro/GW/hour
 
@@ -374,9 +382,11 @@ Known issues with pint
 The ``pint`` package that we use for the unit handling has amazing functionalities but also some hurdles to look out for. The ones we have already found are:
 
 * ``ton``: pint uses the keyword ``ton`` for imperial ton, not the metric ton. The keyword for those are ``metric_ton`` or ``tonne``. However, per default, ZEN-garden overwrites the definition of ``ton`` to be the metric ton, so ``ton`` and ``tonne`` can be used interchangeably. If you for some reason want to use imperial tons, set ``"solver": {"define_ton_as_metric_ton": false}``.
+
 * ``h``: Until recently, ``h`` was treated as the planck constant, not hour. Fortunately, this has been fixed in Feb 2023. If you encounter this error, please update your pint version.
 
 .. _Scaling:
+
 Scaling
 =============
 
@@ -412,9 +422,9 @@ In ZEN-garden we provide 3 different scaling algorithms, from which the row and 
 2. Arithmetic Mean (``"arithm"``)
 3. Infinity Norm (``"infnorm"``)
 
-The approximated geometric mean is the root of the product of the maximum and minimum absolute values of the respective row or column.
-The arithmetic mean is derived over all absolute values of the respective row or column.
-The infinity norm is the maximum absolute value of the respective row or column.
+The approximated geometric mean is the root of the product of the maximum and minimum absolute values of the respective row or column of the constraint matrix :math:`A`.
+The arithmetic mean is derived over all absolute values of the respective row or column of the constraint matrix :math:`A`.
+The infinity norm is the maximum absolute value of the respective row or column of the constraint matrix :math:`A`.
 For a more detailed explanation of each algorithm please see the paper from `Elble and Sahinidis (2012) <https://rdcu.be/dStfc>`_.
 
 **Combination of Scaling Algorithms**
@@ -428,6 +438,7 @@ Furthermore, for all of the above mentioned algorithms, also the right-hand side
 If included, the chosen algorithm determines the row scaling vector entry for a specific row :math:`i` over all entries of that row in the constraint matrix :math:`A_{i*}` while also considering the respective right-hand side entry :math:`b_i`.
 
 .. _How to use scaling in ZEN-garden:
+
 How to use scaling in ZEN-garden?
 ---------------------------------
 As described in, :ref:`Configurations` in the :ref:`Solver` section, scaling can be activated by adjusting the
@@ -449,9 +460,11 @@ For example, the following configuration would use a combination of two iteratio
 
 The default configuration are three iterations of the geometric mean scaling algorithm with right-hand-side scaling.
 
+.. _Recommendations for using scaling:
+
 Recommendations for using scaling
--------------------------------
-Here are some recommendations on what configuration to use and when and when not to use scaling. These rules were derived from the results of benchmarking the scaling procedure on different optimization problems as shown :ref:`Results of benchmarking`.
+---------------------------------
+Here are some recommendations on what configuration to use and when and when not to use scaling. These rules were derived from the results of benchmarking the scaling procedure on different optimization problems as shown :ref:`results of benchmarking`.
 Please note that these recommendations are general and are likely to not apply to all optimization problems. They rather serve as a starting configuration
 which then can be adjusted based on the problem at hand via for example trial and error.
 
@@ -486,6 +499,8 @@ Gurobi has the two options ``ScaleFlag`` and ``NumericFocus`` that aim at improv
 
 For similar functionalities in other solvers, it is recommended to test the interaction of the respective functionalities with the scaling in ZEN-garden via trial and error.
 
+.. _results of benchmarking:
+
 Results of benchmarking
 -----------------------
 The scaling functionality was benchmarked by running the following set of models with various scaling configurations:
@@ -519,7 +534,7 @@ From the plot we can observe:
 * neglecting the RHS may lead to a significant increase in its numerical range, which is visible for both scaling algorithms (as shown in :ref:`regression_analysis` this also leads on average to longer solving times)
 
 Net-solving time comparison for multiple scaling configurations
-^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The following plots show the net-solving time (solving time + scaling time) for the models ``PI_small`` and ``NoErr``. These models were chosen as they represent very different results in terms
 of effectiveness of scaling. The model ``PI_small`` showed mostly a significant decrease in net-solving time when scaling was applied, whereas the model ``NoErr`` showed no significant effect of scaling on the net-solving time or even worse an
@@ -565,8 +580,9 @@ The two examples shown here, again indicate that deriving a general recommendati
 Therefore, we recommended to test different scaling algorithms and configurations via trial and error.
 
 .. _regression_analysis:
+
 Regression Analysis
-^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^
 
 Based on the collected data from the benchmarking runs for the models ``PI_small``, ``WES_nofe``, ``WES_nofe_PI``, and ``WES_nofe_PC``, a regression is run with the net-solving time (solving time + scaling time) as
 the dependent variable. The explanatory variables are the models, the ``use_scaling`` boolean, the ``include_rhs`` boolean, the ``NumericFcous`` (:math:`0` or :math:`1`) setting of Gurobi as well as an interaction term between ZEN-garden scaling and Gurobi's ``ScaleFlag``.

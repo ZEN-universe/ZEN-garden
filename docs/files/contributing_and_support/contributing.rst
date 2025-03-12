@@ -1,6 +1,6 @@
-################
+###################
 How to contribute 
-################
+###################
 We welcome any contribution to the ZEN-garden package. Many thanks for contributing to the project and helping to maintain our ZEN-garden!
 This document provides guidelines on how to contribute to the project.
 

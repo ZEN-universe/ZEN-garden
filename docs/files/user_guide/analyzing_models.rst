@@ -1,10 +1,11 @@
-################
+#################
 Analyzing a model
-################
+#################
 
 .. _Accessing results:
 Accessing results
 =================
+
 The results of ZEN-garden are stored in the ``output`` folder in the ``data`` directory in a folder with the name of the dataset.
 
 .. note::
@@ -50,7 +51,7 @@ The argument ``<component_type>`` can be one of the following: ``'parameter'``, 
 
 .. _Visualization:
 User guide for visualization
-=================
+============================
 
 If you have followed the steps of chapter :ref:`installation`, you should have a conda environment or a virtual environment that contains the necessary python packages to run the visualization suite.
 
@@ -71,6 +72,7 @@ You can investigate precomputed results online with the visualization suite by v
 .. _Comparing results:
 Comparing results
 =================
+
 ZEN-garden provides methods to compare two different result objects. This can be helpful to understand why two results differ.
 Furthermore, it allows for a fast way to spot errors in the datasets.
 The most useful application is to compare the configuration (:ref:`System, analysis, solver settings`) of two datasets and the parameter values.
