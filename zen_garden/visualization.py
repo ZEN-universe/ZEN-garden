@@ -8,7 +8,7 @@ import webbrowser
 from typing import Optional
 
 
-def start(path: str = "./outputs", api_url: Optional[str] = None, port=8000):
+def start(path: str = "./outputs", api_url: Optional[str] = None, port: int = 8000, app_name: str = ''):
     if api_url is None:
         api_url = f"http://localhost:{port}/api/"
 
@@ -23,7 +23,7 @@ def start(path: str = "./outputs", api_url: Optional[str] = None, port=8000):
         pass
 
     with open(env_path, "w") as f:
-        f.write('export const env={"PUBLIC_TEMPLE_URL":"' + api_url + '"}')
+        f.write(f'export const env={{"PUBLIC_TEMPLE_URL":"{api_url}", "PUBLIC_APP_NAME":"{app_name}"}}')
 
     print(
         f"Starting visualization, looking for solutions in {path}. The frontend uses the API under {api_url}"
@@ -61,6 +61,14 @@ if __name__ == "__main__":
     )
 
     parser.add_argument(
+        '--app_name',
+        required=False,
+        type=str,
+        default=None,
+        help="Set the name of the app that is shown in the browser tab.",
+    )
+
+    parser.add_argument(
         "-p",
         "--port",
         required=False,
@@ -71,4 +79,4 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    start(path=args.outputs_folder, api_url=args.api_url, port=args.port)
+    start(path=args.outputs_folder, api_url=args.api_url, port=args.port, app_name=args.app_name)
