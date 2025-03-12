@@ -69,6 +69,7 @@ class Component():
         self,
         name: str,
         component_type: ComponentType,
+        index_names: list[str],
         ts_type: Optional[TimestepType],
         ts_name: Optional[str],
         file_name: str,
@@ -77,6 +78,7 @@ class Component():
     ) -> None:
         self._component_type = component_type
         self._name = name
+        self._index_names = index_names
         self._ts_type = ts_type
         self._file_name = file_name
         self._ts_name = ts_name
@@ -86,6 +88,10 @@ class Component():
     @property
     def component_type(self) -> ComponentType:
         return self._component_type
+
+    @property
+    def index_names(self) -> list[str]:
+        return self._index_names
 
     @property
     def timestep_type(self) -> Optional[TimestepType]:
@@ -277,18 +283,22 @@ class SolutionLoader():
         series.index.names = new_index_names
         return series
 
+    @cache
     def get_component_data(
         self,
         scenario: Scenario,
         component: Component,
         keep_raw: bool = False,
-        data_type: Literal["dataframe","units"] = "dataframe"
+        data_type: Literal["dataframe","units"] = "dataframe",
+        index = None
     ) -> "pd.DataFrame | pd.Series[Any]":
         """
         Returns the actual component values given
         a component and a scenario. Already combines the yearly data if the solution does
         not use perfect foresight, unless explicitly desired otherwise (keep_raw = True).
         """
+        if index is None:
+            index = tuple()
         version = get_solution_version(scenario)
         if scenario.has_rh:
             # If solution has rolling horizon, load the values for all the foresight
@@ -310,7 +320,7 @@ class SolutionLoader():
                     scenario.path, subfolder_name, component.file_name
                 )
                 pd_series_dict[mf_idx] = get_df_from_path(
-                    file_path, component.name,version, data_type
+                    file_path, component.name,version, data_type, index
                 )
             if not keep_raw:
                 combined_dataseries = self._combine_dataseries(
@@ -324,7 +334,7 @@ class SolutionLoader():
         else:
             # If solution does not use rolling horizon, simply load the HDF file.
             file_path = os.path.join(scenario.path, component.file_name)
-            ans = get_df_from_path(file_path, component.name,version,data_type)
+            ans = get_df_from_path(file_path, component.name,version,data_type, index)
             return ans
 
     def _read_scenarios(self) -> dict[str, Scenario]:
@@ -405,6 +415,7 @@ class SolutionLoader():
                 ans[component_name] = Component(
                     component_name,
                     component_type,
+                    index_names,
                     timestep_type,
                     timestep_name,
                     file_name,
@@ -703,20 +714,22 @@ def get_has_units(h5_file: h5py.File,component_name: str,version: str) -> bool:
     return has_units
 
 @cache
-def get_df_from_path(path: str, component_name: str, version: str, data_type: Literal["dataframe","units"] = "dataframe") -> "pd.Series[Any]":
+def get_df_from_path(path: str, component_name: str, version: str, data_type: Literal["dataframe","units"] = "dataframe",index: Optional[tuple[str]] = None) -> "pd.Series[Any]":
     """
     Helper-function that returns a Pandas series given the path of a file and the
     component name.
     """
+    if index is None:
+        index = []
     if check_if_v1_leq_v2(version,"v0"):
         pd_read = pd.read_hdf(path, component_name + f"/{data_type}")
     else:
         if data_type == "dataframe":
-            pd_read = pd.read_hdf(path, component_name)
+            pd_read = pd.read_hdf(path, component_name,where=index)
             if isinstance(pd_read, pd.DataFrame):
                 pd_read = pd_read["value"]
         elif data_type == "units":
-            pd_read = pd.read_hdf(path, component_name)["units"]
+            pd_read = pd.read_hdf(path, component_name,where=index)["units"]
         else:
             raise ValueError(f"Data type {data_type} not supported.")
 
