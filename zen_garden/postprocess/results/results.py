@@ -122,7 +122,7 @@ class Results:
         if component.timestep_type is TimestepType.operational:
             if not any(str(component.timestep_type.value) in i for i in index):
                 time_steps = self.solution_loader.get_timesteps_of_years(scenario, component.timestep_type,tuple(years)).values
-                index = index + (f"{component.timestep_type.value} in [{", ".join(time_steps.astype(str))}]",)
+                index = index + (f"{component.timestep_type.value} in [{', '.join(time_steps.astype(str))}]",)
                 sequence_timesteps = sequence_timesteps[sequence_timesteps.isin(time_steps)]
         series = self.solution_loader.get_component_data(
             scenario, component, keep_raw=keep_raw, index=index

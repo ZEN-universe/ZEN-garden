@@ -9,6 +9,18 @@
 
    
    
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      check_if_v1_leq_v2
+      get_df_from_path
+      get_doc
+      get_first_scenario
+      get_has_units
+      get_index_names
+      get_solution_version
+   
    
 
    
