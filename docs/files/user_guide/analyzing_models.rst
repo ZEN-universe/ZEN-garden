@@ -28,9 +28,16 @@ To access the data frames containing the raw optimization results of the variabl
 The user must pass the name of the ``component`` to the member functions, e.g., ``r.get_total('capacity')`` to access the annual capacity values for all technologies.
 Optional arguments can be passed to the member functions to filter the results. The optional arguments are:
 
-1. ``element_name``: A single element name that is in the first index of the component (e.g., "wind_onshore" for "capacity", if the technology "wind_onshore" is modeled). Not available for ``r.get_unit()``.
-2. ``year``: A single optimization period for which the results should be returned (0, 1, 2, ...). Not available for ``r.get_unit()``.
-3. ``scenario_name``: A single scenario name for which the results should be returned.
+1. ``year``: A single optimization period for which the results should be returned (0, 1, 2, ...). Not available for ``r.get_unit()``.
+2. ``scenario_name``: A single scenario name for which the results should be returned.
+3. ``index``: A slicing index for the results, i.e., a list of indices that should be returned.
+
+There are four ways to pass an index:
+
+1. A single index, e.g., ``r.get_total('capacity', index="heat_pump")``. This returns the capacity of heat pump for all other indices (e.g., nodes and years). Importantly, the index must correspond to the first index of the component.
+2. A list of indices, e.g., ``r.get_total('capacity', index=["heat_pump", "photovoltaics"])``. This returns the capacity of heat pump and photovoltaics for all other indices. Importantly, the index must correspond to the first index of the component.
+3. A tuple of indices, e.g., ``r.get_total('capacity', index=("heat_pump", None, ["DE","CH"]))``. This returns the capacity of heat pump in the nodes DE and CH. The order of index levels matters. The value of a key can either be a single index, None, or a list of indices. In case of None, all indices of the corresponding level are returned.
+4. A dictionary, e.g., ``r.get_total('capacity', index={"node": ["DE", "CH"], "technology": "heat_pump"})``. This returns the capacity of heat pump in the nodes DE and CH. The value of a key can either be a single index or a list of indices. The dictionary must contain the keys of the component. Since the key is passed, the order of the keys does not matter.
 
 To return the names of all components in the results, the following member function can be used::
 

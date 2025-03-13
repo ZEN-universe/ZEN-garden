@@ -18,6 +18,7 @@
       get_inheritors
       linexpr_from_tuple_np
       lp_sum
+      reformat_slicing_index
       setup_logger
       xr_like
    
@@ -29,7 +30,6 @@
 
    .. autosummary::
    
-      HDFPandasSerializer
       IISConstraintParser
       InputDataChecks
       ScenarioDict
