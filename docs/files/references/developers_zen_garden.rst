@@ -1,7 +1,7 @@
 .. _developers:
-################
+########################
 Developers of ZEN-garden
-################
+########################
 The following people have contributed to the development of ZEN-garden:
 
 * Jacob Mannhardt (RRE, ETH Zurich)
@@ -12,4 +12,5 @@ The following people have contributed to the development of ZEN-garden:
 * Vinzenz Muser (ID, ETH Zurich)
 * Johannes Burger (RRE, ETH Zurich)
 * Francesco De Marco (RRE, ETH Zurich)
+* Christoph Funke (RRE, ETH Zurich)
 * Giovanni Sansavini (RRE, ETH Zurich)

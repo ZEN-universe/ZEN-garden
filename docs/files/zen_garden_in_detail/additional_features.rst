@@ -1,6 +1,6 @@
-##############
+###################
 Additional Features
-##############
+###################
 Besides the main features of ZEN-garden, there are some additional features that can be used to enhance the user experience:
 
 1. :ref:`MILP`
@@ -18,7 +18,8 @@ Besides the main features of ZEN-garden, there are some additional features that
 
 .. _MILP:
 Additional mixed-integer constraints
----------------------------------
+------------------------------------
+
 Besides, PWA representation of the CAPEX (see :ref:`PWA`), ZEN-garden allows the use of two additional mixed-integer linear constraints:
 
 .. _min_load:
@@ -51,6 +52,7 @@ Construction times
 .. _year-specific_input_data:
 Year-specific hourly time series
 ---------------------------------
+
 ZEN-garden allows to provide input hourly time series that are specific to a certain year. It overwrites the default values or the given csv file for the respective year. This can be useful for example to model dark doldrums in the electricity sector, where the solar and wind generation is lower than usual.
 The additional csv file can be given as a ``<parameter_name>_<year>.csv`` file, where ``<parameter_name>`` is the name of the parameter whose default values should be overwritten and ``<year>`` is the year for which the data is specific (e.g. ``demand_2023.csv`` if we want to provide demand data for the year 2023).
 Note that the input data structure stays the same as described in the :ref:`Overwriting default values` section.
@@ -62,6 +64,7 @@ Furthermore, if time series aggregation is activated (see :ref:`using_the_tsa`),
 .. _multi_year_storage_periodicity:
 Multi-year storage periodicity
 ---------------------------------
+
 The user can choose to enable storage level periodicity over multiple years, instead of just within single years (see ``storage_periodicity`` and ``multiyear_periodicity`` in :ref:`system`).
 This can be very useful when modeling inter-annual variability. For instance, years with high natural gas supply can be followed by years with low availability, where a storage can be filled in the high supply years and used in the low supply years.
 To use this feature, the user has to set ``multiyear_periodicity`` to ``TRUE`` in the ``system.json`` file (see :ref:`system`).
@@ -71,14 +74,14 @@ Note that as of now the multi-year periodicity is only usable if the interval be
 
 .. _distance_dependent_transport_capex:
 Distance-dependent capital investment cost for transport technologies
----------------------------------
+---------------------------------------------------------------------
 
 The capital investment cost for transport technologies can be determined based on a distance independent cost term :math:`\alpha^\mathrm{const}_{j,y}`, and a distance dependent cost term :math:`\alpha^\mathrm{dist}_{j,e,y}`. The distance independent cost term is multiplied by the capacity of the transport technology, whereas the distance dependent cost term is multiplied by the distance between the nodes. The investment decision is modeled with the binary variable :math:`g_{h,p,y}`. The binary variable :math:`g_{h,p,y}` equals 1 if the transport technology is installed and 0 otherwise.
 
 .. math::
     :label: cost_capex_transport
 
-    I_{j,e,y} = \alpha^\mathrm{const}_{j,y} \Delta S_{j,e,y} + alpha^\mathrm{dist}_{j,e,y} h_{j,e} q_{j,e,y}
+    I_{j,e,y} = \alpha^\mathrm{const}_{j,y} \Delta S_{j,e,y} + \alpha^\mathrm{dist}_{j,e,y} h_{j,e} q_{j,e,y}
 
 .. _technology_diffusion:
 Technology diffusion

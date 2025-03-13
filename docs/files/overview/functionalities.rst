@@ -1,6 +1,6 @@
-################
+################################
 Target group and functionalities
-################
+################################
 
 **Welcome to the ZEN-garden!**
 ZEN-garden is an open-source optimization framework designed to model long-term energy system transition pathways.
@@ -105,7 +105,7 @@ The decarbonization of the energy system can be modelled via annual carbon emiss
 It is also possible, to combine annual carbon emission targets with a carbon emission budget.
 Furthermore, a carbon emission price can be introduced as a market-based instrument to reduce carbon emissions.
 
-The annual emission target and the emission budget can be relaxed by introducing an carbon emission overshoot price for the annual carbon emissions targets, or the carbon emission budget, respectively.
+The annual emission target and the emission budget can be relaxed by introducing a carbon emission overshoot price for the annual carbon emissions targets, or the carbon emission budget, respectively.
 The overshoot price determines the penalty term that is added to the objective function.
 
 For more information see :ref:`emissions_constraints`.
@@ -197,7 +197,7 @@ Users can contribute to the development of ZEN-garden by creating a pull request
 Automated tests are implement to test the key functionalities of the code. We ask contributors to test their code locally before creating a pull request and add tests for new functionalities.
 
 Results analysis & visualization
------------------------
+--------------------------------
 
 The results of the optimization can be analyzed and visualized with the following functionalities:
 
