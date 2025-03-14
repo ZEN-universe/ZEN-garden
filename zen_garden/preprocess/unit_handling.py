@@ -338,8 +338,7 @@ class UnitHandling:
                 elif attribute_name not in ["input_carrier", "output_carrier", "reference_carrier"]:
                     energy_quantity_units.update(self._remove_non_energy_units(unit_specs, attribute_name))
             # remove attributes whose units became dimensionless since they don't have an energy quantity
-            energy_quantity_units_check = {key: value.to_base_units().units for key, value in energy_quantity_units.items()
-                                           if value.to_base_units().units != self.ureg("dimensionless")}
+            energy_quantity_units_check = {key: value.to_base_units().units for key, value in energy_quantity_units.items() if value.to_base_units().units != self.ureg("dimensionless")}
             energy_quantity_units = {key: value for key, value in energy_quantity_units.items() if value != self.ureg("dimensionless")}
             # check if conversion factor units are consistent
             self._check_for_power_power(energy_quantity_units, energy_quantity_units_check)
@@ -364,6 +363,7 @@ class UnitHandling:
                 # if conversion factor unit is in not in energy units, try to convert it to energy units by multiplying with time base unit
                 if value != non_cf_energy_quantity_unit:
                     energy_quantity_units[key] = value * self.ureg(time_base_unit)
+                    energy_quantity_units_check[key] = energy_quantity_units_check[key] * self.ureg(time_base_unit).to_base_units().units
 
     def assert_unit_consistency(self, elements, energy_quantity_units, energy_quantity_units_check, item, optimization_setup, reference_carrier_name, unit_dict):
         """Asserts that the units of the attributes of an element are consistent
