@@ -119,7 +119,7 @@ class Results:
             years = [year]
 
         # slice index with time steps of year
-        if component.timestep_type is TimestepType.operational:
+        if component.timestep_type is TimestepType.operational or component.timestep_type is TimestepType.storage:
             if not any(str(component.timestep_type.value) in i for i in index):
                 time_steps = self.solution_loader.get_timesteps_of_years(scenario, component.timestep_type,tuple(years)).values
                 index = index + (f"{component.timestep_type.value} in [{', '.join(time_steps.astype(str))}]",)
