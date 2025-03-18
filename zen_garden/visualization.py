@@ -10,7 +10,7 @@ from typing import Optional
 
 def start(path: str = "./outputs", api_url: Optional[str] = None, port: int = 8000, app_name: str = ''):
     if api_url is None:
-        api_url = f"http://localhost:{port}/api/"
+        api_url = f"http://127.0.0.1:{port}/api/"
 
     zen_temple.config.config.SOLUTION_FOLDER = path
     env_path = os.path.join(
@@ -28,12 +28,12 @@ def start(path: str = "./outputs", api_url: Optional[str] = None, port: int = 80
     print(
         f"Starting visualization, looking for solutions in {path}. The frontend uses the API under {api_url}"
     )
-    print(f"Open http://localhost:{port}/ to look at your solutions.")
+    print(f"Open http://127.0.0.1:{port}/ to look at your solutions.")
 
     config = uvicorn.Config("zen_temple.main:app", port=int(port), log_level="info")
     server = uvicorn.Server(config)
 
-    webbrowser.open(f"http://localhost:{port}/", new=2)
+    webbrowser.open(f"http://127.0.0.1:{port}/", new=2)
     server.run()
 
 
