@@ -119,11 +119,13 @@ class Results:
             years = [year]
 
         # slice index with time steps of year
+        select_year_time_steps = False
         if component.timestep_type is TimestepType.operational or component.timestep_type is TimestepType.storage:
             if not any(str(component.timestep_type.value) in i for i in index):
                 time_steps = self.solution_loader.get_timesteps_of_years(scenario, component.timestep_type,tuple(years)).values
                 index = index + (f"{component.timestep_type.value} in [{', '.join(time_steps.astype(str))}]",)
-                sequence_timesteps = sequence_timesteps[sequence_timesteps.isin(time_steps)]
+                select_year_time_steps = True
+
         series = self.solution_loader.get_component_data(
             scenario, component, keep_raw=keep_raw, index=index
         )
@@ -166,6 +168,8 @@ class Results:
                 series[time_steps_year] = series[time_steps_year] / annuity[year_temp]
         try:
             if component.timestep_type is TimestepType.operational:
+                if select_year_time_steps:
+                    sequence_timesteps = sequence_timesteps[sequence_timesteps.isin(time_steps)]
                 output_df = series[sequence_timesteps]
             elif component.timestep_type is TimestepType.storage:
                 # for storage components, the last timestep is the final state, linear interpolation is used
@@ -183,6 +187,9 @@ class Results:
                     df_temp = df_temp.interpolate(method='index',axis=1)
                     output_df.loc[:,first_occurrences[tstart]:last_occurrences[tstart]] = df_temp.loc[:,tstart_reconstructed:first_valid_timestep]
                 output_df = output_df.interpolate(method='index',axis=1)
+                if select_year_time_steps:
+                    sequence_timesteps = sequence_timesteps[sequence_timesteps.isin(time_steps)]
+                output_df = output_df[sequence_timesteps.index]
             else:
                 raise ValueError(f"Invalid timestep type {component.timestep_type} for component {component}")
         except KeyError:
