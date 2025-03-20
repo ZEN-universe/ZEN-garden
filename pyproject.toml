@@ -22,7 +22,7 @@ readme = "README.md"
 license = { file = "LICENSE.txt" }
 
 dependencies = [
-    "xarray",
+    "xarray<=2025.1.2",
     "cython",
     "numpy<=1.26.4",
     "pandas>=2.2",
