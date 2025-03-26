@@ -1,12 +1,14 @@
-.. _installation:
-################
+.. _Installation:
+
+############
 Installation
-################
+############
 
 ZEN-garden is written in Python and is available as a package. You can either install it via pip or fork and clone the repository from GitHub.
 We recommend the first option for users who want to use ZEN-garden as a black-box optimization tool. The second option is for developers who want to contribute to the codebase.
 
-.. _For users:
+.. _Install for users:
+
 For users (direct installation)
 ===============================
 
@@ -35,9 +37,10 @@ Now you can install the zen-garden package with the following command::
 
 .. note::
 
-    To get started with small example models, check out :ref:`Running ZEN-garden from a terminal`.
+    To get started with small example models, check out :ref:`Running ZEN-garden as a Model-User`.
 
-.. _For developers:
+.. _Install for developers:
+
 For developers (forking the repository)
 =======================================
 
