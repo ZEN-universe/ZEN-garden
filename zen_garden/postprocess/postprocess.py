@@ -8,7 +8,6 @@ import logging
 import os
 from pathlib import Path
 
-import h5py
 import numpy as np
 import pint
 from tables import NaturalNameWarning
@@ -18,7 +17,6 @@ import xarray as xr
 from filelock import FileLock
 import yaml
 from pydantic import BaseModel
-from win32comext.authorization.demos.EditSecurity import fname
 
 from ..model.optimization_setup import OptimizationSetup
 
