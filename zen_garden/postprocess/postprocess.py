@@ -386,21 +386,6 @@ class Postprocess:
         # only save the scenarios at the highest level
         root_path = Path(self.analysis.folder_output).joinpath(self.model_name)
         fname = root_path.joinpath('scenarios')
-        # # This we only need to save once
-        # # check if MF within scenario analysis
-        # if isinstance(self.subfolder, tuple):
-        #     # check if there are sub_scenarios (parent must then be the name of the parent scenario)
-        #     if not self.subfolder[0].parent == Path("."):
-        #         fname = self.name_dir.parent.parent.parent.joinpath('scenarios')
-        #     else:
-        #         # MF with in scenario analysis without sub-scenarios
-        #         fname = self.name_dir.parent.parent.joinpath('scenarios')
-        # # only MF or only scenario analysis
-        # elif self.subfolder != Path(""):
-        #     fname = self.name_dir.parent.joinpath('scenarios')
-        # # neither MF nor scenario analysis
-        # else:
-        #     fname = self.name_dir.joinpath('scenarios')
         self.write_file(fname, self.scenarios, format="json")
 
     def save_unit_definitions(self):

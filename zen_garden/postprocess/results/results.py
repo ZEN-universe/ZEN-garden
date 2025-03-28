@@ -48,7 +48,7 @@ class Results:
         scenario_name: Optional[str] = None,
         data_type: Literal["dataframe", "units"] = "dataframe",
         index: Optional[Union[NestedTuple, NestedDict, list[str], str, float, int]] = None,
-    ) -> Optional[dict[str, "pd.DataFrame | pd.Series[Any]"]]:
+    ) -> Optional[Union[dict[str, "pd.DataFrame | pd.Series[Any]"],pd.Series]]:
         """
         Transforms a parameter or variable dataframe (compressed) string into an actual pandas dataframe
 
@@ -67,7 +67,10 @@ class Results:
 
         if component_name not in self.solution_loader.components:
             logging.warning(f"Component {component_name} not found. If you expected this component to be present, the solution is probably empty and therefore skipped.")
-            return {s:pd.Series() for s in scenario_names}
+            if len(scenario_names) == 1:
+                return pd.Series()
+            else:
+                return {s:pd.Series() for s in scenario_names}
 
         component = self.solution_loader.components[component_name]
 
@@ -76,13 +79,19 @@ class Results:
         if data_type == "units" and not component.has_units:
             return None
 
-        ans = {}
-
-        for scenario_name in scenario_names:
+        if len(scenario_names) == 1:
+            scenario_name = scenario_names[0]
             scenario = self.solution_loader.scenarios[scenario_name]
-            ans[scenario_name] = self.solution_loader.get_component_data(
+            ans = self.solution_loader.get_component_data(
                 scenario, component, data_type=data_type, index=index
             )
+        else:
+            ans = {}
+            for scenario_name in scenario_names:
+                scenario = self.solution_loader.scenarios[scenario_name]
+                ans[scenario_name] = self.solution_loader.get_component_data(
+                    scenario, component, data_type=data_type, index=index
+                )
 
         return ans
 
@@ -478,12 +487,11 @@ class Results:
         """
         if scenario_name is None:
             scenario_name = next(iter(self.solution_loader.scenarios.keys()))
-        res = self.get_df(
+        units = self.get_df(
             component_name, scenario_name=scenario_name, data_type="units"
         )
-        if res is None:
+        if units is None:
             return None
-        units = res[scenario_name]
         if droplevel:
             # TODO make more flexible
             loc_idx = ["node", "location", "edge", "set_location", "set_nodes"]
@@ -646,7 +654,7 @@ class Results:
         if "carrier" not in dataframe.index.names:
             reference_carriers = self.get_df(
                 "set_reference_carriers", scenario_name=scenario_name
-            )[scenario_name]
+            )
             data_extracted = pd.DataFrame()
             for tech in dataframe.index.get_level_values("technology"):
                 if reference_carriers[tech] == carrier:
@@ -674,9 +682,7 @@ class Results:
         :param scenario: scenario of interest
         :return: pd.DataFrame containing carrier_flow data desired
         """
-        set_nodes_on_edges = self.get_df("set_nodes_on_edges", scenario_name=scenario)[
-            scenario
-        ]
+        set_nodes_on_edges = self.get_df("set_nodes_on_edges", scenario_name=scenario)
         set_nodes_on_edges = {
             edge: set_nodes_on_edges[edge].split(",")
             for edge in set_nodes_on_edges.index

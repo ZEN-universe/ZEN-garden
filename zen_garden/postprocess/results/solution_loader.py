@@ -126,28 +126,40 @@ class Scenario():
     """
 
     def __init__(self, path: str, name: str, base_scenario: str, default_ureg: pint.UnitRegistry) -> None:
+        self.name = name
+        self.base_name = base_scenario
+        self._exists = True
         self._path = path
         self._analysis: Analysis = self._read_analysis()
         self._system: System = self._read_system()
         self._solver: Solver = self._read_solver()
+        self._benchmarking: dict[str,Any] = self._read_benchmarking()
         self._ureg = self._read_ureg(default_ureg)
-        self.name = name
-        self.base_name = base_scenario
 
     def _read_analysis(self) -> Analysis:
         analysis_path = os.path.join(self.path, "analysis.json")
+        if not os.path.exists(analysis_path):
+            print(f"analysis.json does not exist for scenario {self.name}")
+            self._exists = False
+            return Analysis()
 
         with open(analysis_path, "r") as f:
             return Analysis(**json.load(f))
 
     def _read_system(self) -> System:
         system_path = os.path.join(self.path, "system.json")
+        if not os.path.exists(system_path):
+            print(f"system.json does not exist for scenario {self.name}")
+            return System()
 
         with open(system_path, "r") as f:
             return System(**json.load(f))
 
     def _read_solver(self) -> Solver:
         solver_path = os.path.join(self.path, "solver.json")
+        if not os.path.exists(solver_path):
+            print(f"solver.json does not exist for scenario {self.name}")
+            return Solver()
 
         with open(solver_path, "r") as f:
             return Solver(**json.load(f))
@@ -194,6 +206,10 @@ class Scenario():
     @property
     def ureg(self) -> pint.UnitRegistry:
         return self._ureg
+
+    @property
+    def exists(self) -> bool:
+        return self._exists
 
 class SolutionLoader():
     """
@@ -384,9 +400,12 @@ class SolutionLoader():
                         scenario_path, f"scenario_{scenario_subfolder}"
                     )
 
-                ans[scenario_name] = Scenario(
+                scenario = Scenario(
                     scenario_path, scenario_name, base_scenario, default_ureg
                 )
+
+                if scenario.exists:
+                    ans[scenario_name] = scenario
 
         return ans
 
