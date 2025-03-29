@@ -60,7 +60,7 @@ class Results:
         """
 
         scenario_names = (
-            self.solution_loader.scenarios.keys()
+            list(self.solution_loader.scenarios.keys())
             if scenario_name is None
             else [scenario_name]
         )
