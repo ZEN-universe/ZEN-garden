@@ -60,7 +60,7 @@ def compare_variables_results(test_model: str, results: Results, folder_path: st
                 test_values = test_variables[test_model][s]
                 for c in test_values:
                     if c in results.solution_loader.components:
-                        values = results.get_df(c)[s]
+                        values = results.get_df(c,scenario_name=s)
                         for test_value in test_values[c]:
                             if isinstance(test_value["index"],list):
                                 test_index = tuple(test_value["index"])
@@ -520,4 +520,4 @@ if __name__ == "__main__":
 
     config.solver.keep_files = False
     folder_path = os.path.dirname(__file__)
-    test_3c(config, folder_path)
+    test_1a(config, folder_path)

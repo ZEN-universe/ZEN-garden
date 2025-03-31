@@ -1,8 +1,6 @@
 """
 This module contains the Results class, which is used to extract and process the results of a model run.
 """
-import pandas as pd
-from typing import Optional, Any, Literal
 from zen_garden.postprocess.results.solution_loader import (
     SolutionLoader,
     Scenario,
@@ -10,14 +8,19 @@ from zen_garden.postprocess.results.solution_loader import (
     TimestepType,
     ComponentType,
 )
-from functools import cache
 from zen_garden.model.default_config import Config, Analysis, Solver, System
+import pandas as pd
+from typing import Optional, Any, Literal, Union
+from zen_garden.utils import reformat_slicing_index
+from functools import cache
 import importlib
 import os
 import logging
 import json
 from pathlib import Path
 
+NestedTuple = tuple[list[str]] | tuple[str]
+NestedDict = dict[str, str | list[str]]
 
 class Results:
     """
@@ -44,36 +47,51 @@ class Results:
         component_name: str,
         scenario_name: Optional[str] = None,
         data_type: Literal["dataframe", "units"] = "dataframe",
-    ) -> Optional[dict[str, "pd.DataFrame | pd.Series[Any]"]]:
+        index: Optional[Union[NestedTuple, NestedDict, list[str], str, float, int]] = None,
+    ) -> Optional[Union[dict[str, "pd.DataFrame | pd.Series[Any]"],pd.Series]]:
         """
         Transforms a parameter or variable dataframe (compressed) string into an actual pandas dataframe
 
         :component_name string: The string to decode
         :scenario_name: Which scenario to take. If none is specified, all are returned.
+        :data_type: The type of data to extract. Either 'dataframe' or 'units'
+        :index: slicing index of the resulting dataframe
         :return: The corresponding dataframe
         """
+
         scenario_names = (
-            self.solution_loader.scenarios.keys()
+            list(self.solution_loader.scenarios.keys())
             if scenario_name is None
             else [scenario_name]
         )
 
         if component_name not in self.solution_loader.components:
             logging.warning(f"Component {component_name} not found. If you expected this component to be present, the solution is probably empty and therefore skipped.")
-            return {s:pd.Series() for s in scenario_names}
+            if len(scenario_names) == 1:
+                return pd.Series()
+            else:
+                return {s:pd.Series() for s in scenario_names}
 
         component = self.solution_loader.components[component_name]
+
+        index = reformat_slicing_index(index,component)
 
         if data_type == "units" and not component.has_units:
             return None
 
-        ans = {}
-
-        for scenario_name in scenario_names:
+        if len(scenario_names) == 1:
+            scenario_name = scenario_names[0]
             scenario = self.solution_loader.scenarios[scenario_name]
-            ans[scenario_name] = self.solution_loader.get_component_data(
-                scenario, component, data_type=data_type
+            ans = self.solution_loader.get_component_data(
+                scenario, component, data_type=data_type, index=index
             )
+        else:
+            ans = {}
+            for scenario_name in scenario_names:
+                scenario = self.solution_loader.scenarios[scenario_name]
+                ans[scenario_name] = self.solution_loader.get_component_data(
+                    scenario, component, data_type=data_type, index=index
+                )
 
         return ans
 
@@ -83,31 +101,43 @@ class Results:
         component: Component,
         year: Optional[int] = None,
         discount_to_first_step: bool = True,
-        element_name: Optional[str] = None,
         keep_raw: Optional[bool] = False,
-    ) -> "pd.Series[Any]":
-        """Calculates the full timeseries for a given element per scenario
+        index: tuple[str] = None
+    ) -> "pd.DataFrame":
+        """Calculates the full timeseries per scenario
 
         :param scenario: The scenario for with the component should be extracted (only if needed)
         :param component: Component for the Series
         :param discount_to_first_step: apply annuity to first year of interval or entire interval
         :param year: year of which full time series is selected
-        :param element_name: Filter results by a given element
         :param keep_raw: Keep the raw values of the rolling horizon optimization
-        :return: Full timeseries of the element
+        :param index: slicing index of the resulting dataframe
+        :return: Full timeseries
         """
         assert component.timestep_type is not None, "Component has no timestep type."
+        
+        if index is None:
+            index = tuple()
 
-        series = self.solution_loader.get_component_data(
-            scenario, component, keep_raw=keep_raw
+        sequence_timesteps = self.solution_loader.get_sequence_time_steps(
+            scenario, component.timestep_type
         )
-        if element_name is not None and element_name in series.index.get_level_values(0):
-            series = series.loc[element_name]
-
         if year is None:
             years = [i for i in range(0, scenario.system.optimized_years)]
         else:
             years = [year]
+
+        # slice index with time steps of year
+        select_year_time_steps = False
+        if component.timestep_type is TimestepType.operational or component.timestep_type is TimestepType.storage:
+            if not any(str(component.timestep_type.value) in i for i in index):
+                time_steps = self.solution_loader.get_timesteps_of_years(scenario, component.timestep_type,tuple(years)).values
+                index = index + (f"{component.timestep_type.value} in [{', '.join(time_steps.astype(str))}]",)
+                select_year_time_steps = True
+
+        series = self.solution_loader.get_component_data(
+            scenario, component, keep_raw=keep_raw, index=index
+        )
 
         if isinstance(series.index, pd.MultiIndex):
             series = series.unstack(component.timestep_name)
@@ -129,10 +159,6 @@ class Results:
 
             return ans
 
-        sequence_timesteps = self.solution_loader.get_sequence_time_steps(
-            scenario, component.timestep_type
-        )
-
         if (
             component.component_type is ComponentType.dual
             and component.timestep_type is not None
@@ -151,6 +177,8 @@ class Results:
                 series[time_steps_year] = series[time_steps_year] / annuity[year_temp]
         try:
             if component.timestep_type is TimestepType.operational:
+                if select_year_time_steps:
+                    sequence_timesteps = sequence_timesteps[sequence_timesteps.isin(time_steps)]
                 output_df = series[sequence_timesteps]
             elif component.timestep_type is TimestepType.storage:
                 # for storage components, the last timestep is the final state, linear interpolation is used
@@ -168,6 +196,9 @@ class Results:
                     df_temp = df_temp.interpolate(method='index',axis=1)
                     output_df.loc[:,first_occurrences[tstart]:last_occurrences[tstart]] = df_temp.loc[:,tstart_reconstructed:first_valid_timestep]
                 output_df = output_df.interpolate(method='index',axis=1)
+                if select_year_time_steps:
+                    sequence_timesteps = sequence_timesteps[sequence_timesteps.isin(time_steps)]
+                output_df = output_df[sequence_timesteps.index]
             else:
                 raise ValueError(f"Invalid timestep type {component.timestep_type} for component {component}")
         except KeyError:
@@ -175,35 +206,26 @@ class Results:
 
         output_df = output_df.T.reset_index(drop=True).T
 
-        if year is not None:
-            _total_hours_per_year = scenario.system.unaggregated_time_steps_per_year
-
-            hours_of_year = list(
-                range(year * _total_hours_per_year, (year + 1) * _total_hours_per_year)
-            )
-            if output_df.empty:
-                return pd.DataFrame(index=[],columns=hours_of_year)
-            output_df = output_df[hours_of_year]
         return output_df
 
     def get_full_ts(
         self,
         component_name: str,
         scenario_name: Optional[str] = None,
-        discount_to_first_step: bool = True,
+        discount_to_first_step: Optional[bool] = True,
         year: Optional[int] = None,
-        element_name: Optional[str] = None,
         keep_raw: Optional[bool] = False,
+        index: Optional[Union[NestedTuple, NestedDict, list[str], str, float, int]] = None,
     ) -> "pd.DataFrame | pd.Series[Any]":
-        """Calculates the full timeseries for a given element
+        """Calculates the full timeseries
 
         :param component_name: Name of the component
         :param scenario_name: The scenario for with the component should be extracted (only if needed)
         :param discount_to_first_step: apply annuity to first year of interval or entire interval
         :param year: year of which full time series is selected
-        :param element_name: Filter results by a given element
         :param keep_raw: Keep the raw values of the rolling horizon optimization
-        :return: Full timeseries of the element
+        :param index: slicing index of the resulting dataframe
+        :return: Full timeseries
         """
         if scenario_name is None:
             scenario_names = list(self.solution_loader.scenarios)
@@ -218,6 +240,8 @@ class Results:
 
         scenarios_dict: dict[str, "pd.DataFrame | pd.Series[Any]"] = {}
 
+        index = reformat_slicing_index(index,component)
+
         for scenario_name in scenario_names:
             scenario = self.solution_loader.scenarios[scenario_name]
 
@@ -226,40 +250,38 @@ class Results:
                 component,
                 discount_to_first_step=discount_to_first_step,
                 year=year,
-                element_name=element_name,
                 keep_raw=keep_raw,
+                index=index
             )
 
         return self._concat_scenarios_dict(scenarios_dict)
 
-    @cache
     def get_total_per_scenario(
         self,
         scenario: Scenario,
         component: Component,
-        element_name: Optional[str] = None,
         year: Optional[int] = None,
         keep_raw: Optional[bool] = False,
+        index: tuple[str] = None
     ) -> "pd.DataFrame | pd.Series[Any]":
         """
         Calculates the total values of a component for a specific scenario.
 
         :param scenario: Scenario
         :param component: Component
-        :param element_name: Filter the results by a given element
         :param year: Filter the results by a given year
         :param keep_raw: Keep the raw values of the rolling horizon optimization
+        :param index: slicing index of the resulting dataframe
         :return: Total values of the component
         """
-        series = self.solution_loader.get_component_data(scenario, component, keep_raw)
+        if index is None:
+            index = tuple()
+        series = self.solution_loader.get_component_data(scenario, component, keep_raw, index = index)
 
         if year is None:
             years = [i for i in range(0, scenario.system.optimized_years)]
         else:
             years = [year]
-
-        if element_name is not None:
-            series = series.loc[element_name]
 
         if component.timestep_type is None or type(series.index) is not pd.MultiIndex:
             return series
@@ -292,23 +314,22 @@ class Results:
 
         return ans
 
-    @cache
     def get_total(
         self,
         component_name: str,
-        element_name: Optional[str] = None,
         year: Optional[int] = None,
         scenario_name: Optional[str] = None,
         keep_raw: Optional[bool] = False,
+        index: Optional[Union[NestedTuple, NestedDict, list[str], str, float, int]] = None,
     ) -> "pd.DataFrame | pd.Series[Any]":
         """
         Calculates the total values of a component for a all scenarios.
 
         :param component_name: Name of the component
-        :param element_name: Filter the results by a given element
         :param year: Filter the results by a given year
         :param scenario_name: Filter the results by a given scenario
         :param keep_raw: Keep the raw values of the rolling horizon optimization
+        :param index: slicing index of the resulting dataframe
         :return: Total values of the component
         """
         if scenario_name is None:
@@ -324,10 +345,12 @@ class Results:
 
         scenarios_dict: dict[str, "pd.DataFrame | pd.Series[Any]"] = {}
 
+        index = reformat_slicing_index(index, component)
+        
         for scenario_name in scenario_names:
             scenario = self.solution_loader.scenarios[scenario_name]
             current_total = self.get_total_per_scenario(
-                scenario, component, element_name, year, keep_raw
+                scenario, component, year, keep_raw, index = index
             )
 
             if type(current_total) is pd.Series:
@@ -416,7 +439,6 @@ class Results:
         self,
         component_name: str,
         scenario_name: Optional[str] = None,
-        element_name: Optional[str] = None,
         year: Optional[int] = None,
         discount_to_first_step: bool = True,
         keep_raw: Optional[bool] = False,
@@ -425,7 +447,6 @@ class Results:
 
         :param component: Name of dal
         :param scenario_name: Scenario Name
-        :param element_name: Name of Element
         :param year: Year
         :param discount_to_first_step: apply annuity to first year of interval or entire interval
         :param keep_raw: Keep the raw values of the rolling horizon optimization
@@ -443,7 +464,6 @@ class Results:
         duals = self.get_full_ts(
             component_name=component_name,
             scenario_name=scenario_name,
-            element_name=element_name,
             year=year,
             discount_to_first_step=discount_to_first_step,
             keep_raw=keep_raw,
@@ -467,12 +487,11 @@ class Results:
         """
         if scenario_name is None:
             scenario_name = next(iter(self.solution_loader.scenarios.keys()))
-        res = self.get_df(
+        units = self.get_df(
             component_name, scenario_name=scenario_name, data_type="units"
         )
-        if res is None:
+        if units is None:
             return None
-        units = res[scenario_name]
         if droplevel:
             # TODO make more flexible
             loc_idx = ["node", "location", "edge", "set_location", "set_nodes"]
@@ -635,7 +654,7 @@ class Results:
         if "carrier" not in dataframe.index.names:
             reference_carriers = self.get_df(
                 "set_reference_carriers", scenario_name=scenario_name
-            )[scenario_name]
+            )
             data_extracted = pd.DataFrame()
             for tech in dataframe.index.get_level_values("technology"):
                 if reference_carriers[tech] == carrier:
@@ -663,9 +682,7 @@ class Results:
         :param scenario: scenario of interest
         :return: pd.DataFrame containing carrier_flow data desired
         """
-        set_nodes_on_edges = self.get_df("set_nodes_on_edges", scenario_name=scenario)[
-            scenario
-        ]
+        set_nodes_on_edges = self.get_df("set_nodes_on_edges", scenario_name=scenario)
         set_nodes_on_edges = {
             edge: set_nodes_on_edges[edge].split(",")
             for edge in set_nodes_on_edges.index
@@ -757,6 +774,7 @@ class Results:
         """
         assert component_type in ComponentType.get_component_type_names(), f"Invalid component type: {component_type}. Valid types are: {ComponentType.get_component_type_names()}"
         return [component for component in self.solution_loader.components if self.solution_loader.components[component].component_type.name == component_type]
+
 
 if __name__ == "__main__":
     try:

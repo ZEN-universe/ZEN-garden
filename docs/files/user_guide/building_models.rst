@@ -1,6 +1,7 @@
 ################
 Building a model
 ################
+
 You can build a new or adapt an existing model in ZEN-garden.
 All ZEN-garden models follow the same structure of folders, ``.json`` files, and ``.csv`` files. The detailed structure is described in :ref:`Input data structure`.
 
@@ -12,6 +13,7 @@ Note that you do not need to change any code when working with a new model. You 
 .. _Working with existing models:
 Working with existing models
 ============================
+
 The easiest way to get started with ZEN-garden is to use an existing model, obtained either from a collaborator or from one of the ZEN-garden dataset examples.
 
 To run ZEN-garden with an example dataset (see :ref:`dataset_examples`), execute the following line::
@@ -23,6 +25,7 @@ More information on how to run existing models, can be found in :ref:`Running a 
 .. _Building a new model:
 Building a new model
 ====================
+
 Building entirely new models from scratch is also possible in ZEN-garden, but requires more work than using an existing model.
 The following sections describe the necessary steps to build a new model.
 

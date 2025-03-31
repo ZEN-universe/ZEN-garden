@@ -1,11 +1,11 @@
 .. _Running a model:
-################
+###############
 Running a model
-################
+###############
 
 .. _Running ZEN-garden from a terminal:
 Running ZEN-garden from a terminal
-==============
+==================================
 
 Activate the environment
 ------------------------
@@ -59,6 +59,7 @@ The optimization results will be stored in ``dataset_examples/outputs``. A Jupyt
 .. _Run ZEN-garden with preexisting datasets:
 Run ZEN-garden with preexisting datasets
 ----------------------------------------
+
 If you already have a model that you want to run, change your path to the working directory, i.e. the directory that contains the ``config.json``. This directory will also be used to save the results::
 
   cd /path/to/your/data
@@ -80,7 +81,7 @@ If you have multiple ``config.json`` files in your working directory, you can sp
   python -m zen_garden --config=<my_config.json> --dataset=<my_dataset>
 
 PyCharm configurations (only for ZEN-garden fork)
-=======
+=================================================
 
 To execute ZEN-garden with the PyCharm IDE you can use the configuration setup which can be found next to the run button, and click on "Edit configurations.." to edit or add a configuration.
 
@@ -99,12 +100,12 @@ In the end, your configuration to run ZEN-garden as a module should look similar
     :alt: run module
 
 VS code configurations (only for ZEN-garden fork)
-==============
+=================================================
 
 To run ZEN-garden as a module in VS code follow these steps:
 
 - select the correct interpreter: Press ctrl + shift + p to open the command palette (if you're on Windows or Linux), and enter ``Python: Select interpreter`` and make sure that the correct conda environment is selected. Per default, the conda enivronment will be called ``zen-garden``.
-- Create a new file in the folder ``./.vscode/`` called ``launch.json`` with the following content:
+- Create a new fil e in the folder ``./.vscode/`` called ``launch.json`` with the following content:
 
 .. code-block:: JSON
 

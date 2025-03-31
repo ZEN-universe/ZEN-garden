@@ -8,7 +8,8 @@ We recommend the first option for users who want to use ZEN-garden as a black-bo
 
 .. _For users:
 For users (direct installation)
-=========
+===============================
+
 If you want to use ZEN-garden as a black-box optimization tool, you can install the package via `pip <https://pypi.org/project/zen-garden/>`_ in a terminal or command prompt.
 
 We recommend working from a conda environment for the installation. If you have not installed Anaconda, you can download it `here <https://docs.anaconda.com/anaconda/install/>`_. You can check if you have Anaconda installed by running the following command in a terminal (MacOS)/command prompt (Windows)::
@@ -38,7 +39,8 @@ Now you can install the zen-garden package with the following command::
 
 .. _For developers:
 For developers (forking the repository)
-==============
+=======================================
+
 If you want to work on the codebase, you can fork and clone the repository from `GitHub <https://github.com/ZEN-universe/ZEN-garden>`_.
 
 If it's your first time using GitHub, register at `<https://github.com/>`_. After you have created an account, you can fork and clone the repository.

@@ -1,7 +1,8 @@
 .. _Input data structure:
-################
+
+####################
 Input data structure
-################
+####################
 The input data is structured in a folder hierarchy. The root folder ``<data_folder>`` contains a subfolder for each dataset and a configuration file ``config.json``.
 ZEN-garden is run from this root folder (:ref:`Running a model`). The dataset folder ``<dataset>`` comprises the input data for a specific dataset and must contain the following files and subfolders:
 
@@ -48,6 +49,7 @@ The configuration file ``config.json`` contains more general settings for the op
 Depending on your analysis, more files can be added; see :ref:`Attribute.json files` and :ref:`Scenario analysis` for more information.
 
 .. _Energy System:
+
 Energy System
 ==============
 
@@ -67,6 +69,7 @@ In fact, ``set_edges.csv`` defines the edges by the nodes they connect.
 See :ref:`Unit consistency` for more information.
 
 .. _Technologies:
+
 Technologies
 ==============
 The ``set_technologies`` folder is specified in three subfolders: ``set_conversion_technologies``, ``set_storage_technologies``, and ``set_transport_technologies``.
@@ -81,9 +84,9 @@ Hence, the user has to specify which carrier is the reference carrier in the fil
 For storage technologies and transport technologies, the reference carrier is the carrier that is stored or transported, respectively.
 
 .. _Conversion Technologies:
+
 Conversion Technologies
 -----------------------
-
 The conversion technologies are defined in the folder ``set_conversion_technologies``.
 A conversion technology converts ``0`` to ``n`` input carriers into ``0`` to ``m`` output carriers.
 Note that the conversion factor between the carriers is fixed, e.g., a combined heat and power (CHP) plant cannot sometimes generate more heat and sometimes generate more electricity.

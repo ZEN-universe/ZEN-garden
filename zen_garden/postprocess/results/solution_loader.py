@@ -1,6 +1,7 @@
 """
 This module contains the implementation of a SolutionLoader that reads the solution.
 """
+import copy
 import re
 import json
 import os
@@ -69,6 +70,7 @@ class Component():
         self,
         name: str,
         component_type: ComponentType,
+        index_names: list[str],
         ts_type: Optional[TimestepType],
         ts_name: Optional[str],
         file_name: str,
@@ -77,6 +79,7 @@ class Component():
     ) -> None:
         self._component_type = component_type
         self._name = name
+        self._index_names = index_names
         self._ts_type = ts_type
         self._file_name = file_name
         self._ts_name = ts_name
@@ -86,6 +89,10 @@ class Component():
     @property
     def component_type(self) -> ComponentType:
         return self._component_type
+
+    @property
+    def index_names(self) -> list[str]:
+        return self._index_names
 
     @property
     def timestep_type(self) -> Optional[TimestepType]:
@@ -118,35 +125,55 @@ class Scenario():
     folder.
     """
 
-    def __init__(self, path: str, name: str, base_scenario: str) -> None:
+    def __init__(self, path: str, name: str, base_scenario: str, default_ureg: pint.UnitRegistry) -> None:
+        self.name = name
+        self.base_name = base_scenario
+        self._exists = True
         self._path = path
         self._analysis: Analysis = self._read_analysis()
         self._system: System = self._read_system()
         self._solver: Solver = self._read_solver()
-        self._ureg = self._read_ureg()
-        self.name = name
-        self.base_name = base_scenario
+        self._benchmarking: dict[str,Any] = self._read_benchmarking()
+        self._ureg = self._read_ureg(default_ureg)
 
     def _read_analysis(self) -> Analysis:
         analysis_path = os.path.join(self.path, "analysis.json")
+        if not os.path.exists(analysis_path):
+            print(f"analysis.json does not exist for scenario {self.name}")
+            self._exists = False
+            return Analysis()
 
         with open(analysis_path, "r") as f:
             return Analysis(**json.load(f))
 
     def _read_system(self) -> System:
         system_path = os.path.join(self.path, "system.json")
+        if not os.path.exists(system_path):
+            print(f"system.json does not exist for scenario {self.name}")
+            return System()
 
         with open(system_path, "r") as f:
             return System(**json.load(f))
 
     def _read_solver(self) -> Solver:
         solver_path = os.path.join(self.path, "solver.json")
+        if not os.path.exists(solver_path):
+            print(f"solver.json does not exist for scenario {self.name}")
+            return Solver()
 
         with open(solver_path, "r") as f:
             return Solver(**json.load(f))
 
-    def _read_ureg(self) -> pint.UnitRegistry:
-        ureg = pint.UnitRegistry()
+    def _read_benchmarking(self) -> dict[str,Any]:
+        benchmarking_path = os.path.join(self.path, "benchmarking.json")
+        if os.path.exists(benchmarking_path):
+            with open(benchmarking_path, "r") as f:
+                return json.load(f)
+        else:
+            return {}
+
+    def _read_ureg(self,default_ureg) -> pint.UnitRegistry:
+        ureg = copy.deepcopy(default_ureg)
         unit_path = os.path.join(self.path, "unit_definitions.txt")
         if os.path.exists(unit_path):
             ureg.load_definitions(unit_path)
@@ -161,6 +188,14 @@ class Scenario():
         return self._solver
 
     @property
+    def system(self) -> System:
+        return self._system
+
+    @property
+    def benchmarking(self) -> dict[str,Any]:
+        return self._benchmarking
+
+    @property
     def path(self) -> str:
         return self._path
 
@@ -169,12 +204,12 @@ class Scenario():
         return self.system.use_rolling_horizon
 
     @property
-    def system(self) -> System:
-        return self._system
-
-    @property
     def ureg(self) -> pint.UnitRegistry:
         return self._ureg
+
+    @property
+    def exists(self) -> bool:
+        return self._exists
 
 class SolutionLoader():
     """
@@ -277,18 +312,22 @@ class SolutionLoader():
         series.index.names = new_index_names
         return series
 
+    @cache
     def get_component_data(
         self,
         scenario: Scenario,
         component: Component,
         keep_raw: bool = False,
-        data_type: Literal["dataframe","units"] = "dataframe"
+        data_type: Literal["dataframe","units"] = "dataframe",
+        index = None
     ) -> "pd.DataFrame | pd.Series[Any]":
         """
         Returns the actual component values given
         a component and a scenario. Already combines the yearly data if the solution does
         not use perfect foresight, unless explicitly desired otherwise (keep_raw = True).
         """
+        if index is None:
+            index = tuple()
         version = get_solution_version(scenario)
         if scenario.has_rh:
             # If solution has rolling horizon, load the values for all the foresight
@@ -310,7 +349,7 @@ class SolutionLoader():
                     scenario.path, subfolder_name, component.file_name
                 )
                 pd_series_dict[mf_idx] = get_df_from_path(
-                    file_path, component.name,version, data_type
+                    file_path, component.name,version, data_type, index
                 )
             if not keep_raw:
                 combined_dataseries = self._combine_dataseries(
@@ -324,7 +363,7 @@ class SolutionLoader():
         else:
             # If solution does not use rolling horizon, simply load the HDF file.
             file_path = os.path.join(scenario.path, component.file_name)
-            ans = get_df_from_path(file_path, component.name,version,data_type)
+            ans = get_df_from_path(file_path, component.name,version,data_type, index)
             return ans
 
     def _read_scenarios(self) -> dict[str, Scenario]:
@@ -335,14 +374,14 @@ class SolutionLoader():
         """
         scenarios_json_path = os.path.join(self.path, "scenarios.json")
         ans: dict[str, Scenario] = {}
-
+        default_ureg = pint.UnitRegistry()
         with open(scenarios_json_path, "r") as f:
             scenario_configs = json.load(f)
 
         if len(scenario_configs) == 1:
             scenario_name = "none"
             scenario_path = self.path
-            ans[scenario_name] = Scenario(scenario_path, scenario_name, "")
+            ans[scenario_name] = Scenario(scenario_path, scenario_name, "",default_ureg)
         else:
             for scenario_id, scenario_config in scenario_configs.items():
                 scenario_name = f"scenario_{scenario_id}"
@@ -361,9 +400,12 @@ class SolutionLoader():
                         scenario_path, f"scenario_{scenario_subfolder}"
                     )
 
-                ans[scenario_name] = Scenario(
-                    scenario_path, scenario_name, base_scenario
+                scenario = Scenario(
+                    scenario_path, scenario_name, base_scenario, default_ureg
                 )
+
+                if scenario.exists:
+                    ans[scenario_name] = scenario
 
         return ans
 
@@ -405,6 +447,7 @@ class SolutionLoader():
                 ans[component_name] = Component(
                     component_name,
                     component_type,
+                    index_names,
                     timestep_type,
                     timestep_name,
                     file_name,
@@ -703,20 +746,34 @@ def get_has_units(h5_file: h5py.File,component_name: str,version: str) -> bool:
     return has_units
 
 @cache
-def get_df_from_path(path: str, component_name: str, version: str, data_type: Literal["dataframe","units"] = "dataframe") -> "pd.Series[Any]":
+def get_df_from_path(path: str, component_name: str, version: str, data_type: Literal["dataframe","units"] = "dataframe",index: Optional[tuple[str]] = None) -> "pd.Series[Any]":
     """
     Helper-function that returns a Pandas series given the path of a file and the
     component name.
     """
+    if index is None:
+        index = tuple()
+
     if check_if_v1_leq_v2(version,"v0"):
         pd_read = pd.read_hdf(path, component_name + f"/{data_type}")
     else:
+        with pd.HDFStore(path) as store:
+            info = store.info()
+        is_table_format = 'typ->appendable' in next(k for k in info.splitlines()[2:] if k.startswith('/' + component_name)).split()[2]
+        if not is_table_format and len(index) > 0:
+            print(f"The index cannot be extracted, because file {path}/{component_name} is not in table format.")
         if data_type == "dataframe":
-            pd_read = pd.read_hdf(path, component_name)
+            if is_table_format:
+                pd_read = pd.read_hdf(path, component_name,where=index)
+            else:
+                pd_read = pd.read_hdf(path, component_name)
             if isinstance(pd_read, pd.DataFrame):
                 pd_read = pd_read["value"]
         elif data_type == "units":
-            pd_read = pd.read_hdf(path, component_name)["units"]
+            if is_table_format:
+                pd_read = pd.read_hdf(path, component_name,where=index)["units"]
+            else:
+                pd_read = pd.read_hdf(path, component_name)["units"]
         else:
             raise ValueError(f"Data type {data_type} not supported.")
 
