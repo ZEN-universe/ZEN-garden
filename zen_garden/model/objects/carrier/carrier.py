@@ -480,11 +480,11 @@ class CarrierRules(GenericRule):
                 self.variables["flow_conversion_output"].loc[techs_out, carrier_out, nodes].sum(
                     self.variables["flow_conversion_output"].dims[:2]))
         # merge and regroup
-        term_carrier_conversion_in = lp.merge(*term_carrier_conversion_in, dim="group")
+        term_carrier_conversion_in = lp.merge(term_carrier_conversion_in, dim="group")
         term_carrier_conversion_in = self.optimization_setup.constraints.reorder_group(term_carrier_conversion_in, None, None,
                                                                                   index.get_unique([0]),
                                                                                   index_names[:1], self.model)
-        term_carrier_conversion_out = lp.merge(*term_carrier_conversion_out, dim="group")
+        term_carrier_conversion_out = lp.merge(term_carrier_conversion_out, dim="group")
         term_carrier_conversion_out = self.optimization_setup.constraints.reorder_group(term_carrier_conversion_out, None, None,
                                                                                    index.get_unique([0]),
                                                                                    index_names[:1], self.model)
@@ -501,11 +501,11 @@ class CarrierRules(GenericRule):
                 term_flow_storage_charge.append(
                     self.variables["flow_storage_charge"].loc[storage_techs].sum("set_storage_technologies"))
             # merge and regroup
-            term_flow_storage_discharge = lp.merge(*term_flow_storage_discharge, dim="group")
+            term_flow_storage_discharge = lp.merge(term_flow_storage_discharge, dim="group")
             term_flow_storage_discharge = self.optimization_setup.constraints.reorder_group(term_flow_storage_discharge, None,
                                                                                        None, index.get_unique([0]),
                                                                                        index_names[:1], self.model)
-            term_flow_storage_charge = lp.merge(*term_flow_storage_charge, dim="group")
+            term_flow_storage_charge = lp.merge(term_flow_storage_charge, dim="group")
             term_flow_storage_charge = self.optimization_setup.constraints.reorder_group(term_flow_storage_charge, None, None,
                                                                                     index.get_unique([0]),
                                                                                     index_names[:1], self.model)
@@ -522,7 +522,7 @@ class CarrierRules(GenericRule):
         term_carrier_shed_demand = self.variables["shed_demand"].to_linexpr()
 
         ### formulate the constraints
-        lhs = lp.merge(term_carrier_conversion_out,
+        lhs = lp.merge([term_carrier_conversion_out,
                        -term_carrier_conversion_in,
                        term_flow_transport_in,
                        -term_flow_transport_out,
@@ -530,7 +530,7 @@ class CarrierRules(GenericRule):
                        term_flow_storage_discharge,
                        term_carrier_import,
                        -term_carrier_export,
-                       term_carrier_shed_demand,
+                       term_carrier_shed_demand],
                        compat="broadcast_equals")
         rhs = term_carrier_demand
         aligned_idx = xr.align(lhs.coords,rhs,join="inner")[0]
