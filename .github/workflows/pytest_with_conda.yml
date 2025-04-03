@@ -113,7 +113,7 @@ jobs:
       - name: Run Tests
         shell: bash -l {0}
         run: |
-          coverage run --source="zen_garden" -m pytest -v -n auto tests/testcases/run_test.py
+          coverage run --source="zen_garden" -m pytest -v --cov-append -n auto tests/testcases/run_test.py
           coverage report -m
 
       - name: Extract Coverage
