@@ -910,13 +910,13 @@ l
         """
         if is_rhs:
             cons_str = self.model.constraints.get_label_position(label)
-            cons_str = cons_str[0] + str(list(cons_str[1].values()))
+            cons_str = cons_str[0] + str([l.item() for l in list(cons_str[1].values()) if type(l) != str])
             return f"{self.rhs[label]} in {cons_str}"
         else:
             cons_str = self.model.constraints.get_label_position(label)
-            cons_str = cons_str[0] + str(list(cons_str[1].values()))
+            cons_str = cons_str[0] + str([l.item() for l in list(cons_str[1].values()) if type(l) != str])
             var_str = self.model.variables.get_label_position(var)
-            var_str = var_str[0] + str(list(var_str[1].values()))
+            var_str = var_str[0] + str([l.item() for l in list(var_str[1].values()) if type(l) != str])
             return f"{A_matrix[index]} {var_str} in {cons_str}"
 
     def print_numerics(self,i,no_scaling = False, benchmarking_output = False):

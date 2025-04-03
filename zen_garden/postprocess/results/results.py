@@ -442,6 +442,7 @@ class Results:
         year: Optional[int] = None,
         discount_to_first_step: bool = True,
         keep_raw: Optional[bool] = False,
+        index: Optional[Union[NestedTuple, NestedDict, list[str], str, float, int]] = None,
     ) -> Optional["pd.DataFrame | pd.Series[Any]"]:
         """extracts the dual variables of a component
 
@@ -450,6 +451,7 @@ class Results:
         :param year: Year
         :param discount_to_first_step: apply annuity to first year of interval or entire interval
         :param keep_raw: Keep the raw values of the rolling horizon optimization
+        :param index: slicing index of the resulting dataframe
         :return: Duals of the component
         """
         if not self.get_solver(scenario_name=scenario_name).save_duals:
@@ -467,6 +469,7 @@ class Results:
             year=year,
             discount_to_first_step=discount_to_first_step,
             keep_raw=keep_raw,
+            index=index,
         )
         return duals
 
