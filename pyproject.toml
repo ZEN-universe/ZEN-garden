@@ -56,7 +56,8 @@ docs = [
 dev = [
     "pytest",
     "coverage",
-    "pytest-xdist"
+    "pytest-xdist",
+    "pytest-cov"
 ]
 
 vis = [
