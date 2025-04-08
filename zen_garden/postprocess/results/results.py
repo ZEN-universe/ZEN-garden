@@ -134,11 +134,9 @@ class Results:
                 time_steps = self.solution_loader.get_timesteps_of_years(scenario, component.timestep_type,tuple(years)).values
                 index = index + (f"{component.timestep_type.value} in [{', '.join(time_steps.astype(str))}]",)
                 select_year_time_steps = True
-
         series = self.solution_loader.get_component_data(
             scenario, component, keep_raw=keep_raw, index=index
         )
-
         if isinstance(series.index, pd.MultiIndex):
             series = series.unstack(component.timestep_name)
 
@@ -184,8 +182,9 @@ class Results:
                 # for storage components, the last timestep is the final state, linear interpolation is used
                 last_occurrences = sequence_timesteps.groupby(sequence_timesteps).apply(lambda x: x.index[-1])
                 first_occurrences = sequence_timesteps.groupby(sequence_timesteps).apply(lambda x: x.index[0])
-                output_df = pd.DataFrame(columns=sequence_timesteps.index,index=series.index,dtype=float)
-                output_df[last_occurrences.values] = series[last_occurrences.index]
+                output_df = series[last_occurrences.index].rename(last_occurrences,axis=1)
+                # fill missing ts with nan
+                output_df = output_df.reindex(columns=sequence_timesteps.index)
                 time_steps_start_end = self.solution_loader.get_time_steps_storage_level_startend_year(scenario)
                 for tstart,tend in time_steps_start_end.items():
                     tstart_reconstructed = first_occurrences[tstart]
