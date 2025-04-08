@@ -2,15 +2,15 @@
 Building a model
 ################
 
-A model in ZEN-gardon consists entirely of input data files in the ``.json`` and ``.csv`` file formats. Building a model therefore refers to creating the 
+A model in ZEN-garden consists entirely of input data files in the ``.json`` and ``.csv`` file formats. Building a model therefore refers to creating the
 input files, in the proper input format, for ZEN-garden to read. The code uses these input files to construct, solve, and analyze the desired model. 
 You can build a new or adapt an existing model in ZEN-garden. Note that you do not need to change any code when working with a new model. You only need to provide 
-the necessary files in the correct format.
+the necessary files in the correct format. 
 
 At the highest level, two components are necessary in a ZEN-garden model:
 
 1. A 'config.json' file which names dataset to be used, specifies solver configuration, and sets high-level analysis options. 
-2. A folder (henceforth refered to as the ``dataset``) which contains detailed information about the desired model's network topology, conversion technologies, and transport technologies. 
+2. A folder (henceforth referred to as the ``dataset``) which contains detailed information about the desired model's network topology, conversion technologies, and transport technologies.
 
 .. code-block::
 
