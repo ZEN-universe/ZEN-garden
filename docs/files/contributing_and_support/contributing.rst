@@ -42,20 +42,16 @@ If you add new functionalities, make sure to add a new test that covers the new 
 
 You can execute the tests by running::
 
-  coverage run --source="zen_garden" -m pytest -v tests/testcases/run_test.py
-
-The coverage report is also generated in a similar way by running::
-
-  coverage report -m
+    pytest --cov="zen_garden" -n auto tests/ -v
 
 **Pycharm configuration**
 
 To run the tests, add another Python configuration. The important settings are:
 
-- Change "script" to "module" and set it to "coverage"
-- Set the "Parameters" to: ``run --source="zen_garden" -m pytest -v run_test.py``
+- Change "script" to "module" and set it to "pytest"
+- Set the "Parameters" to: ``--cov="zen_garden" -n auto tests/ -v``
 - Set the python interpreter to the Conda environment that was used to install the requirements and also has the package installed. **Important**: This setup will only work for Conda environments that were also declared as such in PyCharm; if you set the path to the Python executable yourself, you should create a new proper PyCharm interpreter.
-- Set the "Working directory" to the directory ``tests/testcases`` of the repo.
+- Set the "Working directory" to the root directory of the repo.
 
 In the end, your configuration to run the tests should look similar to this:
 
