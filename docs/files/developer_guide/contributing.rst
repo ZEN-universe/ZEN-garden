@@ -1,6 +1,6 @@
-###################
-How to contribute 
-###################
+########################
+Contribution guidelines 
+########################
 We welcome any contribution to the ZEN-garden package. Many thanks for contributing to the project and helping to maintain our ZEN-garden!
 This document provides guidelines on how to contribute to the project.
 
@@ -71,9 +71,9 @@ In the end, your configuration to run the coverage should look similar to this:
     :alt: run coverage
 
 Adding documentation
-=================
+=====================
 
-The documentation, located in the ``docs`` folder, is written in `reStructuredText <https://www.sphinx-doc.org/en/master/usage/restructuredtext/index.html>`_ and is built using `Sphinx <https://www.sphinx-doc.org/en/master/>`_. All necessary packages are installed when installing the requirements for the developer environment (:ref:`For developers`).
+The documentation, located in the ``docs`` folder, is written in `reStructuredText <https://www.sphinx-doc.org/en/master/usage/restructuredtext/index.html>`_ and is built using `Sphinx <https://www.sphinx-doc.org/en/master/>`_. All necessary packages are installed when installing the requirements for the developer environment (:ref:`Install for developers`).
 You can build a local version of the documentation by running the following command in the ``docs`` directory of the repository::
 
   make html

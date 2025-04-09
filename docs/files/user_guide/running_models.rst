@@ -1,26 +1,29 @@
 .. _Running a model:
+
 ###############
 Running a model
 ###############
 
-.. _Running ZEN-garden from a terminal:
-Running ZEN-garden from a terminal
+.. _Running ZEN-garden as a Model-User:
+
+Running ZEN-garden as a Model-User
 ==================================
 
 Activate the environment
 ------------------------
 
-To run ZEN-garden from a terminal, activate the environment where you installed ZEN-garden. If you downloaded ZEN-garden from pip (``pip install zen-garden``, :ref:`For users`), activate the environment where you installed ZEN-garden.
+To run ZEN-garden from a terminal, activate the environment where you installed ZEN-garden. If you downloaded ZEN-garden from pip (``pip install zen-garden``, :ref:`Install for users`), activate the environment where you installed ZEN-garden.
 
 .. code-block::
 
     conda activate <your_environment>
 
-If you installed ZEN-garden from the repository and created a new environment (:ref:`For developers`), per default, the environment will be called ``zen-garden``::
+If you installed ZEN-garden from the repository and created a new environment (:ref:`Install for developers`), per default, the environment will be called ``zen-garden``::
 
   conda activate zen-garden
 
 .. _Run example:
+
 Run ZEN-garden with an example dataset
 --------------------------------------
 
@@ -57,6 +60,7 @@ The optimization results will be stored in ``dataset_examples/outputs``. A Jupyt
         python -m zen_garden.visualization
 
 .. _Run ZEN-garden with preexisting datasets:
+
 Run ZEN-garden with preexisting datasets
 ----------------------------------------
 
@@ -79,49 +83,4 @@ When running the previous line, ZEN-garden will attempt to run the dataset speci
 If you have multiple ``config.json`` files in your working directory, you can specify the file you want to use with the ``config`` argument::
 
   python -m zen_garden --config=<my_config.json> --dataset=<my_dataset>
-
-PyCharm configurations (only for ZEN-garden fork)
-=================================================
-
-To execute ZEN-garden with the PyCharm IDE you can use the configuration setup which can be found next to the run button, and click on "Edit configurations.." to edit or add a configuration.
-
-.. image:: images/pycharm_configuration.png
-    :alt: creating zen-garden configurations in pycharm
-
-Add a new configuration by clicking on the "+" button on the top left corner of the window. Choose ´´Python´´ as a type. You can name the configuration however you like. The important settings are:
-
-- Change "Script Path" to "Module name" and set it to "zen_garden"
-- Set the Python interpreter to the Conda environment that was used to install the requirements and ZEN-garden as a package. Per default, the environment will be called ``zen-garden``. **Important**: This setup will only work for Conda environments that were also declared as such in PyCharm; if you set the path to the Python executable, you will have to create a new PyCharm interpreter first.
-- Set the "Working directory" to the path that contains the ``config.json``. This directory will also be used to save the results.
-
-In the end, your configuration to run ZEN-garden as a module should look similar to this:
-
-.. image:: images/pycharm_run_module.png
-    :alt: run module
-
-VS code configurations (only for ZEN-garden fork)
-=================================================
-
-To run ZEN-garden as a module in VS code follow these steps:
-
-- select the correct interpreter: Press ctrl + shift + p to open the command palette (if you're on Windows or Linux), and enter ``Python: Select interpreter`` and make sure that the correct conda environment is selected. Per default, the conda enivronment will be called ``zen-garden``.
-- Create a new fil e in the folder ``./.vscode/`` called ``launch.json`` with the following content:
-
-.. code-block:: JSON
-
-  {"configurations": [
-      {
-        "name": "Python: ZEN-Garden", 
-        "type": "python", 
-        "cwd":"<path to folder with config.py>", 
-        "request": "launch", "module": "zen_garden", 
-        "console": "integratedTerminal"
-      }
-    ]
-  }
-
-
-
-
-
-
+  
