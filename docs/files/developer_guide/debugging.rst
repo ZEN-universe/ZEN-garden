@@ -87,7 +87,7 @@ VS code configurations
 
 To debug ZEN-garden with VSCode, follow these steps:
 
-- select the correct interpreter: Press ctrl + shift + p to open the command palette (if you're on Windows or Linux), and enter ``Python: Select interpreter`` and make sure that the correct conda environment is selected. Per default, the conda environment will be called ``zen-garden``.
+- select the correct interpreter: Press ctrl + shift + p to open the command palette (if you're on Windows or Linux), and enter ``Python: Select interpreter`` and make sure that the correct conda environment is selected. Per default, the conda environment will be called ``zen-garden-env``.
 - Create a new file in the folder ``./.vscode/`` called ``launch.json`` with the following content:
 
 .. code-block:: JSON
