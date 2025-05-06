@@ -18,7 +18,7 @@ To run ZEN-garden from a terminal, activate the environment where you installed 
 
     conda activate <your_environment>
 
-If you installed ZEN-garden from the repository and created a new environment (:ref:`Install for developers`), per default, the environment will be called ``zen-garden``::
+If you installed ZEN-garden from the repository and created a new environment (:ref:`Install for developers`), per default, the environment will be called ``zen-garden-env``::
 
   conda activate zen-garden
 

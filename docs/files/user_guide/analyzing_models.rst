@@ -11,7 +11,7 @@ The results of ZEN-garden are stored in the ``output`` folder in the ``data`` di
 .. note::
     The results are self-contained, i.e., you can copy the ``<dataset_name>`` folder to another location and still access the results.
 
-The easiest way to access the results values is to import the ``Results`` class from the ``zen_garden`` package in, e.g., Pycharm or Jupyter Notebook, with your ``zen-garden`` environment activated and load the results with the following code::
+The easiest way to access the results values is to import the ``Results`` class from the ``zen_garden`` package in, e.g., Pycharm or Jupyter Notebook, with your ``zen-garden-env`` environment activated and load the results with the following code::
 
     from zen_garden.postprocess.results.results import Results
     r = Results(path='<result_folder>')
