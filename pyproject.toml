@@ -15,18 +15,18 @@ authors = [
   {name = "Giovanni Sansavini"},
   ]
 # do not change version manually! Done by bump2version
-version = "2.3.5"
+version = "2.3.12"
 requires-python= ">=3.11"
 description="ZEN-garden is an optimization model of energy systems and value chains."
 readme = "README.md"
 license = { file = "LICENSE.txt" }
 
 dependencies = [
-    "xarray<=2025.1.2",
+    "xarray",
     "cython",
-    "numpy<=1.26.4",
-    "pandas>=2.2",
-    "scipy<=1.14",
+    "numpy",
+    "pandas",
+    "scipy",
     "pint",
     "tables",
     "pydantic",
@@ -36,7 +36,7 @@ dependencies = [
     "ordered-set",
     "pyogrio",
     "psutil",
-    "linopy<=0.3.10",
+    "linopy",
     "requests",
     "ipykernel",
     "zen-temple"
@@ -56,6 +56,8 @@ docs = [
 dev = [
     "pytest",
     "coverage",
+    "pytest-xdist",
+    "pytest-cov"
 ]
 
 vis = [
@@ -68,3 +70,6 @@ gurobipy = ["gurobipy"]
 Homepage = "https://github.com/ZEN-universe/ZEN-garden"
 Documentation = "https://zen-garden.readthedocs.io/en/latest/"
 Zenodo = "https://zenodo.org/api/records/13385110"
+
+[tool.pytest.ini_options]
+addopts = "-n auto"

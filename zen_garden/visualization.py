@@ -11,6 +11,8 @@ from typing import Optional
 def start(path: str = "./outputs", api_url: Optional[str] = None, port: int = 8000, app_name: str = ''):
     if api_url is None:
         api_url = f"http://127.0.0.1:{port}/api/"
+    if app_name is None:
+        app_name = ""
 
     zen_temple.config.config.SOLUTION_FOLDER = path
     env_path = os.path.join(

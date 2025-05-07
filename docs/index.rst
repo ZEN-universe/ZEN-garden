@@ -4,14 +4,14 @@
    contain the root `toctree` directive.
 
 ZEN-garden: Zero emissions Energy Networks
-======================================
+==========================================
 
 ZEN-garden is an open-source linear optimization model. Due to its modular and flexible design, ZEN-garden can be used to optimize different types of energy systems, value chains, or other network-based systems.
 
 ZEN-garden is developed and maintained by the `Reliability and Risk Engineering Laboratory <https://rre.ethz.ch/>`_ at `Eidgenössische Technische Hochschule Zürich (ETHZ) <https://ethz.ch/de.html>`_.
 
 Documentation
-======================================
+=============
 
 .. toctree::
    :maxdepth: 1
@@ -48,13 +48,21 @@ Documentation
 
    files/dataset_examples/dataset_examples
 
+.. toctree::
+   :maxdepth: 1
+   :caption: Developer Guide
+
+   files/developer_guide/contributing
+   files/developer_guide/installation
+   files/developer_guide/constraint_guide
+   files/developer_guide/debugging
+   files/developer_guide/testing
 
 .. toctree::
    :maxdepth: 1
-   :caption: Contributing & Support
+   :caption: Support
 
-   files/contributing_and_support/contributing
-   files/contributing_and_support/get_help
+   files/support/get_help
 
 
 .. toctree::

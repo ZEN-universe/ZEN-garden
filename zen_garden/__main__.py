@@ -11,7 +11,9 @@ import zen_garden.model.default_config as default_config
 import json
 from zen_garden.utils import copy_dataset_example
 
-def run_module(args=None):
+def run_module(args=None, config = "./config.py", dataset = None, 
+               folder_output = None, job_index = None, job_index_var = "SLURM_ARRAY_TASK_ID",
+               example = None):
     """
     Runs the main function of ZEN-Garden
 
@@ -27,16 +29,16 @@ def run_module(args=None):
                   "dataset specified in the config file."
     parser = argparse.ArgumentParser(description=description, add_help=True, usage="usage: python -m zen_garden [-h] [--config CONFIG] [--dataset DATASET] [--job_index JOB_INDEX] [--job_index_var JOB_INDEX_VAR] [--example EXAMPLE]")
     # TODO make json config default
-    parser.add_argument("--config", required=False, type=str, default="./config.py", help="The config file used to run the pipeline, "
+    parser.add_argument("--config", required=False, type=str, default=config, help="The config file used to run the pipeline, "
                                                                                         "defaults to config.py in the current directory.")
-    parser.add_argument("--dataset", required=False, type=str, default=None, help="Path to the dataset used for the run. IMPORTANT: This will overwrite the "
+    parser.add_argument("--dataset", required=False, type=str, default=dataset, help="Path to the dataset used for the run. IMPORTANT: This will overwrite the "
                                                                                   "config.analysis.dataset attribute of the config file!")
-    parser.add_argument("--folder_output", required=False, type=str, default=None, help="Path to the folder where results of the run are stored. IMPORTANT: This will overwrite the "
+    parser.add_argument("--folder_output", required=False, type=str, default=folder_output, help="Path to the folder where results of the run are stored. IMPORTANT: This will overwrite the "
                                                                                         "config.analysis.folder_output attribute of the config file!")
-    parser.add_argument("--job_index", required=False, type=str, default=None, help="A comma separated list (no spaces) of indices of the scenarios to run, if None, all scenarios are run in sequence")
-    parser.add_argument("--job_index_var", required=False, type=str, default="SLURM_ARRAY_TASK_ID", help="Try to read out the job index from the environment variable specified here. "
+    parser.add_argument("--job_index", required=False, type=str, default=job_index, help="A comma separated list (no spaces) of indices of the scenarios to run, if None, all scenarios are run in sequence")
+    parser.add_argument("--job_index_var", required=False, type=str, default=job_index_var, help="Try to read out the job index from the environment variable specified here. "
                                                                                                          "If both --job_index and --job_index_var are specified, --job_index will be used.")
-    parser.add_argument("--example", required=False, type=str, default=None, help="Run an example scenario. The argument should be the name of a dataset example in documentation/dataset_examples. This command will copy the dataset and the config to the current folder and run the example.")
+    parser.add_argument("--example", required=False, type=str, default=example, help="Run an example scenario. The argument should be the name of a dataset example in documentation/dataset_examples. This command will copy the dataset and the config to the current folder and run the example.")
 
     args = parser.parse_args(args)
 

@@ -113,8 +113,8 @@ jobs:
       - name: Run Tests
         shell: bash -l {0}
         run: |
-          coverage run --source="zen_garden" -m pytest -v tests/testcases/run_test.py
-          coverage report -m
+          pytest --cov="zen_garden" -n auto tests/ -v
+#          coverage report -m
 
       - name: Extract Coverage
         if: ${{ always() && matrix.label == 'linux-64' && github.event_name == 'push' }} # include always to overwrite cancel on failure of previous step
