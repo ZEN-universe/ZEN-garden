@@ -173,7 +173,7 @@ class Scenario():
             return {}
 
     def _read_ureg(self,default_ureg) -> pint.UnitRegistry:
-        ureg = copy.deepcopy(default_ureg)
+        ureg = copy.copy(default_ureg)
         unit_path = os.path.join(self.path, "unit_definitions.txt")
         if os.path.exists(unit_path):
             ureg.load_definitions(unit_path)
@@ -757,22 +757,17 @@ def get_df_from_path(path: str, component_name: str, version: str, data_type: Li
     if check_if_v1_leq_v2(version,"v0"):
         pd_read = pd.read_hdf(path, component_name + f"/{data_type}")
     else:
-        with pd.HDFStore(path) as store:
-            info = store.info()
-        is_table_format = 'typ->appendable' in next(k for k in info.splitlines()[2:] if k.startswith('/' + component_name)).split()[2]
-        if not is_table_format and len(index) > 0:
-            print(f"The index cannot be extracted, because file {path}/{component_name} is not in table format.")
         if data_type == "dataframe":
-            if is_table_format:
+            try:
                 pd_read = pd.read_hdf(path, component_name,where=index)
-            else:
+            except:
                 pd_read = pd.read_hdf(path, component_name)
             if isinstance(pd_read, pd.DataFrame):
                 pd_read = pd_read["value"]
         elif data_type == "units":
-            if is_table_format:
+            try:
                 pd_read = pd.read_hdf(path, component_name,where=index)["units"]
-            else:
+            except:
                 pd_read = pd.read_hdf(path, component_name)["units"]
         else:
             raise ValueError(f"Data type {data_type} not supported.")
