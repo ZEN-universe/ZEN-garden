@@ -1,6 +1,8 @@
 """
 This module contains the Results class, which is used to extract and process the results of a model run.
 """
+from pandas import Series
+
 from zen_garden.postprocess.results.solution_loader import (
     SolutionLoader,
     Scenario,
@@ -478,7 +480,7 @@ class Results:
         scenario_name: Optional[str] = None,
         droplevel: bool = True,
         is_total: bool = True,
-    ) -> Optional[dict[str, "pd.DataFrame | pd.Series[Any]"]]:
+    ) -> None | Series | str:
         """
         Extracts the unit of a given Component. If no scenario is given, a random one is taken.
 
@@ -510,22 +512,35 @@ class Results:
                 units.index = units.index.droplevel(drop_idx.to_list())
                 units = units[~units.index.duplicated()]
         # convert to pint units
-        for i in units.index:
-            try:
-                u = units[i]
-                u = self.ureg.parse_expression(u)
-                if is_total and self.solution_loader.components[component_name].timestep_type is TimestepType.operational:
-                    u = u * self.ureg.h
-                units[i] = f"{u.u:~D}"
-            # if the unit is not in the pint registry, change the string manually (normally, when the unit_definition.txt is not saved)
-            except Exception:
-                if is_total and self.solution_loader.components[component_name].timestep_type is TimestepType.operational:
-                    if units[i].endswith(" / hour"):
-                        units[i] = units[i].replace(" / hour", "")
-                    else:
-                        units[i] = f"{units[i]} * hour"
+        if isinstance(units, pd.Series):
+            for i in units.index:
+                units[i] = self._convert_to_pint_units(units[i], is_total, component_name)
+        elif isinstance(units, str):
+            units = self._convert_to_pint_units(units, is_total, component_name)
+        else:
+            raise TypeError(f"Invalid units type: {type(units)}")
 
         return units
+
+    def _convert_to_pint_units(self,u: str,is_total: bool, component_name: str) -> str:
+        """
+        Converts a string to a pint unit.
+        """
+        try:
+            u = self.ureg.parse_expression(u)
+            if is_total and self.solution_loader.components[component_name].timestep_type is TimestepType.operational:
+                u = u * self.ureg.h
+            u_return = f"{u.u:~D}"
+        # if the unit is not in the pint registry, change the string manually (normally, when the unit_definition.txt is not saved)
+        except Exception:
+            if is_total and self.solution_loader.components[component_name].timestep_type is TimestepType.operational:
+                if u.endswith(" / hour"):
+                    u_return = u.replace(" / hour", "")
+                else:
+                    u_return = f"{u} * hour"
+            else:
+                u_return = u
+        return u_return
 
     def get_system(self, scenario_name: Optional[str] = None) -> System:
         """

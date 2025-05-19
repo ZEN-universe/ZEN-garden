@@ -21,20 +21,25 @@ Scenarios are defined in the ``scenarios.json``::
                 "default": "<attribute_file_name>",
                 "default_op": <float>,  
                 "file": "<file_name>",
+                "part_file": "<partial_file_name>",
                 "file_op": <float>
                 }            
             }
         }
     }
 
-Each scenario has a unique name. For each element of the ``energy_system``, as well as the ``energy_system`` itself, the parameters can be overwritten to perform a different analysis. Four options are available:
+Each scenario has a unique name. For each element of the ``energy_system``, as well as the ``energy_system`` itself, the parameters can be overwritten to perform a different analysis. Five options are available:
 
 * ``default``: Change the filename from which the default value is taken
 * ``default_op``: Multiply default value by a constant factor 
 * ``file``: Change the file name from which the values are taken to overwrite the default values
+* ``part_file``: Overwrite the values (after applying the ``file`` operator) for a subset of the indices in the file. This is useful if you want to overwrite only a few elements in a file with a new value, but keep the rest of the file unchanged.For example, if you have a demand file for all European countries but you want to overwrite only the demand for Switzerland, you can specify a partial file with the demand for Switzerland and the rest of the countries will be unchanged.
 * ``file_op``: Multiply the parameter values after reading the default value and overwriting the default values with the file values by a constant factor
 
-It is also possible to combine the four options. For example, if you would like to change the import price for the element ``natural_gas``, the ``scenario.json`` would look like this::
+.. note::
+    Most of the time, we want to use one of the five options, but it is also possible to use multiple options at the same time.
+
+If you would like to change the import price for the element ``natural_gas``, the ``scenario.json`` would look like this::
 
     {"high_gas_price":
         {"natural_gas": 
@@ -42,13 +47,15 @@ It is also possible to combine the four options. For example, if you would like 
                 "default": "attributes_high",
                 "default_op": 1.5,  
                 "file": "price_import_high",
+                "part_file": "price_import_high_part",
                 "file_op": 0.9
                 }            
             }
         }
     }
 
-In this example, first the default value would be read from ``attributes_high.json``. Thereafter, the default value would be multiplied by 1.5. Now, the values specified in the file ``price_import_high.csv`` are read and overwrite the corresponding default values. Lastly, the parameter values are multiplied by 0.9.
+In this example, first the default value would be read from ``attributes_high.json``. Thereafter, the default value would be multiplied by 1.5. Now, the values specified in the file ``price_import_high.csv`` are read and overwrite the corresponding default values.
+Then, the values specified in ``price_import_high_part.csv`` overwrite the values of those indices specified in the partial file (Note that it does not make a lot of sense to specify both ``file`` and ``part_file``. Lastly, the parameter values are multiplied by 0.9.
 
 .. note:: 
     ``file_op`` is applied after the file values have replaced the default values and will therefore be applied to **all** parameter values, the default values as well. Thus, setting both ``default_op`` and ``file_op`` will change the default values twice.
