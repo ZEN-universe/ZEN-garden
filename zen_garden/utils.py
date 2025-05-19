@@ -564,12 +564,9 @@ class ScenarioDict(dict):
             # we do not expand these
             if element in ScenarioDict._special_elements:
                 continue
-            # check for dict items in settings elements
-            # if element in ScenarioDict._setting_elements and dict not in [type(v) for v in element_dict.values()]:
-            #     continue
 
             # check for 'system' analysis' and 'solver' keys and see whether they are dicts and have a list in them,
-            # on ly then do the list expansion, otherwise proceed as always.
+            # only then do the list expansion, otherwise proceed as always.
             for param, param_dict in sorted(element_dict.items(), key=lambda x: x[0]):
                 if element in ScenarioDict._setting_elements:
                     if not isinstance(param_dict, dict):
