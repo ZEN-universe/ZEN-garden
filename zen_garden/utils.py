@@ -458,7 +458,7 @@ class ScenarioDict(dict):
     This is a dictionary for the scenario analysis that has some convenience functions
     """
 
-    _param_dict_keys = {"file", "file_op", "default", "default_op", "value"}
+    _param_dict_keys = {"file", "part_file", "file_op", "default", "default_op", "value"}
     _special_elements = ["base_scenario", "sub_folder", "param_map"]
     _setting_elements = ["system", "analysis", "solver"]
 
@@ -751,6 +751,21 @@ class ScenarioDict(dict):
             self._check_if_numeric_default_factor(default_factor, element=element, param=param, default_f_name=default_f_name, op_type="file_op")
 
         return default_f_name, default_factor
+
+    def get_param_part_file(self, element, param):
+        """
+        Return the partial file name where the parameter values should be read out
+        :param element: the element name
+        :param param: the parameter of the element for which the partial file name is returned
+        :return:  If the entry is overwritten by the scenario analysis the entry, otherwise None
+        """
+        if element in self.dict and param in (element_dict := self.dict[element]):
+            param_dict = element_dict[param]
+            if "part_file" in param_dict:
+                part_file = param_dict["part_file"]
+                part_file = self.validate_file_name(part_file)
+                return part_file
+        return None
 
     def _check_if_numeric_default_factor(self, default_factor, element, param, default_f_name, op_type):
         """Check if the default factor is numeric

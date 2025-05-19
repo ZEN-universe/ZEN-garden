@@ -1115,7 +1115,7 @@
             "flow_import": [
                 {
                     "index": ["natural_gas", "CH", 0],
-                    "value": 11.0
+                    "value": 22.0
                 },
                 {
                     "index": ["natural_gas", "DE", 0],
@@ -1125,7 +1125,7 @@
             "cost_carrier": [
                 {
                     "index": ["natural_gas", "CH", 0],
-                    "value": 0.3036
+                    "value": 0.6072
                 },
                 {
                     "index": ["natural_gas", "DE", 0],
@@ -1135,7 +1135,7 @@
             "carbon_emissions_carrier": [
                 {
                     "index": ["natural_gas", "CH", 0],
-                    "value": 0.0044
+                    "value": 0.0088
                 },
                 {
                     "index": ["natural_gas", "DE", 0],
@@ -1173,7 +1173,7 @@
             "flow_conversion_output": [
                 {
                     "index": ["natural_gas_boiler", "heat", "CH", 0],
-                    "value": 10.0
+                    "value": 20.0
                 },
                 {
                     "index": ["natural_gas_boiler", "heat", "DE", 0],
@@ -1183,7 +1183,7 @@
             "capacity": [
                 {
                     "index": ["natural_gas_boiler", "power", "CH", 0],
-                    "value": 10.0
+                    "value": 20.0
                 },
                 {
                     "index": ["natural_gas_boiler", "power", "DE", 0],
@@ -1193,7 +1193,7 @@
             "cost_capex_overnight": [
                 {
                     "index": ["natural_gas_boiler", "power", "CH", 0],
-                    "value": 1.1
+                    "value": 2.2
                 },
                 {
                     "index": ["natural_gas_boiler", "power", "DE", 0],
