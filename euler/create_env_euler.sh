@@ -8,7 +8,7 @@ module load gcc/12.2.0
 module load python/3.11.6
 # backend for the solvers
 module load glpk
-module load gurobi/11.0.2
+module load gurobi/12.0.1
 
 # create the env
 python -m venv zen_garden_env
@@ -19,4 +19,4 @@ source zen_garden_env/bin/activate
 # install the requirements
 pip install -U pip
 pip install -e ..[dev,vis,docs]
-pip install gurobipy==11.0.2
+pip install gurobipy==12.0.1
