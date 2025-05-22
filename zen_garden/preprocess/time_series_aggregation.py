@@ -22,7 +22,7 @@ class TimeSeriesAggregation(object):
 
         :param energy_system: The energy system to use"""
         logging.info("\n--- Time series aggregation ---")
-        #initiate dictionary for saving year specific TSA results
+        # initiate dictionary for saving year specific TSA results
         self.year_specific_tsa = {}
         self.energy_system = energy_system
         self.time_steps = self.energy_system.time_steps
