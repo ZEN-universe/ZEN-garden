@@ -259,6 +259,17 @@ def reformat_slicing_index(index, component) -> tuple[str]:
 
         return ref_index
 
+def get_label_position(obj,label:int):
+    """ Get dict of index and coordinate for variable or constraint labels."""
+    name_element = obj.get_name_by_label(int(label))
+    element = obj[name_element]
+    if element.ndim > 0:
+        selection = element[np.where(element.labels == label)]
+        mapping = (name_element,{k: v.values[0] for k, v in selection.indexes.variables.items()})
+    else:
+        mapping = (name_element,{})
+    return mapping
+
 # This functionality is for the IIS constraints
 # ---------------------------------------------
 
