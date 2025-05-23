@@ -515,6 +515,15 @@ def test_8a(config, folder_path):
     check_get_total_get_full_ts(res)
 
 
+def test_9a(config, folder_path):
+    # run the test
+    data_set_name = "test_9a"
+    with pytest.raises(AssertionError, match='The attribute units defined in the energy_system are not consistent!'):
+        main(
+            config=config, dataset_path=os.path.join(folder_path, data_set_name)
+        )
+
+
 if __name__ == "__main__":
     from config import config
 
