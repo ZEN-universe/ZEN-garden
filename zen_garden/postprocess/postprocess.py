@@ -164,10 +164,11 @@ class Postprocess:
         benchmarking_data["objective_value"] = self.model.objective.value
         if self.solver.name == "gurobi":
             benchmarking_data["solving_time"] = self.model.solver_model.Runtime
-            if self.solver.solver_options["Method"] == 2:
-                benchmarking_data["number_iterations"] = self.model.solver_model.BarIterCount
-            else:
-                benchmarking_data["number_iterations"] = self.model.solver_model.IterCount
+            if "Method" in self.solver.solver_options:
+                if self.solver.solver_options["Method"] == 2:
+                    benchmarking_data["number_iterations"] = self.model.solver_model.BarIterCount
+                else:
+                    benchmarking_data["number_iterations"] = self.model.solver_model.IterCount
             benchmarking_data["solver_status"] = self.model.solver_model.Status
             benchmarking_data["number_constraints"] = self.model.solver_model.NumConstrs
             benchmarking_data["number_variables"] = self.model.solver_model.NumVars
