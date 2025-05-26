@@ -365,8 +365,8 @@ class Postprocess:
             fname = self.name_dir.joinpath('analysis')
         # remove cwd path part to avoid saving the absolute path
         if os.path.isabs(self.analysis.dataset):
-            self.analysis.dataset = str(Path(self.analysis.dataset).relative_to(os.getcwd()))
-            self.analysis.folder_output = str(Path(self.analysis.folder_output).relative_to(os.getcwd()))
+            self.analysis.dataset = os.path.split(Path(self.analysis.dataset))[-1]
+            self.analysis.folder_output = os.path.split(Path(self.analysis.folder_output))[-1]
         self.write_file(fname, self.analysis, format="json")
 
     def save_solver(self):
