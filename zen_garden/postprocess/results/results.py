@@ -143,10 +143,7 @@ class Results:
             series = series.unstack(component.timestep_name)
 
         if component.timestep_type is TimestepType.yearly:
-            if component.component_type not in [
-                ComponentType.parameter,
-                ComponentType.variable,
-            ]:
+            if component.component_type is ComponentType.dual:
                 annuity = self._get_annuity(scenario, discount_to_first_step)
                 ans = series / annuity
             else:
@@ -184,10 +181,12 @@ class Results:
                 # for storage components, the last timestep is the final state, linear interpolation is used
                 last_occurrences = sequence_timesteps.groupby(sequence_timesteps).apply(lambda x: x.index[-1])
                 first_occurrences = sequence_timesteps.groupby(sequence_timesteps).apply(lambda x: x.index[0])
+                last_occurrences = last_occurrences[last_occurrences.index.intersection(series.columns)]
                 output_df = series[last_occurrences.index].rename(last_occurrences,axis=1)
                 # fill missing ts with nan
                 output_df = output_df.reindex(columns=sequence_timesteps.index)
                 time_steps_start_end = self.solution_loader.get_time_steps_storage_level_startend_year(scenario)
+                time_steps_start_end = {k:v for k,v in time_steps_start_end.items() if k in first_occurrences and v in last_occurrences}
                 for tstart,tend in time_steps_start_end.items():
                     tstart_reconstructed = first_occurrences[tstart]
                     first_valid_timestep = output_df.loc[:,tstart_reconstructed:].T.first_valid_index()

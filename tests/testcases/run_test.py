@@ -94,7 +94,6 @@ def compare_variables_results(test_model: str, results: Results, folder_path: st
 def check_get_total_get_full_ts(
     results: Results,
     specific_scenario=False,
-    element_name=None,
     year=None,
     discount_to_first_step=True,
     get_doc=False,
@@ -104,7 +103,6 @@ def check_get_total_get_full_ts(
 
     :param get_doc:
     :param discount_to_first_step: Apply annuity to first year of interval or entire interval
-    :param element_name: Specific element
     :param year: Specific year
     :param specific_scenario: Specific scenario
     :param results: Results instance of testcase function has been called from
@@ -122,14 +120,6 @@ def check_get_total_get_full_ts(
                 year=year,
                 discount_to_first_step=discount_to_first_step,
             )
-        if element_name is not None:
-            df_total = results.get_total(
-                test_variable, element_name=df_total.index[0][0]
-            )
-            if test_variable != "capacity_limit":
-                df_full_ts = results.get_full_ts(
-                    test_variable, element_name=df_full_ts.index[0][0]
-                )
     if get_doc:
         results.get_doc(test_variables[0])
 
