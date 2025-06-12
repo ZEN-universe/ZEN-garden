@@ -164,10 +164,11 @@ class Postprocess:
         benchmarking_data["objective_value"] = self.model.objective.value
         if self.solver.name == "gurobi":
             benchmarking_data["solving_time"] = self.model.solver_model.Runtime
-            if self.solver.solver_options["Method"] == 2:
-                benchmarking_data["number_iterations"] = self.model.solver_model.BarIterCount
-            else:
-                benchmarking_data["number_iterations"] = self.model.solver_model.IterCount
+            if "Method" in self.solver.solver_options:
+                if self.solver.solver_options["Method"] == 2:
+                    benchmarking_data["number_iterations"] = self.model.solver_model.BarIterCount
+                else:
+                    benchmarking_data["number_iterations"] = self.model.solver_model.IterCount
             benchmarking_data["solver_status"] = self.model.solver_model.Status
             benchmarking_data["number_constraints"] = self.model.solver_model.NumConstrs
             benchmarking_data["number_variables"] = self.model.solver_model.NumVars
@@ -364,8 +365,8 @@ class Postprocess:
             fname = self.name_dir.joinpath('analysis')
         # remove cwd path part to avoid saving the absolute path
         if os.path.isabs(self.analysis.dataset):
-            self.analysis.dataset = str(Path(self.analysis.dataset).relative_to(os.getcwd()))
-            self.analysis.folder_output = str(Path(self.analysis.folder_output).relative_to(os.getcwd()))
+            self.analysis.dataset = os.path.split(Path(self.analysis.dataset))[-1]
+            self.analysis.folder_output = os.path.split(Path(self.analysis.folder_output))[-1]
         self.write_file(fname, self.analysis, format="json")
 
     def save_solver(self):
