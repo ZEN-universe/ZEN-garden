@@ -69,7 +69,8 @@ def copy_dataset_example(example):
     example_path = f"{base_path}docs/dataset_examples/{example}/"
     config_path = f"{base_path}docs/dataset_examples/config.json"
     notebook_path = f"{base_path}docs/dataset_examples/example_notebook.ipynb"
-    local_dataset_path = os.path.join(os.getcwd(), "dataset_examples")
+    #local_dataset_path = os.path.join(os.getcwd(), "dataset_examples")
+    local_dataset_path = os.getcwd()
     if not os.path.exists(local_dataset_path):
         os.mkdir(local_dataset_path)
     local_example_path = os.path.join(local_dataset_path, example)

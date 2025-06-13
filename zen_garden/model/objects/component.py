@@ -833,10 +833,12 @@ class Constraint(Component):
 
     def add_pw_constraint(self, model, name, index_values, yvar, xvar, break_points, f_vals, cons_type="EQ"):
         """Adds a piece-wise linear constraint of the type f(x) = y for each index in the index_values, where f is defined
-        by the breakpoints and f_vals (x_1, y_1), ..., (x_n, y_n)
+        by the breakpoints and f_vals (x_1, y_1), ..., (x_n, y_n).
+
         Note that these method will create helper variables in form of a S0S2, sources:
-         https://support.gurobi.com/hc/en-us/articles/360013421331-How-do-I-model-piecewise-linear-functions-
-         https://medium.com/bcggamma/hands-on-modeling-non-linearity-in-linear-optimization-problems-f9da34c23c9a
+        
+        * https://support.gurobi.com/hc/en-us/articles/360013421331-How-do-I-model-piecewise-linear-functions-
+        * https://medium.com/bcggamma/hands-on-modeling-non-linearity-in-linear-optimization-problems-f9da34c23c9a
 
         :param model: The model to add the constraints to
         :param name: The name of the constraint
