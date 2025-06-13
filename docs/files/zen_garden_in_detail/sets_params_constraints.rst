@@ -1,10 +1,10 @@
-.. _Sets, parameters, variables, and constraints:
+.. _notation.notation:
 
-############################################
-Sets, parameters, variables, and constraints
-############################################
+######################################################
+Notation: Sets, parameters, variables, and constraints
+######################################################
 
-.. _energy_system:
+.. _notation.energy_system:
 
 Energy System
 ==================
@@ -39,7 +39,8 @@ Energy System
     :widths: 10 10 20
     :delim: ;
 
-.. _carrier:
+.. _notation.carrier:
+
 Carrier
 ==================
 
@@ -61,7 +62,8 @@ Carrier
     :widths: 10 10 20
     :delim: ;
 
-.. _technology:
+.. _notation.technology:
+
 Technology
 ==================
 
@@ -89,7 +91,8 @@ Technology
     :widths: 10 10 20
     :delim: ;
 
-.. _conversion_technology:
+.. _notation.conversion_technology:
+
 Conversion Technology
 ----------------------
 
@@ -137,7 +140,9 @@ Conversion Technology
     :widths: 10 10 20
     :delim: ;
 
-.. _storage_technology:
+
+.. _notation.storage_technology:
+
 Storage Technology
 ----------------------
 
@@ -160,7 +165,8 @@ Storage Technology
     :delim: ;
 
 
-.. _transport_technology:
+.. _notation.transport_technology:
+
 Transport Technology
 ----------------------
 
@@ -168,12 +174,6 @@ Transport Technology
     :header-rows: 1
     :file: tables/parameters/transport_technology_parameters.csv
     :widths: 10 10 10 20 10
-    :delim: ;
-
-.. csv-table:: Transport Technology Variables
-    :header-rows: 1
-    :file: tables/variables/transport_technology_variables.csv
-    :widths: 10 10 10 30 10
     :delim: ;
 
 .. csv-table:: Transport Technology Constraints
