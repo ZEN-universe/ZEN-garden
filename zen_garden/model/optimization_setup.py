@@ -239,17 +239,19 @@ class OptimizationSetup(object):
                 self.dict_elements[cls.__name__].append(instance)
 
     def get_all_elements(self, cls):
-        """ get all elements of the class in the enrgysystem.
+        """ get all elements of the class in the energy system.
 
-        :param cls: class of the elements to return
-        :return list of elements in this class """
+
+        
+        """
         return self.dict_elements[cls.__name__]
 
     def get_all_names_of_elements(self, cls):
         """ get all names of elements in class.
 
         :param cls: class of the elements to return
-        :return names_of_elements: list of names of elements in this class """
+        :return names_of_elements: list of elements in this class
+        """
         _elements_in_class = self.get_all_elements(cls=cls)
         names_of_elements = []
         for _element in _elements_in_class:
