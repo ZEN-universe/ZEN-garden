@@ -57,29 +57,29 @@ def compare_model_values(
 
 def compare_configs(
     results: list[Results],
-    scenario_name: str,
+    scenarios: list[str] = [],
 ) -> dict[str, Any]:
     """
     Compares the configs of two results, namely the Analysis-Config and the System-config.
 
     :param results: List of results
-    :param scenario_name: List of scenarios to filter by
+    :param scenarios: List of scenarios to filter by
     :return: dictionary with diverging configs
     """
     ans: dict[str, Any] = {}
 
-    scenario_names = [scenario_name, scenario_name]
+    scenarios = check_and_fill_scenario_list(results, scenarios)
 
     for i in range(2):
-        if scenario_names[i] not in results[i].solution_loader.scenarios:
+        if scenarios[i] not in results[i].solution_loader.scenarios:
             random_scenario = next(iter(results[i].solution_loader.scenarios.keys()))
             logging.info(
-                f"{scenario_name} not in {results[i].solution_loader.name}, choosing {random_scenario}."
+                f"{scenarios[i]} not in {results[i].solution_loader.name}, choosing {random_scenario}."
             )
-            scenario_names[i] = random_scenario
+            scenarios[i] = random_scenario
 
     results_1, results_2 = results
-    scenario_name_1, scenario_name_2 = scenario_names
+    scenario_name_1, scenario_name_2 = scenarios
 
     scenario_1 = results_1.solution_loader.scenarios[scenario_name_1]
     scenario_2 = results_2.solution_loader.scenarios[scenario_name_2]
