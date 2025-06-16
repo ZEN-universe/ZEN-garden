@@ -511,6 +511,66 @@
             ]
         }
     },
+    "test_1g": {
+        "none": {
+            "flow_import": [
+                {
+                    "index": ["natural_gas", "DE", 0],
+                    "value": 121.287796
+                },
+                {
+                    "index": ["natural_gas", "CH", 1],
+                    "value": 0.0
+                }
+            ],
+            "carbon_emissions_carrier": [
+                {
+                    "index": ["heat", "DE", 1],
+                    "value": 0.0
+                }
+            ],
+            "flow_conversion_output": [
+                {
+                    "index": ["natural_gas_boiler", "heat", "DE", 0],
+                    "value": 100.0
+                },
+                {
+                    "index": ["natural_gas_boiler", "heat", "DE", 1],
+                    "value": 100.0
+                }
+            ],
+            "flow_conversion_input": [
+                {
+                    "index": ["natural_gas_boiler", "natural_gas", "DE", 0],
+                    "value": 110.0
+                }
+            ],
+            "capacity": [
+                {
+                    "index": ["natural_gas_boiler", "power", "DE", 0],
+                    "value": 100.0
+                },
+                {
+                    "index": ["natural_gas_boiler", "power", "CH", 0],
+                    "value": 10.0
+                }
+            ],
+            "capacity_addition": [
+                {
+                    "index": ["natural_gas_boiler", "power", "DE", 0],
+                    "value": 0.0
+                },
+                {
+                    "index": ["natural_gas_boiler", "power", "CH", 0],
+                    "value": 0.0
+                },
+                {
+                    "index": ["natural_gas_pipeline", "power", "CH-DE", 0],
+                    "value": 0.0
+                }
+            ]
+        }
+    },
     "test_2a": {
         "none": {
             "flow_import": [
