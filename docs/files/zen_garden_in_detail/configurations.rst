@@ -108,13 +108,13 @@ optimality of the solution, but it also strongly increases the file size of the
 output files. The parameters of the optimization problem can be saved by 
 selecting ``save_parameters=True``. If you only want to save specific 
 parameters, you can specify them in the ``selected_saved_parameters`` list. The 
-same applies to the variables, which can be specified in the 
-``selected_saved_variables`` list.
+same applies to the variables and duals, which can be specified in the
+``selected_saved_variables`` and ``selected_saved_duals`` lists, respectively. The name of the duals corresponds to the name of the constraints.
 
 .. note::
 
-    Non-selected parameters and variables are not saved. We recommend to only 
-    use the option to skip saving parameters and variables if you are sure that 
+    Non-selected parameters, variables, and duals are not saved. We recommend to only
+    use the option to skip saving parameters, variables, and duals if you are sure that
     you do not need them. The visualization platform may not work properly if 
     you do not save the parameters and variables.
 
