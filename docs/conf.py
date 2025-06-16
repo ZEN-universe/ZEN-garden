@@ -18,8 +18,8 @@ sys.path.insert(0, os.path.abspath('..'))
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 project = 'ZEN-garden'
-copyright = '2024, Reliability and Risk Engineering lab, ETH Zurich'
-author = 'Jacob Mannhardt, Alissa Ganter, Johannes Burger, Francesco de Marco, Lukas Kunz, Lukas Schmidt-Engelbertz, Giovanni Sansavini'
+copyright = '2025, Reliability and Risk Engineering lab, ETH Zurich'
+author = 'Jacob Mannhardt, Alissa Ganter, Johannes Burger, Francesco de Marco, Lukas Kunz, Lukas Schmidt-Engelbertz, Nour Boulos, Christoph Funke, Giovanni Sansavini'
 release = get_version("zen_garden")
 language = "en"
 
@@ -35,7 +35,7 @@ extensions = ['sphinx.ext.autodoc',
               'sphinx.ext.autosummary',
               'sphinx.ext.intersphinx',
               'sphinx.ext.todo',
-              "sphinx.ext.autosectionlabel",
+#              "sphinx.ext.autosectionlabel",
               'sphinx_reredirects',
               'nbsphinx',
               'nbsphinx_link',
@@ -44,11 +44,13 @@ extensions = ['sphinx.ext.autodoc',
              ]
 # allow errors in the notebooks
 nbsphinx_allow_errors = True
+
 # Specify the special members to include in the documentation
 autodoc_default_options = {
+    'members': True,
     'special-members': '__init__',
 }
-autodoc_flags = ['members']
+
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
 
@@ -56,7 +58,12 @@ templates_path = ['_templates']
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
 # exclude all jupyter notebooks
-exclude_patterns = ['_build', 'dataset_examples', 'Thumbs.db', '.DS_Store', '**.ipynb_checkpoints']
+exclude_patterns = ['_build', 'dataset_examples', 'Thumbs.db', '.DS_Store', '**.ipynb_checkpoints',
+                    'files/tutorial/add_carrier.rst', 'files/tutorial/add_policy.rst', 
+                    'files/tutorial/add_technology.rst', 'files/tutorial/add_transport.rst', 
+                    'files/tutorial/handle_infeasibilities.rst', 'files/api_v2/**', 
+                    'files/dataset_examples/**', 'files/developer_guide/testing.rst',
+                    'files/welcome/use_cases.rst', 'files/references/release_notes.rst']
 
 
 # -- Options for HTML output -------------------------------------------------
@@ -80,10 +87,10 @@ html_title = "ZEN-garden"
 html_short_title = "ZEN-garden"
 
 # The name of an image file (relative to this directory)
-html_logo = "images/zen_garden_logo_text.png"
+html_logo = "files/figures/general/zen_garden_logo_text.png"
 
 # html_favicon = "images/zen_garden_logo.svg"
-html_favicon = "images/zen_garden_logo_text.png"
+html_favicon = "files/figures/general/zen_garden_logo_text.png"
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".

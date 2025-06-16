@@ -384,8 +384,11 @@ class StorageTechnologyRules(GenericRule):
 
     def constraint_flow_storage_spillage(self):
         """Impose that the flow_energy_spillage cannot be greater than the flow_storage_inflow.
+
         .. math::
+
             TODO
+            
         """
         techs = self.sets["set_storage_technologies"]
         if len(techs) == 0:

@@ -650,11 +650,11 @@ class UnitHandling:
 
     @staticmethod
     def check_pos_neg_boolean(array, axis=None):
-        """ checks if the array has only positive or negative booleans (-1,0,1)
+        """ checks if the array has only positive or negative booleans (-1,0,1).
 
         :param array: numeric numpy array
         :param axis: axis of dataframe
-        :return is_pos_neg_boolean """
+        :return is_pos_neg_boolean: """
         if axis:
             is_pos_neg_boolean = np.apply_along_axis(lambda row: np.array_equal(np.abs(row), np.abs(row).astype(bool)), 1, array).any()
         else:
@@ -787,7 +787,7 @@ class Scaling:
         """
         Adjusts the column scaling factors corresponding to variables that are part of rows that are skipped.
         If the scaling factors are not adjusted, the problem cannot be rescaled to the original problem.
-l
+
         :param name: name of the constraint for which the scaling factors are adjusted
         """
         constraint = self.model.constraints[name]
