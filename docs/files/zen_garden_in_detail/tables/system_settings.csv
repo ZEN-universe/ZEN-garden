@@ -5,6 +5,7 @@ Key;Type;Default Value;Description
 ``set_transport_technologies``;``list[str]``;``[]``;list of transport technologies included in the optimization
 ``set_transport_technologies_loss_exponential``;``list[str]``;``[]``;list of transport technologies included in the optimization for which to use an exponential loss factor
 ``use_capacities_existing``;``bool``;``True``;per default a brownfield optimization is conducted, by setting this parameter to ``False`` existing technology capacities are ignored and a greenfield optimization is conducted
+``allow_investment``;``bool``;``True``;per default, investment in new technology capacity is allowed, by setting this parameter to ``False`` only existing technology capacities are used and only the operation is optimized
 ``double_capex_transport``;``bool``;``False``;per default the capex for transport is not separated into the capacity- and the distance-dependent term, as this introduces binary variables
 ``set_nodes``;``list[str]``;``[]``;per default all nodes are selected, however, by overwriting the empty list value you can conduct the optimization for a subset of subset of nodes
 ``coords``;dict[str, dict[str, float]];``{}``;dictionary with the coordinates of the nodes, is filled by ZEN-garden

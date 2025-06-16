@@ -204,6 +204,16 @@ def test_1f(config, folder_path):
     compare_variables_results(data_set_name, res, folder_path)
 
 
+def test_1g(config, folder_path):
+    # run the test
+    data_set_name = "test_1g"
+    main(config=config, dataset_path=os.path.join(folder_path, data_set_name))
+
+    # read the results and check again
+    res = Results(os.path.join("outputs", data_set_name))
+    compare_variables_results(data_set_name, res, folder_path)
+
+
 def test_2a(config, folder_path):
     # run the test
     data_set_name = "test_2a"

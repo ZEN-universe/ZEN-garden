@@ -631,6 +631,8 @@ class TechnologyRules(GenericRule):
         constraints_not_reached = lhs_not_reached <= rhs_not_reached
         lhs_reached = self.variables["capacity_addition"].where(m).where(~capacity_limit_not_reached)
         rhs_reached = 0
+        if not self.system.allow_investment:
+            lhs_reached = self.variables["capacity_addition"]
         constraints_reached = lhs_reached == rhs_reached
 
         self.constraints.add_constraint("constraint_technology_capacity_limit_not_reached",constraints_not_reached)

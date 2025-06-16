@@ -114,6 +114,7 @@ class System(Subscriptable):
     years_in_rolling_horizon: int = 1
     years_in_decision_horizon: int = 1
     use_capacities_existing: bool = True
+    allow_investment: bool = True
 
 class SolverOptions(Subscriptable):
     pass
