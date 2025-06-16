@@ -315,6 +315,8 @@ class Postprocess:
         # dataframe serialization
         data_frames = {}
         for name, arr in self.model.dual.items():
+            if self.solver.selected_saved_duals and name not in self.solver.selected_saved_duals:
+                continue
             if name in self.constraints.docs:
                 doc = self.constraints.docs[name]
                 index_list = self.get_index_list(doc)

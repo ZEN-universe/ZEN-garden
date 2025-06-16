@@ -5,6 +5,7 @@ Key;Type;Default Value;Description
 ``save_parameters``;``bool``;``False``;if true, parameters are saved, otherwise, parameters are not saved
 ``selected_saved_parameters``;``list[str]``;[];if not empty, only the selected parameters are saved
 ``selected_saved_variables``;``list[str]``;[];if not empty, only the selected variables are saved
+``selected_saved_duals``;``list[str]``;[];if not empty, only the selected duals are saved (if ``save_duals`` is ``True``)
 ``solver_dir``;``str``;``.//outputs//solver_files``;folder path where solver log files are (temporarily) saved
 ``keep_files``;``bool``;``False``;if true, solver log files are saved, otherwise solver log files are deleted after each run
 ``io_api``;``str``;``lp``;api that is used to pass the optimization problem to the solver, must be ``lp``, ``mps``, or ``direct``
