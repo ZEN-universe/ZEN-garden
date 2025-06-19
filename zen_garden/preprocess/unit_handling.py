@@ -6,7 +6,6 @@ import logging
 import numpy as np
 import pandas as pd
 import scipy as sp
-import warnings
 import json
 import os
 import linopy as lp
@@ -20,11 +19,6 @@ from zen_garden.model.objects.carrier.carrier import Carrier
 from zen_garden.utils import get_label_position
 
 import time
-
-
-# enable Deprecation Warnings
-warnings.simplefilter('always', DeprecationWarning)
-
 
 class UnitHandling:
     """
@@ -240,7 +234,7 @@ class UnitHandling:
             return 1
         # if input unit is nan --> dimensionless old definition
         elif type(input_unit) != str and np.isnan(input_unit):
-            warnings.warn(f"Parameter {attribute_name} of {Path(path).name} has no unit (assign unit '1' to unitless parameters)",DeprecationWarning)
+            logging.warning(f"DeprecationWarning: Parameter {attribute_name} of {Path(path).name} has no unit (assign unit '1' to unitless parameters)")
             return 1
         else:
             # convert to string

@@ -2,6 +2,7 @@
 This module contains the implementation of a SolutionLoader that reads the solution.
 """
 import copy
+import logging
 import re
 import json
 import os
@@ -120,7 +121,7 @@ class Component():
 
 class Scenario():
     """
-    Implementation of the abstract scenario. In this solution version, the analysis and
+    Implementation of the scenario. In this solution version, the analysis and
     system configs are stored as jsons for each of the scenario in the corresponding
     folder.
     """
@@ -178,6 +179,30 @@ class Scenario():
         if os.path.exists(unit_path):
             ureg.load_definitions(unit_path)
         return ureg
+
+    def convert_ts2year(self,df: "pd.DataFrame") -> "pd.DataFrame":
+        """ converts the yearly ts column to the corresponding year """
+        assert pd.api.types.is_any_real_numeric_dtype(df.columns), f"DataFrame columns must be numeric to convert to year, not {df.columns.to_list()}."
+        ry = self.system.reference_year
+        del_y = self.system.interval_between_years
+        years = [ry + i*del_y for i in df.columns]
+        df.columns = years
+        return df
+
+    def convert_year2ts(self,year: int) -> int:
+        """ converts the year to the corresponding time step """
+        assert isinstance(year, int), f"Year must be an integer, not {type(year)}."
+        ry = self.system.reference_year
+        del_y = self.system.interval_between_years
+        all_years = [ry + i*del_y for i in range(self.system.optimized_years)]
+        if year in all_years:
+            ts = (year - ry) // del_y
+        elif year <= self.analysis.earliest_year_of_data and year in range(self.system.optimized_years):
+            logging.warning(f"DeprecationWarning: Selecting the yearly time steps ({year}) instead of the actual year ({ry + del_y*year}) is deprecated. Please use the actual year.")
+            ts = year
+        else:
+            raise KeyError(f"Year {year} not in optimized years {all_years}.")
+        return ts
 
     @property
     def analysis(self) -> Analysis:

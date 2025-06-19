@@ -52,6 +52,7 @@ class Results:
         index: Optional[Union[NestedTuple, NestedDict, list[str], str, float, int]] = None,
     ) -> Optional[Union[dict[str, "pd.DataFrame | pd.Series[Any]"],pd.Series]]:
         """
+        Returns the raw results without any further processing.
         Transforms a parameter or variable dataframe (compressed) string into an actual pandas dataframe
 
         :component_name string: The string to decode
@@ -127,6 +128,7 @@ class Results:
         if year is None:
             years = [i for i in range(0, scenario.system.optimized_years)]
         else:
+            year = scenario.convert_year2ts(year)
             years = [year]
 
         # slice index with time steps of year
@@ -153,7 +155,7 @@ class Results:
                 ans = ans[years]
             except KeyError:
                 pass
-
+            ans = scenario.convert_ts2year(ans)
             return ans
 
         if (
@@ -281,6 +283,7 @@ class Results:
         if year is None:
             years = [i for i in range(0, scenario.system.optimized_years)]
         else:
+            year = scenario.convert_year2ts(year)
             years = [year]
 
         if component.timestep_type is None or type(series.index) is not pd.MultiIndex:
@@ -288,7 +291,9 @@ class Results:
 
         if component.timestep_type is TimestepType.yearly:
             ans = series.unstack(component.timestep_name)
-            return ans[years]
+            ans = ans[years]
+            ans = scenario.convert_ts2year(ans)
+            return ans
 
         timestep_duration = self.solution_loader.get_timestep_duration(
             scenario, component
@@ -311,7 +316,7 @@ class Results:
             ans = ans.reorder_levels(
                 [i for i in ans.index.names if i != "mf"] + ["mf"]
             ).sort_index(axis=0)
-
+        ans = scenario.convert_ts2year(ans)
         return ans
 
     def get_total(
