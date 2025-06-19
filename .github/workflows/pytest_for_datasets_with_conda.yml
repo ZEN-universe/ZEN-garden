@@ -20,7 +20,7 @@ jobs:
 
       - name: Check Env File
         id: check-env-file
-        uses: tj-actions/changed-files@v41
+        uses: tj-actions/changed-files@v46
         with:
           files: |
             zen_garden_env.yml
