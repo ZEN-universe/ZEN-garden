@@ -323,7 +323,11 @@ class Postprocess:
             else:
                 index_list = []
                 doc = None
-
+            # rescale
+            if self.solver.use_scaling:
+                cons_labels = self.model.constraints[name].labels.data
+                scaling_factor = self.optimization_setup.scaling.D_r_inv[cons_labels]
+                arr = arr * scaling_factor
             # create dataframe
             if len(arr.shape) > 0:
                 df = arr.to_series().dropna()
