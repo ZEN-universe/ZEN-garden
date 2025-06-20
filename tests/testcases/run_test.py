@@ -57,9 +57,10 @@ def compare_variables_results(test_model: str, results: Results, folder_path: st
     if test_model in test_variables:
         for s in test_variables[test_model]:
             if s in results.solution_loader.scenarios:
+                scenario = results.solution_loader.scenarios[s]
                 test_values = test_variables[test_model][s]
                 for c in test_values:
-                    if c in results.solution_loader.components:
+                    if c in scenario.components:
                         values = results.get_df(c,scenario_name=s)
                         for test_value in test_values[c]:
                             if isinstance(test_value["index"],list):
@@ -529,4 +530,4 @@ if __name__ == "__main__":
 
     config.solver.keep_files = False
     folder_path = os.path.dirname(__file__)
-    test_2a(config, folder_path)
+    test_1b(config, folder_path)
