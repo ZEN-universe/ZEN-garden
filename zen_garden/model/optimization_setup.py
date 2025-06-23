@@ -84,6 +84,9 @@ class OptimizationSetup(object):
         # add Elements to optimization
         self.add_elements()
 
+        # check if all elements from the scenario_dict are in the model
+        ScenarioDict.check_if_all_elements_in_model(self.scenario_dict, self.dict_elements)
+
         # The time series aggregation
         self.time_series_aggregation = None
 
