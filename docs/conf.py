@@ -62,8 +62,7 @@ exclude_patterns = ['_build', 'dataset_examples', 'Thumbs.db', '.DS_Store', '**.
                     'files/tutorial/add_carrier.rst', 'files/tutorial/add_policy.rst', 
                     'files/tutorial/add_technology.rst', 'files/tutorial/add_transport.rst', 
                     'files/tutorial/handle_infeasibilities.rst', 'files/api_v2/**', 
-                    'files/dataset_examples/**', 'files/developer_guide/testing.rst',
-                    'files/welcome/use_cases.rst', 'files/references/release_notes.rst']
+                    'files/dataset_examples/**', 'files/developer_guide/testing.rst', 'files/references/release_notes.rst']
 
 
 # -- Options for HTML output -------------------------------------------------

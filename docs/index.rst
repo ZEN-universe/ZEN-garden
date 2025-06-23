@@ -22,6 +22,7 @@ Documentation
 
    files/welcome/overview
    files/welcome/features
+   files/welcome/use_cases
    files/welcome/acknowledgements
    files/welcome/cite
    files/welcome/license
