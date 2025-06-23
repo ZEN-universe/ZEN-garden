@@ -4,11 +4,10 @@ Default configuration.
 Changes from the default values are specified in config.py (folders data/tests) and system.py (individual datasets)
 """
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel
 from typing import Any, Optional, Union
-import importlib.metadata
 
-class Subscriptable(BaseModel, extra="allow"):
+class Subscriptable(BaseModel, extra="forbid"):
     def __getitem__(self, __name: str) -> Any:
         return getattr(self, __name)
 
@@ -30,21 +29,6 @@ class Subscriptable(BaseModel, extra="allow"):
 
     def values(self) -> Any:
         return self.model_dump().values()
-
-    def __iter__(self) -> Any:
-        self.fix_keys = list(self.model_dump().keys())
-        self.i = 0
-        return self
-
-    def __next__(self) -> Any:
-        if self.i < len(self.fix_keys):
-            ans = self.fix_keys[self.i]
-            self.i += 1
-            return ans
-        else:
-            del self.i
-            del self.fix_keys
-            raise StopIteration
 
 
 class Subsets(Subscriptable):
@@ -88,6 +72,7 @@ class System(Subscriptable):
     """
     set_carriers: list[str] = []
     set_capacity_types: list[str] = ["power", "energy"]
+    set_technologies: list[str] = []
     set_conversion_technologies: list[str] = []
     set_storage_technologies: list[str] = []
     set_retrofitting_technologies: list[str] = []
@@ -116,15 +101,12 @@ class System(Subscriptable):
     use_capacities_existing: bool = True
     allow_investment: bool = True
 
-class SolverOptions(Subscriptable):
-    pass
-
 class Solver(Subscriptable):
     """
     Class which contains the solver configuration. This defines for example the solver options, scaling, etc.
     """
     name: str = "highs"
-    solver_options: SolverOptions = SolverOptions()
+    solver_options: dict = {}
     check_unit_consistency: bool = True
     solver_dir: str = ".//outputs//solver_files"
     keep_files: bool = False
@@ -180,7 +162,7 @@ class Analysis(Subscriptable):
 
 class Config(Subscriptable):
     """
-    Class which contains the configuration of the model. This includes the configuratins of the system, solver, and analysis as well as the dictionary of scenarios.
+    Class which contains the configuration of the model. This includes the configurations of the system, solver, and analysis as well as the dictionary of scenarios.
     """
     analysis: Analysis = Analysis()
     solver: Solver = Solver()

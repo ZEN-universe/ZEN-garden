@@ -499,7 +499,7 @@ class OptimizationSetup(object):
         """Create model instance by assigning parameter values and instantiating the sets """
         solver_name = self.solver.name
         # remove options that are None
-        solver_options = {key: self.solver.solver_options[key] for key in self.solver.solver_options if ((self.solver.solver_options[key] is not None) & (key not in ['fix_keys', 'i']))}
+        solver_options = {key: self.solver.solver_options[key] for key in self.solver.solver_options if self.solver.solver_options[key] is not None}
 
         logging.info(f"\n--- Solve model instance using {solver_name} ---\n")
         # disable logger temporarily

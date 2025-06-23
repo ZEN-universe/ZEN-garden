@@ -530,4 +530,4 @@ if __name__ == "__main__":
 
     config.solver.keep_files = False
     folder_path = os.path.dirname(__file__)
-    test_1b(config, folder_path)
+    test_4a(config, folder_path)

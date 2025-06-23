@@ -43,7 +43,7 @@ class EnergySystem:
         self.indexing_sets = []
 
         # set indexing sets
-        for key in self.system:
+        for key in self.system.keys():
             if "set" in key:
                 self.indexing_sets.append(key)
 
