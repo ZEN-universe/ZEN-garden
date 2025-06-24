@@ -2,6 +2,7 @@
 This module contains the implementation of a SolutionLoader that reads the solution.
 """
 import copy
+import logging
 import re
 import json
 import os
@@ -145,7 +146,8 @@ class Scenario():
             return Analysis()
 
         with open(analysis_path, "r") as f:
-            return Analysis(**json.load(f))
+            analysis = Analysis.result_config()
+            return analysis(**json.load(f))
 
     def _read_system(self) -> System:
         system_path = os.path.join(self.path, "system.json")
@@ -154,7 +156,8 @@ class Scenario():
             return System()
 
         with open(system_path, "r") as f:
-            return System(**json.load(f))
+            system = System.result_config()
+            return system(**json.load(f))
 
     def _read_solver(self) -> Solver:
         solver_path = os.path.join(self.path, "solver.json")
@@ -163,7 +166,8 @@ class Scenario():
             return Solver()
 
         with open(solver_path, "r") as f:
-            return Solver(**json.load(f))
+            solver = Solver.result_config()
+            return solver(**json.load(f))
 
     def _read_benchmarking(self) -> dict[str,Any]:
         benchmarking_path = os.path.join(self.path, "benchmarking.json")
@@ -272,16 +276,16 @@ class SolutionLoader():
         self.path = path
         assert len(os.listdir(path)) > 0, f"Path {path} is empty."
         self._scenarios: dict[str, Scenario] = self._read_scenarios()
-        # self._components: dict[str, Component] = self._read_components()
+        self._components: dict[str, Component] = self._read_components()
         self._series_cache: dict[str, "pd.Series[Any]"] = {}
 
     @property
     def scenarios(self) -> dict[str, Scenario]:
         return self._scenarios
 
-    # @property
-    # def components(self) -> dict[str, Component]:
-    #     return self._components
+    @property
+    def components(self) -> dict[str, Component]:
+        return self._components
 
     @property
     def name(self) -> str:
@@ -461,53 +465,18 @@ class SolutionLoader():
 
         return ans
 
-    # def _read_components(self) -> dict[str, Component]:
-    #     """
-    #     Create the component instances.
-    #
-    #     The components are stored in three files and the file-names define the types of
-    #     the component. Furthermore, the timestep name and type are derived by checking
-    #     if any of the defined time steps name is in the index of the dataframe.
-    #     """
-    #     ans: dict[str, Component] = {}
-    #     first_scenario = get_first_scenario(self.scenarios)
-    #
-    #     if first_scenario.has_rh:
-    #         mf_name = [i for i in os.listdir(first_scenario.path) if "MF_" in i][0]
-    #         component_folder = os.path.join(first_scenario.path, mf_name)
-    #     else:
-    #         component_folder = first_scenario.path
-    #
-    #     for file_name, component_type in ComponentType.get_file_names_maps().items():
-    #         file_path = os.path.join(component_folder, file_name)
-    #
-    #         if not os.path.exists(file_path):
-    #             continue
-    #
-    #         h5_file = h5py.File(file_path)
-    #         version = get_solution_version(first_scenario)
-    #         for component_name in h5_file.keys():
-    #             index_names = get_index_names(h5_file,component_name,version)
-    #             time_index = set(index_names).intersection(set(TimestepType.get_time_steps_names()))
-    #             timestep_name = time_index.pop() if len(time_index) > 0 else None
-    #             timestep_type = TimestepType.get_time_step_type(timestep_name)
-    #
-    #             doc = get_doc(h5_file,component_name,version)
-    #
-    #             has_units = get_has_units(h5_file,component_name,version)
-    #
-    #             ans[component_name] = Component(
-    #                 component_name,
-    #                 component_type,
-    #                 index_names,
-    #                 timestep_type,
-    #                 timestep_name,
-    #                 file_name,
-    #                 doc,
-    #                 has_units
-    #             )
-    #
-    #     return ans
+    def _read_components(self) -> dict[str, Component]:
+        """
+        Create the component instances.
+
+        The components are stored in three files and the file-names define the types of
+        the component. Furthermore, the timestep name and type are derived by checking
+        if any of the defined time steps name is in the index of the dataframe.
+        """
+        # TODO remove when also removed in visualization platform
+        logging.warning("DeprecationWarning: The method _read_components is deprecated and will be removed in the future. Read components from the scenario instead.")
+        first_scenario = get_first_scenario(self.scenarios)
+        return first_scenario.components
 
     @cache
     def get_timestep_duration(
