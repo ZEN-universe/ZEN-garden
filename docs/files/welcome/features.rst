@@ -215,7 +215,7 @@ Raw data for energy system models may come in inconsistent units
 will lead to modeling errors. To minimize errors, ZEN-garden requires
 users to input units along with parameter values. At the start of each
 model run, all units are converted to pre-defined base units base units 
-(:ref:`input_handling.unit_consistancy`). Then, unit consistency checks ensure that the 
+(:ref:`input_handling.unit_consistency`). Then, unit consistency checks ensure that the
 units are consistent throughout all parameters of all elements. When 
 mismatches occur, the most probable wrong unit is stated when the consistency 
 check fails. In the outputs, the units of all variables are inferred from the 

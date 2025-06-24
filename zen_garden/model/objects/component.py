@@ -266,6 +266,7 @@ class IndexSet(Component):
     def add_set(self, name, data, doc, index_set=None):
         """Adds a set to the IndexSets (this set it not indexed)
 
+        :param name: The name of the set
         :param data: The data used for the init
         :param doc: The docstring of the set
         :param index_set: The name of the index set if the set it self is indexed
