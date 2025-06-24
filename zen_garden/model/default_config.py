@@ -4,10 +4,11 @@ Default configuration.
 Changes from the default values are specified in config.py (folders data/tests) and system.py (individual datasets)
 """
 
-from pydantic import BaseModel
+from pydantic import BaseModel,ConfigDict
 from typing import Any, Optional, Union
 
 class Subscriptable(BaseModel, extra="forbid"):
+
     def __getitem__(self, __name: str) -> Any:
         return getattr(self, __name)
 
@@ -30,6 +31,12 @@ class Subscriptable(BaseModel, extra="forbid"):
     def values(self) -> Any:
         return self.model_dump().values()
 
+    @classmethod
+    def result_config(cls):
+        """ creates a loose model configuration that allows for extra fields """
+        class Model(cls):
+            model_config = ConfigDict(extra="allow")
+        return Model
 
 class Subsets(Subscriptable):
     set_carriers: list[str] = []
