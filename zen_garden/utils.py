@@ -510,7 +510,7 @@ class ScenarioDict(dict):
         for key, value in config_parts.items():
             if key in self.dict:
                 for sub_key, sub_value in self.dict[key].items():
-                    assert sub_key in value, f"Trying to update {key} with key {sub_key} and value {sub_value}, but the {key} does not have this key!"
+                    assert sub_key in value.keys(), f"Trying to update {key} with key {sub_key} and value {sub_value}, but the {key} does not have this key!"
                     if type(value[sub_key]) == type(sub_value):
                         value[sub_key] = sub_value
                     elif isinstance(sub_value, dict): #ToDO check this and make more general -> here only for SolverOptions
@@ -687,6 +687,7 @@ class ScenarioDict(dict):
                                 new_dict[element][param] = base_dict.copy()
                 # delete the old set
                 del new_dict[current_set]
+
         return new_dict
 
     def validate_dict(self, vali_dict):
@@ -706,6 +707,22 @@ class ScenarioDict(dict):
                 if len(diff := (set(param_dict.keys()) - self._param_dict_keys)) > 0:
                     raise ValueError(
                         f"The entry for element {element} and param {param} contains invalid entries: {diff}!")
+
+    @staticmethod
+    def check_if_all_elements_in_model(scenario_dict,element_dict):
+        """
+        Checks if all elements in the scenario_dict are present in the element_dict
+        This is used to ensure that all elements in the scenario are defined in the model.
+
+        :param scenario_dict: Dictionary containing the scenario elements
+        :param element_dict: Dictionary containing the element definitions
+        """
+        ignored_elements = ScenarioDict._setting_elements + ScenarioDict._special_elements + list(ScenarioDict._param_dict_keys) + ["EnergySystem"]
+        relevant_elements = set(scenario_dict.keys()) - set(ignored_elements)
+        existing_elements = [e.name for e in element_dict["Element"]]
+        for element in relevant_elements:
+            if element not in existing_elements:
+                raise KeyError(f"The element '{element}', defined in the scenario file, is not defined in the model.")
 
     @staticmethod
     def validate_file_name(fname):

@@ -347,10 +347,6 @@ class Postprocess:
         """
         Saves the system dict as json
         """
-        if hasattr(self.system,"fix_keys"):
-            del self.system.fix_keys
-        if hasattr(self.system,"i"):
-            del self.system.i
         if self.system.use_rolling_horizon:
             fname = self.name_dir.parent.joinpath('system')
         else:
@@ -361,10 +357,6 @@ class Postprocess:
         """
         Saves the analysis dict as json
         """
-        if hasattr(self.analysis,"fix_keys"):
-            del self.analysis.fix_keys
-        if hasattr(self.analysis,"i"):
-            del self.analysis.i
         if self.system.use_rolling_horizon:
             fname = self.name_dir.parent.joinpath('analysis')
         else:
@@ -379,10 +371,6 @@ class Postprocess:
         """
         Saves the solver dict as json
         """
-        if hasattr(self.solver,"fix_keys"):
-            del self.solver.fix_keys
-        if hasattr(self.solver,"i"):
-            del self.solver.i
         # This we only need to save once
         if self.system.use_rolling_horizon:
             fname = self.name_dir.parent.joinpath('solver')

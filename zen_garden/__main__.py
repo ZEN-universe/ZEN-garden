@@ -47,7 +47,6 @@ def run_module(args=None, config = "./config.py", dataset = None,
         example_path_cwd,config_path_cwd = copy_dataset_example(args.download_example)
         return 
 
-
     if not os.path.exists(args.config):
         args.config = args.config.replace(".py", ".json")
 

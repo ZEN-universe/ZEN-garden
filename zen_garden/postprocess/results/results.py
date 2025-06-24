@@ -34,6 +34,8 @@ class Results:
 
         :param path: Path to the results folder
         """
+        assert os.path.exists(path), f"The output folder {Path(path).absolute()} does not exist."
+        assert len(os.listdir(path)) > 0, f"The output folder {Path(path).absolute()} is empty."
         self.solution_loader = SolutionLoader(path)
         self.has_scenarios = len(self.solution_loader.scenarios) > 1
         first_scenario = next(iter(self.solution_loader.scenarios.values()))
