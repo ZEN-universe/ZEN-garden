@@ -420,7 +420,7 @@ class IISConstraintParser(object):
 
         name = constraints.get_name_by_label(value)
         con = constraints[name]
-        indices = [i[0] for i in np.where(con.values == value)]
+        indices = [i[0] for i in np.where(con.labels.values == value)]
 
         # Extract the coordinates from the indices
         coord = {
