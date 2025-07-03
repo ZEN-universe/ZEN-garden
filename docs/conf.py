@@ -12,7 +12,9 @@
 import os
 import sys
 from importlib.metadata import version as get_version
+from pathlib import Path
 sys.path.insert(0, os.path.abspath('..'))
+sys.path.append(os.path.abspath('_ext'))
 
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
@@ -41,6 +43,7 @@ extensions = ['sphinx.ext.autodoc',
               'nbsphinx_link',
               'myst_parser',
               "sphinx.ext.imgconverter",  # for SVG conversion
+              "docstring"
              ]
 # allow errors in the notebooks
 nbsphinx_allow_errors = True
