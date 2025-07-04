@@ -12,7 +12,8 @@
     },
     "solver": {
       "check_unit_consistency": false,
-      "use_scaling": false
+      "use_scaling": false,
+      "run_diagnostics": true
     }
   }
 }

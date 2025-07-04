@@ -43,7 +43,7 @@ class EnergySystem:
         self.indexing_sets = []
 
         # set indexing sets
-        for key in self.system:
+        for key in self.system.keys():
             if "set" in key:
                 self.indexing_sets.append(key)
 
@@ -132,6 +132,8 @@ class EnergySystem:
         set_haversine_distances_of_edges = {}
         # read coords file
         df_coords_input = self.data_input.extract_locations(extract_coordinates=True)
+        coords = df_coords_input.set_index("node")
+        self.system.coords = coords.T.to_dict()
         # convert coords from decimal degrees to radians
         df_coords_input["lon"] = df_coords_input["lon"] * np.pi / 180
         df_coords_input["lat"] = df_coords_input["lat"] * np.pi / 180
@@ -528,10 +530,10 @@ class EnergySystemRules(GenericRule):
                    - self.variables["carbon_emissions_annual"] * self.parameters.price_carbon_emissions)
         # add cost for overshooting carbon emissions budget
         if self.parameters.price_carbon_emissions_budget_overshoot != np.inf:
-            lhs -= self.variables["carbon_emissions_budget_overshoot"].where(mask_last_year) * self.parameters.price_carbon_emissions_budget_overshoot
+            lhs -= self.variables["carbon_emissions_budget_overshoot"].where(mask_last_year) * self.parameters.price_carbon_emissions_budget_overshoot.item()
         # add cost for overshooting annual carbon emissions limit
         if self.parameters.price_carbon_emissions_annual_overshoot != np.inf:
-            lhs -= self.variables["carbon_emissions_annual_overshoot"] * self.parameters.price_carbon_emissions_annual_overshoot
+            lhs -= self.variables["carbon_emissions_annual_overshoot"] * self.parameters.price_carbon_emissions_annual_overshoot.item()
 
         rhs = 0
         constraints = lhs == rhs

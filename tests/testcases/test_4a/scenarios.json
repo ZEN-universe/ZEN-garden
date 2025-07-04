@@ -3,6 +3,7 @@
     "natural_gas": {"price_import": {"default": "attributes_1"}},
     "natural_gas_boiler": {"capex_specific_conversion": {"default_op": 1.1}},
     "heat": {"demand": {"file": "demand_1", "file_op": 2}},
-    "EnergySystem": {"price_carbon_emissions": {"default": "attributes_1"}}
+    "EnergySystem": {"price_carbon_emissions": {"default": "attributes_1"}},
+    "solver": {"scaling_algorithm": ["arithm", "arithm"]}
     }
 }

@@ -7,7 +7,7 @@ API Reference
 Overview
 --------
 
-.. image:: ../../images/how_to_ZEN_garden.png
+.. image:: ../figures/api_reference/how_to_ZEN_garden.png
   :width: 1000
   :alt: Alternative text
 

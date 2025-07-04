@@ -4,11 +4,11 @@ Default configuration.
 Changes from the default values are specified in config.py (folders data/tests) and system.py (individual datasets)
 """
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel,ConfigDict
 from typing import Any, Optional, Union
-import importlib.metadata
 
-class Subscriptable(BaseModel, extra="allow"):
+class Subscriptable(BaseModel, extra="forbid"):
+
     def __getitem__(self, __name: str) -> Any:
         return getattr(self, __name)
 
@@ -31,21 +31,12 @@ class Subscriptable(BaseModel, extra="allow"):
     def values(self) -> Any:
         return self.model_dump().values()
 
-    def __iter__(self) -> Any:
-        self.fix_keys = list(self.model_dump().keys())
-        self.i = 0
-        return self
-
-    def __next__(self) -> Any:
-        if self.i < len(self.fix_keys):
-            ans = self.fix_keys[self.i]
-            self.i += 1
-            return ans
-        else:
-            del self.i
-            del self.fix_keys
-            raise StopIteration
-
+    @classmethod
+    def result_config(cls):
+        """ creates a loose model configuration that allows for extra fields """
+        class Model(cls):
+            model_config = ConfigDict(extra="allow")
+        return Model
 
 class Subsets(Subscriptable):
     set_carriers: list[str] = []
@@ -88,6 +79,7 @@ class System(Subscriptable):
     """
     set_carriers: list[str] = []
     set_capacity_types: list[str] = ["power", "energy"]
+    set_technologies: list[str] = []
     set_conversion_technologies: list[str] = []
     set_storage_technologies: list[str] = []
     set_retrofitting_technologies: list[str] = []
@@ -97,6 +89,7 @@ class System(Subscriptable):
     set_transport_technologies_loss_exponential: list[str] = []
     double_capex_transport: bool = False
     set_nodes: list[str] = []
+    coords: dict[str, dict[str, float]] = {}
     exclude_parameters_from_TSA: bool = True
     conduct_scenario_analysis: bool = False
     run_default_scenario: bool = True
@@ -113,16 +106,14 @@ class System(Subscriptable):
     years_in_rolling_horizon: int = 1
     years_in_decision_horizon: int = 1
     use_capacities_existing: bool = True
-
-class SolverOptions(Subscriptable):
-    pass
+    allow_investment: bool = True
 
 class Solver(Subscriptable):
     """
     Class which contains the solver configuration. This defines for example the solver options, scaling, etc.
     """
     name: str = "highs"
-    solver_options: SolverOptions = SolverOptions()
+    solver_options: dict = {}
     check_unit_consistency: bool = True
     solver_dir: str = ".//outputs//solver_files"
     keep_files: bool = False
@@ -131,6 +122,7 @@ class Solver(Subscriptable):
     save_parameters: bool = True
     selected_saved_parameters: list = [] # if empty, all parameters are saved
     selected_saved_variables: list = [] # if empty, all variables are saved
+    selected_saved_duals: list = [] # if empty, all duals are saved (if save_duals is True)
     linear_regression_check: dict[str, float] = {
         "eps_intercept": 0.1,
         "epsRvalue": 1 - (1e-5),
@@ -140,6 +132,7 @@ class Solver(Subscriptable):
     rounding_decimal_points_capacity: int = 4
     rounding_decimal_points_tsa: int = 4
     analyze_numerics: bool = True
+    run_diagnostics: bool = False
     use_scaling: bool = True
     scaling_include_rhs: bool = True
     scaling_algorithm: Union[list[str],str] = ["geom","geom","geom"]
@@ -172,12 +165,11 @@ class Analysis(Subscriptable):
     overwrite_output: bool = True
     output_format: str = "h5"
     earliest_year_of_data: int = 1900
-    save_benchmarking_results: bool = False
     zen_garden_version: str = None
 
 class Config(Subscriptable):
     """
-    Class which contains the configuration of the model. This includes the configuratins of the system, solver, and analysis as well as the dictionary of scenarios.
+    Class which contains the configuration of the model. This includes the configurations of the system, solver, and analysis as well as the dictionary of scenarios.
     """
     analysis: Analysis = Analysis()
     solver: Solver = Solver()

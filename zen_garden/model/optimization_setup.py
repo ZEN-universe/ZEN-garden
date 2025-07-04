@@ -84,6 +84,9 @@ class OptimizationSetup(object):
         # add Elements to optimization
         self.add_elements()
 
+        # check if all elements from the scenario_dict are in the model
+        ScenarioDict.check_if_all_elements_in_model(self.scenario_dict, self.dict_elements)
+
         # The time series aggregation
         self.time_series_aggregation = None
 
@@ -98,7 +101,6 @@ class OptimizationSetup(object):
 
         # conduct time series aggregation
         self.time_series_aggregation = TimeSeriesAggregation(energy_system=self.energy_system)
-
 
     def create_paths(self):
         """
@@ -239,17 +241,19 @@ class OptimizationSetup(object):
                 self.dict_elements[cls.__name__].append(instance)
 
     def get_all_elements(self, cls):
-        """ get all elements of the class in the enrgysystem.
+        """ get all elements of the class in the energy system.
 
-        :param cls: class of the elements to return
-        :return list of elements in this class """
+
+        
+        """
         return self.dict_elements[cls.__name__]
 
     def get_all_names_of_elements(self, cls):
         """ get all names of elements in class.
 
         :param cls: class of the elements to return
-        :return names_of_elements: list of names of elements in this class """
+        :return names_of_elements: list of elements in this class
+        """
         _elements_in_class = self.get_all_elements(cls=cls)
         names_of_elements = []
         for _element in _elements_in_class:
@@ -348,7 +352,7 @@ class OptimizationSetup(object):
             return dict_of_attributes, False, dict_of_units
         elif isinstance(attribute, dict):
             dict_of_attributes.update({(element.name,) + (key,): val for key, val in attribute.items()})
-        elif isinstance(attribute, pd.Series) and "pwa" not in attribute_name:
+        elif isinstance(attribute, pd.Series):
             if capacity_type:
                 combined_key = (element.name, capacity_type)
             else:
@@ -401,11 +405,11 @@ class OptimizationSetup(object):
         :param attribute_name: str name of attribute
         :return attribute_value: value of attribute"""
         # get element
-        _element = self.get_element(cls, element_name)
+        element = self.get_element(cls, element_name)
         # assert that _element exists and has attribute
-        assert _element, f"Element {element_name} not in class {cls.__name__}"
-        assert hasattr(_element, attribute_name), f"Element {element_name} does not have attribute {attribute_name}"
-        attribute_value = getattr(_element, attribute_name)
+        assert element, f"Element {element_name} not in class {cls.__name__}"
+        assert hasattr(element, attribute_name), f"Element {element_name} does not have attribute {attribute_name}"
+        attribute_value = getattr(element, attribute_name)
         return attribute_value
 
     def construct_optimization_problem(self):
@@ -423,8 +427,6 @@ class OptimizationSetup(object):
         Element.construct_model_components(self)
         # Initiate scaling object
         self.scaling = Scaling(self.model, self.solver.scaling_algorithm, self.solver.scaling_include_rhs)
-        # find smallest and largest coefficient and RHS
-        # self.analyze_numerics() -> Replaced through scaling
 
     def get_optimization_horizon(self):
         """ returns list of optimization horizon steps """
@@ -672,43 +674,3 @@ class OptimizationSetup(object):
                 return component_data
             except KeyError:
                 raise KeyError(f"the custom set {custom_set} cannot be used as a subindex of {component_data.index}")
-
-    def analyze_numerics(self):
-        """ get largest and smallest matrix coefficients and RHS """
-        if self.solver.analyze_numerics:
-            logging.info("\n--- Analyze Matrix Ranges ---\n")
-            flat = self.model.constraints.flat
-            # coeffs
-            coeffs = flat["coeffs"].abs()
-            coeffs = coeffs[coeffs > 0]
-            rhs = flat["rhs"].abs()
-            rhs = rhs[rhs > 0]
-            min_coeff = flat.loc[coeffs.idxmin()]
-            max_coeff = flat.loc[coeffs.idxmax()]
-            min_rhs = flat.loc[rhs.idxmin()]
-            max_rhs = flat.loc[rhs.idxmax()]
-            # print coeffs
-            max_coeff_str = f"Largest Matrix Coefficient: {self.create_cons_var_string(max_coeff)}"
-            min_coeff_str = f"Smallest Matrix Coefficient: {self.create_cons_var_string(min_coeff)}"
-            # print rhs
-            max_rhs_str = f"Largest RHS: {self.create_cons_var_string(max_rhs,is_coeff=False)}"
-            min_rhs_str = f"Smallest RHS: {self.create_cons_var_string(min_rhs,is_coeff=False)}"
-            logging.info(f"Numeric Range Statistics:\n{max_coeff_str}\n{min_coeff_str}\n{max_rhs_str}\n{min_rhs_str}")
-
-    def create_cons_var_string(self, cons_series, is_coeff=True):
-        """ create a string of constraints or variables
-
-        :param cons_series: pd.Series of constraints or variables
-        :param is_coeff: boolean if coefficients, else rhs
-        :return cons_str: string of maximum coefficient or rhs"""
-        cons_str = self.model.constraints.get_label_position(cons_series["labels"])
-        cons_str = cons_str[0] + str(list(cons_str[1].values()))
-
-        if is_coeff:
-            var_str = self.model.variables.get_label_position(cons_series["vars"])
-            var_str = var_str[0] + str(list(var_str[1].values()))
-            coeff_str = abs(cons_series["coeffs"])
-            cons_str = f"{coeff_str} {var_str} in {cons_str}"
-        else:
-            cons_str = f"{abs(cons_series['rhs'])} in {cons_str}"
-        return cons_str

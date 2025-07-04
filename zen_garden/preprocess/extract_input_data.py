@@ -39,7 +39,7 @@ class DataInput:
         self.index_names = self.analysis.header_data_inputs
         # load attributes file
         self.attribute_dict = self.load_attribute_file()
-        #optimization setup
+        # optimization setup
         self.optimization_setup = optimization_setup
 
     def extract_input_data(self, file_name, index_sets, unit_category, time_steps=None, subelement=None):
@@ -60,7 +60,6 @@ class DataInput:
         elif time_steps == "set_base_time_steps_yearly":
             yearly_variation = True
             self.extract_yearly_variation(file_name, index_sets)
-
 
         # if existing capacities and existing capacities not used
         if (file_name == "capacity_existing" or file_name == "capacity_existing_energy") and not self.system.use_capacities_existing:
@@ -86,9 +85,15 @@ class DataInput:
                 df_input = df_input[cols]
             # fill output dataframe
             df_output = self.extract_general_input_data(df_input, df_output, file_name, index_name_list, default_value, time_steps)
-        # save parameter values for analysis of numerics
-        self.save_values_of_attribute(df_output=df_output, file_name=file_name)
-        #copy output data as otherwise overwritten
+            # overwrite parts of the output file with scenario specific data
+            part_file_name = self.scenario_dict.get_param_part_file(self.element.name, file_name)
+            if part_file_name is not None:
+                df_input_part = self.read_input_csv(part_file_name)
+                if df_input_part is None:
+                    logging.info(f"{part_file_name} for current scenario is missing from {self.folder_path}. The base case is used as input file")
+                else:
+                    df_output = self.extract_general_input_data(df_input_part, df_output, file_name, index_name_list, default_value, time_steps)
+        # copy output data as otherwise overwritten
         df_output_generic = df_output.copy()
         if time_steps == "set_base_time_steps_yearly":
             self.extract_year_specific_ts(file_name, index_name_list, time_steps, subelement, default_value,df_output_generic=df_output)
@@ -105,7 +110,7 @@ class DataInput:
         :param default_value: default for dataframe
         :param time_steps: specific time_steps of element
         :return df_output: filled output dataframe """
-
+        df_output_copy = copy.deepcopy(df_output)
         df_input = self.convert_real_to_generic_time_indices(df_input, time_steps, file_name, index_name_list)
 
         assert df_input.columns is not None, f"Input file '{file_name}' has no columns"
@@ -120,13 +125,13 @@ class DataInput:
             missing_index = missing_index[0]
             # check if special case of existing Technology
             if "technology_existing" in missing_index:
-                df_output = DataInput.extract_from_input_for_capacities_existing(df_input, df_output, index_name_list, file_name, missing_index)
+                df_output = DataInput.extract_from_input_for_capacities_existing(df_input, df_output_copy, index_name_list, file_name, missing_index)
                 if isinstance(default_value, dict):
-                    df_output = df_output * default_value["multiplier"]
-                return df_output
+                    df_output_copy = df_output_copy * default_value["multiplier"]
+                return df_output_copy
             # index missing
             else:
-                df_input = DataInput.extract_from_input_with_missing_index(df_input, df_output, copy.deepcopy(index_name_list), file_name, missing_index)
+                df_input = DataInput.extract_from_input_with_missing_index(df_input, df_output_copy, copy.deepcopy(index_name_list), file_name, missing_index)
 
         # check for duplicate indices
         df_input = self.energy_system.optimization_setup.input_data_checks.check_duplicate_indices(df_input=df_input, file_name=file_name, folder_path=self.folder_path)
@@ -136,18 +141,18 @@ class DataInput:
         # delete nans
         df_input = df_input.dropna()
 
-        # get common index of df_output and df_input
-        if not isinstance(df_input.index, pd.MultiIndex) and isinstance(df_output.index, pd.MultiIndex):
+        # get common index of df_output_copy and df_input
+        if not isinstance(df_input.index, pd.MultiIndex) and isinstance(df_output_copy.index, pd.MultiIndex):
             index_list = df_input.index.to_list()
             if len(index_list) == 1:
                 index_multi_index = pd.MultiIndex.from_tuples([(index_list[0],)], names=[df_input.index.name])
             else:
                 index_multi_index = pd.MultiIndex.from_product([index_list], names=[df_input.index.name])
             df_input = pd.Series(index=index_multi_index, data=df_input.to_list(),dtype=float)
-        common_index = df_output.index.intersection(df_input.index)
-        assert default_value is not None or len(common_index) == len(df_output.index), f"Input for {file_name} does not provide entire dataset and no default given in attributes.json"
-        df_output.loc[common_index] = df_input.loc[common_index]
-        return df_output
+        common_index = df_output_copy.index.intersection(df_input.index)
+        assert default_value is not None or len(common_index) == len(df_output_copy.index), f"Input for {file_name} does not provide entire dataset and no default given in attributes.json"
+        df_output_copy.loc[common_index] = df_input.loc[common_index]
+        return df_output_copy
 
     def read_input_csv(self, input_file_name):
         """ reads input data and returns raw input dataframe
@@ -666,35 +671,7 @@ class DataInput:
                 df_output[key] = value
         else:
             df_output = pd.Series(index=index_multi_index, data=default_value["value"], dtype=float)
-        # save unit of attribute of element converted to base unit
-        self.save_unit_of_attribute(default_name, subelement)
         return df_output, default_value, index_name_list
-
-    def save_unit_of_attribute(self, attribute_name, subelement=None):
-        """ saves the unit of an attribute, converted to the base unit
-
-        :param attribute_name: name of selected attribute
-        :param subelement: dependent element for which data is extracted
-        """
-        # if numerics analyzed
-        if self.solver.analyze_numerics and attribute_name is not None:
-            input_unit = self.extract_attribute(attribute_name, unit_category=None, subelement=subelement, return_unit=True)
-            if subelement is not None:
-                attribute_name = attribute_name + "_" + subelement
-            self.unit_handling.set_base_unit_combination(input_unit=input_unit, attribute=(self.element.name, attribute_name))
-
-    def save_values_of_attribute(self, df_output, file_name):
-        """ saves the values of an attribute
-
-        :param df_output: default output dataframe
-        :param file_name: name of selected file.
-        """
-        # if numerics analyzed
-        if self.solver.analyze_numerics:
-            if file_name:
-                df_output_reduced = df_output[(df_output != 0) & (df_output.abs() != np.inf)]
-                if not df_output_reduced.empty:
-                    self.unit_handling.set_attribute_values(df_output=df_output_reduced, attribute=(self.element.name, file_name))
 
     def construct_index_list(self, index_sets, time_steps):
         """ constructs index list from index sets and returns list of indices and list of index names

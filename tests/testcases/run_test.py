@@ -57,10 +57,11 @@ def compare_variables_results(test_model: str, results: Results, folder_path: st
     if test_model in test_variables:
         for s in test_variables[test_model]:
             if s in results.solution_loader.scenarios:
+                scenario = results.solution_loader.scenarios[s]
                 test_values = test_variables[test_model][s]
                 for c in test_values:
-                    if c in results.solution_loader.components:
-                        values = results.get_df(c)[s]
+                    if c in scenario.components:
+                        values = results.get_df(c,scenario_name=s)
                         for test_value in test_values[c]:
                             if isinstance(test_value["index"],list):
                                 test_index = tuple(test_value["index"])
@@ -94,7 +95,6 @@ def compare_variables_results(test_model: str, results: Results, folder_path: st
 def check_get_total_get_full_ts(
     results: Results,
     specific_scenario=False,
-    element_name=None,
     year=None,
     discount_to_first_step=True,
     get_doc=False,
@@ -104,7 +104,6 @@ def check_get_total_get_full_ts(
 
     :param get_doc:
     :param discount_to_first_step: Apply annuity to first year of interval or entire interval
-    :param element_name: Specific element
     :param year: Specific year
     :param specific_scenario: Specific scenario
     :param results: Results instance of testcase function has been called from
@@ -122,14 +121,6 @@ def check_get_total_get_full_ts(
                 year=year,
                 discount_to_first_step=discount_to_first_step,
             )
-        if element_name is not None:
-            df_total = results.get_total(
-                test_variable, element_name=df_total.index[0][0]
-            )
-            if test_variable != "capacity_limit":
-                df_full_ts = results.get_full_ts(
-                    test_variable, element_name=df_full_ts.index[0][0]
-                )
     if get_doc:
         results.get_doc(test_variables[0])
 
@@ -143,7 +134,7 @@ def test_1a(config, folder_path):
 
     # run the test
     data_set_name = "test_1a"
-    optimization_setup = main(
+    main(
         config=config, dataset_path=os.path.join(folder_path, data_set_name)
     )
 
@@ -157,7 +148,7 @@ def test_1a(config, folder_path):
 def test_1b(config, folder_path):
     # run the test
     data_set_name = "test_1b"
-    optimization_setup = main(
+    main(
         config=config, dataset_path=os.path.join(folder_path, data_set_name)
     )
 
@@ -169,7 +160,7 @@ def test_1b(config, folder_path):
 def test_1c(config, folder_path):
     # run the test
     data_set_name = "test_1c"
-    optimization_setup = main(
+    main(
         config=config, dataset_path=os.path.join(folder_path, data_set_name)
     )
 
@@ -181,7 +172,7 @@ def test_1c(config, folder_path):
 def test_1d(config, folder_path):
     # run the test
     data_set_name = "test_1d"
-    optimization_setup = main(config=config, dataset_path=os.path.join(folder_path, data_set_name))
+    main(config=config, dataset_path=os.path.join(folder_path, data_set_name))
 
     # read the results and check again
     res = Results(os.path.join("outputs", data_set_name))
@@ -191,7 +182,7 @@ def test_1d(config, folder_path):
 def test_1e(config, folder_path):
     # run the test
     data_set_name = "test_1e"
-    optimization_setup = main(config=config, dataset_path=os.path.join(folder_path, data_set_name))
+    main(config=config, dataset_path=os.path.join(folder_path, data_set_name))
 
     # read the results and check again
     res = Results(os.path.join("outputs", data_set_name))
@@ -204,11 +195,21 @@ def test_1e(config, folder_path):
 def test_1f(config, folder_path):
     # run the test
     data_set_name = "test_1f"
-    optimization_setup = main(config=config, dataset_path=os.path.join(folder_path, data_set_name))
+    main(config=config, dataset_path=os.path.join(folder_path, data_set_name))
 
     # read the results and check again
     res = Results(os.path.join("outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
+    # read the results and check again
+    res = Results(os.path.join("outputs", data_set_name))
+    compare_variables_results(data_set_name, res, folder_path)
+
+
+def test_1g(config, folder_path):
+    # run the test
+    data_set_name = "test_1g"
+    main(config=config, dataset_path=os.path.join(folder_path, data_set_name))
+
     # read the results and check again
     res = Results(os.path.join("outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
@@ -217,7 +218,7 @@ def test_1f(config, folder_path):
 def test_2a(config, folder_path):
     # run the test
     data_set_name = "test_2a"
-    optimization_setup = main(
+    main(
         config=config, dataset_path=os.path.join(folder_path, data_set_name)
     )
 
@@ -229,7 +230,7 @@ def test_2a(config, folder_path):
 def test_2b(config, folder_path):
     # run the test
     data_set_name = "test_2b"
-    optimization_setup = main(
+    main(
         config=config, dataset_path=os.path.join(folder_path, data_set_name)
     )
 
@@ -241,7 +242,7 @@ def test_2b(config, folder_path):
 def test_2c(config, folder_path):
     # run the test
     data_set_name = "test_2c"
-    optimization_setup = main(
+    main(
         config=config, dataset_path=os.path.join(folder_path, data_set_name)
     )
 
@@ -253,7 +254,7 @@ def test_2c(config, folder_path):
 def test_3a(config, folder_path):
     # run the test
     data_set_name = "test_3a"
-    optimization_setup = main(
+    main(
         config=config, dataset_path=os.path.join(folder_path, data_set_name)
     )
 
@@ -265,7 +266,7 @@ def test_3a(config, folder_path):
 def test_3b(config, folder_path):
     # run the test
     data_set_name = "test_3b"
-    optimization_setup = main(
+    main(
         config=config, dataset_path=os.path.join(folder_path, data_set_name)
     )
 
@@ -279,7 +280,7 @@ def test_3b(config, folder_path):
 def test_3c(config, folder_path):
     # run the test
     data_set_name = "test_3c"
-    optimization_setup = main(
+    main(
         config=config, dataset_path=os.path.join(folder_path, data_set_name)
     )
 
@@ -293,7 +294,7 @@ def test_3c(config, folder_path):
 def test_3d(config, folder_path):
     # run the test
     data_set_name = "test_3d"
-    optimization_setup = main(
+    main(
         config=config, dataset_path=os.path.join(folder_path, data_set_name)
     )
 
@@ -309,7 +310,7 @@ def test_3d(config, folder_path):
 def test_3e(config, folder_path):
     # run the test
     data_set_name = "test_3e"
-    optimization_setup = main(
+    main(
         config=config, dataset_path=os.path.join(folder_path, data_set_name)
     )
 
@@ -323,7 +324,7 @@ def test_3e(config, folder_path):
 def test_3f(config, folder_path):
     # run the test
     data_set_name = "test_3f"
-    optimization_setup = main(
+    main(
         config=config, dataset_path=os.path.join(folder_path, data_set_name)
     )
 
@@ -337,7 +338,7 @@ def test_3f(config, folder_path):
 def test_3g(config, folder_path):
     # run the test
     data_set_name = "test_3g"
-    optimization_setup = main(
+    main(
         config=config, dataset_path=os.path.join(folder_path, data_set_name)
     )
 
@@ -351,7 +352,7 @@ def test_3g(config, folder_path):
 def test_3h(config, folder_path):
     # run the test
     data_set_name = "test_3h"
-    optimization_setup = main(
+    main(
         config=config, dataset_path=os.path.join(folder_path, data_set_name)
     )
 
@@ -365,7 +366,7 @@ def test_3h(config, folder_path):
 def test_3i(config, folder_path):
     # run the test
     data_set_name = "test_3i"
-    optimization_setup = main(
+    main(
         config=config, dataset_path=os.path.join(folder_path, data_set_name)
     )
 
@@ -379,7 +380,7 @@ def test_3i(config, folder_path):
 def test_4a(config, folder_path):
     # run the test
     data_set_name = "test_4a"
-    optimization_setup = main(
+    main(
         config=config, dataset_path=os.path.join(folder_path, data_set_name)
     )
 
@@ -393,7 +394,7 @@ def test_4a(config, folder_path):
 def test_4b(config, folder_path):
     # run the test
     data_set_name = "test_4b"
-    optimization_setup = main(
+    main(
         config=config, dataset_path=os.path.join(folder_path, data_set_name)
     )
 
@@ -407,7 +408,7 @@ def test_4b(config, folder_path):
 def test_4c(config, folder_path):
     # run the test
     data_set_name = "test_4c"
-    optimization_setup = main(
+    main(
         config=config, dataset_path=os.path.join(folder_path, data_set_name)
     )
 
@@ -419,7 +420,7 @@ def test_4c(config, folder_path):
 def test_4d(config, folder_path):
     # run the test
     data_set_name = "test_4d"
-    optimization_setup = main(
+    main(
         config=config, dataset_path=os.path.join(folder_path, data_set_name)
     )
 
@@ -431,7 +432,7 @@ def test_4d(config, folder_path):
 def test_5a(config, folder_path):
     # run the test
     data_set_name = "test_5a"
-    optimization_setup = main(
+    main(
         config=config, dataset_path=os.path.join(folder_path, data_set_name)
     )
 
@@ -445,7 +446,7 @@ def test_5a(config, folder_path):
 def test_5b(config, folder_path):
     # run the test
     data_set_name = "test_5b"
-    optimization_setup = main(
+    main(
         config=config, dataset_path=os.path.join(folder_path, data_set_name)
     )
 
@@ -457,7 +458,7 @@ def test_5b(config, folder_path):
 def test_5c(config, folder_path):
     # run the test
     data_set_name = "test_5c"
-    optimization_setup = main(
+    main(
         config=config, dataset_path=os.path.join(folder_path, data_set_name)
     )
 
@@ -469,7 +470,7 @@ def test_5c(config, folder_path):
 def test_5d(config, folder_path):
     # run the test
     data_set_name = "test_5d"
-    optimization_setup = main(
+    main(
         config=config, dataset_path=os.path.join(folder_path, data_set_name)
     )
 
@@ -481,7 +482,7 @@ def test_5d(config, folder_path):
 def test_6a(config, folder_path):
     # run the test
     data_set_name = "test_6a"
-    optimization_setup = main(
+    main(
         config=config, dataset_path=os.path.join(folder_path, data_set_name)
     )
 
@@ -496,7 +497,7 @@ def test_7a(config, folder_path):
     # run the test
     data_set_name = "test_7a"
     config.analysis.objective = "total_carbon_emissions"
-    optimization_setup = main(config=config, dataset_path=os.path.join(folder_path, data_set_name))
+    main(config=config, dataset_path=os.path.join(folder_path, data_set_name))
 
     # read the results and check again
     res = Results(os.path.join("outputs", data_set_name))
@@ -506,14 +507,22 @@ def test_7a(config, folder_path):
 def test_8a(config, folder_path):
     # run the test
     data_set_name = "test_8a"
-    optimization_setup = main(
+    main(
         config=config, dataset_path=os.path.join(folder_path, data_set_name)
     )
-
     # read the results and check again
     res = Results(os.path.join("outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
     check_get_total_get_full_ts(res)
+
+
+def test_9a(config, folder_path):
+    # run the test
+    data_set_name = "test_9a"
+    with pytest.raises(AssertionError, match='The attribute units defined in the energy_system are not consistent!'):
+        main(
+            config=config, dataset_path=os.path.join(folder_path, data_set_name)
+        )
 
 
 if __name__ == "__main__":
@@ -521,5 +530,4 @@ if __name__ == "__main__":
 
     config.solver.keep_files = False
     folder_path = os.path.dirname(__file__)
-    test_8a(config, folder_path)
-    a=1
+    test_4a(config, folder_path)

@@ -11,7 +11,7 @@ module load python/3.11.6
 
 # backend for the solvers
 module load glpk
-module load gurobi/10.0.3
+module load gurobi/12.0.1
 
 # activate the env from anywhere
 # $BASH_SOURCE contains the path that was sourced
