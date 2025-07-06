@@ -6,4 +6,4 @@ Constraint Name;Time Step Type;Doc String
 ``constraint_capacity_energy_to_power_ratio``;``set_time_steps_storage_level``;couple storage energy and power capacity
 ``constraint_storage_technology_capex``;``set_time_steps_yearly``;Capital expenditures for installing storage technology
 ``constraint_flow_storage_spillage``;``set_time_steps_storage_level``; Limit spillage for storage technologies
-``constraint_charge_discharge_binary``;``set_time_steps_storage_level``; Avoid simultaneous charging and discharging of the storage
+``constraint_charge_discharge_binary``;``set_time_steps_storage_level``; Avoid simultaneous charging and discharging of the storage. NOTE: will be skipped if ``capacity_limit`` is infinite.
