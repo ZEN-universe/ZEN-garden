@@ -46,6 +46,7 @@ class Technology(Element):
         self.capacity_addition_max = self.data_input.extract_input_data("capacity_addition_max", index_sets=[], unit_category={"energy_quantity": 1, "time": -1})
         self.capacity_addition_unbounded = self.data_input.extract_input_data("capacity_addition_unbounded", index_sets=[], unit_category={"energy_quantity": 1, "time": -1})
         self.lifetime = self.data_input.extract_input_data("lifetime", index_sets=[], unit_category={})
+        self.amortization_time = self.data_input.extract_input_data("amortization_time", index_sets=[], unit_category={})
         self.construction_time = self.data_input.extract_input_data("construction_time", index_sets=[], unit_category={})
         # maximum diffusion rate
         self.max_diffusion_rate = self.data_input.extract_input_data("max_diffusion_rate", index_sets=["set_time_steps_yearly"], time_steps="set_time_steps_yearly", unit_category={})
@@ -249,6 +250,37 @@ class Technology(Element):
         return year - del_lifetime
 
     @classmethod
+    def get_amortization_time_range(cls, optimization_setup, tech, year):
+        """ returns amortization time range of technology.
+
+        :param optimization_setup: OptimizationSetup the technology is part of
+        :param tech: name of the technology
+        :param year: yearly time step
+        :return: amortization time range of technology
+        """
+        first_amortization_year = cls.get_first_amortization_time_step(optimization_setup, tech, year)
+        first_amortization_year = max(first_amortization_year, optimization_setup.sets["set_time_steps_yearly"][0])
+        return range(first_amortization_year, year + 1)
+
+    @classmethod
+    def get_first_amortization_time_step(cls, optimization_setup, tech, year):
+        """returns first amortization time step of technology,"""
+        """i.e., the earliest time step in the past whose capacity is still available at the current time step
+
+        :param optimization_setup: The optimization setup to add everything
+        :param tech: name of technology
+        :param year: yearly time step
+        :return: first amortization step
+        """
+        # get params and system
+        params = optimization_setup.parameters.dict_parameters
+        system = optimization_setup.system
+        amortization_time = params.amortization_time[tech]
+        # conservative estimate of amortization time (floor)
+        del_amortization_time = int(np.floor(amortization_time / system.interval_between_years)) - 1
+        return year - del_amortization_time
+
+    @classmethod
     def get_investment_time_step(cls,optimization_setup,tech,year):
         """returns investment time step of technology, i.e., the time step in which the technology is invested considering the construction time
 
@@ -317,6 +349,8 @@ class Technology(Element):
         optimization_setup.parameters.add_parameter(name="capacity_addition_unbounded", index_names=["set_technologies"], doc='Parameter which specifies the unbounded capacity addition that can be added each year (only for delayed technology deployment)', calling_class=cls)
         # lifetime existing technologies
         optimization_setup.parameters.add_parameter(name="lifetime_existing", index_names=["set_technologies", "set_location", "set_technologies_existing"], doc='Parameter which specifies the remaining lifetime of an existing technology', calling_class=cls)
+        # # amortization time existing technologies
+        # optimization_setup.parameters.add_parameter(name="amortization_time_existing", index_names=["set_technologies"], doc='Parameter which specifies the remaining amortization time of an existing technology', calling_class=cls)
         # lifetime existing technologies
         optimization_setup.parameters.add_parameter(name="capex_capacity_existing", index_names=["set_technologies", "set_capacity_types", "set_location", "set_technologies_existing"], capacity_types=True, doc='Parameter which specifies the total capex of an existing technology which still has to be paid', calling_class=cls)
         # variable specific opex
@@ -325,6 +359,8 @@ class Technology(Element):
         optimization_setup.parameters.add_parameter(name="opex_specific_fixed", index_names=["set_technologies", "set_capacity_types","set_location","set_time_steps_yearly"], capacity_types=True, doc='Parameter which specifies the fixed annual specific opex', calling_class=cls)
         # lifetime newly built technologies
         optimization_setup.parameters.add_parameter(name="lifetime", index_names=["set_technologies"], doc='Parameter which specifies the lifetime of a newly built technology', calling_class=cls)
+        # amortization time newly built technologies
+        optimization_setup.parameters.add_parameter(name="amortization_time", index_names=["set_technologies"], doc='Parameter which specifies the amortization time of a newly built technology', calling_class=cls)
         # construction_time newly built technologies
         optimization_setup.parameters.add_parameter(name="construction_time", index_names=["set_technologies"], doc='Parameter which specifies the construction time of a newly built technology', calling_class=cls)
         # maximum diffusion rate, i.e., increase in capacity
@@ -930,18 +966,34 @@ class TechnologyRules(GenericRule):
         index = ZenIndex(index_values, index_names)
 
         ### masks
-        # not necessary
-
+        amortization_time = self.parameters.amortization_time
+        lifetime = self.parameters.lifetime
+        use_amortization_time = (
+                (amortization_time != np.inf) &
+                (amortization_time != 0) &
+                (amortization_time.notnull())
+        )
         #Annuity factor
+        lt = amortization_time.where(use_amortization_time, other=lifetime)
         dr = self.parameters.discount_rate
-        lt = self.parameters.lifetime
+        # lt = self.parameters.lifetime
+
         if dr != 0:
             a = ((1 + dr) ** lt * dr) / ((1 + dr) ** lt - 1)
         else:
             a = 1 / lt
-        lt_range = pd.MultiIndex.from_tuples([(t, y, py) for t, y in
-                                              index.get_unique(["set_technologies", "set_time_steps_yearly"]) for py in
-                                              list(Technology.get_lifetime_range(self.optimization_setup, t, y))])
+
+        # lt_range = pd.MultiIndex.from_tuples([(t, y, py) for t, y in
+        #                                       index.get_unique(["set_technologies", "set_time_steps_yearly"]) for py in
+        #                                       list(Technology.get_lifetime_range(self.optimization_setup, t, y))])
+        lt_range = pd.MultiIndex.from_tuples([
+            (t, y, py) for t, y in index.get_unique(["set_technologies", "set_time_steps_yearly"])
+            for py in (
+                list(Technology.get_amortization_time_range(self.optimization_setup, t, y))
+                if use_amortization_time.loc[t]
+                else list(Technology.get_lifetime_range(self.optimization_setup, t, y))
+            )
+        ])
         lt_range = pd.Series(index=lt_range, data=-1)
         lt_range.index.names = ["set_technologies", "set_time_steps_yearly", "set_time_steps_yearly_prev"]
         lt_range = lt_range.to_xarray().broadcast_like(self.variables["capacity"].lower).fillna(0)
