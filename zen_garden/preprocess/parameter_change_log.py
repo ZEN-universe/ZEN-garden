@@ -1,5 +1,9 @@
 def parameter_change_log():
     log_dict = {
+        "amortization_time": {
+            "default_value": 'inf',  # only 0, 1, or 'inf' are allowed
+            "unit": "lifetime"
+        },
       #  "updated_name": "outdated_name",
 
     #    "new_parameter_name": {
