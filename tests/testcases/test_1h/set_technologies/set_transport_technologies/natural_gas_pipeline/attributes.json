@@ -27,10 +27,6 @@
     "default_value": 50.0,
     "unit": "1"
   },
-  "amortization_time": {
-    "default_value": 2.0,
-    "unit": "1"
-  },
   "opex_specific_variable": {
     "default_value": 0.0,
     "unit": "kiloEuro/GWh"

@@ -27,9 +27,9 @@
     "default_value": 25.0,
     "unit": "1"
   },
-  "amortization_time": {
-    "default_value": 1.0,
-    "unit": "1"
+  "deprecation_time": {
+  "default_value": 1.0,
+  "unit": "1"
   },
   "opex_specific_variable": {
     "default_value": 0.0,
