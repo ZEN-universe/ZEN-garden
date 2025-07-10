@@ -4,10 +4,12 @@ Default configuration.
 Changes from the default values are specified in config.py (folders data/tests) and system.py (individual datasets)
 """
 
-from pydantic import BaseModel,ConfigDict
-from typing import Any, Optional, Union
+from pydantic import BaseModel,ConfigDict, create_model
+from typing import Any, Optional, Union, get_type_hints
 
-class Subscriptable(BaseModel, extra="forbid"):
+
+class Subscriptable(BaseModel):
+    model_config = ConfigDict(extra="forbid")
 
     def __getitem__(self, __name: str) -> Any:
         return getattr(self, __name)
@@ -31,12 +33,45 @@ class Subscriptable(BaseModel, extra="forbid"):
     def values(self) -> Any:
         return self.model_dump().values()
 
+    # @classmethod
+    # def result_config(cls):
+    #     """ creates a loose model configuration that allows for extra fields """
+    #     class Model(cls):
+    #         model_config = ConfigDict(extra="allow")
+    #     return Model
+
     @classmethod
     def result_config(cls):
-        """ creates a loose model configuration that allows for extra fields """
-        class Model(cls):
-            model_config = ConfigDict(extra="allow")
-        return Model
+        """Creates a model with extra fields allowed and applies the same to nested models.
+        Loops required to handle extra fields in nested Subscriptable classes.
+        """
+
+        annotations = get_type_hints(cls)
+        fields = {}
+
+        for name, type_ in annotations.items():
+            default = cls.model_fields[name].default
+
+            # Detect if the type is a subclass of Subscriptable
+            if isinstance(type_, type) and issubclass(type_, Subscriptable):
+                # Recursively get the loosened model
+                new_type = type_.result_config()
+
+                fields[name] = (new_type, new_type.model_construct(**default))
+            else:
+                fields[name] = (type_, default)
+
+        NewModel = create_model(
+            cls.__name__,
+            __config__=ConfigDict(extra="allow"),
+            **fields
+        )
+        return NewModel
+
+        # Create a new model dynamically with extra allowed
+        # class Model(cls):
+        #     model_config = ConfigDict(extra="allow")
+        # return Model
 
 class Subsets(Subscriptable):
     set_carriers: list[str] = []
@@ -73,6 +108,7 @@ class HeaderDataInputs(Subscriptable):
     set_technologies_existing: str = "technology_existing"
     set_capacity_types: str = "capacity_type"
 
+
 class System(Subscriptable):
     """
     Class which contains the system configuration. This defines for example the set of carriers, technologies, etc.
@@ -108,6 +144,7 @@ class System(Subscriptable):
     use_capacities_existing: bool = True
     allow_investment: bool = True
 
+
 class Solver(Subscriptable):
     """
     Class which contains the solver configuration. This defines for example the solver options, scaling, etc.
@@ -120,9 +157,9 @@ class Solver(Subscriptable):
     io_api: str = "lp"
     save_duals: bool = False
     save_parameters: bool = True
-    selected_saved_parameters: list = [] # if empty, all parameters are saved
-    selected_saved_variables: list = [] # if empty, all variables are saved
-    selected_saved_duals: list = [] # if empty, all duals are saved (if save_duals is True)
+    selected_saved_parameters: list = []  # if empty, all parameters are saved
+    selected_saved_variables: list = []  # if empty, all variables are saved
+    selected_saved_duals: list = []  # if empty, all duals are saved (if save_duals is True)
     linear_regression_check: dict[str, float] = {
         "eps_intercept": 0.1,
         "epsRvalue": 1 - (1e-5),
@@ -135,21 +172,21 @@ class Solver(Subscriptable):
     run_diagnostics: bool = False
     use_scaling: bool = True
     scaling_include_rhs: bool = True
-    scaling_algorithm: Union[list[str],str] = ["geom","geom","geom"]
+    scaling_algorithm: Union[list[str], str] = ["geom", "geom", "geom"]
 
 
 class TimeSeriesAggregation(Subscriptable):
     """
     Class which contains the time series aggregation configuration. This defines for example the clustering method, etc.
     """
-    slv: Solver = Solver()
     clusterMethod: str = "hierarchical"
-    solver: str = slv.name
-    hoursPerPeriod: int = 1 # keep this at 1
+    solver: str = "highs"
+    hoursPerPeriod: int = 1  # keep this at 1
     extremePeriodMethod: Optional[str] = "None"
     rescaleClusterPeriods: bool = False
     representationMethod: str = "meanRepresentation"
     resolution: int = 1
+
 
 class Analysis(Subscriptable):
     """
@@ -166,6 +203,7 @@ class Analysis(Subscriptable):
     output_format: str = "h5"
     earliest_year_of_data: int = 1900
     zen_garden_version: str = None
+
 
 class Config(Subscriptable):
     """
