@@ -573,25 +573,13 @@
     },
     "test_1h": {
         "none": {
-            "flow_import": [
-                {
-                    "index": ["natural_gas", "CH", 0],
-                    "value": 21.0
-                },
-                {
-                    "index": ["natural_gas", "DE", 0],
-                    "value": 100.0
-                }
-            ],
-            "flow_transport": [
-                {
-                    "index": ["natural_gas_pipeline", "CH-DE", 0],
-                    "value": 10.0
-                }
-            ],
             "capacity": [
                 {
                     "index": ["natural_gas_pipeline", "power", "CH-DE", 0],
+                    "value": 10.0
+                },
+                {
+                    "index": ["natural_gas_pipeline", "power", "CH-DE", 1],
                     "value": 10.0
                 },
                 {
@@ -599,32 +587,136 @@
                     "value": 0.0
                 },
                 {
+                    "index": ["natural_gas_pipeline", "power", "DE-CH", 1],
+                    "value": 0.0
+                },
+                {
                     "index": ["natural_gas_boiler", "power", "CH", 0],
+                    "value": 10.0
+                },
+                {
+                    "index": ["natural_gas_boiler", "power", "CH", 1],
                     "value": 10.0
                 },
                 {
                     "index": ["natural_gas_boiler", "power", "DE", 0],
                     "value": 100.0
+                },
+                {
+                    "index": ["natural_gas_boiler", "power", "DE", 1],
+                    "value": 100.0
                 }
             ],
-            "flow_transport_loss": [
+            "deprecation_time": [
                 {
-                    "index": ["natural_gas_pipeline", "CH-DE", 0],
+                    "index": ["natural_gas_boiler"],
+                    "value": 1.0
+                },
+                {
+                    "index": ["natural_gas_pipeline"],
+                    "value": 50.0
+                }
+            ],
+            "cost_capex_overnight": [
+                {
+                    "index": ["natural_gas_boiler", "power", "CH", 0],
+                    "value": 1.0
+                },
+                {
+                    "index": ["natural_gas_boiler", "power", "CH", 1],
                     "value": 0.0
                 },
                 {
-                    "index": ["natural_gas_pipeline", "DE-CH", 0],
+                    "index": ["natural_gas_boiler", "power", "DE", 0],
+                    "value": 10.0
+                },
+                {
+                    "index": ["natural_gas_boiler", "power", "DE", 1],
+                    "value": 0.0
+                },
+                {
+                    "index": ["natural_gas_pipeline", "power", "CH-DE", 0],
+                    "value": 0.1542
+                },
+                {
+                    "index": ["natural_gas_pipeline", "power", "CH-DE", 1],
+                    "value": 0.0
+                },
+                {
+                    "index": ["natural_gas_pipeline", "power", "DE-CH", 0],
+                    "value": 0.0
+                },
+                {
+                    "index": ["natural_gas_pipeline", "power", "DE-CH", 1],
                     "value": 0.0
                 }
             ],
-            "flow_conversion_input": [
+            "cost_capex_yearly": [
                 {
-                    "index": ["natural_gas_boiler", "natural_gas", "CH", 0],
-                    "value": 11.0
+                    "index": ["natural_gas_boiler", "power", "CH", 0],
+                    "value": 1.06
                 },
                 {
-                    "index": ["natural_gas_boiler", "natural_gas", "DE", 0],
-                    "value": 110.0
+                    "index": ["natural_gas_boiler", "power", "CH", 1],
+                    "value": 0.0
+                },
+                {
+                    "index": ["natural_gas_boiler", "power", "DE", 0],
+                    "value": 10.6
+                },
+                {
+                    "index": ["natural_gas_boiler", "power", "DE", 1],
+                    "value": 0.0
+                },
+                {
+                    "index": ["natural_gas_pipeline", "power", "CH-DE", 0],
+                    "value": 0.00979
+                },
+                {
+                    "index": ["natural_gas_pipeline", "power", "CH-DE", 1],
+                    "value": 0.00979
+                },
+                {
+                    "index": ["natural_gas_pipeline", "power", "DE-CH", 0],
+                    "value": 0.0
+                },
+                {
+                    "index": ["natural_gas_pipeline", "power", "DE-CH", 1],
+                    "value": 0.0
+                }
+            ],
+            "capacity_investment": [
+                {
+                    "index": ["natural_gas_boiler", "power", "CH", 0],
+                    "value": 10.0
+                },
+                {
+                    "index": ["natural_gas_boiler", "power", "CH", 1],
+                    "value": 0.0
+                },
+                {
+                    "index": ["natural_gas_boiler", "power", "DE", 0],
+                    "value": 100.0
+                },
+                {
+                    "index": ["natural_gas_boiler", "power", "DE", 1],
+                    "value": 0.0
+                },
+                {
+                    "index": ["natural_gas_pipeline", "power", "CH-DE", 0],
+                    "value": 10.0
+                },
+                {
+                    "index": ["natural_gas_pipeline", "power", "CH-DE", 1],
+                    "value": 0.0
+                },
+                {
+                    "index": ["natural_gas_pipeline", "power", "DE-CH", 0],
+                    "value": 0.0
+                },
+                {
+                    "index": ["natural_gas_pipeline", "power", "DE-CH", 1],
+                    "value": 0.0
                 }
             ]
         }
