@@ -2423,5 +2423,21 @@
                 }
             ]
         }
+    },
+    "test_10a": {
+        "none": {
+            "flow_storage_discharge": [
+                {
+                    "index": ["natural_gas_storage","DE",0],
+                    "value": 0
+                }
+            ],
+            "flow_storage_charge": [
+                {
+                    "index": ["natural_gas_storage","DE",0],
+                    "value":100
+                }
+            ]
+        }
     }
 }

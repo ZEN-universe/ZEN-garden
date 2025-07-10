@@ -463,7 +463,7 @@ class Technology(Element):
 
         :param optimization_setup: The OptimizationSetup """
         model = optimization_setup.model
-        constraints = optimization_setup.constraints
+
         # construct pe.Constraints of the class <Technology>
         rules = TechnologyRules(optimization_setup)
         #  technology capacity_limit

@@ -193,7 +193,7 @@ class EnergySystem:
                 return _reversed_edge
         raise KeyError(f"Edge {edge} has no reversed edge. However, at least one transport technology is bidirectional")
 
-    ### --- classmethods to construct sets, parameters, variables, and constraints, that correspond to EnergySystem --- ###
+    ### --- methods to construct sets, parameters, variables, and constraints, that correspond to EnergySystem --- ###
 
     def construct_sets(self):
         """ constructs the pe.Sets of the class <EnergySystem> """
