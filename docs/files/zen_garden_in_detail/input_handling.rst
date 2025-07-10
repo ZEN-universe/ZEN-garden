@@ -47,7 +47,7 @@ Make sure to have the correct positioning of the brackets.
 * Each parameter has a name, followed **by a colon and curly brackets** 
   ``name: {...}``
 * Inside the curly brackets are in most cases a ``default_value`` as a ``float`` 
-  or ``"inf"`` and a ``unit`` as a ``string`` (see :ref:`input_handling.unit_consistancy`).
+  or ``"inf"`` and a ``unit`` as a ``string`` (see :ref:`input_handling.unit_consistency`).
 
 
 What are particular parameters in the ``attributes.json`` file?
@@ -77,7 +77,7 @@ take the following lengths:
 3. more than 1 carrier: for multiple input or output carriers
 
 The units of the carriers in a technology are defined in the corresponding 
-parameters (see :ref:`input_handling.unit_consistancy`) and are therefore omitted in the 
+parameters (see :ref:`input_handling.unit_consistency`) and are therefore omitted in the
 ``"reference_carrier"``, ``"input_carrier"``, and ``"output_carrier"`` field.
 
 **Conversion factor**
@@ -372,7 +372,7 @@ The file ``nonlinear_capex.csv`` has the following structure:
     combinatorial explosion of binary variables.
 
 
-.. _input_handling.unit_consistancy:
+.. _input_handling.unit_consistency:
 
 Unit consistency
 ================

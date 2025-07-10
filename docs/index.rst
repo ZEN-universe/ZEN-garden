@@ -22,6 +22,7 @@ Documentation
 
    files/welcome/overview
    files/welcome/features
+   files/welcome/use_cases
    files/welcome/acknowledgements
    files/welcome/cite
    files/welcome/license
@@ -75,6 +76,7 @@ Documentation
    files/developer_guide/installation
    files/developer_guide/running_and_debugging
    files/developer_guide/contributing
+   files/developer_guide/adding_param_variable_constraint
    files/developer_guide/constraint_guide
 
 
