@@ -85,13 +85,9 @@ class TimeSeriesAggregation(object):
         :param direction: flatten or raise
         """
         if direction == "flatten":
-            if not hasattr(self, "column_names_original"):
-                self.column_names_original = self.df_ts_raw.columns
-                self.column_names_flat = [str(index) for index in self.column_names_original]
-                self.df_ts_raw.columns = self.column_names_flat
-            elif year_specific:  # for specific year ts
-                self.column_names_flat = [str(index) for index in self.column_names_original]
-                self.df_ts_raw.columns = self.column_names_flat
+            self.column_names_original = self.df_ts_raw.columns
+            self.column_names_flat = [str(index) for index in self.column_names_original]
+            self.df_ts_raw.columns = self.column_names_flat
         elif direction == "raise":
             self.typical_periods = self.typical_periods[self.column_names_flat]
             self.typical_periods.columns = self.column_names_original
@@ -262,12 +258,17 @@ class TimeSeriesAggregation(object):
                 self.year_specific_tsa[year] = {}
                 # make copy of raw time series
                 year_raw_ts = self.df_ts_raw_copy.copy()
-                elements = year_raw_ts.columns.get_level_values(0).unique()
-                time_series = year_raw_ts.columns.get_level_values(1).unique()
-                for element,ts in zip(elements,time_series):
+                elements_time_series = year_raw_ts.columns.droplevel(
+                    list(range(2, year_raw_ts.columns.nlevels))).unique()
+                for element,ts in elements_time_series:
                     unstacked = year_raw_ts.unstack(header_set_time_steps)
                     if (element,ts) in self.optimization_setup.year_specific_ts[year].keys():
-                        unstacked[element,ts] = self.optimization_setup.year_specific_ts[year][(element,ts)]
+                        index = self.optimization_setup.year_specific_ts[year][(element, ts)].index
+                        if index.size > unstacked[element, ts].size:
+                            index = pd.MultiIndex.from_tuples([(element, ts, node, time) for node, time in index],names=[None, None, 'node', 'time'])
+                            unstacked = unstacked.reindex(unstacked.index.union(index))
+                            unstacked[element,ts].update(self.optimization_setup.year_specific_ts[year][(element,ts)])
+                        unstacked[element, ts] = self.optimization_setup.year_specific_ts[year][(element,ts)]
                     else:
                         ts_adjusted = self.multiply_yearly_variation(self.optimization_setup.get_element(Element,element), ts, year_raw_ts.unstack(header_set_time_steps)[element,ts], year)
                         unstacked[element,ts] = ts_adjusted
@@ -334,7 +335,10 @@ class TimeSeriesAggregation(object):
                             year_ts = self.year_specific_tsa[year][element.name,ts]
                             #ToDO better assignment of values?
                             for column in year_ts.columns:
-                                new_ts.loc[column,element_time_steps] = year_ts[column].values
+                                if isinstance(column, tuple):
+                                    new_ts.loc[*column, element_time_steps] = year_ts[column].values
+                                else:
+                                    new_ts.loc[column,element_time_steps] = year_ts[column].values
                 #insert year specific TS if not aggregated
                 else:
                     for year in self.optimization_setup.year_specific_ts.keys():
@@ -344,7 +348,10 @@ class TimeSeriesAggregation(object):
                             year_ts = self.optimization_setup.year_specific_ts[year][(element.name,ts)].unstack(header_set_time_steps).T
                             #ToDO better assignment of values?
                             for column in year_ts.columns:
-                                new_ts.loc[column, element_time_steps] = year_ts[column].values
+                                if isinstance(column, tuple):
+                                    new_ts.loc[*column, element_time_steps] = year_ts[column].values
+                                else:
+                                    new_ts.loc[column, element_time_steps] = year_ts[column].values
                 #overwrite time series
                 setattr(element, ts, new_ts)
 
