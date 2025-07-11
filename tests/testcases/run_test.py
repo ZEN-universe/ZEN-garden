@@ -222,9 +222,7 @@ def test_1h(config, folder_path):
     # read the results and check again
     res = Results(os.path.join("outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
-    # read the results and check again
-    res = Results(os.path.join("outputs", data_set_name))
-    compare_variables_results(data_set_name, res, folder_path)
+
 
 def test_2a(config, folder_path):
     # run the test
