@@ -223,28 +223,33 @@ class Technology(Element):
 
     @classmethod
     def get_lifetime_range(cls, optimization_setup, tech, year, use_deprecation_time=False):
-        """ returns lifetime range of technology.
-
-        :param optimization_setup: OptimizationSetup the technology is part of
-        :param tech: name of the technology
-        :param year: yearly time step
-        :param use_deprecation_time: boolean if deprecation time should be used instead of lifetime
-        :return: lifetime range of technology
         """
+        Returns the active year range of a technology based on its lifetime or deprecation time.
+
+            :param optimization_setup: OptimizationSetup the technology is part of
+            :param tech: name of the technology
+            :param year: yearly time step
+            :param use_deprecation_time: boolean indicating whether to use deprecation time instead of lifetime,
+                                    namely for CAPEX calculation
+            :return: lifetime or deprecation time range of technology
+        """
+
         first_lifetime_year = cls.get_first_lifetime_time_step(optimization_setup, tech, year, use_deprecation_time=use_deprecation_time)
         first_lifetime_year = max(first_lifetime_year, optimization_setup.sets["set_time_steps_yearly"][0])
         return range(first_lifetime_year, year + 1)
 
     @classmethod
     def get_first_lifetime_time_step(cls,optimization_setup,tech,year, use_deprecation_time=False):
-        """returns first lifetime time step of technology,
-        i.e., the earliest time step in the past whose capacity is still available at the current time step
+        """
+        Returns the first time step within the lifetime or deprecation time of the technology,
+                i.e., the earliest past time step whose installed capacity is still active at the given time step.
 
-        :param optimization_setup: The optimization setup to add everything
-        :param tech: name of technology
-        :param year: yearly time step
-        :param use_deprecation_time: boolean if deprecation time should be used instead of lifetime
-        :return: first lifetime step
+            :param optimization_setup: OptimizationSetup the technology is part of
+            :param tech: name of the technology
+            :param year: current yearly time step
+            :param use_deprecation_time: boolean indicating whether to use deprecation time, for CAPEX calculation,
+                                        instead of standard lifetime for capacity calculation
+            :return: first time step where capacity or investment is still valid
         """
         # get params and system
         params = optimization_setup.parameters.dict_parameters
@@ -927,7 +932,7 @@ class TechnologyRules(GenericRule):
         :math:`\\alpha_{h,y}`: unit cost of capital investment of technology :math:`h` in year :math:`y` \n
         :math:`\\Delta S_{h,p,y}`: size of built technology :math:`h` (invested capacity after construction) at location :math:`p` in year :math:`y` \n
         :math:`\\Delta s^\\mathrm{ex}_{h,p,y}`: size of the previously added capacities at location :math:`p` in year :math:`y` \n
-        :math:`l_h`: lifetime of technology :math:`h`   \n
+        :math:`l_h`: deprecation time of technology :math:`h`   \n
         :math:`\\mathrm{dy}`: interval between planning periods
 
 
