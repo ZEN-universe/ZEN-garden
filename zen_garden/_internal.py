@@ -82,19 +82,21 @@ def main(config, dataset_path=None, job_index=None, folder_output_path=None):
             # break if infeasible
             if not optimization_setup.optimality:
                 # write IIS
-                optimization_setup.write_IIS()
-                raise OptimizationError(optimization_setup.model.termination_condition)
-            if optimization_setup.solver.use_scaling:
-                optimization_setup.scaling.re_scale()
-            # save new capacity additions and cumulative carbon emissions for next time step
-            optimization_setup.add_results_of_optimization_step(step)
-            # EVALUATE RESULTS
-            # create scenario name, subfolder and param_map for postprocessing
-            scenario_name, subfolder, param_map = StringUtils.generate_folder_path(
-                config=config, scenario=scenario, scenario_dict=scenario_dict, steps_horizon=steps_horizon, step=step
-            )
-            # write results
-            Postprocess(optimization_setup, scenarios=config.scenarios, subfolder=subfolder,
-                        model_name=model_name, scenario_name=scenario_name, param_map=param_map)
+                optimization_setup.write_IIS(scenario)
+                logging.warning(f"Optimization: {optimization_setup.model.termination_condition}")
+                break
+            else:
+                if optimization_setup.solver.use_scaling:
+                    optimization_setup.scaling.re_scale()
+                # save new capacity additions and cumulative carbon emissions for next time step
+                optimization_setup.add_results_of_optimization_step(step)
+                # EVALUATE RESULTS
+                # create scenario name, subfolder and param_map for postprocessing
+                scenario_name, subfolder, param_map = StringUtils.generate_folder_path(
+                    config=config, scenario=scenario, scenario_dict=scenario_dict, steps_horizon=steps_horizon, step=step
+                )
+                # write results
+                Postprocess(optimization_setup, scenarios=config.scenarios, subfolder=subfolder,
+                            model_name=model_name, scenario_name=scenario_name, param_map=param_map)
     logging.info("--- Optimization finished ---")
     return optimization_setup

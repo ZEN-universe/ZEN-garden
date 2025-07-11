@@ -9,7 +9,7 @@ from typing import Any, Optional, Union, get_type_hints
 
 
 class Subscriptable(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="allow")
 
     def __getitem__(self, __name: str) -> Any:
         return getattr(self, __name)
@@ -20,58 +20,11 @@ class Subscriptable(BaseModel):
     def keys(self) -> Any:
         return self.model_dump().keys()
 
-    def update(self, new_values: dict[Any, Any]) -> None:
-        for key, val in new_values.items():
-            if isinstance(val, dict):
-                getattr(self, key).update(val)
-            else:
-                setattr(self, key, val)
-
     def items(self) -> Any:
         return self.model_dump().items()
 
     def values(self) -> Any:
         return self.model_dump().values()
-
-    # @classmethod
-    # def result_config(cls):
-    #     """ creates a loose model configuration that allows for extra fields """
-    #     class Model(cls):
-    #         model_config = ConfigDict(extra="allow")
-    #     return Model
-
-    @classmethod
-    def result_config(cls):
-        """Creates a model with extra fields allowed and applies the same to nested models.
-        Loops required to handle extra fields in nested Subscriptable classes.
-        """
-
-        annotations = get_type_hints(cls)
-        fields = {}
-
-        for name, type_ in annotations.items():
-            default = cls.model_fields[name].default
-
-            # Detect if the type is a subclass of Subscriptable
-            if isinstance(type_, type) and issubclass(type_, Subscriptable):
-                # Recursively get the loosened model
-                new_type = type_.result_config()
-
-                fields[name] = (new_type, new_type.model_construct(**default))
-            else:
-                fields[name] = (type_, default)
-
-        NewModel = create_model(
-            cls.__name__,
-            __config__=ConfigDict(extra="allow"),
-            **fields
-        )
-        return NewModel
-
-        # Create a new model dynamically with extra allowed
-        # class Model(cls):
-        #     model_config = ConfigDict(extra="allow")
-        # return Model
 
 class Subsets(Subscriptable):
     set_carriers: list[str] = []

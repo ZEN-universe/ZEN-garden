@@ -523,12 +523,12 @@ class OptimizationSetup(object):
         else:
             self.optimality = False
 
-    def write_IIS(self):
+    def write_IIS(self,scenario=""):
         """ write an ILP file to print the IIS if infeasible. Only possible for gurobi
         """
         if self.model.termination_condition == 'infeasible' and self.solver.name == "gurobi":
             output_folder = StringUtils.get_output_folder(self.analysis)
-            ilp_file = os.path.join(output_folder,"infeasible_model_IIS.ilp")
+            ilp_file = os.path.join(output_folder,f"infeasible_model_IIS{f'_{scenario}' if scenario else ''}.ilp")
             logging.info(f"Writing parsed IIS to {ilp_file}")
             parser = IISConstraintParser(ilp_file, self.model)
             parser.write_parsed_output()
