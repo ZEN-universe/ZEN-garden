@@ -146,8 +146,7 @@ class Scenario():
             return Analysis()
 
         with open(analysis_path, "r") as f:
-            analysis = Analysis.result_config()
-            return analysis(**json.load(f))
+            return Analysis(**json.load(f))
 
     def _read_system(self) -> System:
         system_path = os.path.join(self.path, "system.json")
@@ -156,8 +155,7 @@ class Scenario():
             return System()
 
         with open(system_path, "r") as f:
-            system = System.result_config()
-            return system(**json.load(f))
+            return System(**json.load(f))
 
     def _read_solver(self) -> Solver:
         solver_path = os.path.join(self.path, "solver.json")
@@ -166,8 +164,7 @@ class Scenario():
             return Solver()
 
         with open(solver_path, "r") as f:
-            solver = Solver.result_config()
-            return solver(**json.load(f))
+            return Solver(**json.load(f))
 
     def _read_benchmarking(self) -> dict[str,Any]:
         benchmarking_path = os.path.join(self.path, "benchmarking.json")

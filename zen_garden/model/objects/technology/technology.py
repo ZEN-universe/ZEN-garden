@@ -332,9 +332,9 @@ class Technology(Element):
         # capacity_limit of technologies
         optimization_setup.parameters.add_parameter(name="capacity_limit", index_names=["set_technologies", "set_capacity_types", "set_location", "set_time_steps_yearly"], capacity_types=True, doc='Parameter which specifies the capacity limit of technologies', calling_class=cls)
         # minimum load relative to capacity
-        optimization_setup.parameters.add_parameter(name="min_load", index_names=["set_technologies", "set_capacity_types", "set_location", "set_time_steps_operation"], capacity_types=True, doc='Parameter which specifies the minimum load of technology relative to installed capacity', calling_class=cls)
+        optimization_setup.parameters.add_parameter(name="min_load", index_names=["set_technologies", "set_location", "set_time_steps_operation"], doc='Parameter which specifies the minimum load of technology relative to installed capacity', calling_class=cls)
         # maximum load relative to capacity
-        optimization_setup.parameters.add_parameter(name="max_load", index_names=["set_technologies", "set_capacity_types", "set_location", "set_time_steps_operation"], capacity_types=True, doc='Parameter which specifies the maximum load of technology relative to installed capacity', calling_class=cls)
+        optimization_setup.parameters.add_parameter(name="max_load", index_names=["set_technologies", "set_location", "set_time_steps_operation"], doc='Parameter which specifies the maximum load of technology relative to installed capacity', calling_class=cls)
         # carbon intensity
         optimization_setup.parameters.add_parameter(name="carbon_intensity_technology", index_names=["set_technologies", "set_location"], doc='Parameter which specifies the carbon intensity of each technology', calling_class=cls)
         # calculate additional existing parameters
@@ -1038,7 +1038,7 @@ class TechnologyRules(GenericRule):
         if len(techs_on_off) == 0:
             return None
         # params and variables
-        min_load = self.parameters.min_load.sel({"set_capacity_types":"power"})
+        min_load = self.parameters.min_load
         capacity = self.variables["capacity"].sel({"set_capacity_types":"power","set_time_steps_yearly":time_step_year})
         big_M = capacity.upper
         binary = self.variables["tech_on_var"]

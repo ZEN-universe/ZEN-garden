@@ -65,9 +65,6 @@ class StorageTechnology(Technology):
         # calculate capex of existing capacity
         self.capex_capacity_existing = self.calculate_capex_of_capacities_existing()
         self.capex_capacity_existing_energy = self.calculate_capex_of_capacities_existing(storage_energy=True)
-        # add min load max load time series for energy
-        self.raw_time_series["min_load_energy"] = self.data_input.extract_input_data("min_load_energy", index_sets=["set_nodes", "set_time_steps"], time_steps="set_base_time_steps_yearly", unit_category={})
-        self.raw_time_series["max_load_energy"] = self.data_input.extract_input_data("max_load_energy", index_sets=["set_nodes", "set_time_steps"], time_steps="set_base_time_steps_yearly", unit_category={})
         # add flow_storage_inflow time series
         self.raw_time_series["flow_storage_inflow"] = self.data_input.extract_input_data("flow_storage_inflow", index_sets=["set_nodes", "set_time_steps"], time_steps="set_base_time_steps_yearly", unit_category={"energy_quantity": 1, "time": -1})
 
@@ -267,7 +264,7 @@ class StorageTechnologyRules(GenericRule):
         times = self.variables.coords["set_time_steps_operation"]
         time_step_year = xr.DataArray([self.optimization_setup.energy_system.time_steps.convert_time_step_operation2year(t) for t in times.data], coords=[times])
         term_capacity = (
-                self.parameters.max_load.loc[techs, "power", nodes, :]
+                self.parameters.max_load.loc[techs, nodes, :]
                 * self.variables["capacity"].loc[techs, "power", nodes, time_step_year]
         ).rename({"set_technologies": "set_storage_technologies", "set_location": "set_nodes"})
 
