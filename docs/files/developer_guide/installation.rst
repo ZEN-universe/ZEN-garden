@@ -14,7 +14,7 @@ Navigate to `<https://github.com/ZEN-universe/ZEN-garden>`_ on Github and click
 on the "Fork" button at the top right corner of the page to create a copy of the 
 repository under your account and select yourself as the owner.
 
-.. image:: images/create_fork.png
+.. image:: ../figures/developer_guide/create_fork.png
     :alt: creating a fork
 
 |
