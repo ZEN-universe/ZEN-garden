@@ -89,7 +89,7 @@ To set-up easy running and debugging with the PyCharm IDE you can use the
 configuration setup. This can be found next to the run button. Click on "Edit 
 configurations.." to edit or add a configuration.
 
-.. image:: images/pycharm_configuration.png
+.. image:: ../figures/developer_guide/pycharm_configuration.png
     :alt: creating zen-garden configurations in pycharm
 
 Add a new configuration by clicking on the "+" button on the top left corner of 
@@ -108,7 +108,7 @@ you like. The important settings are:
 In the end, your configuration to run ZEN-garden as a module should look similar 
 to this:
 
-.. image:: images/pycharm_run_module.png
+.. image:: ../figures/developer_guide/pycharm_run_module.png
     :alt: run module
 
 Once these configurations are set, the standard ``run`` and ``debug`` buttons of 
@@ -152,7 +152,7 @@ the debug menu as shown in the figure. Note that no command line flags can be
 entered. The dataset must therefore be specified in the config.json file which 
 is located in the dataset folder.
 
-.. image:: images/VSCode_Debug.png
+.. image:: ../figures/developer_guide/VSCode_Debug.png
     :alt: VSCode Debug
 
 

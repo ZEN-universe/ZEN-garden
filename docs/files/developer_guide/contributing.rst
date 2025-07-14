@@ -76,7 +76,7 @@ To run the tests, add another Python configuration. The important settings are:
 
 In the end, your configuration to run the tests should look similar to this:
 
-.. image:: images/pycharm_run_tests.png
+.. image:: ../figures/developer_guide/pycharm_run_tests.png
     :alt: run tests
 
 To run the test and also get the coverage report, we use the pipeline settings 
@@ -94,7 +94,7 @@ settings:
 
 In the end, your configuration to run the coverage should look similar to this:
 
-.. image:: images/pycharm_coverage.png
+.. image:: ../figures/developer_guide/pycharm_coverage.png
     :alt: run coverage
 
 
