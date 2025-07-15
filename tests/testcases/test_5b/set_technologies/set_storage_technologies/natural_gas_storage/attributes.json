@@ -88,14 +88,6 @@
     "default_value": "inf",
     "unit": "GWh"
   },
-  "min_load_energy": {
-    "default_value": 0.0,
-    "unit": "1"
-  },
-  "max_load_energy": {
-    "default_value": 1.0,
-    "unit": "1"
-  },
   "capacity_investment_existing_energy": {
     "default_value": 0.0,
     "unit": "GWh"

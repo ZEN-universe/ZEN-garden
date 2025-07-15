@@ -352,7 +352,7 @@ class ConversionTechnologyRules(GenericRule):
         times = self.parameters.max_load.coords["set_time_steps_operation"]
         time_step_year = xr.DataArray([self.optimization_setup.energy_system.time_steps.convert_time_step_operation2year(t) for t in times.data], coords=[times])
         term_capacity = (
-                self.parameters.max_load.loc[techs, "power", nodes, :]
+                self.parameters.max_load.loc[techs, nodes, :]
                 * self.variables["capacity"].loc[techs, "power", nodes, time_step_year]
             ).rename({"set_technologies": "set_conversion_technologies", "set_location": "set_nodes"})
         term_reference_flow = self.get_flow_expression_conversion(techs,  nodes)
