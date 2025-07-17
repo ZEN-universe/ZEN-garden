@@ -721,6 +721,166 @@
             ]
         }
     },
+    "test_1i": {
+        "none": {
+            "flow_conversion_output": [
+                {
+                    "index": ["natural_gas_boiler", "heat", "DE", 0],
+                    "value": 20.0
+                },
+                {
+                    "index": ["natural_gas_boiler", "heat", "DE", 1],
+                    "value": 0
+                },
+                {
+                    "index": ["natural_gas_boiler", "heat", "DE", 2],
+                    "value": 20.0
+                },
+                {
+                    "index": ["natural_gas_boiler", "heat", "DE", 3],
+                    "value": 0
+                },
+                {
+                    "index": ["natural_gas_boiler", "heat", "DE", 4],
+                    "value": 20.0
+                },
+                {
+                    "index": ["natural_gas_boiler", "heat", "DE", 5],
+                    "value": 0
+                },
+                {
+                    "index": ["natural_gas_boiler", "heat", "DE", 6],
+                    "value": 20.0
+                },
+                {
+                    "index": ["natural_gas_boiler", "heat", "DE", 7],
+                    "value": 0
+                },
+                {
+                    "index": ["natural_gas_boiler_baseload", "heat", "DE", 0],
+                    "value": 80.0
+                },
+                {
+                    "index": ["natural_gas_boiler_baseload", "heat", "DE", 1],
+                    "value": 80.0
+                },
+                {
+                    "index": ["natural_gas_boiler_baseload", "heat", "DE", 2],
+                    "value": 80.0
+                },
+                {
+                    "index": ["natural_gas_boiler_baseload", "heat", "DE", 3],
+                    "value": 80.0
+                },
+                {
+                    "index": ["natural_gas_boiler_baseload", "heat", "DE", 4],
+                    "value": 80.0
+                },
+                {
+                    "index": ["natural_gas_boiler_baseload", "heat", "DE", 5],
+                    "value": 80.0
+                },
+                {
+                    "index": ["natural_gas_boiler_baseload", "heat", "DE", 6],
+                    "value": 80.0
+                },
+                {
+                    "index": ["natural_gas_boiler_baseload", "heat", "DE", 7],
+                    "value": 80.0
+                },
+                {
+                    "index": ["natural_gas_boiler", "heat", "CH", 0],
+                    "value": 9.252427
+                },
+                {
+                    "index": ["natural_gas_boiler", "heat", "CH", 1],
+                    "value": 26.93010
+                },
+                {
+                    "index": ["natural_gas_boiler", "heat", "CH", 2],
+                    "value": 34.252427
+                },
+                {
+                    "index": ["natural_gas_boiler", "heat", "CH", 3],
+                    "value": 26.93010
+                },
+                {
+                    "index": ["natural_gas_boiler", "heat", "CH", 4],
+                    "value": 9.252427
+                },
+                {
+                    "index": ["natural_gas_boiler", "heat", "CH", 5],
+                    "value": 0
+                },
+                {
+                    "index": ["natural_gas_boiler", "heat", "CH", 6],
+                    "value": 0
+                },
+                {
+                    "index": ["natural_gas_boiler", "heat", "CH", 7],
+                    "value": 0
+                },
+                {
+                    "index": ["natural_gas_boiler_baseload", "heat", "CH", 0],
+                    "value": 40.747573
+                },
+                {
+                    "index": ["natural_gas_boiler_baseload", "heat", "CH", 1],
+                    "value": 40.747573
+                },
+                {
+                    "index": ["natural_gas_boiler_baseload", "heat", "CH", 2],
+                    "value": 40.747573
+                },
+                {
+                    "index": ["natural_gas_boiler_baseload", "heat", "CH", 3],
+                    "value": 40.747573
+                },
+                {
+                    "index": ["natural_gas_boiler_baseload", "heat", "CH", 4],
+                    "value": 40.747573
+                },
+                {
+                    "index": ["natural_gas_boiler_baseload", "heat", "CH", 5],
+                    "value": 32.32233
+                },
+                {
+                    "index": ["natural_gas_boiler_baseload", "heat", "CH", 6],
+                    "value": 25
+                },
+                {
+                    "index": ["natural_gas_boiler_baseload", "heat", "CH", 7],
+                    "value": 32.32233
+                }
+            ],
+            "capacity": [
+                {
+                    "index": ["natural_gas_boiler", "power", "DE", 0],
+                    "value": 20.0
+                },
+                {
+                    "index": ["natural_gas_boiler", "power", "CH", 0],
+                    "value": 34.25243
+                },
+                {
+                    "index": ["natural_gas_boiler_baseload", "power", "DE", 0],
+                    "value": 80.0
+                },
+                {
+                    "index": ["natural_gas_boiler_baseload", "power", "CH", 0],
+                    "value": 40.74757
+                },
+                {
+                    "index": ["natural_gas_pipeline", "power", "CH-DE", 0],
+                    "value": 0
+                },
+                {
+                    "index": ["natural_gas_pipeline", "power", "DE-CH", 0],
+                    "value": 84.65847
+                }
+            ]
+        }
+    },
     "test_2a": {
         "none": {
             "flow_import": [
