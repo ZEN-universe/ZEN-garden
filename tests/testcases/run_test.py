@@ -64,7 +64,10 @@ def compare_variables_results(test_model: str, results: Results, folder_path: st
                         values = results.get_df(c,scenario_name=s)
                         for test_value in test_values[c]:
                             if isinstance(test_value["index"],list):
-                                test_index = tuple(test_value["index"])
+                                if len(test_value["index"]) == 1:
+                                    test_index = test_value["index"][0]
+                                else:
+                                    test_index = tuple(test_value["index"])
                             else:
                                 test_index = test_value["index"]
                             if test_index in values.index:
