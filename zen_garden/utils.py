@@ -1045,6 +1045,7 @@ class StringUtils:
         :param scenario_dict: current scenario dict
         :param steps_horizon: all steps of horizon
         :param step: current step of horizon
+        :param phase: simulation phase i.e. 'operation', or 'capacity and operation'
         :return: scenario name in folder
         :return: subfolder in results file
         :return: mapping of parameters
@@ -1074,6 +1075,15 @@ class StringUtils:
                 subfolder = Path(subfolder), Path(mf_f_string)
             else:
                 subfolder = Path(mf_f_string)
+
+        # # handle two-phase simulations
+        # if config.system.include_operation_only_phase:
+        #     if phase == 'capacity and operation':
+        #         subfolder = Path(subfolder), Path('capacity')
+        #     elif phase == 'operation':
+        #         subfolder = Path(subfolder), Path('operation')
+        #     else: 
+        #         logging.warning(f"Unknown phase {phase}")
 
         return scenario_name, subfolder, param_map
 
