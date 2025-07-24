@@ -27,7 +27,7 @@
     "default_value": 25.0,
     "unit": "1"
   },
-  "deprecation_time": {
+  "depreciation_time": {
   "default_value": 1.0,
   "unit": "1"
   },
