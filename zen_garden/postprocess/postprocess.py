@@ -108,9 +108,17 @@ class Postprocess:
         if isinstance(dictionary, BaseModel):
             dictionary = dictionary.model_dump()
 
+        # check whether valid mode
+        if not mode in ["a", "w"]:
+            ValueError(f"Invalid file write mode {mode} (valid options are 'a' or 'w').")
+
         # set the format
         if format is None:
             format = self.output_format
+
+        # only allow append mode for h5 files
+        if mode == 'a' and format != "h5":
+            raise ValueError(f"Write mode {mode} not available for output format {format}. If include_operation_only_phase = true, outputs must be saved in h5 files.")
 
         if format == "yml":
             # serialize to string

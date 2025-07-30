@@ -881,7 +881,7 @@
             ]
         }
     },
-    "test_1x": {
+    "test_1j": {
         "none": {
             "capacity": [
                 {
@@ -1430,7 +1430,7 @@
             ]
         }
     },
-    "test_3x": {
+    "test_3j": {
         "none": {
             "capacity": [
                 {

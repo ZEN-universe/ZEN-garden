@@ -68,7 +68,7 @@ def main(config, dataset_path=None, job_index=None, folder_output_path=None):
         # iterate through horizon steps
         for step in steps_horizon:
             # iterate through phases
-            for phase in ['capacity', 'operation']:
+            for phase in ['investment', 'operation']:
                 #if operation phase, exclude capacity expansion
                 if phase == 'operation' and not config.system.include_operation_only_phase:
                     continue

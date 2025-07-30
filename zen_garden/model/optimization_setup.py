@@ -78,7 +78,7 @@ class OptimizationSetup(object):
         # step of optimization horizon
         self.step_horizon = 0
 
-        # flag marking whether the simulation is in capacity expansion or
+        # flag marking whether the optimization is in capacity expansion or
         # operations-only phase (only if `include_operation_only_phase` is true)
         self.operation_only_phase = False
 
@@ -538,25 +538,25 @@ class OptimizationSetup(object):
             parser.write_parsed_output()
 
     def add_results_of_optimization_step(self, step_horizon):
-        """Adds capacity additions and carbon emissions to next simulation step
+        """Adds capacity additions and carbon emissions to next optimization step
 
         This function takes the capacity additions and carbon emissions of the 
-        current simulation step and adds them to the existing capacity and
-        existing emissions of the next simulation step. It is used for myopic 
-        foresight and for operation-only simulations. 
+        current optimization step and adds them to the existing capacity and
+        existing emissions of the next optimization step. It is used for myopic 
+        foresight and for operation-only model runs. 
 
         In myopic foresight, values from the currently simulated year are added 
         as existing capacities and emissions for future steps.
 
-        In operation-only simulations, installed capacities from the previous 
-        capacity-planning simulations are added as existing capacities.
+        In operation-only optimizations, installed capacities from the previous 
+        investment optimization are added as existing capacities.
 
-        In simulations with both features, the capacity additions are taken from 
-        the first phase (capacity-planning) while the emissions are taken from 
-        the second phase (operation-only). This allows model users to 
+        In optimizations with both features, the capacity additions are taken from 
+        the investment phase while the emissions are taken from 
+        the operation phase. This allows model users to 
         differentiate between how the system is planned and operated. 
 
-        :param step_horizon: year index of the current simulation step. 
+        :param step_horizon: year index of the current optimization step. 
             In myopic foresight, capacities and emissions from this step are 
             added to existing capacities and emissions.
         :type step_horizon: int
@@ -575,13 +575,11 @@ class OptimizationSetup(object):
                 time_steps = self.energy_system.set_time_steps_yearly
                 self.add_new_capacity_addition(time_steps)
 
-            elif self.operation_only_phase:
+            else:
                 self.reset_existing_capacity_to_previous_step()
                 decision_horizon = self.get_decision_horizon(step_horizon)
                 self.add_new_capacity_addition(decision_horizon, capacity_addition = self._old_capacity_addition, invest_capacity = self._old_invest_capacity, cost_capex_overnight = self._old_cost_capex_overnight)
                 self.add_carbon_emission_cumulative(decision_horizon)
-            else:
-                raise Exception("Unknown case identified")
 
         else:
             if  self.system.include_operation_only_phase and not self.operation_only_phase:
@@ -659,7 +657,7 @@ class OptimizationSetup(object):
                                   cost_capex_overnight = None):
         """ Adds the newly built capacity to the existing capacity
 
-        This function adds installed capacities from the current simulation 
+        This function adds installed capacities from the current optimization 
         step to existing capacities in the model. It also adds 
         costs from the installed capacities to existing capacity investment. 
         Capacity values whose magnitude is below that specified by the solver
@@ -713,7 +711,7 @@ class OptimizationSetup(object):
     def add_carbon_emission_cumulative(self, decision_horizon):
         """ Add current emissions to existing emissions.
 
-        This function adds carbon emissions from the current simulation 
+        This function adds carbon emissions from the current optimization 
         step to the existing carbon emissions.
 
         :param decision_horizon: list of the years for to transfer installed 
@@ -803,21 +801,21 @@ class OptimizationSetup(object):
         This function sets proper configurations for the current phase 
         (capacity planning vs. operation only) of the model. 
          
-        :param phase: current phase of the simulation. Must be either
-            `capacity` (for capacity planning) or `operations` for
+        :param phase: current phase of the optimization. Must be either
+            `investment` (for capacity planning) or `operations` for
             operations-only.
         :type phase: str
 
         :returns: None
         """
 
-        if phase == 'capacity':
-            logging.info(f"--- Optimizing capacity and operation ---")
+        if phase == 'investment':
+            logging.info(f"---- Optimizing investment ----")
             self.system.allow_investment = True
             self.operation_only_phase = False
 
         elif phase == 'operation':
-            logging.info(f"--- Optimizing operation only ---")
+            logging.info(f"---- Optimizing operation only ----")
             self.system.allow_investment = False
             self.operation_only_phase = True
         else:
