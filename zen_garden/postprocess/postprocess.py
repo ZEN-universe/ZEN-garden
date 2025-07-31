@@ -92,21 +92,33 @@ class Postprocess:
         if self.solver.run_diagnostics:
             self.save_benchmarking_data()
 
-    def write_file(self, name, dictionary, format=None):
+    def write_file(self, name, dictionary, format=None, mode = 'w'):
         """Writes the dictionary to file as json, if compression attribute is True, the serialized json is compressed
             and saved as binary file
 
         :param name: Filename without extension
         :param dictionary: The dictionary to save
         :param format: Force the format to use, if None use output_format attribute of instance
+        :param mode: Writting mode for python file. The two options are 'w' and
+            'a'. The former create a new file while the latter will append to an
+            existing file. Appending files is currently only supported for h5 
+            files. 
         """
 
         if isinstance(dictionary, BaseModel):
             dictionary = dictionary.model_dump()
 
+        # check whether valid mode
+        if not mode in ["a", "w"]:
+            ValueError(f"Invalid file write mode {mode} (valid options are 'a' or 'w').")
+
         # set the format
         if format is None:
             format = self.output_format
+
+        # only allow append mode for h5 files
+        if mode == 'a' and format != "h5":
+            raise ValueError(f"Write mode {mode} not available for output format {format}. If include_operation_only_phase = true, outputs must be saved in h5 files.")
 
         if format == "yml":
             # serialize to string
@@ -140,7 +152,7 @@ class Postprocess:
         elif format == "h5":
             f_name = f"{name}.h5"
             with FileLock(f_name + ".lock").acquire(timeout=300):
-                self._write_h5_file(f_name, dictionary)
+                self._write_h5_file(f_name, dictionary, mode)
 
         elif format == "txt":
             f_name = f"{name}.txt"
@@ -280,8 +292,20 @@ class Postprocess:
         # dataframe serialization
         data_frames = {}
         for name, arr in self.model.solution.items():
-            if self.solver.selected_saved_variables and name not in self.solver.selected_saved_variables:
+
+            # skip variables not selected to be saved
+            if (
+                not self.optimization_setup.operation_only_phase 
+                and self.solver.selected_saved_variables 
+                and name not in self.solver.selected_saved_variables
+            ) or (
+                self.optimization_setup.operation_only_phase
+                and self.solver.selected_saved_variables_operation
+                and name not in self.solver.selected_saved_variables_operation
+            ):
                 continue
+            
+            # extract doc information
             if name in self.vars.docs:
                 doc = self.vars.docs[name]
                 units = self.vars.units[name]
@@ -295,15 +319,32 @@ class Postprocess:
 
             # create dataframe
             df = arr.to_dataframe("value").dropna()
+
             # rename the index
             if len(df.index.names) == len(index_list):
                 df.index.names = index_list
 
             units = self._unit_df(units,df.index)
-            # we transform the dataframe to a json string and load it into the dictionary as dict
-            data_frames[name] = self._transform_df(df,doc,units)
 
-        self.write_file(self.name_dir.joinpath('var_dict'), data_frames)
+            # rename for operations-only duals
+            if self.optimization_setup.operation_only_phase:
+                name = name + '_operation'
+
+            # transform the dataframe to a json string and load it into the dictionary as dict
+            data_frames[name] = self._transform_df(df,doc,units)
+        
+        # choose whether to write new file or append to existing file
+        if self.optimization_setup.operation_only_phase:
+            mode = 'a'
+        else: 
+            mode = 'w'
+
+        # write file
+        self.write_file(
+            self.name_dir.joinpath('var_dict'), 
+            data_frames, 
+            mode = mode
+        )
 
     def save_duals(self):
         """ Saves the dual variable values to a json file which can then be
@@ -315,14 +356,27 @@ class Postprocess:
         # dataframe serialization
         data_frames = {}
         for name, arr in self.model.dual.items():
-            if self.solver.selected_saved_duals and name not in self.solver.selected_saved_duals:
+
+            # skip variables not selected to be saved
+            if (
+                not self.optimization_setup.operation_only_phase 
+                and self.solver.selected_saved_duals
+                and name not in self.solver.selected_saved_duals
+            ) or (
+                self.optimization_setup.operation_only_phase
+                and self.solver.selected_saved_duals_operation
+                and name not in self.solver.selected_saved_duals_operation
+            ):
                 continue
+            
+            # extract doc information
             if name in self.constraints.docs:
                 doc = self.constraints.docs[name]
                 index_list = self.get_index_list(doc)
             else:
                 index_list = []
                 doc = None
+
             # rescale
             if self.solver.use_scaling:
                 cons_labels = self.model.constraints[name].labels.data
@@ -338,10 +392,25 @@ class Postprocess:
             if len(df.index.names) == len(index_list):
                 df.index.names = index_list
 
+            # rename for operations-only duals
+            if self.optimization_setup.operation_only_phase:
+                name = name + '_operation'
+
             # we transform the dataframe to a json string and load it into the dictionary as dict
             data_frames[name] = self._transform_df(df,doc)
 
-        self.write_file(self.name_dir.joinpath('dual_dict'), data_frames)
+        # choose whether to write new file or append to existing file
+        if self.optimization_setup.operation_only_phase:
+            mode = 'a'
+        else: 
+            mode = 'w'
+
+        # write file
+        self.write_file(
+            self.name_dir.joinpath('dual_dict'), 
+            data_frames, 
+            mode = mode
+        )
 
     def save_system(self):
         """
@@ -568,15 +637,18 @@ class Postprocess:
         else:
             return None
 
-    def _write_h5_file(self, file_name, dictionary,complevel=4,complib="blosc"):
+    def _write_h5_file(self, file_name, dictionary, mode = 'w', complevel=4,complib="blosc"):
         """Writes the dictionary to a hdf5 file
 
         :param file_name: The name of the file
         :param dictionary: The dictionary to save
+        :param mode: Writting mode for python file. The two options are 'w' and
+            'a'. The former create a new file while the latter will append to an
+            existing file.
         """
-        if not self.overwrite and os.path.exists(file_name):
+        if mode == 'w' and not self.overwrite and os.path.exists(file_name):
             raise FileExistsError("File already exists. Please set overwrite=True to overwrite the file.")
-        with pd.HDFStore(file_name, mode='w', complevel=complevel, complib=complib) as store:
+        with pd.HDFStore(file_name, mode=mode, complevel=complevel, complib=complib) as store:
             for key, value in dictionary.items():
                 if not isinstance(key, str):
                     raise TypeError("All dictionary keys must be strings!")

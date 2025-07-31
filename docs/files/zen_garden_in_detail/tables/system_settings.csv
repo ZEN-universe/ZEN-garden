@@ -29,3 +29,4 @@ Key;Type;Default Value;Description
 ``exclude_parameters_from_TSA``;``bool``;``True``;exclude selected parameters from the timeseries aggregation
 ``knowledge_depreciation_rate``;``float``;``0.1``;knowledge deprecation rate to be used in the technology expansion constraint
 ``storage_charge_discharge_binary``;``bool``;``False``;add binary variable to avoid simultaneous charging and discharging of all storage technologies
+``include_operation_only_phase``;``bool``;``False``;option to run a operation-only model after the main capacity-planning model code.
