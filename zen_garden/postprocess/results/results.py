@@ -472,7 +472,7 @@ class Results:
         component_name: str,
         scenario_name: Optional[str] = None,
         droplevel: bool = True,
-        is_total: bool = True,
+        is_total: bool = False,
     ) -> None | Series | str:
         """
         Extracts the unit of a given Component. If no scenario is given, a random one is taken.
@@ -480,6 +480,7 @@ class Results:
         :param component_name: Name of the component
         :param scenario_name: Name of the scenario
         :param droplevel: Drop the location and time levels of the multiindex
+        :param is_total: If True, the unit is converted to a total unit (e.g. for per time components, the unit is multiplied by hour)
         :return: The corresponding unit
         """
         if scenario_name is None:
@@ -530,12 +531,15 @@ class Results:
 
         try:
             u = self.ureg.parse_expression(u)
-            if is_total and timestep_type is TimestepType.operational:
+            dim = u.dimensionality
+            is_per_energy = dim.get("[length]", 0) == -2 and dim.get("[mass]", 0) == -1 and dim.get("[time]", 0) == 2
+            is_per_time = dim.get("[time]", 0) < 0
+            if is_total and is_per_time and not is_per_energy:
                 u = u * self.ureg.h
             u_return = f"{u.u:~D}"
-        # if the unit is not in the pint registry, change the string manually (normally, when the unit_definition.txt is not saved)
+        # if the unit is not in the pint registry, change the string manually (normally when the unit_definition.txt is not saved)
         except Exception:
-            if is_total and timestep_type is TimestepType.operational:
+            if is_total and is_per_time and not is_per_energy:
                 if u.endswith(" / hour"):
                     u_return = u.replace(" / hour", "")
                 else:

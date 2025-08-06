@@ -6,7 +6,7 @@ Parameter Name;Symbol;Time Step Type;Doc String;Unit Category
 ``capacity_addition_max``;:math:`\Delta s^\mathrm{max}_{h,s,p,y}`;temporal immutable;Parameter which specifies the maximum capacity addition that can be installed;"{""energy_quantity"": 1, ""time"": -1}"
 ``capacity_addition_unbounded``;:math:`\zeta_h`;temporal immutable;Parameter which specifies the unbounded capacity addition that can be added each year (only for delayed technology deployment);"{""energy_quantity"": 1, ""time"": -1}"
 ``lifetime_existing``;:math:`l^\mathrm{ex}_h`;temporal immutable;Parameter which specifies the remaining lifetime of an existing technology;{}
-``depreciation_time``;:math: `dp_h`;temporal immutable;Parameter which specifies the depreciation time of invested technologies (optional, default value is the lifetime, if );{}
+``depreciation_time``;:math:`dp_h`;temporal immutable;Parameter which specifies the depreciation time of invested technologies (optional, default value is the lifetime);{}
 ``capex_capacity_existing``;-;temporal immutable;Parameter which specifies the total capex of an existing technology which still has to be paid;"{""money"": 1, ""energy_quantity"": -1}"
 ``opex_specific_variable``;:math:`\beta_{h,y}`;``set_time_steps_operation``;Parameter which specifies the variable specific opex;"{""money"": 1, ""energy_quantity"": -1}"
 ``opex_specific_fixed``;:math:`\gamma_{h,y}`;``set_time_steps_yearly``;Parameter which specifies the fixed annual specific opex;"{""money"": 1, ""energy_quantity"": -1, ""time"": 1}"

@@ -100,7 +100,7 @@ on edges :math:`e\in\mathcal{E}`. We summarize nodes and edges to positions
 
 The investment costs are annualized by multiplying the total investment cost 
 with the annuity factor :math:`f_h`, which is a function of the technology
-deprecation time :math:`dp_h` and the discount rate :math:`r`:
+depreciation time :math:`dp_h` and the discount rate :math:`r`:
 
 .. math::
     :label: annuity
@@ -127,8 +127,8 @@ where :math:`\lceil\cdot\rceil` is the ceiling function and :math:`\psi(y)` is a
 function that maps the planning period :math:`y` to the actual year.
 
 .. note::
-    The deprecation time :math:`dp_h` is an optional parameter that reflects the time range for which technology
-    investments have to be paid back. In case the deprecation time is not defined or not needed, the default value will
+    The depreciation time :math:`dp_h` is an optional parameter that reflects the time range for which technology
+    investments have to be paid back. In case the depreciation time is not defined or not needed, the default value will
     be set to the technology lifetime.
 
 The capital investment cost :math:`I_{h,p,y}` for conversion technology
