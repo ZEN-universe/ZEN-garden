@@ -2,7 +2,7 @@
 This module contains the implementation of a SolutionLoader that reads the solution.
 """
 import copy
-import logging
+import warnings
 import re
 import json
 import os
@@ -471,7 +471,7 @@ class SolutionLoader():
         if any of the defined time steps name is in the index of the dataframe.
         """
         # TODO remove when also removed in visualization platform
-        logging.warning("DeprecationWarning: The method _read_components is deprecated and will be removed in the future. Read components from the scenario instead.")
+        warnings.warn("DeprecationWarning: The method _read_components is deprecated and will be removed in the future. Read components from the scenario instead.")
         first_scenario = get_first_scenario(self.scenarios)
         return first_scenario.components
 

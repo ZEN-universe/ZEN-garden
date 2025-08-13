@@ -14,6 +14,7 @@ from zen_garden.utils import align_like
 from .technology import Technology
 from ..component import ZenIndex
 from ..element import GenericRule,Element
+import warnings
 
 
 class ConversionTechnology(Technology):
@@ -139,7 +140,7 @@ class ConversionTechnology(Technology):
             return dict_of_attributes, index_names, dict_of_units
         dict_of_attributes = pd.concat(dict_of_attributes, keys=dict_of_attributes.keys())
         if not index_names:
-            logging.warning(f"Initializing the parameter capex without the specifying the index names will be deprecated!")
+            warnings.warn(f"Initializing the parameter capex without the specifying the index names will be deprecated!")
             return dict_of_attributes, dict_of_units
         else:
             custom_set, index_names = cls.create_custom_set(index_names, optimization_setup)
