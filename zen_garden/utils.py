@@ -233,7 +233,7 @@ def reformat_slicing_index(index, component) -> tuple[str]:
             ref_index = []
             for key, value in index.items():
                 if key not in index_names:
-                    logging.warning(f"Invalid index name '{key}' in index. Skipping.")
+                    warnings.warn(f"Invalid index name '{key}' in index. Skipping.", Warning)
                     continue
                 if isinstance(value, list):
                     ref_index.append(f"{key} in {value}")
@@ -243,7 +243,7 @@ def reformat_slicing_index(index, component) -> tuple[str]:
         elif isinstance(index, tuple):
             ref_index = []
             if len(index) > len(index_names):
-                logging.warning(f"Index length {len(index)} is longer than the number of index dimensions {len(index_names)}. Check selected index.")
+                warnings.warn(f"Index length {len(index)} is longer than the number of index dimensions {len(index_names)}. Check selected index.", Warning)
             for i, index_name in enumerate(index_names):
                 if i >= len(index):
                     break
@@ -255,7 +255,7 @@ def reformat_slicing_index(index, component) -> tuple[str]:
                     ref_index.append(f"{index_name} == {index[i]}")
             ref_index = tuple(ref_index)
         else:
-            logging.warning(f"Invalid index type {type(index)}. Skipping.")
+            warnings.warn(f"Invalid index type {type(index)}. Skipping.", Warning)
             ref_index = tuple()
 
         return ref_index
