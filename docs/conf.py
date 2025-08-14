@@ -12,7 +12,9 @@
 import os
 import sys
 from importlib.metadata import version as get_version
+from pathlib import Path
 sys.path.insert(0, os.path.abspath('..'))
+sys.path.append(os.path.abspath('_ext'))
 
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
@@ -41,6 +43,7 @@ extensions = ['sphinx.ext.autodoc',
               'nbsphinx_link',
               'myst_parser',
               "sphinx.ext.imgconverter",  # for SVG conversion
+              "docstring"
              ]
 # allow errors in the notebooks
 nbsphinx_allow_errors = True
@@ -62,8 +65,7 @@ exclude_patterns = ['_build', 'dataset_examples', 'Thumbs.db', '.DS_Store', '**.
                     'files/tutorial/add_carrier.rst', 'files/tutorial/add_policy.rst', 
                     'files/tutorial/add_technology.rst', 'files/tutorial/add_transport.rst', 
                     'files/tutorial/handle_infeasibilities.rst', 'files/api_v2/**', 
-                    'files/dataset_examples/**', 'files/developer_guide/testing.rst',
-                    'files/welcome/use_cases.rst', 'files/references/release_notes.rst']
+                    'files/dataset_examples/**', 'files/developer_guide/testing.rst', 'files/references/release_notes.rst']
 
 
 # -- Options for HTML output -------------------------------------------------

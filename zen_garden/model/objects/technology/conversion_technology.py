@@ -57,6 +57,8 @@ class ConversionTechnology(Technology):
         # get conversion efficiency and capex
         self.get_conversion_factor()
         self.opex_specific_fixed = self.data_input.extract_input_data("opex_specific_fixed", index_sets=["set_nodes", "set_time_steps_yearly"], time_steps="set_time_steps_yearly", unit_category={"money": 1, "energy_quantity": -1, "time": 1})
+        self.min_full_load_hours_fraction = self.data_input.extract_input_data("min_full_load_hours_fraction", index_sets=["set_nodes", "set_time_steps_yearly"], time_steps="set_time_steps_yearly", unit_category={})
+
         self.convert_to_fraction_of_capex()
 
     def get_conversion_factor(self):
@@ -188,7 +190,10 @@ class ConversionTechnology(Technology):
         # slope of linearly modeled conversion efficiencies
         optimization_setup.parameters.add_parameter(name="conversion_factor", index_names=["set_conversion_technologies", "set_dependent_carriers", "set_nodes", "set_time_steps_operation"],
             doc="Parameter which specifies the conversion factor", calling_class=cls)
-
+        # minimum annual average capacity factor
+        optimization_setup.parameters.add_parameter(name="min_full_load_hours_fraction", index_names=["set_conversion_technologies", "set_nodes", "set_time_steps_yearly"],
+            doc="Minimum full load hours as a fraction of the total hours per planning period", calling_class=cls)
+            
         # add params of the child classes
         for subclass in cls.__subclasses__():
             if np.size(optimization_setup.system[subclass.label]):
@@ -273,6 +278,8 @@ class ConversionTechnology(Technology):
         rules.constraint_opex_emissions_technology_conversion()
         # conversion factor
         rules.constraint_carrier_conversion()
+        # minimum average annual capacity factor
+        rules.constraint_minimum_full_load_hours()
 
         # capex
         set_pwa_capex = cls.create_custom_set(["set_conversion_technologies", "set_capex_pwa", "set_nodes", "set_time_steps_yearly"], optimization_setup)
@@ -352,7 +359,7 @@ class ConversionTechnologyRules(GenericRule):
         times = self.parameters.max_load.coords["set_time_steps_operation"]
         time_step_year = xr.DataArray([self.optimization_setup.energy_system.time_steps.convert_time_step_operation2year(t) for t in times.data], coords=[times])
         term_capacity = (
-                self.parameters.max_load.loc[techs, "power", nodes, :]
+                self.parameters.max_load.loc[techs, nodes, :]
                 * self.variables["capacity"].loc[techs, "power", nodes, time_step_year]
             ).rename({"set_technologies": "set_conversion_technologies", "set_location": "set_nodes"})
         term_reference_flow = self.get_flow_expression_conversion(techs,  nodes)
@@ -361,6 +368,91 @@ class ConversionTechnologyRules(GenericRule):
         constraints = lhs >= rhs
 
         self.constraints.add_constraint("constraint_capacity_factor_conversion", constraints)
+
+
+    def constraint_minimum_full_load_hours(self):
+        """ Sets minimum full load hours for each unit.
+
+        This constraint requires that a minimum number of full_load_hours be met
+        over the course of year. Full load hours are the amount of hours that
+        a conversion technology would need to run at full capacity in order 
+        to produce an output equivalent to its yearly total. The constraint can 
+        be used to require a conversion technology to always operate at 
+        baseload capacity. This can be helpful for technologies where ramping 
+        is not possible or economical for reasons not captured by the model. 
+
+        **Mathematical formulation:**
+
+        .. math::
+            \\sum_t G_{i,n,t,y}^\\mathrm{r} \\geq 
+            \\bigg( \\sum_{t \\in\\mathcal{T}} \\tau_t \\bigg) 
+            \\underline{\\pi}_{i,n,y} S_{i,n,y} 
+            \\qquad \\forall i,n,y
+
+        The sum simply yields the unaggregated time steps per year, set in the 
+        systems.json file.
+
+        **Constraint parameters:** 
+        
+        - :math:`\\underline{\\pi}_{i,n,y}`: minimum number of full load hours,
+          expressed as a fraction of the unaggregated time steps per year. Takes
+          separate values for each technology :math:`i` at node :math:`n` and 
+          planning period :math:`y`\n
+
+        **Constraint variables:**
+
+        - :math:`S_{i,n,y}`: installed capacity of the technology :math:`i` at 
+          node :math:`n` in planning period :math:`y` \n
+    
+        - :math:`G_{i,n,t}^\\mathrm{r}`: reference carrier flow of the technology 
+          :math:`i` at node :math:`n` in time step :math:`t` in planning
+          period :math:`y`
+
+
+        """
+        #get dimensions
+        techs = self.sets["set_conversion_technologies"]
+        if len(techs) == 0:
+            return
+        nodes = self.sets["set_nodes"]
+        times = self.sets["set_time_steps_yearly"]
+        # define mask
+        min_full_load_hours_fraction = (
+            self.parameters.min_full_load_hours_fraction
+        )
+        mask = xr.DataArray(
+            ~np.isclose(min_full_load_hours_fraction,0), 
+            dims = min_full_load_hours_fraction.dims, 
+            coords= min_full_load_hours_fraction.coords
+        )
+        #create constraint
+        term_capacity = (
+            min_full_load_hours_fraction
+            * self.system.unaggregated_time_steps_per_year
+            * self.variables["capacity"]
+                .sel({
+                    "set_technologies": techs,
+                    "set_capacity_types": ["power"],
+                    "set_location": nodes
+                })
+                .rename({
+                    "set_technologies": "set_conversion_technologies",
+                    "set_location": "set_nodes"
+                })
+        )
+        term_annual_production = (
+            self.get_flow_expression_conversion(techs,  nodes)*
+            self.get_year_time_step_duration_array()
+        ).sum("set_time_steps_operation")
+        
+        lhs = term_annual_production.where(mask) - term_capacity.where(mask)
+        rhs = 0
+        constraints = lhs >= rhs
+
+        self.constraints.add_constraint(
+            "constraint_minimum_full_load_hours", 
+            constraints
+        )
 
     def constraint_opex_emissions_technology_conversion(self):
         """ calculate opex and carbon emissions of each technology

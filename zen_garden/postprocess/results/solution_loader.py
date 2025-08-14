@@ -136,6 +136,7 @@ class Scenario():
         self._solver: Solver = self._read_solver()
         self._benchmarking: dict[str,Any] = self._read_benchmarking()
         self._ureg = self._read_ureg(default_ureg)
+        self._components: dict[str, Component] = self._read_components()
 
     def _read_analysis(self) -> Analysis:
         analysis_path = os.path.join(self.path, "analysis.json")
@@ -203,6 +204,57 @@ class Scenario():
         else:
             raise KeyError(f"Year {year} not in optimized years {all_years}.")
         return ts
+
+    def _read_components(self) -> dict[str, Component]:
+        """
+        Create the component instances.
+
+        The components are stored in three files and the file-names define the types of
+        the component. Furthermore, the timestep name and type are derived by checking
+        if any of the defined time steps name is in the index of the dataframe.
+        """
+        ans: dict[str, Component] = {}
+
+        if self.has_rh:
+            mf_name = [i for i in os.listdir(self.path) if "MF_" in i][0]
+            component_folder = os.path.join(self.path, mf_name)
+        else:
+            component_folder = self.path
+
+        for file_name, component_type in ComponentType.get_file_names_maps().items():
+            file_path = os.path.join(component_folder, file_name)
+
+            if not os.path.exists(file_path):
+                continue
+
+            h5_file = h5py.File(file_path)
+            version = get_solution_version(self)
+            for component_name in h5_file.keys():
+                index_names = get_index_names(h5_file,component_name,version)
+                time_index = set(index_names).intersection(set(TimestepType.get_time_steps_names()))
+                timestep_name = time_index.pop() if len(time_index) > 0 else None
+                timestep_type = TimestepType.get_time_step_type(timestep_name)
+
+                doc = get_doc(h5_file,component_name,version)
+
+                has_units = get_has_units(h5_file,component_name,version)
+
+                ans[component_name] = Component(
+                    component_name,
+                    component_type,
+                    index_names,
+                    timestep_type,
+                    timestep_name,
+                    file_name,
+                    doc,
+                    has_units
+                )
+
+        return ans
+
+    @property
+    def components(self) -> dict[str, Component]:
+        return self._components
 
     @property
     def analysis(self) -> Analysis:
@@ -442,45 +494,10 @@ class SolutionLoader():
         the component. Furthermore, the timestep name and type are derived by checking
         if any of the defined time steps name is in the index of the dataframe.
         """
-        ans: dict[str, Component] = {}
+        # TODO remove when also removed in visualization platform
+        logging.warning("DeprecationWarning: The method _read_components is deprecated and will be removed in the future. Read components from the scenario instead.")
         first_scenario = get_first_scenario(self.scenarios)
-
-        if first_scenario.has_rh:
-            mf_name = [i for i in os.listdir(first_scenario.path) if "MF_" in i][0]
-            component_folder = os.path.join(first_scenario.path, mf_name)
-        else:
-            component_folder = first_scenario.path
-
-        for file_name, component_type in ComponentType.get_file_names_maps().items():
-            file_path = os.path.join(component_folder, file_name)
-
-            if not os.path.exists(file_path):
-                continue
-
-            h5_file = h5py.File(file_path)
-            version = get_solution_version(first_scenario)
-            for component_name in h5_file.keys():
-                index_names = get_index_names(h5_file,component_name,version)
-                time_index = set(index_names).intersection(set(TimestepType.get_time_steps_names()))
-                timestep_name = time_index.pop() if len(time_index) > 0 else None
-                timestep_type = TimestepType.get_time_step_type(timestep_name)
-
-                doc = get_doc(h5_file,component_name,version)
-
-                has_units = get_has_units(h5_file,component_name,version)
-
-                ans[component_name] = Component(
-                    component_name,
-                    component_type,
-                    index_names,
-                    timestep_type,
-                    timestep_name,
-                    file_name,
-                    doc,
-                    has_units
-                )
-
-        return ans
+        return first_scenario.components
 
     @cache
     def get_timestep_duration(

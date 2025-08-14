@@ -86,7 +86,7 @@ edges, but note that you are not forced to follow that convention. In fact,
 
 ``base_units.csv`` define the base units in the model. That means that all units 
 in the model are converted to a combination of base units. See 
-:ref:`input_handling.unit_consistancy` for more information.
+:ref:`input_handling.unit_consistency` for more information.
 
 
 .. _input_structure.technologies:

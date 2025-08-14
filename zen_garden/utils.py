@@ -12,11 +12,11 @@ import re
 from ordered_set import OrderedSet
 import linopy as lp
 import numpy as np
-import pandas as pd
 import xarray as xr
 import shutil
 from copy import deepcopy
 from pathlib import Path
+from zen_garden.model.default_config import Subscriptable
 
 def setup_logger(level=logging.INFO):
     """ set up logger
@@ -420,7 +420,7 @@ class IISConstraintParser(object):
 
         name = constraints.get_name_by_label(value)
         con = constraints[name]
-        indices = [i[0] for i in np.where(con.values == value)]
+        indices = [i[0] for i in np.where(con.labels.values == value)]
 
         # Extract the coordinates from the indices
         coord = {
@@ -510,7 +510,7 @@ class ScenarioDict(dict):
         for key, value in config_parts.items():
             if key in self.dict:
                 for sub_key, sub_value in self.dict[key].items():
-                    assert sub_key in value, f"Trying to update {key} with key {sub_key} and value {sub_value}, but the {key} does not have this key!"
+                    assert sub_key in value.keys(), f"Trying to update {key} with key {sub_key} and value {sub_value}, but the {key} does not have this key!"
                     if type(value[sub_key]) == type(sub_value):
                         value[sub_key] = sub_value
                     elif isinstance(sub_value, dict): #ToDO check this and make more general -> here only for SolverOptions
@@ -687,6 +687,7 @@ class ScenarioDict(dict):
                                 new_dict[element][param] = base_dict.copy()
                 # delete the old set
                 del new_dict[current_set]
+
         return new_dict
 
     def validate_dict(self, vali_dict):
@@ -706,6 +707,22 @@ class ScenarioDict(dict):
                 if len(diff := (set(param_dict.keys()) - self._param_dict_keys)) > 0:
                     raise ValueError(
                         f"The entry for element {element} and param {param} contains invalid entries: {diff}!")
+
+    @staticmethod
+    def check_if_all_elements_in_model(scenario_dict,element_dict):
+        """
+        Checks if all elements in the scenario_dict are present in the element_dict
+        This is used to ensure that all elements in the scenario are defined in the model.
+
+        :param scenario_dict: Dictionary containing the scenario elements
+        :param element_dict: Dictionary containing the element definitions
+        """
+        ignored_elements = ScenarioDict._setting_elements + ScenarioDict._special_elements + list(ScenarioDict._param_dict_keys) + ["EnergySystem"]
+        relevant_elements = set(scenario_dict.keys()) - set(ignored_elements)
+        existing_elements = [e.name for e in element_dict["Element"]]
+        for element in relevant_elements:
+            if element not in existing_elements:
+                raise KeyError(f"The element '{element}', defined in the scenario file, is not defined in the model.")
 
     @staticmethod
     def validate_file_name(fname):
@@ -812,9 +829,9 @@ class InputDataChecks:
         assert len(self.system.set_conversion_technologies + self.system.set_transport_technologies + self.system.set_storage_technologies) > 0, f"No technology selected in system.py"
         # Checks if identical technologies are selected multiple times in system.py file and removes possible duplicates
         for tech_list in ["set_conversion_technologies", "set_transport_technologies", "set_storage_technologies"]:
-            techs_selected = self.system[tech_list]
+            techs_selected = getattr(self.system,tech_list)
             unique_elements = list(np.unique(techs_selected))
-            self.system[tech_list] = unique_elements
+            self.system = self.system.model_copy(update={tech_list: unique_elements})
 
     def check_year_definitions(self):
         """
@@ -834,7 +851,7 @@ class InputDataChecks:
         Checks if the primary folder structure (set_conversion_technology, set_transport_technology, ..., energy_system) is provided correctly
         """
 
-        for set_name, subsets in self.analysis.subsets.items():
+        for set_name, subsets in self.analysis.subsets.model_dump().items():
             if not os.path.exists(os.path.join(self.analysis.dataset, set_name)):
                 raise AssertionError(f"Folder {set_name} does not exist!")
             if isinstance(subsets, dict):
@@ -915,6 +932,37 @@ class InputDataChecks:
             if reversed_edge not in [edge_string[0] for edge_string in set_edges_input.values] and edge[1] in self.system.set_nodes and edge[2] in self.system.set_nodes:
                 warnings.warn(f"The edge {edge[0]} is single-directed, i.e., the edge {reversed_edge} doesn't exist!")
 
+    def read_system_file(self,config):
+        """
+        Reads the system file and returns the system dictionary
+
+        :param config: config object
+        """
+        # check if system.json file exists
+        if os.path.exists(os.path.join(config.analysis.dataset, "system.json")):
+            with open(os.path.join(config.analysis.dataset, "system.json"), "r") as file:
+                system = json.load(file)
+        # otherwise read system.py file
+        else:
+            system_path = os.path.join(config.analysis.dataset, "system.py")
+            spec = importlib.util.spec_from_file_location("module", system_path)
+            module = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(module)
+            system = module.system
+        new_system = config.system.model_copy(update=system)
+        config.system = new_system
+        self.system = new_system
+        self.check_no_extra_config_fields(config)
+
+    def check_no_extra_config_fields(self,config,config_name="config"):
+        """ Checks if the config object has no extra fields that are not defined in the default_config """
+        assert len(config.model_extra) == 0, f"The config object '{config_name}' has extra fields that are not defined in the default_config: {config.model_extra}."
+        for name in config.__class__.model_fields:
+            subconfig = getattr(config, name)
+            # Detect if the subconfig is a subclass of Subscriptable
+            if isinstance(subconfig.__class__, type) and issubclass(subconfig.__class__, Subscriptable):
+                self.check_no_extra_config_fields(subconfig,config_name = config_name+"/"+name)
+
     @staticmethod
     def check_carrier_configuration(input_carrier, output_carrier, reference_carrier, name):
         """
@@ -961,26 +1009,6 @@ class InputDataChecks:
             df_input = df_input[~duplicate_mask]
 
         return df_input
-
-    @staticmethod
-    def read_system_file(config):
-        """
-        Reads the system file and returns the system dictionary
-
-        :param config: config object
-        """
-        # check if system.json file exists
-        if os.path.exists(os.path.join(config.analysis.dataset, "system.json")):
-            with open(os.path.join(config.analysis.dataset, "system.json"), "r") as file:
-                system = json.load(file)
-        # otherwise read system.py file
-        else:
-            system_path = os.path.join(config.analysis.dataset, "system.py")
-            spec = importlib.util.spec_from_file_location("module", system_path)
-            module = importlib.util.module_from_spec(spec)
-            spec.loader.exec_module(module)
-            system = module.system
-        config.system.update(system)
 
 
 class StringUtils:

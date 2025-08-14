@@ -670,7 +670,7 @@ class Scaling:
         :param include_rhs: bool whether to include the right hand side in the scaling
 
         """
-        #optimization model to perform scaling on
+        # optimization model to perform scaling on
         if algorithm is None:
             algorithm = ["geom"]
         elif type(algorithm) == str:
@@ -679,10 +679,10 @@ class Scaling:
         self.model = model
         self.algorithm = algorithm
         self.include_rhs = include_rhs
-        #For Numerical Range Improvement
+        # For Numerical Range Improvement
         self.last_lhs_range = 0
         self.last_rhs_range = 0
-        #For benchmarking
+        # For benchmarking
         self.scaling_time = 0
 
     def initiate_A_matrix(self):
@@ -721,7 +721,7 @@ class Scaling:
         """
         Analyzes the numerics of the optimization model
         """
-        #print numerics if no scaling is activated
+        # print numerics if no scaling is activated
         self.initiate_A_matrix()
         self.A_matrix.eliminate_zeros()
         self.print_numerics(0,True)
@@ -828,7 +828,7 @@ class Scaling:
                 continue
             else:
                 self.replace_data(name_con)
-        #overwrite objective
+        # overwrite objective
         vars = self.model.objective.vars.data
         scale_factors = self.D_c_inv[vars]
         self.model.objective.coeffs.data = self.model.objective.coeffs.data * scale_factors
