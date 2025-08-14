@@ -108,7 +108,7 @@ class UnitHandling:
         :return list_base_units: list of base units """
         if os.path.exists(os.path.join(self.folder_path / "base_units.csv")):
             list_base_units = pd.read_csv(self.folder_path / "base_units.csv").squeeze().values.tolist()
-            logging.warning("DeprecationWarning: Specifying the base units in .csv file format is deprecated. Use a .json file format instead.")
+            logging.warning("DeprecationWarning: Specifying the base units in .csv file format is deprecated. Use the .json file format instead.")
         else:
             with open(os.path.join(self.folder_path, 'base_units.json'), "r") as f:
                 data = json.load(f)
