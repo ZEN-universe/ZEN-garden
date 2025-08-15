@@ -456,6 +456,12 @@ class Technology(Element):
         techs_on_off,index_list = cls.create_custom_set(["set_technologies", "set_on_off", "set_location", "set_time_steps_operation"],optimization_setup)
         index_list.pop(1)
         mask_on_off = optimization_setup.variables.index_sets.indices_to_mask(techs_on_off, index_list, (0, 0))[0]
+        times = optimization_setup.sets['set_time_steps_operation']
+        time_step_year = xr.DataArray(
+            [optimization_setup.energy_system.time_steps.convert_time_step_operation2year(t) for t in times.data],
+            coords=[times], dims=["set_time_steps_operation"])
+        mask_nonzero_cap_limit = optimization_setup.parameters.capacity_limit.sel({'set_capacity_types': 'power', 'set_time_steps_yearly': time_step_year}) != 0
+        mask_on_off = mask_on_off & mask_nonzero_cap_limit.drop_vars('set_capacity_types')
         variables.add_variable(model, name="tech_on_var", index_sets=cls.create_custom_set(["set_technologies", "set_location", "set_time_steps_operation"],optimization_setup),mask=mask_on_off,doc="Binary variable which equals 1 when technology is switched on at location l and time t", binary=True, unit_category=None)
         variables.add_variable(model, name="capacity_on_off_helper_var",index_sets=cls.create_custom_set(["set_technologies", "set_location", "set_time_steps_operation"],optimization_setup), bounds=(0, np.inf),mask=mask_on_off,doc="Helper variable that substitutes the product of capacity and tech_on_var",unit_category={"energy_quantity": 1, "time": -1})
 
