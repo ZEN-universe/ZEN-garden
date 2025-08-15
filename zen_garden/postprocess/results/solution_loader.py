@@ -305,16 +305,11 @@ class SolutionLoader():
         self.path = path
         assert len(os.listdir(path)) > 0, f"Path {path} is empty."
         self._scenarios: dict[str, Scenario] = self._read_scenarios()
-        self._components: dict[str, Component] = self._read_components()
         self._series_cache: dict[str, "pd.Series[Any]"] = {}
 
     @property
     def scenarios(self) -> dict[str, Scenario]:
         return self._scenarios
-
-    @property
-    def components(self) -> dict[str, Component]:
-        return self._components
 
     @property
     def name(self) -> str:
@@ -494,19 +489,6 @@ class SolutionLoader():
 
         return ans
 
-    def _read_components(self) -> dict[str, Component]:
-        """
-        Create the component instances.
-
-        The components are stored in three files and the file-names define the types of
-        the component. Furthermore, the timestep name and type are derived by checking
-        if any of the defined time steps name is in the index of the dataframe.
-        """
-        # TODO remove when also removed in visualization platform
-        logging.warning("DeprecationWarning: The method _read_components is deprecated and will be removed in the future. Read components from the scenario instead.")
-        first_scenario = get_first_scenario(self.scenarios)
-        return first_scenario.components
-
     @cache
     def get_timestep_duration(
         self, scenario: Scenario, component: Component
@@ -522,7 +504,7 @@ class SolutionLoader():
         version = get_solution_version(scenario)
         if check_if_v1_leq_v2(version,"v0"):
             time_step_duration = self.get_component_data(
-                scenario, self.components[timestep_duration_name]
+                scenario, scenario.components[timestep_duration_name]
             )
         else:
             time_steps_file_name = _get_time_steps_file(scenario)
