@@ -39,7 +39,7 @@ dependencies = [
     "linopy",
     "requests",
     "ipykernel",
-    "zen-temple==0.7.0"
+    "zen-temple>=0.7.0"
 ]
 
 [project.optional-dependencies]
