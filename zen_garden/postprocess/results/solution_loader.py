@@ -2,7 +2,7 @@
 This module contains the implementation of a SolutionLoader that reads the solution.
 """
 import copy
-import logging
+import warnings
 import re
 import json
 import os

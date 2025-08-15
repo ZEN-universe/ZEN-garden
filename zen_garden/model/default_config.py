@@ -97,6 +97,8 @@ class System(Subscriptable):
     use_capacities_existing: bool = True
     allow_investment: bool = True
     storage_charge_discharge_binary: bool = False
+    include_operation_only_phase: bool = False
+
 
 
 class Solver(Subscriptable):
@@ -113,7 +115,9 @@ class Solver(Subscriptable):
     save_parameters: bool = True
     selected_saved_parameters: list = []  # if empty, all parameters are saved
     selected_saved_variables: list = []  # if empty, all variables are saved
+    selected_saved_variables_operation: list = []  # if empty, all variables are saved
     selected_saved_duals: list = []  # if empty, all duals are saved (if save_duals is True)
+    selected_saved_duals_operation: list = []  # if empty, all duals are saved (if save_duals is True)
     linear_regression_check: dict[str, float] = {
         "eps_intercept": 0.1,
         "epsRvalue": 1 - (1e-5),
@@ -157,6 +161,7 @@ class Analysis(Subscriptable):
     output_format: str = "h5"
     earliest_year_of_data: int = 1900
     zen_garden_version: str = None
+
 
 
 class Config(Subscriptable):

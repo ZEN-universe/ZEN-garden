@@ -7,7 +7,7 @@ Set Name;Index;Symbol;Doc String
 ``set_carriers``;--;:math:`\mathcal{C}`;Set of carriers
 ``set_technologies``;--;:math:`\mathcal{H}`;Set of technologies
 ``set_base_time_steps``;--;:math:`\mathcal{T}^\mathrm{base}`;Set of base timesteps
-``set_time_steps_yearly``;--;:math:`\mathcal{Y}`;Set of yearly timesteps
-``set_time_steps_yearly_entire_horizon``;--;:math:`\mathcal{Y}^\mathrm{horizon}`;Set of yearly timesteps of entire optimization horizon
+``set_time_steps_yearly``;--;:math:`\mathcal{Y}`;Set of yearly timesteps within the current foresight horizon. For simulations with myopic foresight, this set is a subset math:`\mathcal{Y}^\mathrm{horizon}` 
+``set_time_steps_yearly_entire_horizon``;--;:math:`\mathcal{Y}^\mathrm{horizon}`;All yearly timesteps, regardless of whether they are within or the current foresight horizon. 
 ``set_time_steps_operation``;--;:math:`\mathcal{T}`;Set of operational time steps
 ``set_time_steps_storage``;--;:math:`\mathcal{T}^\mathrm{storage}`;Set of storage level timesteps
