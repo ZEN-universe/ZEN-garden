@@ -181,13 +181,21 @@ class Scenario():
             ureg.load_definitions(unit_path)
         return ureg
 
-    def convert_ts2year(self,df: "pd.DataFrame") -> "pd.DataFrame":
+    def convert_ts2year(self,df: ["pd.DataFrame","pd.Series"]) -> ["pd.DataFrame","pd.Series"]:
         """ converts the yearly ts column to the corresponding year """
-        assert pd.api.types.is_any_real_numeric_dtype(df.columns), f"DataFrame columns must be numeric to convert to year, not {df.columns.to_list()}."
+        df = df.copy()
+        if isinstance(df, pd.Series):
+            year_index = df.index
+        else:
+            year_index = df.columns
+        assert pd.api.types.is_any_real_numeric_dtype(year_index), f"DataFrame columns must be numeric to convert to year, not {year_index.to_list()}."
         ry = self.system.reference_year
         del_y = self.system.interval_between_years
-        years = [ry + i*del_y for i in df.columns]
-        df.columns = years
+        years = [ry + i*del_y for i in year_index]
+        if isinstance(df, pd.Series):
+            df.index = years
+        else:
+            df.columns = years
         return df
 
     def convert_year2ts(self,year: int) -> int:

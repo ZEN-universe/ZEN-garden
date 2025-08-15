@@ -288,6 +288,8 @@ class Results:
             years = [year]
 
         if component.timestep_type is None or type(series.index) is not pd.MultiIndex:
+            if component.timestep_type is TimestepType.yearly:
+                series = scenario.convert_ts2year(series)
             return series
 
         if component.timestep_type is TimestepType.yearly:
