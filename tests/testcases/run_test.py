@@ -319,7 +319,7 @@ def test_3c(config, folder_path):
     res = Results(os.path.join("outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
     # test functions get_total() and get_full_ts()
-    check_get_total_get_full_ts(res, year=0)
+    check_get_total_get_full_ts(res, year=2022)
 
 
 def test_3d(config, folder_path):
