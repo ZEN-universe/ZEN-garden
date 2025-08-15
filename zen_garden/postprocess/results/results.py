@@ -479,7 +479,7 @@ class Results:
         component_name: str,
         scenario_name: Optional[str] = None,
         droplevel: bool = True,
-        is_total: bool = False,
+        convert_to_yearly_unit: bool = False,
     ) -> None | Series | str:
         """
         Extracts the unit of a given Component. If no scenario is given, a random one is taken.
@@ -487,7 +487,7 @@ class Results:
         :param component_name: Name of the component
         :param scenario_name: Name of the scenario
         :param droplevel: Drop the location and time levels of the multiindex
-        :param is_total: If True, the unit is converted to a total unit (e.g. for per time components, the unit is multiplied by hour)
+        :param convert_to_yearly_unit: If True, the unit is converted to a yearly unit, i.e., for components with an operational time step type, the unit is multiplied by hours.
         :return: The corresponding unit
         """
         if scenario_name is None:
@@ -515,15 +515,15 @@ class Results:
         # convert to pint units
         if isinstance(units, pd.Series):
             for i in units.index:
-                units[i] = self._convert_to_pint_units(units[i], is_total, component_name)
+                units[i] = self._convert_to_pint_units(units[i], convert_to_yearly_unit, component_name)
         elif isinstance(units, str):
-            units = self._convert_to_pint_units(units, is_total, component_name)
+            units = self._convert_to_pint_units(units, convert_to_yearly_unit, component_name)
         else:
             raise TypeError(f"Invalid units type: {type(units)}")
 
         return units
 
-    def _convert_to_pint_units(self,u: str,is_total: bool, component_name: str) -> str:
+    def _convert_to_pint_units(self,u: str,convert_to_yearly_unit: bool, component_name: str) -> str:
         """
         Converts a string to a pint unit.
         """
@@ -538,15 +538,12 @@ class Results:
 
         try:
             u = self.ureg.parse_expression(u)
-            dim = u.dimensionality
-            is_per_energy = dim.get("[length]", 0) == -2 and dim.get("[mass]", 0) == -1 and dim.get("[time]", 0) == 2
-            is_per_time = dim.get("[time]", 0) < 0
-            if is_total and is_per_time and not is_per_energy:
+            if convert_to_yearly_unit and timestep_type is TimestepType.operational:
                 u = u * self.ureg.h
             u_return = f"{u.u:~D}"
         # if the unit is not in the pint registry, change the string manually (normally when the unit_definition.txt is not saved)
         except Exception:
-            if is_total and is_per_time and not is_per_energy:
+            if convert_to_yearly_unit and timestep_type is TimestepType.operational:
                 if u.endswith(" / hour"):
                     u_return = u.replace(" / hour", "")
                 else:
