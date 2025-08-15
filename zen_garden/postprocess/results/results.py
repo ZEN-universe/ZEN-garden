@@ -536,6 +536,8 @@ class Results:
             return u
         timestep_type = component.timestep_type
 
+        is_per_energy = False
+        is_per_time = False
         try:
             u = self.ureg.parse_expression(u)
             dim = u.dimensionality
