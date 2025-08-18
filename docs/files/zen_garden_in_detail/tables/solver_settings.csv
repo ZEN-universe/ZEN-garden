@@ -2,7 +2,7 @@ Key;Type;Default Value;Description
 ``name``;``str``;``highs``;select solver
 ``solver_options``;``SolverOptions``;``SolverOptions()``;pass solver options to the selected solver
 ``save_duals``;``bool``;``False``;if true, dual variables are computed, otherwise, computation of dual variables is skipped
-``save_parameters``;``bool``;``False``;if true, parameters are saved, otherwise, parameters are not saved
+``save_parameters``;``bool``;``True``;if true, parameters are saved, otherwise, parameters are not saved
 ``selected_saved_parameters``;``list[str]``;[];list of parameters to save. If empty, all parameters are saved.
 ``selected_saved_variables``;``list[str]``;[];list of variables to save. If empty, all variables are saved.
 ``selected_saved_variables_operation``;``list[str]``;[];list of variables to save in the operation-only phase (only if system setting ``include_operation_only_phase`` is ``True``). If empty, all variables are saved.
