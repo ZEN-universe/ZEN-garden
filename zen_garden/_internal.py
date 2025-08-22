@@ -72,6 +72,7 @@ def main(config, dataset_path=None, job_index=None, folder_output_path=None):
                 #if operation phase, exclude capacity expansion
                 if phase == 'operation' and not config.system.include_operation_only_phase:
                     continue
+                StringUtils.print_optimization_progress(scenario, steps_horizon, step, system=config.system)
                 optimization_setup.set_phase_configurations(phase)
                 # overwrite time indices
                 optimization_setup.overwrite_time_indices(step)
