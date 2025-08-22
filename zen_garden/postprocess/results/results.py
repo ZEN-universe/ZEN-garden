@@ -478,6 +478,7 @@ class Results:
         self,
         component_name: str,
         scenario_name: Optional[str] = None,
+        index: Optional[Union[NestedTuple, NestedDict, list[str], str, float, int]] = None,
         droplevel: bool = True,
         convert_to_yearly_unit: bool = False,
     ) -> None | Series | str:
@@ -486,6 +487,7 @@ class Results:
 
         :param component_name: Name of the component
         :param scenario_name: Name of the scenario
+        :param index: slicing index of the resulting dataframe
         :param droplevel: Drop the location and time levels of the multiindex
         :param convert_to_yearly_unit: If True, the unit is converted to a yearly unit, i.e., for components with an operational time step type, the unit is multiplied by hours.
         :return: The corresponding unit
@@ -493,7 +495,7 @@ class Results:
         if scenario_name is None:
             scenario_name = next(iter(self.solution_loader.scenarios.keys()))
         units = self.get_df(
-            component_name, scenario_name=scenario_name, data_type="units"
+            component_name, scenario_name=scenario_name, data_type="units", index=index
         )
         if units is None:
             return None
