@@ -25,6 +25,14 @@ if errorlevel 9009 (
 
 if "%1" == "" goto help
 
+if "%1" == "clean" (
+    if exist files\api\generated\*.rst (
+        echo Cleaning 'files/api/generated/' folder...
+        del /s /q files\api\generated\*.rst > nul
+    )
+)
+
+
 %SPHINXBUILD% -M %1 %SOURCEDIR% %BUILDDIR% %SPHINXOPTS% %O%
 goto end
 
