@@ -197,7 +197,8 @@ class Results:
                 time_steps_start_end = {k:v for k,v in time_steps_start_end.items() if k in first_occurrences and v in last_occurrences}
                 for tstart,tend in time_steps_start_end.items():
                     tstart_reconstructed = first_occurrences[tstart]
-                    first_valid_timestep = np.isnan(output_df.iloc[0][tstart_reconstructed:]).argmin()
+                    _output_df_recon = output_df.iloc[0][tstart_reconstructed:]
+                    first_valid_timestep = _output_df_recon.index[np.isnan(_output_df_recon).argmin()]
                     df_temp = pd.DataFrame(index=series.index,columns=range(tstart_reconstructed-1,first_valid_timestep+1),dtype=float)
                     df_temp.loc[:,tstart_reconstructed-1] = series.loc[:,tend]
                     df_temp.loc[:,first_valid_timestep] = series.loc[:,sequence_timesteps[first_valid_timestep]]
