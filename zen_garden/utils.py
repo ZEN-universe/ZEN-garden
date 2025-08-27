@@ -215,50 +215,52 @@ def xr_like(fill_value, dtype, other, dims):
     return da
 
 def reformat_slicing_index(index, component) -> tuple[str]:
-        """ reformats the slicing index to a tuple of strings that is readable by pytables
-        :param index: slicing index of the resulting dataframe
-        :param component: component for which the index is reformatted
-        :return: reformatted index
-        """
-        if index is None:
-            return tuple()
-        index_names = component.index_names
-        if isinstance(index, str) or isinstance(index, float) or isinstance(index, int):
-            index_name = index_names[0]
-            ref_index = (f"{index_name} == {index}",)
-        elif isinstance(index, list):
-            index_name = index_names[0]
-            ref_index = (f"{index_name} in {index}",)
-        elif isinstance(index, dict):
-            ref_index = []
-            for key, value in index.items():
-                if key not in index_names:
-                    logging.warning(f"Invalid index name '{key}' in index. Skipping.")
-                    continue
-                if isinstance(value, list):
-                    ref_index.append(f"{key} in {value}")
-                else:
-                    ref_index.append(f"{key} == {value}")
-            ref_index = tuple(ref_index)
-        elif isinstance(index, tuple):
-            ref_index = []
-            if len(index) > len(index_names):
-                logging.warning(f"Index length {len(index)} is longer than the number of index dimensions {len(index_names)}. Check selected index.")
-            for i, index_name in enumerate(index_names):
-                if i >= len(index):
-                    break
-                if index[i] is None:
-                    continue
-                elif isinstance(index[i], list):
-                    ref_index.append(f"{index_name} in {index[i]}")
-                else:
-                    ref_index.append(f"{index_name} == {index[i]}")
-            ref_index = tuple(ref_index)
-        else:
-            logging.warning(f"Invalid index type {type(index)}. Skipping.")
-            ref_index = tuple()
+    """ reformats the slicing index to a tuple of strings that is readable by pytables
+    :param index: slicing index of the resulting dataframe
+    :param component: component for which the index is reformatted
+    :return: reformatted index
+    """
+    if index is None:
+        return tuple()
+    index_names = component.index_names
+    if isinstance(index, str) or isinstance(index, float) or isinstance(index, int):
+        index_name = index_names[0]
+        ref_index = (f"{index_name} == {index}",)
+        if len(index_names) == 1:
+            ref_index = (f"index == {index}",)
+    elif isinstance(index, list):
+        index_name = index_names[0]
+        ref_index = (f"{index_name} in {index}",)
+    elif isinstance(index, dict):
+        ref_index = []
+        for key, value in index.items():
+            if key not in index_names:
+                warnings.warn(f"Invalid index name '{key}' in index. Skipping.", Warning)
+                continue
+            if isinstance(value, list):
+                ref_index.append(f"{key} in {value}")
+            else:
+                ref_index.append(f"{key} == {value}")
+        ref_index = tuple(ref_index)
+    elif isinstance(index, tuple):
+        ref_index = []
+        if len(index) > len(index_names):
+            warnings.warn(f"Index length {len(index)} is longer than the number of index dimensions {len(index_names)}. Check selected index.", Warning)
+        for i, index_name in enumerate(index_names):
+            if i >= len(index):
+                break
+            if index[i] is None:
+                continue
+            elif isinstance(index[i], list):
+                ref_index.append(f"{index_name} in {index[i]}")
+            else:
+                ref_index.append(f"{index_name} == {index[i]}")
+        ref_index = tuple(ref_index)
+    else:
+        warnings.warn(f"Invalid index type {type(index)}. Skipping.", Warning)
+        ref_index = tuple()
 
-        return ref_index
+    return ref_index
 
 def get_label_position(obj,label:int):
     """ Get dict of index and coordinate for variable or constraint labels."""

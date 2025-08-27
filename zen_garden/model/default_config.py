@@ -1,7 +1,34 @@
 """
-Default configuration.
+Set default configurations in ZEN_garden.
 
-Changes from the default values are specified in config.py (folders data/tests) and system.py (individual datasets)
+This module defines default values for all configurations in ZEN_garden. The 
+class :class:`Config` serves as a container grouping all model configurations.
+The configurations are further organized in a class structure that resembles
+that of the ZEN-garden input data. The :class:`Config` class thus links to the four 
+main configuration types (``analysis``, ``solver``, ``system``, and ``scenario``), 
+each defined using separate class. Default configurations for the ``system.json`` 
+configurations are located in the class :class:`System`. Whenever a 
+configuration consists of a dictionary, a new class is defined 
+to provide a template for the configuration and define all required
+default values.  
+
+The current structure of classes in which defaults are set is as follows:
+
+.. code-block::
+
+    Config
+    |--Analysis
+    |  |--Subsets
+    |  |--HeaderDataInputs
+    |  `--TimeSeriesAggregation
+    |
+    |--Solver
+    |--System
+    `--Scenario
+
+
+Default values are overwritten by any chances specified in the input files
+``system.json``, ``scenarios.json``, and ``config.json``.
 """
 
 from pydantic import BaseModel,ConfigDict, create_model
@@ -9,6 +36,21 @@ from typing import Any, Optional, Union, get_type_hints
 
 
 class Subscriptable(BaseModel):
+    """
+    Allows dictionary-like access to class attributes.
+
+    This class allows dictionary-like access to class attributes, such as
+    ``obj["key"]`` instead of ``obj.key``. Similarly, attribute values can
+    be changed in a dictionary like fashion ``obj["key"] = new_value``. Lastly,
+    attribute names and values can be called using the methods ``.keys()``,
+    ``.values()``, and ``.items()`` like in a normal dictionary. 
+
+    Inherits from:
+        :class:`BaseModel` - Class from the Pydantic package which provides
+        advanced features in input data handling and validation. 
+
+    """
+
     model_config = ConfigDict(extra="allow")
 
     def __getitem__(self, __name: str) -> Any:
@@ -36,9 +78,22 @@ class Subsets(Subscriptable):
 
 
 class HeaderDataInputs(Subscriptable):
+    
     """
-    Header data inputs for the model
+    Maps input/output headers to internal set names used in ZEN-garden.
+
+    This class defines standard header names for the input and 
+    output files of ZEN-garden. It provides a mapping between the column headers
+    of input/output files and internal set names used in the code. For 
+    example, the class attribute "set_nodes" (default value "node") means that
+    any input csv file with column header "node" will be interpreted as 
+    containing elements of the internal set "set_nodes". 
+
+    Inherits from:
+        :class:`Subscriptable` - Provides dictionary-like access to attributes 
+        and allows input data handling via Pydantic's BaseModel
     """
+
     set_nodes: str = "node"
     set_edges: str = "edge"
     set_location: str = "location"
@@ -97,6 +152,8 @@ class System(Subscriptable):
     use_capacities_existing: bool = True
     allow_investment: bool = True
     storage_charge_discharge_binary: bool = False
+    include_operation_only_phase: bool = False
+
 
 
 class Solver(Subscriptable):
@@ -113,7 +170,9 @@ class Solver(Subscriptable):
     save_parameters: bool = True
     selected_saved_parameters: list = []  # if empty, all parameters are saved
     selected_saved_variables: list = []  # if empty, all variables are saved
+    selected_saved_variables_operation: list = []  # if empty, all variables are saved
     selected_saved_duals: list = []  # if empty, all duals are saved (if save_duals is True)
+    selected_saved_duals_operation: list = []  # if empty, all duals are saved (if save_duals is True)
     linear_regression_check: dict[str, float] = {
         "eps_intercept": 0.1,
         "epsRvalue": 1 - (1e-5),
@@ -157,6 +216,7 @@ class Analysis(Subscriptable):
     output_format: str = "h5"
     earliest_year_of_data: int = 1900
     zen_garden_version: str = None
+
 
 
 class Config(Subscriptable):

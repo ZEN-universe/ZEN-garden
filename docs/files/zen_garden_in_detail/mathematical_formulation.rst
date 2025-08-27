@@ -99,15 +99,15 @@ on edges :math:`e\in\mathcal{E}`. We summarize nodes and edges to positions
 :math:`p\in\mathcal{P}=\mathcal{N}\cup\mathcal{E}`.
 
 The investment costs are annualized by multiplying the total investment cost 
-with the annuity factor :math:`f_h`, which is a function of the technology 
-lifetime  :math:`l_h` and the discount rate :math:`r`:
+with the annuity factor :math:`f_h`, which is a function of the technology
+depreciation time :math:`dp_h` and the discount rate :math:`r`:
 
 .. math::
     :label: annuity
 
-    f_h=\frac{\left(1+r\right)^{l_h}r}{\left(1+r\right)^{l_h}-1}
+    f_h=\frac{\left(1+r\right)^{dp_h}r}{\left(1+r\right)^{dp_h}-1}
 
-The annual cash flows accrue over the technology lifetime :math:`l_h` and 
+The annual cash flows accrue over the technology deprecation time :math:`dp_h` and
 comprise the capital investment cost of newly installed and existing technology 
 capacities :math:`I_{h,p,y}` and :math:`i_{h,p,y}^\mathrm{ex}`. The annual 
 capital expenditure :math:`A_{h,p,y}` for technology :math:`h\in\mathcal{H}` in 
@@ -118,15 +118,20 @@ as:
     :label: cost_capex_yearly
 
     A_{h,p,y}= f_h\left(\left(\sum_{\tilde{y}=
-    \max\left(y_0,y-\lceil\frac{l_h}{dy}\rceil+1\right)}^y 
+    \max\left(y_0,y-\lceil\frac{dp_h}{dy}\rceil+1\right)}^y
     I_{h,p,\tilde{y}} \right)+
-    \left(\sum_{\hat{y}=\psi \left(y-\lceil\frac{l_h}{dy}\rceil+1\right)}^
+    \left(\sum_{\hat{y}=\psi \left(y-\lceil\frac{dp_h}{dy}\rceil+1\right)}^
     {\psi(y_0-1)} i_{h,p,y}^\mathrm{ex}\right)\right)
 
 where :math:`\lceil\cdot\rceil` is the ceiling function and :math:`\psi(y)` is a 
 function that maps the planning period :math:`y` to the actual year.
 
-The capital investment cost :math:`I_{h,p,y}` for conversion technology 
+.. note::
+    The depreciation time :math:`dp_h` is an optional parameter that reflects the time range for which technology
+    investments have to be paid back. In case the depreciation time is not defined or not needed, the default value will
+    be set to the technology lifetime.
+
+The capital investment cost :math:`I_{h,p,y}` for conversion technology
 :math:`i\in\mathcal{I}` is calculated as the product of the unit cost of capital 
 investment :math:`\alpha_{i,y}` and the capacity addition 
 :math:`\Delta S_{i,n,y}` on each node :math:`n\in\mathcal{N}`:
@@ -1073,6 +1078,12 @@ If no physically motivated capacity limit :math:`s^\mathrm{max}_{h,p,y}` exists,
 :math:`s^\mathrm{max}_{h,p,y}` must be large enough to ensure that the 
 technology is not constrained by the capacity limit (Big-M parameter).
 
+Minimum full-load hours
+-----------------------
+
+.. docstring_method:: zen_garden.model.objects.technology.conversion_technology.ConversionTechnologyRules.constraint_minimum_full_load_hours
+
+This constraint is currently only available for conversion technologies.
 
 .. _math_formulation.min_capacity_installation:
 

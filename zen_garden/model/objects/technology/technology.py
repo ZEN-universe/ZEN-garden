@@ -46,6 +46,11 @@ class Technology(Element):
         self.capacity_addition_max = self.data_input.extract_input_data("capacity_addition_max", index_sets=[], unit_category={"energy_quantity": 1, "time": -1})
         self.capacity_addition_unbounded = self.data_input.extract_input_data("capacity_addition_unbounded", index_sets=[], unit_category={"energy_quantity": 1, "time": -1})
         self.lifetime = self.data_input.extract_input_data("lifetime", index_sets=[], unit_category={})
+        if "depreciation_time" in self.data_input.attribute_dict:
+            self.depreciation_time = self.data_input.extract_input_data("depreciation_time", index_sets=[], unit_category={})
+            self.depreciation_time[0] = np.max((self.energy_system.system.interval_between_years, self.depreciation_time[0]))
+        else:
+            self.depreciation_time = self.lifetime.copy()
         self.construction_time = self.data_input.extract_input_data("construction_time", index_sets=[], unit_category={})
         # maximum diffusion rate
         self.max_diffusion_rate = self.data_input.extract_input_data("max_diffusion_rate", index_sets=["set_time_steps_yearly"], time_steps="set_time_steps_yearly", unit_category={})
@@ -218,32 +223,39 @@ class Technology(Element):
             return cutoff_year <= lifetime_existing
 
     @classmethod
-    def get_lifetime_range(cls, optimization_setup, tech, year):
-        """ returns lifetime range of technology.
-
-        :param optimization_setup: OptimizationSetup the technology is part of
-        :param tech: name of the technology
-        :param year: yearly time step
-        :return: lifetime range of technology
+    def get_lifetime_range(cls, optimization_setup, tech, year, use_depreciation_time=False):
         """
-        first_lifetime_year = cls.get_first_lifetime_time_step(optimization_setup, tech, year)
+        Returns the active year range of a technology based on its lifetime or depreciation time.
+
+            :param optimization_setup: OptimizationSetup the technology is part of
+            :param tech: name of the technology
+            :param year: yearly time step
+            :param use_depreciation_time: boolean indicating whether to use depreciation time instead of lifetime,
+                                    namely for CAPEX calculation
+            :return: lifetime or depreciation time range of technology
+        """
+
+        first_lifetime_year = cls.get_first_lifetime_time_step(optimization_setup, tech, year, use_depreciation_time=use_depreciation_time)
         first_lifetime_year = max(first_lifetime_year, optimization_setup.sets["set_time_steps_yearly"][0])
         return range(first_lifetime_year, year + 1)
 
     @classmethod
-    def get_first_lifetime_time_step(cls,optimization_setup,tech,year):
-        """returns first lifetime time step of technology,
-        i.e., the earliest time step in the past whose capacity is still available at the current time step
+    def get_first_lifetime_time_step(cls,optimization_setup,tech,year, use_depreciation_time=False):
+        """
+        Returns the first time step within the lifetime or depreciation time of the technology,
+                i.e., the earliest past time step whose installed capacity is still active at the given time step.
 
-        :param optimization_setup: The optimization setup to add everything
-        :param tech: name of technology
-        :param year: yearly time step
-        :return: first lifetime step
+            :param optimization_setup: OptimizationSetup the technology is part of
+            :param tech: name of the technology
+            :param year: current yearly time step
+            :param use_depreciation_time: boolean indicating whether to use depreciation time, for CAPEX calculation,
+                                        instead of standard lifetime for capacity calculation
+            :return: first time step where capacity or investment is still valid
         """
         # get params and system
         params = optimization_setup.parameters.dict_parameters
         system = optimization_setup.system
-        lifetime = params.lifetime[tech]
+        lifetime = params.depreciation_time[tech] if use_depreciation_time else params.lifetime[tech]
         # conservative estimate of lifetime (floor)
         del_lifetime = int(np.floor(lifetime/system.interval_between_years)) - 1
         return year - del_lifetime
@@ -325,6 +337,8 @@ class Technology(Element):
         optimization_setup.parameters.add_parameter(name="opex_specific_fixed", index_names=["set_technologies", "set_capacity_types","set_location","set_time_steps_yearly"], capacity_types=True, doc='Parameter which specifies the fixed annual specific opex', calling_class=cls)
         # lifetime newly built technologies
         optimization_setup.parameters.add_parameter(name="lifetime", index_names=["set_technologies"], doc='Parameter which specifies the lifetime of a newly built technology', calling_class=cls)
+        # amortization time newly built technologies
+        optimization_setup.parameters.add_parameter(name="depreciation_time", index_names=["set_technologies"], doc='Parameter which specifies the depreciation time of a newly built technology', calling_class=cls)
         # construction_time newly built technologies
         optimization_setup.parameters.add_parameter(name="construction_time", index_names=["set_technologies"], doc='Parameter which specifies the construction time of a newly built technology', calling_class=cls)
         # maximum diffusion rate, i.e., increase in capacity
@@ -442,6 +456,12 @@ class Technology(Element):
         techs_on_off,index_list = cls.create_custom_set(["set_technologies", "set_on_off", "set_location", "set_time_steps_operation"],optimization_setup)
         index_list.pop(1)
         mask_on_off = optimization_setup.variables.index_sets.indices_to_mask(techs_on_off, index_list, (0, 0))[0]
+        times = optimization_setup.sets['set_time_steps_operation']
+        time_step_year = xr.DataArray(
+            [optimization_setup.energy_system.time_steps.convert_time_step_operation2year(t) for t in times.data],
+            coords=[times], dims=["set_time_steps_operation"])
+        mask_nonzero_cap_limit = optimization_setup.parameters.capacity_limit.sel({'set_capacity_types': 'power', 'set_time_steps_yearly': time_step_year}) != 0
+        mask_on_off = mask_on_off & mask_nonzero_cap_limit.drop_vars('set_capacity_types')
         variables.add_variable(model, name="tech_on_var", index_sets=cls.create_custom_set(["set_technologies", "set_location", "set_time_steps_operation"],optimization_setup),mask=mask_on_off,doc="Binary variable which equals 1 when technology is switched on at location l and time t", binary=True, unit_category=None)
         variables.add_variable(model, name="capacity_on_off_helper_var",index_sets=cls.create_custom_set(["set_technologies", "set_location", "set_time_steps_operation"],optimization_setup), bounds=(0, np.inf),mask=mask_on_off,doc="Helper variable that substitutes the product of capacity and tech_on_var",unit_category={"energy_quantity": 1, "time": -1})
 
@@ -919,7 +939,7 @@ class TechnologyRules(GenericRule):
         :math:`\\alpha_{h,y}`: unit cost of capital investment of technology :math:`h` in year :math:`y` \n
         :math:`\\Delta S_{h,p,y}`: size of built technology :math:`h` (invested capacity after construction) at location :math:`p` in year :math:`y` \n
         :math:`\\Delta s^\\mathrm{ex}_{h,p,y}`: size of the previously added capacities at location :math:`p` in year :math:`y` \n
-        :math:`l_h`: lifetime of technology :math:`h`   \n
+        :math:`l_h`: depreciation time of technology :math:`h`   \n
         :math:`\\mathrm{dy}`: interval between planning periods
 
 
@@ -930,18 +950,21 @@ class TechnologyRules(GenericRule):
         index = ZenIndex(index_values, index_names)
 
         ### masks
-        # not necessary
+        # not needed
 
         #Annuity factor
         dr = self.parameters.discount_rate
-        lt = self.parameters.lifetime
+        lt = self.parameters.depreciation_time
+
         if dr != 0:
             a = ((1 + dr) ** lt * dr) / ((1 + dr) ** lt - 1)
         else:
             a = 1 / lt
+
         lt_range = pd.MultiIndex.from_tuples([(t, y, py) for t, y in
                                               index.get_unique(["set_technologies", "set_time_steps_yearly"]) for py in
-                                              list(Technology.get_lifetime_range(self.optimization_setup, t, y))])
+                                              list(Technology.get_lifetime_range(self.optimization_setup, t, y, use_depreciation_time=True))])
+
         lt_range = pd.Series(index=lt_range, data=-1)
         lt_range.index.names = ["set_technologies", "set_time_steps_yearly", "set_time_steps_yearly_prev"]
         lt_range = lt_range.to_xarray().broadcast_like(self.variables["capacity"].lower).fillna(0)

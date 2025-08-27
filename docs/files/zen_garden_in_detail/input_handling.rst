@@ -377,12 +377,12 @@ The file ``nonlinear_capex.csv`` has the following structure:
 Unit consistency
 ================
 
-Our models describe physical processes, whose numeric values are always 
- to a physical unit. For example, the capacity of a coal power plant is a power, 
- thus the unit is, e.g., GW. In our optimization models, we use a large variety 
- of different technologies and carriers, for which the input data is often 
- provided in different units. The optimization problem itself however only 
- accepts numeric values.
+Our models describe physical processes, where every numerical value is associated
+to a physical unit. For example, the capacity of a coal power plant is a power,
+thus the unit is, e.g., GW. In our optimization models, we use a large variety
+of different technologies and carriers, for which the input data is often
+provided in different units. The optimization problem itself however only
+accepts numeric values.
 
 Thus, we have to make sure that the numeric values have the same physical base 
 unit, i.e., if our input data for technology A is in GW and for technology B in 

@@ -1,16 +1,12 @@
 """
 File which contains the unit handling and scaling class.
 """
-import cProfile
 import logging
 import numpy as np
 import pandas as pd
 import scipy as sp
-import warnings
 import json
 import os
-import linopy as lp
-import re
 import itertools
 from pint import UnitRegistry
 from pint.util import column_echelon_form
@@ -20,11 +16,6 @@ from zen_garden.model.objects.carrier.carrier import Carrier
 from zen_garden.utils import get_label_position
 
 import time
-
-
-# enable Deprecation Warnings
-warnings.simplefilter('always', DeprecationWarning)
-
 
 class UnitHandling:
     """
@@ -114,7 +105,7 @@ class UnitHandling:
         :return list_base_units: list of base units """
         if os.path.exists(os.path.join(self.folder_path / "base_units.csv")):
             list_base_units = pd.read_csv(self.folder_path / "base_units.csv").squeeze().values.tolist()
-            logging.warning("DeprecationWarning: Specifying the base units in .csv file format is deprecated. Use a .json file format instead.")
+            logging.warning("DeprecationWarning: Specifying the base units in .csv file format is deprecated. Use the .json file format instead.")
         else:
             with open(os.path.join(self.folder_path, 'base_units.json'), "r") as f:
                 data = json.load(f)
@@ -162,7 +153,7 @@ class UnitHandling:
                     combined_unit *= self.ureg(unit) ** (-1 * power)
             else:
                 base_combination,combined_unit = self._get_combined_unit_of_different_matrix(
-                    dim_matrix_reduced= dim_matrix_reduced,
+                    dim_matrix_reduced=dim_matrix_reduced,
                     dim_vector=dim_vector,
                     input_unit=input_unit
                 )
@@ -240,7 +231,7 @@ class UnitHandling:
             return 1
         # if input unit is nan --> dimensionless old definition
         elif type(input_unit) != str and np.isnan(input_unit):
-            warnings.warn(f"Parameter {attribute_name} of {Path(path).name} has no unit (assign unit '1' to unitless parameters)",DeprecationWarning)
+            logging.warning(f"DeprecationWarning: Parameter {attribute_name} of {Path(path).name} has no unit (assign unit '1' to unitless parameters)")
             return 1
         else:
             # convert to string
@@ -668,7 +659,7 @@ class Scaling:
     """
     This class scales the optimization model before solving it and rescales the solution
     """
-    def __init__(self, model, algorithm=None, include_rhs = True):
+    def __init__(self, model, algorithm=None, include_rhs=True):
         """ initializes scaling instance
 
         :param model: optimization model
@@ -752,7 +743,7 @@ class Scaling:
         :param name: name of the constraint for which the data is replaced with the scaled data
         """
         constraint = self.model.constraints[name]
-        #Get data
+        # Get data
         lhs = constraint.coeffs.data
         mask_skip_constraints = constraint.labels.data
         mask_variables = constraint.vars.data
@@ -791,8 +782,8 @@ class Scaling:
         :param name: name of the constraint for which the scaling factors are adjusted
         """
         constraint = self.model.constraints[name]
-        #rows -> unnecessary to adjust scaling factor of rows with binary and integer variables as skipped anyways
-        #cols
+        # rows -> unnecessary to adjust scaling factor of rows with binary and integer variables as skipped anyways
+        # cols
         mask_variables = constraint.vars.data
         indices = np.where(mask_variables != -1)
         self.D_c_inv[mask_variables[indices]] = 1

@@ -48,11 +48,19 @@ extensions = ['sphinx.ext.autodoc',
 # allow errors in the notebooks
 nbsphinx_allow_errors = True
 
+# Generate .rst files when encountering an autosummary directive
+autosummary_generate = True
+autosummary_generate_overwrite = False
+
+
 # Specify the special members to include in the documentation
 autodoc_default_options = {
     'members': True,
     'special-members': '__init__',
 }
+
+# Prevent Spynx from showing nested defaults and typehints.
+autodoc_typehints_format = "short"
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']

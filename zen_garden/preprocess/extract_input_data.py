@@ -3,14 +3,12 @@ Functions to extract the input data from the provided input files
 """
 import copy
 import logging
-import math
 import os
 import json
+import warnings
 import numpy as np
 import pandas as pd
 from scipy.stats import linregress
-
-from zen_garden.utils import InputDataChecks
 
 
 class DataInput:
@@ -216,7 +214,7 @@ class DataInput:
             data = json.load(file)
         attribute_dict = {}
         if type(data) == list:
-            logging.warning("DeprecationWarning: The list format in attributes.json [{...}] is deprecated. Use a dict format instead {...}.")
+            warnings.warn("The list format in attributes.json [{...}] is deprecated. Use a dict format instead {...}.", DeprecationWarning)
             for item in data:
                 for k, v in item.items():
                     if type(v) == list:
@@ -313,14 +311,14 @@ class DataInput:
                     attribute_dict[attribute_name] = {"default_value": missing_attribute["default_value"],
                                                       "unit": attribute_dict[missing_attribute["unit"]]['unit']}
 
-                    logging.warning(f"\nDeprecationWarning: Attribute {attribute_name} is not yet included in your model. Automatic assign default_value:{attribute_dict[attribute_name]['default_value']}, unit: {attribute_dict[attribute_name]['unit']}\n")
+                    warnings.warn(f"\nAttribute {attribute_name} is not yet included in your model. Automatic assign default_value:{attribute_dict[attribute_name]['default_value']}, unit: {attribute_dict[attribute_name]['unit']}\n", DeprecationWarning)
 
                 # CASE 2: The attribute has a new name
                 else:
                     old_name = parameter_change_log[attribute_name]
                     attribute_dict[attribute_name] = attribute_dict.pop(old_name)
 
-                    logging.warning(f"DeprecationWarning: Attribute {old_name} is now called {attribute_name}")
+                    warnings.warn(f"Attribute {old_name} is now called {attribute_name}", DeprecationWarning)
 
             else:
                 raise AttributeError(f"Attribute {attribute_name} does not exist in input data of {self.element.name}")
@@ -351,7 +349,7 @@ class DataInput:
         :param subelement: string specifying dependent element
         :param df_output_generic: original/generic time series data (base case)
         """
-        #years of optimization model
+        # years of optimization model
         years = [str(year) for year in range(self.system.reference_year, self.system.reference_year+self.system.optimized_years*self.system.interval_between_years, self.system.interval_between_years)]
         # files to check
         file_names = os.listdir(self.folder_path)
@@ -575,8 +573,8 @@ class DataInput:
                         pwa_dict["pwa_variables"].append(value_variable)
                         # save bounds
                         values_between_bounds = [pwa_dict
-                             [value_variable][idx_breakpoint] for idx_breakpoint, breakpoint in enumerate(breakpoints)
-                                                 if min_capacity_tech <= breakpoint <= max_capacity_tech
+                             [value_variable][idx_breakpoint] for idx_breakpoint, break_point in enumerate(breakpoints)
+                                                 if min_capacity_tech <= break_point <= max_capacity_tech
                                                  ]
                         values_between_bounds.extend(list(
                             np.interp([min_capacity_tech, max_capacity_tech], breakpoints, pwa_dict[value_variable])))
@@ -712,8 +710,9 @@ class DataInput:
         if time_steps == "set_time_steps_yearly" or time_steps == "set_time_steps_yearly_entire_horizon":
             # check if temporal header of input data is still given as 'time' instead of 'year'
             if "time" in df_input.axes[1]:
-                logging.warning(
-                    f"DeprecationWarning: The column header 'time' (used in {file_name}) will not be supported for input data with yearly time steps any longer! Use the header 'year' instead")
+                warnings.warn(
+                    f"The column header 'time' (used in {file_name}) will not be supported for input data with yearly time steps any longer! Use the header 'year' instead",
+                    DeprecationWarning)
                 df_input = df_input.rename(
                     {self.index_names["set_time_steps"]: self.index_names["set_time_steps_yearly"]}, axis=1)
             # does not contain annual index
@@ -740,7 +739,8 @@ class DataInput:
             # check if input data is still given with generic time indices
             temporal_header = self.index_names["set_time_steps_yearly"]
             if max(df_input.loc[:, temporal_header]) < self.analysis.earliest_year_of_data:
-                logging.warning(f"DeprecationWarning: Generic time indices (used in {file_name}) will not be supported for input data with yearly time steps any longer! Use the corresponding years (e.g. 2022,2023,...) as time indices instead")
+                warnings.warn(f"Generic time indices (used in {file_name}) will not be supported for input data with yearly time steps any longer! Use the corresponding years (e.g. 2022,2023,...) as time indices instead",
+                              DeprecationWarning)
                 return df_input
             # assert that correct temporal index_set to get corresponding index_name is given (i.e. set_time_steps_yearly for input data with yearly time steps)(otherwise extract_general_input_data() will find a missing_index)
             assert temporal_header in index_name_list, f"Input data with yearly time steps and therefore the temporal header 'year' needs to be extracted with index_sets=['set_time_steps_yearly'] instead of index_sets=['set_time_steps']"
