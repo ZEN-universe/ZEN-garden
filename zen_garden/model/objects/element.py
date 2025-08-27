@@ -183,9 +183,9 @@ class Element:
             return custom_set, list_index
 
         if list_index[0] not in indexing_sets:
-            raise NotImplementedError
+            raise NotImplementedError(f"Index <{list_index[0]}> is not in the indexing sets.")
 
-        # Case 2: first index is indexed, build custom set based on first ind
+        # Case 2: first index is indexed, build custom set based on first index
         custom_set = []
         for element in sets[list_index[0]]:
             append_element = True
@@ -196,7 +196,7 @@ class Element:
                 if index in sets:
                     append = cls.handle_existing_set(index, element, sets, list_sets)
                     if not append:
-                        raise NotImplementedError
+                        raise NotImplementedError(f"Index <{index}> is not known in sets.")
                     continue
 
                 # if index is set_location
@@ -206,18 +206,13 @@ class Element:
 
                 # if set is built for pwa capex:
                 if "set_capex" in index:
-                    if not cls.append_set_capex_index(element, optimization_setup, index):
-                        append_element = False
-                        break
+                    append_element = cls.append_set_capex_index(element, optimization_setup, index)
                     continue
 
                 # if set is used to determine if on-off behavior is modeled
                 # exclude technologies which have no min_load
                 if "on_off" in index:
-                    # model_on_off = cls.check_on_off_modeled(element, optimization_setup)
-                    if not cls.append_on_off_modeled(element, optimization_setup, index):
-                        append_element = False
-                        break
+                    append_element = cls.append_on_off_modeled(element, optimization_setup, index)
                     continue
 
                 # split in capacity types of power and energy
@@ -230,7 +225,7 @@ class Element:
             # append indices to custom_set if element is supposed to be appended
             if append_element:
                 if list_sets:
-                        custom_set.extend(list(itertools.product([element], *list_sets)))
+                    custom_set.extend(list(itertools.product([element], *list_sets)))
                 else:
                     custom_set.extend([element])
         return custom_set, list_index
@@ -240,6 +235,11 @@ class Element:
         """
         Handles existing sets in the model.
         Returns True if handled, False if unknown.
+
+        :param index: index to handle
+        :param element: element to handle
+        :param sets: sets of the optimization setup
+        :param list_sets: list of sets to append
         """
         if not sets.is_indexed(index):
             list_sets.append(sets[index])
@@ -275,7 +275,7 @@ class Element:
         :param element: technology in model
         :param optimization_setup: The OptimizationSetup the element is part of
         :param index: index to check
-        :return model_on_off: Bool indicating if on-off-behaviour (min load) needs to be modeled"""
+        :return model_on_off: Bool indicating if on-off-behavior (min load) needs to be modeled"""
 
         model_on_off = cls.check_on_off_modeled(element, optimization_setup)
         if "set_no_on_off" in index:
