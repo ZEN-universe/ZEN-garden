@@ -8,7 +8,6 @@ import logging
 import os
 from collections import defaultdict
 import importlib
-
 from .model.optimization_setup import OptimizationSetup
 from .postprocess.postprocess import Postprocess
 from .utils import setup_logger, InputDataChecks, StringUtils, ScenarioUtils, OptimizationError
@@ -68,24 +67,29 @@ def main(config, dataset_path=None, job_index=None, folder_output_path=None):
         steps_horizon = optimization_setup.get_optimization_horizon()
         # iterate through horizon steps
         for step in steps_horizon:
-            StringUtils.print_optimization_progress(scenario, steps_horizon, step, system=config.system)
-            # overwrite time indices
-            optimization_setup.overwrite_time_indices(step)
-            # create optimization problem
-            optimization_setup.construct_optimization_problem()
-            if optimization_setup.solver.use_scaling:
-                optimization_setup.scaling.run_scaling()
-            elif optimization_setup.solver.analyze_numerics or optimization_setup.solver.run_diagnostics:
-                optimization_setup.scaling.analyze_numerics()
-            # SOLVE THE OPTIMIZATION PROBLEM
-            optimization_setup.solve()
-            # break if infeasible
-            if not optimization_setup.optimality:
-                # write IIS
-                optimization_setup.write_IIS(scenario)
-                logging.warning(f"Optimization: {optimization_setup.model.termination_condition}")
-                break
-            else:
+            # iterate through phases
+            for phase in ['investment', 'operation']:
+                #if operation phase, exclude capacity expansion
+                if phase == 'operation' and not config.system.include_operation_only_phase:
+                    continue
+                StringUtils.print_optimization_progress(scenario, steps_horizon, step, system=config.system)
+                optimization_setup.set_phase_configurations(phase)
+                # overwrite time indices
+                optimization_setup.overwrite_time_indices(step)
+                # create optimization problem
+                optimization_setup.construct_optimization_problem()
+                if optimization_setup.solver.use_scaling:
+                    optimization_setup.scaling.run_scaling()
+                elif optimization_setup.solver.analyze_numerics or optimization_setup.solver.run_diagnostics:
+                    optimization_setup.scaling.analyze_numerics()
+                # SOLVE THE OPTIMIZATION PROBLEM
+                optimization_setup.solve()
+                # break if infeasible
+                if not optimization_setup.optimality:
+                    # write IIS
+                    optimization_setup.write_IIS(scenario)
+                    logging.warning(f"Optimization: {optimization_setup.model.termination_condition}")
+                    break
                 if optimization_setup.solver.use_scaling:
                     optimization_setup.scaling.re_scale()
                 # save new capacity additions and cumulative carbon emissions for next time step
@@ -93,8 +97,7 @@ def main(config, dataset_path=None, job_index=None, folder_output_path=None):
                 # EVALUATE RESULTS
                 # create scenario name, subfolder and param_map for postprocessing
                 scenario_name, subfolder, param_map = StringUtils.generate_folder_path(
-                    config=config, scenario=scenario, scenario_dict=scenario_dict, steps_horizon=steps_horizon, step=step
-                )
+                    config=config, scenario=scenario, scenario_dict=scenario_dict, steps_horizon=steps_horizon, step=step)
                 # write results
                 Postprocess(optimization_setup, scenarios=config.scenarios, subfolder=subfolder,
                             model_name=model_name, scenario_name=scenario_name, param_map=param_map)

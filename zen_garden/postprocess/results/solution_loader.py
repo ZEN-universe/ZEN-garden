@@ -2,7 +2,7 @@
 This module contains the implementation of a SolutionLoader that reads the solution.
 """
 import copy
-import logging
+import warnings
 import re
 import json
 import os
@@ -121,7 +121,7 @@ class Component():
 
 class Scenario():
     """
-    Implementation of the abstract scenario. In this solution version, the analysis and
+    Implementation of the scenario. In this solution version, the analysis and
     system configs are stored as jsons for each of the scenario in the corresponding
     folder.
     """
@@ -146,8 +146,7 @@ class Scenario():
             return Analysis()
 
         with open(analysis_path, "r") as f:
-            analysis = Analysis.result_config()
-            return analysis(**json.load(f))
+            return Analysis(**json.load(f))
 
     def _read_system(self) -> System:
         system_path = os.path.join(self.path, "system.json")
@@ -156,8 +155,7 @@ class Scenario():
             return System()
 
         with open(system_path, "r") as f:
-            system = System.result_config()
-            return system(**json.load(f))
+            return System(**json.load(f))
 
     def _read_solver(self) -> Solver:
         solver_path = os.path.join(self.path, "solver.json")
@@ -166,8 +164,7 @@ class Scenario():
             return Solver()
 
         with open(solver_path, "r") as f:
-            solver = Solver.result_config()
-            return solver(**json.load(f))
+            return Solver(**json.load(f))
 
     def _read_benchmarking(self) -> dict[str,Any]:
         benchmarking_path = os.path.join(self.path, "benchmarking.json")
@@ -183,6 +180,38 @@ class Scenario():
         if os.path.exists(unit_path):
             ureg.load_definitions(unit_path)
         return ureg
+
+    def convert_ts2year(self,df: ["pd.DataFrame","pd.Series"]) -> ["pd.DataFrame","pd.Series"]:
+        """ converts the yearly ts column to the corresponding year """
+        df = df.copy()
+        if isinstance(df, pd.Series):
+            year_index = df.index
+        else:
+            year_index = df.columns
+        assert pd.api.types.is_any_real_numeric_dtype(year_index), f"DataFrame columns must be numeric to convert to year, not {year_index.to_list()}."
+        ry = self.system.reference_year
+        del_y = self.system.interval_between_years
+        years = [ry + i*del_y for i in year_index]
+        if isinstance(df, pd.Series):
+            df.index = years
+        else:
+            df.columns = years
+        return df
+
+    def convert_year2ts(self,year: int) -> int:
+        """ converts the year to the corresponding time step """
+        assert isinstance(year, int), f"Year must be an integer, not {type(year)}."
+        ry = self.system.reference_year
+        del_y = self.system.interval_between_years
+        all_years = [ry + i*del_y for i in range(self.system.optimized_years)]
+        if year in all_years:
+            ts = (year - ry) // del_y
+        elif year <= self.analysis.earliest_year_of_data and year in range(self.system.optimized_years):
+            logging.warning(f"DeprecationWarning: Selecting the yearly time steps ({year}) instead of the actual year ({ry + del_y*year}) is deprecated. Please use the actual year.")
+            ts = year
+        else:
+            raise KeyError(f"Year {year} not in optimized years {all_years}.")
+        return ts
 
     def _read_components(self) -> dict[str, Component]:
         """
@@ -276,16 +305,11 @@ class SolutionLoader():
         self.path = path
         assert len(os.listdir(path)) > 0, f"Path {path} is empty."
         self._scenarios: dict[str, Scenario] = self._read_scenarios()
-        self._components: dict[str, Component] = self._read_components()
         self._series_cache: dict[str, "pd.Series[Any]"] = {}
 
     @property
     def scenarios(self) -> dict[str, Scenario]:
         return self._scenarios
-
-    @property
-    def components(self) -> dict[str, Component]:
-        return self._components
 
     @property
     def name(self) -> str:
@@ -465,19 +489,6 @@ class SolutionLoader():
 
         return ans
 
-    def _read_components(self) -> dict[str, Component]:
-        """
-        Create the component instances.
-
-        The components are stored in three files and the file-names define the types of
-        the component. Furthermore, the timestep name and type are derived by checking
-        if any of the defined time steps name is in the index of the dataframe.
-        """
-        # TODO remove when also removed in visualization platform
-        logging.warning("DeprecationWarning: The method _read_components is deprecated and will be removed in the future. Read components from the scenario instead.")
-        first_scenario = get_first_scenario(self.scenarios)
-        return first_scenario.components
-
     @cache
     def get_timestep_duration(
         self, scenario: Scenario, component: Component
@@ -493,7 +504,7 @@ class SolutionLoader():
         version = get_solution_version(scenario)
         if check_if_v1_leq_v2(version,"v0"):
             time_step_duration = self.get_component_data(
-                scenario, self.components[timestep_duration_name]
+                scenario, scenario.components[timestep_duration_name]
             )
         else:
             time_steps_file_name = _get_time_steps_file(scenario)

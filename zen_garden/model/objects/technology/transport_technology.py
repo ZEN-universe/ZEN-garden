@@ -242,7 +242,7 @@ class TransportTechnologyRules(GenericRule):
         times = self.variables["flow_transport"].coords["set_time_steps_operation"]
         time_step_year = xr.DataArray([self.optimization_setup.energy_system.time_steps.convert_time_step_operation2year(t) for t in times.data], coords=[times])
         term_capacity = (
-                self.parameters.max_load.loc[techs, "power", edges, :]
+                self.parameters.max_load.loc[techs, edges, :]
                 * self.variables["capacity"].loc[techs, "power", edges, time_step_year]
         ).rename({"set_technologies":"set_transport_technologies","set_location": "set_edges"})
 

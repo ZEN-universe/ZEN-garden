@@ -46,7 +46,8 @@ Documentation
    files/tutorial/02_change_configuration
    files/tutorial/03_scenario_analysis
    files/tutorial/04_handle_infeasibilities
-
+   files/tutorial/05_operation_only
+   
 .. toctree::
    :maxdepth: 1
    :caption: ZEN-garden in detail

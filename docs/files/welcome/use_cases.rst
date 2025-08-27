@@ -36,7 +36,7 @@ Myopic foresight in the European energy transition
 The long-term climate goals are often met by short-term - or myopic - decision-making,
 which can lead to suboptimal outcomes.
 
-In `this study <https://www.sciencedirect.com/science/article/pii/S258900422402594X>`_,
+In `this study <https://www.sciencedirect.com/science/article/pii/S258900422402594X>`__,
 ZEN-garden was used to analyze the impact of myopic foresight on the European energy transition.
 The case study setup was similar to the one in the previous use case,
 but focusing on the capacity expansion of the European energy system.
@@ -56,7 +56,7 @@ Technology optimism in carbon management technologies
 Carbon management technologies are often considered a silver bullet for achieving climate goals.
 They are sought to rectify the mistakes of the past by removing carbon emissions from the atmosphere or point sources.
 
-In `this study <https://papers.ssrn.com/sol3/papers.cfm?abstract_id=5276156>`_,
+In `this study <https://papers.ssrn.com/sol3/papers.cfm?abstract_id=5276156>`__,
 ZEN-garden was used to analyze the impact of unwarranted optimism
 in carbon management technologies on the European energy transition.
 To this end, the previous case study was extended to include many industrial and transport sectors.
