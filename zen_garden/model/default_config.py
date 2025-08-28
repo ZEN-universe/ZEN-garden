@@ -27,7 +27,7 @@ The current structure of classes in which defaults are set is as follows:
     `--Scenario
 
 
-Default values are overwritten by any chances specified in the input files
+Default values are overwritten by any changes specified in the input files
 ``system.json``, ``scenarios.json``, and ``config.json``.
 """
 
