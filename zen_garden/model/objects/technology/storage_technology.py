@@ -186,7 +186,7 @@ class StorageTechnology(Technology):
         # Linear Capex
         rules.constraint_storage_technology_capex()
 
-        #avoid simulatneous charge and discharge
+        # avoid simultaneous charge and discharge
         if optimization_setup.system.storage_charge_discharge_binary:
             rules.constraint_charge_discharge_binary()
 
@@ -295,10 +295,10 @@ class StorageTechnologyRules(GenericRule):
             return
         nodes = self.sets["set_nodes"]
         lhs_opex = (
-                self.variables["cost_opex_variable"] - (self.parameters.opex_specific_variable * self.get_flow_expression_storage())
-        ).sel({"set_technologies": techs, "set_location": nodes})
-        lhs_emissions = (self.variables["carbon_emissions_technology"]
-               - (self.parameters.carbon_intensity_technology*self.get_flow_expression_storage())).sel({"set_technologies": techs, "set_location": nodes})
+                self.variables["cost_opex_variable"].sel({"set_technologies": techs, "set_location": nodes}) - (self.parameters.opex_specific_variable * self.get_flow_expression_storage())
+        )
+        lhs_emissions = (self.variables["carbon_emissions_technology"].sel({"set_technologies": techs, "set_location": nodes})
+               - (self.parameters.carbon_intensity_technology*self.get_flow_expression_storage()))
         lhs_opex = lhs_opex.rename({"set_technologies": "set_storage_technologies", "set_location": "set_nodes"})
         lhs_emissions = lhs_emissions.rename({"set_technologies": "set_storage_technologies", "set_location": "set_nodes"})
         rhs = 0
