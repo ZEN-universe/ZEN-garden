@@ -470,10 +470,10 @@ class GenericRule(object):
             else:
                 reference_flows.append(mult * self.variables["flow_conversion_output"].loc[t, rc, nodes, :])
         if rename:
-            term_reference_flow = lp.merge(reference_flows, dim="set_technologies").rename(
+            term_reference_flow = lp.merge(reference_flows, dim="set_technologies",join="outer",coords="minimal",compat="override").rename(
                 {"set_nodes": "set_location"})
         else:
-            term_reference_flow = lp.merge(reference_flows, dim="set_conversion_technologies")
+            term_reference_flow = lp.merge(reference_flows, dim="set_conversion_technologies",join="outer",coords="minimal",compat="override")
         return term_reference_flow
 
     def get_flow_expression_storage(self,rename=True):

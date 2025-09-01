@@ -355,7 +355,9 @@ class Postprocess:
 
         # dataframe serialization
         data_frames = {}
-        for name, arr in self.model.dual.items():
+        for name in self.model.constraints:
+
+            arr = self.model.constraints[name].dual
 
             # skip variables not selected to be saved
             if (
