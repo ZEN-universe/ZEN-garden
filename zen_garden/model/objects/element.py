@@ -165,111 +165,158 @@ class Element:
 
     @classmethod
     def create_custom_set(cls, list_index, optimization_setup):
-        """ creates custom set for model component 
+        """ creates custom set for model component
 
         :param list_index: list of names of indices
         :param optimization_setup: The OptimizationSetup the element is part of
         :return list_index: list of names of indices """
-        list_index_overwrite = copy.copy(list_index)
+
+        list_index=list(list_index)  # make a copy of the list to avoid side effects
         sets = optimization_setup.sets
         indexing_sets = optimization_setup.energy_system.indexing_sets
-        # check if all index sets are already defined in model and no set is indexed
-        if all([(index in sets.sets and not sets.is_indexed(index)) for index in list_index]):
-            # check if no set is indexed
-            list_sets = []
-            # iterate through indices
-            for index in list_index:
-                # if the set already exists in model
-                if index in sets:
-                    # append set to list
-                    list_sets.append(sets[index])
+
+        # Case 1: all index sets are already defined in model and no set is indexed
+        if all(index in sets.sets and not sets.is_indexed(index) for index in list_index):
+            list_sets = [sets[index] for index in list_index if index in sets]
             # return indices as cartesian product of sets
-            if len(list_index) > 1:
-                custom_set = list(itertools.product(*list_sets))
-            else:
-                custom_set = list(list_sets[0])
+            custom_set = list(itertools.product(*list_sets)) if len(list_sets) > 1 else list(list_sets[0])
             return custom_set, list_index
-        # at least one set is not yet defined
+
+        if list_index[0] not in indexing_sets:
+            raise NotImplementedError(f"Index <{list_index[0]}> is not in the indexing sets.")
+
+        # Case 2: first index is indexed, build custom set based on first index
+        custom_set = []
+        for element in sets[list_index[0]]:
+            append_element = True
+            list_sets = []
+
+            for index in list_index[1:]:
+                # if the set already exist in model
+                if index in sets:
+                    append = cls.handle_existing_set(index, element, sets, list_sets)
+                    if not append:
+                        raise NotImplementedError(f"Index <{index}> is not known in sets.")
+                    continue
+
+                # if index is set_location
+                if index == "set_location":
+                    cls.handle_set_location_index(element, sets, list_sets)
+                    continue
+
+                # if set is built for pwa capex:
+                if "set_capex" in index:
+                    append_element = cls.append_set_capex_index(element, optimization_setup, index)
+                    continue
+
+                # if set is used to determine if on-off behavior is modeled
+                # exclude technologies which have no min_load
+                if "on_off" in index:
+                    append_element = cls.append_on_off_modeled(element, optimization_setup, index)
+                    continue
+
+                # split in capacity types of power and energy
+                if index == "set_capacity_types":
+                    cls.handle_set_capacity_types_index(element, sets, optimization_setup, list_sets)
+                    continue
+
+                raise NotImplementedError(f"Index <{index}> not known")
+
+            # append indices to custom_set if element is supposed to be appended
+            if append_element:
+                if list_sets:
+                    custom_set.extend(list(itertools.product([element], *list_sets)))
+                else:
+                    custom_set.extend([element])
+        return custom_set, list_index
+
+    @staticmethod
+    def handle_existing_set(index, element, sets, list_sets):
+        """
+        Handles existing sets in the model.
+        Returns True if handled, False if unknown.
+
+        :param index: index to handle
+        :param element: element to handle
+        :param sets: sets of the optimization setup
+        :param list_sets: list of sets to append
+        """
+        if not sets.is_indexed(index):
+            list_sets.append(sets[index])
+            return True
+        elif sets.get_index_name(index) in sets.sets:
+            list_sets.append(sets[index][element])
+            return True
+        return False
+
+    @classmethod
+    def append_set_capex_index(cls, element, optimization_setup, index):
+        """ checks if the capex of a technology needs to be modeled as pwa or linear
+
+        :param element: technology in model
+        :param optimization_setup: The OptimizationSetup the element is part of
+        :param index: index to check
+        :return model_capex: Bool indicating if capex needs to be modeled as pwa or linear"""
+
+        if element in optimization_setup.sets["set_conversion_technologies"]:
+            capex_is_pwa = optimization_setup.get_attribute_of_specific_element(cls, element, "capex_is_pwa")
+            if "linear" in index and capex_is_pwa:
+                return False
+            if "pwa" in index and not capex_is_pwa:
+                return False
         else:
-            # ugly, but if first set is indexing_set
-            if list_index[0] in indexing_sets:
-                # empty custom index set
-                custom_set = []
-                # iterate through
-                for element in sets[list_index[0]]:
-                    # default: append element
-                    append_element = True
-                    # create empty list of sets
-                    list_sets = []
-                    # iterate through indices without first index
-                    for index in list_index[1:]:
-                        # if the set already exist in model
-                        if index in sets:
-                            # if not indexed
-                            if not sets.is_indexed(index):
-                                list_sets.append(sets[index])
-                            # if indexed by first entry
-                            elif sets.get_index_name(index) in indexing_sets:
-                                list_sets.append(sets[index][element])
-                            else:
-                                raise NotImplementedError
-                        # if index is set_location
-                        elif index == "set_location":
-                            # if element in set_conversion_technologies or set_storage_technologies, append set_nodes
-                            if (element in sets["set_conversion_technologies"] or element in sets["set_storage_technologies"] \
-                                    or element in sets["set_retrofitting_technologies"]):
-                                list_sets.append(sets["set_nodes"])
-                            # if element in set_transport_technologies
-                            elif element in sets["set_transport_technologies"]:
-                                list_sets.append(sets["set_edges"])
-                        # if set is built for pwa capex:
-                        elif "set_capex" in index:
-                            if element in sets["set_conversion_technologies"]:
-                                capex_is_pwa = optimization_setup.get_attribute_of_specific_element(cls, element, "capex_is_pwa")
-                                # if technology is modeled as pwa, break for linear index
-                                if "linear" in index and capex_is_pwa:
-                                    append_element = False
-                                    break
-                                # if technology is not modeled as pwa, break for pwa index
-                                elif "pwa" in index and not capex_is_pwa:
-                                    append_element = False
-                                    break
-                            # Transport or Storage technology
-                            else:
-                                append_element = False
-                                break
-                        # if set is used to determine if on-off behavior is modeled
-                        # exclude technologies which have no min_load
-                        elif "on_off" in index:
-                            model_on_off = cls.check_on_off_modeled(element, optimization_setup)
-                            if "set_no_on_off" in index:
-                                # if modeled as on off, do not append to set_no_on_off
-                                if model_on_off:
-                                    append_element = False
-                                    break
-                            else:
-                                # if not modeled as on off, do not append to set_on_off
-                                if not model_on_off:
-                                    append_element = False
-                                    break
-                        # split in capacity types of power and energy
-                        elif index == "set_capacity_types":
-                            system = optimization_setup.system
-                            if element in sets["set_storage_technologies"]:
-                                list_sets.append(system.set_capacity_types)
-                            else:
-                                list_sets.append([system.set_capacity_types[0]])
-                        else:
-                            raise NotImplementedError(f"Index <{index}> not known")
-                    # append indices to custom_set if element is supposed to be appended
-                    if append_element:
-                        if list_sets:
-                            custom_set.extend(list(itertools.product([element], *list_sets)))
-                        else:
-                            custom_set.extend([element])
-                return custom_set, list_index_overwrite
-            else:
-                raise NotImplementedError
+            return False
+        return True
+
+    @classmethod
+    def append_on_off_modeled(cls, element, optimization_setup, index):
+        """ checks if the on-off-behavior of a technology needs to be modeled.
+
+        :param element: technology in model
+        :param optimization_setup: The OptimizationSetup the element is part of
+        :param index: index to check
+        :return model_on_off: Bool indicating if on-off-behavior (min load) needs to be modeled"""
+
+        model_on_off = cls.check_on_off_modeled(element, optimization_setup)
+        if "set_no_on_off" in index:
+            # if modeled as on off, do not append to set_no_on_off
+            if model_on_off:
+                return False
+        else:
+            # if not modeled as on off, do not append to set_on_off
+            if not model_on_off:
+                return False
+        return True
+
+    @staticmethod
+    def handle_set_location_index(element, sets, list_sets):
+        """ handles the set_location index for the custom set
+
+        :param element: element to handle
+        :param sets: sets of the optimization setup
+        :param list_sets: list of sets to append
+        """
+        if (element in sets["set_conversion_technologies"] or
+                element in sets["set_storage_technologies"] or
+                element in sets["set_retrofitting_technologies"]):
+            list_sets.append(sets["set_nodes"])
+        elif element in sets["set_transport_technologies"]:
+            list_sets.append(sets["set_edges"])
+
+    @staticmethod
+    def handle_set_capacity_types_index(element, sets, optimization_setup, list_sets):
+        """ handles the set_capacity_types index for the custom set
+
+        :param element: element to handle
+        :param sets: sets of the optimization setup
+        :param optimization_setup: The OptimizationSetup the element is part of
+        :param list_sets: list of sets to append
+        """
+        system = optimization_setup.system
+        if element in sets["set_storage_technologies"]:
+            list_sets.append(system.set_capacity_types)
+        else:
+            list_sets.append([system.set_capacity_types[0]])
 
     @classmethod
     def check_on_off_modeled(cls, tech, optimization_setup):

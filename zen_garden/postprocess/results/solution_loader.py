@@ -207,7 +207,7 @@ class Scenario():
         if year in all_years:
             ts = (year - ry) // del_y
         elif year <= self.analysis.earliest_year_of_data and year in range(self.system.optimized_years):
-            logging.warning(f"DeprecationWarning: Selecting the yearly time steps ({year}) instead of the actual year ({ry + del_y*year}) is deprecated. Please use the actual year.")
+            warnings.warn(f"Selecting the yearly time steps ({year}) instead of the actual year ({ry + del_y*year}) is deprecated. Please use the actual year.", DeprecationWarning)
             ts = year
         else:
             raise KeyError(f"Year {year} not in optimized years {all_years}.")
@@ -818,17 +818,15 @@ def get_df_from_path(path: str, component_name: str, version: str, data_type: Li
 
     return ans
 
+
 def _get_time_steps_file(scenario):
     """
     Helper-function that returns the name of the time steps file of a scenario.
     :param scenario:
     :return: time_steps_file_name
     """
-    time_steps_file_name = [
-        i.split(".")[0]
-        for i in os.listdir(scenario.path)
-        if "dict_all_sequence_time_steps" in i and ".lock" not in i
-    ]
+    time_steps_file_name = [os.path.splitext(i)[0] for i in os.listdir(scenario.path)
+                            if 'dict_all_sequence_time_steps' in i and '.lock' not in i]
     time_steps_file_name = np.unique(time_steps_file_name)
     assert len(time_steps_file_name) == 1, f"Multiple time steps files found: {time_steps_file_name}"
     time_steps_file_name = time_steps_file_name[0]

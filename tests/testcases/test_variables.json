@@ -1893,6 +1893,16 @@
                     "index": ["natural_gas_boiler", "power", "DE", 0],
                     "value": 0.008
                 }
+            ],
+            "flow_import": [
+                {
+                    "index": ["natural_gas", "CH", 0],
+                    "value": 11.0
+                },
+                {
+                    "index": ["natural_gas", "DE", 0],
+                    "value": 110.0
+                }
             ]
         },
         "scenario_1_p00_000_price_import_1.6_reference_year_2023": {

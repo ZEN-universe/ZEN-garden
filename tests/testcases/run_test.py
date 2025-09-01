@@ -471,6 +471,8 @@ def test_4d(config, folder_path):
     # read the results and check again
     res = Results(os.path.join("outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
+    # test functions get_total() and get_full_ts()
+    check_get_total_get_full_ts(res)
 
 
 def test_5a(config, folder_path):

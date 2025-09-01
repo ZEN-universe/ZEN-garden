@@ -2,6 +2,7 @@
 File which contains the unit handling and scaling class.
 """
 import logging
+import warnings
 import numpy as np
 import pandas as pd
 import scipy as sp
@@ -110,6 +111,9 @@ class UnitHandling:
             with open(os.path.join(self.folder_path, 'base_units.json'), "r") as f:
                 data = json.load(f)
             list_base_units = data['unit']
+        if 'hour' not in list_base_units:
+            warnings.warn('The base unit for time is intended to be "hour" but is not found in the base_units file. '
+                          'If this is intentional, make sure that your settings and input data are aligned with this change.', UserWarning)
         return list_base_units
 
     def calculate_combined_unit(self, input_unit, return_combination=False):
