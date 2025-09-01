@@ -746,7 +746,7 @@ class TechnologyRules(GenericRule):
         lhs = lp.merge(
             [1 * self.variables["capacity_addition"],
             - (investment_time_current*capacity_investment_addition).sum("set_time_steps_construction")]
-            , compat="broadcast_equals")
+            , compat="broadcast_equals",join="outer")
         rhs = (investment_time_existing*capacity_investment_existing).sum("set_time_steps_construction")
         rhs = xr.align(lhs.const,rhs,join="left")[1]
         constraints = lhs == rhs
@@ -781,9 +781,9 @@ class TechnologyRules(GenericRule):
         capacity_addition = self.variables["capacity_addition"].rename({"set_time_steps_yearly": "set_time_steps_yearly_prev"})
         capacity_addition = capacity_addition.broadcast_like(lt_range)
         expr = (lt_range * capacity_addition).sum("set_time_steps_yearly_prev")
-        lhs = lp.merge([1 * self.variables["capacity"], expr], compat="broadcast_equals")
+        lhs = lp.merge([1 * self.variables["capacity"], expr], compat="broadcast_equals",join="outer")
         lhs_previous = lp.merge([1 * self.variables["capacity_previous"], expr, 1 * self.variables["capacity_addition"]],
-                                compat="broadcast_equals")
+                                compat="broadcast_equals",join="outer")
         rhs = xr.align(lhs.const,self.parameters.existing_capacities,join="left")[1]
         constraints = lhs == rhs
         constraints_previous = lhs_previous == rhs
@@ -903,7 +903,7 @@ class TechnologyRules(GenericRule):
         capacity_addition_unbounded = capacity_addition_unbounded.broadcast_like(tdr)
         capacity_addition_unbounded = capacity_addition_unbounded.where(mask_technology_location, 0)
         # build constraints for all nodes summed ("sn")
-        lhs_sn = lp.merge([1*capacity_addition,-1*term_knowledge_no_spillover,-1*term_unbounded_addition], compat="broadcast_equals").sum("set_location")
+        lhs_sn = lp.merge([1*capacity_addition,-1*term_knowledge_no_spillover,-1*term_unbounded_addition], compat="broadcast_equals",join="outer").sum("set_location")
         rhs_sn = (tdr * (capacity_existing_total_nosr * kdr_existing).sum("set_technologies_existing") + capacity_addition_unbounded).sum("set_location")
         rhs_sn = rhs_sn.broadcast_like(lhs_sn.const)
         # mask for tdr == inf
@@ -917,7 +917,7 @@ class TechnologyRules(GenericRule):
             # existing capacities with spillover
             capacity_existing_total = capacity_existing + spillover_rate * (
                         capacity_existing.sum("set_location") - capacity_existing).where(mask_technology_type, 0)
-            lhs_an = lp.merge([1*capacity_addition,-1*term_knowledge,-1*term_unbounded_addition], compat="broadcast_equals")
+            lhs_an = lp.merge([1*capacity_addition,-1*term_knowledge,-1*term_unbounded_addition], compat="broadcast_equals",join="outer")
             rhs_an = tdr * (capacity_existing_total * kdr_existing).sum("set_technologies_existing") + capacity_addition_unbounded
             rhs_an = rhs_an.broadcast_like(lhs_an.const)
             # mask for tdr == inf
@@ -973,7 +973,7 @@ class TechnologyRules(GenericRule):
             {"set_time_steps_yearly": "set_time_steps_yearly_prev"})
         cost_capex_overnight = cost_capex_overnight.broadcast_like(lt_range)
         expr = (lt_range * a * cost_capex_overnight).sum("set_time_steps_yearly_prev")
-        lhs = lp.merge([1 * self.variables["cost_capex_yearly"], expr], compat="broadcast_equals")
+        lhs = lp.merge([1 * self.variables["cost_capex_yearly"], expr], compat="broadcast_equals",join="outer")
         rhs = (a * self.parameters.existing_capex).broadcast_like(lhs.const)
         constraints = lhs == rhs
 
@@ -1079,7 +1079,7 @@ class TechnologyRules(GenericRule):
             list_flow_reference.append(self.get_flow_expression_storage(rename=True))
         if len(transport_techs) > 0:
             list_flow_reference.append(self.variables["flow_transport"].rename({"set_transport_technologies": "set_technologies", "set_edges": "set_location"}).to_linexpr())
-        flow_reference = lp.merge(list_flow_reference, compat="broadcast_equals")
+        flow_reference = lp.merge(list_flow_reference, compat="broadcast_equals",join="outer")
         flow_reference = flow_reference.reindex_like(mask_on_off)
         # constraints
         # constraint 1, operational limit
