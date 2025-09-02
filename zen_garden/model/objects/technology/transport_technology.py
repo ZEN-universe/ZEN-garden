@@ -355,7 +355,7 @@ class TransportTechnologyRules(GenericRule):
         ### formulate constraint
         lhs = term_distance_inf + term_distance_not_inf
         lhs  = lhs.where(global_mask)
-        rhs = xr.zeros_like(global_mask)
+        rhs = 0
         constraints = lhs == rhs
         self.constraints.add_constraint("constraint_transport_technology_capex",constraints)
 

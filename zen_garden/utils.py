@@ -225,12 +225,12 @@ def reformat_slicing_index(index, component) -> tuple[str]:
     index_names = component.index_names
     if isinstance(index, str) or isinstance(index, float) or isinstance(index, int):
         index_name = index_names[0]
-        ref_index = (f"{index_name} == {index}",)
+        ref_index = (f"'{index_name}' == '{index}'",)
         if len(index_names) == 1:
-            ref_index = (f"index == {index}",)
+            ref_index = (f"index == '{index}'",)
     elif isinstance(index, list):
         index_name = index_names[0]
-        ref_index = (f"{index_name} in {index}",)
+        ref_index = (f"'{index_name}' in {index}",)
     elif isinstance(index, dict):
         ref_index = []
         for key, value in index.items():
@@ -238,9 +238,9 @@ def reformat_slicing_index(index, component) -> tuple[str]:
                 warnings.warn(f"Invalid index name '{key}' in index. Skipping.", Warning)
                 continue
             if isinstance(value, list):
-                ref_index.append(f"{key} in {value}")
+                ref_index.append(f"'{key}' in {value}")
             else:
-                ref_index.append(f"{key} == {value}")
+                ref_index.append(f"'{key}' == '{value}'")
         ref_index = tuple(ref_index)
     elif isinstance(index, tuple):
         ref_index = []
@@ -252,9 +252,9 @@ def reformat_slicing_index(index, component) -> tuple[str]:
             if index[i] is None:
                 continue
             elif isinstance(index[i], list):
-                ref_index.append(f"{index_name} in {index[i]}")
+                ref_index.append(f"'{index_name}' in {index[i]}")
             else:
-                ref_index.append(f"{index_name} == {index[i]}")
+                ref_index.append(f"'{index_name}' == '{index[i]}'")
         ref_index = tuple(ref_index)
     else:
         warnings.warn(f"Invalid index type {type(index)}. Skipping.", Warning)

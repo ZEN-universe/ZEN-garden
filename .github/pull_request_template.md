@@ -16,7 +16,7 @@ Please check all items that apply. If an item is not applicable, please remove i
   - [ ] A new test folder is added or an existing test folder is adapted
   - [ ] The test is added to `run_tests.py` and `docu_test_cases.md`
   - [ ] The tested variables are added to `test_variables.json`
-  - [ ] Code changes have been tested locally and all tests pass
+- [ ] Code changes have been tested locally and all tests pass
 
 ### Code changes
 - [ ] If the name of an existing parameter is changed, the new and old name are added to `zen_garden/preprocess/parameter_change_log.py`

@@ -334,7 +334,7 @@ function (here from the ``constraint_nodal_energy_balance`` in ``carrier.py``):
     term_carrier_import,
     -term_carrier_export,
     term_carrier_shed_demand],
-    compat="broadcast_equals")
+    compat="broadcast_equals",join="outer")
 
 This function merges the expressions and makes sure that the dimensions are 
 compatible. This is often faster and more reliable than using ``+`` or ``-``.
