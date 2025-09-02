@@ -135,4 +135,4 @@ class RetrofittingTechnologyRules(GenericRule):
         rhs = 0
         constraints = lhs <= rhs
 
-        self.constraints.add_constraint("retrofit_flow_coupling", constraints)
+        self.constraints.add_constraint("constraint_retrofit_flow_coupling", constraints)
