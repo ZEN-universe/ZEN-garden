@@ -15,6 +15,7 @@ import xarray as xr
 import linopy as lp
 import psutil
 import time
+from linopy.expressions import LinearExpression
 from pathlib import Path
 from zen_garden.preprocess.extract_input_data import DataInput
 
@@ -364,7 +365,7 @@ class GenericRule(object):
         self.time_steps = self.energy_system.time_steps
 
     # helper methods for constraint rules
-    def get_year_time_step_array(self,storage = False):
+    def get_year_time_step_array(self,storage=False):
         """ returns array with year and time steps of each year
 
         :param storage: boolean indicating if object is a storage object
@@ -470,10 +471,11 @@ class GenericRule(object):
             else:
                 reference_flows.append(mult * self.variables["flow_conversion_output"].loc[t, rc, nodes, :])
         if rename:
-            term_reference_flow = lp.merge(reference_flows, dim="set_technologies",join="outer",coords="minimal",compat="override").rename(
-                {"set_nodes": "set_location"})
+            term_reference_flow = lp.merge(reference_flows, dim="set_technologies", join="outer", coords="minimal",
+                                           compat="override", cls=LinearExpression).rename({"set_nodes": "set_location"})
         else:
-            term_reference_flow = lp.merge(reference_flows, dim="set_conversion_technologies",join="outer",coords="minimal",compat="override")
+            term_reference_flow = lp.merge(reference_flows, dim="set_conversion_technologies", join="outer",
+                                           coords="minimal", compat="override", cls=LinearExpression)
         return term_reference_flow
 
     def get_flow_expression_storage(self,rename=True):
