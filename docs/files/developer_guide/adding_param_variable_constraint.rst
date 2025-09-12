@@ -92,7 +92,7 @@ Finally, the ``unit_category`` parameter is set to the unit category of the para
 which is used for unit conversion and validation.
 The ``unit_category`` is a dictionary with the categories of the unit and their power (+1 or -1).
 For example ``{"energy_quantity": 1}`` means that the parameter is in energy quantity units (e.g., MWh, m^3, kg, etc.).
-As discussed in :ref:``input_handling.unit_consistency``,
+As discussed in :ref:``t_units.t_units``,
 the concrete unit of the energy quantity is determined through the input data and is not predefined in the code.
 What is predefined is how the unit dimensionalities build the parameter unit.
 A parameter with emissions per distance and energy, for example,

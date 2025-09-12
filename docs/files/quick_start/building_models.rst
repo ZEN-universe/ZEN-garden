@@ -44,7 +44,7 @@ Broadly speaking, ``.json`` files within the dataset define the default values
 of an element, which can be overwritten by the ``.csv`` files to specify data in 
 more detail. The ``.csv`` files are optional and can be omitted if the default 
 values are sufficient. More detail on the use of default values and overwriting 
-them can be found in :ref:`input_handling.attribute_files` and :ref:`input_handling.overwrite_defaults`.
+them can be found in :ref:`input_structure.attribute_files` and :ref:`input_structure.overwrite_defaults`.
 
 .. tip::
     If you create the ``data`` folder in the ZEN-garden root folder, it will not 
@@ -147,9 +147,9 @@ The following sections describe the necessary steps to build a new model.
    - Fill the energy system folder (`Energy System 
      <https://zen-garden.readthedocs.io/en/latest/files/zen_garden_in_detail/input_structure.html#energy-system>`_)
    - Create the ``attributes.json`` file for each element (energy system, 
-     technology, carrier; :ref:`input_handling.attribute_files`). The ``attributes.json`` 
+     technology, carrier; :ref:`input_structure.attribute_files`). The ``attributes.json`` 
      files must contain a default value for all parameters of this element type 
      (:ref:`notation.notation`)
    - If necessary, create the ``.csv`` files to specify the data in more detail 
-     (:ref:`input_handling.overwrite_defaults`)
+     (:ref:`input_structure.overwrite_defaults`)
    - Create the ``system.json`` files (:ref:`configuration.configuration`)

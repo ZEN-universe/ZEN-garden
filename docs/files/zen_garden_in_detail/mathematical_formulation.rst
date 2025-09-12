@@ -143,7 +143,7 @@ investment :math:`\alpha_{i,y}` and the capacity addition
 
 .. note::
     The capex of conversion technologies can also be approximated by a piecewise 
-    linear approximation as described in :ref:`input_handling.pwa` and 
+    linear approximation as described in :ref:`input_structure.pwa` and 
     :ref:`math_formulation.pwa_constraints`.
 
 For existing conversion technology capacities :math:`s_{h,n,y}^{ex}` that were 

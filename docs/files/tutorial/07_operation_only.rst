@@ -1,7 +1,7 @@
 .. _t_operation_only.t_operation_only:
 
 ########################################
-Tutorial 5: Operation-Only Optimizations
+Tutorial 7: Operation-Only Optimizations
 ########################################
 
 In some cases, it may be helpful run an operation-only version of ZEN-garden 
@@ -56,7 +56,7 @@ This tutorial goes into detail on the  second method
 understand and customize. Users seeking to implement the ``allow_investment`` 
 method should refer to the sections on 
 :ref:`setting configurations <t_configuration.t_configuration>` and
-:ref:`input handling <input_handling.input_handling>` 
+:ref:`input handling <input_structure.input_structure>` 
 
 
 .. _t_operation_only.include_operation_only_phase:
