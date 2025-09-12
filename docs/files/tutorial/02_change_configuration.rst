@@ -228,7 +228,7 @@ Example Exercise
       change the configuration of ``aggregated_time_steps_per_year`` to 10. This
       specifies the number of representative hours used. Save the file. For 
       more detailed information on time series aggregation and available options,
-      see the documentation on :ref:`time series aggregation <tsa.tsa>`.
+      see the documentation on :ref:`time series aggregation <t_tsa.t_tsa>`.
 
    b. Run ZEN-garden by following the instructions on :ref:`running a model 
       <running.running>`

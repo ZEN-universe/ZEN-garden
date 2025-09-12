@@ -77,7 +77,7 @@ configuration (``system.json``).
 
 Per default, the intrayearly resolution is set at to an hourly resolution and 
 considers 8760 h/a. Time-series aggregation allows users to change the 
-intrayearly resolution to reduce model complexity (see :ref:`tsa.tsa`). 
+intrayearly resolution to reduce model complexity (see :ref:`t_tsa.t_tsa`). 
 Timeseries aggregation methods are available in ZEN-garden via the tsam package. 
 Timeseries which should not impact the clustering can be excluded by the user.
 Moreover, a novel formulation of the constraints describing the storage levels 
@@ -183,14 +183,14 @@ Clean input formats
 
 ZEN-garden completely separates the model code and the input data. No input data 
 is **ever** hard-coded into the model code. Instead, all inputs are structured 
-in the form of human-readable csv/json files (:ref:`input_handling.input_handling`).
+in the form of human-readable csv/json files (:ref:`input_structure.input_structure`).
 Inputs are designed to be minimalistic, with no redundant values. At minimum, 
 each parameter of every element must have a user-specified default value 
-(:ref:`input_handling.attribute_files`). Default values are always set in the ``.json`` 
+(:ref:`input_structure.attribute_files`). Default values are always set in the ``.json`` 
 files and apply uniformly to all dimensions of the parameter (i.e. nodes, time 
 steps, years, etc.). Default values can be overwritten to account variation of 
 the parameter across dimensions using the  ``.csv`` files 
-(:ref:`input_handling.overwrite_defaults`). 
+(:ref:`input_structure.overwrite_defaults`). 
 
 
 .. _features.scenario:
@@ -215,7 +215,7 @@ Raw data for energy system models may come in inconsistent units
 will lead to modeling errors. To minimize errors, ZEN-garden requires
 users to input units along with parameter values. At the start of each
 model run, all units are converted to pre-defined base units base units 
-(:ref:`input_handling.unit_consistency`). Then, unit consistency checks ensure that the
+(:ref:`t_units.t_units`). Then, unit consistency checks ensure that the
 units are consistent throughout all parameters of all elements. When 
 mismatches occur, the most probable wrong unit is stated when the consistency 
 check fails. In the outputs, the units of all variables are inferred from the 
@@ -244,7 +244,7 @@ A scaling algorithm is available which can be applied to reduce the matrix range
 (LHS) and the parameter range (RHS) of the optimization problem. Scaling is 
 known to significantly reduce solution times, efficiently reducing numerical 
 issues. Several scaling parameters are available to fine tune the algorithm and 
-improve the algorithm performance (see :ref:`input_handling.scaling`).
+improve the algorithm performance (see :ref:`t_scaling.t_scaling`).
 
 
 .. _features.analysis:

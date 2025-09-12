@@ -45,22 +45,24 @@ Documentation
    files/tutorial/01_analyze_outputs
    files/tutorial/02_change_configuration
    files/tutorial/03_scenario_analysis
-   files/tutorial/04_handle_infeasibilities
-   files/tutorial/05_operation_only
+   files/tutorial/04_time_series_aggregation
+   files/tutorial/05_scaling
+   files/tutorial/06_unit_handling
+   files/tutorial/07_operation_only
+   files/tutorial/08_handle_infeasibilities
+   files/tutorial/09_troubleshooting
+
    
 .. toctree::
    :maxdepth: 1
    :caption: ZEN-garden in detail
 
    files/zen_garden_in_detail/input_structure
-   files/zen_garden_in_detail/dataset_examples
-   files/zen_garden_in_detail/input_handling
+   files/zen_garden_in_detail/configurations
    files/zen_garden_in_detail/sets_params_constraints
    files/zen_garden_in_detail/mathematical_formulation
-   files/zen_garden_in_detail/configurations
-   files/zen_garden_in_detail/time_series_aggregation
    files/zen_garden_in_detail/additional_features
-   files/zen_garden_in_detail/troubleshooting
+   files/zen_garden_in_detail/dataset_examples
 
 .. toctree::
    :maxdepth: 1
