@@ -38,7 +38,7 @@ You can change the interyearly resolution by modifying the
 ``unaggregated_time_steps_per_year``. To reduce the complexity, timeseries 
 aggregation can be used (``conduct_time_series_aggregation``) to reduce the 
 number of time steps. Per default, the number of timesteps is reduced to 10 
-(``aggregated_time_steps_per_year``). :ref:`tsa.tsa` and :ref:`tsa.time_parameters` provide a detailed description of 
+(``aggregated_time_steps_per_year``). :ref:`t_tsa.t_tsa` and :ref:`t_tsa.time_parameters` provide a detailed description of 
 the time representation and the time parameters.
 
 
@@ -71,8 +71,8 @@ available ``analysis`` settings and their default values:
 The settings of the timeseries aggregation algorithm are also specified in the 
 ``analysis`` section. The following table summarizes the available timeseries 
 aggregation settings and their default values. For further information on how to 
-use the timeseries aggregation, see :ref:`tsa.using_the_tsa`. In addition, 
-:ref:`tsa.tsa` and :ref:`tsa.time_parameters` 
+use the timeseries aggregation, see :ref:`t_tsa.using_the_tsa`. In addition, 
+:ref:`t_tsa.t_tsa` and :ref:`t_tsa.time_parameters` 
 provide helpful information on the time representation and the time parameters 
 in ZEN-garden.
 
@@ -121,5 +121,5 @@ same applies to the variables and duals, which can be specified in the
 You can analyze the numerics of your optimization problem via 
 ``analyze_numerics``. In addition, a scaling algorithm is available. Per 
 default, four iterations of the scaling algorithm are conducted without 
-including the values of the right-hand-side. :ref:`input_handling.scaling` provides a detailed 
+including the values of the right-hand-side. :ref:`t_scaling.t_scaling` provides a detailed 
 description of the scaling algorithm.

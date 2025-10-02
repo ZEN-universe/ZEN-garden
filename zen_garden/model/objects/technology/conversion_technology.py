@@ -10,6 +10,7 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 import linopy as lp
+from linopy.expressions import LinearExpression
 from zen_garden.utils import align_like
 from .technology import Technology
 from ..component import ZenIndex
@@ -504,7 +505,7 @@ class ConversionTechnologyRules(GenericRule):
         lhs = lp.merge(
             [1 * self.variables["capex_approximation"],
              - capex_specific_conversion * self.variables["capacity_approximation"]],
-            compat="broadcast_equals",join="outer")
+            compat="broadcast_equals", join="outer", cls=LinearExpression)
         lhs = self.align_and_mask(lhs, mask)
         rhs = 0
         constraints = lhs == rhs
@@ -568,7 +569,8 @@ class ConversionTechnologyRules(GenericRule):
         dc_in = align_like(dc_in.to_xarray(), combined_dependent_index, astype=bool)
         dc_out = align_like(dc_out.to_xarray(), combined_dependent_index, astype=bool)
         dc = dc_in | dc_out
-        term_flow_dependent = lp.merge([1 * flow_conversion_input_dep, 1 * flow_conversion_output_dep], compat="broadcast_equals",join="outer").where(dc)
+        term_flow_dependent = lp.merge([1 * flow_conversion_input_dep, 1 * flow_conversion_output_dep],
+                                       compat="broadcast_equals", join="outer", cls=LinearExpression).where(dc)
         conversion_factor = align_like(self.parameters.conversion_factor, term_flow_dependent)
         # reference carriers
         flow_conversion_input = self.variables["flow_conversion_input"].broadcast_like(conversion_factor)

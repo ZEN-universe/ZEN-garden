@@ -24,7 +24,7 @@ can be used to enhance the user experience:
 Additional mixed-integer constraints
 ------------------------------------
 
-Besides, PWA representation of the CAPEX (see :ref:`input_handling.pwa`), ZEN-garden allows the 
+Besides, PWA representation of the CAPEX (see :ref:`input_structure.pwa`), ZEN-garden allows the 
 use of two additional mixed-integer linear constraints:
 
 
@@ -70,7 +70,7 @@ the installation before adding the cost for the size of the capacity.
 **Piecewise affine linearization of the CAPEX of conversion technologies**
 
 The user can specify a ``nonlinear_capex.csv`` file to approximate the CAPEX 
-values of a conversion technology by a set of linear functions. :ref:`input_handling.pwa` 
+values of a conversion technology by a set of linear functions. :ref:`input_structure.pwa` 
 provides detailed description on how to use the piecewise affine representation.
 Moreover, :ref:`math_formulation.pwa_constraints` outlines the mathematical constraints that 
 are added.
@@ -96,11 +96,11 @@ where ``<parameter_name>`` is the name of the parameter whose default values
 should be overwritten and ``<year>`` is the year for which the data is specific 
 (e.g. ``demand_2023.csv`` if we want to provide demand data for the year 2023).
 Note that the input data structure stays the same as described in the 
-:ref:`input_handling.overwrite_defaults` section.
+:ref:`input_structure.overwrite_defaults` section.
 
 **Year-specific time series aggregation**
 
-Furthermore, if time series aggregation is activated (see :ref:`tsa.using_the_tsa`), 
+Furthermore, if time series aggregation is activated (see :ref:`t_tsa.using_the_tsa`), 
 for each year with year-specific input data, the time series aggregation is 
 performed separately.
 

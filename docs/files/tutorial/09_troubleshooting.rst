@@ -1,6 +1,9 @@
-######################
-Troubleshooting
-######################
+.. _t_troubleshooting._t_troubleshooting:
+
+
+###########################
+Tutorial 9: Troubleshooting
+###########################
 
 Frequently made mistakes
 ========================
@@ -33,7 +36,7 @@ the full model again.
 
 The easiest way to build a smaller model is to reduce the number of time steps, 
 years, regions, or technologies. If you are using time series aggregation 
-(see :ref:`tsa.tsa`), reduce the number of 
+(see :ref:`t_tsa.t_tsa`), reduce the number of 
 ``aggregated_time_steps_per_year``. Refer to :ref:`configuration.system` for the 
 relevant settings.
 
@@ -47,7 +50,7 @@ improve them:
 2. remove constraints that make the problem harder to solve through parameter 
    selection, such as technology expansion constraints, binary constraints, or 
    storage constraints
-3. improve your numerics by scaling your model (see :ref:`input_handling.scaling`)
+3. improve your numerics by scaling your model (see :ref:`t_scaling.t_scaling`)
 4. improve your numerics by selecting other solver options (if you are using 
    Gurobi see `Guidelines for Numerical Issues 
    <https://www.gurobi.com/documentation/current/refman/guidelines_for_numerical_i.html>`_)

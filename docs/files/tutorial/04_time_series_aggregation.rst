@@ -1,7 +1,7 @@
-.. _tsa.tsa:
+.. _t_tsa.t_tsa:
 
-Time series aggregation and representation
-==========================================
+Tutorial 4: Time Series Aggregation
+===================================
 
 
 Time steps in ZEN-garden
@@ -27,7 +27,7 @@ That means that in general we have three different time indices:
    the carriers, this is the index ``set_time_steps_operation``.
 
 
-.. _tsa.time_parameters:
+.. _t_tsa.time_parameters:
 
 The time parameters in ZEN-garden
 ---------------------------------
@@ -112,7 +112,7 @@ This disables the time series aggregation. If you do not want to investigate a
 full year, set ``"unaggregated_time_steps_per_year"<8760``
 
 
-.. _tsa.using_the_tsa:
+.. _t_tsa.using_the_tsa:
 
 Using time series aggregation
 -------------------------------------------------------
