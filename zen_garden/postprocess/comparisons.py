@@ -34,7 +34,7 @@ def compare_model_values(
         f"Comparing the model parameters of {results[0].solution_loader.name, results[1].solution_loader.name} and scenarios {scenarios[0], scenarios[1]}"
     )
 
-    diff_components = get_component_diff(results, component_type)
+    diff_components = get_component_diff(results, component_type,scenarios)
 
     diff_dict = {}
     # initialize progress bar
@@ -110,7 +110,7 @@ def compare_configs(
     return ans
 
 def get_component_diff(
-    results: list[Results], component_type: ComponentType
+    results: list[Results], component_type: ComponentType, scenarios: list[str]
 ) -> list[str]:
     """returns a list with the differences in component names
 
@@ -124,7 +124,7 @@ def get_component_diff(
     component_names_0 = set(
         [
             name
-            for name, component in results_0.solution_loader.components.items()
+            for name, component in results_0.solution_loader.scenarios[scenarios[0]].components.items()
             if component.component_type is component_type
         ]
     )
@@ -132,7 +132,7 @@ def get_component_diff(
     component_names_1 = set(
         [
             name
-            for name, component in results_1.solution_loader.components.items()
+            for name, component in results_1.solution_loader.scenarios[scenarios[1]].components.items()
             if component.component_type is component_type
         ]
     )
