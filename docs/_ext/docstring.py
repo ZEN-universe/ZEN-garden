@@ -15,14 +15,14 @@ import pdb;
 pdb.set_trace()
 
 The latter line can be placed anywhere in the code and will set a breakpoint
-at the location. When calling "make html" to build the documentatin, the 
+at the location. When calling "make html" to build the documentation, the 
 breakpoint will be activated. Type variable names to view variables values
 "next" to go to the next line, "step" to step into a function, and "exit" to
 leave the debugger.
 """
 
 class DocstringMethod(SphinxDirective):
-    """A directive insert the trimed docstring of a class method.
+    """A directive insert the trimmed docstring of a class method.
 
     The can be used to insert the docstring of a class method directly into 
     the documentation text. It removes the function header, summary line, 
@@ -35,10 +35,10 @@ class DocstringMethod(SphinxDirective):
     example, the mathematical formulation of constraints can now be written
     only once (in the docstring) and copied directly over to the documentation.
 
-    To use this directive, use the following command in a restructured text 
+    To use this directive, use the following command in a reStructuredText 
     file:
 
-    .. docstring_method <module.class.method_name>
+    .. docstring_method:: <module.class.method_name>
 
     EXAMPLE
 
@@ -80,6 +80,19 @@ class DocstringMethod(SphinxDirective):
                     break
                 filtered.append(line)
 
+            # Remove Google-style section headers and everything after
+            google_section_headers = (
+                "Args:", "Arguments:", "Parameters:", 
+                "Returns:", "Yields:", "Raises:", 
+                "Examples:", "Attributes:"
+            )
+
+            filtered = []
+            for line in lines:
+                if any(line.strip().startswith(header) for header in google_section_headers):
+                    break
+                filtered.append(line)
+                
             # Convert list of strings to a ViewList so Sphinx can parse it
             content = ViewList()
             for i, line in enumerate(filtered):
@@ -100,7 +113,7 @@ class DocstringMethod(SphinxDirective):
 
 
 class DocstringClass(SphinxDirective):
-    """A directive insert the trimed docstring of a class.
+    """A directive insert the trimmed docstring of a class.
 
     The can be used to insert the docstring of a class directly into 
     the documentation text. It removes the function header, summary line, 
@@ -109,14 +122,14 @@ class DocstringClass(SphinxDirective):
     body of the original docstring.
 
     The directive is useful for minimizing the amount of redundant information
-    that is required when writting both docstrings and documentation. For
+    that is required when writing both docstrings and documentation. For
     example, the docstring for conversion technologies can now contain all
     required information and pasted directly into the documentation.
 
-    To use this directive, use the following command in a restructured text 
+    To use this directive, use the following command in a reStructuredText 
     file:
 
-    .. docstring_class <module.class_name>
+    .. docstring_class:: <module.class_name>
 
     EXAMPLE
 
@@ -149,6 +162,19 @@ class DocstringClass(SphinxDirective):
             for line in lines:
                 if line.strip().startswith((':param', ':return', 
                                             ':rtype', ':raises')):
+                    break
+                filtered.append(line)
+
+            # Remove Google-style section headers and everything after
+            google_section_headers = (
+                "Args:", "Arguments:", "Parameters:", 
+                "Returns:", "Yields:", "Raises:", 
+                "Examples:", "Attributes:"
+            )
+
+            filtered = []
+            for line in lines:
+                if any(line.strip().startswith(header) for header in google_section_headers):
                     break
                 filtered.append(line)
 

@@ -52,6 +52,10 @@ nbsphinx_allow_errors = True
 autosummary_generate = True
 autosummary_generate_overwrite = False
 
+# configure docstring options
+# todo_include_todos = True  # <- REQUIRED
+napoleon_attr_annotations = True
+napoleon_use_ivar = False
 
 # Specify the special members to include in the documentation
 autodoc_default_options = {
