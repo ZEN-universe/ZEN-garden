@@ -28,7 +28,12 @@ jobs:
       - name: Check for '#skiptests' in commit messages
         id: check_commit
         run: |
-          commit_message="${{ github.event.head_commit.message }}"
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            commit_message=$(git log -1 --pretty=%B)
+          else
+            commit_message="${{ github.event.head_commit.message }}"
+          fi
+
           if [[ "$commit_message" =~ "#skiptests" ]]; then
             skip="true"
           else
@@ -36,7 +41,6 @@ jobs:
           fi
           echo "skiptests=$skip" >> $GITHUB_ENV
           echo "skiptests=$skip" >> $GITHUB_OUTPUT
-          echo "skiptests=$skip"
 
   matrix_prep:
     if: ${{ github.repository == 'ZEN-universe/ZEN-garden' && needs.check_skiptests.outputs.skiptests == 'false' }}
@@ -136,7 +140,6 @@ jobs:
           maxColorRange: 100
           minColorRange: 0
 
-  #
   bump_version:
     if: ${{ github.repository == 'ZEN-universe/ZEN-garden' && needs.check_skiptests.outputs.skiptests == 'false' && github.event_name == 'push' && github.ref == 'refs/heads/main' }}
     runs-on: ubuntu-latest
@@ -144,18 +147,50 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: main
+          fetch-depth: 0  # Needed for tags and full history
+
+      - name: Set up Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Generate new branch name
+        id: vars
+        run: |
+          BRANCH_NAME="version-bump-$(date +'%Y%m%d%H%M%S')"
+          echo "branch_name=$BRANCH_NAME" >> $GITHUB_OUTPUT
+
+      - name: Create new branch
+        run: |
+          git checkout -b ${{ steps.vars.outputs.branch_name }}
+
       - name: Bump version and push tag
         uses: jasonamyers/github-bumpversion-action@v1.0.5
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Push changes
-        if: env.bump != 'none'
-        uses: ad-m/github-push-action@master
+      - name: Push to new branch
+        run: |
+          git push origin ${{ steps.vars.outputs.branch_name }} --follow-tags
+
+      - name: Create Pull Request
+        id: cpr
+        uses: peter-evans/create-pull-request@v5
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          tags: true
+          token: ${{ secrets.GITHUB_TOKEN }}
+          title: "Bump version"
+          body: "Automated version bump"
+          base: main
+          branch: ${{ steps.vars.outputs.branch_name }}
+          delete-branch: true  # optional: auto-delete branch after merge
+
+      - name: Enable auto-merge for PR
+        if: steps.cpr.outputs.pull-request-number != ''
+        uses: peter-evans/enable-pull-request-automerge@v3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          pull-request-number: ${{ steps.cpr.outputs.pull-request-number }}
+          merge-method: squash
 
   release:
     if: ${{ github.repository == 'ZEN-universe/ZEN-garden' && needs.check_skiptests.outputs.skiptests == 'false' && github.event_name == 'push' && github.ref == 'refs/heads/main' }}
@@ -182,7 +217,7 @@ jobs:
           PATCH_VERSION=$(echo $TAG | cut -d. -f3)
           echo "patch=$PATCH_VERSION"
           echo "patch=$PATCH_VERSION" >> $GITHUB_ENV
-          echo "tag=$tag" >> $GITHUB_OUTPUT
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
   
           if [[ $PATCH_VERSION -eq 0 ]]; then
             echo "is_major_minor=true" >> $GITHUB_ENV
