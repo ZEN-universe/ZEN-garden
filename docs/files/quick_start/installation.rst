@@ -30,10 +30,6 @@ You can quickly create an environment with the following command::
 
 Replace ``<your_env_name>`` with the name of your environment.
 
-.. warning::
-    Gurobi currently does not support Python version 3.13. We therefore 
-    recommend using Python 3.12.
-
 Activate the environment with the following command::
 
   conda activate <your_env_name>
@@ -50,6 +46,10 @@ To test whether the installation was successful, type:
     
 into the command prompt. This will print a list of all installed packages. You 
 should see ``zen_garden`` in the list.
+
+
+.. warning::
+    ZEN-garden currently only supports Python versions 3.11 through 3.13.
 
 
 .. _installation.activate:
