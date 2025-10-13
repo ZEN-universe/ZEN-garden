@@ -7,7 +7,7 @@ import importlib.util
 import argparse
 import sys
 import os
-import zen_garden.model.default_config as default_config
+import zen_garden.default_config as default_config
 import json
 from zen_garden.utils import copy_dataset_example
 

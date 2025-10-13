@@ -4,14 +4,11 @@ Class defining the parameters, variables and constraints that hold for all trans
 The class takes the abstract optimization model as an input, and returns the parameters, variables and
 constraints that hold for the transport technologies.
 """
-import logging
-
 import numpy as np
-import pandas as pd
 import xarray as xr
 
 from .technology import Technology
-from ..component import ZenIndex, IndexSet
+from ..component import IndexSet
 from ..element import Element, GenericRule
 
 

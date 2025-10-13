@@ -2,16 +2,13 @@
 This function runs ZEN garden,it is executed in the __main__.py script.
 Compilation  of the optimization problem.
 """
-import cProfile
 import importlib.util
 import logging
 import os
-from collections import defaultdict
 import importlib
-from .model.optimization_setup import OptimizationSetup
+from .optimization_setup import OptimizationSetup
 from .postprocess.postprocess import Postprocess
-from .utils import setup_logger, InputDataChecks, StringUtils, ScenarioUtils, OptimizationError
-from .preprocess.unit_handling import Scaling
+from .utils import setup_logger, InputDataChecks, StringUtils, ScenarioUtils
 
 # we setup the logger here
 setup_logger()

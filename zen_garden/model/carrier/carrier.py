@@ -8,10 +8,8 @@ import logging
 
 import linopy as lp
 import numpy as np
-import pandas as pd
 import xarray as xr
 
-from zen_garden.utils import lp_sum
 from ..component import ZenIndex
 from ..element import Element, GenericRule
 

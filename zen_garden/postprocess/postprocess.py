@@ -18,7 +18,7 @@ from filelock import FileLock
 import yaml
 from pydantic import BaseModel
 
-from ..model.optimization_setup import OptimizationSetup
+from ..optimization_setup import OptimizationSetup
 
 
 # Warnings

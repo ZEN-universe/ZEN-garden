@@ -4,7 +4,6 @@ The class takes the abstract optimization model as an input and adds parameters,
 constraints of the conversion technologies.
 """
 import itertools
-import logging
 
 import numpy as np
 import pandas as pd
@@ -12,8 +11,7 @@ import xarray as xr
 import linopy as lp
 from zen_garden.utils import align_like
 from .technology import Technology
-from ..component import ZenIndex
-from ..element import GenericRule,Element
+from ..element import GenericRule
 import warnings
 
 

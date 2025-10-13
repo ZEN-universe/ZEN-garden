@@ -11,7 +11,6 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 
-from zen_garden.utils import lp_sum
 from ..component import ZenIndex, IndexSet
 from ..element import Element, GenericRule
 
