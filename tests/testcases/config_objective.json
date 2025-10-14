@@ -1,0 +1,4 @@
+{
+  "solver": {"keep_files": false},
+  "analysis": {"objective": "total_carbon_emissions"}
+}

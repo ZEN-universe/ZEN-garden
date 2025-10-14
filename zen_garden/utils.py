@@ -16,7 +16,7 @@ import xarray as xr
 import shutil
 from copy import deepcopy
 from pathlib import Path
-from zen_garden.model.default_config import Subscriptable
+from zen_garden.default_config import Subscriptable
 
 def setup_logger(level=logging.INFO):
     """ set up logger
@@ -828,7 +828,7 @@ class InputDataChecks:
         Checks selection of different technologies in system.py file
         """
         # Checks if at least one technology is selected in the system.py file
-        assert len(self.system.set_conversion_technologies + self.system.set_transport_technologies + self.system.set_storage_technologies) > 0, f"No technology selected in system.py"
+        assert len(self.system.set_conversion_technologies + self.system.set_transport_technologies + self.system.set_storage_technologies) > 0, f"No technology selected in system"
         # Checks if identical technologies are selected multiple times in system.py file and removes possible duplicates
         for tech_list in ["set_conversion_technologies", "set_transport_technologies", "set_storage_technologies"]:
             techs_selected = getattr(self.system,tech_list)

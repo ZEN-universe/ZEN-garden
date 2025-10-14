@@ -9,10 +9,8 @@ import logging
 import linopy as lp
 from linopy.expressions import LinearExpression
 import numpy as np
-import pandas as pd
 import xarray as xr
 
-from zen_garden.utils import lp_sum
 from ..component import ZenIndex
 from ..element import Element, GenericRule
 

@@ -13,7 +13,7 @@ import numpy as np
 from typing import Optional, Any,Literal
 from enum import Enum
 from functools import cache
-from zen_garden.model.default_config import Analysis, System, Solver
+from zen_garden.default_config import Analysis, System, Solver
 
 class ComponentType(Enum):
     parameter: str = "parameter"
