@@ -306,6 +306,9 @@ There are four ways to pass an index:
 If set to ``True``, the function converts the unit of the component to a yearly unit,
 i.e., multiplying the unit string of components with an operational time step type with ``hour``.
 
+``r.get_unit()`` can also be used to read the unit of the objective function with
+``r.get_unit('objective')``.
+
 .. note::
     The result class can only identify the components present in the result 
     files. Please refer to :ref:`configuration.solver` on how to only save 
