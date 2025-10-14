@@ -11,11 +11,10 @@ from zen_garden.postprocess.results.solution_loader import (
     TimestepType,
     ComponentType,
 )
-from zen_garden.model.default_config import Config, Analysis, Solver, System
+from zen_garden.default_config import Config, Analysis, Solver, System
+from zen_garden.utils import reformat_slicing_index
 import pandas as pd
 from typing import Optional, Any, Literal, Union
-from zen_garden.utils import reformat_slicing_index
-from functools import cache
 import importlib
 import os
 import logging
@@ -499,9 +498,18 @@ class Results:
         """
         if scenario_name is None:
             scenario_name = next(iter(self.solution_loader.scenarios.keys()))
+        if component_name == "objective":
+            if self.get_analysis(scenario_name=scenario_name).objective == "total_cost":
+                component_name = "net_present_cost"
+            elif self.get_analysis(scenario_name=scenario_name).objective == "total_carbon_emissions":
+                component_name = "carbon_emissions_annual"
+            else:
+                raise ValueError(f"Invalid objective function {self.get_analysis(scenario_name=scenario_name).objective}")
+            if component_name not in self.get_component_names("variable"):
+                logging.warning(f"Component {component_name} not found in {self.get_analysis(scenario_name=scenario_name)}")
         units = self.get_df(
-            component_name, scenario_name=scenario_name, data_type="units", index=index
-        )
+                component_name, scenario_name=scenario_name, data_type="units", index=index
+            )
         if units is None:
             return None
         if droplevel:

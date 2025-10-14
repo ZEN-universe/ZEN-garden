@@ -9,14 +9,14 @@ import scipy as sp
 import json
 import os
 import itertools
+import time
 from pint import UnitRegistry
 from pint.util import column_echelon_form
 from pathlib import Path
-from zen_garden.model.objects.technology.technology import Technology
-from zen_garden.model.objects.carrier.carrier import Carrier
+from zen_garden.model.technology.technology import Technology
+from zen_garden.model.carrier.carrier import Carrier
 from zen_garden.utils import get_label_position
 
-import time
 
 class UnitHandling:
     """

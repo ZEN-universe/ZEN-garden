@@ -12,7 +12,6 @@ import pandas as pd
 import xarray as xr
 from linopy.expressions import LinearExpression
 
-from zen_garden.utils import lp_sum
 from ..component import ZenIndex, IndexSet
 from ..element import Element, GenericRule
 

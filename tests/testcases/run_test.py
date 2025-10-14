@@ -1,32 +1,30 @@
 import json
 import os
-import re
 import warnings
 from collections import defaultdict
 from copy import deepcopy
 
 import numpy as np
-import pandas as pd
 import pytest
 
 from zen_garden._internal import main
+from zen_garden.__main__ import run_module
 from zen_garden.postprocess.results import Results
 
 
 # fixtures
 ##########
 
-
-@pytest.fixture
-def config():
-    """
-    :return: A new instance of the config
-    """
-    # TODO make work with new json! maybe use run_module from __main__.py directly
-    from config import config
-
-    config.solver.keep_files = False
-    return deepcopy(config)
+# @pytest.fixture
+# def config():
+#     """
+#     :return: A new instance of the config
+#     """
+#     # TODO make work with new json! maybe use run_module from __main__.py directly
+#     from config import config
+#
+#     config.solver.keep_files = False
+#     return deepcopy(config)
 
 
 @pytest.fixture
@@ -131,14 +129,12 @@ def check_get_total_get_full_ts(
 # All the tests
 ###############
 
-def test_1a(config, folder_path):
+def test_1a(folder_path):
     # add duals for this test
-    config.solver.save_duals = True
-
     # run the test
     data_set_name = "test_1a"
-    main(
-        config=config, dataset_path=os.path.join(folder_path, data_set_name)
+    run_module(
+        config="./config_duals.json", dataset=data_set_name
     )
 
     # read the results and check again
@@ -148,11 +144,11 @@ def test_1a(config, folder_path):
     check_get_total_get_full_ts(res)
 
 
-def test_1b(config, folder_path):
+def test_1b(folder_path):
     # run the test
     data_set_name = "test_1b"
-    main(
-        config=config, dataset_path=os.path.join(folder_path, data_set_name)
+    run_module(
+        dataset=data_set_name
     )
 
     # read the results and check again
@@ -160,11 +156,11 @@ def test_1b(config, folder_path):
     compare_variables_results(data_set_name, res, folder_path)
 
 
-def test_1c(config, folder_path):
+def test_1c(folder_path):
     # run the test
     data_set_name = "test_1c"
-    main(
-        config=config, dataset_path=os.path.join(folder_path, data_set_name)
+    run_module(
+        dataset=data_set_name
     )
 
     # read the results and check again
@@ -172,20 +168,20 @@ def test_1c(config, folder_path):
     compare_variables_results(data_set_name, res, folder_path)
 
 
-def test_1d(config, folder_path):
+def test_1d(folder_path):
     # run the test
     data_set_name = "test_1d"
-    main(config=config, dataset_path=os.path.join(folder_path, data_set_name))
+    run_module(dataset=data_set_name)
 
     # read the results and check again
     res = Results(os.path.join("outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
 
 
-def test_1e(config, folder_path):
+def test_1e(folder_path):
     # run the test
     data_set_name = "test_1e"
-    main(config=config, dataset_path=os.path.join(folder_path, data_set_name))
+    run_module(dataset=data_set_name)
 
     # read the results and check again
     res = Results(os.path.join("outputs", data_set_name))
@@ -195,10 +191,10 @@ def test_1e(config, folder_path):
     compare_variables_results(data_set_name, res, folder_path)
 
 
-def test_1f(config, folder_path):
+def test_1f(folder_path):
     # run the test
     data_set_name = "test_1f"
-    main(config=config, dataset_path=os.path.join(folder_path, data_set_name))
+    run_module(dataset=data_set_name)
 
     # read the results and check again
     res = Results(os.path.join("outputs", data_set_name))
@@ -208,49 +204,48 @@ def test_1f(config, folder_path):
     compare_variables_results(data_set_name, res, folder_path)
 
 
-def test_1g(config, folder_path):
+def test_1g(folder_path):
     # run the test
     data_set_name = "test_1g"
-    main(config=config, dataset_path=os.path.join(folder_path, data_set_name))
+    run_module(dataset=data_set_name)
 
     # read the results and check again
     res = Results(os.path.join("outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
 
-def test_1h(config, folder_path):
+def test_1h(folder_path):
     # run the test
     data_set_name = "test_1h"
-    main(config=config, dataset_path=os.path.join(folder_path, data_set_name))
+    run_module(dataset=data_set_name)
 
     # read the results and check again
     res = Results(os.path.join("outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
 
 
-def test_1i(config, folder_path):
+def test_1i(folder_path):
     # run the test
     data_set_name = "test_1i"
-    main(config=config, dataset_path=os.path.join(folder_path, data_set_name))
+    run_module(dataset=data_set_name)
 
     # read the results and check again
     res = Results(os.path.join("outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
 
-def test_1j(config, folder_path):
+def test_1j(folder_path):
     # run the test
     data_set_name = "test_1j"
-    config.solver.save_duals = True
-    main(config=config, dataset_path=os.path.join(folder_path, data_set_name))
+    run_module(config="./config_duals.json", dataset=data_set_name)
 
     # read the results and check again
     res = Results(os.path.join("outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
 
-def test_2a(config, folder_path):
+def test_2a(folder_path):
     # run the test
     data_set_name = "test_2a"
-    main(
-        config=config, dataset_path=os.path.join(folder_path, data_set_name)
+    run_module(
+        dataset=data_set_name
     )
 
     # read the results and check again
@@ -258,11 +253,11 @@ def test_2a(config, folder_path):
     compare_variables_results(data_set_name, res, folder_path)
 
 
-def test_2b(config, folder_path):
+def test_2b(folder_path):
     # run the test
     data_set_name = "test_2b"
-    main(
-        config=config, dataset_path=os.path.join(folder_path, data_set_name)
+    run_module(
+        dataset=data_set_name
     )
 
     # read the results and check again
@@ -270,11 +265,11 @@ def test_2b(config, folder_path):
     compare_variables_results(data_set_name, res, folder_path)
 
 
-def test_2c(config, folder_path):
+def test_2c(folder_path):
     # run the test
     data_set_name = "test_2c"
-    main(
-        config=config, dataset_path=os.path.join(folder_path, data_set_name)
+    run_module(
+        dataset=data_set_name
     )
 
     # read the results and check again
@@ -282,11 +277,11 @@ def test_2c(config, folder_path):
     compare_variables_results(data_set_name, res, folder_path)
 
 
-def test_3a(config, folder_path):
+def test_3a(folder_path):
     # run the test
     data_set_name = "test_3a"
-    main(
-        config=config, dataset_path=os.path.join(folder_path, data_set_name)
+    run_module(
+        dataset=data_set_name
     )
 
     # read the results and check again
@@ -294,11 +289,11 @@ def test_3a(config, folder_path):
     compare_variables_results(data_set_name, res, folder_path)
 
 
-def test_3b(config, folder_path):
+def test_3b(folder_path):
     # run the test
     data_set_name = "test_3b"
-    main(
-        config=config, dataset_path=os.path.join(folder_path, data_set_name)
+    run_module(
+        dataset=data_set_name
     )
 
     # read the results and check again
@@ -308,11 +303,11 @@ def test_3b(config, folder_path):
     check_get_total_get_full_ts(res)
 
 
-def test_3c(config, folder_path):
+def test_3c(folder_path):
     # run the test
     data_set_name = "test_3c"
-    main(
-        config=config, dataset_path=os.path.join(folder_path, data_set_name)
+    run_module(
+        dataset=data_set_name
     )
 
     # read the results and check again
@@ -322,11 +317,11 @@ def test_3c(config, folder_path):
     check_get_total_get_full_ts(res, year=2022)
 
 
-def test_3d(config, folder_path):
+def test_3d(folder_path):
     # run the test
     data_set_name = "test_3d"
-    main(
-        config=config, dataset_path=os.path.join(folder_path, data_set_name)
+    run_module(
+        dataset=data_set_name
     )
 
     # compare the variables of the optimization setup ## disabled for myopic foresight tests!
@@ -338,11 +333,11 @@ def test_3d(config, folder_path):
     check_get_total_get_full_ts(res, discount_to_first_step=False)
 
 
-def test_3e(config, folder_path):
+def test_3e(folder_path):
     # run the test
     data_set_name = "test_3e"
-    main(
-        config=config, dataset_path=os.path.join(folder_path, data_set_name)
+    run_module(
+        dataset=data_set_name
     )
 
     # compare the variables of the optimization setup ## disabled for myopic foresight tests!
@@ -352,11 +347,11 @@ def test_3e(config, folder_path):
     compare_variables_results(data_set_name, res, folder_path)
 
 
-def test_3f(config, folder_path):
+def test_3f(folder_path):
     # run the test
     data_set_name = "test_3f"
-    main(
-        config=config, dataset_path=os.path.join(folder_path, data_set_name)
+    run_module(
+        dataset=data_set_name
     )
 
     # compare the variables of the optimization setup ## disabled for myopic foresight tests!
@@ -366,11 +361,11 @@ def test_3f(config, folder_path):
     compare_variables_results(data_set_name, res, folder_path)
 
 
-def test_3g(config, folder_path):
+def test_3g(folder_path):
     # run the test
     data_set_name = "test_3g"
-    main(
-        config=config, dataset_path=os.path.join(folder_path, data_set_name)
+    run_module(
+        dataset=data_set_name
     )
 
     # read the results and check again
@@ -380,11 +375,11 @@ def test_3g(config, folder_path):
     check_get_total_get_full_ts(res)
 
 
-def test_3h(config, folder_path):
+def test_3h(folder_path):
     # run the test
     data_set_name = "test_3h"
-    main(
-        config=config, dataset_path=os.path.join(folder_path, data_set_name)
+    run_module(
+        dataset=data_set_name
     )
 
     # read the results and check again
@@ -394,11 +389,11 @@ def test_3h(config, folder_path):
     check_get_total_get_full_ts(res)
 
 
-def test_3i(config, folder_path):
+def test_3i(folder_path):
     # run the test
     data_set_name = "test_3i"
-    main(
-        config=config, dataset_path=os.path.join(folder_path, data_set_name)
+    run_module(
+        dataset=data_set_name
     )
 
     # read the results and check again
@@ -407,12 +402,11 @@ def test_3i(config, folder_path):
     # test functions get_total() and get_full_ts()
     check_get_total_get_full_ts(res)
 
-def test_3j(config, folder_path):
+def test_3j(folder_path):
     # run the test
     data_set_name = "test_3j"
-    config.solver.save_duals = True
-    main(
-        config=config, dataset_path=os.path.join(folder_path, data_set_name)
+    run_module(
+        config="./config_duals.json", dataset=data_set_name
     )
 
     # read the results and check again
@@ -421,11 +415,11 @@ def test_3j(config, folder_path):
     # test functions get_total() and get_full_ts()
     check_get_total_get_full_ts(res)
 
-def test_4a(config, folder_path):
+def test_4a(folder_path):
     # run the test
     data_set_name = "test_4a"
-    main(
-        config=config, dataset_path=os.path.join(folder_path, data_set_name)
+    run_module(
+        dataset=data_set_name
     )
 
     # read the results and check again
@@ -435,11 +429,11 @@ def test_4a(config, folder_path):
     check_get_total_get_full_ts(res)
 
 
-def test_4b(config, folder_path):
+def test_4b(folder_path):
     # run the test
     data_set_name = "test_4b"
-    main(
-        config=config, dataset_path=os.path.join(folder_path, data_set_name)
+    run_module(
+        dataset=data_set_name
     )
 
     # read the results and check again
@@ -449,11 +443,11 @@ def test_4b(config, folder_path):
     check_get_total_get_full_ts(res, specific_scenario=True)
 
 
-def test_4c(config, folder_path):
+def test_4c(folder_path):
     # run the test
     data_set_name = "test_4c"
-    main(
-        config=config, dataset_path=os.path.join(folder_path, data_set_name)
+    run_module(
+        dataset=data_set_name
     )
 
     # read the results and check again
@@ -461,11 +455,11 @@ def test_4c(config, folder_path):
     compare_variables_results(data_set_name, res, folder_path)
 
 
-def test_4d(config, folder_path):
+def test_4d(folder_path):
     # run the test
     data_set_name = "test_4d"
-    main(
-        config=config, dataset_path=os.path.join(folder_path, data_set_name)
+    run_module(
+        dataset=data_set_name
     )
 
     # read the results and check again
@@ -475,11 +469,11 @@ def test_4d(config, folder_path):
     check_get_total_get_full_ts(res)
 
 
-def test_5a(config, folder_path):
+def test_5a(folder_path):
     # run the test
     data_set_name = "test_5a"
-    main(
-        config=config, dataset_path=os.path.join(folder_path, data_set_name)
+    run_module(
+        dataset=data_set_name
     )
 
     # read the results and check again
@@ -489,11 +483,11 @@ def test_5a(config, folder_path):
     check_get_total_get_full_ts(res)
 
 
-def test_5b(config, folder_path):
+def test_5b(folder_path):
     # run the test
     data_set_name = "test_5b"
-    main(
-        config=config, dataset_path=os.path.join(folder_path, data_set_name)
+    run_module(
+        dataset=data_set_name
     )
 
     # read the results and check again
@@ -501,11 +495,11 @@ def test_5b(config, folder_path):
     compare_variables_results(data_set_name, res, folder_path)
 
 
-def test_5c(config, folder_path):
+def test_5c(folder_path):
     # run the test
     data_set_name = "test_5c"
-    main(
-        config=config, dataset_path=os.path.join(folder_path, data_set_name)
+    run_module(
+        dataset=data_set_name
     )
 
     # read the results and check again
@@ -513,11 +507,11 @@ def test_5c(config, folder_path):
     compare_variables_results(data_set_name, res, folder_path)
 
 
-def test_5d(config, folder_path):
+def test_5d(folder_path):
     # run the test
     data_set_name = "test_5d"
-    main(
-        config=config, dataset_path=os.path.join(folder_path, data_set_name)
+    run_module(
+        dataset=data_set_name
     )
 
     # read the results and check again
@@ -525,11 +519,11 @@ def test_5d(config, folder_path):
     compare_variables_results(data_set_name, res, folder_path)
 
 
-def test_6a(config, folder_path):
+def test_6a(folder_path):
     # run the test
     data_set_name = "test_6a"
-    main(
-        config=config, dataset_path=os.path.join(folder_path, data_set_name)
+    run_module(
+        dataset=data_set_name
     )
 
     # read the results and check again
@@ -539,22 +533,21 @@ def test_6a(config, folder_path):
     check_get_total_get_full_ts(res)
 
 
-def test_7a(config, folder_path):
+def test_7a(folder_path):
     # run the test
     data_set_name = "test_7a"
-    config.analysis.objective = "total_carbon_emissions"
-    main(config=config, dataset_path=os.path.join(folder_path, data_set_name))
+    run_module(config="./config_objective.json",dataset=data_set_name)
 
     # read the results and check again
     res = Results(os.path.join("outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
 
 
-def test_8a(config, folder_path):
+def test_8a(folder_path):
     # run the test
     data_set_name = "test_8a"
-    main(
-        config=config, dataset_path=os.path.join(folder_path, data_set_name)
+    run_module(
+        dataset=data_set_name
     )
     # read the results and check again
     res = Results(os.path.join("outputs", data_set_name))
@@ -562,19 +555,19 @@ def test_8a(config, folder_path):
     check_get_total_get_full_ts(res)
 
 
-def test_9a(config, folder_path):
+def test_9a(folder_path):
     # run the test
     data_set_name = "test_9a"
     with pytest.raises(AssertionError, match='The attribute units defined in the energy_system are not consistent!'):
-        main(
-            config=config, dataset_path=os.path.join(folder_path, data_set_name)
+        run_module(
+            dataset=data_set_name
         )
 
-def test_10a(config, folder_path):
+def test_10a(folder_path):
     # run the test
     data_set_name = "test_10a"
-    main(
-        config=config, dataset_path=os.path.join(folder_path, data_set_name)
+    run_module(
+        dataset=data_set_name
     )
     # read the results and check again
     res = Results(os.path.join("outputs", data_set_name))
@@ -582,8 +575,5 @@ def test_10a(config, folder_path):
 
 
 if __name__ == "__main__":
-    from config import config
-
-    config.solver.keep_files = False
     folder_path = os.path.dirname(__file__)
-    test_1j(config, folder_path)
+    test_1j(folder_path)

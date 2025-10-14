@@ -1,0 +1,6 @@
+{
+  "solver": {
+    "keep_files": false,
+    "save_duals": true
+  }
+}

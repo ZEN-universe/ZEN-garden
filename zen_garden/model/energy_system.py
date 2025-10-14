@@ -9,12 +9,10 @@ import logging
 import numpy as np
 import pandas as pd
 import xarray as xr
-from linopy import LinearExpression
 
-from zen_garden.model.objects.element import GenericRule,Element
+from zen_garden.model.element import GenericRule
 from zen_garden.preprocess.extract_input_data import DataInput
 from zen_garden.preprocess.unit_handling import UnitHandling
-from zen_garden.model.objects.component import ZenIndex
 from .time_steps import TimeStepsDicts
 from pathlib import Path
 

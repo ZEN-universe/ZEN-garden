@@ -3,15 +3,12 @@ Class defining the parameters, variables and constraints that hold for all stora
 The class takes the abstract optimization model as an input, and returns the parameters, variables and
 constraints that hold for the storage technologies.
 """
-import cProfile
-import logging
-
 import numpy as np
 import xarray as xr
 
 from zen_garden.utils import linexpr_from_tuple_np
 from .technology import Technology
-from ..component import ZenIndex, IndexSet
+from ..component import IndexSet
 from ..element import Element, GenericRule
 
 

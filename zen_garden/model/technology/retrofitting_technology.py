@@ -4,15 +4,10 @@ The class takes the abstract optimization model as an input and adds parameters,
 constraints of the retrofitting technologies.
 """
 import itertools
-import logging
-
-import numpy as np
 import pandas as pd
-import xarray as xr
 
-from zen_garden.utils import linexpr_from_tuple_np, InputDataChecks, align_like
+from zen_garden.utils import align_like
 from .conversion_technology import ConversionTechnology
-from ..component import ZenIndex
 from ..element import GenericRule
 
 
