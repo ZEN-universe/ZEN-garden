@@ -281,7 +281,7 @@ class TimeSeriesAggregation(object):
                     self.single_ts_tsa()
                 # overwrite time_step_sequence here
                 base_time_steps = self.energy_system.time_steps.decode_time_step(year, "yearly")
-                new_sequence_time_steps[base_time_steps][:,0] = self.sequence_time_steps
+                new_sequence_time_steps[base_time_steps.squeeze()] = self.sequence_time_steps
                 # save year specific TSA results
                 self.year_specific_tsa[year] = self.typical_periods
         return new_sequence_time_steps
