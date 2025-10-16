@@ -88,6 +88,11 @@ detail in :ref:`dataset_examples.dataset_examples`. To download one of the examp
 
 1. Create a new folder where to store the data (i.e. the ``data`` folder).
 2. In a terminal or the command prompt, navigate to the newly created folder.
+
+   .. code-block::
+
+       cd <path_to_data>
+
 3. Activate the ZEN-garden python environment (see :ref:`instructions 
    <installation.activate>`).
 4. Download the desired example data set using the command: 

@@ -43,7 +43,8 @@ extensions = ['sphinx.ext.autodoc',
               'nbsphinx_link',
               'myst_parser',
               "sphinx.ext.imgconverter",  # for SVG conversion
-              "docstring"
+              "sphinxcontrib.mermaid", # for class diagrams
+              "docstring" # custom extension for inserting docstring text
              ]
 # allow errors in the notebooks
 nbsphinx_allow_errors = True
@@ -79,6 +80,16 @@ exclude_patterns = ['_build', 'dataset_examples', 'Thumbs.db', '.DS_Store', '**.
                     'files/tutorial/handle_infeasibilities.rst', 'files/api_v2/**', 
                     'files/dataset_examples/**', 'files/developer_guide/testing.rst', 'files/references/release_notes.rst']
 
+
+mermaid = {
+    'theme': 'default',
+    'startOnLoad': True,
+    'mermaidConfig': {
+        'themeVariables': {
+            'primaryColor': '#ffcc00',
+        },
+    },
+}
 
 # -- Options for HTML output -------------------------------------------------
 
