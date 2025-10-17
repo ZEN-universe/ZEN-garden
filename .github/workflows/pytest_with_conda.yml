@@ -207,10 +207,21 @@ jobs:
           branch: ${{ steps.vars.outputs.branch_name }}
           delete-branch: true  # optional: auto-delete branch after merge
 
+      - name: Install GitHub CLI
+        run: |
+          sudo apt-get install gh
+
       - name: Enable Pull Request Automerge
-        run: gh pr merge --merge --auto "1"
+        run: |
+          PR_NUMBER=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            "https://api.github.com/repos/${{ github.repository }}/pulls?head=${{ github.repository }}:${{ steps.vars.outputs.branch_name }}" | jq -r '.[0].number')
+          
+          echo "PR Number: $PR_NUMBER"
+
+          # Automerge the PR with `gh` CLI
+          gh pr merge $PR_NUMBER --merge --auto --delete-branch
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}      
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}    
 
   release:
     if: ${{ github.repository == 'ZEN-universe/ZEN-garden' && needs.check_skiptests.outputs.skiptests == 'false' && github.event_name == 'push' && github.ref == 'refs/heads/main' }}
