@@ -177,18 +177,20 @@ jobs:
       - name: Check for changes after bump
         run: |
           git log --oneline -n 2
+          git branch
           git status
           git diff --name-only  # Check which files have changed
           git log -n 1  # Check the last commit, to see if a version bump commit was made
 
-      - name: Commit version bump changes
-        run: |
-          git add bumpversion.cfg pyproject.toml
-          git commit -m "Bump version"
-          git push origin ${{ steps.vars.outputs.branch_name }} --follow-tags
+      # - name: Commit version bump changes
+      #   run: |
+      #     git add bumpversion.cfg pyproject.toml
+      #     git commit -m "Bump version"
+      #     git push origin ${{ steps.vars.outputs.branch_name }} --follow-tags
 
       - name: Push all changes and tags
         run: |
+          git push origin ${{ steps.vars.outputs.branch_name }} --follow-tags
           git push --tags  # Push all tags to the remote
           git push origin ${{ steps.vars.outputs.branch_name }}  # Push the branch
 
