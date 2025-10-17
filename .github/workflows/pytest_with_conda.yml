@@ -146,8 +146,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Check bumpversion version
-        run: bumpversion --versions
+      # - name: Check bumpversion version
+      #   run: bumpversion --versions
 
       - name: Check for changes after bump
         run: |
