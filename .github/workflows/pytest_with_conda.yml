@@ -208,7 +208,6 @@ jobs:
           delete-branch: true  # optional: auto-delete branch after merge
 
       - name: Enable auto-merge for PR
-        if: steps.cpr.outputs.pull-request-number != ''
         uses: peter-evans/enable-pull-request-automerge@v3
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
