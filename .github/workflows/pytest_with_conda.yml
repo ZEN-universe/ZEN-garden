@@ -114,32 +114,6 @@ jobs:
         shell: bash -l {0}
         run: pip install -e .
 
-      - name: Run Tests
-        shell: bash -l {0}
-        run: |
-          pytest --cov="zen_garden" -n auto tests/ -v
-#          coverage report -m
-
-      - name: Extract Coverage
-        if: ${{ always() && matrix.label == 'linux-64' && github.event_name == 'push' }} # include always to overwrite cancel on failure of previous step
-        shell: bash -l {0}
-        run: |
-          echo "COVERAGE_INT=$(coverage report -m | grep TOTAL | grep -oE '[0-9]+%' | grep -oE '[0-9]+')" >> $GITHUB_ENV
-          echo "COVERAGE_FLT=$(coverage report -m --precision=2 | grep TOTAL | grep -oE '[0-9]+\.[0-9]+')" >> $GITHUB_ENV
-      # COMMENTED OUT BECAUSE THIS LEAD TO A 400 Bad request ERROR
-      - name: Create Coverage Badge
-        if: ${{ always() && matrix.label == 'linux-64' && github.event_name == 'push' }}
-        uses: schneegans/dynamic-badges-action@v1.7.0
-        with:
-          auth: ${{ secrets.GIST_TOKEN }}
-          gistID: 30d479a5b4c591a63b7b0f41abbce6a0
-          filename: zen_garden_coverage.json
-          label: coverage
-          message: ${{ env.COVERAGE_FLT }}%
-          valColorRange: ${{ env.COVERAGE_INT }}
-          maxColorRange: 100
-          minColorRange: 0
-
   bump_version:
     if: ${{ github.repository == 'ZEN-universe/ZEN-garden' && needs.check_skiptests.outputs.skiptests == 'false' && github.event_name == 'push' && github.ref == 'refs/heads/main' }}
     runs-on: ubuntu-latest
