@@ -178,10 +178,11 @@ jobs:
         run: |
           git status
           git diff --name-only  # Check which files have changed
+          git log -n 1  # Check the last commit, to see if a version bump commit was made
 
       - name: Commit version bump changes
         run: |
-          git add bumpversion.cfg pyproject.toml
+          git add .bumpversion.cfg pyproject.toml
           git commit -m "Bump version"
           git push origin ${{ steps.vars.outputs.branch_name }} --follow-tags
 
