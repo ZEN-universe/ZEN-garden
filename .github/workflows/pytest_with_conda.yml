@@ -178,7 +178,7 @@ jobs:
       - name: Check for changes after bump
         run: |
           git log --oneline -n 2
-          git show head
+          git show HEAD
           git branch
           git status
           git diff --name-only  # Check which files have changed
