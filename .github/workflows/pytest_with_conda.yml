@@ -10,6 +10,8 @@ on:
   pull_request:
     branches: ['*']
 
+  workflow_dispatch:
+
 # Env variables
 env:
   CACHE_NUMBER: 0  # increase to reset cache manually
