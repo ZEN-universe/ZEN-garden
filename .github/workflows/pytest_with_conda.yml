@@ -163,6 +163,7 @@ jobs:
             echo "bump_type=patch" >> $GITHUB_ENV
           fi
 
+        # For debugging
       - name: Dry run bumpversion with appropriate type
         run: |
           bumpversion ${{ env.bump_type }} --dry-run  # --dry-run shows what would change
@@ -177,6 +178,7 @@ jobs:
       - name: Check for changes after bump
         run: |
           git log --oneline -n 2
+          git show head
           git branch
           git status
           git diff --name-only  # Check which files have changed
