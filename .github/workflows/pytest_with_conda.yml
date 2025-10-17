@@ -149,6 +149,17 @@ jobs:
       - name: Check bumpversion version
         run: bumpversion --versions
 
+      - name: Check for changes after bump
+        run: |
+          git status
+          git diff --name-only  # Check which files have changed
+
+      - name: Commit version bump changes
+        run: |
+          git add bumpversion.cfg pyproject.toml
+          git commit -m "Bump version"
+          git push origin ${{ steps.vars.outputs.branch_name }} --follow-tags
+
       - name: Push to new branch
         run: |
           git push origin ${{ steps.vars.outputs.branch_name }} --follow-tags
