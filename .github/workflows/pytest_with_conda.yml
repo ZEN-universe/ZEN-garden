@@ -207,6 +207,12 @@ jobs:
           branch: ${{ steps.vars.outputs.branch_name }}
           delete-branch: true  # optional: auto-delete branch after merge
 
+      - name: Check outputs
+        if: ${{ steps.cpr.outputs.pull-request-number }}
+        run: |
+          echo "Pull Request Number - ${{ steps.cpr.outputs.pull-request-number }}"
+          echo "Pull Request URL - ${{ steps.cpr.outputs.pull-request-url }}"
+
       - name: Enable auto-merge for PR
         uses: peter-evans/enable-pull-request-automerge@v3
         with:
