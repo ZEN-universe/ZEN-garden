@@ -176,6 +176,7 @@ jobs:
 
       - name: Check for changes after bump
         run: |
+          git log --oneline -n 2
           git status
           git diff --name-only  # Check which files have changed
           git log -n 1  # Check the last commit, to see if a version bump commit was made
