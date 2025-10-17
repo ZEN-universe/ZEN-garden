@@ -203,7 +203,7 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           title: "Bump version"
           body: "Automated version bump"
-#          base: main
+          base: fix_bumpversion
           branch: ${{ steps.vars.outputs.branch_name }}
           delete-branch: true  # optional: auto-delete branch after merge
 
