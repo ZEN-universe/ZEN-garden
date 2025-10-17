@@ -122,9 +122,6 @@ jobs:
     needs: build
     steps:
       
-      - name: Check bumpversion version
-        run: bumpversion --versions
-
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0  # Needed for tags and full history
@@ -148,6 +145,9 @@ jobs:
         uses: jasonamyers/github-bumpversion-action@v1.0.5
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Check bumpversion version
+        run: bumpversion --versions
 
       - name: Push to new branch
         run: |
