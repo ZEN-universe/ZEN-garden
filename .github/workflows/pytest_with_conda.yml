@@ -5,8 +5,8 @@ on:
   schedule:
     - cron:  '30 4 1 * *'
   push:
-    branches:
-      - main
+    branches: ['*']
+
   pull_request:
     branches: ['*']
 
@@ -28,7 +28,12 @@ jobs:
       - name: Check for '#skiptests' in commit messages
         id: check_commit
         run: |
-          commit_message="${{ github.event.head_commit.message }}"
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            commit_message=$(git log -1 --pretty=%B)
+          else
+            commit_message="${{ github.event.head_commit.message }}"
+          fi
+
           if [[ "$commit_message" =~ "#skiptests" ]]; then
             skip="true"
           else
@@ -36,7 +41,6 @@ jobs:
           fi
           echo "skiptests=$skip" >> $GITHUB_ENV
           echo "skiptests=$skip" >> $GITHUB_OUTPUT
-          echo "skiptests=$skip"
 
   matrix_prep:
     if: ${{ github.repository == 'ZEN-universe/ZEN-garden' && needs.check_skiptests.outputs.skiptests == 'false' }}
@@ -101,6 +105,12 @@ jobs:
           key: ${{ matrix.label }}-conda-${{ hashFiles('zen_garden_env.yml') }}-${{ env.DATE }}-${{ env.CACHE_NUMBER }}
         id: cache
 
+      # # Clear mamba cache (for debugging)
+      # - name: Clear Mamba and Conda Caches
+      #   run: |
+      #     mamba clean -a
+      #     conda clean --all
+
       # This step is cached in case the env file was not changed
       - name: Update environment
         run: mamba env update -f zen_garden_env.yml
@@ -135,27 +145,88 @@ jobs:
           valColorRange: ${{ env.COVERAGE_INT }}
           maxColorRange: 100
           minColorRange: 0
-
-  #
+  
   bump_version:
     if: ${{ github.repository == 'ZEN-universe/ZEN-garden' && needs.check_skiptests.outputs.skiptests == 'false' && github.event_name == 'push' && github.ref == 'refs/heads/main' }}
-    runs-on: ubuntu-latest
     needs: build
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: main
-      - name: Bump version and push tag
-        uses: jasonamyers/github-bumpversion-action@v1.0.5
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0  # Needed for tags and full history
 
-      - name: Push changes
-        if: env.bump != 'none'
-        uses: ad-m/github-push-action@master
+      - name: Set up Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Install bumpversion
+        run: |
+          python -m pip install --upgrade pip
+          pip install bumpversion
+
+      # Step to fetch the PR body and determine version bump type
+      - name: Get PR body and determine bump type
+        id: pr_info
+        run: |
+          PR_BODY=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            "https://api.github.com/repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}" | jq -r '.body')
+          
+          echo "PR Body: $PR_BODY"
+          
+          # Determine bump type based on PR body
+          if [[ "$PR_BODY" =~ "#major" ]]; then
+            echo "bump_type=major" >> $GITHUB_ENV
+          elif [[ "$PR_BODY" =~ "#minor" ]]; then
+            echo "bump_type=minor" >> $GITHUB_ENV
+          else
+            echo "bump_type=patch" >> $GITHUB_ENV
+          fi
+
+        # For debugging
+      - name: Dry run bumpversion with appropriate type
+        run: |
+          bumpversion ${{ env.bump_type }} --dry-run  # --dry-run shows what would change
+          git diff  # Check what files are being modified
+
+      - name: Run bumpversion with appropriate type
+        run: |
+          bumpversion ${{ env.bump_type }}  # Will be 'patch', 'minor', or 'major'
+          git diff
+
+      - name: Check for changes after bump
+        run: |
+          git log --oneline -n 2
+          git show HEAD
+          git branch
+          git status
+          git diff --name-only  # Check which files have changed
+          git log -n 1  # Check the last commit, to see if a version bump commit was made
+
+      - name: Create Pull Request
+        id: cpr
+        uses: peter-evans/create-pull-request@v7
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          tags: true
+          token: ${{ secrets.GITHUB_TOKEN }}
+          title: "Bump version"
+          body: "Automated version bump"
+          base: main
+          #branch: ${{ steps.vars.outputs.branch_name }}
+          delete-branch: true  # optional: auto-delete branch after merge
+
+      - name: Check outputs
+        if: ${{ steps.cpr.outputs.pull-request-number }}
+        run: |
+          echo "Pull Request Number - ${{ steps.cpr.outputs.pull-request-number }}"
+          echo "Pull Request URL - ${{ steps.cpr.outputs.pull-request-url }}"
+
+      - name: Enable auto-merge for PR
+        if: ${{ steps.cpr.outputs.pull-request-number }}
+        uses: peter-evans/enable-pull-request-automerge@v3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          pull-request-number: ${{ steps.cpr.outputs.pull-request-number }}
+          merge-method: squash  
 
   release:
     if: ${{ github.repository == 'ZEN-universe/ZEN-garden' && needs.check_skiptests.outputs.skiptests == 'false' && github.event_name == 'push' && github.ref == 'refs/heads/main' }}
@@ -182,7 +253,7 @@ jobs:
           PATCH_VERSION=$(echo $TAG | cut -d. -f3)
           echo "patch=$PATCH_VERSION"
           echo "patch=$PATCH_VERSION" >> $GITHUB_ENV
-          echo "tag=$tag" >> $GITHUB_OUTPUT
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
   
           if [[ $PATCH_VERSION -eq 0 ]]; then
             echo "is_major_minor=true" >> $GITHUB_ENV

@@ -7,12 +7,10 @@ import itertools
 import logging
 import uuid
 from itertools import combinations
-from itertools import zip_longest
 
 import linopy as lp
 import numpy as np
 import pandas as pd
-import pint
 import xarray as xr
 from ordered_set import OrderedSet
 

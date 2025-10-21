@@ -4,7 +4,7 @@ channels:
   - gurobi
 dependencies:
   - pip
-  - python
+  - python=3.13
   - pip:
       - -e .[dev,vis,gurobipy,docs]
 

@@ -4,8 +4,6 @@ Contains methods to add parameters, variables and constraints to the
 optimization problem. Parent class of the Carrier and Technology classes .The class takes the concrete
 optimization model as an input.
 """
-import cProfile
-import copy
 import itertools
 import logging
 import os

@@ -7,12 +7,12 @@ General
 .. autosummary::
    :toctree: generated
 
-   zen_garden.model.optimization_setup
+   zen_garden.optimization_setup
 
 .. autosummary::
    :toctree: modules
 
-   zen_garden.model.default_config
+   zen_garden.default_config
 
 
 Objects
@@ -20,10 +20,10 @@ Objects
 .. autosummary::
     :toctree: generated
 
-    zen_garden.model.objects.component
-    zen_garden.model.objects.element
-    zen_garden.model.objects.energy_system
-    zen_garden.model.objects.time_steps
+    zen_garden.model.component
+    zen_garden.model.element
+    zen_garden.model.energy_system
+    zen_garden.model.time_steps
 
 
 Carriers
@@ -31,18 +31,18 @@ Carriers
 .. autosummary::
     :toctree: generated
 
-    zen_garden.model.objects.carrier.carrier
+    zen_garden.model.carrier.carrier
 
 Technologies
 ------------
 .. autosummary::
     :toctree: generated
 
-    zen_garden.model.objects.technology.technology
-    zen_garden.model.objects.technology.conversion_technology
-    zen_garden.model.objects.technology.storage_technology
-    zen_garden.model.objects.technology.transport_technology
-    zen_garden.model.objects.technology.retrofitting_technology
+    zen_garden.model.technology.technology
+    zen_garden.model.technology.conversion_technology
+    zen_garden.model.technology.storage_technology
+    zen_garden.model.technology.transport_technology
+    zen_garden.model.technology.retrofitting_technology
 
 
 

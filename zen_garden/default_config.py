@@ -31,8 +31,8 @@ Default values are overwritten by any changes specified in the input files
 ``system.json``, ``scenarios.json``, and ``config.json``.
 """
 
-from pydantic import BaseModel,ConfigDict, create_model
-from typing import Any, Optional, Union, get_type_hints
+from pydantic import BaseModel,ConfigDict
+from typing import Any, Optional, Union, Literal
 
 
 class Subscriptable(BaseModel):
@@ -206,7 +206,7 @@ class Analysis(Subscriptable):
     Class which contains the analysis configuration. This defines for example the objective function, output settings, etc.
     """
     dataset: str = ""
-    objective: str = "total_cost"
+    objective: Literal['total_cost','total_carbon_emissions'] = "total_cost"
     sense: str = "min"
     subsets: Subsets = Subsets()
     header_data_inputs: HeaderDataInputs = HeaderDataInputs()
