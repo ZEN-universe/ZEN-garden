@@ -1,0 +1,262 @@
+name: Bump and Release
+
+# Define when to run
+on:
+  push:
+    branches: bumpversion
+
+# Env variables
+env:
+  CACHE_NUMBER: 0  # increase to reset cache manually
+
+# Jobs
+jobs:
+
+  # check whether #nobump is in pull request message or commmit message: 
+  # The option #nobump skips bumpversion
+  check_nobump:
+    runs-on: ubuntu-latest
+    outputs:
+      nobump: ${{ steps.check_nobump.outputs.nobump }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check for '#nobump' in pull request title or body
+        id: check_nobump
+        run: |
+          COMMIT_MESSAGE=$(git log -n 1 --pretty=format:"%B")
+          if [[ "$COMMIT_MESSAGE" =~ \#nobump ]]; then
+            value="true"
+          else
+            value="false"
+          fi
+
+          echo "nobump=$value" >> $GITHUB_OUTPUT 
+          echo "commit messasge: $COMMIT_MESSAGE"
+          echo "nobump=$value"
+
+        
+  # Bump version number
+  bump_version:
+    name: Bump Version
+    if: ${{ github.repository == 'ZEN-universe/ZEN-garden' && needs.check_nobump.outputs.nobump == 'false' }}
+    runs-on: ubuntu-latest
+    needs: [check_nobump]
+    env:
+      NO_BUMP: ${{ needs.check_nobump.outputs.nobump }}
+    steps:
+
+      - name: Check the value of nobump
+        run: |
+          echo "nobump output: ${{ env.NO_BUMP }}"
+          
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Needed for tags and full history
+
+      - name: Set up Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Install bumpversion
+        run: |
+          python -m pip install --upgrade pip
+          pip install --upgrade bump2version
+
+      # Step to fetch the PR body and determine version bump type
+      - name: Get PR body and determine bump type
+        id: pr_info
+        env:
+          TITLE: ${{ github.event.pull_request.title }}
+          BODY: ${{ github.event.pull_request.body }}
+        run: |
+          #Get commit message
+          COMMIT_MESSAGE=$(git log -n 1 --pretty=format:"%B")
+
+          # Determine bump type based on commit message
+          if [[ "$COMMIT_MESSAGE" =~ \#major ]]; then
+            bump_type="major"
+          elif [[ "$COMMIT_MESSAGE" =~ "#minor" ]]; then
+            bump_type="minor"
+          else
+            bump_type="patch"
+          fi
+          
+          echo "bump_type=$bump_type" >> $GITHUB_ENV
+          echo "Commit Message: $COMMIT_MESSAGE"
+          echo "bump_type=$bump_type"
+
+      - name: Run bumpversion with appropriate type
+        run: |
+          bump2version ${{ env.bump_type }}  # Will be 'patch', 'minor', or 'major'
+          COMMIT_TITLE=$(git log -n 1 --pretty=format:"%s")
+          echo "COMMIT_TITLE=$COMMIT_TITLE" >> $GITHUB_ENV
+          git diff
+
+      - name: Check for changes after bump
+        run: |
+          git log --oneline -n 2
+          git show HEAD
+          git branch
+          git status
+          git diff --name-only  # Check which files have changed
+          git log -n 1  # Check the last commit, to see if a version bump commit was made
+
+      - name: Create Pull Request
+        id: cpr
+        uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ secrets.PULL_REQUEST_PAT }}
+          title: ${{ env.COMMIT_TITLE }}
+          body: "Automated version bump #skiptests"
+          base: bumpversion
+          delete-branch: true  # optional: auto-delete branch after merge
+
+      - name: Check outputs
+        if: ${{ steps.cpr.outputs.pull-request-number }}
+        run: |
+          echo "Pull Request Number - ${{ steps.cpr.outputs.pull-request-number }}"
+          echo "Pull Request URL - ${{ steps.cpr.outputs.pull-request-url }}"
+
+      - name: Enable auto-merge for PR
+        if: ${{ steps.cpr.outputs.pull-request-number }}
+        uses: peter-evans/enable-pull-request-automerge@v3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          #token: ${{ secrets.PULL_REQUEST_PAT }}
+          pull-request-number: ${{ steps.cpr.outputs.pull-request-number }}
+          merge-method: squash  
+
+      - name: Wait for pull request to be merged
+        env:
+          GH_TOKEN: ${{ github.token }} 
+        run: |
+          PR_NUMBER=${{ steps.cpr.outputs.pull-request-number }}
+          
+          echo "Waiting for PR #$PR_NUMBER to be merged..."
+          
+          MAX_WAIT_TIME=600  # Time limit in seconds (10 mins)
+          START_TIME=$(date +%s)
+          
+          while true; do
+            PR_MERGED_AT=$(gh pr view $PR_NUMBER --json mergedAt --jq '.mergedAt')
+            echo "pr_merged_at:$PR_MERGED_AT"
+            
+            CURRENT_TIME=$(date +%s)
+            ELAPSED_TIME=$((CURRENT_TIME - START_TIME))
+
+            if [ -n "${PR_MERGED_AT}" ]; then
+              echo "PR #$PR_NUMBER has been merged."
+              break
+            fi
+
+            if [[ $ELAPSED_TIME -ge $MAX_WAIT_TIME ]]; then
+              echo "Time limit exceeded. PR #$PR_NUMBER was not merged within the time frame."
+              exit 1  # Exit the job with failure
+            fi
+
+            echo "Waiting... PR #$PR_NUMBER is not yet merged. Elapsed time: $ELAPSED_TIME seconds."
+            sleep 10  # Wait for 30 seconds before checking again
+          done
+          
+  release:
+    if: ${{ github.repository == 'ZEN-universe/ZEN-garden' }}
+    name: "Create Github Release"
+    needs: bump_version
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.get-latest-tag.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Extract tag version
+        uses: actions-ecosystem/action-get-latest-tag@v1
+        id: get-latest-tag
+        with:
+          semver_only: true
+
+      - name: Check for major/minor version
+        id: check_version
+        run: |
+          TAG=${{ steps.get-latest-tag.outputs.tag }}
+          PATCH_VERSION=$(echo $TAG | cut -d. -f3)
+          echo "patch=$PATCH_VERSION"
+          echo "patch=$PATCH_VERSION" >> $GITHUB_ENV
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+  
+          if [[ $PATCH_VERSION -eq 0 ]]; then
+            echo "is_major_minor=true" >> $GITHUB_ENV
+          else
+            echo "is_major_minor=false" >> $GITHUB_ENV
+          fi
+
+      - name: Create GitHub Release
+        if: ${{ env.is_major_minor == 'true' && github.ref == 'refs/heads/main' }}
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ steps.get-latest-tag.outputs.tag }}
+          release_name: Release ${{ steps.get-latest-tag.outputs.tag }}
+          body: "Automated release for version ${{ steps.get-latest-tag.outputs.tag }} after major/minor version bump."
+          draft: false
+          prerelease: false
+
+  build-package:
+    if: ${{ github.repository == 'ZEN-universe/ZEN-garden' && github.ref == 'refs/heads/main' }}
+    name: "Build and verify package"
+    runs-on: ubuntu-latest
+    needs: release
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.release.outputs.tag }}
+      - uses: hynek/build-and-inspect-python-package@v2
+
+  release-test-pypi:
+    if: ${{ github.repository == 'ZEN-universe/ZEN-garden' && github.ref == 'refs/heads/main'}}
+    name: "Release to Test PyPI"
+    runs-on: ubuntu-latest
+    needs: build-package
+    environment:
+      name: test-pypi
+      url: https://test.pypi.org/project/zen-garden/
+    permissions:
+      id-token: write
+    steps:
+      - name: Download packages
+        uses: actions/download-artifact@v4
+        with:
+          name: Packages
+          path: dist
+
+      - name: Publish to Test PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          repository-url: https://test.pypi.org/legacy/
+
+  release-pypi:
+    if: ${{ github.repository == 'ZEN-universe/ZEN-garden' && github.ref == 'refs/heads/main' }}
+    name: "Release to PyPI"
+    runs-on: ubuntu-latest
+    needs: build-package
+    environment:
+      name: pypi
+      url: https://pypi.org/project/zen-garden/
+    permissions:
+      id-token: write
+    steps:
+      - name: Download packages
+        uses: actions/download-artifact@v4
+        with:
+          name: Packages
+          path: dist
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
