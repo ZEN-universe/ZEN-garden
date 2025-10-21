@@ -14,6 +14,9 @@ env:
 
 # Jobs
 jobs:
+
+  # check whether #skiptests is in pull request message or commmit message: 
+  # The option #skiptests skips the tests   
   check_skiptests:
     runs-on: ubuntu-latest
     outputs:
