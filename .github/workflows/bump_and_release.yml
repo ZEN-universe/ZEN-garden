@@ -175,12 +175,20 @@ jobs:
           
           while true; do
             PR_MERGED_AT=$(gh pr view $PR_NUMBER --json mergedAt --jq '.mergedAt')
+            PR_MERGED_COMMIT=$(gh pr view $PR_NUMBER --json mergedAt --jq '.mergeCommit')
+            PR_MERGED_BY=$(gh pr view $PR_NUMBER --json mergedAt --jq '.mergedBy')
+
+            
             CURRENT_TIME=$(date +%s)
             ELAPSED_TIME=$((CURRENT_TIME - START_TIME))
-            
+
+            echo "pr_merged_at:$PR_MERGED_AT"
+            echo "pr_merged_by:$PR_MERGED_BY"
+            echo "pr_merged_commit:$PR_MERGED_COMMIT"
+
             if [[ "$PR_MERGED_AT" != "null" ]]; then
               echo "PR #$PR_NUMBER has been merged."
-              break
+              #break
             fi
 
             if [[ $ELAPSED_TIME -ge $MAX_WAIT_TIME ]]; then
