@@ -21,19 +21,19 @@ jobs:
   check_skiptests:
     runs-on: ubuntu-latest
     outputs:
-      skiptests: ${{ steps.check_commit.outputs.skiptests }}
+      skiptests: ${{ steps.check_skiptests.outputs.skiptests }}
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
       - name: Check for '#skiptests' in pull request title or body
-        id: check_skiptest
+        id: check_skiptests
         env:
           TITLE: ${{ github.event.pull_request.title }}
           BODY: ${{ github.event.pull_request.body }}
         run: |
-          if [[ "$TITLE" =~ "#skiptests" || "$BODY" =~ "#skiptests" ]]; then
+          if [[ "$TITLE" =~ \#skiptests || "$BODY" =~ \#skiptests ]]; then
             skip="true"
           else
             skip="false"
@@ -41,7 +41,8 @@ jobs:
 
           echo "skiptests=$skip" >> $GITHUB_ENV
           echo "skiptests=$skip" >> $GITHUB_OUTPUT
-          echo "PR Body: $PR_BODY"
+          echo "PR Title: $TITLE"
+          echo "PR Body: $BODY"
           echo "skiptests=$skip"
           
 
@@ -84,7 +85,7 @@ jobs:
     name: ${{ matrix.label }}
     runs-on: ${{ matrix.os }}
     steps:
-      # checkout the dev branch
+      # checkout PR commit
       - uses: actions/checkout@v4
         if: ${{ needs.check_skiptests.outputs.skiptests == 'false' }}
 
@@ -111,19 +112,13 @@ jobs:
           key: ${{ matrix.label }}-conda-${{ hashFiles('zen_garden_env.yml') }}-${{ env.DATE }}-${{ env.CACHE_NUMBER }}
         id: cache
 
-      # # Clear mamba cache (for debugging)
-      # - name: Clear Mamba and Conda Caches
-      #   run: |
-      #     mamba clean -a
-      #     conda clean --all
-
       # This step is cached in case the env file was not changed
       - name: Update environment
         if: ${{ needs.check_skiptests.outputs.skiptests == 'false' && steps.cache.outputs.cache-hit != 'true'}}
         run: mamba env update -f zen_garden_env.yml
 
       - name: Install package
-        if: ${{ needs.check_skiptests.outputs.skiptests == 'false' }}
+        if: ${{ steps.check_skiptests.outputs.skiptests == 'false' }}
         shell: bash -l {0}
         run: pip install -e .
 
@@ -140,7 +135,7 @@ jobs:
         run: |
           echo "COVERAGE_INT=$(coverage report -m | grep TOTAL | grep -oE '[0-9]+%' | grep -oE '[0-9]+')" >> $GITHUB_ENV
           echo "COVERAGE_FLT=$(coverage report -m --precision=2 | grep TOTAL | grep -oE '[0-9]+\.[0-9]+')" >> $GITHUB_ENV
-      # COMMENTED OUT BECAUSE THIS LEAD TO A 400 Bad request ERROR
+
       - name: Create Coverage Badge
         if: ${{ always() && matrix.label == 'linux-64' && github.event_name == 'push' && needs.check_skiptests.outputs.skiptests == 'false' }}
         uses: schneegans/dynamic-badges-action@v1.7.0
