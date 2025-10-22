@@ -27,24 +27,13 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Get Pull Request Body and Title
-        id: pull_request
+      - name: Check for '#skiptests' in pull request title or body
+        id: check_skiptest
         env:
           TITLE: ${{ github.event.pull_request.title }}
           BODY: ${{ github.event.pull_request.body }}
-
         run: |
-          echo "PR Title: $TITLE"
-          echo "PR Body: $BODY"
-
-
-      - name: Check for '#skiptests' in commit messages
-        id: check_commit
-        run: |
-          PR_BODY=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
-          "https://api.github.com/repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}" | jq -r '.body')
-
-          if [[ "$PR_BODY" =~ "#skiptests" ]]; then
+          if [[ "$TITLE" =~ "#skiptests" || "$BODY" =~ "#skiptests" ]]; then
             skip="true"
           else
             skip="false"
@@ -64,13 +53,11 @@ jobs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
       - uses: actions/checkout@v4
-        if: ${{ needs.check_skiptests.outputs.skiptests == 'false' }}
         with:
           fetch-depth: 0
 
       - name: Check Env File
         id: check-env-file
-        if: ${{ needs.check_skiptests.outputs.skiptests == 'false' }}
         uses: tj-actions/changed-files@v46
         with:
           files: |
@@ -83,7 +70,6 @@ jobs:
 
       - id: set-matrix
         uses: JoshuaTheMiller/conditional-build-matrix@main
-        if: ${{ needs.check_skiptests.outputs.skiptests == 'false' }}
         with:
           # Run filter -> see matrix_includes.json!
           filter: '[?runs_when==`${{ env.ENV_STATE }}` || runs_when==`${{ github.event_name }}` || runs_when==`always`]'
