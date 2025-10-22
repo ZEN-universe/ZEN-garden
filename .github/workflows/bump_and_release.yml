@@ -154,7 +154,7 @@ jobs:
 
       - name: 'Wait for status checks'
         id: waitforstatuschecks
-        uses: "WyriHaximus/github-action-wait-for-status@v2"
+        uses: "WyriHaximus/github-action-wait-for-status@v1.8"
         with:
           checkInterval: 30 # Number of seconds between checks
         env:
