@@ -28,7 +28,7 @@ jobs:
         id: check_nobump
         run: |
           COMMIT_MESSAGE=$(git log -n 1 --pretty=format:"%B")
-          if [[ "$COMMIT_MESSAGE" =~ \#nobump]]; then
+          if [[ "$COMMIT_MESSAGE" =~ \#nobump ]]; then
             nobump="true"
           else
             nobump="false"
