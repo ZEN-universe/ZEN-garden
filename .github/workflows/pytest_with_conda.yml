@@ -6,7 +6,8 @@ on:
     - cron:  '30 4 1 * *'
 
   pull_request:
-    branches: ['*']
+    branches: 
+      - bumpversion
     types: [opened, edited, synchronize]
 
 # Env variables
