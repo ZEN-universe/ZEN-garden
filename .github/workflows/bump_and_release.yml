@@ -153,24 +153,17 @@ jobs:
           echo "Pull Request Number - ${{ steps.cpr.outputs.pull-request-number }}"
           echo "Pull Request URL - ${{ steps.cpr.outputs.pull-request-url }}"
 
-      - name: Determine name of status checks
-        if: ${{ env.NO_BUMP == 'false' }}
-        env:
-          token: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          CHECKS = curl -u username:$token \
-          https://api.github.com/repos/OWNER/REPO/commits/REF/check-runs \
-          -H 'Accept: application/vnd.github.antiope-preview+json' | jq '[.check_runs[].name]'
+      # - name: Determine name of status checks
+      #   if: ${{ env.NO_BUMP == 'false' }}
+      #   env:
+      #     token: ${{ secrets.GITHUB_TOKEN }}
+      #   run: |
+      #     CHECKS = curl -u username:$token \
+      #     https://api.github.com/repos/OWNER/REPO/commits/REF/check-runs \
+      #     -H 'Accept: application/vnd.github.antiope-preview+json' | jq '[.check_runs[].name]'
           
-          echo "checks:$CHECKS"
+      #     echo "checks:$CHECKS"
 
-      - name: Wait for other checks to succeed
-        uses: lewagon/wait-on-check-action@v1.4.1
-        with:
-          ref: ${{ github.ref }}
-          running-workflow-name: 'Bump Version'
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
-          wait-interval: 10
       # - name: 'Wait for status checks'
       #   id: waitforstatuschecks
       #   uses: "WyriHaximus/github-action-wait-for-status@v1.8"
@@ -187,6 +180,14 @@ jobs:
           #token: ${{ secrets.PULL_REQUEST_PAT }}
           pull-request-number: ${{ steps.cpr.outputs.pull-request-number }}
           merge-method: squash  
+
+      - name: Wait for other checks to succeed
+        uses: lewagon/wait-on-check-action@v1.4.1
+        with:
+          ref: ${{ github.ref }}
+          running-workflow-name: 'Bump Version'
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          wait-interval: 10
 
   release:
     if: ${{ github.repository == 'ZEN-universe/ZEN-garden' }}
