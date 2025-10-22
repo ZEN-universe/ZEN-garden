@@ -35,7 +35,7 @@ jobs:
           fi
 
           echo "nobump=$value" >> $GITHUB_ENV
-          echo "nobump=$value" >> $GITHUB_OUTPUT
+          echo "::set-output name=nobump::$value" 
           echo "commit message: $COMMIT_MESSAGE"
           echo "nobump=$value"
 
@@ -57,13 +57,13 @@ jobs:
         run: |
           COMMIT_MESSAGE=$(git log -n 1 --pretty=format:"%B")
       
-          if [[ "$COMMIT_MESSAGE" =~ "#release" ]]; then
+          if [[ "$COMMIT_MESSAGE" =~ \#release ]]; then
             value="true"
           else
             value="false"
           fi
           echo "release=$value" >> $GITHUB_ENV
-          echo "release=$value" >> $GITHUB_OUTPUT
+          echo "::set-output name=release::$value"
           echo "commit message = $commit_message"
           echo "release=$value"
           
