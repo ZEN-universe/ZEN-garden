@@ -33,7 +33,6 @@ jobs:
             value="false"
           fi
 
-          echo "nobump=$value" >> $GITHUB_ENV
           echo "nobump=$value" >> $GITHUB_OUTPUT
           echo "commit messasge: $COMMIT_MESSAGE"
           echo "nobump=$value"
@@ -61,7 +60,6 @@ jobs:
           else
             value="false"
           fi
-          echo "release=$value" >> $GITHUB_ENV
           echo "release=$value" >> $GITHUB_OUTPUT
           echo "commit message = $COMMIT_MESSAGE"
           echo "release=$value"
@@ -85,13 +83,13 @@ jobs:
           fetch-depth: 0  # Needed for tags and full history
 
       - name: Set up Git
-        if: ${{ needs.check_nobump.outputs.nobump == 'false' }}
+        if: ${{ env.NO_BUMP == 'false' }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
       - name: Install bumpversion
-        if: ${{ needs.check_nobump.outputs.nobump == 'false' }}
+        if: ${{ env.NO_BUMP == 'false' }}
         run: |
           python -m pip install --upgrade pip
           pip install --upgrade bump2version
@@ -99,14 +97,11 @@ jobs:
       # Step to fetch the PR body and determine version bump type
       - name: Get PR body and determine bump type
         id: pr_info
-        if: ${{ needs.check_nobump.outputs.nobump == 'false' }}
+        if: ${{ env.NO_BUMP == 'false' }}
         env:
           TITLE: ${{ github.event.pull_request.title }}
           BODY: ${{ github.event.pull_request.body }}
         run: |
-          PR_BODY=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
-            "https://api.github.com/repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}" | jq -r '.body')
-          
           # Determine bump type based on PR body
           if [[ "$BODY" =~ \#major || "$TITLE" =~ \#major ]]; then
             bump_type="major"
@@ -121,13 +116,13 @@ jobs:
           echo "PR Body: $BODY"
 
       - name: Run bumpversion with appropriate type
-        if: ${{ needs.check_nobump.outputs.nobump == 'false' }}
+        if: ${{ env.NO_BUMP == 'false' }}
         run: |
           bump2version ${{ env.bump_type }}  # Will be 'patch', 'minor', or 'major'
           git diff
 
       - name: Check for changes after bump
-        if: ${{ needs.check_nobump.outputs.nobump == 'false' }}
+        if: ${{ env.NO_BUMP == 'false' }}
         run: |
           git log --oneline -n 2
           git show HEAD
@@ -137,7 +132,7 @@ jobs:
           git log -n 1  # Check the last commit, to see if a version bump commit was made
 
       - name: Create Pull Request
-        if: ${{ needs.check_nobump.outputs.nobump == 'false' }}
+        if: ${{ env.NO_BUMP == 'false' }}
         id: cpr
         uses: peter-evans/create-pull-request@v7
         with:
@@ -150,13 +145,13 @@ jobs:
           delete-branch: true  # optional: auto-delete branch after merge
 
       - name: Check outputs
-        if: ${{ steps.cpr.outputs.pull-request-number && needs.check_nobump.outputs.nobump == 'false' }}
+        if: ${{ steps.cpr.outputs.pull-request-number && env.NO_BUMP == 'false' }}
         run: |
           echo "Pull Request Number - ${{ steps.cpr.outputs.pull-request-number }}"
           echo "Pull Request URL - ${{ steps.cpr.outputs.pull-request-url }}"
 
       - name: Enable auto-merge for PR
-        if: ${{ steps.cpr.outputs.pull-request-number && needs.check_nobump.outputs.nobump == 'false' }}
+        if: ${{ steps.cpr.outputs.pull-request-number && env.NO_BUMP == 'false' }}
         uses: peter-evans/enable-pull-request-automerge@v3
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
