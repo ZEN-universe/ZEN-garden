@@ -12,6 +12,8 @@ env:
 # Jobs
 jobs:
 
+  # check whether #nobump is in pull request message or commmit message: 
+  # The option #nobump skips bumpversion
   check_nobump:
     runs-on: ubuntu-latest
     outputs:
@@ -23,9 +25,6 @@ jobs:
 
       - name: Check for '#nobump' in pull request title or body
         id: check_nobump
-        env:
-          TITLE: ${{ github.event.pull_request.title }}
-          BODY: ${{ github.event.pull_request.body }}
         run: |
           COMMIT_MESSAGE=$(git log -n 1 --pretty=format:"%B")
           if [[ "$COMMIT_MESSAGE" =~ \#nobump ]]; then
@@ -37,33 +36,7 @@ jobs:
           echo "nobump=$value" >> $GITHUB_ENV
           echo "nobump=$value" >> $GITHUB_OUTPUT
           echo "commit messasge: $COMMIT_MESSAGE"
-
-  # check whether #nobump is in pull request message or commmit message: 
-  # The option #nobump skips bumpversion
-  # check_nobump:
-  #   runs-on: ubuntu-latest
-  #   outputs:
-  #     nobump: ${{ steps.check_nobump.outputs.nobump }}
-  #   steps:
-
-  #     - uses: actions/checkout@v4
-  #       with:
-  #         fetch-depth: 0
-
-  #     - name: Check for '#nobump' in commit messages
-  #       id: check_nobump
-  #       run: |
-  #         COMMIT_MESSAGE=$(git log -n 1 --pretty=format:"%B")
-  #         if [[ "$COMMIT_MESSAGE" =~ \#nobump ]]; then
-  #           value="true"
-  #         else
-  #           value="false"
-  #         fi
-
-  #         echo "nobump=$value" >> $GITHUB_ENV
-  #         echo "::set-output name=nobump::$value" 
-  #         echo "commit message: $COMMIT_MESSAGE"
-  #         echo "nobump=$value"
+          echo "nobump=$value"
 
   # check whether #release is in pull request message or commmit message: 
   # The option #norelease skips the release    
@@ -89,8 +62,8 @@ jobs:
             value="false"
           fi
           echo "release=$value" >> $GITHUB_ENV
-          echo "::set-output name=release::$value"
-          echo "commit message = $commit_message"
+          echo "release=$value" >> $GITHUB_OUTPUT
+          echo "commit message = $COMMIT_MESSAGE"
           echo "release=$value"
           
   # Bump version number
@@ -98,14 +71,16 @@ jobs:
     if: ${{ github.repository == 'ZEN-universe/ZEN-garden'}}
     runs-on: ubuntu-latest
     needs: check_release
+    env:
+      NO_BUMP: ${{ needs.check_nobump.outputs.nobump }}
     steps:
 
       - name: Check the value of nobump
         run: |
-          echo "nobump output: ${{ needs.check_nobump.outputs.nobump }}"
+          echo "nobump output: ${{ env.NO_BUMP }}"
           
       - uses: actions/checkout@v4
-        if: ${{ needs.check_nobump.outputs.nobump == 'false' }}
+        if: ${{ env.NO_BUMP == 'false' }}
         with:
           fetch-depth: 0  # Needed for tags and full history
 
