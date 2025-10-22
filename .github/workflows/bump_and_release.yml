@@ -156,7 +156,7 @@ jobs:
         if: ${{ steps.cpr.outputs.pull-request-number && env.NO_BUMP == 'false' }}
         uses: peter-evans/enable-pull-request-automerge@v3
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.PULL_REQUEST_PAT }}
           pull-request-number: ${{ steps.cpr.outputs.pull-request-number }}
           merge-method: squash  
 
