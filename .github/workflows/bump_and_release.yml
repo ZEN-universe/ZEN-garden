@@ -186,9 +186,9 @@ jobs:
             echo "pr_merged_by:$PR_MERGED_BY"
             echo "pr_merged_commit:$PR_MERGED_COMMIT"
 
-            if [ -z "${PR_MERGED_AT}" ]; then
+            if [ -n "${PR_MERGED_AT}" ]; then
               echo "PR #$PR_NUMBER has been merged."
-              #break
+              break
             fi
 
             if [[ $ELAPSED_TIME -ge $MAX_WAIT_TIME ]]; then
