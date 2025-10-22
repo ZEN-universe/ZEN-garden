@@ -26,6 +26,17 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Get Pull Request Body and Title
+        id: pull_request
+        env:
+          TITLE: ${{ github.event.pull_request.title }}
+          BODY: ${{ github.event.pull_request.body }}
+
+        run: |
+          echo "PR Title: $TITLE"
+          echo "PR Body: $BODY"
+
+
       - name: Check for '#skiptests' in commit messages
         id: check_commit
         run: |
