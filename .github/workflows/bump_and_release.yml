@@ -29,15 +29,15 @@ jobs:
         run: |
           COMMIT_MESSAGE=$(git log -n 1 --pretty=format:"%B")
           if [[ "$COMMIT_MESSAGE" =~ \#nobump ]]; then
-            nobump="true"
+            value="true"
           else
-            nobump="false"
+            value="false"
           fi
 
-          echo "nobump=$nobump" >> $GITHUB_ENV
-          echo "nobump=$nobump" >> $GITHUB_OUTPUT
+          echo "nobump=$value" >> $GITHUB_ENV
+          echo "nobump=$value" >> $GITHUB_OUTPUT
           echo "commit message: $COMMIT_MESSAGE"
-          echo "nobump=$nobump"
+          echo "nobump=$value"
 
   # check whether #release is in pull request message or commmit message: 
   # The option #norelease skips the release    
@@ -58,14 +58,14 @@ jobs:
           COMMIT_MESSAGE=$(git log -n 1 --pretty=format:"%B")
       
           if [[ "$COMMIT_MESSAGE" =~ "#release" ]]; then
-            release="true"
+            value="true"
           else
-            release="false"
+            value="false"
           fi
-          echo "release=$release" >> $GITHUB_ENV
-          echo "release=$release" >> $GITHUB_OUTPUT
+          echo "release=$value" >> $GITHUB_ENV
+          echo "release=$value" >> $GITHUB_OUTPUT
           echo "commit message = $commit_message"
-          echo "release=$release"
+          echo "release=$value"
           
   # Bump version number
   bump_version:
