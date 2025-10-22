@@ -77,9 +77,10 @@ jobs:
       - name: Check the value of nobump
         run: |
           echo "nobump output: ${{ needs.check_nobump.outputs.nobump }}"
+          echo "nobump environment output: ${{ env.nobump }}"
 
       - uses: actions/checkout@v4
-        if: ${{ needs.check_nobump.outputs.nobump == 'false' }}
+        if: ${{ env.nobump == 'false' }}
         with:
           fetch-depth: 0  # Needed for tags and full history
 
