@@ -47,6 +47,7 @@ jobs:
       release: ${{ steps.check_release.outputs.release }}
     needs: check_nobump
     steps:
+
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
@@ -72,6 +73,11 @@ jobs:
     runs-on: ubuntu-latest
     needs: check_release
     steps:
+
+      - name: Check the value of nobump
+        run: |
+          echo needs.check_nobump.outputs.nobump
+
       - uses: actions/checkout@v4
         if: ${{ needs.check_nobump.outputs.nobump == 'false' }}
         with:
