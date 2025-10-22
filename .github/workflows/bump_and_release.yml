@@ -174,11 +174,11 @@ jobs:
           START_TIME=$(date +%s)
           
           while true; do
-            PR_STATUS=$(gh pr view $PR_NUMBER --json merged --jq '.merged')
+            PR_MERGED_AT=$(gh pr view $PR_NUMBER --json mergedAt --jq '.mergedAt')
             CURRENT_TIME=$(date +%s)
             ELAPSED_TIME=$((CURRENT_TIME - START_TIME))
             
-            if [[ "$PR_STATUS" == "true" ]]; then
+            if [[ "$PR_MERGED_AT" != "null" ]]; then
               echo "PR #$PR_NUMBER has been merged."
               break
             fi
