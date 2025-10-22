@@ -163,6 +163,8 @@ jobs:
           merge-method: squash  
 
       - name: Wait for pull request to be merged
+        env:
+          GH_TOKEN: ${{ github.token }} 
         run: |
           PR_NUMBER=${{ steps.cpr.outputs.pull-request-number }}
           
