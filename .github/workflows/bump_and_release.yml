@@ -1,4 +1,4 @@
-name: Tests
+name: Bump and Release
 
 # Define when to run
 on:
@@ -12,20 +12,20 @@ env:
 # Jobs
 jobs:
 
-  # check whether #nobump is in pull request message or commmit message: 
-  # The option #nobump skips bumpversion
   check_nobump:
     runs-on: ubuntu-latest
     outputs:
       nobump: ${{ steps.check_nobump.outputs.nobump }}
     steps:
-
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Check for '#nobump' in commit messages
+      - name: Check for '#nobump' in pull request title or body
         id: check_nobump
+        env:
+          TITLE: ${{ github.event.pull_request.title }}
+          BODY: ${{ github.event.pull_request.body }}
         run: |
           COMMIT_MESSAGE=$(git log -n 1 --pretty=format:"%B")
           if [[ "$COMMIT_MESSAGE" =~ \#nobump ]]; then
@@ -35,9 +35,35 @@ jobs:
           fi
 
           echo "nobump=$value" >> $GITHUB_ENV
-          echo "::set-output name=nobump::$value" 
-          echo "commit message: $COMMIT_MESSAGE"
-          echo "nobump=$value"
+          echo "nobump=$value" >> $GITHUB_OUTPUT
+          echo "commit messasge: $COMMIT_MESSAGE"
+
+  # check whether #nobump is in pull request message or commmit message: 
+  # The option #nobump skips bumpversion
+  # check_nobump:
+  #   runs-on: ubuntu-latest
+  #   outputs:
+  #     nobump: ${{ steps.check_nobump.outputs.nobump }}
+  #   steps:
+
+  #     - uses: actions/checkout@v4
+  #       with:
+  #         fetch-depth: 0
+
+  #     - name: Check for '#nobump' in commit messages
+  #       id: check_nobump
+  #       run: |
+  #         COMMIT_MESSAGE=$(git log -n 1 --pretty=format:"%B")
+  #         if [[ "$COMMIT_MESSAGE" =~ \#nobump ]]; then
+  #           value="true"
+  #         else
+  #           value="false"
+  #         fi
+
+  #         echo "nobump=$value" >> $GITHUB_ENV
+  #         echo "::set-output name=nobump::$value" 
+  #         echo "commit message: $COMMIT_MESSAGE"
+  #         echo "nobump=$value"
 
   # check whether #release is in pull request message or commmit message: 
   # The option #norelease skips the release    
@@ -77,10 +103,9 @@ jobs:
       - name: Check the value of nobump
         run: |
           echo "nobump output: ${{ needs.check_nobump.outputs.nobump }}"
-          echo "nobump environment output: ${{ env.nobump }}"
-
+          
       - uses: actions/checkout@v4
-        if: ${{ env.nobump == 'false' }}
+        if: ${{ needs.check_nobump.outputs.nobump == 'false' }}
         with:
           fetch-depth: 0  # Needed for tags and full history
 
