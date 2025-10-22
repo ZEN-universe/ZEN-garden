@@ -138,14 +138,14 @@ jobs:
 #          coverage report -m
 
       - name: Extract Coverage
-        if: ${{ always() && matrix.label == 'linux-64' && github.event_name == 'push' && env.SKIPTESTS == 'false' }} # include always to overwrite cancel on failure of previous step
+        if: ${{ always() && matrix.label == 'linux-64' && env.SKIPTESTS == 'false' }} # include always to overwrite cancel on failure of previous step
         shell: bash -l {0}
         run: |
           echo "COVERAGE_INT=$(coverage report -m | grep TOTAL | grep -oE '[0-9]+%' | grep -oE '[0-9]+')" >> $GITHUB_ENV
           echo "COVERAGE_FLT=$(coverage report -m --precision=2 | grep TOTAL | grep -oE '[0-9]+\.[0-9]+')" >> $GITHUB_ENV
 
       - name: Create Coverage Badge
-        if: ${{ always() && matrix.label == 'linux-64' && github.event_name == 'push' && env.SKIPTESTS == 'false' }}
+        if: ${{ always() && matrix.label == 'linux-64' && env.SKIPTESTS == 'false' }}
         uses: schneegans/dynamic-badges-action@v1.7.0
         with:
           auth: ${{ secrets.GIST_TOKEN }}

@@ -37,39 +37,13 @@ jobs:
           echo "commit messasge: $COMMIT_MESSAGE"
           echo "nobump=$value"
 
-  # check whether #release is in pull request message or commmit message: 
-  # The option #norelease skips the release    
-  check_release:
-    runs-on: ubuntu-latest
-    outputs:
-      release: ${{ steps.check_release.outputs.release }}
-    needs: check_nobump
-    steps:
-
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Check for '#release' in commit messages
-        id: check_release
-        run: |
-          COMMIT_MESSAGE=$(git log -n 1 --pretty=format:"%B")
-      
-          if [[ "$COMMIT_MESSAGE" =~ \#release ]]; then
-            value="true"
-          else
-            value="false"
-          fi
-          echo "release=$value" >> $GITHUB_OUTPUT
-          echo "commit message = $COMMIT_MESSAGE"
-          echo "release=$value"
-          
+        
   # Bump version number
   bump_version:
     name: Bump Version
-    if: ${{ github.repository == 'ZEN-universe/ZEN-garden'}}
+    if: ${{ github.repository == 'ZEN-universe/ZEN-garden' && needs.check_nobump.outputs.nobump == 'false' }}
     runs-on: ubuntu-latest
-    needs: [check_nobump, check_release]
+    needs: [check_nobump]
     env:
       NO_BUMP: ${{ needs.check_nobump.outputs.nobump }}
     steps:
@@ -79,18 +53,15 @@ jobs:
           echo "nobump output: ${{ env.NO_BUMP }}"
           
       - uses: actions/checkout@v4
-        if: ${{ env.NO_BUMP == 'false' }}
         with:
           fetch-depth: 0  # Needed for tags and full history
 
       - name: Set up Git
-        if: ${{ env.NO_BUMP == 'false' }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
       - name: Install bumpversion
-        if: ${{ env.NO_BUMP == 'false' }}
         run: |
           python -m pip install --upgrade pip
           pip install --upgrade bump2version
@@ -98,7 +69,6 @@ jobs:
       # Step to fetch the PR body and determine version bump type
       - name: Get PR body and determine bump type
         id: pr_info
-        if: ${{ env.NO_BUMP == 'false' }}
         env:
           TITLE: ${{ github.event.pull_request.title }}
           BODY: ${{ github.event.pull_request.body }}
@@ -117,7 +87,6 @@ jobs:
           echo "PR Body: $BODY"
 
       - name: Run bumpversion with appropriate type
-        if: ${{ env.NO_BUMP == 'false' }}
         run: |
           bump2version ${{ env.bump_type }}  # Will be 'patch', 'minor', or 'major'
           COMMIT_TITLE=$(git log -n 1 --pretty=format:"%s")
@@ -125,7 +94,6 @@ jobs:
           git diff
 
       - name: Check for changes after bump
-        if: ${{ env.NO_BUMP == 'false' }}
         run: |
           git log --oneline -n 2
           git show HEAD
@@ -135,7 +103,6 @@ jobs:
           git log -n 1  # Check the last commit, to see if a version bump commit was made
 
       - name: Create Pull Request
-        if: ${{ env.NO_BUMP == 'false' }}
         id: cpr
         uses: peter-evans/create-pull-request@v7
         with:
@@ -148,13 +115,13 @@ jobs:
           delete-branch: true  # optional: auto-delete branch after merge
 
       - name: Check outputs
-        if: ${{ steps.cpr.outputs.pull-request-number && env.NO_BUMP == 'false' }}
+        if: ${{ steps.cpr.outputs.pull-request-number }}
         run: |
           echo "Pull Request Number - ${{ steps.cpr.outputs.pull-request-number }}"
           echo "Pull Request URL - ${{ steps.cpr.outputs.pull-request-url }}"
 
       - name: Enable auto-merge for PR
-        if: ${{ steps.cpr.outputs.pull-request-number && env.NO_BUMP == 'false' }}
+        if: ${{ steps.cpr.outputs.pull-request-number }}
         uses: peter-evans/enable-pull-request-automerge@v3
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -170,21 +137,15 @@ jobs:
           
           echo "Waiting for PR #$PR_NUMBER to be merged..."
           
-          MAX_WAIT_TIME=1800  # Time limit in seconds (1/2 hour)
+          MAX_WAIT_TIME=600  # Time limit in seconds (10 mins)
           START_TIME=$(date +%s)
           
           while true; do
             PR_MERGED_AT=$(gh pr view $PR_NUMBER --json mergedAt --jq '.mergedAt')
-            PR_MERGED_COMMIT=$(gh pr view $PR_NUMBER --json mergedAt --jq '.mergeCommit')
-            PR_MERGED_BY=$(gh pr view $PR_NUMBER --json mergedAt --jq '.mergedBy')
-
+            echo "pr_merged_at:$PR_MERGED_AT"
             
             CURRENT_TIME=$(date +%s)
             ELAPSED_TIME=$((CURRENT_TIME - START_TIME))
-
-            echo "pr_merged_at:$PR_MERGED_AT"
-            echo "pr_merged_by:$PR_MERGED_BY"
-            echo "pr_merged_commit:$PR_MERGED_COMMIT"
 
             if [ -n "${PR_MERGED_AT}" ]; then
               echo "PR #$PR_NUMBER has been merged."
@@ -197,12 +158,11 @@ jobs:
             fi
 
             echo "Waiting... PR #$PR_NUMBER is not yet merged. Elapsed time: $ELAPSED_TIME seconds."
-            sleep 30  # Wait for 30 seconds before checking again
+            sleep 10  # Wait for 30 seconds before checking again
           done
           
   release:
     if: ${{ github.repository == 'ZEN-universe/ZEN-garden' }}
-    # if: ${{ github.repository == 'ZEN-universe/ZEN-garden' && needs.check_release.outputs.release == 'true'}}
     name: "Create Github Release"
     needs: bump_version
     runs-on: ubuntu-latest
