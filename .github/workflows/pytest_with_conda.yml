@@ -79,7 +79,7 @@ jobs:
   build:
     if: ${{ github.repository == 'ZEN-universe/ZEN-garden' }}
     # the testing
-    needs: matrix_prep
+    needs: [matrix_prep, check_skiptests]
     strategy:
       fail-fast: false # if true all jobs are cancelled if one fails
       matrix: ${{fromJson(needs.matrix_prep.outputs.matrix)}}
@@ -91,7 +91,7 @@ jobs:
       
       - name: Check the value of SKIPTESTS
         run: |
-          echo "nobump output: ${{ env.SKIPTESTS }}"
+          echo "skiptests output: ${{ env.SKIPTESTS }}"
       
       # checkout PR commit
       - uses: actions/checkout@v4

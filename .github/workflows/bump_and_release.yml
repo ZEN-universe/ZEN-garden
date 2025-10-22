@@ -33,7 +33,7 @@ jobs:
             value="false"
           fi
 
-          echo "nobump=$value" >> $GITHUB_OUTPUT
+          echo "nobump=$value" >> $GITHUB_OUTPUT 
           echo "commit messasge: $COMMIT_MESSAGE"
           echo "nobump=$value"
 
@@ -68,7 +68,7 @@ jobs:
   bump_version:
     if: ${{ github.repository == 'ZEN-universe/ZEN-garden'}}
     runs-on: ubuntu-latest
-    needs: check_release
+    needs: [check_nobump, check_release]
     env:
       NO_BUMP: ${{ needs.check_nobump.outputs.nobump }}
     steps:
