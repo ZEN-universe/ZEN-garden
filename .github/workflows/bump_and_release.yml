@@ -153,27 +153,8 @@ jobs:
           echo "Pull Request Number - ${{ steps.cpr.outputs.pull-request-number }}"
           echo "Pull Request URL - ${{ steps.cpr.outputs.pull-request-url }}"
 
-      # - name: Determine name of status checks
-      #   if: ${{ env.NO_BUMP == 'false' }}
-      #   env:
-      #     token: ${{ secrets.GITHUB_TOKEN }}
-      #   run: |
-      #     CHECKS = curl -u username:$token \
-      #     https://api.github.com/repos/OWNER/REPO/commits/REF/check-runs \
-      #     -H 'Accept: application/vnd.github.antiope-preview+json' | jq '[.check_runs[].name]'
-          
-      #     echo "checks:$CHECKS"
-
-      # - name: 'Wait for status checks'
-      #   id: waitforstatuschecks
-      #   uses: "WyriHaximus/github-action-wait-for-status@v1.8"
-      #   with:
-      #     checkInterval: 30 # Number of seconds between checks
-      #   env:
-      #     GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
-
       - name: Enable auto-merge for PR
-        if: ${{ steps.cpr.outputs.pull-request-number && steps.waitforstatuschecks.outputs.status == 'success' && env.NO_BUMP == 'false' }}
+        if: ${{ steps.cpr.outputs.pull-request-number && env.NO_BUMP == 'false' }}
         uses: peter-evans/enable-pull-request-automerge@v3
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -181,14 +162,34 @@ jobs:
           pull-request-number: ${{ steps.cpr.outputs.pull-request-number }}
           merge-method: squash  
 
-      - name: Wait for other checks to succeed
-        uses: lewagon/wait-on-check-action@v1.4.1
-        with:
-          ref: ${{ github.ref }}
-          running-workflow-name: 'Bump Version'
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
-          wait-interval: 10
+      - name: Wait for pull request to be merged
+        run: |
+          PR_NUMBER=${{ steps.cpr.outputs.pull-request-number }}
+          
+          echo "Waiting for PR #$PR_NUMBER to be merged..."
+          
+          MAX_WAIT_TIME=1800  # Time limit in seconds (1/2 hour)
+          START_TIME=$(date +%s)
+          
+          while true; do
+            PR_STATUS=$(gh pr view $PR_NUMBER --json merged --jq '.merged')
+            CURRENT_TIME=$(date +%s)
+            ELAPSED_TIME=$((CURRENT_TIME - START_TIME))
+            
+            if [[ "$PR_STATUS" == "true" ]]; then
+              echo "PR #$PR_NUMBER has been merged."
+              break
+            fi
 
+            if [[ $ELAPSED_TIME -ge $MAX_WAIT_TIME ]]; then
+              echo "Time limit exceeded. PR #$PR_NUMBER was not merged within the time frame."
+              exit 1  # Exit the job with failure
+            fi
+
+            echo "Waiting... PR #$PR_NUMBER is not yet merged. Elapsed time: $ELAPSED_TIME seconds."
+            sleep 30  # Wait for 30 seconds before checking again
+          done
+          
   release:
     if: ${{ github.repository == 'ZEN-universe/ZEN-garden' }}
     # if: ${{ github.repository == 'ZEN-universe/ZEN-garden' && needs.check_release.outputs.release == 'true'}}
