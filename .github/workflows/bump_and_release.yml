@@ -119,6 +119,8 @@ jobs:
         if: ${{ env.NO_BUMP == 'false' }}
         run: |
           bump2version ${{ env.bump_type }}  # Will be 'patch', 'minor', or 'major'
+          COMMIT_TITLE=$(git log -n 1 --pretty=format:"%s")
+          echo "COMMIT_TITLE=$COMMIT_TITLE" >> $GITHUB_ENV
           git diff
 
       - name: Check for changes after bump
@@ -137,8 +139,8 @@ jobs:
         uses: peter-evans/create-pull-request@v7
         with:
           token: ${{ secrets.PULL_REQUEST_PAT }}
-          title: "Bump version"
-          body: "Automated version bump #nobump, #release"
+          title: ${{ env.COMMIT_TITLE }}
+          body: "Automated version bump #nobump, #release, #skiptests"
           #base: main
           base: bumpversion
           #branch: ${{ steps.vars.outputs.branch_name }}
