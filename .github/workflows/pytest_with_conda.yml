@@ -88,6 +88,11 @@ jobs:
     env:
       SKIPTESTS: ${{ needs.check_skiptests.outputs.skiptests }}
     steps:
+      
+      - name: Check the value of SKIPTESTS
+        run: |
+          echo "nobump output: ${{ env.SKIPTESTS }}"
+      
       # checkout PR commit
       - uses: actions/checkout@v4
         if: ${{ env.SKIPTESTS == 'false' }}
