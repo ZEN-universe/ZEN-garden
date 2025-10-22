@@ -128,7 +128,7 @@ jobs:
         id: cpr
         uses: peter-evans/create-pull-request@v7
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.PULL_REQUEST_PAT }}
           title: "Bump version"
           body: "Automated version bump #nobump, #release"
           #base: main
