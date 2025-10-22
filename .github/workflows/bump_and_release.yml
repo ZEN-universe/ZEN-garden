@@ -152,16 +152,26 @@ jobs:
           echo "Pull Request Number - ${{ steps.cpr.outputs.pull-request-number }}"
           echo "Pull Request URL - ${{ steps.cpr.outputs.pull-request-url }}"
 
+      - name: 'Wait for status checks'
+        id: waitforstatuschecks
+        uses: "WyriHaximus/github-action-wait-for-status@v2"
+        with:
+          checkInterval: 30 # Number of seconds between checks
+        env:
+          GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+
       - name: Enable auto-merge for PR
-        if: ${{ steps.cpr.outputs.pull-request-number && env.NO_BUMP == 'false' }}
+        if: ${{ steps.cpr.outputs.pull-request-number && steps.waitforstatuschecks.outputs.status == 'success' && env.NO_BUMP == 'false' }}
         uses: peter-evans/enable-pull-request-automerge@v3
         with:
-          token: ${{ secrets.PULL_REQUEST_PAT }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+          #token: ${{ secrets.PULL_REQUEST_PAT }}
           pull-request-number: ${{ steps.cpr.outputs.pull-request-number }}
           merge-method: squash  
 
   release:
-    if: ${{ github.repository == 'ZEN-universe/ZEN-garden' && needs.check_release.outputs.release == 'true'}}
+    if: ${{ github.repository == 'ZEN-universe/ZEN-garden' }}
+    # if: ${{ github.repository == 'ZEN-universe/ZEN-garden' && needs.check_release.outputs.release == 'true'}}
     name: "Create Github Release"
     needs: bump_version
     runs-on: ubuntu-latest
