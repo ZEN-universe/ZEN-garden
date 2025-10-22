@@ -42,6 +42,8 @@ jobs:
           fi
           echo "skiptests=$skip" >> $GITHUB_ENV
           echo "skiptests=$skip" >> $GITHUB_OUTPUT
+          echo "commit_message = $commit_message"
+          echo "skiptests=$skip"
 
   matrix_prep:
     if: ${{ github.repository == 'ZEN-universe/ZEN-garden' && needs.check_skiptests.outputs.skiptests == 'false' }}

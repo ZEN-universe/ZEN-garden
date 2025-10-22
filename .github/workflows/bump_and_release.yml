@@ -39,6 +39,8 @@ jobs:
           fi
           echo "nobump=$nobump" >> $GITHUB_ENV
           echo "nobump=$nobump" >> $GITHUB_OUTPUT
+          echo "commit_message = $commit_message"
+          echo "nobump=$nobump"
 
   # check whether #release is in pull request message or commmit message: 
   # The option #norelease skips the release    
@@ -59,15 +61,17 @@ jobs:
           else
             commit_message="${{ github.event.head_commit.message }}"
           fi
-
+      
           if [[ "$commit_message" =~ "#release" ]]; then
-            skip="true"
+            release="true"
           else
-            skip="false"
+            release="false"
           fi
           echo "release=$release" >> $GITHUB_ENV
           echo "release=$release" >> $GITHUB_OUTPUT
-
+          echo "commit_message = $commit_message"
+          echo "release=$release"
+          
   # Bump version number
   bump_version:
     if: ${{ github.repository == 'ZEN-universe/ZEN-garden' && needs.check_skiptests.outputs.nobump == 'false' && github.event_name == 'push'}}
