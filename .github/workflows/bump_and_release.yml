@@ -3,7 +3,7 @@ name: Tests
 # Define when to run
 on:
   push:
-    branches: ['*']
+    branches: bumpversion
 
 # Env variables
 env:
@@ -17,7 +17,7 @@ jobs:
   check_nobump:
     runs-on: ubuntu-latest
     outputs:
-      skiptests: ${{ steps.check_commit.outputs.nobump }}
+      nobump: ${{ steps.check_commit.outputs.nobump }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -47,7 +47,7 @@ jobs:
   check_release:
     runs-on: ubuntu-latest
     outputs:
-      skiptests: ${{ steps.check_commit.outputs.release }}
+      release: ${{ steps.check_commit.outputs.release }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -75,7 +75,6 @@ jobs:
   # Bump version number
   bump_version:
     if: ${{ github.repository == 'ZEN-universe/ZEN-garden' && needs.check_skiptests.outputs.nobump == 'false' && github.event_name == 'push'}}
-#    if: ${{ github.repository == 'ZEN-universe/ZEN-garden' && needs.check_skiptests.outputs.nobump == 'false' && github.event_name == 'push' && github.ref == 'refs/heads/main' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -158,8 +157,6 @@ jobs:
 
   release:
     if: ${{ github.repository == 'ZEN-universe/ZEN-garden' && needs.check_skiptests.outputs.nobump == 'true' && needs.check_skiptests.outputs.release == 'true' && github.event_name == 'push'}}
-    # if: ${{ github.repository == 'ZEN-universe/ZEN-garden' && needs.check_skiptests.outputs.nobump == 'true' && needs.check_skiptests.outputs.release == 'true' && github.event_name == 'push' && github.ref == 'refs/heads/main' }}
-
     name: "Create Github Release"
     needs: bump_version
     runs-on: ubuntu-latest

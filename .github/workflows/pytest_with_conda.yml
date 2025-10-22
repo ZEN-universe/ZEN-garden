@@ -44,6 +44,10 @@ jobs:
           echo "skiptests=$skip" >> $GITHUB_OUTPUT
           echo "commit_message = $commit_message"
           echo "skiptests=$skip"
+          PR_BODY=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+          "https://api.github.com/repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}" | jq -r '.body')
+          
+          echo "PR Body: $PR_BODY"
 
   matrix_prep:
     if: ${{ github.repository == 'ZEN-universe/ZEN-garden' && needs.check_skiptests.outputs.skiptests == 'false' }}
