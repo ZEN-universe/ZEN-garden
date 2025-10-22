@@ -186,7 +186,7 @@ jobs:
             echo "pr_merged_by:$PR_MERGED_BY"
             echo "pr_merged_commit:$PR_MERGED_COMMIT"
 
-            if [[ "$PR_MERGED_AT" != "null" ]]; then
+            if [ -z "${PR_MERGED_AT}" ]; then
               echo "PR #$PR_NUMBER has been merged."
               #break
             fi
