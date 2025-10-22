@@ -76,7 +76,7 @@ jobs:
 
       - name: Check the value of nobump
         run: |
-          echo needs.check_nobump.outputs.nobump
+          echo "nobump output: ${{ needs.check_nobump.outputs.nobump }}"
 
       - uses: actions/checkout@v4
         if: ${{ needs.check_nobump.outputs.nobump == 'false' }}
