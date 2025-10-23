@@ -177,9 +177,22 @@ jobs:
           
       - name: Get version number
         run: |
-          VERSION=$(python -c "import toml; print(toml.load('pyproject.toml')['tool']['poetry']['version'])")
-          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          COMMIT_SUBJECT=$(git log -n 1 --pretty=format:"%s")
+          echo "commit subject: $COMMIT_SUBJECT"
+
+          # Extract the second version using grep with a regular expression
+          VERSION=$(echo "$COMMIT_SUBJECT" | grep -oP '\d+\.\d+\.\d+(?=\s*\()')
+
+          # Split the version into major, minor, and patch components
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$VERSION"
+
+          # Output the results
+          echo "version=$VERSION" >> $GITHUB_ENV
           echo "Version: $VERSION"
+          echo "Major version: $MAJOR"
+          echo "Minor version: $MINOR"
+          echo "Patch version: $PATCH"
+
           
       - name: Create and push tag
         run: |
