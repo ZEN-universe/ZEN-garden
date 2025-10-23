@@ -83,7 +83,6 @@ jobs:
     strategy:
       fail-fast: false # if true all jobs are cancelled if one fails
       matrix: ${{fromJson(needs.matrix_prep.outputs.matrix)}}
-    name: Build
     runs-on: ${{ matrix.os }}
     env:
       SKIPTESTS: ${{ needs.check_skiptests.outputs.skiptests }}
