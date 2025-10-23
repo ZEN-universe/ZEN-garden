@@ -61,37 +61,42 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-      - name: Install bumpversion
-        run: |
-          python -m pip install --upgrade pip
-          pip install --upgrade bump2version
+      - name: Bump version and push tag
+        uses: jasonamyers/github-bumpversion-action@v1.0.5
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # Step to fetch the PR body and determine version bump type
-      - name: Get PR body and determine bump type
-        id: pr_info
-        run: |
-          #Get commit message
-          COMMIT_MESSAGE=$(git log -n 1 --pretty=format:"%B")
+      # - name: Install bumpversion
+      #   run: |
+      #     python -m pip install --upgrade pip
+      #     pip install --upgrade bump2version
 
-          # Determine bump type based on commit message
-          if [[ "$COMMIT_MESSAGE" =~ \#major ]]; then
-            bump_type="major"
-          elif [[ "$COMMIT_MESSAGE" =~ "#minor" ]]; then
-            bump_type="minor"
-          else
-            bump_type="patch"
-          fi
+      # # Step to fetch the PR body and determine version bump type
+      # - name: Get PR body and determine bump type
+      #   id: pr_info
+      #   run: |
+      #     #Get commit message
+      #     COMMIT_MESSAGE=$(git log -n 1 --pretty=format:"%B")
+
+      #     # Determine bump type based on commit message
+      #     if [[ "$COMMIT_MESSAGE" =~ \#major ]]; then
+      #       bump_type="major"
+      #     elif [[ "$COMMIT_MESSAGE" =~ "#minor" ]]; then
+      #       bump_type="minor"
+      #     else
+      #       bump_type="patch"
+      #     fi
           
-          echo "bump_type=$bump_type" >> $GITHUB_ENV
-          echo "Commit Message: $COMMIT_MESSAGE"
-          echo "bump_type=$bump_type"
+      #     echo "bump_type=$bump_type" >> $GITHUB_ENV
+      #     echo "Commit Message: $COMMIT_MESSAGE"
+      #     echo "bump_type=$bump_type"
 
-      - name: Run bumpversion with appropriate type
-        run: |
-          bump2version ${{ env.bump_type }}  # Will be 'patch', 'minor', or 'major'
-          COMMIT_TITLE=$(git log -n 1 --pretty=format:"%s")
-          echo "COMMIT_TITLE=$COMMIT_TITLE" >> $GITHUB_ENV
-          git diff
+      # - name: Run bumpversion with appropriate type
+      #   run: |
+      #     bump2version ${{ env.bump_type }}  # Will be 'patch', 'minor', or 'major'
+      #     COMMIT_TITLE=$(git log -n 1 --pretty=format:"%s")
+      #     echo "COMMIT_TITLE=$COMMIT_TITLE" >> $GITHUB_ENV
+      #     git diff
 
       - name: Check for changes after bump
         run: |
