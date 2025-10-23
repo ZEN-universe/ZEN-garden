@@ -61,37 +61,42 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-      - name: Install bumpversion
-        run: |
-          python -m pip install --upgrade pip
-          pip install --upgrade bump2version
+      - name: Bump version and push tag
+        uses: jasonamyers/github-bumpversion-action@v1.0.5
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # Step to fetch the PR body and determine version bump type
-      - name: Get PR body and determine bump type
-        id: pr_info
-        run: |
-          #Get commit message
-          COMMIT_MESSAGE=$(git log -n 1 --pretty=format:"%B")
+      # - name: Install bumpversion
+      #   run: |
+      #     python -m pip install --upgrade pip
+      #     pip install --upgrade bump2version
 
-          # Determine bump type based on commit message
-          if [[ "$COMMIT_MESSAGE" =~ \#major ]]; then
-            bump_type="major"
-          elif [[ "$COMMIT_MESSAGE" =~ "#minor" ]]; then
-            bump_type="minor"
-          else
-            bump_type="patch"
-          fi
+      # # Step to fetch the PR body and determine version bump type
+      # - name: Get PR body and determine bump type
+      #   id: pr_info
+      #   run: |
+      #     #Get commit message
+      #     COMMIT_MESSAGE=$(git log -n 1 --pretty=format:"%B")
+
+      #     # Determine bump type based on commit message
+      #     if [[ "$COMMIT_MESSAGE" =~ \#major ]]; then
+      #       bump_type="major"
+      #     elif [[ "$COMMIT_MESSAGE" =~ "#minor" ]]; then
+      #       bump_type="minor"
+      #     else
+      #       bump_type="patch"
+      #     fi
           
-          echo "bump_type=$bump_type" >> $GITHUB_ENV
-          echo "Commit Message: $COMMIT_MESSAGE"
-          echo "bump_type=$bump_type"
+      #     echo "bump_type=$bump_type" >> $GITHUB_ENV
+      #     echo "Commit Message: $COMMIT_MESSAGE"
+      #     echo "bump_type=$bump_type"
 
-      - name: Run bumpversion with appropriate type
-        run: |
-          bump2version ${{ env.bump_type }}  # Will be 'patch', 'minor', or 'major'
-          COMMIT_TITLE=$(git log -n 1 --pretty=format:"%s")
-          echo "COMMIT_TITLE=$COMMIT_TITLE" >> $GITHUB_ENV
-          git diff
+      # - name: Run bumpversion with appropriate type
+      #   run: |
+      #     bump2version ${{ env.bump_type }}  # Will be 'patch', 'minor', or 'major'
+      #     COMMIT_TITLE=$(git log -n 1 --pretty=format:"%s")
+      #     echo "COMMIT_TITLE=$COMMIT_TITLE" >> $GITHUB_ENV
+      #     git diff
 
       - name: Check for changes after bump
         run: |
@@ -158,52 +163,52 @@ jobs:
             sleep 10  # Wait for 30 seconds before checking again
           done
 
-  create_tag:
-    name: Create tag for release
-    if: ${{ github.repository == 'ZEN-universe/ZEN-garden' }}
-    runs-on: ubuntu-latest
-    needs: [bump_version]
-    steps:
+  # create_tag:
+  #   name: Create tag for release
+  #   if: ${{ github.repository == 'ZEN-universe/ZEN-garden' }}
+  #   runs-on: ubuntu-latest
+  #   needs: [bump_version]
+  #   steps:
 
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0  # Needed for tags and full history
-          ref: ${{github.ref}}
+  #     - uses: actions/checkout@v4
+  #       with:
+  #         fetch-depth: 0  # Needed for tags and full history
+  #         ref: ${{github.ref}}
 
-      - name: Set up Git
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git branch
+  #     - name: Set up Git
+  #       run: |
+  #         git config user.name "github-actions[bot]"
+  #         git config user.email "github-actions[bot]@users.noreply.github.com"
+  #         git branch
           
-      - name: Get version number
-        run: |
-          COMMIT_SUBJECT=$(git log -n 1 --pretty=format:"%s")
-          echo "commit subject: $COMMIT_SUBJECT"
+  #     - name: Get version number
+  #       run: |
+  #         COMMIT_SUBJECT=$(git log -n 1 --pretty=format:"%s")
+  #         echo "commit subject: $COMMIT_SUBJECT"
 
-          # Extract the second version using grep with a regular expression
-          VERSION=$(echo "$COMMIT_SUBJECT" | grep -oP '\d+\.\d+\.\d+(?=\s*\()')
+  #         # Extract the second version using grep with a regular expression
+  #         VERSION=$(echo "$COMMIT_SUBJECT" | grep -oP '\d+\.\d+\.\d+(?=\s*\()')
 
-          # Split the version into major, minor, and patch components
-          IFS='.' read -r MAJOR MINOR PATCH <<< "$VERSION"
+  #         # Split the version into major, minor, and patch components
+  #         IFS='.' read -r MAJOR MINOR PATCH <<< "$VERSION"
 
-          # Output the results
-          echo "VERSION=$VERSION" >> $GITHUB_ENV
-          echo "Version: $VERSION"
-          echo "Major version: $MAJOR"
-          echo "Minor version: $MINOR"
-          echo "Patch version: $PATCH"
+  #         # Output the results
+  #         echo "VERSION=$VERSION" >> $GITHUB_ENV
+  #         echo "Version: $VERSION"
+  #         echo "Major version: $MAJOR"
+  #         echo "Minor version: $MINOR"
+  #         echo "Patch version: $PATCH"
 
           
-      - name: Create and push tag
-        run: |
-          git tag -a "v$env.VERSION" -m "Version $env.VERSION"
-          git push usptream --tags
+  #     - name: Create and push tag
+  #       run: |
+  #         git tag -a "v$env.VERSION" -m "Version $env.VERSION"
+  #         git push upstream --tags
 
   release:
     if: ${{ github.repository == 'ZEN-universe/ZEN-garden' }}
     name: "Create Github Release"
-    needs: [create_tag, bump_version]
+    needs: bump_version #[create_tag, bump_version]
     runs-on: ubuntu-latest
     outputs:
       tag: ${{ steps.get-latest-tag.outputs.tag }}
