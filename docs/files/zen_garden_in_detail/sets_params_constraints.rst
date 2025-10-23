@@ -176,6 +176,12 @@ Transport Technology
     :widths: 10 10 10 20 10
     :delim: ;
 
+.. csv-table:: Transport Technology Variables
+    :header-rows: 1
+    :file: tables/variables/transport_technology_variables.csv
+    :widths: 10 10 10 30 10
+    :delim: ;
+
 .. csv-table:: Transport Technology Constraints
     :header-rows: 1
     :file: tables/constraints/transport_technology_constraints.csv
