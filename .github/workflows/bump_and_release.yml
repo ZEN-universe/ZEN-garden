@@ -187,7 +187,7 @@ jobs:
           IFS='.' read -r MAJOR MINOR PATCH <<< "$VERSION"
 
           # Output the results
-          echo "version=$VERSION" >> $GITHUB_ENV
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
           echo "Version: $VERSION"
           echo "Major version: $MAJOR"
           echo "Minor version: $MINOR"
@@ -196,7 +196,7 @@ jobs:
           
       - name: Create and push tag
         run: |
-          git tag -a "v$VERSION" -m "Version $VERSION"
+          git tag -a "v$env.VERSION" -m "Version $env.VERSION"
           git push usptream --tags
 
   release:
