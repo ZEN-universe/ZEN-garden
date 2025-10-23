@@ -62,6 +62,7 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
       - name: Bump version and push tag
+        id: bv
         uses: jasonamyers/github-bumpversion-action@v1.0.5
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -169,52 +170,55 @@ jobs:
             sleep 10  # Wait for 30 seconds before checking again
           done
 
-  # create_tag:
-  #   name: Create tag for release
-  #   if: ${{ github.repository == 'ZEN-universe/ZEN-garden' }}
-  #   runs-on: ubuntu-latest
-  #   needs: [bump_version]
-  #   steps:
+  create_tag:
+    name: Create tag for release
+    if: ${{ github.repository == 'ZEN-universe/ZEN-garden' }}
+    runs-on: ubuntu-latest
+    needs: [bump_version]
+    env:
+      VERSION: ${{ needs.bump_version.outputs.new_ver }}
+    steps:
 
-  #     - uses: actions/checkout@v4
-  #       with:
-  #         fetch-depth: 0  # Needed for tags and full history
-  #         ref: ${{github.ref}}
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Needed for tags and full history
+          ref: ${{github.ref}}
 
-  #     - name: Set up Git
-  #       run: |
-  #         git config user.name "github-actions[bot]"
-  #         git config user.email "github-actions[bot]@users.noreply.github.com"
-  #         git branch
+      - name: Set up Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git branch
           
-  #     - name: Get version number
-  #       run: |
-  #         COMMIT_SUBJECT=$(git log -n 1 --pretty=format:"%s")
-  #         echo "commit subject: $COMMIT_SUBJECT"
+      # - name: Get version number
+      #   run: |
+      #     COMMIT_SUBJECT=$(git log -n 1 --pretty=format:"%s")
+      #     echo "commit subject: $COMMIT_SUBJECT"
 
-  #         # Extract the second version using grep with a regular expression
-  #         VERSION=$(echo "$COMMIT_SUBJECT" | grep -oP '\d+\.\d+\.\d+(?=\s*\()')
+      #     # Extract the second version using grep with a regular expression
+      #     VERSION=$(echo "$COMMIT_SUBJECT" | grep -oP '\d+\.\d+\.\d+(?=\s*\()')
 
-  #         # Split the version into major, minor, and patch components
-  #         IFS='.' read -r MAJOR MINOR PATCH <<< "$VERSION"
+      #     # Split the version into major, minor, and patch components
+      #     IFS='.' read -r MAJOR MINOR PATCH <<< "$VERSION"
 
-  #         # Output the results
-  #         echo "VERSION=$VERSION" >> $GITHUB_ENV
-  #         echo "Version: $VERSION"
-  #         echo "Major version: $MAJOR"
-  #         echo "Minor version: $MINOR"
-  #         echo "Patch version: $PATCH"
+      #     # Output the results
+      #     echo "VERSION=$VERSION" >> $GITHUB_ENV
+      #     echo "Version: $VERSION"
+      #     echo "Major version: $MAJOR"
+      #     echo "Minor version: $MINOR"
+      #     echo "Patch version: $PATCH"
 
           
-  #     - name: Create and push tag
-  #       run: |
-  #         git tag -a "v$env.VERSION" -m "Version $env.VERSION"
-  #         git push upstream --tags
+      - name: Create and push tag
+        run: |
+          echo "version: $env.VERSION"
+          git tag -a "v$env.VERSION" -m "Version $env.VERSION"
+          git push upstream --tags
 
   release:
     if: ${{ github.repository == 'ZEN-universe/ZEN-garden' }}
     name: "Create Github Release"
-    needs: bump_version #[create_tag, bump_version]
+    needs: [create_tag, bump_version]
     runs-on: ubuntu-latest
     outputs:
       tag: ${{ steps.get-latest-tag.outputs.tag }}
