@@ -98,6 +98,12 @@ jobs:
       #     echo "COMMIT_TITLE=$COMMIT_TITLE" >> $GITHUB_ENV
       #     git diff
 
+      - name: Get commit title
+        run: |
+          COMMIT_TITLE=$(git log -n 1 --pretty=format:"%s")
+          echo "COMMIT_TITLE=$COMMIT_TITLE" >> $GITHUB_ENV
+
+
       - name: Check for changes after bump
         run: |
           git log --oneline -n 2
