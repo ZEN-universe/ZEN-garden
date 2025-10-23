@@ -7,7 +7,7 @@ on:
 
   pull_request:
     branches: 
-      - bumpversion
+      - main
     types: [opened, edited, synchronize]
 
 # Env variables
