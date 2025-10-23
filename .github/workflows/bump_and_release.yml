@@ -213,7 +213,7 @@ jobs:
         run: |
           echo "version: $env.VERSION"
           git tag -a "v$env.VERSION" -m "Version $env.VERSION"
-          git push upstream --tags
+          git push origin --tags
 
   release:
     if: ${{ github.repository == 'ZEN-universe/ZEN-garden' }}
