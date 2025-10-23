@@ -124,7 +124,7 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           pull-request-number: ${{ steps.cpr.outputs.pull-request-number }}
-          merge-method: squash  
+          merge-method: merge  
 
       - name: Wait for pull request to be merged
         env:
@@ -202,7 +202,7 @@ jobs:
   release:
     if: ${{ github.repository == 'ZEN-universe/ZEN-garden' }}
     name: "Create Github Release"
-    needs: bump_version
+    needs: [create_tag, bump_version]
     runs-on: ubuntu-latest
     outputs:
       tag: ${{ steps.get-latest-tag.outputs.tag }}
