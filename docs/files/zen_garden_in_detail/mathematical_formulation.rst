@@ -858,6 +858,8 @@ The derivative of Eq. :eq:`storage_level_selfdisch` follows as:
 With :math:`\kappa^t>0`, it follows that Eq. :eq:`storage_level_simpl` is 
 monotonous for :math:`0<\varphi<1`.
 
+.. _math_formulation.investment_constraints:
+
 Investment constraints
 ----------------------
 
@@ -921,6 +923,7 @@ the new technology capacities do not become available before the construction
 time has passed:
 
 .. math::
+    :label: construction_time
 
     \Delta S_{h,p,y} = 
     \Delta S_{h,p,\left(y-dy^\mathrm{construction}\right)}^\mathrm{invest}

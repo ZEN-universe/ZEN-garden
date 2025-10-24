@@ -194,7 +194,7 @@ the optimization uses 10 representative time steps for the entire year.
 All the previous datasets are optimized using so-called perfect foresight, i.e., 
 all years are optimized at once with the assumption that all the future 
 parameter data are known at the time the optimization is conducted. In this 
-example, however, `myopic foresight` is demonstrated, where the knowledge of 
+example, however, ``myopic foresight`` is demonstrated, where the knowledge of
 future parameter data, the foresight horizon, is limited. To activate this 
 feature, the parameter ``use_rolling_horizon`` in the ``system.json`` file is 
 set to ``true``. Simultaneously, the ``years_in_rolling_horizon`` parameter 
@@ -214,10 +214,10 @@ horizon are visualized:
 
 10_brown_field
 ----------------
-Up to this model, all examples have assumed so-called `green field` capacity 
+Up to this model, all examples have assumed so-called ``green field`` capacity
 expansion. The assumption is that all capacities are newly built and no 
 capacities are existing on nodes or edges, i.e., the whole system is built 
-from scratch. In this model, the `brown field` capacity expansion is introduced. 
+from scratch. In this model, the ``brown field`` capacity expansion is introduced.
 Brown field capacity expansion means that some capacities already exist and have 
 to be considered in the optimization. ZEN-garden supports existing capacities 
 that are built in the past, i.e., can be used immediately and have a reduced 
@@ -289,11 +289,12 @@ names can be added to the file ``parameters_interpolation_off.json`` inside the
 interpolation of missing values is switched off. In this case, the default value 
 from the ``attributes.json`` file is used for the missing values.
 
+.. _dataset_examples.14_retrofitting_and_fuel_substitution:
 
 14_retrofitting_and_fuel_substitution
 -------------------------------------
 
-In this example, the concept of `retrofit technologies` is introduced. Retrofit 
+In this example, the concept of ``retrofit technologies`` is introduced. Retrofit
 technologies are technologies that can be added to existing technologies to 
 change their input or output carriers. By changing the input carrier of a 
 technology, the model can substitute the fuel originally used by the technology 
