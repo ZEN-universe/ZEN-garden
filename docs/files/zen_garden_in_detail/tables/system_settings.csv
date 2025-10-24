@@ -19,7 +19,7 @@ Key;Type;Default Value;Description
 ``use_rolling_horizon``;``bool``;``False``;per default the optimization is conducted assuming perfect foresight, set this parameter to ``True`` if you want to use a rolling horizon approach with myopic foresight instead
 ``years_in_rolling_horizon``;``int``;``1``;per default the foresight is limited of the rolling horizon approach is limited to one year, flexibly increase or decrease this value to investigate longer or shorter foresight horizons
 ``years_in_decision_horizon``;``int``;``1``;per default, the rolling horizon decision horizon is one year, increase this value to only allow decision every second (2) or third (3) planning period, etc.
-``conduct_scenario_analysis``;``bool``;``False``;per default only the optimization is only conducted for the default scenario, set to ``True`` to conduct scenario analysis
+``conduct_scenario_analysis``;``bool``;``False``;per default, the optimization is only conducted for the default scenario. Set this value to true to ``True`` to conduct a scenario analysis
 ``run_default_scenario``;``bool``;``True``;per default the optimization is conducted for the default scenario as well as all scenarios specified in ``scenarios.json`` , if ``False`` the optimization is only conducted for the scenarios specified in ``scenarios.json``
 ``clean_sub_scenarios``;``bool``;``False``;per default sub-scenarios are not removed, set to ``True`` to delete sub-scenarios between runs
 ``set_transport_technologies_loss_exponential``;``list[str]``;``[]``;list of transport technologies for which exponential transport loss function is used
