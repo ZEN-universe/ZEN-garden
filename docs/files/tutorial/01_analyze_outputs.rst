@@ -176,7 +176,7 @@ The path ``<result_folder>`` is the path to the results folder of the dataset,
 e.g., ``<data>/output/<dataset_name>``. 
 
 The results class has many methods (i.e. functions) which can be used to access
-subsets of the results. The sections below describe some of the must important
+subsets of the results. The sections below describe some of the most important
 methods and how they can be used. 
 
 
@@ -274,7 +274,7 @@ results to values from a single scenario, year, or region. The optional input
 arguments for these functions are:
 
 1. ``year``: A single optimization period for which the results should be 
-   returned (0, 1, 2, ...). Noe that this is not available for ``r.get_unit()``.
+   returned (0, 1, 2, ...). Note that this is not available for ``r.get_unit()``.
 2. ``scenario_name``: A single scenario name for which the results should be 
    returned. This is only relevant when using the scenario tool, as described
    in the :ref:`scenarios tutorial <t_scenario.t_scenario>`.

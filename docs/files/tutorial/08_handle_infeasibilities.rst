@@ -1,3 +1,5 @@
+.. _t_infeasibilities.t_infeasibilities:
+
 ###########################
 Tutorial 8: Infeasibilities
 ###########################

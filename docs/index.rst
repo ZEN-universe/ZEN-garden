@@ -69,6 +69,7 @@ Documentation
    :caption: References
 
    files/references/api_reference
+   files/references/class_structure
 
 
 
@@ -82,6 +83,7 @@ Documentation
    files/developer_guide/documentation
    files/developer_guide/adding_param_variable_constraint
    files/developer_guide/constraint_guide
+   files/developer_guide/github_actions
 
 
 

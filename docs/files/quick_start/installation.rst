@@ -51,6 +51,10 @@ should see ``zen_garden`` in the list.
 .. warning::
     ZEN-garden currently only supports Python versions 3.11 through 3.13.
 
+.. warning::
+    The directory in which you install Anaconda should not contain any blank 
+    spaces in its file path. Otherwise, the installation of ZEN-garden might 
+    fail.
 
 .. _installation.activate:
 

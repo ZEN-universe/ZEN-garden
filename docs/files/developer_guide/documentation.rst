@@ -129,10 +129,7 @@ Documentation guidelines
   the documentation are consistent and up-to-date.
 
 
-Adding a new Section
-------------------------------
-
-
+.. _documentation.docstring:
 
 Docstrings 
 ----------
@@ -302,8 +299,8 @@ steps:
 
 .. _documentation.docstrings:
 
-Docstring extension
-^^^^^^^^^^^^^^^^^^^
+Use text from Docstrings in the Documentation
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The docstring extension allows text from the main body of a docstring to be 
 inserted into the documentation text. The main body of the docstring is 
