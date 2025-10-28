@@ -117,7 +117,7 @@ jobs:
           token: ${{ secrets.PULL_REQUEST_PAT }}
           title: ${{ env.COMMIT_TITLE }}
           body: "Automated version bump #skiptests"
-          base: ${{github.ref}}
+          base: main
           delete-branch: true  # optional: auto-delete branch after merge
 
       - name: Check outputs
