@@ -15,12 +15,24 @@ Class Structure
            +returntype1 method1()
        }
 
-       class Technology
-       class Carrier
-       class ConversionTechnology
-       class StorageTechnology
-       class RetrofittingTechnology
-       class TransportTechnology
+       class Technology {
+           +store_input_data()
+       }
+       class Carrier {
+           +store_input_data()
+       }
+       class ConversionTechnology {
+           +store_input_data()
+       }
+       class StorageTechnology {
+           +store_input_data()
+       }
+       class RetrofittingTechnology {
+           +store_input_data()
+       }
+       class TransportTechnology {
+           +store_input_data()
+       }
 
 
        Element <|-- Technology
