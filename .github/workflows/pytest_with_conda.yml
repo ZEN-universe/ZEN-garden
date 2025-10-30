@@ -10,6 +10,10 @@ on:
       - main
     types: [opened, edited, synchronize]
 
+  push:
+    branches:
+      - main
+
 # Env variables
 env:
   CACHE_NUMBER: 0  # increase to reset cache manually
@@ -138,21 +142,21 @@ jobs:
 #          coverage report -m
 
       - name: Extract Coverage
-        if: ${{ always() && matrix.label == 'linux-64' && env.SKIPTESTS == 'false' }} # include always to overwrite cancel on failure of previous step
+        if: ${{ always() && matrix.label == 'linux-64' && env.SKIPTESTS == 'false' && github.event_name == 'push'}} # include always to overwrite cancel on failure of previous step
         shell: bash -l {0}
         run: |
           echo "COVERAGE_INT=$(coverage report -m | grep TOTAL | grep -oE '[0-9]+%' | grep -oE '[0-9]+')" >> $GITHUB_ENV
           echo "COVERAGE_FLT=$(coverage report -m --precision=2 | grep TOTAL | grep -oE '[0-9]+\.[0-9]+')" >> $GITHUB_ENV
 
-      # - name: Create Coverage Badge
-      #   if: ${{ always() && matrix.label == 'linux-64' && env.SKIPTESTS == 'false' }}
-      #   uses: schneegans/dynamic-badges-action@v1.7.0
-      #   with:
-      #     auth: ${{ secrets.GIST_TOKEN }}
-      #     gistID: 30d479a5b4c591a63b7b0f41abbce6a0
-      #     filename: zen_garden_coverage.json
-      #     label: coverage
-      #     message: ${{ env.COVERAGE_FLT }}%
-      #     valColorRange: ${{ env.COVERAGE_INT }}
-      #     maxColorRange: 100
-      #     minColorRange: 0
+      - name: Create Coverage Badge
+        if: ${{ always() && matrix.label == 'linux-64' && env.SKIPTESTS == 'false' && github.event_name == 'push'}}
+        uses: schneegans/dynamic-badges-action@v1.7.0
+        with:
+          auth: ${{ secrets.GIST_TOKEN }}
+          gistID: 30d479a5b4c591a63b7b0f41abbce6a0
+          filename: zen_garden_coverage.json
+          label: coverage
+          message: ${{ env.COVERAGE_FLT }}%
+          valColorRange: ${{ env.COVERAGE_INT }}
+          maxColorRange: 100
+          minColorRange: 0

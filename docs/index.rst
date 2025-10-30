@@ -84,6 +84,7 @@ Documentation
    files/developer_guide/adding_param_variable_constraint
    files/developer_guide/constraint_guide
    files/developer_guide/github_actions
+   files/developer_guide/tips_and_tricks
 
 
 
