@@ -569,10 +569,28 @@ class Results:
 
     def get_system(self, scenario_name: Optional[str] = None) -> System:
         """
-        Extracts the System config of a given Scenario. If no scenario is given, a random one is taken.
+        Extract system configurations from a scenario.
 
-        :param scenario_name: Name of the scenario
-        :return: The corresponding System config
+        Extracts system configurations from the results of a scenario. This 
+        ensures the tractability of model configurations. System configurations
+        are those specified in the ``system.json`` file of a given model.
+
+        Args:
+            scenario_name (str, optional): The name of the scenario for which
+                to extract the system configuration. If no value is given, then
+                the first scenario is used. Default value: ``None``.
+
+        Returns:
+            System: System configuration.
+
+        Examples:
+            Basic usage example:
+
+            >>> from zen_garden.postprocess.results.results import Results
+            >>> r = Results(path='<result_folder>')
+            >>> r.get_system() # system configurations of first scenario
+            >>> r.get_system('scenario_name') # system configuration of "scenario_name"
+
         """
         if scenario_name is None:
             scenario_name = next(iter(self.solution_loader.scenarios.keys()))
@@ -580,10 +598,29 @@ class Results:
 
     def get_analysis(self, scenario_name: Optional[str] = None) -> Analysis:
         """
-        Extracts the Analysis config of a given Scenario. If no scenario is given, a random one is taken.
+        Extract analysis configurations from a scenario.
 
-        :param scenario_name: Name of the scenario
-        :return: The corresponding Analysis config
+        Extracts analysis configurations from the results of a scenario. This 
+        ensures the tractability of model configurations. Analysis configurations 
+        are those specified under the ``analysis`` object in the ``config.json``
+        file.
+
+        Args:
+            scenario_name (str, optional): The name of the scenario for which
+                to extract the system configuration. If no value is given, then
+                the first scenario is used. Default value: ``None``.
+
+        Returns:
+            Analysis: Analysis configuration.
+
+        Examples:
+            Basic usage example:
+
+            >>> from zen_garden.postprocess.results.results import Results
+            >>> r = Results(path='<result_folder>')
+            >>> r.get_analysis() # analysis configurations of first scenario
+            >>> r.get_analysis('scenario_name') # analysis configuration of "scenario_name"
+
         """
         if scenario_name is None:
             scenario_name = next(iter(self.solution_loader.scenarios.keys()))
@@ -591,10 +628,29 @@ class Results:
 
     def get_solver(self, scenario_name: Optional[str] = None) -> Solver:
         """
-        Extracts the Solver config of a given Scenario. If no scenario is given, a random one is taken.
+        Extract solver configurations from a scenario.
 
-        :param scenario_name: Name of the scenario
-        :return: The corresponding Solver config
+        Extracts solver configurations from the results of a scenario. This 
+        ensures the tractability of model configurations. Solver configurations 
+        are those specified under the ``solver`` object in the ``config.json``
+        file.
+
+        Args:
+            scenario_name (str, optional): The name of the scenario for which
+                to extract the system configuration. If no value is given, then
+                the first scenario is used. Default value: ``None``.
+
+        Returns:
+            Solver: Solver configuration.
+
+        Examples:
+            Basic usage example:
+
+            >>> from zen_garden.postprocess.results.results import Results
+            >>> r = Results(path='<result_folder>')
+            >>> r.get_solver() # solver configurations of first scenario
+            >>> r.get_solver('scenario_name') # solver configuration of "scenario_name"
+
         """
         if scenario_name is None:
             scenario_name = next(iter(self.solution_loader.scenarios.keys()))
