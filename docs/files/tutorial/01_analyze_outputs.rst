@@ -8,15 +8,15 @@ This tutorial describes how to analyze the the outputs of the ZEN-garden model.
 Two approaches are introduced:
 
 1. The ZEN-garden visualization platform
-2. The ZEN-garden ``Results`` codebase.
+2. The ZEN-garden ``Results`` object.
 
 The visualization platform is an ideal starting point for data analysis.
 The platform allows user to see standardized plots of capacity mixes, 
 generation mixes, energy balances, technology locations. The platform is 
 interactive, allowing users to select what regions, time-steps, and scenarios,
-and energy carriers to view results from. In contrast, the results codebase 
+and energy carriers to view results from. In contrast, the results object
 is ideal for detailed analyses where users work directly with the model output 
-and produce custom plots or calculations. The codebase allows users to easily 
+and produce custom plots or calculations. The results object allows users to easily
 filter, extract, and compare results from various scenarios. 
 
 This tutorial assumes that you have installed and run the example dataset 
@@ -153,8 +153,8 @@ Example Exercises
 
 .. _t_analyze.results_code:
 
-Results Codebase
-=================
+Results Object
+==============
 
 Detailed ZEN-garden results are stored in the ``output`` folder of the ``data`` 
 directory. ZEN-garden provides functions and tools for easily loading,
@@ -192,21 +192,6 @@ elements are collectively referred to as ``components``.
 Step 1: Identify the name of the component
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-All components are stored in a dictionary ``r.solution_loader.components``. A 
-complete list of all parameter, variable, and dual variable names can therefore
-be obtained using the command:
-
-.. code:: python
-
-    r.solution_loader.components.keys()
-
-.. tip::
-    Any component whose name starts with ``constraint_`` refers to a dual
-    variable. Dual variables are not saved to the results by default. To view
-    dual variables, users therefore need to adjust the ZEN-garden 
-    configurations, as described in :ref:`configurations tutorial 
-    <t_configuration.t_configuration>` 
-
 To filter the names by component type (``<component_type>`` in {``'parameter'``, 
 ``'variable'``, ``'dual'``, ``'sets'``})  the following member function can be 
 used:
@@ -226,6 +211,13 @@ From the list of components names, select the component which your are intereste
 in investigating. Descriptions of all components can be found in the in the 
 documentation on :ref:`sets, parameters, variables, and constraints 
 <notation.notation>`.
+
+.. tip::
+    Any component whose name starts with ``constraint_`` refers to a dual
+    variable. Dual variables are not saved to the results by default. To view
+    dual variables, users therefore need to adjust the ZEN-garden
+    configurations, as described in :ref:`configurations tutorial
+    <t_configuration.t_configuration>`
 
 Step II: Read component values
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
