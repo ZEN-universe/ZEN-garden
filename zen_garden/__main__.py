@@ -29,10 +29,8 @@ def run_module(args=None, config = "./config.py", dataset = None,
                   "dataset specified in the config file."
     parser = argparse.ArgumentParser(description=description, add_help=True, usage="usage: python -m zen_garden [-h] [--config CONFIG] [--dataset DATASET] [--job_index JOB_INDEX] [--job_index_var JOB_INDEX_VAR] [-- download_example EXAMPLE_NAME]")
     # TODO make json config default
-    parser.add_argument("--config", required=False, type=str, default=config, help="The config file used to run the pipeline, "
-                                                                                        "defaults to config.py in the current directory.")
-    parser.add_argument("--dataset", required=False, type=str, default=dataset, help="Path to the dataset used for the run. IMPORTANT: This will overwrite the "
-                                                                                  "config.analysis.dataset attribute of the config file!")
+    parser.add_argument("--config", required=False, type=str, default=config, help="Path to the config file used to run the pipeline (e.g., `./config.json`). Alternatively, if the config file is located in the current working directory, then the file name is alone is also acceptable (e.g. `config.json`).")
+    parser.add_argument("--dataset", required=False, type=str, default=dataset, help="Path to the dataset (e.g. `./<dataset_name>`). Alternatively, if the dataset is located in the current working directory, then the folder name alone is also acceptable (e.g. `<dataset_name>`). IMPORTANT: This will overwrite the config.analysis.dataset attribute of the config file!")
     parser.add_argument("--folder_output", required=False, type=str, default=folder_output, help="Path to the folder where results of the run are stored. IMPORTANT: This will overwrite the "
                                                                                         "config.analysis.folder_output attribute of the config file!")
     parser.add_argument("--job_index", required=False, type=str, default=job_index, help="A comma separated list (no spaces) of indices of the scenarios to run, if None, all scenarios are run in sequence")
@@ -51,7 +49,8 @@ def run_module(args=None, config = "./config.py", dataset = None,
         args.config = args.config.replace(".py", ".json")
 
     # change working directory to the directory of the config file
-    config_path, config_file = os.path.split(args.config)
+
+    config_path, config_file = os.path.split(os.path.abspath(args.config))
     os.chdir(config_path)
     ### import the config
     if config_file.endswith(".py"):
