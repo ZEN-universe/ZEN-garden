@@ -1,7 +1,8 @@
 .. _t_tsa.t_tsa:
 
-Tutorial 4: Time Series Aggregation
-===================================
+###################################
+Tutorial 5: Time Series Aggregation
+###################################
 
 
 Time steps in ZEN-garden
