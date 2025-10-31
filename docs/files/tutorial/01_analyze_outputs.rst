@@ -76,18 +76,29 @@ Use the following steps to run the visualization platform:
 
 
 
-The main menu of the visualization platform shows three options:
+The main menu of the visualization platform shows four options 
+(:numref:`t_analyze.fig_viz_homepage`):
 
-1. **The Transition Pathway** - contains plots which show how key system
-   variables, namely capacity, production, emissions, and costs, change annually 
-   between different simulation years.
+1. **The Transition Pathway** - contains plots that show how key system
+   variables (e.g. capacity, production, emissions, and costs) change
+   between different simulation years. Only annual values are shown.
 
 2. **The Energy Balance** - contains plots showing nodal energy and storage
-   balances throughout all time-steps within a single year.
+   balances throughout all time-steps within a single year. Dual variable values
+   of the nodal energy balance constraint are also shown if these are saved 
+   in the outputs.
 
-3. **The Map** - allows users to see a map of how generation is distributed 
+3. **The Energy System** - shows a flow-chart of carriers and technologies 
+   in the model. The width of each carrier indicates the amount of that carrier
+   that is used in the optimal model solution. Each flow chart depicts a single 
+   year in the optimization problem. Carriers and technologies that are not used
+   are omitted from the plot.
+
+4. **The Map** - creates map that shows how generation is distributed 
    among regions in the model. Each map shows annual results for one carrier and 
    one simulation year.
+
+.. _t_analyze.fig_viz_homepage:
 
 .. figure:: ../figures/tutorials/zen_visualization_homepage.png
     :figwidth: 550 pt
