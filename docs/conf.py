@@ -64,6 +64,8 @@ autodoc_default_options = {
     'special-members': '__init__',
 }
 
+numfig = True
+
 # Prevent Spynx from showing nested defaults and typehints.
 autodoc_typehints_format = "short"
 
