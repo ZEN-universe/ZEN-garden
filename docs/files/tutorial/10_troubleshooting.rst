@@ -1,9 +1,9 @@
 .. _t_troubleshooting._t_troubleshooting:
 
 
-###########################
-Tutorial 9: Troubleshooting
-###########################
+############################
+Tutorial 10: Troubleshooting
+############################
 
 Frequently made mistakes
 ========================
@@ -15,7 +15,7 @@ in other packages.
 Here are some common mistakes that can lead to errors:
 
 Comma at the end of a list in json
-==================================
+----------------------------------
 
  ``"list": [1, 2, 3,]`` is wrong, it should be ``"list": [1, 2, 3]``. This is a 
  common mistake because Python allows it, but JSON does not. The cryptic error 
