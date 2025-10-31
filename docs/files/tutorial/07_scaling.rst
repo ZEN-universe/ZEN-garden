@@ -1,7 +1,8 @@
 .. _t_scaling.t_scaling:
 
-Tutorial 5: Scaling
-===================
+###################
+Tutorial 7: Scaling
+###################
 
 What is scaling and when to use it?
 -----------------------------------
