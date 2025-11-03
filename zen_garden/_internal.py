@@ -37,7 +37,8 @@ def main(config, dataset_path=None, job_index=None, folder_output_path=None):
         # logging.info(f"Overwriting dataset to: {dataset_path}")
         config.analysis.dataset = dataset_path
     if folder_output_path is not None:
-        config.analysis.folder_output = folder_output_path
+        config.analysis.folder_output = os.path.abspath(folder_output_path)
+        config.solver.solver_dir = os.path.abspath(folder_output_path)
     logging.info(f"Optimizing for dataset {config.analysis.dataset}")
     # get the abs path to avoid working dir stuff
     config.analysis.dataset = os.path.abspath(config.analysis.dataset)

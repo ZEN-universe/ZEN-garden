@@ -131,11 +131,16 @@ def check_get_total_get_full_ts(
 
 def test_1a(folder_path):
     # add duals for this test
+
+    # test also whether config and dataset can take just file name in cwd
+    cwd = os.getcwd()
+    os.chdir(folder_path)
+   
     # run the test
     data_set_name = "test_1a"
     run_module(
-        config=os.path.join(folder_path,"config_duals.json"),
-        dataset=os.path.join(folder_path,data_set_name)
+        config=os.path.join("config_duals.json"),
+        dataset=os.path.join(data_set_name),
     )
 
     # read the results and check again
@@ -143,6 +148,7 @@ def test_1a(folder_path):
     compare_variables_results(data_set_name, res, folder_path)
     # test functions get_total() and get_full_ts()
     check_get_total_get_full_ts(res)
+    os.chdir(cwd)
 
 
 def test_1b(folder_path):
@@ -150,11 +156,12 @@ def test_1b(folder_path):
     data_set_name = "test_1b"
     run_module(
         config=os.path.join(folder_path,"config.json"),
-        dataset=os.path.join(folder_path,data_set_name)
+        dataset=os.path.join(folder_path,data_set_name),
+        folder_output=os.path.join(folder_path,"outputs")
     )
 
     # read the results and check again
-    res = Results(os.path.join("outputs", data_set_name))
+    res = Results(os.path.join(folder_path, "outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
 
 
@@ -163,11 +170,12 @@ def test_1c(folder_path):
     data_set_name = "test_1c"
     run_module(
         config=os.path.join(folder_path,"config.json"),
-        dataset=os.path.join(folder_path,data_set_name)
+        dataset=os.path.join(folder_path,data_set_name),
+        folder_output=os.path.join(folder_path,"outputs")
     )
 
     # read the results and check again
-    res = Results(os.path.join("outputs", data_set_name))
+    res = Results(os.path.join(folder_path, "outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
 
 
@@ -176,10 +184,12 @@ def test_1d(folder_path):
     data_set_name = "test_1d"
     run_module(
         config=os.path.join(folder_path,"config.json"),
-        dataset=os.path.join(folder_path,data_set_name))
+        dataset=os.path.join(folder_path,data_set_name),
+        folder_output=os.path.join(folder_path,"outputs")
+    )
 
     # read the results and check again
-    res = Results(os.path.join("outputs", data_set_name))
+    res = Results(os.path.join(folder_path, "outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
 
 
@@ -188,13 +198,15 @@ def test_1e(folder_path):
     data_set_name = "test_1e"
     run_module(
         config=os.path.join(folder_path,"config.json"),
-        dataset=os.path.join(folder_path,data_set_name))
+        dataset=os.path.join(folder_path,data_set_name),
+        folder_output=os.path.join(folder_path,"outputs")
+    )
 
     # read the results and check again
-    res = Results(os.path.join("outputs", data_set_name))
+    res = Results(os.path.join(folder_path, "outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
     # read the results and check again
-    res = Results(os.path.join("outputs", data_set_name))
+    res = Results(os.path.join(folder_path, "outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
 
 
@@ -203,13 +215,15 @@ def test_1f(folder_path):
     data_set_name = "test_1f"
     run_module(
         config=os.path.join(folder_path,"config.json"),
-        dataset=os.path.join(folder_path,data_set_name))
+        dataset=os.path.join(folder_path,data_set_name),
+        folder_output=os.path.join(folder_path,"outputs")
+    )
 
     # read the results and check again
-    res = Results(os.path.join("outputs", data_set_name))
+    res = Results(os.path.join(folder_path, "outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
     # read the results and check again
-    res = Results(os.path.join("outputs", data_set_name))
+    res = Results(os.path.join(folder_path, "outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
 
 
@@ -218,10 +232,12 @@ def test_1g(folder_path):
     data_set_name = "test_1g"
     run_module(
         config=os.path.join(folder_path,"config.json"),
-        dataset=os.path.join(folder_path,data_set_name))
+        dataset=os.path.join(folder_path,data_set_name),
+        folder_output=os.path.join(folder_path,"outputs")
+    )
 
     # read the results and check again
-    res = Results(os.path.join("outputs", data_set_name))
+    res = Results(os.path.join(folder_path, "outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
 
 def test_1h(folder_path):
@@ -229,10 +245,12 @@ def test_1h(folder_path):
     data_set_name = "test_1h"
     run_module(
         config=os.path.join(folder_path,"config.json"),
-        dataset=os.path.join(folder_path,data_set_name))
+        dataset=os.path.join(folder_path,data_set_name),
+        folder_output=os.path.join(folder_path,"outputs")
+    )
 
     # read the results and check again
-    res = Results(os.path.join("outputs", data_set_name))
+    res = Results(os.path.join(folder_path, "outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
 
 
@@ -241,22 +259,25 @@ def test_1i(folder_path):
     data_set_name = "test_1i"
     run_module(
         config=os.path.join(folder_path,"config.json"),
-        dataset=os.path.join(folder_path,data_set_name)
+        dataset=os.path.join(folder_path,data_set_name),
+        folder_output=os.path.join(folder_path,"outputs")
     )
 
     # read the results and check again
-    res = Results(os.path.join("outputs", data_set_name))
+    res = Results(os.path.join(folder_path, "outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
 
 def test_1j(folder_path):
     # run the test
     data_set_name = "test_1j"
-    run_module(config=os.path.join(folder_path,"config_duals.json"),
-               dataset=os.path.join(folder_path,data_set_name)
+    run_module(
+        config=os.path.join(folder_path,"config_duals.json"),
+        dataset=os.path.join(folder_path,data_set_name),
+        folder_output=os.path.join(folder_path,"outputs")
     )
 
     # read the results and check again
-    res = Results(os.path.join("outputs", data_set_name))
+    res = Results(os.path.join(folder_path, "outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
 
 def test_2a(folder_path):
@@ -264,11 +285,12 @@ def test_2a(folder_path):
     data_set_name = "test_2a"
     run_module(
         config=os.path.join(folder_path,"config.json"),
-        dataset=os.path.join(folder_path,data_set_name)
+        dataset=os.path.join(folder_path,data_set_name),
+        folder_output=os.path.join(folder_path,"outputs")
     )
 
     # read the results and check again
-    res = Results(os.path.join("outputs", data_set_name))
+    res = Results(os.path.join(folder_path, "outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
 
 
@@ -277,11 +299,12 @@ def test_2b(folder_path):
     data_set_name = "test_2b"
     run_module(
         config=os.path.join(folder_path,"config.json"),
-        dataset=os.path.join(folder_path,data_set_name)
+        dataset=os.path.join(folder_path,data_set_name),
+        folder_output=os.path.join(folder_path,"outputs")
     )
 
     # read the results and check again
-    res = Results(os.path.join("outputs", data_set_name))
+    res = Results(os.path.join(folder_path, "outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
 
 
@@ -290,11 +313,12 @@ def test_2c(folder_path):
     data_set_name = "test_2c"
     run_module(
         config=os.path.join(folder_path,"config.json"),
-        dataset=os.path.join(folder_path,data_set_name)
+        dataset=os.path.join(folder_path,data_set_name),
+        folder_output=os.path.join(folder_path,"outputs")
     )
 
     # read the results and check again
-    res = Results(os.path.join("outputs", data_set_name))
+    res = Results(os.path.join(folder_path, "outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
 
 
@@ -303,11 +327,12 @@ def test_3a(folder_path):
     data_set_name = "test_3a"
     run_module(
         config=os.path.join(folder_path,"config.json"),
-        dataset=os.path.join(folder_path,data_set_name)
+        dataset=os.path.join(folder_path,data_set_name),
+        folder_output=os.path.join(folder_path,"outputs")
     )
 
     # read the results and check again
-    res = Results(os.path.join("outputs", data_set_name))
+    res = Results(os.path.join(folder_path, "outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
 
 
@@ -316,11 +341,12 @@ def test_3b(folder_path):
     data_set_name = "test_3b"
     run_module(
         config=os.path.join(folder_path,"config.json"),
-        dataset=os.path.join(folder_path,data_set_name)
+        dataset=os.path.join(folder_path,data_set_name),
+        folder_output=os.path.join(folder_path,"outputs")
     )
 
     # read the results and check again
-    res = Results(os.path.join("outputs", data_set_name))
+    res = Results(os.path.join(folder_path, "outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
     # test functions get_total() and get_full_ts()
     check_get_total_get_full_ts(res)
@@ -331,11 +357,12 @@ def test_3c(folder_path):
     data_set_name = "test_3c"
     run_module(
         config=os.path.join(folder_path,"config.json"),
-        dataset=os.path.join(folder_path,data_set_name)
+        dataset=os.path.join(folder_path,data_set_name),
+        folder_output=os.path.join(folder_path,"outputs")
     )
 
     # read the results and check again
-    res = Results(os.path.join("outputs", data_set_name))
+    res = Results(os.path.join(folder_path, "outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
     # test functions get_total() and get_full_ts()
     check_get_total_get_full_ts(res, year=2022)
@@ -346,13 +373,14 @@ def test_3d(folder_path):
     data_set_name = "test_3d"
     run_module(
         config=os.path.join(folder_path,"config.json"),
-        dataset=os.path.join(folder_path,data_set_name)
+        dataset=os.path.join(folder_path,data_set_name),
+        folder_output=os.path.join(folder_path,"outputs")
     )
 
     # compare the variables of the optimization setup ## disabled for myopic foresight tests!
     # compare_variables(data_set_name, optimization_setup, folder_path)
     # read the results and check again
-    res = Results(os.path.join("outputs", data_set_name))
+    res = Results(os.path.join(folder_path, "outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
     # test functions get_total() and get_full_ts()
     check_get_total_get_full_ts(res, discount_to_first_step=False)
@@ -363,13 +391,14 @@ def test_3e(folder_path):
     data_set_name = "test_3e"
     run_module(
         config=os.path.join(folder_path,"config.json"),
-        dataset=os.path.join(folder_path,data_set_name)
+        dataset=os.path.join(folder_path,data_set_name),
+        folder_output=os.path.join(folder_path,"outputs")
     )
 
     # compare the variables of the optimization setup ## disabled for myopic foresight tests!
     # compare_variables(data_set_name, optimization_setup, folder_path)
     # read the results and check again
-    res = Results(os.path.join("outputs", data_set_name))
+    res = Results(os.path.join(folder_path, "outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
 
 
@@ -378,13 +407,14 @@ def test_3f(folder_path):
     data_set_name = "test_3f"
     run_module(
         config=os.path.join(folder_path,"config.json"),
-        dataset=os.path.join(folder_path,data_set_name)
+        dataset=os.path.join(folder_path,data_set_name),
+        folder_output=os.path.join(folder_path,"outputs")
     )
 
     # compare the variables of the optimization setup ## disabled for myopic foresight tests!
     # compare_variables(data_set_name, optimization_setup, folder_path)
     # read the results and check again
-    res = Results(os.path.join("outputs", data_set_name))
+    res = Results(os.path.join(folder_path, "outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
 
 
@@ -393,11 +423,12 @@ def test_3g(folder_path):
     data_set_name = "test_3g"
     run_module(
         config=os.path.join(folder_path,"config.json"),
-        dataset=os.path.join(folder_path,data_set_name)
+        dataset=os.path.join(folder_path,data_set_name),
+        folder_output=os.path.join(folder_path,"outputs")
     )
 
     # read the results and check again
-    res = Results(os.path.join("outputs", data_set_name))
+    res = Results(os.path.join(folder_path, "outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
     # test functions get_total() and get_full_ts()
     check_get_total_get_full_ts(res)
@@ -408,11 +439,12 @@ def test_3h(folder_path):
     data_set_name = "test_3h"
     run_module(
         config=os.path.join(folder_path,"config.json"),
-        dataset=os.path.join(folder_path,data_set_name)
+        dataset=os.path.join(folder_path,data_set_name),
+        folder_output=os.path.join(folder_path,"outputs")
     )
 
     # read the results and check again
-    res = Results(os.path.join("outputs", data_set_name))
+    res = Results(os.path.join(folder_path, "outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
     # test functions get_total() and get_full_ts()
     check_get_total_get_full_ts(res)
@@ -423,11 +455,12 @@ def test_3i(folder_path):
     data_set_name = "test_3i"
     run_module(
         config=os.path.join(folder_path,"config.json"),
-        dataset=os.path.join(folder_path,data_set_name)
+        dataset=os.path.join(folder_path,data_set_name),
+        folder_output=os.path.join(folder_path,"outputs")
     )
 
     # read the results and check again
-    res = Results(os.path.join("outputs", data_set_name))
+    res = Results(os.path.join(folder_path, "outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
     # test functions get_total() and get_full_ts()
     check_get_total_get_full_ts(res)
@@ -437,11 +470,12 @@ def test_3j(folder_path):
     data_set_name = "test_3j"
     run_module(
         config=os.path.join(folder_path,"config_duals.json"),
-        dataset=os.path.join(folder_path,data_set_name)
+        dataset=os.path.join(folder_path,data_set_name),
+        folder_output=os.path.join(folder_path,"outputs")
     )
 
     # read the results and check again
-    res = Results(os.path.join("outputs", data_set_name))
+    res = Results(os.path.join(folder_path, "outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
     # test functions get_total() and get_full_ts()
     check_get_total_get_full_ts(res)
@@ -451,11 +485,12 @@ def test_4a(folder_path):
     data_set_name = "test_4a"
     run_module(
         config=os.path.join(folder_path,"config.json"),
-        dataset=os.path.join(folder_path,data_set_name)
+        dataset=os.path.join(folder_path,data_set_name),
+        folder_output=os.path.join(folder_path,"outputs")
     )
 
     # read the results and check again
-    res = Results(os.path.join("outputs", data_set_name))
+    res = Results(os.path.join(folder_path, "outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
     # test functions get_total() and get_full_ts()
     check_get_total_get_full_ts(res)
@@ -466,11 +501,12 @@ def test_4b(folder_path):
     data_set_name = "test_4b"
     run_module(
         config=os.path.join(folder_path,"config.json"),
-        dataset=os.path.join(folder_path,data_set_name)
+        dataset=os.path.join(folder_path,data_set_name),
+        folder_output=os.path.join(folder_path,"outputs")
     )
 
     # read the results and check again
-    res = Results(os.path.join("outputs", data_set_name))
+    res = Results(os.path.join(folder_path, "outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
     # test functions get_total() and get_full_ts()
     check_get_total_get_full_ts(res, specific_scenario=True)
@@ -481,11 +517,12 @@ def test_4c(folder_path):
     data_set_name = "test_4c"
     run_module(
         config=os.path.join(folder_path,"config.json"),
-        dataset=os.path.join(folder_path,data_set_name)
+        dataset=os.path.join(folder_path,data_set_name),
+        folder_output=os.path.join(folder_path,"outputs")
     )
 
     # read the results and check again
-    res = Results(os.path.join("outputs", data_set_name))
+    res = Results(os.path.join(folder_path, "outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
 
 
@@ -494,11 +531,12 @@ def test_4d(folder_path):
     data_set_name = "test_4d"
     run_module(
         config=os.path.join(folder_path,"config.json"),
-        dataset=os.path.join(folder_path,data_set_name)
+        dataset=os.path.join(folder_path,data_set_name),
+        folder_output=os.path.join(folder_path,"outputs")
     )
 
     # read the results and check again
-    res = Results(os.path.join("outputs", data_set_name))
+    res = Results(os.path.join(folder_path, "outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
     # test functions get_total() and get_full_ts()
     check_get_total_get_full_ts(res)
@@ -509,11 +547,12 @@ def test_5a(folder_path):
     data_set_name = "test_5a"
     run_module(
         config=os.path.join(folder_path,"config.json"),
-        dataset=os.path.join(folder_path,data_set_name)
+        dataset=os.path.join(folder_path,data_set_name),
+        folder_output=os.path.join(folder_path,"outputs")
     )
 
     # read the results and check again
-    res = Results(os.path.join("outputs", data_set_name))
+    res = Results(os.path.join(folder_path, "outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
     # test functions get_total() and get_full_ts()
     check_get_total_get_full_ts(res)
@@ -524,11 +563,12 @@ def test_5b(folder_path):
     data_set_name = "test_5b"
     run_module(
         config=os.path.join(folder_path,"config.json"),
-        dataset=os.path.join(folder_path,data_set_name)
+        dataset=os.path.join(folder_path,data_set_name),
+        folder_output=os.path.join(folder_path,"outputs")
     )
 
     # read the results and check again
-    res = Results(os.path.join("outputs", data_set_name))
+    res = Results(os.path.join(folder_path, "outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
 
 
@@ -537,11 +577,12 @@ def test_5c(folder_path):
     data_set_name = "test_5c"
     run_module(
         config=os.path.join(folder_path,"config.json"),
-        dataset=os.path.join(folder_path,data_set_name)
+        dataset=os.path.join(folder_path,data_set_name),
+        folder_output=os.path.join(folder_path,"outputs")
     )
 
     # read the results and check again
-    res = Results(os.path.join("outputs", data_set_name))
+    res = Results(os.path.join(folder_path, "outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
 
 
@@ -550,11 +591,12 @@ def test_5d(folder_path):
     data_set_name = "test_5d"
     run_module(
         config=os.path.join(folder_path,"config.json"),
-        dataset=os.path.join(folder_path,data_set_name)
+        dataset=os.path.join(folder_path,data_set_name),
+        folder_output=os.path.join(folder_path,"outputs")
     )
 
     # read the results and check again
-    res = Results(os.path.join("outputs", data_set_name))
+    res = Results(os.path.join(folder_path, "outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
 
 
@@ -563,12 +605,12 @@ def test_6a(folder_path):
     data_set_name = "test_6a"
     run_module(
         config=os.path.join(folder_path,"config.json"),
-        dataset=os.path.join(folder_path,data_set_name)
-
+        dataset=os.path.join(folder_path,data_set_name),
+        folder_output=os.path.join(folder_path,"outputs")
     )
 
     # read the results and check again
-    res = Results(os.path.join("outputs", data_set_name))
+    res = Results(os.path.join(folder_path, "outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
     # test functions get_total() and get_full_ts()
     check_get_total_get_full_ts(res)
@@ -579,11 +621,12 @@ def test_7a(folder_path):
     data_set_name = "test_7a"
     run_module(
         config=os.path.join(folder_path,"config_objective.json"),
-        dataset=os.path.join(folder_path,data_set_name)
+        dataset=os.path.join(folder_path,data_set_name),
+        folder_output=os.path.join(folder_path,"outputs")
     )
 
     # read the results and check again
-    res = Results(os.path.join("outputs", data_set_name))
+    res = Results(os.path.join(folder_path, "outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
 
 
@@ -592,10 +635,11 @@ def test_8a(folder_path):
     data_set_name = "test_8a"
     run_module(
         config=os.path.join(folder_path,"config.json"),
-        dataset=os.path.join(folder_path,data_set_name)
+        dataset=os.path.join(folder_path,data_set_name),
+        folder_output=os.path.join(folder_path,"outputs")
     )
     # read the results and check again
-    res = Results(os.path.join("outputs", data_set_name))
+    res = Results(os.path.join(folder_path, "outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
     check_get_total_get_full_ts(res)
 
@@ -606,7 +650,8 @@ def test_9a(folder_path):
     with pytest.raises(AssertionError, match='The attribute units defined in the energy_system are not consistent!'):
         run_module(
             config=os.path.join(folder_path,"config.json"),
-            dataset=os.path.join(folder_path,data_set_name)
+            dataset=os.path.join(folder_path,data_set_name),
+            folder_output=os.path.join(folder_path,"outputs")
         )
 
 def test_10a(folder_path):
@@ -614,13 +659,14 @@ def test_10a(folder_path):
     data_set_name = "test_10a"
     run_module(
         config=os.path.join(folder_path,"config.json"),
-        dataset=os.path.join(folder_path,data_set_name)
+        dataset=os.path.join(folder_path,data_set_name),
+        folder_output=os.path.join(folder_path,"outputs")
     )
     # read the results and check again
-    res = Results(os.path.join("outputs", data_set_name))
+    res = Results(os.path.join(folder_path, "outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
 
 
 if __name__ == "__main__":
     folder_path = os.path.dirname(__file__)
-    test_1j(folder_path)
+    test_1a(folder_path)
