@@ -10,6 +10,7 @@ import os
 import zen_garden.default_config as default_config
 import json
 from zen_garden.utils import copy_dataset_example
+from pathlib import Path
 
 def run_module(args=None, config = "./config.py", dataset = None, 
                folder_output = None, job_index = None, job_index_var = "SLURM_ARRAY_TASK_ID",
@@ -48,18 +49,15 @@ def run_module(args=None, config = "./config.py", dataset = None,
     if not os.path.exists(args.config):
         args.config = args.config.replace(".py", ".json")
 
-    # change working directory to the directory of the config file
-
-    config_path, config_file = os.path.split(os.path.abspath(args.config))
-    os.chdir(config_path)
     ### import the config
+    config_path, config_file = os.path.split(os.path.abspath(args.config))
     if config_file.endswith(".py"):
-        spec = importlib.util.spec_from_file_location("module", config_file)
+        spec = importlib.util.spec_from_file_location("module", Path(config_path) / config_file)
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
         config = module.config
     else:
-        with open(args.config, "r") as f:
+        with open(Path(config_path) / config_file, "r") as f:
             config = default_config.Config(**json.load(f))
 
     ### get the job index
