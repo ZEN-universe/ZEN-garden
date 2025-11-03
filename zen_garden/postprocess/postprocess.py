@@ -434,8 +434,9 @@ class Postprocess:
             fname = self.name_dir.joinpath('analysis')
         # remove cwd path part to avoid saving the absolute path
         if os.path.isabs(self.analysis.dataset):
-            self.analysis.dataset = os.path.split(Path(self.analysis.dataset))[-1]
-            self.analysis.folder_output = os.path.split(Path(self.analysis.folder_output))[-1]
+            cwd = os.getcwd()
+            self.analysis.dataset = os.path.relpath(self.analysis.dataset,cwd)
+            self.analysis.folder_output = os.path.relpath(self.analysis.folder_output, cwd)
         self.write_file(fname, self.analysis, format="json")
 
     def save_solver(self):
@@ -447,6 +448,12 @@ class Postprocess:
             fname = self.name_dir.parent.joinpath('solver')
         else:
             fname = self.name_dir.joinpath('solver')
+        
+        # remove cwd path part to avoid saving the absolute path
+        if os.path.isabs(self.solver.solver_dir):
+            cwd = os.getcwd()
+            self.solver.solver_dir = os.path.relpath(self.solver.solver_dir,cwd)
+        # save    
         self.write_file(fname, self.solver, format="json")
 
     def save_scenarios(self):
@@ -454,8 +461,8 @@ class Postprocess:
         Saves the scenario dict as json
         """
         # only save the scenarios at the highest level
-        root_path = Path(self.analysis.folder_output).joinpath(self.model_name)
-        fname = root_path.joinpath('scenarios')
+        root_dir = Path(self.analysis.folder_output).joinpath(self.model_name)
+        fname = root_dir.joinpath('scenarios')
         self.write_file(fname, self.scenarios, format="json")
 
     def save_unit_definitions(self):

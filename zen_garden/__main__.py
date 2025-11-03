@@ -10,6 +10,7 @@ import os
 import zen_garden.default_config as default_config
 import json
 from zen_garden.utils import copy_dataset_example
+from pathlib import Path
 
 def run_module(args=None, config = "./config.py", dataset = None, 
                folder_output = None, job_index = None, job_index_var = "SLURM_ARRAY_TASK_ID",
@@ -32,7 +33,7 @@ def run_module(args=None, config = "./config.py", dataset = None,
     parser.add_argument("--config", required=False, type=str, default=config, help="Path to the config file used to run the pipeline (e.g., `./config.json`). Alternatively, if the config file is located in the current working directory, then the file name is alone is also acceptable (e.g. `config.json`).")
     parser.add_argument("--dataset", required=False, type=str, default=dataset, help="Path to the dataset (e.g. `./<dataset_name>`). Alternatively, if the dataset is located in the current working directory, then the folder name alone is also acceptable (e.g. `<dataset_name>`). IMPORTANT: This will overwrite the config.analysis.dataset attribute of the config file!")
     parser.add_argument("--folder_output", required=False, type=str, default=folder_output, help="Path to the folder where results of the run are stored. IMPORTANT: This will overwrite the "
-                                                                                        "config.analysis.folder_output attribute of the config file!")
+                                                                                        "config.analysis.folder_output attribute and the config.solver.solver_dir attribute of the config file!")
     parser.add_argument("--job_index", required=False, type=str, default=job_index, help="A comma separated list (no spaces) of indices of the scenarios to run, if None, all scenarios are run in sequence")
     parser.add_argument("--job_index_var", required=False, type=str, default=job_index_var, help="Try to read out the job index from the environment variable specified here. "
                                                                                                          "If both --job_index and --job_index_var are specified, --job_index will be used.")
@@ -48,18 +49,15 @@ def run_module(args=None, config = "./config.py", dataset = None,
     if not os.path.exists(args.config):
         args.config = args.config.replace(".py", ".json")
 
-    # change working directory to the directory of the config file
-
-    config_path, config_file = os.path.split(os.path.abspath(args.config))
-    os.chdir(config_path)
     ### import the config
+    config_path, config_file = os.path.split(os.path.abspath(args.config))
     if config_file.endswith(".py"):
-        spec = importlib.util.spec_from_file_location("module", config_file)
+        spec = importlib.util.spec_from_file_location("module", Path(config_path) / config_file)
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
         config = module.config
     else:
-        with open(args.config, "r") as f:
+        with open(Path(config_path) / config_file, "r") as f:
             config = default_config.Config(**json.load(f))
 
     ### get the job index
