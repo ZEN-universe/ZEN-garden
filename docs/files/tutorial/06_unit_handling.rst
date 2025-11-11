@@ -1,7 +1,8 @@
 .. _t_units.t_units:
 
+############################
 Tutorial 6: Unit consistency
-============================
+############################
 
 Our models describe physical processes, where every numerical value is associated
 to a physical unit. For example, the capacity of a coal power plant is a power,

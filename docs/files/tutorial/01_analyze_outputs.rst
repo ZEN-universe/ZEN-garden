@@ -8,15 +8,15 @@ This tutorial describes how to analyze the the outputs of the ZEN-garden model.
 Two approaches are introduced:
 
 1. The ZEN-garden visualization platform
-2. The ZEN-garden ``Results`` codebase.
+2. The ZEN-garden ``Results`` object.
 
 The visualization platform is an ideal starting point for data analysis.
 The platform allows user to see standardized plots of capacity mixes, 
 generation mixes, energy balances, technology locations. The platform is 
 interactive, allowing users to select what regions, time-steps, and scenarios,
-and energy carriers to view results from. In contrast, the results codebase 
+and energy carriers to view results from. In contrast, the results object
 is ideal for detailed analyses where users work directly with the model output 
-and produce custom plots or calculations. The codebase allows users to easily 
+and produce custom plots or calculations. The results object allows users to easily
 filter, extract, and compare results from various scenarios. 
 
 This tutorial assumes that you have installed and run the example dataset 
@@ -76,18 +76,29 @@ Use the following steps to run the visualization platform:
 
 
 
-The main menu of the visualization platform shows three options:
+The main menu of the visualization platform shows four options 
+(:numref:`t_analyze.fig_viz_homepage`):
 
-1. **The Transition Pathway** - contains plots which show how key system
-   variables, namely capacity, production, emissions, and costs, change annually 
-   between different simulation years.
+1. **The Transition Pathway** - contains plots that show how key system
+   variables (e.g. capacity, production, emissions, and costs) change
+   between different simulation years. Only annual values are shown.
 
 2. **The Energy Balance** - contains plots showing nodal energy and storage
-   balances throughout all time-steps within a single year.
+   balances throughout all time-steps within a single year. Dual variable values
+   of the nodal energy balance constraint are also shown if these are saved 
+   in the outputs.
 
-3. **The Map** - allows users to see a map of how generation is distributed 
+3. **The Energy System** - shows a flow-chart of carriers and technologies 
+   in the model. The width of each carrier indicates the amount of that carrier
+   that is used in the optimal model solution. Each flow chart depicts a single 
+   year in the optimization problem. Carriers and technologies that are not used
+   are omitted from the plot.
+
+4. **The Map** - creates map that shows how generation is distributed 
    among regions in the model. Each map shows annual results for one carrier and 
    one simulation year.
+
+.. _t_analyze.fig_viz_homepage:
 
 .. figure:: ../figures/tutorials/zen_visualization_homepage.png
     :figwidth: 550 pt
@@ -153,8 +164,8 @@ Example Exercises
 
 .. _t_analyze.results_code:
 
-Results Codebase
-=================
+Results Object
+==============
 
 Detailed ZEN-garden results are stored in the ``output`` folder of the ``data`` 
 directory. ZEN-garden provides functions and tools for easily loading,
@@ -176,7 +187,7 @@ The path ``<result_folder>`` is the path to the results folder of the dataset,
 e.g., ``<data>/output/<dataset_name>``. 
 
 The results class has many methods (i.e. functions) which can be used to access
-subsets of the results. The sections below describe some of the must important
+subsets of the results. The sections below describe some of the most important
 methods and how they can be used. 
 
 
@@ -191,21 +202,6 @@ elements are collectively referred to as ``components``.
 
 Step 1: Identify the name of the component
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-All components are stored in a dictionary ``r.solution_loader.components``. A 
-complete list of all parameter, variable, and dual variable names can therefore
-be obtained using the command:
-
-.. code:: python
-
-    r.solution_loader.components.keys()
-
-.. tip::
-    Any component whose name starts with ``constraint_`` refers to a dual
-    variable. Dual variables are not saved to the results by default. To view
-    dual variables, users therefore need to adjust the ZEN-garden 
-    configurations, as described in :ref:`configurations tutorial 
-    <t_configuration.t_configuration>` 
 
 To filter the names by component type (``<component_type>`` in {``'parameter'``, 
 ``'variable'``, ``'dual'``, ``'sets'``})  the following member function can be 
@@ -226,6 +222,13 @@ From the list of components names, select the component which your are intereste
 in investigating. Descriptions of all components can be found in the in the 
 documentation on :ref:`sets, parameters, variables, and constraints 
 <notation.notation>`.
+
+.. tip::
+    Any component whose name starts with ``constraint_`` refers to a dual
+    variable. Dual variables are not saved to the results by default. To view
+    dual variables, users therefore need to adjust the ZEN-garden
+    configurations, as described in :ref:`configurations tutorial
+    <t_configuration.t_configuration>`
 
 Step II: Read component values
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -274,7 +277,7 @@ results to values from a single scenario, year, or region. The optional input
 arguments for these functions are:
 
 1. ``year``: A single optimization period for which the results should be 
-   returned (0, 1, 2, ...). Noe that this is not available for ``r.get_unit()``.
+   returned (0, 1, 2, ...). Note that this is not available for ``r.get_unit()``.
 2. ``scenario_name``: A single scenario name for which the results should be 
    returned. This is only relevant when using the scenario tool, as described
    in the :ref:`scenarios tutorial <t_scenario.t_scenario>`.

@@ -1,7 +1,7 @@
 .. _t_operation_only.t_operation_only:
 
 ########################################
-Tutorial 7: Operation-Only Optimizations
+Tutorial 8: Operation-Only Optimizations
 ########################################
 
 In some cases, it may be helpful run an operation-only version of ZEN-garden 

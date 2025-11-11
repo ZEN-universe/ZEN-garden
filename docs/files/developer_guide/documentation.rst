@@ -127,12 +127,98 @@ Documentation guidelines
   extension copies text from the docstring and inserts into the documentation.
   This helps avoid duplicate text and thus helps ensure that all elements of 
   the documentation are consistent and up-to-date.
+* All figures are stored in the ``docs\files\figures`` folder. Within this folder
+  figures can be further organized into sub-folders based on the section of the
+  documentation in which they intended for. 
 
 
-Adding a new Section
-------------------------------
+Addition new pages to the documentation
+---------------------------------------
+
+The following steps allow new pages to be added to the documentation:
+
+1. Add a new restructured text file in the ``docs\files`` folder. Files in 
+   this folder are typically grouped into subfolders by section of the 
+   docmentation (e.g. Quick Start, Developer Guide, etc.). Example:
+   ``docs\files\quick_start\<new_file_name>.rst``
+
+2. Insert the desired text in the restructured text file. The following template
+   can be used to create the new file:
+
+   .. code-block:: rst
+    
+      .. _page_label.page_label:
+
+      ###########
+      Page Title
+      ###########
+
+      Insert description here. You can also reference a 
+      :ref:`Section <page_label.section_label>`, a 
+      :ref:`Subsection <page_label.subsection_label>`, or a figures 
+      (:numref:`page_label.figure_label`). Bold lettering can be written like 
+      **this**, italics like *this*, and files or variables like ``this``. 
+      Finally, links can be included as follows:
+      `ZEN-garden Github <https://github.com/ZEN-universe/ZEN-garden>`_
 
 
+      .. _page_label.section_label:
+
+      Section Name
+      =============
+
+      This section contains a code block of python code:
+
+      .. code:: python
+
+        import numpy as np
+        print("Hello World")
+
+      It also contains a figure:
+
+      .. _page_label.figure_label:
+
+      .. figure:: ../figures/tutorials/figure_name.png
+          :figwidth: 550 pt
+          :align: center
+        
+          Caption goes here.
+
+
+      .. _page_label.subsection_label:
+
+      Subsection Name
+      ---------------
+
+      This subsection contains a numbered list:
+
+      1. First item
+      2. Second item
+
+      The following is creates a bulleted list:
+
+      * Item 
+      * Another item
+
+
+3. Add the path of new file to the ``docs\index.rst`` file. The file paths are
+   expressed relative to the ``docs`` folder. The location of the
+   file path determines where in the documentation the new page is inserted. For
+   example, the following syntax inserts the new file in the Quick Start 
+   section between the page on installation and running models:  
+
+   .. code-block:: rst
+
+       .. toctree::
+   
+           :maxdepth: 1
+           :caption: Quick Start
+
+           files/quick_start/installation
+           files/quick_start/<new_file_name>.rst
+           files/quick_start/running_models
+
+.. _documentation.docstring:
 
 Docstrings 
 ----------
@@ -302,8 +388,8 @@ steps:
 
 .. _documentation.docstrings:
 
-Docstring extension
-^^^^^^^^^^^^^^^^^^^
+Use text from Docstrings in the Documentation
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The docstring extension allows text from the main body of a docstring to be 
 inserted into the documentation text. The main body of the docstring is 

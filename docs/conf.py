@@ -43,7 +43,8 @@ extensions = ['sphinx.ext.autodoc',
               'nbsphinx_link',
               'myst_parser',
               "sphinx.ext.imgconverter",  # for SVG conversion
-              "docstring"
+              "sphinxcontrib.mermaid", # for class diagrams
+              "docstring" # custom extension for inserting docstring text
              ]
 # allow errors in the notebooks
 nbsphinx_allow_errors = True
@@ -63,6 +64,8 @@ autodoc_default_options = {
     'special-members': '__init__',
 }
 
+numfig = True
+
 # Prevent Spynx from showing nested defaults and typehints.
 autodoc_typehints_format = "short"
 
@@ -80,21 +83,44 @@ exclude_patterns = ['_build', 'dataset_examples', 'Thumbs.db', '.DS_Store', '**.
                     'files/dataset_examples/**', 'files/developer_guide/testing.rst', 'files/references/release_notes.rst']
 
 
+mermaid = {
+    'theme': 'default',
+    'startOnLoad': True,
+    'mermaidConfig': {
+        'themeVariables': {
+            'primaryColor': '#ffcc00',
+        },
+    },
+}
+
 # -- Options for HTML output -------------------------------------------------
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-html_theme = 'sphinx_book_theme'
+# html_theme = 'sphinx_book_theme'
+html_theme = 'furo'
 
 # Theme-specific options to customize the look of a theme
 # For a list of options available for each theme, see the documentation.
+## sphinx_book_theme options
+# html_theme_options = {
+#     "repository_url": "https://github.com/ZEN-universe/ZEN-garden",
+#     "use_repository_button": True,
+#     "show_navbar_depth": 1,
+#     "show_toc_level": 2,
+# }
 html_theme_options = {
-    "repository_url": "https://github.com/ZEN-universe/ZEN-garden",
-    "use_repository_button": True,
-    "show_navbar_depth": 1,
-    "show_toc_level": 2,
+    "light_css_variables": {
+        "color-brand-primary": "#215CAF",
+        "color-brand-content": "#007894",
+    },
+    "source_repository": "https://github.com/ZEN-universe/ZEN-garden",
+    "source_branch": "main",
+    "source_directory": "docs/",
+    "top_of_page_buttons": ["view"],
 }
+
 
 # The name for this set of Sphinx documents.  
 html_title = "ZEN-garden"

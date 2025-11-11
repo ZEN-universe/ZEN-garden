@@ -248,72 +248,100 @@ Make sure to have the correct positioning of the brackets.
   or ``"inf"`` and a ``unit`` as a ``string`` (see :ref:`t_units.t_units`).
 
 
-What are particular parameters in the ``attributes.json`` file?
+Special parameters in the ``attributes.json`` file
 ---------------------------------------------------------------
 
-Some parameters do not have the structure above. These are the carriers of 
-technologies (``"reference_carrier"``, ``"input_carrier"``, and 
-``"output_carrier"``), the ``"conversion_factor"`` of conversion technologies, 
-and the ``"retrofit_flow_coupling_factor"`` of retrofitting technologies.
+Some technology parameters do not have the structure above. These are: 
+``"input_carrier"``, ``"output_carrier"``, ``"reference_carrier"``,
+``"conversion_factor"`` (for conversion technologies only), 
+and ``"retrofit_flow_coupling_factor"`` (for retrofitting technologies only).
 
 **Input, output, and reference carriers**
 
-.. code-block::
+The input and output carriers refer to the energy carriers which a technology
+takes as input or output. The data format for these attributes differs
+since technologies can have more than one input or output carrier.
+Consequentially, these attributes take a list ``[..., ...]`` rather 
+than a single value such as ``"inf"`` or ``0``. The JSON below, for example, 
+describes the Haber-Bosch process, which converts hydrogen and electricity to 
+ammonia.
 
-    "output_carrier": {
-      "default_value": [
-        "heat",
-        "electricity"
-      ],
-    }
+.. code-block:: json
 
-The default value of the three carrier types are a list ``[..., ...]``. It can 
-take the following lengths:
+   "reference_carrier": {
+     "default_value": [
+       "ammonia"
+     ]
+   },
+   "input_carrier": {
+     "default_value": [
+       "hydrogen",
+       "electricity"
+     ]
+   },
+   "output_carrier": {
+     "default_value": [
+       "ammonia"
+     ]
+   }
 
-1. 1 carrier: Necessary in the case of the reference carrier
-2. 0 carrier: Empty list if no input or output carrier
-3. more than 1 carrier: for multiple input or output carriers
+The ``reference_carrier`` attribute defines the carrier based on which technology
+performance is measured. It must be one of the input or output carriers.
+In the Haber-Bosch process describe above, for example, the reference carrier is 
+ammonia. This means that the capacity of the Haber-Bosch 
+facility is defined in terms of ammonia output per unit time (rather than e.g.
+the hydrogen consumed per unit time). It also means that the conversion factors 
+for the technology (see below) must be defined relative to the ammonia output.
 
-The units of the carriers in a technology are defined in the corresponding 
-parameters (see :ref:`t_units.t_units`) and are therefore omitted in the
-``"reference_carrier"``, ``"input_carrier"``, and ``"output_carrier"`` field.
+The following properties must hold for all carriers:
+
+1. The reference carrier is one of the input or output carriers.
+2. The input and output carriers must be mutually exclusive (i.e. no carrier can
+   be both).
+3. All carriers must be defined by ``attributes.json`` files within their 
+   respective folders ``set_carriers\<carrier_name>``.
+
+The units of the input, output, and reference carriers are defined by carrier 
+parameters (see :ref:`t_units.t_units`). They are therefore omitted in the
+``"reference_carrier"``, ``"input_carrier"``, and ``"output_carrier"`` fields.
 
 **Conversion factor**
 
-The ``conversion_factor`` is the fixed ratio between a carrier flow and the 
-reference carrier flow, defined for all dependent carriers, i.e., all carriers 
-except the reference carrier.
+The ``conversion_factor`` is the ratio between a carrier flow and the 
+reference carrier flow. It is defined for all input carriers and output carriers
+that are not the reference carrier. The conversion factor sets the 
+efficiency of a technology at converting between the input and output carriers.
+The units of the conversion factor are always 
+``<unit of carrier>/<unit of reference carrier>``. 
 
-.. code-block::
+For the Haber-Bosch process, the conversion factor could for example be defined
+as:
 
-    dependent_carriers = input_carriers + output_carriers - reference_carrier
+.. code-block:: json
 
-ZEN-garden will check i) that the reference carrier is not part of the input and 
-output carriers, ii) that there is no overlap between the input and output 
-carriers, and iii) that all carriers are defined in their respective folders in 
-``set_carriers``. The default conversion factor is defined in 
-``attributes.json`` as:
+   "conversion_factor": [
+     {
+       "electricity": {
+         "default_value": 0.05,
+         "unit": "GW/GW"
+       }
+     },
+     {
+       "hydrogen": {
+         "default_value": 0.95,
+         "unit": "GW/GW"
+       }
+     }
+   ]
 
-.. code-block::
+This format consists of a list ``[...]`` in which each carrier (excluding the
+reference carrier) is wrapped in curly brackets. Inside each curly bracket, 
+there are the ``default_value`` and the ``unit`` attributes. The above
+JSON means that the Haber-Bosch process consumes 0.05 GW of electricity and 
+0.95 GW of hydrogen per unit of ammonia produced. The conversion factors for the
+Haber-Bosch process are expressed per unit of ammonia since ammonia is 
+defined as the reference carrier. 
 
-    "conversion_factor": [
-      {
-        "heat": {
-          "default_value": 1.257,
-          "unit": "GWh/GWh"
-        }
-      },
-      {
-        "natural_gas": {
-          "default_value": 2.857,
-          "unit": "GWh/GWh"
-        }
-      }
-    ]
-
-The conversion factor is **a list ``[...]`` with each dependent carrier wrapped 
-in curly brackets**. Inside each curly bracket, there are the ``default_value`` 
-and the ``unit``.
 
 **Retrofitting flow coupling factor**
 
