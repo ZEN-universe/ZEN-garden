@@ -516,33 +516,43 @@
             "flow_import": [
                 {
                     "index": ["natural_gas", "DE", 0],
-                    "value": 121.287796
+                    "value": 210
+                },
+                {
+                    "index": ["natural_gas", "DE", 1],
+                    "value": 210
+                },
+                {
+                    "index": ["natural_gas", "CH", 0],
+                    "value": 0.0
                 },
                 {
                     "index": ["natural_gas", "CH", 1],
-                    "value": 0.0
+                    "value": 2.0
                 }
             ],
-            "carbon_emissions_carrier": [
+            "shed_demand": [
+                {
+                    "index": ["heat", "DE", 0],
+                    "value": 0.0
+                },
                 {
                     "index": ["heat", "DE", 1],
                     "value": 0.0
-                }
-            ],
-            "flow_conversion_output": [
-                {
-                    "index": ["natural_gas_boiler", "heat", "DE", 0],
-                    "value": 100.0
                 },
                 {
-                    "index": ["natural_gas_boiler", "heat", "DE", 1],
-                    "value": 100.0
+                    "index": ["heat", "CH", 0],
+                    "value": 5.0
+                },
+                {
+                    "index": ["heat", "CH", 1],
+                    "value": 4.0
                 }
             ],
             "flow_conversion_input": [
                 {
-                    "index": ["natural_gas_boiler", "natural_gas", "DE", 0],
-                    "value": 110.0
+                    "index": ["natural_gas_boiler", "natural_gas", "CH", 1],
+                    "value": 12.0
                 }
             ],
             "capacity": [
@@ -552,6 +562,10 @@
                 },
                 {
                     "index": ["natural_gas_boiler", "power", "CH", 0],
+                    "value": 6.0
+                },
+                {
+                    "index": ["natural_gas_pipeline", "power", "DE-CH", 0],
                     "value": 10.0
                 }
             ],
