@@ -81,6 +81,7 @@ Zenodo = "https://zenodo.org/api/records/13385110"
 zen-garden = "zen_garden.cli.zen_garden_cli:create_zen_garden_cli"
 zen-visualization = "zen_garden.cli.zen_visualization_cli:create_zen_visualization_cli"
 zen-example = "zen_garden.cli.zen_example_cli:create_zen_example_cli"
+zen-operation="zen_garden.cli.zen_operation_cli:create_zen_operation_cli"
 
 [tool.pytest.ini_options]
 addopts = "-n auto"

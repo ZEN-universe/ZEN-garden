@@ -51,11 +51,13 @@ def build_parser() -> argparse.ArgumentParser:
                                      add_help=True,
                                      usage="zen_garden [options]")
 
-    parser.add_argument("--config",
-                        type=str,
-                        required=False,
-                        default="./config.json",
-                        help="Path to a Python or JSON config file.")
+    parser.add_argument(
+        "--config",
+        type=str,
+        required=False,
+        default="./config.json",
+        help="Path to a Python or JSON config file."
+    )
     parser.add_argument(
         "--dataset",
         type=str,
@@ -69,19 +71,23 @@ def build_parser() -> argparse.ArgumentParser:
         required=False,
         default=None,
         help=
-        "Path to the output directory. Overrides output settings in config.")
+        "Path to the output directory. Overrides output settings in config."
+    )
     parser.add_argument(
         "--job_index",
         type=str,
         required=False,
         default=None,
         help="Comma-separated list of scenario indices. If omitted, the "
-        "environment variable specified by --job_index_var is used.")
-    parser.add_argument("--job_index_var",
-                        type=str,
-                        required=False,
-                        default="SLURM_ARRAY_TASK_ID",
-                        help="Environment variable for job index.")
+        "environment variable specified by --job_index_var is used."
+    )
+    parser.add_argument(
+        "--job_index_var",
+        type=str,
+        required=False,
+        default="SLURM_ARRAY_TASK_ID",
+        help="Environment variable for job index."
+    )
 
     return parser
 
@@ -155,10 +161,12 @@ def create_zen_garden_cli():
         Basic usage in a command line prompt:
 
         >>> zen-garden --config=".\\config.json" --dataset="1_base_case"
-
     """    
+    
     # parse command line arguments
     parser = build_parser()
+
+    # parse command line arguments
     args = parser.parse_args()
 
     ### get the job index
