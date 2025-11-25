@@ -75,3 +75,7 @@ Zenodo = "https://zenodo.org/api/records/13385110"
 
 [tool.pytest.ini_options]
 addopts = "-n auto"
+
+[project.scripts]
+zen-garden = "zen_garden.__main__:run_module"
+zen-viz = "zen_garden.visualization:parse_arguments_and_run"
