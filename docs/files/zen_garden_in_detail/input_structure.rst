@@ -493,6 +493,13 @@ with the yearly variation. Per default, the yearly variation is assumed to be
 ``<parameter_name>_yearly_variation.csv``, the hourly-dependent data is 
 not scaled.
 
+.. warning::
+    The ``<parameter_name>_yearly_variation.csv`` only works for parameters 
+    which vary on an hourly basis. It therefore does not work for parameters 
+    such as ``capacity`` that only have one value per year. For such parameters,
+    yearly variation must be specified directly in the 
+    ``<parameter_name>.csv`` file.
+
 The user can specify the yearly variation for all dimensions except for the 
 ``time`` dimension:
 
