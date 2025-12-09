@@ -673,6 +673,27 @@ class Results:
             return ""
         return component.doc
 
+    def get_index_names(self, component_name: str, scenario_name: Optional[str] = None) -> list[str]:
+        """
+        Docstring for get_index_names
+        
+        :param self: Description
+        :param component_name: Description
+        :type component_name: str
+        :param scenario_name: Description
+        :type scenario_name: Optional[str]
+        :return: Description
+        :rtype: list[str]
+        """
+        if scenario_name is None:
+            scenario_name = next(iter(self.solution_loader.scenarios.keys()))
+        scenario = self.solution_loader.scenarios[scenario_name]
+        if component_name not in scenario.components:
+            logging.warning(f"Component {component_name} not found and the index names cannot be returned.")
+            return []
+        component = scenario.components[component_name]
+        return component.index_names
+
     def get_years(self, scenario_name: Optional[str] = None) -> list[int]:
         """
         Extracts the years of a given Scenario. If no scenario is given, a random one is taken.
