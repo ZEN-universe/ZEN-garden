@@ -668,7 +668,12 @@ class SolutionLoader():
         version = get_solution_version(scenario)
         if check_if_v1_leq_v2(version,"v1"):
             sequence = self.get_sequence_time_steps(scenario,TimestepType.storage)
-            dict_startend = {sequence.iloc[0]:sequence.iloc[-1]}
+            time_steps_per_year = scenario.system.unaggregated_time_steps_per_year
+            dict_startend = {}
+            for i in np.arange(scenario.system.optimized_years):
+                start_idx = i * time_steps_per_year
+                end_idx = (i + 1) * time_steps_per_year - 1
+                dict_startend[sequence.iloc[start_idx]] = sequence.iloc[end_idx]
         else:
             time_steps_file_name = _get_time_steps_file(scenario)
             time_steps_file_name = time_steps_file_name + ".json"
