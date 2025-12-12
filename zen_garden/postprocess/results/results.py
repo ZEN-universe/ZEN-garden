@@ -337,13 +337,21 @@ class Results:
         """
         Calculates the total values of a component for a all scenarios.
 
-        :param component_name: Name of the component
+        :param component_name: Name of the component. Should not be used for dual variables!
         :param year: Filter the results by a given year
         :param scenario_name: Filter the results by a given scenario
         :param keep_raw: Keep the raw values of the rolling horizon optimization
         :param index: slicing index of the resulting dataframe
         :return: Total values of the component
         """
+
+        # Throw error if used for a dual variable
+        if component_name in self.get_component_names("dual"):
+            raise ValueError(
+                "This method does not support the extraction of " \
+                "dual variables. Please use the methods " \
+                "`get_dual()` or `get_full_ts()` instead.")
+
         if scenario_name is None:
             scenario_names = list(self.solution_loader.scenarios)
         else:
