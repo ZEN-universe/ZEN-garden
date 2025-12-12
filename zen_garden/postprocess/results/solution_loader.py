@@ -10,10 +10,13 @@ import h5py  # type: ignore
 import pint
 import pandas as pd
 import numpy as np
+import logging
+
 from typing import Optional, Any,Literal
 from enum import Enum
 from functools import cache
 from zen_garden.default_config import Analysis, System, Solver
+from zen_garden.utils import slice_df_by_index
 
 class ComponentType(Enum):
     parameter: str = "parameter"
@@ -665,7 +668,12 @@ class SolutionLoader():
         version = get_solution_version(scenario)
         if check_if_v1_leq_v2(version,"v1"):
             sequence = self.get_sequence_time_steps(scenario,TimestepType.storage)
-            dict_startend = {sequence.iloc[0]:sequence.iloc[-1]}
+            time_steps_per_year = scenario.system.unaggregated_time_steps_per_year
+            dict_startend = {}
+            for i in np.arange(scenario.system.optimized_years):
+                start_idx = i * time_steps_per_year
+                end_idx = (i + 1) * time_steps_per_year - 1
+                dict_startend[sequence.iloc[start_idx]] = sequence.iloc[end_idx]
         else:
             time_steps_file_name = _get_time_steps_file(scenario)
             time_steps_file_name = time_steps_file_name + ".json"
@@ -788,6 +796,8 @@ def get_df_from_path(path: str, component_name: str, version: str, data_type: Li
 
     if check_if_v1_leq_v2(version,"v0"):
         pd_read = pd.read_hdf(path, component_name + f"/{data_type}")
+        if len(index) > 0:
+            pd_read = slice_df_by_index(pd_read,index)
     else:
         if data_type == "dataframe":
             try:

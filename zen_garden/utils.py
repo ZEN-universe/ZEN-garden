@@ -262,6 +262,33 @@ def reformat_slicing_index(index, component) -> tuple[str]:
 
     return ref_index
 
+def slice_df_by_index(df,index_tuple) -> dict:
+    """ recreates the slicing index from a tuple of strings and slices the dataframe accordingly
+    :param df: dataframe to be sliced
+    :param index_tuple: tuple of strings representing the slicing index
+    :return: sliced dataframe
+    """
+    index = {}
+    for index_str in index_tuple:
+        if " in " in index_str:
+            key, value_str = index_str.split(" in ")
+            key = key.strip("'")
+            value = eval(value_str)
+        elif " == " in index_str:
+            key, value_str = index_str.split(" == ")
+            key = key.strip("'")
+            value = eval(value_str)
+        else:
+            continue
+        index[key] = value
+    for key in index:
+        if key in df.index.names:
+            if isinstance(index[key], list):
+                df = df.loc[df.index.get_level_values(key).isin(index[key])]
+            else:
+                df = df.xs(index[key], level=key, drop_level=False)
+    return df
+
 def get_label_position(obj,label:int):
     """ Get dict of index and coordinate for variable or constraint labels."""
     name_element = obj.get_name_by_label(int(label))
