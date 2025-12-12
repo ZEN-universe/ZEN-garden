@@ -29,6 +29,11 @@ for details.
     version from the repository. Otherwise, dependency changes may result in 
     errors.
 
+.. tip::
+    The command-line command ``zen-garden`` is a shortcut that invokes the 
+    ``run_module`` function from ``zen_garden.__main__``. This shortcut is 
+    defined in the ``[project.scripts]`` section of the ``pyproject.toml``.
+
 
 Debugging ZEN-garden
 ====================
@@ -74,7 +79,7 @@ Alternatively, developers may also debug ZEN-garden using IDE-specific
 debug routines and configurations. These configurations are described 
 below for two common IDEs: PyCharm and VSCode. In both cases, the user 
 must specify special debug settings in the IDE. These settings essentially 
-inform the IDE about which command line script (i.e. ``python -m zen_garden``) 
+inform the IDE about which command line script (i.e., ``zen-garden``) 
 needs to be run whenever debugging. Once set up, the user can debug ZEN-garden by 
 clicking on a button in the IDE. The full ZEN-garden module will then be run
 in debug mode, regardless of which file is currently open and being edited. The 

@@ -55,7 +55,7 @@ Use the following steps to run the visualization platform:
 
    .. code::
 
-        python -m zen_garden.visualization
+        zen-visualization
 
 
    Running this command will pull up a new tab in your default browser 
@@ -71,7 +71,7 @@ Use the following steps to run the visualization platform:
     ``./outputs``, relatively to where you run the command. If you are copying 
     results from somewhere else, make sure to create a folder called ``outputs`` 
     and copy the results there. Alternatively, you can pass an arbitrary folder 
-    with ``python -m zen_garden.visualization -o <path to your solutions 
+    with ``zen-visualization -o <path to your solutions 
     folder>`` to change the solutions folder.
 
 
