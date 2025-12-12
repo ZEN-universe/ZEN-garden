@@ -35,6 +35,7 @@ Documentation
    files/quick_start/installation
    files/quick_start/building_models
    files/quick_start/running_models
+   files/quick_start/summary
 
 
 .. toctree::

@@ -10,7 +10,7 @@ import pytest
 from zen_garden._internal import main
 from zen_garden.__main__ import run_module
 from zen_garden.postprocess.results import Results
-
+from zen_garden.dataset_examples import download_example_dataset
 
 # fixtures
 ##########
@@ -128,6 +128,21 @@ def check_get_total_get_full_ts(
 
 # All the tests
 ###############
+def test_0a(folder_path):
+    # test that dataset examples can be succesfully downloaded
+    
+    # change working directory to output folder   
+    cwd = os.getcwd()
+    out_dir = os.path.join(folder_path,"outputs")
+    if not os.path.exists(out_dir):
+        os.makedirs(out_dir)
+    os.chdir(out_dir)
+
+    # download example
+    download_example_dataset("1_base_case")
+
+    # change directory back to original one
+    os.chdir(os.getcwd())
 
 def test_1a(folder_path):
     # add duals for this test

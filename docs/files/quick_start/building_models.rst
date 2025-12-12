@@ -99,11 +99,13 @@ detail in :ref:`dataset_examples.dataset_examples`. To download one of the examp
 
    .. code-block::
 
-       zen-garden --download_example="<example name>"
+       zen-example --dataset="1_base_case"
 
 
-   The desired example data set will be downloaded to the current working 
-   directory. A full list of example data sets can be found in :ref:`dataset_examples.dataset_examples`. 
+   The example dataset "1_base_case" will then be downloaded to the current
+   working directory. Other datasets can also be downloaded by changing the 
+   ``--dataset`` argument.  A full list of example datasets can be found 
+   in :ref:`dataset_examples.dataset_examples`. 
 
 .. note::
     If done correctly, you should now see a new directory in the ``data`` folder
