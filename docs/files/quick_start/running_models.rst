@@ -19,7 +19,7 @@ Run ZEN-garden
 
 3. Execute the following lines to run ZEN-garden::
       
-      python -m zen_garden --dataset="<dataset_name>"
+      zen-garden --dataset="<dataset_name>"
 
    Here, replace ``<dataset_name>`` with the name of the dataset that you 
    wish to run (e.g. ``1_base_case``). Once the model finishes, the output files 
@@ -41,7 +41,7 @@ Additional Remarks and Tips
 
    .. code-block::
     
-      python -m zen_garden
+      zen-garden
    
    In this case, ZEN-garden will look for the name of the dataset in the  
    ``analysis/dataset`` entry of ``config.json``. 
@@ -49,7 +49,7 @@ Additional Remarks and Tips
 2. If you have multiple ``config.json`` files in your working directory, you can 
    specify the file you want to use with the ``config`` argument::
 
-     python -m zen_garden --config=<my_config.json> --dataset=<my_dataset>
+     zen-garden --config=<my_config.json> --dataset=<my_dataset>
 
 
 3. ZEN-garden can also be run from with a python script. You may find this to be 

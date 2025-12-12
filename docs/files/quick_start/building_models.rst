@@ -99,7 +99,7 @@ detail in :ref:`dataset_examples.dataset_examples`. To download one of the examp
 
    .. code-block::
 
-       python -m zen_garden --download_example="<example name>"
+       zen-garden --download_example="<example name>"
 
 
    The desired example data set will be downloaded to the current working 

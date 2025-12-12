@@ -106,7 +106,7 @@ Lastly, we can run the model with the new dataset ``tutorial_3_add_technologies_
 
 .. code:: bash
 
-    python -m zen_garden --dataset=tutorial_3_add_technologies_carrier
+    zen-garden --dataset=tutorial_3_add_technologies_carrier
 
 Example Exercise
 ================

@@ -11,6 +11,7 @@ authors = [
   {name = "Francesco De Marco"},
   {name = "Lukas Kunz"},
   {name = "Lukas Schmidt-Engelbertz"},
+  {name = "Christoph Funke"},
   {name = "Paolo Gabrielli"},
   {name = "Giovanni Sansavini"},
   ]
@@ -78,4 +79,4 @@ addopts = "-n auto"
 
 [project.scripts]
 zen-garden = "zen_garden.__main__:run_module"
-zen-viz = "zen_garden.visualization:parse_arguments_and_run"
+zen-visualization = "zen_garden.visualization:parse_arguments_and_run"
