@@ -28,7 +28,7 @@ def run_module(args=None, config = "./config.py", dataset = None,
                   "current working directory. You can specify a config file with the --config argument. However, " \
                   "note that the output directory will always be the current working directory, independent of the " \
                   "dataset specified in the config file."
-    parser = argparse.ArgumentParser(description=description, add_help=True, usage="usage: python -m zen_garden [-h] [--config CONFIG] [--dataset DATASET] [--job_index JOB_INDEX] [--job_index_var JOB_INDEX_VAR] [-- download_example EXAMPLE_NAME]")
+    parser = argparse.ArgumentParser(description=description, add_help=True, usage="usage: zen-garden [-h] [--config CONFIG] [--dataset DATASET] [--job_index JOB_INDEX] [--job_index_var JOB_INDEX_VAR] [-- download_example EXAMPLE_NAME]")
     # TODO make json config default
     parser.add_argument("--config", required=False, type=str, default=config, help="Path to the config file used to run the pipeline (e.g., `./config.json`). Alternatively, if the config file is located in the current working directory, then the file name is alone is also acceptable (e.g. `config.json`).")
     parser.add_argument("--dataset", required=False, type=str, default=dataset, help="Path to the dataset (e.g. `./<dataset_name>`). Alternatively, if the dataset is located in the current working directory, then the folder name alone is also acceptable (e.g. `<dataset_name>`). IMPORTANT: This will overwrite the config.analysis.dataset attribute of the config file!")

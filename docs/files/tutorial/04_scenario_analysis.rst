@@ -337,7 +337,7 @@ Per default, all scenarios are run sequentially, as before. Additionally, one
 can specify a subset of scenarios to run with the --job_index argument. 
 For example::
 
-    python -m zen_garden --job_index 1,4,7
+    zen-garden --job_index 1,4,7
 
 will run scenarios 1,4,7, where the number is the index of the key (starting 
 with 0), not the key itself (no explicit scenario names).
