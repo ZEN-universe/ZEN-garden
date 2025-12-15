@@ -2,67 +2,70 @@
 Runs the main function of ZEN-Garden.
 Compilation  of the optimization problem.
 """
-from ._internal import main
-import importlib.util
-import argparse
-import sys
-import os
-import zen_garden.default_config as default_config
-import json
-from pathlib import Path
+from .runner import run
+from .cli.zen_garden import cli_zen_garden
+import warnings
 
-def run_module(args=None, config = "./config.py", dataset = None, 
-               folder_output = None, job_index = None, job_index_var = "SLURM_ARRAY_TASK_ID"):
+def run_module(config = "./config.py", dataset = None, 
+               folder_output = None, job_index = None):
     """
-    Runs the main function of ZEN-Garden
+    Deprecated wrapper for ``zen_garden.runner.run()``.
 
-    :param args: Arguments to parse
+    This function mirrors the behavior of
+    ``zen_garden.runner.run()`` and exists solely for backward
+    compatibility with older versions of ZEN_garden, where
+    ``zen_garden.__main__.run_module()`` served as the primary entry point.
+
+    This function is deprecated and will be removed in ZEN-garden v3.0.0.
+    Users should migrate to ``zen_garden.runner.run()``.
+
+    Args:
+        config (str): Path to the configuration file (e.g. ``config.json``).
+            If the file is located in the current working directory, the
+            filename alone may be specified. Defaults to ``"./config.py"``.
+        dataset (str): Path to the folder containing the input dataset
+            (e.g. ``"./1_base_case"``). If located in the current working
+            directory, the folder name alone may be used. Defaults to the
+            ``dataset`` value specified in the configuration file.
+        folder_output (str): Path to the folder where outputs will be saved.
+            Defaults to ``"./outputs"``.
+        job_index (list[int] | None): Indices of jobs (scenarios) to run.
+            For example, ``job_index=[1]`` runs only the first scenario.
+            Defaults to ``None`` (run all jobs).
+
+    Raises:
+        DeprecationWarning: This function will be removed in ZEN-garden v3.0.0.
+
+    Returns:
+        OptimizationSetup: The fully set up and solved optimization problem.
+
+    See Also:
+        zen_garden.runner.run: Replacement function.
+
+    Examples:
+        >>> from zen_garden import run, copy_example_dataset
+        >>> download_example_dataset("1_base_case")
+        >>> run("1_base_case")
     """
-    if args is None:
-        args = sys.argv[1:]
 
-    # parse the args
-    description = "Run ZEN garden with a given config file. Per default, the config file will be read out from the " \
-                  "current working directory. You can specify a config file with the --config argument. However, " \
-                  "note that the output directory will always be the current working directory, independent of the " \
-                  "dataset specified in the config file."
-    parser = argparse.ArgumentParser(description=description, add_help=True, usage="usage: zen-garden [-h] [--config CONFIG] [--dataset DATASET] [--job_index JOB_INDEX] [--job_index_var JOB_INDEX_VAR]")
-    # TODO make json config default
-    parser.add_argument("--config", required=False, type=str, default=config, help="Path to the config file used to run the pipeline (e.g., `./config.json`). Alternatively, if the config file is located in the current working directory, then the file name is alone is also acceptable (e.g. `config.json`).")
-    parser.add_argument("--dataset", required=False, type=str, default=dataset, help="Path to the dataset (e.g. `./<dataset_name>`). Alternatively, if the dataset is located in the current working directory, then the folder name alone is also acceptable (e.g. `<dataset_name>`). IMPORTANT: This will overwrite the config.analysis.dataset attribute of the config file!")
-    parser.add_argument("--folder_output", required=False, type=str, default=folder_output, help="Path to the folder where results of the run are stored. IMPORTANT: This will overwrite the "
-                                                                                        "config.analysis.folder_output attribute and the config.solver.solver_dir attribute of the config file!")
-    parser.add_argument("--job_index", required=False, type=str, default=job_index, help="A comma separated list (no spaces) of indices of the scenarios to run, if None, all scenarios are run in sequence")
-    parser.add_argument("--job_index_var", required=False, type=str, default=job_index_var, help="Try to read out the job index from the environment variable specified here. "
-                                                                                                         "If both --job_index and --job_index_var are specified, --job_index will be used.")
-    args = parser.parse_args(args)
 
-    if not os.path.exists(args.config):
-        args.config = args.config.replace(".py", ".json")
+    # throw deprecation warning
+    warnings.warn(
+        "zen_garden.__main__.run_module() is deprecated and will be removed " \
+        "in ZEN-garden v3.0.0. Please use the new version " \
+        "zen_garden.runner.run() instead.",
+        DeprecationWarning,
+        stacklevel=2
+    )
 
-    ### import the config
-    config_path, config_file = os.path.split(os.path.abspath(args.config))
-    if config_file.endswith(".py"):
-        spec = importlib.util.spec_from_file_location("module", Path(config_path) / config_file)
-        module = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(module)
-        config = module.config
-    else:
-        with open(Path(config_path) / config_file, "r") as f:
-            config = default_config.Config(**json.load(f))
-
-    ### get the job index
-    job_index = args.job_index
-    if job_index is None:
-        if (job_index := os.environ.get(args.job_index_var)) is not None:
-            job_index = int(job_index)
-    else:
-        job_index = [int(i) for i in job_index.split(",")]
-
-    ### run
-    main(config=config, dataset_path=args.dataset, job_index=job_index, folder_output_path=args.folder_output)
-
+    # run new function
+    return run(
+        config = config, 
+        dataset = dataset, 
+        folder_output=folder_output,
+        job_index=job_index
+        )
 
 if __name__ == "__main__":
 
-    run_module()
+    cli_zen_garden()

@@ -31,7 +31,7 @@ for details.
 
 .. tip::
     The command-line command ``zen-garden`` is a shortcut that invokes the 
-    ``run_module`` function from ``zen_garden.__main__``. This shortcut is 
+    ``run`` function from ``zen_garden``. This shortcut is 
     defined in the ``[project.scripts]`` section of the ``pyproject.toml``.
 
 
@@ -56,18 +56,18 @@ can be run from a python script using the following code:
 
 .. code-block:: python
 
-  from zen_garden.__main__ import run_module
+  from zen_garden import run
   import os
 
   os.chdir("<path\to\data>")
-  run_module(dataset = "<dataset_name>")
+  run(dataset = "<dataset_name>")
 
 Using a IDE, this python code can be run and debugged using the standard debug
 functionalities of the IDE. Any breakpoints set within the ZEN-garden module 
 will be stopped at when the script is run in debug mode. As described in the
 :ref:`additional remarks section for running model <running.additional_remarks>`,
 all command line flags for ZEN-garden can be directly added into the 
-``run_module`` function of ZEN-garden.
+``run`` function of ZEN-garden.
 
 
 .. _debug.IDE:

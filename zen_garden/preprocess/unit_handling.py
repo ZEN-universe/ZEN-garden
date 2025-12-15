@@ -729,7 +729,7 @@ class Scaling:
 
     def run_scaling(self):
         """
-        Runs the scaling algorithm. Function called in _internal.py.
+        Runs the scaling algorithm. Function called in runner.py.
         """
         logging.info(f"\n--- Start Scaling ---\n")
         t0 = time.perf_counter()

@@ -7,25 +7,12 @@ from copy import deepcopy
 import numpy as np
 import pytest
 
-from zen_garden._internal import main
-from zen_garden.__main__ import run_module
-from zen_garden.postprocess.results import Results
-from zen_garden.dataset_examples import download_example_dataset
+from zen_garden import run
+from zen_garden import Results
+from zen_garden import download_example_dataset
 
 # fixtures
 ##########
-
-# @pytest.fixture
-# def config():
-#     """
-#     :return: A new instance of the config
-#     """
-#     # TODO make work with new json! maybe use run_module from __main__.py directly
-#     from config import config
-#
-#     config.solver.keep_files = False
-#     return deepcopy(config)
-
 
 @pytest.fixture
 def folder_path():
@@ -153,7 +140,7 @@ def test_1a(folder_path):
    
     # run the test
     data_set_name = "test_1a"
-    run_module(
+    run(
         config=os.path.join("config_duals.json"),
         dataset=os.path.join(data_set_name),
     )
@@ -169,7 +156,7 @@ def test_1a(folder_path):
 def test_1b(folder_path):
     # run the test
     data_set_name = "test_1b"
-    run_module(
+    run(
         config=os.path.join(folder_path,"config.json"),
         dataset=os.path.join(folder_path,data_set_name),
         folder_output=os.path.join(folder_path,"outputs")
@@ -183,7 +170,7 @@ def test_1b(folder_path):
 def test_1c(folder_path):
     # run the test
     data_set_name = "test_1c"
-    run_module(
+    run(
         config=os.path.join(folder_path,"config.json"),
         dataset=os.path.join(folder_path,data_set_name),
         folder_output=os.path.join(folder_path,"outputs")
@@ -197,7 +184,7 @@ def test_1c(folder_path):
 def test_1d(folder_path):
     # run the test
     data_set_name = "test_1d"
-    run_module(
+    run(
         config=os.path.join(folder_path,"config.json"),
         dataset=os.path.join(folder_path,data_set_name),
         folder_output=os.path.join(folder_path,"outputs")
@@ -211,7 +198,7 @@ def test_1d(folder_path):
 def test_1e(folder_path):
     # run the test
     data_set_name = "test_1e"
-    run_module(
+    run(
         config=os.path.join(folder_path,"config.json"),
         dataset=os.path.join(folder_path,data_set_name),
         folder_output=os.path.join(folder_path,"outputs")
@@ -228,7 +215,7 @@ def test_1e(folder_path):
 def test_1f(folder_path):
     # run the test
     data_set_name = "test_1f"
-    run_module(
+    run(
         config=os.path.join(folder_path,"config.json"),
         dataset=os.path.join(folder_path,data_set_name),
         folder_output=os.path.join(folder_path,"outputs")
@@ -245,7 +232,7 @@ def test_1f(folder_path):
 def test_1g(folder_path):
     # run the test
     data_set_name = "test_1g"
-    run_module(
+    run(
         config=os.path.join(folder_path,"config.json"),
         dataset=os.path.join(folder_path,data_set_name),
         folder_output=os.path.join(folder_path,"outputs")
@@ -258,7 +245,7 @@ def test_1g(folder_path):
 def test_1h(folder_path):
     # run the test
     data_set_name = "test_1h"
-    run_module(
+    run(
         config=os.path.join(folder_path,"config.json"),
         dataset=os.path.join(folder_path,data_set_name),
         folder_output=os.path.join(folder_path,"outputs")
@@ -272,7 +259,7 @@ def test_1h(folder_path):
 def test_1i(folder_path):
     # run the test
     data_set_name = "test_1i"
-    run_module(
+    run(
         config=os.path.join(folder_path,"config.json"),
         dataset=os.path.join(folder_path,data_set_name),
         folder_output=os.path.join(folder_path,"outputs")
@@ -285,7 +272,7 @@ def test_1i(folder_path):
 def test_1j(folder_path):
     # run the test
     data_set_name = "test_1j"
-    run_module(
+    run(
         config=os.path.join(folder_path,"config_duals.json"),
         dataset=os.path.join(folder_path,data_set_name),
         folder_output=os.path.join(folder_path,"outputs")
@@ -298,7 +285,7 @@ def test_1j(folder_path):
 def test_2a(folder_path):
     # run the test
     data_set_name = "test_2a"
-    run_module(
+    run(
         config=os.path.join(folder_path,"config.json"),
         dataset=os.path.join(folder_path,data_set_name),
         folder_output=os.path.join(folder_path,"outputs")
@@ -312,7 +299,7 @@ def test_2a(folder_path):
 def test_2b(folder_path):
     # run the test
     data_set_name = "test_2b"
-    run_module(
+    run(
         config=os.path.join(folder_path,"config.json"),
         dataset=os.path.join(folder_path,data_set_name),
         folder_output=os.path.join(folder_path,"outputs")
@@ -326,7 +313,7 @@ def test_2b(folder_path):
 def test_2c(folder_path):
     # run the test
     data_set_name = "test_2c"
-    run_module(
+    run(
         config=os.path.join(folder_path,"config.json"),
         dataset=os.path.join(folder_path,data_set_name),
         folder_output=os.path.join(folder_path,"outputs")
@@ -340,7 +327,7 @@ def test_2c(folder_path):
 def test_3a(folder_path):
     # run the test
     data_set_name = "test_3a"
-    run_module(
+    run(
         config=os.path.join(folder_path,"config.json"),
         dataset=os.path.join(folder_path,data_set_name),
         folder_output=os.path.join(folder_path,"outputs")
@@ -354,7 +341,7 @@ def test_3a(folder_path):
 def test_3b(folder_path):
     # run the test
     data_set_name = "test_3b"
-    run_module(
+    run(
         config=os.path.join(folder_path,"config.json"),
         dataset=os.path.join(folder_path,data_set_name),
         folder_output=os.path.join(folder_path,"outputs")
@@ -370,7 +357,7 @@ def test_3b(folder_path):
 def test_3c(folder_path):
     # run the test
     data_set_name = "test_3c"
-    run_module(
+    run(
         config=os.path.join(folder_path,"config.json"),
         dataset=os.path.join(folder_path,data_set_name),
         folder_output=os.path.join(folder_path,"outputs")
@@ -386,7 +373,7 @@ def test_3c(folder_path):
 def test_3d(folder_path):
     # run the test
     data_set_name = "test_3d"
-    run_module(
+    run(
         config=os.path.join(folder_path,"config.json"),
         dataset=os.path.join(folder_path,data_set_name),
         folder_output=os.path.join(folder_path,"outputs")
@@ -404,7 +391,7 @@ def test_3d(folder_path):
 def test_3e(folder_path):
     # run the test
     data_set_name = "test_3e"
-    run_module(
+    run(
         config=os.path.join(folder_path,"config.json"),
         dataset=os.path.join(folder_path,data_set_name),
         folder_output=os.path.join(folder_path,"outputs")
@@ -420,7 +407,7 @@ def test_3e(folder_path):
 def test_3f(folder_path):
     # run the test
     data_set_name = "test_3f"
-    run_module(
+    run(
         config=os.path.join(folder_path,"config.json"),
         dataset=os.path.join(folder_path,data_set_name),
         folder_output=os.path.join(folder_path,"outputs")
@@ -436,7 +423,7 @@ def test_3f(folder_path):
 def test_3g(folder_path):
     # run the test
     data_set_name = "test_3g"
-    run_module(
+    run(
         config=os.path.join(folder_path,"config.json"),
         dataset=os.path.join(folder_path,data_set_name),
         folder_output=os.path.join(folder_path,"outputs")
@@ -452,7 +439,7 @@ def test_3g(folder_path):
 def test_3h(folder_path):
     # run the test
     data_set_name = "test_3h"
-    run_module(
+    run(
         config=os.path.join(folder_path,"config.json"),
         dataset=os.path.join(folder_path,data_set_name),
         folder_output=os.path.join(folder_path,"outputs")
@@ -468,7 +455,7 @@ def test_3h(folder_path):
 def test_3i(folder_path):
     # run the test
     data_set_name = "test_3i"
-    run_module(
+    run(
         config=os.path.join(folder_path,"config.json"),
         dataset=os.path.join(folder_path,data_set_name),
         folder_output=os.path.join(folder_path,"outputs")
@@ -483,7 +470,7 @@ def test_3i(folder_path):
 def test_3j(folder_path):
     # run the test
     data_set_name = "test_3j"
-    run_module(
+    run(
         config=os.path.join(folder_path,"config_duals.json"),
         dataset=os.path.join(folder_path,data_set_name),
         folder_output=os.path.join(folder_path,"outputs")
@@ -498,7 +485,7 @@ def test_3j(folder_path):
 def test_4a(folder_path):
     # run the test
     data_set_name = "test_4a"
-    run_module(
+    run(
         config=os.path.join(folder_path,"config.json"),
         dataset=os.path.join(folder_path,data_set_name),
         folder_output=os.path.join(folder_path,"outputs")
@@ -514,7 +501,7 @@ def test_4a(folder_path):
 def test_4b(folder_path):
     # run the test
     data_set_name = "test_4b"
-    run_module(
+    run(
         config=os.path.join(folder_path,"config.json"),
         dataset=os.path.join(folder_path,data_set_name),
         folder_output=os.path.join(folder_path,"outputs")
@@ -530,7 +517,7 @@ def test_4b(folder_path):
 def test_4c(folder_path):
     # run the test
     data_set_name = "test_4c"
-    run_module(
+    run(
         config=os.path.join(folder_path,"config.json"),
         dataset=os.path.join(folder_path,data_set_name),
         folder_output=os.path.join(folder_path,"outputs")
@@ -544,7 +531,7 @@ def test_4c(folder_path):
 def test_4d(folder_path):
     # run the test
     data_set_name = "test_4d"
-    run_module(
+    run(
         config=os.path.join(folder_path,"config.json"),
         dataset=os.path.join(folder_path,data_set_name),
         folder_output=os.path.join(folder_path,"outputs")
@@ -560,7 +547,7 @@ def test_4d(folder_path):
 def test_5a(folder_path):
     # run the test
     data_set_name = "test_5a"
-    run_module(
+    run(
         config=os.path.join(folder_path,"config.json"),
         dataset=os.path.join(folder_path,data_set_name),
         folder_output=os.path.join(folder_path,"outputs")
@@ -576,7 +563,7 @@ def test_5a(folder_path):
 def test_5b(folder_path):
     # run the test
     data_set_name = "test_5b"
-    run_module(
+    run(
         config=os.path.join(folder_path,"config.json"),
         dataset=os.path.join(folder_path,data_set_name),
         folder_output=os.path.join(folder_path,"outputs")
@@ -590,7 +577,7 @@ def test_5b(folder_path):
 def test_5c(folder_path):
     # run the test
     data_set_name = "test_5c"
-    run_module(
+    run(
         config=os.path.join(folder_path,"config.json"),
         dataset=os.path.join(folder_path,data_set_name),
         folder_output=os.path.join(folder_path,"outputs")
@@ -604,7 +591,7 @@ def test_5c(folder_path):
 def test_5d(folder_path):
     # run the test
     data_set_name = "test_5d"
-    run_module(
+    run(
         config=os.path.join(folder_path,"config.json"),
         dataset=os.path.join(folder_path,data_set_name),
         folder_output=os.path.join(folder_path,"outputs")
@@ -618,7 +605,7 @@ def test_5d(folder_path):
 def test_6a(folder_path):
     # run the test
     data_set_name = "test_6a"
-    run_module(
+    run(
         config=os.path.join(folder_path,"config.json"),
         dataset=os.path.join(folder_path,data_set_name),
         folder_output=os.path.join(folder_path,"outputs")
@@ -634,7 +621,7 @@ def test_6a(folder_path):
 def test_7a(folder_path):
     # run the test
     data_set_name = "test_7a"
-    run_module(
+    run(
         config=os.path.join(folder_path,"config_objective.json"),
         dataset=os.path.join(folder_path,data_set_name),
         folder_output=os.path.join(folder_path,"outputs")
@@ -648,7 +635,7 @@ def test_7a(folder_path):
 def test_8a(folder_path):
     # run the test
     data_set_name = "test_8a"
-    run_module(
+    run(
         config=os.path.join(folder_path,"config.json"),
         dataset=os.path.join(folder_path,data_set_name),
         folder_output=os.path.join(folder_path,"outputs")
@@ -663,7 +650,7 @@ def test_9a(folder_path):
     # run the test
     data_set_name = "test_9a"
     with pytest.raises(AssertionError, match='The attribute units defined in the energy_system are not consistent!'):
-        run_module(
+        run(
             config=os.path.join(folder_path,"config.json"),
             dataset=os.path.join(folder_path,data_set_name),
             folder_output=os.path.join(folder_path,"outputs")
@@ -672,7 +659,7 @@ def test_9a(folder_path):
 def test_10a(folder_path):
     # run the test
     data_set_name = "test_10a"
-    run_module(
+    run(
         config=os.path.join(folder_path,"config.json"),
         dataset=os.path.join(folder_path,data_set_name),
         folder_output=os.path.join(folder_path,"outputs")
@@ -684,4 +671,4 @@ def test_10a(folder_path):
 
 if __name__ == "__main__":
     folder_path = os.path.dirname(__file__)
-    test_1g(folder_path)
+    test_1a(folder_path)

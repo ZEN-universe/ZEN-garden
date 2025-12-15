@@ -52,9 +52,7 @@ analyzing the results rather than the visualization platform.
 
 .. code:: python
 
-    from zen_garden.dataset_examples import download_example_dataset
-    from zen_garden.__main__ import run_module
-    from zen_garden.postprocess.results.results import Results
+    from zen_garden import download_example_dataset, run, Results
 
     # dataset name
     dataset = "1_base_case"
@@ -63,7 +61,7 @@ analyzing the results rather than the visualization platform.
     download_example_dataset(dataset)
 
     # run ZEN-garden
-    run_module(dataset=dataset)
+    run(dataset=dataset)
 
     # load results
     r = Results(f"./outputs/{dataset}")

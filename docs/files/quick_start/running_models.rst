@@ -59,26 +59,26 @@ Additional Remarks and Tips
 
    .. code-block:: python
     
-      from zen_garden.__main__ import run_module
+      from zen_garden import run
       import os
 
       os.chdir("<path\to\data>")
-      run_module(dataset = "<dataset_name>")
+      run(dataset = "<dataset_name>")
 
    In this code, replace ``<path\to\data>`` with the path to your data folder 
    (i.e. the directory that contains the ``config.json``) and replace 
    ``<dataset_name>`` with the name of the dataset you would like to run. 
    
-   Note that the ``run_module`` function can take as an optional input arguments 
+   Note that the ``run`` function can take as an optional input arguments 
    any flags which can also be specified in the command line. For instance, in 
    order to specify a config file, you can use the code:
 
 
    .. code-block:: python
     
-      from zen_garden.__main__ import run_module
+      from zen_garden import run
       import os
 
       os.chdir("<path\to\data>")
-      run_module(dataset = "<dataset_name>",
+      run(dataset = "<dataset_name>",
                  config="<my_config.json>")
