@@ -9,21 +9,27 @@ Running a model
 Run ZEN-garden
 --------------
 
-1. In a terminal or command prompt, change your directory to the ``data`` folder 
-   (i.e. the directory that contains your model and the ``config.json``)::
+1. In a terminal or command prompt, change your directory to the ``<data>`` 
+   folder (i.e. the directory that contains your model and 
+   the ``config.json``)
+
+   .. code:: shell
       
-      cd /path/to/your/data
+      cd <data>
 
 2. Activate the ZEN-garden environment (see :ref:`instructions 
    <installation.activate>`).
 
 3. Execute the following lines to run ZEN-garden::
       
-      zen-garden --dataset="<dataset_name>"
+      zen-garden --dataset="1_base_case"
 
-   Here, replace ``<dataset_name>`` with the name of the dataset that you 
-   wish to run (e.g. ``1_base_case``). Once the model finishes, the output files 
-   will be stored in a new directory ``outputs`` in your current folder.
+   This will run the ZEN-garden model ``1_base_case``, provide that it was 
+   downloaded as described in :ref:`Builing a model 
+   <building.building>`. To run other datasets, replace ``"1_base_case"`` with 
+   the name of (or path to) the dataset that you wish to run. Once the model 
+   finishes, the output files will be stored in a new directory ``outputs`` 
+   in your current working directory.
 
 
 .. tip::
@@ -39,7 +45,7 @@ Additional Remarks and Tips
 
 1. ZEN-garden can also be run without providing any command line flags:
 
-   .. code-block::
+   .. code-block:: shell
     
       zen-garden
    
@@ -47,9 +53,11 @@ Additional Remarks and Tips
    ``analysis/dataset`` entry of ``config.json``. 
 
 2. If you have multiple ``config.json`` files in your working directory, you can 
-   specify the file you want to use with the ``config`` argument::
+   specify the file you want to use with the ``config`` argument:
 
-     zen-garden --config=<my_config.json> --dataset=<my_dataset>
+   .. code-block:: shell
+
+      zen-garden --config="config.json" --dataset="1_base_case"
 
 
 3. ZEN-garden can also be run from with a python script. You may find this to be 
@@ -62,16 +70,19 @@ Additional Remarks and Tips
       from zen_garden import run
       import os
 
-      os.chdir("<path\to\data>")
-      run(dataset = "<dataset_name>")
+      os.chdir("<data>")
+      run(dataset = "1_base_case")
 
-   In this code, replace ``<path\to\data>`` with the path to your data folder 
-   (i.e. the directory that contains the ``config.json``) and replace 
-   ``<dataset_name>`` with the name of the dataset you would like to run. 
+   In this code, replace ``<data>`` with the path to your data folder 
+   (i.e. the directory that contains the ``config.json``). The 
+   ``dataset`` argument of the function ``run`` can be used to specify the 
+   name of the dataset that should be run. 
    
    Note that the ``run`` function can take as an optional input arguments 
    any flags which can also be specified in the command line. For instance, in 
-   order to specify a config file, you can use the code:
+   order to specify a config file, you can use the code below. See 
+   :func:`zen_garden.runner.run` for full documentation of the ``run`` 
+   function.
 
 
    .. code-block:: python
@@ -79,6 +90,5 @@ Additional Remarks and Tips
       from zen_garden import run
       import os
 
-      os.chdir("<path\to\data>")
-      run(dataset = "<dataset_name>",
-                 config="<my_config.json>")
+      os.chdir("<data>")
+      run(dataset = "1_base_case", config="<my_config.json>")

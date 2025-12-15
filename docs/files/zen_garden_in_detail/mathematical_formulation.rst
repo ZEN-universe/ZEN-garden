@@ -84,7 +84,7 @@ and the cost of carbon emissions :math:`OPEX_y^\mathrm{e}`.
 .. math::
     :label: capex_y
 
-    CAPEX_y = \sum_{h\in\mathcal{H}}\sum_{s\in\mathcal{S}}
+    CAPEX_y = \sum_{h\in\mathcal{H}}
     \sum_{p\in\mathcal{P}} A_{h,p,y}
 
 Each technology :math:`h\in\mathcal{H}` is either a conversion technology 
@@ -260,7 +260,7 @@ entire year, where each timestep is multiplied by the time step duration
     :label: opex_v
 
     OPEX_y^\mathrm{t,v} = \sum_{t\in\mathcal{T}}\tau_t 
-    \bigg(\sum_{h\in\mathcal{H}} \sum_{s\in\mathcal{S}} 
+    \bigg(\sum_{h\in\mathcal{H}} 
     \sum_{p\in\mathcal{P}} O^\mathrm{t}_{h,p,t,y} \bigg).
 
 For conversion technologies :math:`i \in \mathcal{I}`, the variable operational 
