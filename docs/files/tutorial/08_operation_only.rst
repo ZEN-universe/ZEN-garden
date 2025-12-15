@@ -205,7 +205,7 @@ the following question:
 
       .. code:: python
         
-        from zen_garden.postprocess.results.results import Results
+        from zen_garden import Results
         from matplotlib import pyplot as plt
         import numpy as np
 

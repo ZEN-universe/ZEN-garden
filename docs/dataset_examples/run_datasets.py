@@ -2,7 +2,7 @@ import os
 import re
 from pathlib import Path
 import pytest
-from zen_garden.__main__ import run_module
+from zen_garden import run
 
 
 def find_dataset_files():
@@ -31,9 +31,9 @@ def test_dataset(dataset_name):
     config = str(dataset_main_path / "config.json")
     if dataset_name.replace('_', '').endswith("expectederror"):
         with pytest.raises(AssertionError):
-            run_module(["--config", config, "--dataset", dataset_name])
+            run(["--config", config, "--dataset", dataset_name])
     else:
-        run_module(["--config", config, "--dataset", dataset_name])
+        run(["--config", config, "--dataset", dataset_name])
 
 
 if __name__ == "__main__":

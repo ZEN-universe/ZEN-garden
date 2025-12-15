@@ -180,7 +180,7 @@ the ZEN-garden environment. Then, load the results with the following code:
 
 .. code:: python
 
-    from zen_garden.postprocess.results.results import Results
+    from zen_garden import Results
     r = Results(path='<result_folder>')
 
 The path ``<result_folder>`` is the path to the results folder of the dataset, 
@@ -332,7 +332,7 @@ Example Exercises
 
    .. code:: python
 
-    from zen_garden.postprocess.results.results import Results
+    from zen_garden import Results
     r = Results(path='<result_folder>')
     capacity_CH = r.get_total('capacity', index=("natural_gas_boiler", None, "CH"), year = 0).iloc[0,0]
     capacity_DE = r.get_total('capacity', index=("natural_gas_boiler", None, "CH"), year = 0).iloc[0,0]
@@ -350,7 +350,7 @@ Example Exercises
 
    .. code:: python
     
-    from zen_garden.postprocess.results.results import Results
+    from zen_garden import Results
     import numpy as np
     r = Results(path='<result_folder>')
     demand_DE = r.get_full_ts('demand', index=("electricity", "CH"), year=0)
@@ -377,7 +377,7 @@ Let's assume you have the following two result objects:
 
 .. code:: python
 
-    from zen_garden.postprocess.results.results import Results
+    from zen_garden import Results
     r1 = Results(path='<result_folder_1>')
     r2 = Results(path='<result_folder_2>')
 

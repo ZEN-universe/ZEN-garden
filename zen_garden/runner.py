@@ -3,26 +3,52 @@ This function runs ZEN garden,it is executed in the __main__.py script.
 Compilation  of the optimization problem.
 """
 import importlib.util
+from pathlib import Path
 import logging
 import os
 import importlib
 from .optimization_setup import OptimizationSetup
 from .postprocess.postprocess import Postprocess
 from .utils import setup_logger, InputDataChecks, StringUtils, ScenarioUtils
+import zen_garden.default_config as default_config
+import json
+import warnings
 
 # we setup the logger here
 setup_logger()
 
 
-def main(config, dataset_path=None, job_index=None, folder_output_path=None):
+def run(config = "./config.json", dataset=None, job_index=None, 
+               folder_output=None):
     """
-    This function runs ZEN garden,
-    it is executed in the __main__.py script
+    Run ZEN-garden.
 
-    :param config: A config instance used for the run
-    :param dataset_path: If not None, used to overwrite the config.analysis.dataset
-    :param job_index: The index of the scenario to run or a list of indices, if None, all scenarios are run in sequence
-    :param folder_output_path: If not None, used to overwrite the config.analysis.folder_output
+    This function is the primary programmatic entry point for running
+    ZEN-garden. When called, it reads the configuration, loads the model
+    input data, constructs and solves the optimization problem, and saves
+    the results.
+
+    Args:
+        config (str): Path to the configuration file (e.g. ``config.json``).
+            If the file is located in the current working directory, the
+            filename alone may be specified. Defaults to ``"./config.json"``.
+        dataset (str): Path to the folder containing the input dataset
+            (e.g. ``"./1_base_case"``). If located in the current working
+            directory, the folder name alone may be used. Defaults to the
+            ``dataset`` value specified in the configuration file.
+        folder_output (str): Path to the folder where outputs will be saved.
+            Defaults to ``"./outputs"``.
+        job_index (list[int] | None): Indices of jobs (scenarios) to run.
+            For example, ``job_index=[1]`` runs only the first scenario.
+            Defaults to ``None`` (run all jobs).
+
+    Returns:
+        OptimizationSetup: The fully set up and solved optimization problem.
+
+    Examples:
+        >>> from zen_garden import run, download_example_dataset
+        >>> download_example_dataset("1_base_case")
+        >>> run("1_base_case")
     """
 
     # print the version
@@ -32,13 +58,33 @@ def main(config, dataset_path=None, job_index=None, folder_output_path=None):
     # prevent double printing
     logging.propagate = False
 
+    ### import the config
+    if not os.path.exists(config):
+        config = config.replace(".py", ".json")
+    config_path, config_file = os.path.split(os.path.abspath(config))
+    if config_file.endswith(".py"):
+        spec = importlib.util.spec_from_file_location("module", Path(config_path) / config_file)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        config = module.config
+        warnings.warn(
+            "Use of the `config.py` file is deprecated and will be removed " \
+            "in ZEN-garden v3.0.0. Please switch to using a `config.json` " \
+            "file instead.",
+            DeprecationWarning,
+            stacklevel=2
+        )
+    else:
+        with open(Path(config_path) / config_file, "r") as f:
+            config = default_config.Config(**json.load(f))
+
     # overwrite the path if necessary
-    if dataset_path is not None:
+    if dataset is not None:
         # logging.info(f"Overwriting dataset to: {dataset_path}")
-        config.analysis.dataset = dataset_path
-    if folder_output_path is not None:
-        config.analysis.folder_output = os.path.abspath(folder_output_path)
-        config.solver.solver_dir = os.path.abspath(folder_output_path)
+        config.analysis.dataset = dataset
+    if folder_output is not None:
+        config.analysis.folder_output = os.path.abspath(folder_output)
+        config.solver.solver_dir = os.path.abspath(folder_output)
     logging.info(f"Optimizing for dataset {config.analysis.dataset}")
     # get the abs path to avoid working dir stuff
     config.analysis.dataset = os.path.abspath(config.analysis.dataset)
