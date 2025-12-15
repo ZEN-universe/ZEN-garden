@@ -154,9 +154,9 @@ def cli_zen_garden():
     Examples:
         Basic usage in a command line prompt:
 
-        >>> zen-garden --config=".\config.json" --dataset="1_base_case"
-    """
+        >>> zen-garden --config=".\\config.json" --dataset="1_base_case"
 
+    """    
     # parse command line arguments
     parser = build_parser()
     args = parser.parse_args()
