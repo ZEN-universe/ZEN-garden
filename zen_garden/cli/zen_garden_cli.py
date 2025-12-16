@@ -39,8 +39,8 @@ def build_parser() -> argparse.ArgumentParser:
     Returns:
         argparse.ArgumentParser: An argument parser configured for the
         ZEN-Garden command-line interface.
-    """
 
+    """
     description = (
         "Run ZEN-Garden with a given config file. By default, the config file "
         "is read from the current working directory. You may specify a config "
@@ -103,8 +103,8 @@ def resolve_job_index(job_index:str, job_index_var:str) -> list[int]:
     Returns:
         list[int] | None: List of job indices to run in the current instance of
             ZEN-garden, or ``None`` if no job index is specified.
-    """
 
+    """
     if job_index:
         return [int(i) for i in job_index.split(",")]
     elif ((env_value := os.environ.get(job_index_var)) is not None):
@@ -112,7 +112,7 @@ def resolve_job_index(job_index:str, job_index_var:str) -> list[int]:
     else:
         return None
 
-def cli_zen_garden():
+def create_zen_garden_cli():
     """
     Entry point for the `zen-garden` command-line interface.
     
