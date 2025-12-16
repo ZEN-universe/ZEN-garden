@@ -115,22 +115,6 @@ def check_get_total_get_full_ts(
 
 # All the tests
 ###############
-def test_0a(folder_path):
-    # test that dataset examples can be succesfully downloaded
-    
-    # change working directory to output folder   
-    cwd = os.getcwd()
-    out_dir = os.path.join(folder_path,"outputs")
-    if not os.path.exists(out_dir):
-        os.makedirs(out_dir)
-    os.chdir(out_dir)
-
-    # download example
-    download_example_dataset("1_base_case")
-
-    # change directory back to original one
-    os.chdir(os.getcwd())
-
 def test_1a(folder_path):
     # add duals for this test
 
@@ -261,19 +245,6 @@ def test_1i(folder_path):
     data_set_name = "test_1i"
     run(
         config=os.path.join(folder_path,"config.json"),
-        dataset=os.path.join(folder_path,data_set_name),
-        folder_output=os.path.join(folder_path,"outputs")
-    )
-
-    # read the results and check again
-    res = Results(os.path.join(folder_path, "outputs", data_set_name))
-    compare_variables_results(data_set_name, res, folder_path)
-
-def test_1j(folder_path):
-    # run the test
-    data_set_name = "test_1j"
-    run(
-        config=os.path.join(folder_path,"config_duals.json"),
         dataset=os.path.join(folder_path,data_set_name),
         folder_output=os.path.join(folder_path,"outputs")
     )
@@ -479,21 +450,6 @@ def test_3i(folder_path):
     data_set_name = "test_3i"
     run(
         config=os.path.join(folder_path,"config.json"),
-        dataset=os.path.join(folder_path,data_set_name),
-        folder_output=os.path.join(folder_path,"outputs")
-    )
-
-    # read the results and check again
-    res = Results(os.path.join(folder_path, "outputs", data_set_name))
-    compare_variables_results(data_set_name, res, folder_path)
-    # test functions get_total() and get_full_ts()
-    check_get_total_get_full_ts(res)
-
-def test_3j(folder_path):
-    # run the test
-    data_set_name = "test_3j"
-    run(
-        config=os.path.join(folder_path,"config_duals.json"),
         dataset=os.path.join(folder_path,data_set_name),
         folder_output=os.path.join(folder_path,"outputs")
     )
@@ -713,4 +669,4 @@ def test_10a(folder_path):
 
 if __name__ == "__main__":
     folder_path = os.path.dirname(__file__)
-    test_1k(folder_path)
+    test_7b(folder_path)

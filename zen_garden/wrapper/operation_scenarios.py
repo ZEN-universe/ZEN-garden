@@ -26,23 +26,6 @@ def operation_scenarios(
     if (job_index is not None) and not isinstance(job_index, list):
         raise TypeError("Job index must be a list of integers")
     
-
-    # if dataset_op is None:
-    #     dataset_op = Path(dataset_path) / (dataset_name + "__operation")
-    # if system_op is None:
-    #     system_op = Path(dataset_path) / dataset_name / "system.json"
-    # if scenarios_op is None:
-    #     system_op = Path(dataset_path) / dataset_name / "scenarios.json"
-
-    # run ZEN-garden on the original dataset
-    # if not use_existing:
-    #     run(
-    #         config=config, 
-    #         dataset=dataset,           
-    #         folder_output=folder_output,
-    #         job_index=job_index
-    #     )
-
     # extract scenario from the simulation results
     r = Results(Path(folder_output) / dataset_name)
     scenario_list = list(r.solution_loader.scenarios.keys())
@@ -69,6 +52,7 @@ def operation_scenarios(
         rounding_value = 10**-5
         utils.capacity_addition_2_existing_capacity(
             Path(folder_output) / dataset_name, 
+            dataset,
             dataset_op,
             scenario,
             rounding_value
@@ -93,5 +77,7 @@ def operation_scenarios(
             shutil.rmtree(dataset_op)
 
 if __name__ == "__main__":
-    os.chdir("./data")
-    operation_scenarios(dataset="1_base_case")
+    print(os.getcwd())
+    os.chdir("../../../03_ZEN_data/Reg4Fuels/")
+    operation_scenarios(dataset="Reg4Fuels_V9", folder_output="./outputs/Reg4Fuels_V9",
+                        job_index=[0])

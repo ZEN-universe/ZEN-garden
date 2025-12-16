@@ -1,4 +1,5 @@
 from zen_garden.postprocess.results.results import Results
+from zen_garden.preprocess.unit_handling import UnitHandling
 from pathlib import Path
 import pandas as pd
 import shutil
@@ -6,17 +7,20 @@ import os
 import json
 import numpy as np
 
-
-def capacity_addition_2_existing_capacity(out_dir,
-                                          dataset_op,
-                                          scenario,
-                                          rounding_value=None):
+def capacity_addition_2_existing_capacity(
+    out_dir: Path | str ,
+    dataset: Path | str,
+    dataset_op: Path | str,
+    scenario: str,
+    rounding_value: int | None = None
+):
     """
     out_dir ... directory of simulation_ouputs
     dataset_op ... new model dataset to which to add capacity additions as 
     existing capacities.
     """
     out_dir = Path(out_dir)
+    dataset = Path(dataset)
     dataset_op = Path(dataset_op)
 
     # load results
@@ -32,7 +36,8 @@ def capacity_addition_2_existing_capacity(out_dir,
         scenario_name=scenario
     )
     system = r.get_system()
-
+    solver = r.get_solver()
+    unit_handling = UnitHandling(dataset / "energy_system", solver.rounding_decimal_points_units)
     # add as capacities to input files of operations simulation
     #  Iterate over technology types: conversion, transport, storage
     technologies = {
@@ -43,7 +48,8 @@ def capacity_addition_2_existing_capacity(out_dir,
     for element_name, elements in technologies.items():
         print(f"Transferring capacity for {element_name}")
         if element_name == "set_transport_technologies":
-            location = r.get_total('set_nodes_on_edges').index.values
+            location = r.get_total('set_nodes_on_edges',
+                                   scenario_name=scenario).index.values
             location_name = "edge"
         else:
             location = system.set_nodes
@@ -58,9 +64,6 @@ def capacity_addition_2_existing_capacity(out_dir,
             index_full).sort_index()
         # Iterate over each technology in that type
         for tech in elements:
-            print(tech)
-            if tech == 'photovoltaics':
-                print("hi")
             if (element_name == "set_conversion_technologies"
                     and tech in system.set_retrofitting_technologies):
                 tech_folder_op = (dataset_op / "set_technologies" /
@@ -125,19 +128,23 @@ def capacity_addition_2_existing_capacity(out_dir,
                     attributes = json.load(f)
                     capacity_existing_unit = (
                         attributes['capacity_existing']['unit'])
+                
+                # convert to base units
+                unit_multiplier = (
+                    unit_handling.get_unit_multiplier(capacity_existing_unit, tech)
+                )
+                capacity_addition_tech["capacity_existing" + suffix] = (
+                    capacity_addition_tech["capacity_existing" + suffix]
+                    /unit_multiplier 
+                )
 
-                # check that the units of capacity_existing and 
-                # capacity_addition match
-                if (capacity_addition_unit.replace(" ", "").lower()
-                        != capacity_addition_unit.replace(" ", "").lower()):
-                    raise NotImplementedError(
-                        f"Existing capacity for technology {tech} is not "
-                        "specified in base units. The ZEN-garden wrapper "
-                        "currently requires that existing capacities (from "
-                        "`attributes.json`) are expressed in the base "
-                        "units (from 'energy_system.base_units.json`). "
-                        f"\nExpected: {capacity_addition_unit}\n"
-                        f"Received: {capacity_existing_unit}")
+                if not np.isclose(unit_multiplier, 1):
+                    print(
+                        f"Multiplying capacity addition (unit:{capacity_addition_unit}) " \
+                        f"by a scale factor of {1/unit_multiplier} to convert to units " \
+                        f"{capacity_existing_unit}"
+                    )
+
 
                 if os.path.exists(fp_capacity_existing):
                     capacity_existing = pd.read_csv(fp_capacity_existing,

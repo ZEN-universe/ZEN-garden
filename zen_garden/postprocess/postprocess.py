@@ -295,13 +295,8 @@ class Postprocess:
 
             # skip variables not selected to be saved
             if (
-                not self.optimization_setup.operation_only_phase 
-                and self.solver.selected_saved_variables 
+                self.solver.selected_saved_variables 
                 and name not in self.solver.selected_saved_variables
-            ) or (
-                self.optimization_setup.operation_only_phase
-                and self.solver.selected_saved_variables_operation
-                and name not in self.solver.selected_saved_variables_operation
             ):
                 continue
             
@@ -326,24 +321,14 @@ class Postprocess:
 
             units = self._unit_df(units,df.index)
 
-            # rename for operations-only duals
-            if self.optimization_setup.operation_only_phase:
-                name = name + '_operation'
-
             # transform the dataframe to a json string and load it into the dictionary as dict
             data_frames[name] = self._transform_df(df,doc,units)
         
-        # choose whether to write new file or append to existing file
-        if self.optimization_setup.operation_only_phase:
-            mode = 'a'
-        else: 
-            mode = 'w'
-
         # write file
         self.write_file(
             self.name_dir.joinpath('var_dict'), 
             data_frames, 
-            mode = mode
+            mode = 'w'
         )
 
     def save_duals(self):
@@ -361,13 +346,8 @@ class Postprocess:
 
             # skip variables not selected to be saved
             if (
-                not self.optimization_setup.operation_only_phase 
-                and self.solver.selected_saved_duals
+                self.solver.selected_saved_duals 
                 and name not in self.solver.selected_saved_duals
-            ) or (
-                self.optimization_setup.operation_only_phase
-                and self.solver.selected_saved_duals_operation
-                and name not in self.solver.selected_saved_duals_operation
             ):
                 continue
             
@@ -394,24 +374,14 @@ class Postprocess:
             if len(df.index.names) == len(index_list):
                 df.index.names = index_list
 
-            # rename for operations-only duals
-            if self.optimization_setup.operation_only_phase:
-                name = name + '_operation'
-
             # we transform the dataframe to a json string and load it into the dictionary as dict
             data_frames[name] = self._transform_df(df,doc)
-
-        # choose whether to write new file or append to existing file
-        if self.optimization_setup.operation_only_phase:
-            mode = 'a'
-        else: 
-            mode = 'w'
 
         # write file
         self.write_file(
             self.name_dir.joinpath('dual_dict'), 
             data_frames, 
-            mode = mode
+            mode = 'w'
         )
 
     def save_system(self):
