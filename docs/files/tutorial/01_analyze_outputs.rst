@@ -385,7 +385,7 @@ Then you can compare the two result objects with the following code:
 
 .. code:: python
 
-    from zen_garden.postprocess.comparisons import compare_model_values, compare_configs
+    from zen_garden import compare_model_values, compare_configs
     compare_parameters = compare_model_values([r1, r2], component_type = 'parameter')
     compare_variables = compare_model_values([r1, r2], component_type = 'variable')
     compare_config = compare_configs([r1, r2])

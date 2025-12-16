@@ -2,7 +2,7 @@ import argparse
 import sys
 from zen_garden.utils import download_example_dataset
 
-def cli_zen_example():
+def create_zen_example_cli():
     """ 
     Entry point for the `zen-example` command-line interface.
 

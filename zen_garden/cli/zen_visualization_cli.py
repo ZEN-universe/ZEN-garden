@@ -1,6 +1,6 @@
 from zen_temple.main import parse_arguments_and_run
 
-def cli_zen_visualization():
+def create_zen_visualization_cli():
     """
     Entry point for the `zen-visualization` command-line interface.
 
