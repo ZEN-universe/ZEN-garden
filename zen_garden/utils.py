@@ -351,6 +351,8 @@ def slice_df_by_index(df,index_tuple) -> dict:
             if isinstance(index[key], list):
                 df = df.loc[df.index.get_level_values(key).isin(index[key])]
             else:
+                if index[key] not in df.index.get_level_values(key):
+                    df = pd.DataFrame(columns=df.columns)  # return empty dataframe if value not in index
                 df = df.xs(index[key], level=key, drop_level=False)
     return df
 
