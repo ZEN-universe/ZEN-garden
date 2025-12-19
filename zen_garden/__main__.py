@@ -3,7 +3,7 @@ Runs the main function of ZEN-Garden.
 Compilation  of the optimization problem.
 """
 from .runner import run
-from .cli.zen_garden import cli_zen_garden
+from .cli.zen_garden_cli import create_zen_garden_cli
 import warnings
 
 def run_module(config = "./config.py", dataset = None, 
@@ -68,4 +68,4 @@ def run_module(config = "./config.py", dataset = None,
 
 if __name__ == "__main__":
 
-    cli_zen_garden()
+    create_zen_garden_cli()
