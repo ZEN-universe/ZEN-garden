@@ -20,14 +20,38 @@ from zen_garden.utils import get_label_position
 
 class UnitHandling:
     """
-    Class containing the unit handling procedure
+    A class for managing and converting units in an energy system model.
+
+    This class facilitates unit consistency checks, dimensionality analysis, and 
+    unit conversions in energy systems models, particularly those that involve 
+    energy carriers, technologies, and conversion processes. It helps in 
+    defining and converting units across various parameters and ensures that 
+    unit definitions are consistent across the entire system.
+
+    Key functionalities:
+        - Loading and extracting base units for the system.
+        - Converting input units into a unified system of base units.
+        - Checking for dimensional consistency between input units and 
+          base units.
+        - Redefining and verifying the dimensional matrix of the system.
+        - Ensuring that unit conversions and combinations are performed 
+          accurately.
     """
 
     def __init__(self, folder_path, rounding_decimal_points_units):
-        """ initialization of the unit_handling instance
+        """
+        Initializes an instance of the UnitHandling class.
 
-        :param folder_path: The path to the folder containing the system specifications
-        :param round_decimal_points: rounding tolerance
+        This constructor processes and stores the system's base unit definitions 
+        and other configurations. It also defines the rounding tolerance for 
+        unit conversions.
+
+        Args:
+            folder_path (str or Path): The path to the folder containing system 
+                specifications (e.g., "unit_definitions.txt", "base_units.csv").
+            rounding_decimal_points_units (int): The number of decimal points to 
+                which units should be rounded during conversion and consistency 
+                checks.
         """
         self.folder_path = folder_path
         self.rounding_decimal_points_units = rounding_decimal_points_units
@@ -37,7 +61,22 @@ class UnitHandling:
         self.carrier_energy_quantities = {}
 
     def get_base_units(self):
-        """ gets base units of energy system """
+        """
+        Extracts and initializes the base units of the energy system.
+
+        This method loads unit definitions, processes them to extract base 
+        units, and constructs the dimensionality matrix for the system. 
+        It also checks for duplicates and verifies that no unit can be 
+        constructed from other base units. Additionally, it ensures that all 
+        base units have a valid dimensionality and that no linear dependencies 
+        exist between them.
+
+        Raises:
+            KeyError: If there are multiple base units defined for the same 
+                dimensionality.
+            AssertionError: If there are linear dependencies between base units 
+                that can't be resolved.
+        """
         _list_base_unit = self.extract_base_units()
         self.ureg = UnitRegistry()
 
@@ -98,12 +137,26 @@ class UnitHandling:
             dependent_dims = dependent_dims[pos_ones[:, 1], :]
         self.dim_analysis["dependent_dims"] = dependent_dims
         # check that no base unit can be directly constructed from the others (e.g., GJ from GW and hour)
-        assert ~UnitHandling.check_pos_neg_boolean(dependent_dims, axis=1), f"At least one of the base units {list(self.base_units.keys())} can be directly constructed from the others"
+        assert not UnitHandling.check_pos_neg_boolean(dependent_dims, axis=1), f"At least one of the base units {list(self.base_units.keys())} can be directly constructed from the others"
 
     def extract_base_units(self):
-        """ extracts base units of energy system
+        """
+        Extracts the base units from either a CSV or JSON file.
 
-        :return list_base_units: list of base units """
+        If the CSV file (``base_units.csv``) is not found, the method will
+        fall back on a JSON file (``base_units.json``) to load the base units.
+        If ``hour`` is not found in the list of base units, a warning will 
+        be raised. This method provides the list of all base units that will be
+        used for further calculations and unit consistency checks.
+
+        Returns:
+            list:
+                A list of base units defined in the system.
+        
+        Raises:
+            UserWarning: If the hour unit is not found in the base unit 
+            definitions.
+        """
         if os.path.exists(os.path.join(self.folder_path / "base_units.csv")):
             list_base_units = pd.read_csv(self.folder_path / "base_units.csv").squeeze().values.tolist()
             logging.warning("DeprecationWarning: Specifying the base units in .csv file format is deprecated. Use the .json file format instead.")
@@ -117,11 +170,30 @@ class UnitHandling:
         return list_base_units
 
     def calculate_combined_unit(self, input_unit, return_combination=False):
-        """ calculates the combined unit for converting an input_unit to the base units
+        """
+        Represents the input unit as a combination of base units.
 
-        :param input_unit: string of input unit
-        :param return_combination: If True, return the combination of units
-        :return combined_unit: multiplication factor """
+        This method constructs a combined unit by converting an input unit into 
+        a set of base units. It first checks the dimensionality of the input 
+        unit and constructs the appropriate combined unit through dimensional 
+        analysis. It then checks for unit consistency with the base units 
+        and returns the combined unit.
+
+        Args:
+            input_unit (str): The input unit to be converted (e.g., ``kg``, ``m/s``).
+            return_combination (bool): If True, also returns the base unit 
+                combination, in addition to the combined unit.
+
+        Returns:
+            pint.Quantity or tuple: 
+                The combined unit represented as a ``pint.Quantity``. If 
+                ``return_combination=True``, returns a tuple containing the 
+                combined unit and the base unit combination.
+                
+        Raises:
+            AssertionError: If the dimensionality of the input unit cannot be 
+                matched with base units.
+        """   
         # check if "h" and thus "planck_constant" in unit
         self.check_if_invalid_hourstring(input_unit)
         # create dimensionality vector for input_unit
@@ -223,13 +295,34 @@ class UnitHandling:
 
     #ToDo: check if combined_unit is described correctly in the header
     def get_unit_multiplier(self, input_unit, attribute_name, path=None, combined_unit=None):
-        """ calculates the multiplier for converting an input_unit to the base units
+        """
+        Calculates the multiplier for converting an input unit into the base 
+        units.
 
-        :param input_unit: string of input unit
-        :param attribute_name: name of attribute
-        :param path: path of element
-        :param combined_unit: input unit expressed in base units
-        :return multiplier: multiplication factor """
+        This method computes the scaling factor (multiplier) needed to convert 
+        the given `input_unit` into a base unit. If the `input_unit` is already 
+        a base unit, the multiplier is 1. If the `input_unit` is not in base 
+        units, it computes the conversion using dimensional analysis and ensures 
+        that the resulting multiplier meets the rounding tolerance.
+
+        Args:
+            input_unit (str): The unit to be converted (e.g., "kg", "m/s").
+            attribute_name (str): The name of the attribute that this unit 
+                corresponds to.
+            path (str, optional): The file path associated with the unit 
+                (for logging purposes).
+            combined_unit (pint.Quantity, optional): The combined unit in 
+                base units. If provided, skips recomputing the combined unit.
+
+        Returns:
+            float: 
+                The multiplier that scales the `input_unit` into the 
+                base units.
+
+        Raises:
+            AssertionError: If the multiplier is smaller than the rounding 
+                tolerance.
+        """
         # if input unit is already in base units --> the input unit is base unit, multiplier = 1
         if input_unit in self.base_units:
             return 1
@@ -254,13 +347,30 @@ class UnitHandling:
             return round(multiplier, self.rounding_decimal_points_units)
 
     def convert_unit_into_base_units(self, input_unit, get_multiplier=False, attribute_name=None, path=None):
-        """Converts the input_unit into base units and returns the multiplier such that the combined unit mustn't be computed twice
+        """
+        Converts an input unit into base units 
 
-        :param input_unit: unit read from input csv files
-        :param attribute_name: name of the attribute the input_unit corresponds to
-        :param path: path of the attribute's csv file
-        :param get_multiplier: bool whether multiplier should be returned or not
-        :return: multiplier to convert input_unit to base  units, pint Quantity of input_unit converted to base units
+        This method converts an input unit into the equivalent base units, 
+        following the dimensional analysis process to express the `input_unit`
+        as a combination of base units. Additionally, it can return the 
+        multiplier that scales the input unit into the base units, depending on 
+        the value of `get_multiplier`.
+
+        Args:
+            input_unit (str): The unit to be converted (e.g., "kg", "m/s").
+            attribute_name (str, optional): The name of the attribute 
+                corresponding to the unit.
+            path (str, optional): The file path of the attribute for 
+                logging purposes.
+            get_multiplier (bool, optional): Whether to return the multiplier 
+                for the conversion. If False, returns the base unit combination.
+
+        Returns:
+            pint.Quantity or tuple: 
+                If `get_multiplier` is False, returns the 
+                `input_unit` converted to base units as a `pint.Quantity`. 
+                If `get_multiplier` is True, returns the multiplier as a float 
+                and the base units as a `pint.Quantity`.
         """
         # convert attribute unit into unit combination of base units
         combined_unit = None
@@ -277,9 +387,24 @@ class UnitHandling:
             return attribute_unit_in_base_units
 
     def consistency_checks_input_units(self, optimization_setup):
-        """Checks if the units of the parameters specified in the input csv files are consistent
+        """
+        Performs unit consistency checks on the input data.
 
-        :param optimization_setup: OptimizationSetup object
+        This method checks whether the units of the parameters defined in the 
+        input CSV files are consistent with the system's dimensional framework. 
+        It compares units across elements and technologies and ensures that the 
+        units match the expected dimensional definitions. The check also 
+        includes units for conversion factors, retrofit flow coupling factors, 
+        and other related parameters.
+
+        Args:
+            optimization_setup (OptimizationSetup): The setup object containing 
+                information about the optimization problem, including elements, 
+                technologies, and carriers.
+        
+        Raises:
+            AssertionError: If unit inconsistencies are found in the input 
+                files or optimization setup.
         """
         if not optimization_setup.solver.check_unit_consistency:
             return
@@ -344,11 +469,21 @@ class UnitHandling:
         self.save_carrier_energy_quantities(optimization_setup)
 
     def _check_for_power_power(self, energy_quantity_units, energy_quantity_units_check):
-        """if unit consistency is not fulfilled because of conversion factor or retrofit_flow_coupling_factor,
-        try to change "wrong" conversion factor or retrofit_flow_coupling_factor units from power/power to energy/energy (since both is allowed)
+        """
+        Adjusts conversion factors or retrofit flow coupling factor units from power/power to energy/energy if needed.
 
-        :param energy_quantity_units: dict containing attribute names and their energy quantity units
-        :param energy_quantity_units_check: dict containing the energy quantity terms in base units for checking consistency
+        This helper method tries to resolve unit inconsistencies that might 
+        arise due to the units of conversion factors or retrofit flow coupling 
+        factors. If units are inconsistent and involve power terms, the method 
+        attempts to change the units from "power/power" to "energy/energy" to 
+        resolve the inconsistency. This is done since both types of units are
+        allowed as inputs.
+
+        Args:
+            energy_quantity_units (dict): Dictionary containing the energy 
+                quantity units for each attribute.
+            energy_quantity_units_check (dict): Dictionary of energy quantities 
+                in base units to check for consistency.
         """
         exclude_strings = ["conversion_factor", "retrofit_flow_coupling_factor"]
         if self._is_inconsistent(energy_quantity_units_check) and not self._is_inconsistent(energy_quantity_units_check, exclude_strings=exclude_strings):
@@ -362,15 +497,31 @@ class UnitHandling:
                     energy_quantity_units_check[key] = energy_quantity_units_check[key] * self.ureg(time_base_unit).to_base_units().units
 
     def assert_unit_consistency(self, elements, energy_quantity_units, energy_quantity_units_check, item, optimization_setup, reference_carrier_name, unit_dict):
-        """Asserts that the units of the attributes of an element are consistent
+        """
+        Asserts that the units of the attributes of an element are consistent 
+        with the system's dimensional framework.
 
-        :param elements: list of all elements
-        :param energy_quantity_units: dict containing attribute names and their energy quantity terms
-        :param energy_quantity_units_check: dict containing the energy quantity terms in base units for checking consistency
-        :param item: element or energy system
-        :param optimization_setup: OptimizationSetup object
-        :param reference_carrier_name: name of reference carrier if item is a conversion technology
-        :param unit_dict: dict containing attribute names along with their units in base units
+        This method checks if the units of attributes defined in the input 
+        files (or the optimization setup) are consistent with each other and 
+        with the base units. It verifies that all the parameters' units 
+        conform to dimensional analysis and resolves any inconsistencies.
+
+        Args:
+            elements (list): List of all elements in the system.
+            energy_quantity_units (dict): Dictionary of attribute names and 
+                their corresponding energy quantity units.
+            energy_quantity_units_check (dict): Dictionary of energy quantity 
+                units in base units for consistency checking.
+            item: The specific element or energy system being checked.
+            optimization_setup (OptimizationSetup): The optimization setup 
+                containing all system parameters.
+            reference_carrier_name (str): The name of the reference carrier 
+                associated with the element (if applicable).
+            unit_dict (dict): Dictionary of unit specifications for attributes.
+
+        Raises:
+            AssertionError: If inconsistencies are found in the units of the 
+                attributes.
         """
         attributes_with_lowest_appearance = self._get_attributes_with_least_often_appearing_unit(energy_quantity_units)
         # assert unit consistency
@@ -417,11 +568,26 @@ class UnitHandling:
                 f"The attribute units defined in the energy_system are not consistent! Most probably, the unit(s) of the attribute(s) {self._get_units_of_wrong_attributes(wrong_atts=energy_quantity_units, unit_dict=unit_dict)} are wrong.")
 
     def _is_inconsistent(self, energy_quantity_units,exclude_strings=None):
-        """Checks if the units of the attributes of an element are inconsistent
+        """
+        Checks if the units of the attributes of an element are inconsistent.
 
-        :param energy_quantity_units: dict containing attribute names and their energy quantity terms
-        :param exclude_strings: string for which consistency is not checked
-        :return: bool whether the units are consistent or not
+        This method identifies inconsistencies in the units of attributes 
+        by comparing the energy  quantity terms across all attributes. It allows 
+        for the exclusion of certain attributes from the consistency check 
+        based on the `exclude_strings` parameter.
+
+        Args:
+            energy_quantity_units (dict): Dictionary containing attribute 
+                names and their corresponding energy quantity terms (e.g., 
+                "kg/s", "m^2").
+            exclude_strings (list, optional): List of strings for which c
+                consistency is not checked (e.g., ["conversion_factor", 
+                "retrofit_flow_coupling_factor"]).
+
+        Returns:
+            bool: 
+                Returns `True` if there are inconsistencies (i.e., if the 
+                energy quantity units differ), otherwise returns `False`.
         """
         # exclude attributes which are not of interest for consistency
         if exclude_strings:
@@ -433,11 +599,22 @@ class UnitHandling:
             return False
 
     def _get_units_of_wrong_attributes(self, wrong_atts, unit_dict):
-        """Gets units of attributes showing wrong units
+        """
+        Gets units of attributes showing wrong units.
 
-        :param wrong_atts: dict containing attribute names along with their energy_quantity part of attributes which have inconsistent units
-        :param unit_dict: dict containing attribute names along with their units in base units
-        :return: dict containing attribute names along with their unit in base unit of attributes which have inconsistent units
+        This method retrieves the units in base units for attributes that have 
+        inconsistent energy quantities based on the provided `wrong_atts`.
+
+        Args:
+            wrong_atts (dict): Dictionary containing attribute names with
+                inconsistent units.
+            unit_dict (dict): Dictionary of attribute names and their unit 
+                specifications in base units.
+
+        Returns:
+            dict: 
+                A dictionary where keys are attribute names, and values 
+                are their corresponding units in base units.
         """
         wrong_atts_with_units = {}
         for att in wrong_atts:
@@ -445,12 +622,24 @@ class UnitHandling:
         return wrong_atts_with_units
 
     def _write_inconsistent_units_file(self, inconsistent_attributes, item_name, analysis, reference_carrier_name=None):
-        """Writes file of attributes and their units which cause unit inconsistency
+        """
+        Writes a file documenting attributes and their units that cause unit 
+        inconsistency.
 
-        :param inconsistent_attributes: attributes which are not consistent
-        :param item_name: element name or energy system name which shows inconsistent units
-        :param analysis:  dictionary defining the analysis settings
-        :param reference_carrier_name: name of reference carrier if item is a conversion technology
+        This method writes a JSON file that contains a record of the 
+        inconsistent attributes and their units for a given element or energy 
+        system. This helps with identifying and resolving unit issues in the 
+        system.
+
+        Args:
+            inconsistent_attributes (dict): Attributes that are inconsistent in 
+                terms of their units.
+            item_name (str): The name of the element or energy system that has 
+                inconsistent units.
+            analysis (dict): Dictionary containing analysis settings, including 
+                output folder.
+            reference_carrier_name (str, optional): The name of the reference 
+                carrier, if the item is a conversion technology.
         """
         inconsistent_attributes_dict = {"element_name": item_name, "reference_carrier": reference_carrier_name, "attribute_names": str(inconsistent_attributes.keys())}
         directory = os.path.join(analysis.folder_output, os.path.basename(analysis.dataset))
@@ -461,10 +650,20 @@ class UnitHandling:
             json.dump(inconsistent_attributes_dict, json_file)
 
     def _get_attributes_with_least_often_appearing_unit(self, energy_quantity_units):
-        """Finds all attributes which have the least often appearing unit
+        """
+        Finds attributes that have the least commonly appearing unit.
 
-        :param energy_quantity_units: dict containing attribute names and their energy quantity terms
-        :return: attribute names and energy quantity terms which appear the least often in energy_quantity_units
+        This method identifies the attributes with the least frequent unit occurrence. 
+        The assumption is that the least frequent unit is most likely the incorrect one.
+
+        Args:
+            energy_quantity_units (dict): Dictionary containing attribute names 
+                and their corresponding energy quantity terms.
+
+        Returns:
+            dict: 
+                A dictionary of attributes that have the least frequently 
+                appearing units, along with their energy quantity terms.
         """
         min_unit_count = np.inf
         attributes_with_lowest_appearance = {}
@@ -478,10 +677,20 @@ class UnitHandling:
         return attributes_with_lowest_appearance
 
     def get_most_often_appearing_energy_unit(self, energy_units):
-        """finds a carriers most likely correct energy unit
+        """
+        Finds the most commonly appearing energy unit for a carrier's attributes.
 
-        :param energy_units: all the energy_quantity terms of a carriers attributes
-        :return: most frequently appearing energy quantity
+        This method identifies the most frequently used energy unit across the 
+        attributes of a given carrier, which is assumed to be the correct one.
+
+        Args:
+            energy_units (dict): Dictionary containing attribute names and their 
+                energy quantity terms.
+
+        Returns:
+            str: 
+                The energy unit that appears most frequently across the 
+                attributes of the carrier.
         """
         max_unit_count = 0
         correct_value = None
@@ -494,14 +703,28 @@ class UnitHandling:
         return correct_value
 
     def _get_conversion_factor_units(self, conversion_element, unit_specs, reference_carrier, elements):
-        """Splits conversion factor units into dependent carrier and reference carrier part
-
-        :param conversion_element: Conversion technology element the conversion factor belongs to
-        :param unit_specs: dict containing unit category and unit as pint Quantity in base units
-        :param reference_carrier: Carrier object of conversion_element's reference carrier
-        :param elements: list containing all existing elements
-        :return: dict of conversion_element's conversion factors' units separated by dependent carrier and reference carrier
         """
+        Splits conversion factor units into dependent and reference carrier units.
+
+        This method takes a conversion factor and splits its units into two parts: 
+        one for the dependent carrier and one for the reference carrier. This is 
+        necessary when dealing with complex unit formats like "MW/MW".
+
+        Args:
+            conversion_element (object): The conversion technology element the 
+                conversion factor belongs to.
+            unit_specs (dict): Dictionary containing unit category and unit as 
+                pint Quantity in base units.
+            reference_carrier (Carrier): The reference carrier object for the 
+                conversion technology.
+            elements (list): List of all elements in the system, used to find 
+                dependent carriers.
+
+        Returns:
+            dict: 
+                A dictionary of conversion factor units separated by 
+                dependent carrier and reference carrier.
+        """        
         conversion_factor_units = {}
         for dependent_carrier_name, cf_unit_specs in unit_specs.items():
             assert cf_unit_specs["unit"] != "1", f"Since there doesn't exist a conversion_factor file for the technology {conversion_element.name}, the attribute conversion_factor_default must be defined with units to ensure unit consistency"
@@ -543,11 +766,23 @@ class UnitHandling:
         return conversion_factor_units
 
     def _get_number_of_division_signs_energy_quantity(self, carrier_units, power=False):
-        """ Finds the most common energy quantity of a carrier and counts its number of division signs (or the number of division signs of the resulting power unit)
+        """
+        Counts the number of division signs in a carrier's energy or power unit.
 
-        :param carrier_units: unit attribute of the underlying carrier element
-        :param power: bool to get the number of division signs of the most common power quantity (energy quantity divided by time)
-        :return: number of division signs of the carriers most common energy/power unit
+        This method counts the number of division signs ("/") in the most 
+        common energy or power unit of a carrier's attributes. It helps 
+        determine how energy or power is distributed across different units 
+        in the system.
+
+        Args:
+            carrier_units (dict): The units of the carrier element.
+            power (bool, optional): If `True`, it counts the number of division 
+                signs in the power unit (energy divided by time). Defaults to `False`.
+
+        Returns:
+            int: 
+                The number of division signs in the most common energy or 
+                power unit.
         """
         energy_units = {}
         time_base_unit = [key for key, value in self.base_units.items() if value == "[time]"][0]
@@ -560,11 +795,21 @@ class UnitHandling:
         return len(str(energy_unit_ref_carrier.units).split("/")) - 1
 
     def _remove_non_energy_units(self, unit_specs, attribute_name):
-        """Removes all non-energy dimensions from unit by multiplication/division
+        """
+        Removes all non-energy dimensions from a unit by multiplication/division.
 
-        :param unit_specs: dict containing unit category and unit as pint Quantity in base units
-        :param attribute_name: name of attribute whose unit is reduced to energy unit
-        :return: dict with attribute name and reduced unit
+        This method strips non-energy units (e.g., mass, time, etc.) from the 
+        specified unit and leaves only the energy quantity part. This is used 
+        for comparing energy quantities across different attributes.
+
+        Args:
+            unit_specs (dict): The unit specifications for the attribute.
+            attribute_name (str): The name of the attribute to be processed.
+
+        Returns:
+            dict: 
+                A dictionary containing the attribute name and the 
+                energy-only unit.
         """
         # dictionary which assigns unit dimensions to corresponding base unit namings
         distinct_dims = {"money": "[currency]", "distance": "[length]", "time": "[time]", "emissions": "[mass]"}
@@ -583,19 +828,35 @@ class UnitHandling:
 
     def save_carrier_energy_quantities(self, optimization_setup):
         """
-        saves energy_quantity units of carriers after consistency checks in order to assign units to the variables later on
+        Saves energy quantity units of carriers after consistency checks.
 
-        :param optimization_setup: optimization setup object
-        :return: dict of carrier units
+        This method stores the energy quantities of the carriers after they 
+        have been verified for unit consistency. It ensures that the units of 
+        the carrier's attributes are properly assigned to variables for later 
+        use in calculations.
+
+        Args:
+            optimization_setup (OptimizationSetup): The optimization setup 
+                containing system parameters.
+
+        Returns:
+            dict: 
+                A dictionary containing the carrier units.
         """
         for carrier in optimization_setup.dict_elements["Carrier"]:
             self.carrier_energy_quantities[carrier.name] = self._remove_non_energy_units(carrier.units["demand"], attribute_name=None)[None]
 
     def set_base_unit_combination(self, input_unit, attribute):
-        """ converts the input unit to the corresponding base unit
+        """
+        Converts the input unit to the corresponding base unit.
 
-        :param input_unit: unit of input
-        :param attribute: name of attribute
+        This method takes an input unit and converts it to its base unit 
+        equivalent, which can be used for further unit analysis. It also handles 
+        special cases where the input unit is `NaN` or dimensionless.
+
+        Args:
+            input_unit (str or Quantity): The unit to be converted to base units.
+            attribute (str): The name of the attribute that uses the unit.
         """
         # TODO combine overlap with get_unit_multiplier
         # if input unit is already in base units --> the input unit is base unit
@@ -615,41 +876,73 @@ class UnitHandling:
             self.dict_attribute_values[attribute] = {"base_combination": base_unit_combination, "values": None}
 
     def set_attribute_values(self, df_output, attribute):
-        """ saves the attributes values of an attribute
+        """
+        Saves the values of an attribute from a dataframe output.
 
-        :param df_output: output dataframe
-        :param attribute: attribute name
+        This method stores the values of a given attribute from a dataframe into 
+        the class' internal dictionary for future use.
+
+        Args:
+            df_output (DataFrame): The dataframe containing the output values for attributes.
+            attribute (str): The name of the attribute whose values are being saved.
         """
         if attribute in self.dict_attribute_values.keys():
             self.dict_attribute_values[attribute]["values"] = df_output
 
     def check_if_invalid_hourstring(self, input_unit):
         """
-        checks if "h" and thus "planck_constant" in input_unit
+        Checks if "h" in the input unit refers to the Planck constant.
 
-        :param input_unit: string of input_unit
+        This method ensures that the string "h" is not mistaken for the 
+        Planck constant when specifying time units in the system. It will raise 
+        an error if "h" is used incorrectly.
+
+        Args:
+            input_unit (str): The unit string to be checked.
         """
         _tuple_units = self.ureg(input_unit).to_tuple()[1]
         _list_units = [_item[0] for _item in _tuple_units]
         assert "planck_constant" not in _list_units, f"Error in input unit '{input_unit}'. Did you want to define hour? Use 'hour' instead of 'h' ('h' is interpreted as the planck constant)"
 
     def define_ton_as_metric(self):
-        """ redefines the "ton" as a metric ton """
+        """
+        Redefines the "ton" as a metric ton.
+
+        This method redefines the unit "ton" to represent the metric ton, ensuring 
+        consistency across the system when dealing with mass units.
+        """
         self.ureg.define("ton = metric_ton")
 
     def redefine_standard_units(self):
-        """ defines the standard units always required in ZEN and removes the rounding error for leap years."""
+        """
+        Redefines standard units required in the system.
+
+        This method sets up standard units such as "Euro", "year", and "ton", 
+        and ensures that the system handles leap years correctly.
+        """
         self.ureg.define("Euro = [currency] = EURO = Eur = €")
         self.ureg.define("year = 365 * day = a = yr = julian_year")
         self.ureg.define("ton = metric_ton")
 
     @staticmethod
     def check_pos_neg_boolean(array, axis=None):
-        """ checks if the array has only positive or negative booleans (-1,0,1).
+        """
+        Checks if the array contains only positive or negative booleans (-1, 0, 1).
 
-        :param array: numeric numpy array
-        :param axis: axis of dataframe
-        :return is_pos_neg_boolean: """
+        This method verifies if the input array contains values that are either 
+        positive or negative booleans, which is often used to check binary 
+        states in the optimization.
+
+        Args:
+            array (numpy.ndarray): The numeric array to be checked.
+            axis (int, optional): The axis of the dataframe along which the 
+                check is applied.
+
+        Returns:
+            bool: 
+                Returns `True` if the array contains only positive or 
+                negative booleans, otherwise returns `False`.
+        """
         if axis:
             is_pos_neg_boolean = np.apply_along_axis(lambda row: np.array_equal(np.abs(row), np.abs(row).astype(bool)), 1, array).any()
         else:
