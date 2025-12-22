@@ -178,6 +178,10 @@ class Scenario():
             return {}
 
     def _read_ureg(self,default_ureg) -> pint.UnitRegistry:
+
+        # suppress pint output about redefining units
+        logging.getLogger('pint').setLevel(logging.ERROR)
+        # load ureg
         ureg = copy.copy(default_ureg)
         unit_path = os.path.join(self.path, "unit_definitions.txt")
         if os.path.exists(unit_path):
