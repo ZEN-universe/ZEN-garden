@@ -21,6 +21,7 @@ import requests
 from importlib.metadata import metadata
 import zipfile
 import io
+import pandas as pd
 
 def setup_logger(level=logging.INFO):
     """ set up logger
