@@ -1,22 +1,38 @@
+
+## Summary
+
+Provde a brief summary of the changes proposed in this pull request. Include high-level details on what is changed and why the change is necessary.
+
 Closes # (if applicable).
 
-## Changes proposed in this Pull Request
 
+## Detailed list of changes
+
+List all changes in the the format `<type>:<description>`. Valid types include `fix`, `feat`, `docs`, `chore`, and `breaking`. This list will be used to automatically generate the changelog. Example :
+
+- fix: description of bug fix
+- feat: description of feature
+- docs: description of documentation changes
+- chore: description of maintainance tasks
+- breaking: description of breaking changes
 
 ## Checklist
-Please check all items that apply. If an item is not applicable, please remove it from the list.
+Please check all items that apply. If an item is not applicable, please remove 
+it from the list.
 
 ### PR structure
 - [ ] The PR has a descriptive title.
 - [ ] The corresponding issue is linked with # in the PR description.
+- [ ] Detailed list of changes was provided 
+
 
 ### Code quality
 - [ ] Newly introduced dependencies are added to `pyproject.toml`.
+- [ ] Code changes have been tested locally and all tests pass
 - [ ] Tests for new features were added:
-  - [ ] A new test folder is added or an existing test folder is adapted
   - [ ] The test is added to `run_tests.py` and `docu_test_cases.md`
   - [ ] The tested variables are added to `test_variables.json`
-- [ ] Code changes have been tested locally and all tests pass
+
 
 ### Code changes
 - [ ] If the name of an existing parameter is changed, the new and old name are added to `zen_garden/preprocess/parameter_change_log.py`
