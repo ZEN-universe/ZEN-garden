@@ -48,6 +48,7 @@ jobs:
     #   new_ver: ${{ steps.bv.outputs.new_ver }}
     env:
       NO_BUMP: ${{ needs.check_nobump.outputs.nobump }}
+      GH_TOKEN: ${{ github.token }}
     steps:
 
       - name: Check the value of nobump
