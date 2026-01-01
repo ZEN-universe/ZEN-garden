@@ -3,13 +3,15 @@ import re
 from datetime import date
 
 #pr_body_file = os.environ.get("PR_BODY_FILE", "pr_body.txt")
-pr_body_file = "./.github/pull_request_template.md"
+pr_body = os.getenv("PR_BODY")
+
 zen_garden_version = "v2.2.1"
 changelog_file = "CHANGELOG.md"
 
-# Read PR body
-with open(pr_body_file, "r") as f:
-    pr_body = f.read()
+# # Read PR body
+# pr_body_file = "./.github/pull_request_template.md"
+# with open(pr_body_file, "r") as f:
+#     pr_body = f.read()
 
 # Extract "Detailed list of changes" section
 match = re.search(
@@ -94,3 +96,6 @@ for change_type, items in categorized_changes.items():
 with open(changelog_file, "w", encoding="utf-8") as f:
     f.write(header + changelog_addition + changelog_existing)
 
+# Write to the GitHub Actions environment file
+# with open(os.environ["GITHUB_ENV"], "a") as env_file:
+#     env_file.write(f"NEW_VERSION={new_version}\n")

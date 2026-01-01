@@ -23,7 +23,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Check for '#nobump' in pull request title or body
+      - name: Check for '#nobump' in commit message title or body
         id: check_nobump
         run: |
           COMMIT_MESSAGE=$(git log -n 1 --pretty=format:"%B")
@@ -68,8 +68,30 @@ jobs:
           python -m pip install --upgrade pip
           pip install --upgrade bump2version
 
+      - name: Get PR info
+        id: pr_info
+        run: |
+          echo "COMMIT_SHA=${GITHUB_SHA}" >> $GITHUB_ENV
+
+      - name: Get PR number
+        id: get_pr
+        run: |
+          PR_NUMBER=$(gh api repos/${GITHUB_REPOSITORY}/commits/${GITHUB_SHA}/pulls \
+            -H "Accept: application/vnd.github.groot-preview+json" \
+            | jq '.[0].number')
+          echo "PR_NUMBER=$PR_NUMBER" >> $GITHUB_ENV
+          echo "PR_NUMBER: $PR_NUMBER"
+
+      - name: Get PR body
+        id: pr_body
+        run: |
+          BODY=$(gh api repos/${GITHUB_REPOSITORY}/pulls/$PR_NUMBER \
+            | jq -r '.body')
+          echo "PR_BODY=$BODY" >> $GITHUB_ENV
+          echo "PR body: $BODY"
+
       # Step to fetch the PR body and determine version bump type
-      - name: Get PR body and determine bump type
+      - name: Get Merge Commit Message and Determine Bump Type
         id: pr_info
         run: |
           #Get commit message
