@@ -92,7 +92,7 @@ jobs:
 
       # Step to fetch the PR body and determine version bump type
       - name: Get Merge Commit Message and Determine Bump Type
-        id: pr_info
+        id: commit_info
         run: |
           #Get commit message
           COMMIT_MESSAGE=$(git log -n 1 --pretty=format:"%B")
