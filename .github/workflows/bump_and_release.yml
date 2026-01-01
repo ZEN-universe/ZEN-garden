@@ -91,6 +91,11 @@ jobs:
           echo "PR_BODY=$BODY" >> $GITHUB_ENV
           echo "PR body: $BODY"
 
+      - name: Update Changelog
+        id: changelog
+        run: |
+          python scripts/update_changelog.py
+
       # Step to fetch the PR body and determine version bump type
       - name: Get Merge Commit Message and Determine Bump Type
         id: commit_info

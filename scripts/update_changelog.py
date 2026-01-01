@@ -1,11 +1,13 @@
 import os
 import re
 from datetime import date
+from importlib.metadata import version as get_version
+
 
 #pr_body_file = os.environ.get("PR_BODY_FILE", "pr_body.txt")
 pr_body = os.getenv("PR_BODY")
-
-zen_garden_version = "v2.2.1"
+print(pr_body)
+zen_garden_version = "v" + get_version("zen_garden")
 changelog_file = "CHANGELOG.md"
 
 # # Read PR body
