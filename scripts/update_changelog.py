@@ -3,18 +3,13 @@ import re
 from datetime import date
 from importlib.metadata import version as get_version
 
-
-#pr_body_file = os.environ.get("PR_BODY_FILE", "pr_body.txt")
-pr_body = os.getenv("PR_BODY")
-print(pr_body)
-
 zen_garden_version = "v" + get_version("zen_garden")
 changelog_file = "CHANGELOG.md"
+pr_body_file = "pr_body.txt" # saved in github action
 
-# # Read PR body
-# pr_body_file = "./.github/pull_request_template.md"
-# with open(pr_body_file, "r") as f:
-#     pr_body = f.read()
+## Read PR body
+with open(pr_body_file, "r") as f:
+    pr_body = f.read()
 
 # Extract "Detailed list of changes" section
 match = re.search(

@@ -88,7 +88,7 @@ jobs:
         run: |
           BODY=$(gh api repos/${GITHUB_REPOSITORY}/pulls/$PR_NUMBER \
             | jq -r '.body')
-          echo "PR_BODY=$BODY" >> $GITHUB_ENV
+          printf "%s" "$BODY" > pr_body.txt
           echo "PR body: $BODY"
 
       - name: Update Changelog
