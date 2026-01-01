@@ -7,7 +7,7 @@ on:
 
   pull_request:
     branches: 
-      - main
+      - release_notes
     types: [opened, edited, synchronize]
 
   push:
