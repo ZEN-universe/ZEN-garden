@@ -3,7 +3,7 @@ name: Bump and Release
 # Define when to run
 on:
   push:
-    branches: main
+    branches: release_notes
 
 # Env variables
 env:
@@ -139,7 +139,7 @@ jobs:
           token: ${{ secrets.PULL_REQUEST_PAT }}
           title: ${{ env.COMMIT_TITLE }}
           body: "Automated version bump #skiptests"
-          base: main
+          base: release_notes
           delete-branch: true  # optional: auto-delete branch after merge
 
       - name: Check outputs
