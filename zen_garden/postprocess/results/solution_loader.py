@@ -395,7 +395,6 @@ class SolutionLoader():
         series.index.names = new_index_names
         return series
 
-    @cache
     def get_component_data(
         self,
         scenario: Scenario,
@@ -492,7 +491,6 @@ class SolutionLoader():
 
         return ans
 
-    @cache
     def get_timestep_duration(
         self, scenario: Scenario, component: Component
     ) -> "pd.Series[Any]":
@@ -525,7 +523,6 @@ class SolutionLoader():
 
 
 
-    @cache
     def get_timesteps(
         self, scenario: Scenario, component: Component, year: int
     ) -> "pd.Series[Any]":
@@ -556,7 +553,6 @@ class SolutionLoader():
 
         return ans
 
-    @cache
     def get_timesteps_of_years(
         self, scenario: Scenario, ts_type: TimestepType, years: tuple
     ) -> "pd.DataFrame | pd.Series[Any]":
@@ -785,7 +781,6 @@ def get_has_units(h5_file: h5py.File,component_name: str,version: str) -> bool:
         raise ValueError(f"Value {has_units} for has_units not supported.")
     return has_units
 
-@cache
 def get_df_from_path(path: str, component_name: str, version: str, data_type: Literal["dataframe","units"] = "dataframe",index: Optional[tuple[str]] = None) -> "pd.Series[Any]":
     """
     Helper-function that returns a Pandas series given the path of a file and the
