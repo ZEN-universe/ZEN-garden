@@ -83,13 +83,19 @@ jobs:
           echo "PR_NUMBER=$PR_NUMBER" >> $GITHUB_ENV
           echo "PR_NUMBER: $PR_NUMBER"
 
-      - name: Get PR body
+      - name: Get PR body and author
         id: pr_body
         run: |
-          BODY=$(gh api repos/${GITHUB_REPOSITORY}/pulls/$PR_NUMBER \
-            | jq -r '.body')
+          PR_JSON=$(gh api repos/${GITHUB_REPOSITORY}/pulls/$PR_NUMBER)
+
+          BODY=$(echo "$PR_JSON" | jq -r '.body')
+          AUTHOR=$(echo "$PR_JSON" | jq -r '.user.login')
+
           printf "%s" "$BODY" > pr_body.txt
           echo "PR body: $BODY"
+
+          echo "PR_AUTHOR=$AUTHOR" >> $GITHUB_ENV
+
 
       - name: Update Changelog
         id: changelog
