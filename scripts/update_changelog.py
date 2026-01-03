@@ -1,6 +1,6 @@
 import os
 import re
-from datetime import date
+from datetime import date, datetime
 from importlib.metadata import version as get_version
 import tomllib  # Python 3.11+
 from pathlib import Path
@@ -167,6 +167,21 @@ def update_changelog(header, categorized_changes, changelog_existing,
     
     return header + changelog_addition + changelog_existing
 
+def suggest_branch_name(semver_bump, old_version, new_version):
+    
+    branch_name = f"v{new_version}-{datetime.now().strftime("%d.%m.%Y-%H.%M.%S")}"
+
+    return branch_name
+
+def suggest_commit_title(semver_bump, old_version, new_version):
+
+    if semver_bump != "none":
+        commit_title = f"Bump version: v{new_version} → v{old_version}"
+    else:
+        commit_title = f"Update changelog: v{new_version}"
+    
+    return commit_title
+
 if __name__ == "__main__":
 
     changelog_file = Path("CHANGELOG.md")
@@ -184,10 +199,16 @@ if __name__ == "__main__":
 
     changelog = update_changelog(header, categorized_changes, changelog_existing, semver_bump, pr_number, pr_author)
 
+    commit_title = suggest_commit_title(semver_bump, old_version, new_version)
+    branch_name = suggest_branch_name(semver_bump, old_version, new_version)
+    
     # Save new changelog file
     with open(changelog_file, "w", encoding="utf-8") as f:
         f.write(changelog)
 
     # Write to the GitHub Actions environment file
-    # with open(os.environ["GITHUB_ENV"], "a") as env_file:
-    #     env_file.write(f"NEW_VERSION={new_version}\n")
+    with open(os.environ["GITHUB_ENV"], "a") as env_file:
+        env_file.write(f"NEW_VERSION={new_version}\n")
+        env_file.write(f"OLD_VERSION={old_version}\n")
+        env_file.write(f"BRANCH_NAME={branch_name}\n")
+        env_file.write(f"COMMIT_TITLE={commit_title}\n")
