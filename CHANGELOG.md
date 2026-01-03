@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v3.0.0] - 2026-01-03 
+
+### New Features ✨
+- description of feature [[🔀 PR #1159](https://github.com/ZEN-universe/ZEN-garden/pull/1159) @csfunke]
+
+### Bug Fixes 🐛
+- description of bug fix [[🔀 PR #1159](https://github.com/ZEN-universe/ZEN-garden/pull/1159) @csfunke]
+
+### Documentation Changes 📝
+- description of documentation changes [[🔀 PR #1159](https://github.com/ZEN-universe/ZEN-garden/pull/1159) @csfunke]
+
+### Maintainance Tasks 🧹
+- description of maintainance tasks [[🔀 PR #1159](https://github.com/ZEN-universe/ZEN-garden/pull/1159) @csfunke]
+
+### BREAKING CHANGES ⚠️💥
+- description of breaking changes [[🔀 PR #1159](https://github.com/ZEN-universe/ZEN-garden/pull/1159) @csfunke]
+
 ## [v1.2.0] - 2024-05-08
 ### Added
 - new dataset creation tutorials and updated `dataset_creation_tutorial.md`
