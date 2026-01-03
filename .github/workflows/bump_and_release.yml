@@ -107,8 +107,9 @@ jobs:
         uses: peter-evans/create-pull-request@v7
         with:
           token: ${{ secrets.PULL_REQUEST_PAT }}
-          title: ${{ env.COMMIT_TITLE }}
-          body: "Automated version bump and changelog update #skiptests"
+          title: ${{ env.COMMIT_TITLE }} # PR
+          body: "Automated version bump and changelog update #skiptests" # PR
+          commit-message: ${{ env.COMMIT_TITLE }}
           base: release_notes
           branch: ${{ env.BRANCH_NAME }}
           delete-branch: true  # optional: auto-delete branch after merge
