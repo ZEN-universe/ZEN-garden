@@ -104,7 +104,7 @@ jobs:
       - name: Commit changes
         run: |
           git checkout -b $BRANCH_NAME
-          git commit -am $COMMIT_TITLE
+          git commit -am "$COMMIT_TITLE"
           git show HEAD
           git branch
           git status
