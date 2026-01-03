@@ -14,7 +14,7 @@ def extract_pr_info(pr_body_file: Path):
     if not pr_author:
         raise RuntimeError("PR_AUTHOR environment variable is not set")
     if not pr_number:
-        raise RuntimeError("PR_AUTHOR environment variable is not set")
+        raise RuntimeError("PR_NUMBER environment variable is not set")
     
     ## Read PR body
     with open(pr_body_file, "r") as f:
@@ -84,7 +84,7 @@ def determine_bump_type(categorized_changes):
 
     return semver_bump
 
-def bumpversion(pyproject_toml_file, semver_bump):
+def bumpversion(semver_bump: str, pyproject_toml_file: Path):
     
     # Extract current version
     version = get_zen_garden_version(pyproject_toml_file)
@@ -137,32 +137,33 @@ def parse_changelog(changelog_file: Path):
 
     return header, changelog_existing
 
-def update_changelog(header, categorized_changes, changelog_existing, semver_bump):
+def update_changelog(header, categorized_changes, changelog_existing, 
+                     semver_bump, pr_number, pr_author):
     # Append changes to CHANGELOG.md --------------------------------------
+    pr_info = f"[[🔀 PR #{pr_number}](https://github.com/ZEN-universe/ZEN-garden/pull/{pr_number}) @{pr_author}]"
 
     # initialize changelog additions
     changelog_addition = ""
 
     # add version number if bump
     if semver_bump != "none":
-        changelog_addition += f"\n## v{new_version}\n"
-
-    # add date 
-    changelog_addition += f"\n### [{date.today()}]\n"
+        changelog_addition += f"\n## [v{new_version}] - {date.today()} \n"
+    else:
+        changelog_addition += f"\n## [Unversioned Changes] - {date.today()} \n"
 
     type_labels = {
-        "feat": "Feature",
-        "fix": "Fix",
-        "docs": "Documenataion",
-        "chore": "Chores",
-        "breaking": "BREAKING CHANGES"
+        "feat": "New Features ✨",
+        "fix": "Bug Fixes 🐛",
+        "docs": "Documentation Changes 📝",
+        "chore": "Maintainance Tasks 🧹",
+        "breaking": "BREAKING CHANGES ⚠️💥"
     }
 
     for change_type, items in categorized_changes.items():
         if items:
-            changelog_addition += f"\n#### {type_labels[change_type]}\n"
+            changelog_addition += f"\n### {type_labels[change_type]}\n"
             for item in items:
-                changelog_addition += f"- {item}\n"
+                changelog_addition += f"- {item} {pr_info}\n"
     
     return header + changelog_addition + changelog_existing
 
@@ -173,8 +174,6 @@ if __name__ == "__main__":
     pyproject_toml_file = Path("pyproject.toml")
 
     pr_author, pr_number, pr_body = extract_pr_info(pr_body_file)
-    version, major, minor, patch = get_zen_garden_version(pyproject_toml_file)
-
     categorized_changes = parse_changes_from_pr_body(pr_body)
 
     semver_bump = determine_bump_type(categorized_changes)
@@ -183,7 +182,7 @@ if __name__ == "__main__":
 
     header, changelog_existing = parse_changelog(changelog_file)
 
-    changelog = update_changelog(header, categorized_changes, changelog_existing, semver_bump)
+    changelog = update_changelog(header, categorized_changes, changelog_existing, semver_bump, pr_number, pr_author)
 
     # Save new changelog file
     with open(changelog_file, "w", encoding="utf-8") as f:
