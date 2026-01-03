@@ -96,48 +96,15 @@ jobs:
 
           echo "PR_AUTHOR=$AUTHOR" >> $GITHUB_ENV
 
-
-      - name: Update Changelog
-        id: changelog
+      - name: Bump version and update changelog
+        id: bumpversion_changelog
         run: |
           python scripts/update_changelog.py
 
-      # Step to fetch the PR body and determine version bump type
-      - name: Get Merge Commit Message and Determine Bump Type
-        id: commit_info
+      - name: Commit changes
         run: |
-          #Get commit message
-          COMMIT_MESSAGE=$(git log -n 1 --pretty=format:"%B")
-
-          # Determine bump type based on commit message
-          if [[ "$COMMIT_MESSAGE" =~ \#major ]]; then
-            bump_type="major"
-          elif [[ "$COMMIT_MESSAGE" =~ "#minor" ]]; then
-            bump_type="minor"
-          else
-            bump_type="patch"
-          fi
-          
-          echo "bump_type=$bump_type" >> $GITHUB_ENV
-          echo "Commit Message: $COMMIT_MESSAGE"
-          echo "bump_type=$bump_type"
-
-      - name: Run bumpversion with appropriate type
-        run: |
-          bump2version ${{ env.bump_type }}  # Will be 'patch', 'minor', or 'major'
-          COMMIT_TITLE=$(git log -n 1 --pretty=format:"%s")
-          echo "COMMIT_TITLE=$COMMIT_TITLE" >> $GITHUB_ENV
-          git diff
-
-      - name: Get commit title
-        run: |
-          COMMIT_TITLE=$(git log -n 1 --pretty=format:"%s")
-          echo "COMMIT_TITLE=$COMMIT_TITLE" >> $GITHUB_ENV
-
-
-      - name: Check for changes after bump
-        run: |
-          git log --oneline -n 2
+          git checkout -b $BRANCH_NAME
+          git commit -am $COMMIT_TITLE
           git show HEAD
           git branch
           git status
@@ -200,6 +167,11 @@ jobs:
             sleep 10  # Wait for 30 seconds before checking again
           done
 
+      - name: Delete branch
+        run: |
+          git checkout main
+          git branch -D $BRANCH_NAME
+
   create_tag:
     name: Create tag for release
     if: ${{ github.repository == 'ZEN-universe/ZEN-garden' && github.ref == 'refs/heads/main'}}
@@ -217,30 +189,11 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git branch
-          
-      - name: Get version number
-        run: |
-          COMMIT_SUBJECT=$(git log -n 1 --pretty=format:"%s")
-          echo "commit subject: $COMMIT_SUBJECT"
-
-          # Extract the second version using grep with a regular expression
-          VERSION=$(echo "$COMMIT_SUBJECT" | grep -oP '\d+\.\d+\.\d+(?=\s*\()')
-
-          # Split the version into major, minor, and patch components
-          IFS='.' read -r MAJOR MINOR PATCH <<< "$VERSION"
-
-          # Output the results
-          echo "VERSION=$VERSION" >> $GITHUB_ENV
-          echo "Version: $VERSION"
-          echo "Major version: $MAJOR"
-          echo "Minor version: $MINOR"
-          echo "Patch version: $PATCH"
-
-          
+                  
       - name: Create and push tag
         run: |
-          echo "version: $env.VERSION"
-          git tag -a "v${{ env.VERSION }}" -m "Automated release for version v${{ env.VERSION }}"
+          echo "version: $NEW_VERSION"
+          git tag -a "v${{ $NEW_VERSION }}" -m "Automated release for version v${{ $NEW_VERSION }}"
           git push origin --tags
 
   release:
