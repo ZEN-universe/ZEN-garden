@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unversioned Changes] - 2026-01-03 
+
+### Maintainance Tasks 🧹
+- fix commit message title [[🔀 PR #1161](https://github.com/ZEN-universe/ZEN-garden/pull/1161) @csfunke]
+
 ## [v3.0.0] - 2026-01-03 
 
 ### New Features ✨
