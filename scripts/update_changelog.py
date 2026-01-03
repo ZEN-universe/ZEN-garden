@@ -176,7 +176,7 @@ def suggest_branch_name(semver_bump, old_version, new_version):
 def suggest_commit_title(semver_bump, old_version, new_version):
 
     if semver_bump != "none":
-        commit_title = f"Bump version: v{new_version} → v{old_version}"
+        commit_title = f"Bump version: v{old_version} → v{new_version}"
     else:
         commit_title = f"Update changelog: v{new_version}"
     
