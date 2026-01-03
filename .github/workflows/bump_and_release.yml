@@ -193,7 +193,7 @@ jobs:
       - name: Create and push tag
         run: |
           echo "version: $NEW_VERSION"
-          git tag -a "v${{ $NEW_VERSION }}" -m "Automated release for version v${{ $NEW_VERSION }}"
+          git tag -a "v${{ env.NEW_VERSION }}" -m "Automated release for version v${{ env.NEW_VERSION }}"
           git push origin --tags
 
   release:
