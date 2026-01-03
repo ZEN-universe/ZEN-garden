@@ -100,17 +100,7 @@ jobs:
         id: bumpversion_changelog
         run: |
           python scripts/update_changelog.py
-
-      - name: Commit changes
-        run: |
-          git checkout -b $BRANCH_NAME
-          git commit -am "$COMMIT_TITLE"
-          git push -u origin $BRANCH_NAME
-          git show HEAD
-          git branch
-          git status
-          git diff --name-only  # Check which files have changed
-          git log -n 1  # Check the last commit, to see if a version bump commit was made
+          rm -f pr_body.txt
 
       - name: Create Pull Request
         id: cpr
@@ -118,8 +108,9 @@ jobs:
         with:
           token: ${{ secrets.PULL_REQUEST_PAT }}
           title: ${{ env.COMMIT_TITLE }}
-          body: "Automated version bump #skiptests"
+          body: "Automated version bump and changelog update #skiptests"
           base: release_notes
+          branch: ${{ env.BRANCH_NAME }}
           delete-branch: true  # optional: auto-delete branch after merge
 
       - name: Check outputs
@@ -172,6 +163,8 @@ jobs:
         run: |
           git checkout main
           git branch -D $BRANCH_NAME
+          git push origin --delete $BRANCH_NAME
+          git push origin --delete create-pull-request/patch
 
   create_tag:
     name: Create tag for release
