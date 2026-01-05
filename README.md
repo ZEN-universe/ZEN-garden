@@ -12,6 +12,8 @@
 
 <img src="https://github.com/ZEN-universe/ZEN-garden/assets/114185605/d6a9aca9-74b0-4a82-8295-43e6a78b8450" alt="drawing" width="200"/>
 
+
+
 Welcome to the ZEN-garden! ZEN-garden is an optimization framework for energy transition pathways. 
 It is currently used to model the electricity system, hydrogen value chains, and carbon capture, storage and utilization (CCUS) value chains. 
 However, it is designed to be modular and flexible, and can be extended to model other types of energy systems, value chains or other network-based systems. 
