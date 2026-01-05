@@ -11,6 +11,7 @@
 #
 import os
 import sys
+import shutil
 from importlib.metadata import version as get_version
 from pathlib import Path
 sys.path.insert(0, os.path.abspath('..'))
@@ -135,3 +136,16 @@ html_favicon = "files/figures/general/zen_garden_logo_text.png"
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
 # html_static_path = ['_static']
+
+## ----------------------------------------------------------------------------
+# copy changelog to allow it to appear in the documentation.
+# GitHub expects the changelog in the root directory
+# Sphinx requires the changelog to be in the docs folder
+def copy_changelog(app):
+    src = Path(app.confdir).parent / "CHANGELOG.md"
+    dst = Path(app.confdir) / "files" / "api" / "generated" / "changelog.md"
+    if src.exists():
+        shutil.copy(src, dst)
+
+def setup(app):
+    app.connect("builder-inited", copy_changelog)
