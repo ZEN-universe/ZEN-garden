@@ -28,7 +28,7 @@ class Results:
     """
     The Results class is used to extract and process the results of a model run.
     """
-    def __init__(self, path: str):
+    def __init__(self, path: str, enable_cache: bool = True):
         """
         Initializes the Results class.
 
@@ -36,7 +36,7 @@ class Results:
         """
         assert os.path.exists(path), f"The output folder {Path(path).absolute()} does not exist."
         assert len(os.listdir(path)) > 0, f"The output folder {Path(path).absolute()} is empty."
-        self.solution_loader = SolutionLoader(path)
+        self.solution_loader = SolutionLoader(path, enable_cache=enable_cache)
         self.has_scenarios = len(self.solution_loader.scenarios) > 1
         first_scenario = next(iter(self.solution_loader.scenarios.values()))
         self.name = Path(first_scenario.analysis.dataset).name
