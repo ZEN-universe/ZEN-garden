@@ -14,9 +14,9 @@ import logging
 
 from typing import Optional, Any,Literal
 from enum import Enum
-from functools import cache
 from zen_garden.default_config import Analysis, System, Solver
 from zen_garden.utils import slice_df_by_index
+from .cache import ConditionalCache
 
 class ComponentType(Enum):
     parameter: str = "parameter"
@@ -304,11 +304,12 @@ class SolutionLoader():
     Implementation of a SolutionLoader.
     """
 
-    def __init__(self, path: str) -> None:
+    def __init__(self, path: str, enable_cache: bool = True) -> None:
         self.path = path
         assert len(os.listdir(path)) > 0, f"Path {path} is empty."
         self._scenarios: dict[str, Scenario] = self._read_scenarios()
         self._series_cache: dict[str, "pd.Series[Any]"] = {}
+        self.enable_cache = enable_cache
 
     @property
     def scenarios(self) -> dict[str, Scenario]:
@@ -395,6 +396,7 @@ class SolutionLoader():
         series.index.names = new_index_names
         return series
 
+    @ConditionalCache("enable_cache")
     def get_component_data(
         self,
         scenario: Scenario,
@@ -491,6 +493,7 @@ class SolutionLoader():
 
         return ans
 
+    @ConditionalCache("enable_cache")
     def get_timestep_duration(
         self, scenario: Scenario, component: Component
     ) -> "pd.Series[Any]":
@@ -521,8 +524,7 @@ class SolutionLoader():
 
         return time_step_duration
 
-
-
+    @ConditionalCache("enable_cache")
     def get_timesteps(
         self, scenario: Scenario, component: Component, year: int
     ) -> "pd.Series[Any]":
@@ -553,6 +555,7 @@ class SolutionLoader():
 
         return ans
 
+    @ConditionalCache("enable_cache")
     def get_timesteps_of_years(
         self, scenario: Scenario, ts_type: TimestepType, years: tuple
     ) -> "pd.DataFrame | pd.Series[Any]":
