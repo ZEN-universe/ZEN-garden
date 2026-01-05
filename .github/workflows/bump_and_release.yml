@@ -160,8 +160,7 @@ jobs:
           git checkout main
           git branch -D $BRANCH_NAME
           git push origin --delete $BRANCH_NAME
-          git push origin --delete create-pull-request/patch
-
+          
   create_tag:
     name: Create tag for release
     if: ${{ github.repository == 'ZEN-universe/ZEN-garden' && github.ref == 'refs/heads/main'}}
