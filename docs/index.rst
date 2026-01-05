@@ -72,7 +72,7 @@ Documentation
 
    files/references/api_reference
    files/references/class_structure
-
+   files/api/generated/changelog.md
 
 
 .. toctree::
