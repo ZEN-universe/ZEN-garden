@@ -3,6 +3,11 @@
 This file gets automatically updated in ZEN-garden's continuous integration 
 procedures. Do not edit the file manually.
 
+## [v2.8.9] - 2026-01-05 
+
+### Bug Fixes 🐛
+- Fixes bump and release by making the NEW_VERSION string accessible across jobs [[🔀 PR #1180](https://github.com/ZEN-universe/ZEN-garden/pull/1180) @jacob-mannhardt]
+
 ## [v2.8.8] - 2026-01-05 
 
 ### Bug Fixes 🐛
