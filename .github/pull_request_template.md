@@ -10,7 +10,7 @@ Closes # (if applicable).
 List all changes suggested in the pull request in the the format ``<type>:<description>`` (Mandatory!). This list will used to update the changelog. Valid types include ``fix``, ``feat``, ``docs``, ``chore``, and ``breaking``. The first sentance of the description should be in the imperative tense, i.e. "Add new feature" or "Clean existing code file". Subsequent sentances may have any format, however, the discription must consist of only one paragraph (no newline characters). Example list:
 
 - fix: remove bug in changelog updates. Add a 1-2 sentance description of the bug. Bug fixes automatically lead to patch version bumps.
-- feat: add piecewise affince capex representation. Add a 1-2 sentance description of the new feature. New features automatically lead to minor version bumps.
+- feat: add piecewise affine capex representation. Add a 1-2 sentance description of the new feature. New features automatically lead to minor version bumps.
 - docs: add class diagrams to documentationn. This category is for all changes to the documentation or to docstrings. Documentation changes will not bump the ZEN-garden version.
 - chore: refactor default_config. Chores include any maintainance tasks such updating tests, improving continuous integration workflows, and refactoring code. They do not change the functionality of ZEN-garden from a user perspective and therefore do not lead to a version bump.
 - breaking: remove run_module function (depricated). Add a 1-2 sentance description of the breaking change. Breaking changes automatically lead to a major version bump.
