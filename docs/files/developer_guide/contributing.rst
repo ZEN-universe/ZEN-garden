@@ -144,26 +144,6 @@ request into the main branch of ZEN-garden. By the :ref:`branch protection
 rules <contributing.branch_protections>`, a merge is only possible if all the 
 ZEN-garden tests have passed. 
 
-Administrators may write a commit message to accompany the merge.
-By default, the merge will be trigger a GitHub action which bumps the version 
-of ZEN-garden by a patch and releases the new version to the Python Package 
-Index. Administrators can alter this behavior by adding the following hash-tag 
-codes anywhere in the merge commit message:
-
-* ``#major`` - release a new major version of ZEN-garden. This should be done 
-  when the pull request includes changes which make the code incompatible with
-  older model versions (i.e, breaking changes).
-
-* ``#minor`` - release a new minor version of ZEN-garden. This should be done
-  when making large changes that maintain backward compatibility. Minor releases
-  also trigger the ZEN-garden datasets (from ``.\docs\dataset_examples``) to be 
-  re-uploaded to the Zenodo dataset repository. 
-
-* ``#nobump`` - do not release a new version of ZEN-garden. This also prevents the
-  merged changes from being released to PyPI  
-
-
-
 
 .. _contributing.tests:
 
