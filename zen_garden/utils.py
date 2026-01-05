@@ -21,6 +21,7 @@ import requests
 from importlib.metadata import metadata
 import zipfile
 import io
+import pandas as pd
 
 def setup_logger(level=logging.INFO):
     """ set up logger
@@ -350,10 +351,10 @@ def slice_df_by_index(df,index_tuple) -> dict:
         if key in df.index.names:
             if isinstance(index[key], list):
                 df = df.loc[df.index.get_level_values(key).isin(index[key])]
-            else:
-                if index[key] not in df.index.get_level_values(key):
-                    df = pd.DataFrame(columns=df.columns)  # return empty dataframe if value not in index
+            elif index[key] in df.index.get_level_values(key):
                 df = df.xs(index[key], level=key, drop_level=False)
+            else:
+                df = pd.DataFrame(columns=df.columns)  # return empty dataframe if value not in index
     return df
 
 def get_label_position(obj,label:int):
