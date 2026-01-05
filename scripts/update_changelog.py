@@ -291,7 +291,9 @@ def parse_unversioned_changes(unversioned_changes: str, categorized_changes: dic
     for change_type, item in categorized_changes.items():
         title = item["title"]
         match = re.search(
-            f"### *?{title} *?\n(.*?)(\n## |$)", unversioned_changes, re.DOTALL
+                rf"###\s*{re.escape(title)}\s*\n(.*?)(?=\n## |\n### |\Z)", 
+                unversioned_changes, 
+                re.DOTALL
         )
         if not match:
             continue
@@ -299,10 +301,11 @@ def parse_unversioned_changes(unversioned_changes: str, categorized_changes: dic
         section = match.group(1)
         for line in section.splitlines():
             line = line.strip()
-            if line: # remove empty lines
-                categorized_changes[change_type]["changes"].append(line)
+            m = re.match(r"-\s*(.*)", line)  # search correct format
+            if m: # remove empty lines
+                categorized_changes[change_type]["changes"].append(m.group(1))
         
-        return categorized_changes
+    return categorized_changes
 
 def update_changelog(header: str, categorized_changes: dict,
                      changelog_existing: str, semver_bump: str,
@@ -341,7 +344,11 @@ def update_changelog(header: str, categorized_changes: dict,
             for change in items["changes"]:
                 changelog_addition += f"- {change}\n"
 
-    return header + "\n" + changelog_addition + "\n" + changelog_existing
+    return (
+        header.strip("\n") + "\n\n" + 
+        changelog_addition.strip("\n") + "\n\n" + 
+        changelog_existing.strip("\n")
+    )
 
 
 def suggest_branch_name(new_version):
