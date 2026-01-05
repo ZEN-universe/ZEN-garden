@@ -3,13 +3,24 @@
 This file gets automatically updated in ZEN-garden's continuous integration 
 procedures. Do not edit the file manually.
 
-## [Unversioned Changes] - 2026-01-05 
+## [v4.0.0] - 2026-01-05 
+
+### New Features ✨
+- describe new features added to the model. Features include any new functionality that is available to ZEN-garden users. New features automatically lead to minor version bumps. [[🔀 PR #1167](https://github.com/ZEN-universe/ZEN-garden/pull/1167) @csfunke]
+
+### Bug Fixes 🐛
+- describe bug fixed through the pull-request, including 1-2 additional sentances on the context. Bug fixes automatically lead to patch version bumps. [[🔀 PR #1167](https://github.com/ZEN-universe/ZEN-garden/pull/1167) @csfunke]
 
 ### Documentation Changes 📝
+- describe changes to the documentation. This category is for all changes to the documentation or docstrings. Documentation changes do not bump the ZEN-garden version. [[🔀 PR #1167](https://github.com/ZEN-universe/ZEN-garden/pull/1167) @csfunke]
 - add class diagrams to documentationn. This category is for all changes to the documentation or to docstrings. Documentation changes will not bump the ZEN-garden version. [[🔀 PR #1165](https://github.com/ZEN-universe/ZEN-garden/pull/1165) @csfunke]
 
 ### Maintainance Tasks 🧹
+- describe maintainance tasks such as updating tests, improving continuous integration workflows, and refactoring code. These tasks do not change the functionality of ZEN-garden from a user perspective and therefore do not lead to a version bump. They are primarily relevant for developers. [[🔀 PR #1167](https://github.com/ZEN-universe/ZEN-garden/pull/1167) @csfunke]
 - refactor default_config. Chores include any maintainance tasks such updating tests, improving continuous integration workflows, and refactoring code. They do not change the functionality of ZEN-garden from a user perspective and therefore do not lead to a version bump. [[🔀 PR #1165](https://github.com/ZEN-universe/ZEN-garden/pull/1165) @csfunke]
+
+### BREAKING CHANGES ⚠️
+- describe breaking changes. Add a 1–2 sentence description of the breaking change. Breaking changes automatically lead to a major version bump. [[🔀 PR #1167](https://github.com/ZEN-universe/ZEN-garden/pull/1167) @csfunke]
 
 ## [v0.1.0] - [v2.8.4]
 
