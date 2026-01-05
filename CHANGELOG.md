@@ -3,7 +3,10 @@
 This file gets automatically updated in ZEN-garden's continuous integration 
 procedures. Do not edit the file manually.
 
-## [Unversioned Changes] - 2026-01-05 
+## [v2.8.7] - 2026-01-05 
+
+### Bug Fixes 🐛
+- bug fix for myopic foresight results when yearly series is empty (index returns empty results). Returns empty Series. [[🔀 PR #1172](https://github.com/ZEN-universe/ZEN-garden/pull/1172) @jacob-mannhardt]
 
 ### Documentation Changes 📝
 - add changelog to documentation. The changelog now gets copied to the ``docs/files/api/generated`` folder when the documentation is built. This allows it to be shown in the "References" section of the documentation. [[🔀 PR #1169](https://github.com/ZEN-universe/ZEN-garden/pull/1169) @csfunke]
