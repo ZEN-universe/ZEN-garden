@@ -3,6 +3,11 @@
 This file gets automatically updated in ZEN-garden's continuous integration 
 procedures. Do not edit the file manually.
 
+## [v2.8.10] - 2026-01-05 
+
+### Bug Fixes 🐛
+- adds an env variable in `create_tag` in bump and release [[🔀 PR #1182](https://github.com/ZEN-universe/ZEN-garden/pull/1182) @jacob-mannhardt]
+
 ## [v2.8.9] - 2026-01-05 
 
 ### Bug Fixes 🐛
