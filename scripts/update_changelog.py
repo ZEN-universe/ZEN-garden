@@ -25,7 +25,7 @@ from datetime import date, datetime
 from importlib.metadata import version as get_version
 import tomllib  # Python 3.11+
 from pathlib import Path
-from typing import Dict, List, Tuple, Literal
+from typing import Tuple
 
 
 def extract_pr_info(pr_body_file: Path) -> Tuple[str, str, str]:
@@ -50,8 +50,7 @@ def extract_pr_info(pr_body_file: Path) -> Tuple[str, str, str]:
     # read PR author and number from environment variables
     pr_author = os.environ.get("PR_AUTHOR")
     pr_number = os.environ.get("PR_NUMBER")
-    pr_author = "csf"
-    pr_number = 1
+
     if not pr_author:
         raise RuntimeError("PR_AUTHOR environment variable is not set")
     if not pr_number:
@@ -81,7 +80,7 @@ def get_zen_garden_version(pyproject_toml_file: Path) -> str:
     return version
 
 
-def parse_changes_from_pr_body(pr_body: str, pr_number : str, pr_author : str):
+def parse_changes_from_pr_body(pr_body: str, pr_number: str, pr_author: str) -> dict:
     """Parse pull request body and categorize changes.
 
     Expects a section in the pull request titled "Detailed list of changes" with 
@@ -118,8 +117,8 @@ def parse_changes_from_pr_body(pr_body: str, pr_number : str, pr_author : str):
     # Parse each line: expect "- type: description"
     # Format: "Section Tytle": {"Keyword": keyword, "changes": changes}
     categorized_changes = {
-        "feat":{ 
-            "title": "New Features ✨", 
+        "feat": {
+            "title": "New Features ✨",
             "changes": []
         },
         "fix": {
@@ -132,11 +131,11 @@ def parse_changes_from_pr_body(pr_body: str, pr_number : str, pr_author : str):
         },
         "chore": {
             "title": "Maintainance Tasks 🧹",
-            "changes":[]
+            "changes": []
         },
         "breaking": {
             "title": "BREAKING CHANGES ⚠️",
-            "changes":[]
+            "changes": []
         }
     }
     for line in changes_section.splitlines():
@@ -241,7 +240,10 @@ def bumpversion(semver_bump: str, pyproject_toml_file: Path):
 def parse_changelog(changelog_file: Path) -> Tuple[str, str, str]:
     """Parse an existing changelog into header and body.
 
-    The header is everything before the first subsection.
+    The header is everything before the first subsection. Unversioned changes
+    are anything with inside the section whose title includes 
+    "[Unversioned Changes]". The existing changelog consits of the remainder 
+    of the file.
 
     Args:
         changelog_file (Path): Path to the CHANGELOG.md file.
@@ -273,27 +275,48 @@ def parse_changelog(changelog_file: Path) -> Tuple[str, str, str]:
             "CHANGELOG.md format is invalid. Could not find preface.")
 
     # Extract unversioned changes:
-    match = re.search(    
+    match = re.search(
         r"(##\s*\[Unversioned Changes\][^\n]*\n)"   # group 1: header
         r"(.*?)"                                    # group 2: section body
         r"(\n##(?!#).*|\Z)", changelog_existing, re.DOTALL)
     if match:
         unversioned_changes = match.group(2)
         changelog_existing = match.group(3)
-    else: 
+    else:
         unversioned_changes = ""
-    
 
     return header, unversioned_changes, changelog_existing
 
-def parse_unversioned_changes(unversioned_changes: str, categorized_changes: dict) -> dict:
 
+def parse_unversioned_changes(unversioned_changes: str, 
+                              categorized_changes: dict) -> dict:
+    """Extracts bullet-point changes from an unversioned changelog section.
+
+    This function scans a markdown-formatted changelog string for sections
+    matching the titles defined in `categorized_changes`. For each matching
+    section, it collects list items (lines starting with `-`) and appends them
+    to the corresponding category's `"changes"` list.
+
+    The function mutates and returns the provided `categorized_changes` dict.
+
+    Args:
+        unversioned_changes (str): Markdown text containing unversioned
+            changelog entries organized under `### <title>` headings.
+        categorized_changes (dict): Mapping of change types to metadata.
+            Each value must contain:
+            - "title" (str): Section title to search for.
+            - "changes" (list): List to append extracted change entries to.
+
+    Returns:
+        dict: The updated `categorized_changes` dictionary with extracted
+        change entries added to each category's `"changes"` list.
+    """
     for change_type, item in categorized_changes.items():
         title = item["title"]
         match = re.search(
-                rf"###\s*{re.escape(title)}\s*\n(.*?)(?=\n## |\n### |\Z)", 
-                unversioned_changes, 
-                re.DOTALL
+            rf"###\s*{re.escape(title)}\s*\n(.*?)(?=\n## |\n### |\Z)",
+            unversioned_changes,
+            re.DOTALL
         )
         if not match:
             continue
@@ -302,19 +325,21 @@ def parse_unversioned_changes(unversioned_changes: str, categorized_changes: dic
         for line in section.splitlines():
             line = line.strip()
             m = re.match(r"-\s*(.*)", line)  # search correct format
-            if m: # remove empty lines
+            if m:  # remove empty lines
                 categorized_changes[change_type]["changes"].append(m.group(1))
-        
+
     return categorized_changes
+
 
 def update_changelog(header: str, categorized_changes: dict,
                      changelog_existing: str, semver_bump: str,
-                     pr_number: str, pr_author: str, new_version: str) -> str:
+                     new_version: str) -> str:
     """Generate an updated changelog with the current PR changes.
 
     Adds a new version section if version is bumped by a major, minor, or 
-    patc. Otherwise adds a new section of unversioned changes. The sections 
-    contain the categorized change entries from the PR metadata.
+    patch. Otherwise adds a new section of unversioned changes. The sections 
+    contain the categorized change entries from the PR metadata as well as 
+    any unversioned changes from previous pull requests.
 
     Args:
         header (str): Changelog header/preface.
@@ -338,15 +363,15 @@ def update_changelog(header: str, categorized_changes: dict,
     else:
         changelog_addition += f"\n## [Unversioned Changes] - {date.today()} \n"
 
-    for change_type, items in categorized_changes.items():
+    for items in categorized_changes.values():
         if items["changes"]:
             changelog_addition += f"\n### {items["title"]}\n"
             for change in items["changes"]:
                 changelog_addition += f"- {change}\n"
 
     return (
-        header.strip("\n") + "\n\n" + 
-        changelog_addition.strip("\n") + "\n\n" + 
+        header.strip("\n") + "\n\n" +
+        changelog_addition.strip("\n") + "\n\n" +
         changelog_existing.strip("\n")
     )
 
@@ -425,7 +450,8 @@ def main():
     pyproject_toml_file = Path("pyproject.toml")
 
     pr_author, pr_number, pr_body = extract_pr_info(pr_body_file)
-    categorized_changes = parse_changes_from_pr_body(pr_body, pr_number, pr_author)
+    categorized_changes = parse_changes_from_pr_body(
+        pr_body, pr_number, pr_author)
 
     semver_bump = determine_bump_type(categorized_changes)
 
@@ -433,12 +459,13 @@ def main():
 
     header, unversioned_changes, changelog_existing = parse_changelog(
         changelog_file)
-    
-    categorized_changes = parse_unversioned_changes(unversioned_changes, categorized_changes)
+
+    categorized_changes = parse_unversioned_changes(
+        unversioned_changes, categorized_changes)
 
     changelog = update_changelog(
-        header, categorized_changes, changelog_existing, semver_bump, 
-        pr_number, pr_author, new_version
+        header, categorized_changes, changelog_existing, semver_bump,
+        new_version
     )
 
     commit_title = suggest_commit_title(semver_bump, old_version, new_version)
