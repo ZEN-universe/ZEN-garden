@@ -3,6 +3,11 @@
 This file gets automatically updated in ZEN-garden's continuous integration 
 procedures. Do not edit the file manually.
 
+## [v2.8.8] - 2026-01-05 
+
+### Bug Fixes 🐛
+- run again to release the correct version [[🔀 PR #1177](https://github.com/ZEN-universe/ZEN-garden/pull/1177) @jacob-mannhardt]
+
 ## [v2.8.7] - 2026-01-05 
 
 ### Bug Fixes 🐛
