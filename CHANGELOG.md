@@ -3,7 +3,10 @@
 This file gets automatically updated in ZEN-garden's continuous integration 
 procedures. Do not edit the file manually.
 
-## [Unversioned Changes] - 2026-01-06 
+## [v2.8.11] - 2026-01-06 
+
+### Bug Fixes 🐛
+- bug fix when extracting `get_full_ts("storage_level",year=2022)` for a solution with rolling horizon. [[🔀 PR #1186](https://github.com/ZEN-universe/ZEN-garden/pull/1186) @jacob-mannhardt]
 
 ### Documentation Changes 📝
 - clean changelog. [[🔀 PR #1184](https://github.com/ZEN-universe/ZEN-garden/pull/1184) @csfunke]
