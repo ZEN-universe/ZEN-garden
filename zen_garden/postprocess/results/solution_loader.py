@@ -354,7 +354,7 @@ class SolutionLoader():
             decision_horizon = tuple(range(year, next_year))
             current_mf = pd_dict[year]
             if current_mf.empty:
-                return pd.Series(dtype=float)
+                continue
             if component.timestep_type is TimestepType.yearly:
                 year_series = current_mf[
                     current_mf.index.get_level_values("year").isin(decision_horizon)
