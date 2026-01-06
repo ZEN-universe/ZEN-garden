@@ -3,6 +3,11 @@
 This file gets automatically updated in ZEN-garden's continuous integration 
 procedures. Do not edit the file manually.
 
+## [Unversioned Changes] - 2026-01-06 
+
+### Documentation Changes 📝
+- clean changelog. [[🔀 PR #1184](https://github.com/ZEN-universe/ZEN-garden/pull/1184) @csfunke]
+
 ## [v2.8.10] - 2026-01-05 
 
 ### Bug Fixes 🐛
