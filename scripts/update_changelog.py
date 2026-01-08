@@ -481,6 +481,7 @@ def main():
         env_file.write(f"OLD_VERSION={old_version}\n")
         env_file.write(f"BRANCH_NAME={branch_name}\n")
         env_file.write(f"COMMIT_TITLE={commit_title}\n")
+        env_file.write(f"SEMVER_BUMP={semver_bump}\n")
 
 
 if __name__ == "__main__":

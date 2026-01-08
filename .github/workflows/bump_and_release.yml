@@ -45,7 +45,8 @@ jobs:
     runs-on: ubuntu-latest
     needs: [check_nobump]
     outputs:
-      new_ver: ${{ steps.export_version.outputs.new_ver }}
+      new_ver: ${{ steps.export_variables.outputs.new_ver }}
+      semver_bump: ${{ steps.export_variables.outputs.semver_bump }}
     env:
       NO_BUMP: ${{ needs.check_nobump.outputs.nobump }}
       GH_TOKEN: ${{ github.token }}
@@ -97,11 +98,14 @@ jobs:
           python scripts/update_changelog.py
           rm -f pr_body.txt
 
-      - name: Export new version
-        id: export_version
+      - name: Export new version and bump type
+        id: export_variables
         run: |
           echo "new_ver=$NEW_VERSION" >> $GITHUB_OUTPUT
           echo "Bumped to version: $NEW_VERSION"
+          echo "semver_bump=$SEMVER_BUMP" >> $GITHUB_OUTPUT
+          echo "Bump type: $SEMVER_BUMP"
+
 
       - name: Create Pull Request
         id: cpr
@@ -169,7 +173,7 @@ jobs:
           
   create_tag:
     name: Create tag for release
-    if: ${{ github.repository == 'ZEN-universe/ZEN-garden' && github.ref == 'refs/heads/main'}}
+    if: ${{ github.repository == 'ZEN-universe/ZEN-garden' && github.ref == 'refs/heads/main' && needs.bump_version.outputs.semver_bump != 'none' }}
     runs-on: ubuntu-latest
     needs: [bump_version]
     env:
