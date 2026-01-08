@@ -3,6 +3,11 @@
 This file gets automatically updated in ZEN-garden's continuous integration 
 procedures. Do not edit the file manually.
 
+## [Unversioned Changes] - 2026-01-08 
+
+### Maintainance Tasks 🧹
+- skip release in CI workflow when no version bump occurs. [[🔀 PR #1188](https://github.com/ZEN-universe/ZEN-garden/pull/1188) @csfunke]
+
 ## [v2.8.11] - 2026-01-06 
 
 ### Bug Fixes 🐛
