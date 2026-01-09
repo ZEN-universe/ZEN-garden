@@ -3,9 +3,11 @@
 This file gets automatically updated in ZEN-garden's continuous integration 
 procedures. Do not edit the file manually.
 
-## [Unversioned Changes] - 2026-01-08 
+## [Unversioned Changes] - 2026-01-09 
 
 ### Maintenance Tasks 🧹
+- delete ``.bumpversion.cfg`` file. It is now obsolete, as version bumping is performed via a custom Python script rather than the bump2version package. [[🔀 PR #1190](https://github.com/ZEN-universe/ZEN-garden/pull/1190) @csfunke]
+- correct spelling in changelog. In previous changelog versions, the header "Maintenance Tasks" was spelled wrong. [[🔀 PR #1190](https://github.com/ZEN-universe/ZEN-garden/pull/1190) @csfunke]
 - skip release in CI workflow when no version bump occurs. [[🔀 PR #1188](https://github.com/ZEN-universe/ZEN-garden/pull/1188) @csfunke]
 
 ## [v2.8.11] - 2026-01-06 
