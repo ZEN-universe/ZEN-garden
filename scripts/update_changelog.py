@@ -130,7 +130,7 @@ def parse_changes_from_pr_body(pr_body: str, pr_number: str, pr_author: str) -> 
             "changes": []
         },
         "chore": {
-            "title": "Maintainance Tasks 🧹",
+            "title": "Maintenance Tasks 🧹",
             "changes": []
         },
         "breaking": {
