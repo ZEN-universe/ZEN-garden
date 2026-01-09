@@ -13,10 +13,10 @@ The first sentence of the description should be written in the imperative tense 
 
 An example list is shown below. Update these sections to match the changes proposed in the pull request.:
 
-- fix: describe bug fixed through the pull-request, including 1-2 additional sentances on the context. Bug fixes automatically lead to patch version bumps.
+- fix: describe bug fixed through the pull-request, including 1-2 additional sentences on the context. Bug fixes automatically lead to patch version bumps.
 - feat: describe new features added to the model. Features include any new functionality that is available to ZEN-garden users. New features automatically lead to minor version bumps.
 - docs: describe changes to the documentation. This category is for all changes to the documentation or docstrings. Documentation changes do not bump the ZEN-garden version.
-- chore: describe maintainance tasks such as updating tests, improving continuous integration workflows, and refactoring code. These tasks do not change the functionality of ZEN-garden from a user perspective and therefore do not lead to a version bump. They are primarily relevant for developers.
+- chore: describe maintenance tasks such as updating tests, improving continuous integration workflows, and refactoring code. These tasks do not change the functionality of ZEN-garden from a user perspective and therefore do not lead to a version bump. They are primarily relevant for developers.
 - breaking: describe breaking changes. Add a 1–2 sentence description of the breaking change. Breaking changes automatically lead to a major version bump.
 
 

@@ -5,7 +5,7 @@ procedures. Do not edit the file manually.
 
 ## [Unversioned Changes] - 2026-01-08 
 
-### Maintainance Tasks 🧹
+### Maintenance Tasks 🧹
 - skip release in CI workflow when no version bump occurs. [[🔀 PR #1188](https://github.com/ZEN-universe/ZEN-garden/pull/1188) @csfunke]
 
 ## [v2.8.11] - 2026-01-06 
@@ -28,7 +28,7 @@ procedures. Do not edit the file manually.
 
 ## [v2.8.8] - 2026-01-05 
 
-### Maintainance Tasks 🧹
+### Maintenance Tasks 🧹
 - test release to PyPi [[🔀 PR #1177](https://github.com/ZEN-universe/ZEN-garden/pull/1177) @jacob-mannhardt]
 
 ## [v2.8.7] - 2026-01-05 
@@ -39,7 +39,7 @@ procedures. Do not edit the file manually.
 ### Documentation Changes 📝
 - add changelog to documentation. The changelog now gets copied to the ``docs/files/api/generated`` folder when the documentation is built. This allows it to be shown in the "References" section of the documentation. [[🔀 PR #1169](https://github.com/ZEN-universe/ZEN-garden/pull/1169) @csfunke]
 
-### Maintainance Tasks 🧹
+### Maintenance Tasks 🧹
 - fix branch deletion in continuous integration pipeline. The previous pipeline attempted to delete a branch which is no longer in use. [[🔀 PR #1173](https://github.com/ZEN-universe/ZEN-garden/pull/1173) @csfunke]
 - update pull request template to match changelog automation. [[🔀 PR #1169](https://github.com/ZEN-universe/ZEN-garden/pull/1169) @csfunke]
 - implement semantic version bumping. Major version bumps are now triggered upon breaking changes; minor version bumps are triggered by new features; patch version bumps are triggered by bug fixes. [[🔀 PR #1169](https://github.com/ZEN-universe/ZEN-garden/pull/1169) @csfunke]
