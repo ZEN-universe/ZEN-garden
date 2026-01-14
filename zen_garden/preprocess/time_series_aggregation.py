@@ -305,7 +305,7 @@ class TimeSeriesAggregation(object):
         else:
             for element in self.optimization_setup.get_all_elements(Element):
                 # check to multiply the time series with the yearly variation
-                self.yearly_variation_nonaggregated_ts(element)
+                self.overwrite_ts_without_expanded_timeindex(element)
 
     def overwrite_ts_with_expanded_timeindex(self, element, old_sequence_time_steps):
         """ this method expands the aggregated time series to match the extended operational time steps because of matching the investment and operational time sequences.
@@ -323,46 +323,24 @@ class TimeSeriesAggregation(object):
                 new_ts = new_ts.stack()
                 # multiply with yearly variation
                 new_ts = self.multiply_yearly_variation(element, ts, new_ts)
-                #insert year specific TSA output
-                if self.conducted_tsa:
-                    for year in self.year_specific_tsa.keys():
-                        if (element.name,ts) in self.year_specific_tsa[year].keys():
-                            base_time_steps = self.energy_system.time_steps.decode_time_step(year, "yearly")
-                            element_time_steps = self.energy_system.time_steps.encode_time_step(base_time_steps,time_step_type="operation")
-                            year_ts = self.year_specific_tsa[year][element.name,ts]
-                            #ToDO better assignment of values?
-                            for column in year_ts.columns:
-                                if isinstance(column, tuple):
-                                    new_ts.loc[*column, element_time_steps] = year_ts[column].values
-                                else:
-                                    new_ts.loc[column,element_time_steps] = year_ts[column].values
-                #insert year specific TS if not aggregated
-                else:
-                    for year in self.optimization_setup.year_specific_ts.keys():
-                        if (element.name,ts) in self.optimization_setup.year_specific_ts[year].keys():
-                            base_time_steps = self.energy_system.time_steps.decode_time_step(year, "yearly")
-                            element_time_steps = self.energy_system.time_steps.encode_time_step(base_time_steps,time_step_type="operation")
-                            year_ts = self.optimization_setup.year_specific_ts[year][(element.name,ts)].unstack(header_set_time_steps).T
-                            #ToDO better assignment of values?
-                            for column in year_ts.columns:
-                                if isinstance(column, tuple):
-                                    new_ts.loc[*column, element_time_steps] = year_ts[column].values
-                                else:
-                                    new_ts.loc[column, element_time_steps] = year_ts[column].values
+                # insert year specific TSA output
+                new_ts = self.add_year_specific_ts(element, ts,new_ts,header_set_time_steps)
                 #overwrite time series
                 setattr(element, ts, new_ts)
 
-    def yearly_variation_nonaggregated_ts(self, element):
+    def overwrite_ts_without_expanded_timeindex(self, element):
         """ multiply the time series with the yearly variation if the element's time series are not aggregated
 
         :param element: element of the optimization """
+        header_set_time_steps = self.analysis.header_data_inputs.set_time_steps
         for ts in element.raw_time_series:
-            if element.raw_time_series[ts] is None:
-                continue
-            # multiply with yearly variation
-            new_ts = self.multiply_yearly_variation(element, ts, getattr(element, ts))
-            # overwrite time series
-            setattr(element, ts, new_ts)
+            if element.raw_time_series[ts] is not None:
+                # multiply with yearly variation
+                new_ts = self.multiply_yearly_variation(element, ts, getattr(element, ts))
+                # insert year specific TSA output
+                new_ts = self.add_year_specific_ts(element, ts,new_ts,header_set_time_steps)
+                # overwrite time series
+                setattr(element, ts, new_ts)
 
     def multiply_yearly_variation(self, element, ts_name, ts, year_specific = None):
         """ this method multiplies time series with the yearly variation of the time series
@@ -398,7 +376,41 @@ class TimeSeriesAggregation(object):
             rounding_value = 10 ** (-self.optimization_setup.solver.rounding_decimal_points_tsa)
             ts[ts.abs() < rounding_value] = 0
         return ts
+    
+    def add_year_specific_ts(self, element, ts,new_ts,header_set_time_steps):
+        """ this method adds a year specific time series for an element
 
+        :param element: element of the time series
+        :param ts: time series to add 
+        :param new_ts: new time series to add year specific values to 
+        :param header_set_time_steps: name of set_time_steps """
+        if self.conducted_tsa:
+            for year in self.year_specific_tsa.keys():
+                if (element.name,ts) in self.year_specific_tsa[year].keys():
+                    base_time_steps = self.energy_system.time_steps.decode_time_step(year, "yearly")
+                    element_time_steps = self.energy_system.time_steps.encode_time_step(base_time_steps,time_step_type="operation")
+                    year_ts = self.year_specific_tsa[year][element.name,ts]
+                    #ToDO better assignment of values?
+                    for column in year_ts.columns:
+                        if isinstance(column, tuple):
+                            new_ts.loc[*column, element_time_steps] = year_ts[column].values
+                        else:
+                            new_ts.loc[column,element_time_steps] = year_ts[column].values
+        #insert year specific TS if not aggregated
+        else:
+            for year in self.optimization_setup.year_specific_ts.keys():
+                if (element.name,ts) in self.optimization_setup.year_specific_ts[year].keys():
+                    base_time_steps = self.energy_system.time_steps.decode_time_step(year, "yearly")
+                    element_time_steps = self.energy_system.time_steps.encode_time_step(base_time_steps,time_step_type="operation")
+                    year_ts = self.optimization_setup.year_specific_ts[year][(element.name,ts)].unstack(header_set_time_steps).T
+                    #ToDO better assignment of values?
+                    for column in year_ts.columns:
+                        if isinstance(column, tuple):
+                            new_ts.loc[*column, element_time_steps] = year_ts[column].values
+                        else:
+                            new_ts.loc[column, element_time_steps] = year_ts[column].values
+        return new_ts
+    
     def repeat_sequence_time_steps_for_all_years(self):
         """ this method repeats the operational time series for all years."""
         logging.info("Repeat the time series sequences for all years")
