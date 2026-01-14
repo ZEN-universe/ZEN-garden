@@ -142,7 +142,7 @@ class System(Subscriptable):
     knowledge_depreciation_rate: float = 0.1
     reference_year: int = 2024
     unaggregated_time_steps_per_year: int = 8760
-    aggregated_time_steps_per_year: int = 10
+    aggregated_time_steps_per_year: int = 8760
     conduct_time_series_aggregation: bool = False
     optimized_years: int = 1
     interval_between_years: int = 1
