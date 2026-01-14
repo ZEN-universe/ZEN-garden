@@ -3,7 +3,10 @@
 This file gets automatically updated in ZEN-garden's continuous integration 
 procedures. Do not edit the file manually.
 
-## [Unversioned Changes] - 2026-01-09 
+## [v2.8.12] - 2026-01-14 
+
+### Bug Fixes 🐛
+- fix overwriting the values for a specific year when only one year is selected [[🔀 PR #1193](https://github.com/ZEN-universe/ZEN-garden/pull/1193) @jacob-mannhardt]
 
 ### Maintenance Tasks 🧹
 - delete ``.bumpversion.cfg`` file. It is now obsolete, as version bumping is performed via a custom Python script rather than the bump2version package. [[🔀 PR #1190](https://github.com/ZEN-universe/ZEN-garden/pull/1190) @csfunke]
