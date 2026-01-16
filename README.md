@@ -56,3 +56,6 @@ issn = {2352-7110},
 doi = {10.1016/j.softx.2025.102059},
 }
 ```
+
+## Changelog
+See [CHANGELOG.md](CHANGELOG.md) for a list of changes and release notes.
