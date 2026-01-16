@@ -91,9 +91,11 @@ target-version = ["py311", "py312", "py313"]
 
 [tool.ruff]
 line-length = 79
+fix = false
+
+[tool.ruff.lint]
 select = ["E", "F", "I", "B"]
 ignore = []
-fix = false
 
 [tool.ruff.isort]
 known-first-party = ["your_package_name"]
