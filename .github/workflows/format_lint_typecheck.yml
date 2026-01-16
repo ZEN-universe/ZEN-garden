@@ -1,0 +1,46 @@
+name: Format, Lint, and Typecheck
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+
+jobs:
+  lint-and-typecheck:
+    runs-on: ubuntu-latest
+    if: ${{ github.repository == 'ZEN-universe/ZEN-garden' }}
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12", "3.13"]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Cache pip downloads
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ matrix.python-version }}-${{ hashFiles('**/pyproject.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-${{ matrix.python-version }}-
+
+      - name: Upgrade pip and install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          # Always reinstall dependencies, but use the cached wheels for speed
+          pip install --upgrade -e .[dev]
+
+      - name: Run Black (check only, gradual rollout)
+        run: black --check . || true
+
+      - name: Run Ruff (informational)
+        run: ruff check . || true
+
+      - name: Run Mypy (informational)
+        run: mypy . || true

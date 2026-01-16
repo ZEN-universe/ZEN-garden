@@ -60,7 +60,10 @@ dev = [
     "pytest",
     "coverage",
     "pytest-xdist",
-    "pytest-cov"
+    "pytest-cov",
+    "black",
+    "ruff",
+    "mypy"
 ]
 
 vis = [
@@ -74,10 +77,29 @@ Homepage = "https://github.com/ZEN-universe/ZEN-garden"
 Documentation = "https://zen-garden.readthedocs.io/en/latest/"
 Zenodo = "https://zenodo.org/api/records/13385110"
 
-[tool.pytest.ini_options]
-addopts = "-n auto"
-
 [project.scripts]
 zen-garden = "zen_garden.cli.zen_garden_cli:create_zen_garden_cli"
 zen-visualization = "zen_garden.cli.zen_visualization_cli:create_zen_visualization_cli"
 zen-example = "zen_garden.cli.zen_example_cli:create_zen_example_cli"
+
+[tool.pytest.ini_options]
+addopts = "-n auto"
+
+[tool.black]
+line-length = 79
+target-version = ["py311", "py312", "py313"]
+
+[tool.ruff]
+line-length = 79
+select = ["E", "F", "I", "B"]
+ignore = []
+fix = false
+
+[tool.ruff.isort]
+known-first-party = ["your_package_name"]
+
+[tool.mypy]
+warn_unused_configs = true
+ignore_missing_imports = true
+check_untyped_defs = false
+disallow_untyped_defs = false
