@@ -8,6 +8,9 @@ procedures. Do not edit the file manually.
 ### Documentation Changes 📝
 - fix broken links in the README file. Some of the documentation links were outdated and not longer worked. [[🔀 PR #1196](https://github.com/ZEN-universe/ZEN-garden/pull/1196) @csfunke]
 
+### Maintenance Tasks 🧹
+- add continuous integration workflow that checks code formatting, linting, and type checking. Uses the packages `black` for formatting, `ruff` for linting, and `mypy` for type checking. Errors are reported but not enforced initially, allowing developers time to clean up the existing codebase. Enforcement will be enabled once all errors are resolved. [[🔀 PR #1199](https://github.com/ZEN-universe/ZEN-garden/pull/1199) @csfunke]
+
 ## [v2.8.12] - 2026-01-14 
 
 ### Bug Fixes 🐛
