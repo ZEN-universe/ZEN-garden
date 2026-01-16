@@ -1,4 +1,4 @@
-name: Format, Lint, and Typecheck
+name: Code Quality Checks
 
 on:
   push:
@@ -36,11 +36,11 @@ jobs:
           # Always reinstall dependencies, but use the cached wheels for speed
           pip install --upgrade -e .[dev]
 
-      - name: Run Black (check only, gradual rollout)
+      - name: Run Black
         run: black --check . || true
 
-      - name: Run Ruff (informational)
+      - name: Run Ruff
         run: ruff check . || true
 
-      - name: Run Mypy (informational)
+      - name: Run Mypy
         run: mypy . || true
