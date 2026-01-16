@@ -388,7 +388,7 @@ def suggest_branch_name(new_version):
     Returns:
         str: A suggested branch name.
     """
-    branch_name = f"v{new_version}-{datetime.now().strftime("%d.%m.%Y-%H.%M.%S")}"
+    branch_name = f"v{new_version}-{datetime.now().strftime('%d.%m.%Y-%H.%M.%S')}"
 
     return branch_name
 
