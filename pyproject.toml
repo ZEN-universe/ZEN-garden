@@ -97,7 +97,7 @@ fix = false
 select = ["E", "F", "I", "B"]
 ignore = []
 
-[tool.ruff.isort]
+[tool.ruff.lint.isort]
 known-first-party = ["your_package_name"]
 
 [tool.mypy]
