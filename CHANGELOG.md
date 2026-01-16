@@ -3,6 +3,11 @@
 This file gets automatically updated in ZEN-garden's continuous integration 
 procedures. Do not edit the file manually.
 
+## [Unversioned Changes] - 2026-01-16 
+
+### Documentation Changes 📝
+- fix broken links in the README file. Some of the documentation links were outdated and not longer worked. [[🔀 PR #1196](https://github.com/ZEN-universe/ZEN-garden/pull/1196) @csfunke]
+
 ## [v2.8.12] - 2026-01-14 
 
 ### Bug Fixes 🐛
