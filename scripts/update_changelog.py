@@ -365,7 +365,8 @@ def update_changelog(header: str, categorized_changes: dict,
 
     for items in categorized_changes.values():
         if items["changes"]:
-            changelog_addition += f"\n### {items["title"]}\n"
+            title = items["title"]
+            changelog_addition += f"\n### {title}\n"
             for change in items["changes"]:
                 changelog_addition += f"- {change}\n"
 
