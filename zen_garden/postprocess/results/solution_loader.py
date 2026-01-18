@@ -379,6 +379,9 @@ class SolutionLoader():
                 series_to_concat.append(current_mf)
                 break
 
+        if len(series_to_concat) == 0:
+            return pd.Series(dtype=float)
+
         return pd.concat(series_to_concat)
 
     def _concatenate_raw_dataseries(
