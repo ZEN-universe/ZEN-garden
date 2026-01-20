@@ -10,10 +10,12 @@ from zen_garden.wrapper import utils
 
 logger = logging.getLogger(__name__)
 
+
 def validate_inputs(
     dataset: Path | str,
-    job_index: Iterable[int] | None,
-) -> tuple[Path, List[int] | None]:
+    folder_output: Path | str | None,
+    job_index: Iterable[int] | None
+) -> tuple[Path, Path, List[int] | None]:
     """Validate and normalize user-provided inputs.
 
     This function performs validates the inputs to ensure downstream
@@ -40,14 +42,21 @@ def validate_inputs(
     if not dataset.exists():
         raise FileNotFoundError(f"Dataset not found: {dataset}")
 
+    if folder_output is None:
+        folder_output = "./outputs/"
+    folder_output = Path(folder_output)
+    if not (folder_output / dataset.name).exists():
+        raise FileNotFoundError(f"Results for dataset {dataset} do not exist"
+            f" in the folder {folder_output}.")
+
     if job_index is None:
         job_index_list = None
-    else: 
+    else:
         job_index_list = list(job_index)
         if not all(isinstance(i, int) for i in job_index_list):
             raise TypeError("job_index must be an iterable of integers")
 
-    return dataset, job_index_list
+    return dataset, folder_output, job_index_list
 
 
 def load_scenarios(
@@ -195,7 +204,7 @@ def operation_scenarios(
         config (str | Path): Path to the simulation configuration file.
         folder_output (str | Path): Directory containing simulation outputs of 
             the capacity-planning problem. New operation results will also be 
-            saved in this directory.
+            saved in this directory. Defaults to "./outputs/".
         job_index (list[int]): Optional iterable of scenario indices in the 
             capacity-planning problem to run. Only these scenarios will be 
             used in the operation-only simulations. If None, all scenarios are 
@@ -210,11 +219,12 @@ def operation_scenarios(
         - Executes simulation runs and writes output files to disk.
         - Emits log messages during execution.
     """
-    dataset, job_index_list = validate_inputs(dataset, job_index)
+    dataset, folder_output, job_index_list = validate_inputs(
+        dataset, folder_output, job_index)
 
     dataset_path = dataset.parent
     dataset_name = dataset.name
-    results_path = Path(folder_output) / dataset_name
+    results_path = folder_output / dataset_name
 
     scenarios = load_scenarios(results_path, job_index_list)
 
@@ -236,12 +246,3 @@ def operation_scenarios(
         )
 
         cleanup_dataset(dataset_op, delete_data)
-
-
-if __name__ == "__main__":
-    import os
-    
-    print(os.getcwd())
-    os.chdir("../../../03_ZEN_data/Reg4Fuels/")
-    operation_scenarios(dataset="Reg4Fuels_V9", folder_output="./outputs/Reg4Fuels_V9",
-                        job_index=[0])

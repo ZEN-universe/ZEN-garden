@@ -41,14 +41,6 @@ def build_parser_op() -> argparse.ArgumentParser:
         "Deletes the created operation-only models upon termination to avoid " \
         "cluttering the data directory"
     )
-    parser.add_argument(
-        "--use_existing",
-        action="store_true",
-        help=
-        "Makes the code reuse existing simulation results for constructing "
-        "the operational problem rather than running a new capacity-planning"
-        "optimization. "
-    )
 
     # add parser description
     parser.description = "Run ZEN garden with a given config file. Per default, the" \
@@ -78,7 +70,7 @@ def create_zen_operation_cli() -> None:
         raise argparse.ArgumentError(
             "Missing required argument --dataset."
         ) 
-    
+      
     # Resolve job index
     job_index = resolve_job_index(args.job_index, args.job_index_var)
 
