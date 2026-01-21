@@ -51,7 +51,7 @@ be placed into the `<dataset>`  folder of the model being run:
     `--config.json
 
 
-For example, the ``scenarios_op.json`` file tells ZEN-garden
+For example, the ``scenarios_op.json`` file shown below tells ZEN-garden
 to run an operational scenario with all 8760 hours per year. Such a scenario 
 is useful for testing whether the results from time-series aggregation are 
 feasible with a full hourly resolution:
@@ -75,9 +75,9 @@ feasible with a full hourly resolution:
 Running Operational Scenarios
 -----------------------------
 
-The `zen-operation` wrapper requires that you first run the original model 
+The ``zen-operation`` wrapper requires that you first run the original model 
 and have the model results available. This can be done using the standard 
-zen-garden commands, as described in the section on 
+ZEN-garden commands, as described in the section on 
 :ref:`running a model:<running.running>`:
 
 .. code:: shell
@@ -102,11 +102,11 @@ are included in the operational simulations. For a detailed description of
 all options in the wrapper, see 
 :func:`zen_garden.cli.zen_operation.cli_zen_operation`.
 
-If the original capacity-planning model has multiple scenario, then the 
+If the original capacity-planning model has multiple scenarios, then the 
 ``zen-operations`` wrapper applies the operational scenarios to all of the
-capacity planning scenarios. If the capacity planning model has 5 scenarios, 
-and there are two operational scenarios, then the ``zen-operations`` wrapper 
-will run :math:`5 \times 2 = 10` scenarios in total.
+capacity planning scenarios. For example, if the capacity planning model has 
+5 scenarios, and there are two operational scenarios, then the 
+``zen-operations`` wrapper will run :math:`5 \times 2 = 10` scenarios in total.
 
 The ``zen-operation`` wrapper can also be run directly from a python script.
 The code below replicates the command line commands presented previously:
@@ -164,18 +164,17 @@ wrapper to answer the following question:
     
 
    *Solution: The operational variables (e.g. production, emissions) have 
-   the same values in the capacity-planning problem and the operation 
-   scenario. This makes sense since the planning problem includes operational
-   optimization. Similarly, the total installed capacity in each year is 
-   the same in each problem. That said, the operation problem has no 
+   the same values in the capacity-planning problem and the operational problem. 
+   This makes sense since the planning problem includes an operational
+   optimization. The total installed capacity in each year is also
+   the same in both problems. That said, the operation problem has no 
    capacity addition in any model year since all technology capacities 
-   were specified ahead of time.* 
+   were specified exogenously.* 
 
 
 2. **Define a new operational scenario in which the system is operated to 
-   minimize emissions instead of cost. Do the results change? From the dual 
-   values of the nodal energy balance constraint, what marginal are associated
-   with supplying one extra unit of electricity demand?**
+   minimize emissions instead of cost. Do the results change? Is the heat 
+   demand still met?**
 
 
 
@@ -212,32 +211,16 @@ wrapper to answer the following question:
 
       .. code:: shell
 
-      zen-garden --dataset="5_multiple_time_steps_per_year"
-      zen-operation --dataset="5_multiple_time_steps_per_year" --scenarios_op="scenarios_op.json"
-      zen-visualization
-
-
-
-   *Solution: A price spike in the capacity planning model occurs in the 
-   hour where electricity demand is highest. In this hour, adding
-   additional capacity would require installing an additional unit of
-   electricity generating capacity. These capacity costs are reflected
-   in the price. In contrast, the operation-only model shows electricity 
-   prices equal to the marginal cost of electricity production in 
-   all hours* 
-    
-.. note::
-  With some solvers, the operation-only price in the 
-  highest-load hour might equal the price of lost load. 
-
-.. tip:: 
-
-  The units of the dual variables can be identified using the definition
-  :math:`\lambda = \frac{\partial f}{\partial g}`. The units of the dual
-  are simply the units of the objective function divided by the units of 
-  the constraint. The units of both can be discovered using the results 
-  functions ``r.get_unit('cost_total')`` and 
-  ``r.get_unit('flow_conversion_output')``, respectively.
+        zen-garden --dataset="5_multiple_time_steps_per_year"
+        zen-operation --dataset="5_multiple_time_steps_per_year" --scenarios_op="scenarios_op.json"        
+        zen-visualization
+      
+   *Solution: In the operational model that minimizes emissions, heat demand 
+   gets shed. The original cost-minimization capacity-planning model installs a 
+   gas boiler to meet heat demand. The operational optimization can not
+   change the installed technology capacities. Since the gas boiler has 
+   non-zero emissions, the minimum emissions optimization chooses to shed 
+   heat demand rather than use the gas boiler.* 
 
 
 
