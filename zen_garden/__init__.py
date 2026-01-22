@@ -1,6 +1,7 @@
 from . import model
 from . import postprocess
 from . import preprocess
+from . import wrapper
 from .utils import get_inheritors
 from .model.element import Element
 from .optimization_setup import OptimizationSetup

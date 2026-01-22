@@ -5,9 +5,7 @@ Key;Type;Default Value;Description
 ``save_parameters``;``bool``;``True``;if true, parameters are saved, otherwise, parameters are not saved
 ``selected_saved_parameters``;``list[str]``;[];list of parameters to save. If empty, all parameters are saved.
 ``selected_saved_variables``;``list[str]``;[];list of variables to save. If empty, all variables are saved.
-``selected_saved_variables_operation``;``list[str]``;[];list of variables to save in the operation-only phase (only if system setting ``include_operation_only_phase`` is ``True``). If empty, all variables are saved.
 ``selected_saved_duals``;``list[str]``;[];list of duals to save. If empty, all duals are saved. (only if ``save_duals`` is ``True``).
-``selected_saved_duals_operation``;``list[str]``;[];list of duals to save in the operation-only phase (only if system setting ``include_operation_only_phase`` is ``True``). If empty, all variables are saved.
 ``solver_dir``;``str``;``.//outputs//solver_files``;folder path where solver log files are (temporarily) saved
 ``keep_files``;``bool``;``False``;if true, solver log files are saved, otherwise solver log files are deleted after each run
 ``io_api``;``str``;``lp``;api that is used to pass the optimization problem to the solver, must be ``lp``, ``mps``, or ``direct``
