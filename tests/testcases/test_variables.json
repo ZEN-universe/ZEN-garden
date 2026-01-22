@@ -895,7 +895,7 @@
             ]
         }
     },
-    "test_1k_capacity": {
+    "test_1j_capacity": {
         "none": {
             "capacity": [
                 {
@@ -947,7 +947,7 @@
             ]
         }
     },
-    "test_1k_operation": {
+    "test_1j_operation": {
         "none": {
             "constraint_nodal_energy_balance": [
                 {
@@ -2715,19 +2715,19 @@
                 },
                 {
                     "index": ["carbon_capture", "power", "CH", 0],
-                    "value": 200.0
+                    "value": 200000.0
                 },
                 {
                     "index": ["carbon_capture", "power", "CH", 1],
-                    "value": 300.0
+                    "value": 300000.0
                 },
                 {
                     "index": ["carbon_storage", "power", "CH", 0],
-                    "value": 200.0
+                    "value": 200000.0
                 },
                 {
                     "index": ["carbon_storage", "power", "CH", 1],
-                    "value": 300.0
+                    "value": 300000.0
                 },
                 {
                     "index": ["natural_gas_storage", "power", "CH", 0],
@@ -2757,19 +2757,19 @@
                 },
                 {
                     "index": ["carbon_capture", "power", "CH", 0],
-                    "value": 200.0
+                    "value": 200000.0
                 },
                 {
                     "index": ["carbon_capture", "power", "CH", 1],
-                    "value": 100.0
+                    "value": 100000.0
                 },
                 {
                     "index": ["carbon_storage", "power", "CH", 0],
-                    "value": 200.0
+                    "value": 200000.0
                 },
                 {
                     "index": ["carbon_storage", "power", "CH", 1],
-                    "value": 100.0
+                    "value": 100000.0
                 },
                 {
                     "index": ["natural_gas_storage", "power", "CH", 0],
@@ -2811,7 +2811,7 @@
                 },
                 {
                     "index": ["carbon_capture", "carbon", "CH", 1],
-                    "value": 200.0
+                    "value": 200000.0
                 },
                 {
                     "index": ["carbon_capture", "carbon", "CH", 2],
@@ -2819,7 +2819,7 @@
                 },
                 {
                     "index": ["carbon_capture", "carbon", "CH", 3],
-                    "value": 300.0
+                    "value": 300000.0
                 }
             ],
             "flow_conversion_input": [
@@ -2845,7 +2845,7 @@
                 },
                 {
                     "index": ["carbon_storage", "carbon", "CH", 1],
-                    "value": 200.0
+                    "value": 200000.0
                 },
                 {
                     "index": ["carbon_storage", "carbon", "CH", 2],
@@ -2853,7 +2853,7 @@
                 },
                 {
                     "index": ["carbon_storage", "carbon", "CH", 3],
-                    "value": 300.0
+                    "value": 300000.0
                 }
             ],
             "flow_storage_charge": [
@@ -2907,19 +2907,19 @@
                 },
                 {
                     "index": ["carbon_capture", "power", "CH", 0],
-                    "value": 200.0
+                    "value": 200000.0
                 },
                 {
                     "index": ["carbon_capture", "power", "CH", 1],
-                    "value": 300.0
+                    "value": 300000.0
                 },
                 {
                     "index": ["carbon_storage", "power", "CH", 0],
-                    "value": 200.0
+                    "value": 200000.0
                 },
                 {
                     "index": ["carbon_storage", "power", "CH", 1],
-                    "value": 300.0
+                    "value": 300000.0
                 },
                 {
                     "index": ["natural_gas_storage", "power", "CH", 0],
@@ -3003,7 +3003,7 @@
                 },
                 {
                     "index": ["carbon_capture", "carbon", "CH", 1],
-                    "value": 200.0
+                    "value": 200000.0
                 },
                 {
                     "index": ["carbon_capture", "carbon", "CH", 2],
@@ -3011,7 +3011,7 @@
                 },
                 {
                     "index": ["carbon_capture", "carbon", "CH", 3],
-                    "value": 300.0
+                    "value": 300000.0
                 }
             ],
             "flow_conversion_input": [
@@ -3037,7 +3037,7 @@
                 },
                 {
                     "index": ["carbon_storage", "carbon", "CH", 1],
-                    "value": 200.0
+                    "value": 200000.0
                 },
                 {
                     "index": ["carbon_storage", "carbon", "CH", 2],
@@ -3045,7 +3045,7 @@
                 },
                 {
                     "index": ["carbon_storage", "carbon", "CH", 3],
-                    "value": 300.0
+                    "value": 300000.0
                 }
             ],
             "flow_storage_charge": [

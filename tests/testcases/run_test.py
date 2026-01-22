@@ -253,9 +253,9 @@ def test_1i(folder_path):
     res = Results(os.path.join(folder_path, "outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
 
-def test_1k(folder_path):
+def test_1j(folder_path):
     # run the test
-    data_set_name = "test_1k"
+    data_set_name = "test_1j"
     data_set_name_op = data_set_name + "_none__operation"
     run(
         config=os.path.join(folder_path,"config_duals.json"),
