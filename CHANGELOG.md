@@ -3,6 +3,19 @@
 This file gets automatically updated in ZEN-garden's continuous integration 
 procedures. Do not edit the file manually.
 
+## [v2.9.0] - 2026-01-22 
+
+### New Features ✨
+- implement ``zen-operation`` wrapper. This wrapper allows users to seamlessly run operation-only scenarios using the capacity values of a previous simulation. Users may provide a new ``scenarios_op`` file that specifies the operational scenarios to run. This new feature replaces the old configuration ``include_operation_only_phase``, which has now been removed. [[🔀 PR #1204](https://github.com/ZEN-universe/ZEN-garden/pull/1204) @csfunke]
+
+### Documentation Changes 📝
+- implement detailed Google-style docstrings for the ``UnitHandling`` class. [[🔀 PR #1204](https://github.com/ZEN-universe/ZEN-garden/pull/1204) @csfunke]
+- improve tutorial of operation-only simulations and update the tutorial to include the new ``zen-operation`` wrapper. [[🔀 PR #1204](https://github.com/ZEN-universe/ZEN-garden/pull/1204) @csfunke]
+
+### Maintenance Tasks 🧹
+- create test cases for the new ``zen-operation`` wrapper. [[🔀 PR #1204](https://github.com/ZEN-universe/ZEN-garden/pull/1204) @csfunke]
+- suppress ``Pint`` package output on redefining units. This output was previously printed to the terminal whenever a new ``Results`` object was initialized. [[🔀 PR #1204](https://github.com/ZEN-universe/ZEN-garden/pull/1204) @csfunke]
+
 ## [v2.8.13] - 2026-01-19 
 
 ### Bug Fixes 🐛
