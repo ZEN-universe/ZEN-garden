@@ -130,7 +130,7 @@ def parse_changes_from_pr_body(pr_body: str, pr_number: str, pr_author: str) -> 
             "changes": []
         },
         "chore": {
-            "title": "Maintainance Tasks 🧹",
+            "title": "Maintenance Tasks 🧹",
             "changes": []
         },
         "breaking": {
@@ -365,7 +365,8 @@ def update_changelog(header: str, categorized_changes: dict,
 
     for items in categorized_changes.values():
         if items["changes"]:
-            changelog_addition += f"\n### {items["title"]}\n"
+            title = items["title"]
+            changelog_addition += f"\n### {title}\n"
             for change in items["changes"]:
                 changelog_addition += f"- {change}\n"
 
@@ -387,7 +388,7 @@ def suggest_branch_name(new_version):
     Returns:
         str: A suggested branch name.
     """
-    branch_name = f"v{new_version}-{datetime.now().strftime("%d.%m.%Y-%H.%M.%S")}"
+    branch_name = f"v{new_version}-{datetime.now().strftime('%d.%m.%Y-%H.%M.%S')}"
 
     return branch_name
 
@@ -481,6 +482,7 @@ def main():
         env_file.write(f"OLD_VERSION={old_version}\n")
         env_file.write(f"BRANCH_NAME={branch_name}\n")
         env_file.write(f"COMMIT_TITLE={commit_title}\n")
+        env_file.write(f"SEMVER_BUMP={semver_bump}\n")
 
 
 if __name__ == "__main__":

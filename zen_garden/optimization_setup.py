@@ -78,10 +78,6 @@ class OptimizationSetup(object):
         # step of optimization horizon
         self.step_horizon = 0
 
-        # flag marking whether the optimization is in capacity expansion or
-        # operations-only phase (only if `include_operation_only_phase` is true)
-        self.operation_only_phase = False
-
         # Init the energy system
         self.energy_system = EnergySystem(optimization_setup=self)
 
@@ -538,159 +534,51 @@ class OptimizationSetup(object):
             parser.write_parsed_output()
 
     def add_results_of_optimization_step(self, step_horizon):
-        """Adds capacity additions and carbon emissions to next optimization step
+        """
+        Adds capacity additions and carbon emissions to the next optimization step.
 
         This function takes the capacity additions and carbon emissions of the 
-        current optimization step and adds them to the existing capacity and
-        existing emissions of the next optimization step. It is used for myopic 
-        foresight and for operation-only model runs. 
+        current optimization step and adds them to the existing capacity and 
+        existing emissions of the next optimization step. Values from the 
+        currently simulated year are added as existing capacities and 
+        emissions for future steps.
 
-        In myopic foresight, values from the currently simulated year are added 
-        as existing capacities and emissions for future steps.
+        Args:
+            step_horizon (int): The year index of the current optimization step. 
+                In myopic foresight, capacities and emissions from this step are 
+                added to existing capacities and emissions.
 
-        In operation-only optimizations, installed capacities from the previous 
-        investment optimization are added as existing capacities.
+        Returns:
+            None
 
-        In optimizations with both features, the capacity additions are taken from 
-        the investment phase while the emissions are taken from 
-        the operation phase. This allows model users to 
-        differentiate between how the system is planned and operated. 
-
-        :param step_horizon: year index of the current optimization step. 
-            In myopic foresight, capacities and emissions from this step are 
-            added to existing capacities and emissions.
-        :type step_horizon: int
-
-        :returns: None
         """
+        decision_horizon = self.get_decision_horizon(step_horizon)
+        # add newly capacity_addition of first year to existing capacity
+        self.add_new_capacity_addition(decision_horizon)
+        # add cumulative carbon emissions to previous carbon emissions
+        self.add_carbon_emission_cumulative(decision_horizon)
 
-        if self.system.use_rolling_horizon:
-            if not self.system.include_operation_only_phase:
-                decision_horizon = self.get_decision_horizon(step_horizon)
-                self.add_new_capacity_addition(decision_horizon)
-                self.add_carbon_emission_cumulative(decision_horizon)
-
-            elif not self.operation_only_phase:
-                self.save_current_existing_capacity()
-                time_steps = self.energy_system.set_time_steps_yearly
-                self.add_new_capacity_addition(time_steps)
-
-            else:
-                self.reset_existing_capacity_to_previous_step()
-                decision_horizon = self.get_decision_horizon(step_horizon)
-                self.add_new_capacity_addition(decision_horizon, capacity_addition = self._old_capacity_addition, invest_capacity = self._old_invest_capacity, cost_capex_overnight = self._old_cost_capex_overnight)
-                self.add_carbon_emission_cumulative(decision_horizon)
-
-        else:
-            if  self.system.include_operation_only_phase and not self.operation_only_phase:
-                time_steps = self.energy_system.set_time_steps_yearly
-                self.add_new_capacity_addition(time_steps)
-
-    def save_current_existing_capacity(self):
+    def add_new_capacity_addition(self, decision_horizon):
         """
-        Stores current capacity values for each technology
-
-        This function saves a copy of the input 
-        paratmeters: capacity_existing, lifetime_existing, 
-        capex_capacity_existing, capacity_existing_energy,
-        and capex_capacity_existing_energy. The copies of these variables are
-        saved directly to the technology class in attributes named 
-        "_old_<parameter_name>".
-
-        :returns: None
-        """
-        for tech in self.get_all_elements(Technology):
-            # new capacity
-            tech._old_capacity_existing = tech.capacity_existing.copy(deep=True)
-            tech._old_capex_capacity_existing = (
-                tech.capex_capacity_existing.copy(deep=True)
-            )
-            tech._old_lifetime_existing = tech.lifetime_existing.copy(deep=True)
-            tech._old_set_technologies_existing = tech.set_technologies_existing
-            if hasattr(tech, 'capex_capacity_existing_energy'):
-                tech._old_capex_capacity_existing_energy = (
-                    tech.capex_capacity_existing_energy.copy(deep=True)
-                )
-            if hasattr(tech, 'capacity_existing_energy'):
-                tech._old_capacity_existing_energy = (
-                    tech.capacity_existing_energy.copy(deep=True)
-                )
-        
-        self._old_capacity_addition = self.model.solution["capacity_addition"].to_series().dropna()
-        self._old_invest_capacity = self.model.solution["capacity_investment"].to_series().dropna()
-        self._old_cost_capex_overnight = self.model.solution["cost_capex_overnight"].to_series().dropna()
-
-
-
-    def reset_existing_capacity_to_previous_step(self):
-        """
-        Resets existing capacities to saved values
-
-        This function resets capacity-related input parameters to
-        previously saved values. The following parameters are reset:
-        capacity_existing, lifetime_existing, capex_capacity_existing, 
-        capacity_existing_energy, and capex_capacity_existing_energy. The values 
-        are taken from the technology attributes "_old_<parameter_name>", as
-        saved by :meth:`OptimizationSetup.save_current_existing_capacity`. 
-
-        :returns: None
-        """
-        for tech in self.get_all_elements(Technology):
-            # new capacity
-            tech.capacity_existing = tech._old_capacity_existing
-            tech.capex_capacity_existing = tech._old_capex_capacity_existing
-            tech.lifetime_existing = tech._old_capex_capacity_existing
-            tech.set_technologies_existing = tech._old_set_technologies_existing
-            if hasattr(tech, '_old_capex_capacity_existing_energy'):
-                tech.capex_capacity_existing_energy = (
-                    tech._old_capex_capacity_existing_energy
-                )
-            if hasattr(tech, '_old_capacity_existing_energy'):
-                tech.capacity_existing_energy = (
-                    tech._old_capacity_existing_energy
-                )
-
-    def add_new_capacity_addition(self, 
-                                  decision_horizon, 
-                                  capacity_addition = None,
-                                  invest_capacity = None,
-                                  cost_capex_overnight = None):
-        """ Adds the newly built capacity to the existing capacity
+        Adds the newly built capacity to the existing capacity.
 
         This function adds installed capacities from the current optimization 
-        step to existing capacities in the model. It also adds 
-        costs from the installed capacities to existing capacity investment. 
-        Capacity values whose magnitude is below that specified by the solver
-        setting "rounding_decimal_points_capacity" are set to zero.
+        step to existing capacities in the model. It also adds costs from the 
+        installed capacities to existing capacity investment. Capacity values whose 
+        magnitude is below that specified by the solver setting 
+        "rounding_decimal_points_capacity" are set to zero.
 
-        :param decision_horizon: list of the years for to transfer installed 
-            capacities to existing capacities. 
-        :type decision_horizon: list or int
+        Args:
+            decision_horizon (list or int): A list of the years to transfer installed 
+                capacities to existing capacities.
 
-        :param capacity_addition: dataframe of capacity additions to add to 
-            existing capacities (optional). If blank, capacity additions are 
-            taken from the current modeling results.
-        :type capacity_addition: pandas.DataFrame
-
-        :param invest_capacity: dataframe of capacity investments to add to 
-            existing investments (optional). If blank, capacity investments are 
-            taken from the current modeling results.
-        :type invest_capacity: pandas.DataFrame
-
-        :param cost_capex_overnight: dataframe of overnight capital costs to 
-            add to existing investments (optional). If blank, capital costs are 
-            taken from the current modeling results.
-        :type cost_capex_overnight: pandas.DataFrame
-
-        :returns: None
+        Returns:
+            None
 
         """
-        if capacity_addition is None:
-            capacity_addition = self.model.solution["capacity_addition"].to_series().dropna()
-        if invest_capacity is None:
-            invest_capacity = self.model.solution["capacity_investment"].to_series().dropna()
-        if cost_capex_overnight is None:
-            cost_capex_overnight = self.model.solution["cost_capex_overnight"].to_series().dropna()
+        capacity_addition = self.model.solution["capacity_addition"].to_series().dropna()
+        invest_capacity = self.model.solution["capacity_investment"].to_series().dropna()
+        cost_capex_overnight = self.model.solution["cost_capex_overnight"].to_series().dropna()
 
         if self.solver.round_parameters:
             rounding_value = 10 ** (-self.solver.rounding_decimal_points_capacity)
@@ -709,17 +597,19 @@ class OptimizationSetup(object):
             tech.add_new_capacity_investment(capacity_investment, decision_horizon)
 
     def add_carbon_emission_cumulative(self, decision_horizon):
-        """ Add current emissions to existing emissions.
+        """
+        Adds current emissions to existing emissions.
 
         This function adds carbon emissions from the current optimization 
         step to the existing carbon emissions.
 
-        :param decision_horizon: list of the years for to transfer installed 
-            capacities to existing capacities. 
-        :type decision_horizon: list or int
+        Args:
+            decision_horizon (list or int): A list of the years to transfer 
+                emissions to existing emissions.
 
-        :returns: None
-        
+        Returns:
+            None
+            
         """
         interval_between_years = self.energy_system.system.interval_between_years
         last_year = decision_horizon[-1]
@@ -794,29 +684,3 @@ class OptimizationSetup(object):
                 return component_data
             except KeyError:
                 raise KeyError(f"the custom set {custom_set} cannot be used as a subindex of {component_data.index}")
-
-    def set_phase_configurations(self, phase):
-        """ Sets proper configurations for operation-only problems.
-         
-        This function sets proper configurations for the current phase 
-        (capacity planning vs. operation only) of the model. 
-         
-        :param phase: current phase of the optimization. Must be either
-            `investment` (for capacity planning) or `operations` for
-            operations-only.
-        :type phase: str
-
-        :returns: None
-        """
-
-        if phase == 'investment':
-            logging.info(f"---- Optimizing investment ----")
-            self.system.allow_investment = True
-            self.operation_only_phase = False
-
-        elif phase == 'operation':
-            logging.info(f"---- Optimizing operation only ----")
-            self.system.allow_investment = False
-            self.operation_only_phase = True
-        else:
-            raise ValueError(f"Unrecognized phase: {phase}")

@@ -895,7 +895,7 @@
             ]
         }
     },
-    "test_1j": {
+    "test_1j_capacity": {
         "none": {
             "capacity": [
                 {
@@ -944,8 +944,12 @@
                     "index": ["natural_gas", "FR", 0],
                     "value": 0.001000
                 }
-            ],
-            "constraint_nodal_energy_balance_operation": [
+            ]
+        }
+    },
+    "test_1j_operation": {
+        "none": {
+            "constraint_nodal_energy_balance": [
                 {
                     "index": ["heat", "CH", 0],
                     "value": 0.001200
@@ -969,6 +973,50 @@
                 {
                     "index": ["natural_gas", "FR", 0],
                     "value": 0.001000
+                }
+            ],
+            "capacity": [
+                {
+                    "index": ["natural_gas_boiler", "power", "DE", 0],
+                    "value": 110.0
+                },
+                {
+                    "index": ["natural_gas_boiler", "power", "CH", 0],
+                    "value": 0.0
+                },
+                {
+                    "index": ["natural_gas_boiler", "power", "FR", 0],
+                    "value": 60.0
+                },
+                {
+                    "index": ["heat_pipeline", "power", "CH-DE", 0],
+                    "value": 0.0
+                },
+                {
+                    "index": ["heat_pipeline", "power", "DE-CH", 0],
+                    "value": 10.0
+                }
+            ],
+            "capacity_addition": [
+                {
+                    "index": ["natural_gas_boiler", "power", "DE", 0],
+                    "value": 0
+                },
+                {
+                    "index": ["natural_gas_boiler", "power", "CH", 0],
+                    "value": 0
+                },
+                {
+                    "index": ["natural_gas_boiler", "power", "FR", 0],
+                    "value": 0
+                },
+                {
+                    "index": ["heat_pipeline", "power", "CH-DE", 0],
+                    "value": 0
+                },
+                {
+                    "index": ["heat_pipeline", "power", "DE-CH", 0],
+                    "value": 0
                 }
             ]
         }
@@ -1440,92 +1488,6 @@
                 {
                     "index": ["natural_gas_storage", "energy", "DE", 0],
                     "value": 5437.681983
-                }
-            ]
-        }
-    },
-    "test_3j": {
-        "none": {
-            "capacity": [
-                {
-                    "index": ["natural_gas_boiler", "power", "CH", 0],
-                    "value": 10.0
-                },
-                {
-                    "index": ["natural_gas_boiler", "power", "DE", 0],
-                    "value": 100.0
-                }
-            ],
-            "capacity_addition": [
-                {
-                    "index": ["natural_gas_boiler", "power", "CH", 0],
-                    "value": 10.0
-                },
-                {
-                    "index": ["natural_gas_boiler", "power", "DE", 0],
-                    "value": 100.0
-                },
-                {
-                    "index": ["natural_gas_boiler", "power", "CH", 1],
-                    "value": 0.0
-                },
-                {
-                    "index": ["natural_gas_boiler", "power", "DE", 1],
-                    "value": 0.0
-                }
-            ],
-            "capacity_operation": [
-                {
-                    "index": ["natural_gas_boiler", "power", "CH", 0],
-                    "value": 10.0
-                },
-                {
-                    "index": ["natural_gas_boiler", "power", "DE", 0],
-                    "value": 100.0
-                }
-            ],
-            "capacity_addition_operation": [
-                {
-                    "index": ["natural_gas_boiler", "power", "CH", 0],
-                    "value": 0.0
-                },
-                {
-                    "index": ["natural_gas_boiler", "power", "DE", 0],
-                    "value": 0.0
-                },
-                {
-                    "index": ["natural_gas_boiler", "power", "CH", 1],
-                    "value": 0.0
-                },
-                {
-                    "index": ["natural_gas_boiler", "power", "DE", 1],
-                    "value": 0.0
-                }
-            ],
-            "constraint_nodal_energy_balance": [
-                {
-                    "index": ["heat", "CH", 0],
-                    "value": 0.043123
-                },
-                {
-                    "index": ["heat", "DE", 0],
-                    "value": 0.043123
-                },
-                {
-                    "index": ["heat", "CH", 1],
-                    "value": 0.0253
-                },
-                {
-                    "index": ["heat", "DE", 1],
-                    "value": 0.0253
-                },
-                {
-                    "index": ["heat", "CH", 2],
-                    "value": 0.043123
-                },
-                {
-                    "index": ["heat", "DE", 2],
-                    "value": 0.025300
                 }
             ]
         }
@@ -2737,6 +2699,390 @@
                     "value": 1.0
                 },
                 {"index": ["natural_gas_boiler", "power", "DE", 0], "value": 10.0}
+            ]
+        }
+    },
+    "test_7b_capacity": {
+        "none": {
+            "capacity": [
+                {
+                    "index": ["natural_gas_boiler", "power", "CH", 0],
+                    "value": 100.0
+                },
+                {
+                    "index": ["natural_gas_boiler", "power", "CH", 1],
+                    "value": 150.0
+                },
+                {
+                    "index": ["carbon_capture", "power", "CH", 0],
+                    "value": 200000.0
+                },
+                {
+                    "index": ["carbon_capture", "power", "CH", 1],
+                    "value": 300000.0
+                },
+                {
+                    "index": ["carbon_storage", "power", "CH", 0],
+                    "value": 200000.0
+                },
+                {
+                    "index": ["carbon_storage", "power", "CH", 1],
+                    "value": 300000.0
+                },
+                {
+                    "index": ["natural_gas_storage", "power", "CH", 0],
+                    "value": 200.0
+                },
+                {
+                    "index": ["natural_gas_storage", "power", "CH", 1],
+                    "value": 300.0
+                },
+                {
+                    "index": ["natural_gas_storage", "energy", "CH", 0],
+                    "value": 200.0
+                },
+                {
+                    "index": ["natural_gas_storage", "energy", "CH", 1],
+                    "value": 300.0
+                }
+            ],
+            "capacity_addition": [
+                {
+                    "index": ["natural_gas_boiler", "power", "CH", 0],
+                    "value": 50.0
+                },
+                {
+                    "index": ["natural_gas_boiler", "power", "CH", 1],
+                    "value": 50.0
+                },
+                {
+                    "index": ["carbon_capture", "power", "CH", 0],
+                    "value": 200000.0
+                },
+                {
+                    "index": ["carbon_capture", "power", "CH", 1],
+                    "value": 100000.0
+                },
+                {
+                    "index": ["carbon_storage", "power", "CH", 0],
+                    "value": 200000.0
+                },
+                {
+                    "index": ["carbon_storage", "power", "CH", 1],
+                    "value": 100000.0
+                },
+                {
+                    "index": ["natural_gas_storage", "power", "CH", 0],
+                    "value": 200.0
+                },
+                {
+                    "index": ["natural_gas_storage", "power", "CH", 1],
+                    "value": 100.0
+                },
+                {
+                    "index": ["natural_gas_storage", "energy", "CH", 0],
+                    "value": 200.0
+                },
+                {
+                    "index": ["natural_gas_storage", "energy", "CH", 1],
+                    "value": 100.0
+                }
+            ],
+            "flow_conversion_output": [
+                {
+                    "index": ["natural_gas_boiler", "heat", "CH", 0],
+                    "value": 0.0
+                },
+                {
+                    "index": ["natural_gas_boiler", "heat", "CH", 1],
+                    "value": 100.0
+                },
+                {
+                    "index": ["natural_gas_boiler", "heat", "CH", 2],
+                    "value": 0.0
+                },
+                {
+                    "index": ["natural_gas_boiler", "heat", "CH", 3],
+                    "value": 150.0
+                },
+                {
+                    "index": ["carbon_capture", "carbon", "CH", 0],
+                    "value": 0.0
+                },
+                {
+                    "index": ["carbon_capture", "carbon", "CH", 1],
+                    "value": 200000.0
+                },
+                {
+                    "index": ["carbon_capture", "carbon", "CH", 2],
+                    "value": 0.0
+                },
+                {
+                    "index": ["carbon_capture", "carbon", "CH", 3],
+                    "value": 300000.0
+                }
+            ],
+            "flow_conversion_input": [
+                {
+                    "index": ["natural_gas_boiler", "natural_gas", "CH", 0],
+                    "value": 0.0
+                },
+                {
+                    "index": ["natural_gas_boiler", "natural_gas", "CH", 1],
+                    "value": 200.0
+                },
+                {
+                    "index": ["natural_gas_boiler", "natural_gas", "CH", 2],
+                    "value": 0.0
+                },
+                {
+                    "index": ["natural_gas_boiler", "natural_gas", "CH", 3],
+                    "value": 300.0
+                },
+                {
+                    "index": ["carbon_storage", "carbon", "CH", 0],
+                    "value": 0.0
+                },
+                {
+                    "index": ["carbon_storage", "carbon", "CH", 1],
+                    "value": 200000.0
+                },
+                {
+                    "index": ["carbon_storage", "carbon", "CH", 2],
+                    "value": 0.0
+                },
+                {
+                    "index": ["carbon_storage", "carbon", "CH", 3],
+                    "value": 300000.0
+                }
+            ],
+            "flow_storage_charge": [
+                {
+                    "index": ["natural_gas_storage", "CH", 0],
+                    "value": 200.0
+                },
+                {
+                    "index": ["natural_gas_storage", "CH", 1],
+                    "value": 0.0
+                },
+                {
+                    "index": ["natural_gas_storage", "CH", 2],
+                    "value": 300.0
+                },
+                {
+                    "index": ["natural_gas_storage", "CH", 3],
+                    "value": 0.0
+                }
+            ],
+            "flow_storage_discharge": [
+                {
+                    "index": ["natural_gas_storage", "CH", 0],
+                    "value": 0.0
+                },
+                {
+                    "index": ["natural_gas_storage", "CH", 1],
+                    "value": 200.0
+                },
+                {
+                    "index": ["natural_gas_storage", "CH", 2],
+                    "value": 0.0
+                },
+                {
+                    "index": ["natural_gas_storage", "CH", 3],
+                    "value": 300.0
+                }
+            ]
+        }
+    },
+    "test_7b_operation": {
+        "none": {
+            "capacity": [
+                {
+                    "index": ["natural_gas_boiler", "power", "CH", 0],
+                    "value": 100.0
+                },
+                {
+                    "index": ["natural_gas_boiler", "power", "CH", 1],
+                    "value": 150.0
+                },
+                {
+                    "index": ["carbon_capture", "power", "CH", 0],
+                    "value": 200000.0
+                },
+                {
+                    "index": ["carbon_capture", "power", "CH", 1],
+                    "value": 300000.0
+                },
+                {
+                    "index": ["carbon_storage", "power", "CH", 0],
+                    "value": 200000.0
+                },
+                {
+                    "index": ["carbon_storage", "power", "CH", 1],
+                    "value": 300000.0
+                },
+                {
+                    "index": ["natural_gas_storage", "power", "CH", 0],
+                    "value": 200.0
+                },
+                {
+                    "index": ["natural_gas_storage", "power", "CH", 1],
+                    "value": 300.0
+                },
+                {
+                    "index": ["natural_gas_storage", "energy", "CH", 0],
+                    "value": 200.0
+                },
+                {
+                    "index": ["natural_gas_storage", "energy", "CH", 1],
+                    "value": 300.0
+                }
+            ],
+            "capacity_addition": [
+                {
+                    "index": ["natural_gas_boiler", "power", "CH", 0],
+                    "value": 0.0
+                },
+                {
+                    "index": ["natural_gas_boiler", "power", "CH", 1],
+                    "value": 0.0
+                },
+                {
+                    "index": ["carbon_capture", "power", "CH", 0],
+                    "value": 0.0
+                },
+                {
+                    "index": ["carbon_capture", "power", "CH", 1],
+                    "value": 0.0
+                },
+                {
+                    "index": ["carbon_storage", "power", "CH", 0],
+                    "value": 0.0
+                },
+                {
+                    "index": ["carbon_storage", "power", "CH", 1],
+                    "value": 0.0
+                },
+                {
+                    "index": ["natural_gas_storage", "power", "CH", 0],
+                    "value": 0.0
+                },
+                {
+                    "index": ["natural_gas_storage", "power", "CH", 1],
+                    "value": 0.0
+                },
+                {
+                    "index": ["natural_gas_storage", "energy", "CH", 0],
+                    "value": 0.0
+                },
+                {
+                    "index": ["natural_gas_storage", "energy", "CH", 1],
+                    "value": 0.0
+                }
+            ],
+            "flow_conversion_output": [
+                {
+                    "index": ["natural_gas_boiler", "heat", "CH", 0],
+                    "value": 0.0
+                },
+                {
+                    "index": ["natural_gas_boiler", "heat", "CH", 1],
+                    "value": 100.0
+                },
+                {
+                    "index": ["natural_gas_boiler", "heat", "CH", 2],
+                    "value": 0.0
+                },
+                {
+                    "index": ["natural_gas_boiler", "heat", "CH", 3],
+                    "value": 150.0
+                },
+                {
+                    "index": ["carbon_capture", "carbon", "CH", 0],
+                    "value": 0.0
+                },
+                {
+                    "index": ["carbon_capture", "carbon", "CH", 1],
+                    "value": 200000.0
+                },
+                {
+                    "index": ["carbon_capture", "carbon", "CH", 2],
+                    "value": 0.0
+                },
+                {
+                    "index": ["carbon_capture", "carbon", "CH", 3],
+                    "value": 300000.0
+                }
+            ],
+            "flow_conversion_input": [
+                {
+                    "index": ["natural_gas_boiler", "natural_gas", "CH", 0],
+                    "value": 0.0
+                },
+                {
+                    "index": ["natural_gas_boiler", "natural_gas", "CH", 1],
+                    "value": 200.0
+                },
+                {
+                    "index": ["natural_gas_boiler", "natural_gas", "CH", 2],
+                    "value": 0.0
+                },
+                {
+                    "index": ["natural_gas_boiler", "natural_gas", "CH", 3],
+                    "value": 300.0
+                },
+                {
+                    "index": ["carbon_storage", "carbon", "CH", 0],
+                    "value": 0.0
+                },
+                {
+                    "index": ["carbon_storage", "carbon", "CH", 1],
+                    "value": 200000.0
+                },
+                {
+                    "index": ["carbon_storage", "carbon", "CH", 2],
+                    "value": 0.0
+                },
+                {
+                    "index": ["carbon_storage", "carbon", "CH", 3],
+                    "value": 300000.0
+                }
+            ],
+            "flow_storage_charge": [
+                {
+                    "index": ["natural_gas_storage", "CH", 0],
+                    "value": 200.0
+                },
+                {
+                    "index": ["natural_gas_storage", "CH", 1],
+                    "value": 0.0
+                },
+                {
+                    "index": ["natural_gas_storage", "CH", 2],
+                    "value": 300.0
+                },
+                {
+                    "index": ["natural_gas_storage", "CH", 3],
+                    "value": 0.0
+                }
+            ],
+            "flow_storage_discharge": [
+                {
+                    "index": ["natural_gas_storage", "CH", 0],
+                    "value": 0.0
+                },
+                {
+                    "index": ["natural_gas_storage", "CH", 1],
+                    "value": 200.0
+                },
+                {
+                    "index": ["natural_gas_storage", "CH", 2],
+                    "value": 0.0
+                },
+                {
+                    "index": ["natural_gas_storage", "CH", 3],
+                    "value": 300.0
+                }
             ]
         }
     },

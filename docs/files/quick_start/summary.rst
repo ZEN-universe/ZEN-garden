@@ -12,8 +12,8 @@ The two examples below are equivalent. They both download the dataset examples
 ``1_base_case`` to the current working directory. Then, they run ZEN-garden 
 on that dataset. Finally, they provide a simple example of how to analyze the
 resulting model outputs. In the command-line interface, the model outputs 
-can be explored using the zen-garden visualization platform. In a python script,
-the zen-garden results class can be used to extract variable values and units.
+can be explored using the ZEN-garden visualization platform. In a python script,
+the ZEN-garden results class can be used to extract variable values and units.
 Both types of analyses are described in detail in the 
 :ref:`tutorial on analyzing outputs<t_analyze.t_analyze>`.
 

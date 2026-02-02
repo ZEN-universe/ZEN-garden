@@ -7,9 +7,9 @@ from copy import deepcopy
 import numpy as np
 import pytest
 
-from zen_garden import run
-from zen_garden import Results
-from zen_garden import download_example_dataset
+from zen_garden import run, Results, download_example_dataset
+from zen_garden.wrapper.operation_scenarios import operation_scenarios
+
 
 # fixtures
 ##########
@@ -115,22 +115,6 @@ def check_get_total_get_full_ts(
 
 # All the tests
 ###############
-def test_0a(folder_path):
-    # test that dataset examples can be succesfully downloaded
-    
-    # change working directory to output folder   
-    cwd = os.getcwd()
-    out_dir = os.path.join(folder_path,"outputs")
-    if not os.path.exists(out_dir):
-        os.makedirs(out_dir)
-    os.chdir(out_dir)
-
-    # download example
-    download_example_dataset("1_base_case")
-
-    # change directory back to original one
-    os.chdir(os.getcwd())
-
 def test_1a(folder_path):
     # add duals for this test
 
@@ -272,15 +256,24 @@ def test_1i(folder_path):
 def test_1j(folder_path):
     # run the test
     data_set_name = "test_1j"
+    data_set_name_op = data_set_name + "_none__operation"
     run(
         config=os.path.join(folder_path,"config_duals.json"),
         dataset=os.path.join(folder_path,data_set_name),
-        folder_output=os.path.join(folder_path,"outputs")
+        folder_output=os.path.join(folder_path,"outputs"),
+    )
+    operation_scenarios(
+        config=os.path.join(folder_path,"config_duals.json"),
+        dataset=os.path.join(folder_path,data_set_name),
+        folder_output=os.path.join(folder_path,"outputs"),
+        delete_data="True"
     )
 
     # read the results and check again
-    res = Results(os.path.join(folder_path, "outputs", data_set_name))
-    compare_variables_results(data_set_name, res, folder_path)
+    res_cap = Results(os.path.join(folder_path, "outputs", data_set_name))
+    res_op = Results(os.path.join(folder_path, "outputs", data_set_name_op))
+    compare_variables_results(data_set_name + "_capacity", res_cap, folder_path)
+    compare_variables_results(data_set_name + "_operation", res_op, folder_path)
 
 def test_2a(folder_path):
     # run the test
@@ -467,21 +460,6 @@ def test_3i(folder_path):
     # test functions get_total() and get_full_ts()
     check_get_total_get_full_ts(res)
 
-def test_3j(folder_path):
-    # run the test
-    data_set_name = "test_3j"
-    run(
-        config=os.path.join(folder_path,"config_duals.json"),
-        dataset=os.path.join(folder_path,data_set_name),
-        folder_output=os.path.join(folder_path,"outputs")
-    )
-
-    # read the results and check again
-    res = Results(os.path.join(folder_path, "outputs", data_set_name))
-    compare_variables_results(data_set_name, res, folder_path)
-    # test functions get_total() and get_full_ts()
-    check_get_total_get_full_ts(res)
-
 def test_4a(folder_path):
     # run the test
     data_set_name = "test_4a"
@@ -631,6 +609,26 @@ def test_7a(folder_path):
     res = Results(os.path.join(folder_path, "outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
 
+def test_7b(folder_path):
+    # run the test
+    data_set_name = "test_7b"
+    data_set_name_op = data_set_name + "_none__operation"
+    run(
+        config=os.path.join(folder_path,"config_duals.json"),
+        dataset=os.path.join(folder_path,data_set_name),
+        folder_output=os.path.join(folder_path,"outputs"),
+    )
+    operation_scenarios(
+        config=os.path.join(folder_path,"config_duals.json"),
+        dataset=os.path.join(folder_path,data_set_name),
+        folder_output=os.path.join(folder_path,"outputs"),
+        delete_data=True
+    )
+    # read the results and check again
+    res_cap = Results(os.path.join(folder_path, "outputs", data_set_name))
+    res_op = Results(os.path.join(folder_path, "outputs", data_set_name_op))
+    compare_variables_results(data_set_name + "_capacity", res_cap, folder_path)
+    compare_variables_results(data_set_name + "_operation", res_op, folder_path)
 
 def test_8a(folder_path):
     # run the test
@@ -671,4 +669,4 @@ def test_10a(folder_path):
 
 if __name__ == "__main__":
     folder_path = os.path.dirname(__file__)
-    test_1a(folder_path)
+    test_7b(folder_path)
