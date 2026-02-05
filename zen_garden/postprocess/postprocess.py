@@ -632,19 +632,23 @@ class Postprocess:
                 if not isinstance(key, str):
                     raise TypeError("All dictionary keys must be strings!")
                 if isinstance(value, dict):
-                    input_dict, docstring, has_units = self._format_dict(value)
+                    input_dict, units, docstring, has_units = self._format_dict(value)
                     if not input_dict["dataframe"].empty:
-                        store.put(key, input_dict["dataframe"], format='table')
+                        df = input_dict["dataframe"]
+                        store.put(key, df, format='table')
                         # add additional attributes
-                        index_names = input_dict["dataframe"].index.names
+                        index_names = df.index.names
                         index_names = ",".join([str(name) for name in index_names])
                         store.get_storer(key).attrs.docstring = docstring
                         store.get_storer(key).attrs["name"] = key
                         store.get_storer(key).attrs["has_units"] = has_units
                         store.get_storer(key).attrs["index_names"] = index_names
+                        if has_units:
+                            store.put(key + "_units", units, format='table')
                         # remove "_i_table" to reduce file size
                         try:
                             store.remove(key + "/_i_table")
+                            store.remove(key + "_units/_i_table")
                         except KeyError:
                             pass
                 else:
@@ -673,12 +677,11 @@ class Postprocess:
             assert units.index.intersection(df.index).equals(
                 units.index), f"Units index {units.index} does not match dataframe index {df.index}"
             units.name = "units"
-            df = pd.concat([df, units], axis=1)
-            input_dict["dataframe"] = df
             has_units = True
         else:
             has_units = False
+            units = None
         if not (set(input_dict.keys()) == set(expected_keys) or set(input_dict.keys()) == set(expected_keys).union(
                 ["units"])):
             raise ValueError(f"Expected keys are {expected_keys}, but got {input_dict.keys()}")
-        return input_dict, docstring, has_units
+        return input_dict, units, docstring, has_units
