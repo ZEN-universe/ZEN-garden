@@ -3,6 +3,14 @@
 This file gets automatically updated in ZEN-garden's continuous integration 
 procedures. Do not edit the file manually.
 
+## [v2.9.1] - 2026-02-05 
+
+### Bug Fixes 🐛
+- Set `macos` version to `latest` instead of `macos13` because deprecated [[🔀 PR #1207](https://github.com/ZEN-universe/ZEN-garden/pull/1207) @jacob-mannhardt]
+- Skip `read_components` when the scenario does not exist [[🔀 PR #1207](https://github.com/ZEN-universe/ZEN-garden/pull/1207) @jacob-mannhardt]
+- Create `ureg` (including reading in the user units) only for one scenario, not for all [[🔀 PR #1207](https://github.com/ZEN-universe/ZEN-garden/pull/1207) @jacob-mannhardt]
+- Move the components construction outside the initialization of the scenarios. The components are only created upon requests when the data is actually read. [[🔀 PR #1207](https://github.com/ZEN-universe/ZEN-garden/pull/1207) @jacob-mannhardt]
+
 ## [v2.9.0] - 2026-01-22 
 
 ### New Features ✨
