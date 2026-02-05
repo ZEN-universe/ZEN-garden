@@ -76,7 +76,7 @@ class Results:
             if component_name not in scenario.components:
                 logging.warning(f"Component {component_name} not found. If you expected this component to be present, the solution is probably empty and therefore skipped.")
                 return pd.Series()
-            component = scenario.components[component_name]
+            component = scenario.get_component(component_name)
             if data_type == "units" and not component.has_units:
                 return None
             idx = reformat_slicing_index(index,component)
@@ -89,7 +89,7 @@ class Results:
                 scenario = self.solution_loader.scenarios[scenario_name]
                 if component_name not in scenario.components:
                     continue
-                component = scenario.components[component_name]
+                component = scenario.get_component(component_name)
                 if data_type == "units" and not component.has_units:
                     return None
                 idx = reformat_slicing_index(index, component)
@@ -247,7 +247,7 @@ class Results:
             scenario = self.solution_loader.scenarios[scenario_name]
             if component_name not in scenario.components:
                 continue
-            component = scenario.components[component_name]
+            component = scenario.get_component(component_name)
             idx = reformat_slicing_index(index,component)
             scenarios_dict[scenario_name] = self.get_full_ts_per_scenario(
                 scenario,
@@ -363,7 +363,7 @@ class Results:
             scenario = self.solution_loader.scenarios[scenario_name]
             if component_name not in scenario.components:
                 continue
-            component = scenario.components[component_name]
+            component = scenario.get_component(component_name)
             idx = reformat_slicing_index(index, component)
             current_total = self.get_total_per_scenario(
                 scenario, component, year, keep_raw, index = idx
@@ -416,7 +416,7 @@ class Results:
         :return: annuity of the duals
         """
         system = scenario.system
-        discount_rate_component = scenario.components["discount_rate"]
+        discount_rate_component = scenario.get_component("discount_rate")
         # calculate annuity
         discount_rate = self.solution_loader.get_component_data(
             scenario, discount_rate_component
@@ -553,7 +553,7 @@ class Results:
         component = None
         for s in self.solution_loader.scenarios:
             if component_name in self.solution_loader.scenarios[s].components:
-                component = self.solution_loader.scenarios[s].components[component_name]
+                component = self.solution_loader.scenarios[s].get_component(component_name)
                 break
         if component is None:
             return u
@@ -674,7 +674,7 @@ class Results:
         component = None
         for scenario in self.solution_loader.scenarios.values():
             if component_name in scenario.components:
-                component = scenario.components[component_name]
+                component = scenario.get_component(component_name)
                 break
         if component is None:
             logging.warning(f"Component {component_name} not found and the documentation cannot be returned.")
@@ -699,7 +699,7 @@ class Results:
         if component_name not in scenario.components:
             logging.warning(f"Component {component_name} not found and the index names cannot be returned.")
             return []
-        component = scenario.components[component_name]
+        component = scenario.get_component(component_name)
         return component.index_names
 
     def get_years(self, scenario_name: Optional[str] = None) -> list[int]:
@@ -909,11 +909,9 @@ class Results:
         assert component_type in ComponentType.get_component_type_names(), f"Invalid component type: {component_type}. Valid types are: {ComponentType.get_component_type_names()}"
         list_names = []
         for scenario in self.solution_loader.scenarios:
-            for component in self.solution_loader.scenarios[scenario].components:
-                component_name = self.solution_loader.scenarios[scenario].components[component].name
-                component_type_specific = self.solution_loader.scenarios[scenario].components[component].component_type.name
-                if component_name not in list_names and component_type_specific == component_type:
-                    list_names.append(component)
+            for cn in self.solution_loader.scenarios[scenario].component_types[component_type]:
+                if cn not in list_names:
+                    list_names.append(cn)
         return list_names
 
 

@@ -12,7 +12,7 @@
         "runs_when":"env_change"
     },
     {
-        "os":"macos-13",
+        "os":"macos-latest",
         "label":"osx-64",
         "prefix":"/Users/runner/miniconda3/envs/zen-garden-env",
         "runs_when":"schedule"
