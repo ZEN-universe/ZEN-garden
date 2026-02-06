@@ -545,7 +545,7 @@ class SolutionLoader():
         version = get_solution_version(scenario)
         if check_if_v1_leq_v2(version,"v0"):
             time_step_duration = self.get_component_data(
-                scenario, scenario.components[timestep_duration_name]
+                scenario, scenario.get_component(timestep_duration_name)
             )
         else:
             time_steps_file_name = _get_time_steps_file(scenario)
@@ -739,7 +739,7 @@ def get_solution_version(scenario: Scenario) -> str:
 
     :return: The version of the solution.
     """
-    versions = {"v1":"2.0.14","v2":"2.2.15"}
+    versions = {"v1":"2.0.14","v2":"2.2.15","v3":"2.9.1"}
     version = "v0"
     if hasattr(scenario.analysis,"zen_garden_version"):
         for k,v in versions.items():
@@ -831,21 +831,36 @@ def get_df_from_path(path: str, component_name: str, version: str, data_type: Li
 
     if check_if_v1_leq_v2(version,"v0"):
         pd_read = pd.read_hdf(path, component_name + f"/{data_type}")
+        with h5py.File(path,'r') as h5_file:
+            data = h5_file[component_name + f"/{data_type}"][:]
         if len(index) > 0:
             pd_read = slice_df_by_index(pd_read,index)
+    elif check_if_v1_leq_v2(version,"v2"):
+        if data_type == "dataframe":
+            try:
+                pd_read = pd.read_hdf(path, component_name,where=index,columns=["value"])
+            except:
+                pd_read = pd.read_hdf(path, component_name,columns=["value"])
+            # if isinstance(pd_read, pd.DataFrame):
+            #     pd_read = pd_read["value"]
+        elif data_type == "units":
+            try:
+                pd_read = pd.read_hdf(path, component_name,where=index,columns=["units"])
+            except:
+                pd_read = pd.read_hdf(path, component_name,columns=["units"])
+        else:
+            raise ValueError(f"Data type {data_type} not supported.")
     else:
         if data_type == "dataframe":
             try:
                 pd_read = pd.read_hdf(path, component_name,where=index)
             except:
                 pd_read = pd.read_hdf(path, component_name)
-            if isinstance(pd_read, pd.DataFrame):
-                pd_read = pd_read["value"]
         elif data_type == "units":
             try:
-                pd_read = pd.read_hdf(path, component_name,where=index)["units"]
+                pd_read = pd.read_hdf(path, component_name + "_units",where=index)
             except:
-                pd_read = pd.read_hdf(path, component_name)["units"]
+                pd_read = pd.read_hdf(path, component_name + "_units")
         else:
             raise ValueError(f"Data type {data_type} not supported.")
 
@@ -859,7 +874,7 @@ def get_df_from_path(path: str, component_name: str, version: str, data_type: Li
     if isinstance(ans, (np.float64, str)):
         ans = pd.Series([ans], index=pd_read.index)
 
-    assert type(ans) is pd.Series
+    assert type(ans) is pd.Series, f"Type {type(ans)} not supported."
 
     return ans
 
