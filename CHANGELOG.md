@@ -3,6 +3,11 @@
 This file gets automatically updated in ZEN-garden's continuous integration 
 procedures. Do not edit the file manually.
 
+## [v2.9.2] - 2026-02-06 
+
+### Bug Fixes 🐛
+- Make result reading faster by splitting the `value` and `unit` columns into two keys in the `.h5` file. [[🔀 PR #1209](https://github.com/ZEN-universe/ZEN-garden/pull/1209) @jacob-mannhardt]
+
 ## [v2.9.1] - 2026-02-05 
 
 ### Bug Fixes 🐛
