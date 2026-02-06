@@ -838,11 +838,11 @@ def get_df_from_path(path: str, component_name: str, version: str, data_type: Li
     elif check_if_v1_leq_v2(version,"v2"):
         if data_type == "dataframe":
             try:
-                pd_read = pd.read_hdf(path, component_name,where=index,columns=["value"])
+                pd_read = pd.read_hdf(path, component_name,where=index)
             except:
-                pd_read = pd.read_hdf(path, component_name,columns=["value"])
-            # if isinstance(pd_read, pd.DataFrame):
-            #     pd_read = pd_read["value"]
+                pd_read = pd.read_hdf(path, component_name)
+            if isinstance(pd_read, pd.DataFrame):
+                pd_read = pd_read["value"]
         elif data_type == "units":
             try:
                 pd_read = pd.read_hdf(path, component_name,where=index,columns=["units"])
