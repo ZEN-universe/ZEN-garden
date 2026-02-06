@@ -3,6 +3,11 @@
 This file gets automatically updated in ZEN-garden's continuous integration 
 procedures. Do not edit the file manually.
 
+## [v2.9.5] - 2026-02-06 
+
+### Bug Fixes 🐛
+- fix result extraction from hdf files when there is a single column. [[🔀 PR #1216](https://github.com/ZEN-universe/ZEN-garden/pull/1216) @csfunke]
+
 ## [v2.9.4] - 2026-02-06 
 
 ### Bug Fixes 🐛
