@@ -3,6 +3,11 @@
 This file gets automatically updated in ZEN-garden's continuous integration 
 procedures. Do not edit the file manually.
 
+## [v2.9.3] - 2026-02-06 
+
+### Bug Fixes 🐛
+- add error catch for when extracting the units in the new format without updating the environment before. [[🔀 PR #1211](https://github.com/ZEN-universe/ZEN-garden/pull/1211) @jacob-mannhardt]
+
 ## [v2.9.2] - 2026-02-06 
 
 ### Bug Fixes 🐛
