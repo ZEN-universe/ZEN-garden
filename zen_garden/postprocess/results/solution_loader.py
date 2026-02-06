@@ -739,7 +739,7 @@ def get_solution_version(scenario: Scenario) -> str:
 
     :return: The version of the solution.
     """
-    versions = {"v1":"2.0.14","v2":"2.2.15","v3":"2.9.1"}
+    versions = {"v1":"2.0.14","v2":"2.2.15","v3":"2.9.2"}
     version = "v0"
     if hasattr(scenario.analysis,"zen_garden_version"):
         for k,v in versions.items():
@@ -847,7 +847,11 @@ def get_df_from_path(path: str, component_name: str, version: str, data_type: Li
             try:
                 pd_read = pd.read_hdf(path, component_name,where=index,columns=["units"])
             except:
-                pd_read = pd.read_hdf(path, component_name,columns=["units"])
+                try:
+                    pd_read = pd.read_hdf(path, component_name,columns=["units"])
+                except IndexError:
+                    logging.warning(f"Cannot retrieve units. Make sure you have updated the environment to the latest version.")
+                    return pd.Series([])
         else:
             raise ValueError(f"Data type {data_type} not supported.")
     else:
