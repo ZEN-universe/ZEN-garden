@@ -2,6 +2,7 @@
 This function runs ZEN garden,it is executed in the __main__.py script.
 Compilation  of the optimization problem.
 """
+
 import importlib.util
 from pathlib import Path
 import logging
@@ -18,8 +19,7 @@ import warnings
 setup_logger()
 
 
-def run(config = "./config.json", dataset=None, job_index=None, 
-               folder_output=None):
+def run(config="./config.json", dataset=None, job_index=None, folder_output=None):
     """
     Run ZEN-garden.
 
@@ -68,11 +68,11 @@ def run(config = "./config.json", dataset=None, job_index=None,
         spec.loader.exec_module(module)
         config = module.config
         warnings.warn(
-            "Use of the `config.py` file is deprecated and will be removed " \
-            "in ZEN-garden v3.0.0. Please switch to using a `config.json` " \
+            "Use of the `config.py` file is deprecated and will be removed "
+            "in ZEN-garden v3.0.0. Please switch to using a `config.json` "
             "file instead.",
             DeprecationWarning,
-            stacklevel=2
+            stacklevel=2,
         )
     else:
         with open(Path(config_path) / config_file, "r") as f:
@@ -106,19 +106,26 @@ def run(config = "./config.json", dataset=None, job_index=None,
     for scenario, scenario_dict in zip(scenarios, elements):
         # FORMULATE THE OPTIMIZATION PROBLEM
         # add the scenario_dict and read input data
-        optimization_setup = OptimizationSetup(config, scenario_dict=scenario_dict, input_data_checks=input_data_checks)
+        optimization_setup = OptimizationSetup(
+            config, scenario_dict=scenario_dict, input_data_checks=input_data_checks
+        )
         # get rolling horizon years
         steps_horizon = optimization_setup.get_optimization_horizon()
         # iterate through horizon steps
         for step in steps_horizon:
-            StringUtils.print_optimization_progress(scenario, steps_horizon, step, system=config.system)
+            StringUtils.print_optimization_progress(
+                scenario, steps_horizon, step, system=config.system
+            )
             # overwrite time indices
             optimization_setup.overwrite_time_indices(step)
             # create optimization problem
             optimization_setup.construct_optimization_problem()
             if optimization_setup.solver.use_scaling:
                 optimization_setup.scaling.run_scaling()
-            elif optimization_setup.solver.analyze_numerics or optimization_setup.solver.run_diagnostics:
+            elif (
+                optimization_setup.solver.analyze_numerics
+                or optimization_setup.solver.run_diagnostics
+            ):
                 optimization_setup.scaling.analyze_numerics()
             # SOLVE THE OPTIMIZATION PROBLEM
             optimization_setup.solve()
@@ -136,9 +143,20 @@ def run(config = "./config.json", dataset=None, job_index=None,
             # EVALUATE RESULTS
             # create scenario name, subfolder and param_map for postprocessing
             scenario_name, subfolder, param_map = StringUtils.generate_folder_path(
-                config=config, scenario=scenario, scenario_dict=scenario_dict, steps_horizon=steps_horizon, step=step)
+                config=config,
+                scenario=scenario,
+                scenario_dict=scenario_dict,
+                steps_horizon=steps_horizon,
+                step=step,
+            )
             # write results
-            Postprocess(optimization_setup, scenarios=config.scenarios, subfolder=subfolder,
-                        model_name=model_name, scenario_name=scenario_name, param_map=param_map)
+            Postprocess(
+                optimization_setup,
+                scenarios=config.scenarios,
+                subfolder=subfolder,
+                model_name=model_name,
+                scenario_name=scenario_name,
+                param_map=param_map,
+            )
     logging.info("--- Optimization finished ---")
     return optimization_setup

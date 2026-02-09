@@ -1,6 +1,7 @@
 """
 Class is defining to read in the results of an Optimization problem.
 """
+
 import json
 import logging
 import os
@@ -23,12 +24,15 @@ import zipfile
 import io
 import pandas as pd
 
+
 def setup_logger(level=logging.INFO):
-    """ set up logger
+    """set up logger
 
     :param level: logging level
     """
-    logging.basicConfig(stream=sys.stdout, level=level,format="%(message)s",datefmt='%Y-%m-%d %H:%M:%S')
+    logging.basicConfig(
+        stream=sys.stdout, level=level, format="%(message)s", datefmt="%Y-%m-%d %H:%M:%S"
+    )
     logging.captureWarnings(True)
 
 
@@ -50,19 +54,20 @@ def get_inheritors(klass):
                 work.append(child)
     return subclasses
 
+
 def download_example_dataset(dataset):
-    """ 
-    Downloads a dataset example to the current working directory. The function 
-    downloads the ZEN-garden dataset examples from the ZEN-garden Zenodo 
+    """
+    Downloads a dataset example to the current working directory. The function
+    downloads the ZEN-garden dataset examples from the ZEN-garden Zenodo
     repository. It then extracts the dataset specified by the user and saves
-    it to the current working directory. In addition, it also downloads a 
+    it to the current working directory. In addition, it also downloads a
     ``config.json`` file and a Jupyter notebook demonstrating how to analyze
-    the results of a model. 
+    the results of a model.
 
     Args:
         dataset (str): Name of the dataset to be downloaded. The following
-            options are currently available: "1_base_case", 
-            "2_multi_year_optimization", "3_reduced_import_availability", 
+            options are currently available: "1_base_case",
+            "2_multi_year_optimization", "3_reduced_import_availability",
             "4_PWA_nonlinear_capex", "5_multiple_time_steps_per_year",
             "6_reduced_import_availability_yearly", "7_time_series_aggregation",
             "8_yearly_variation", "9_myopic_foresight", "10_brown_field",
@@ -71,13 +76,13 @@ def download_example_dataset(dataset):
             "15_unit_consistency_expected_error"
 
     Returns:
-        tuple: 
+        tuple:
             str: The local path of the copied example
             str: The local path of the copied config.json
 
     Raises:
-        FileNotFoundError: If either the dataset or the config file could not 
-            be found in the Zenodo repository. 
+        FileNotFoundError: If either the dataset or the config file could not
+            be found in the Zenodo repository.
 
     Examples:
         Basic usage example:
@@ -126,14 +131,12 @@ def download_example_dataset(dataset):
         # download all files in dataset example
         if file.filename.startswith(example_path):
             filename_ending = file.filename.split(example_path)[1]
-            local_folder_path = os.path.join(
-                local_example_path, filename_ending)
+            local_folder_path = os.path.join(local_example_path, filename_ending)
             if file.is_dir():
                 if not os.path.exists(local_folder_path):
                     os.mkdir(os.path.join(local_example_path, filename_ending))
             else:
-                local_file_path = os.path.join(
-                    local_example_path, filename_ending)
+                local_file_path = os.path.join(local_example_path, filename_ending)
                 with open(local_file_path, "wb") as f:
                     f.write(zenodo_zip.read(file))
             example_found = True
@@ -146,33 +149,28 @@ def download_example_dataset(dataset):
 
         # download jupyter notebook
         elif file.filename == notebook_path:
-            notebook_path_local = os.path.join(
-                local_dataset_path, "example_notebook.ipynb")
+            notebook_path_local = os.path.join(local_dataset_path, "example_notebook.ipynb")
             notebook = json.loads(zenodo_zip.read(file))
-            for cell in notebook['cells']:
-                if cell['cell_type'] == 'code':  # Check only code cells
-                    for i, line in enumerate(cell['source']):
+            for cell in notebook["cells"]:
+                if cell["cell_type"] == "code":  # Check only code cells
+                    for i, line in enumerate(cell["source"]):
                         if "<dataset_name>" in line:
-                            cell['source'][i] = line.replace(
-                                "<dataset_name>", dataset)
+                            cell["source"][i] = line.replace("<dataset_name>", dataset)
             with open(notebook_path_local, "w") as f:
                 json.dump(notebook, f)
             notebook_found = True
 
     # display status, errors, and warnings
     if not example_found:
-        raise FileNotFoundError(
-            f"Example {dataset} could not be found in the dataset examples!"
-        )
+        raise FileNotFoundError(f"Example {dataset} could not be found in the dataset examples!")
     if not config_found:
         raise FileNotFoundError(
-            "Config.json file could not be downloaded from the dataset "
-            "examples!"
+            "Config.json file could not be downloaded from the dataset " "examples!"
         )
     if not notebook_found:
         warnings.warn(
-            "Example jupyter notebook could not be downloaded from the "
-            "dataset examples!")
+            "Example jupyter notebook could not be downloaded from the " "dataset examples!"
+        )
 
     # print output
     print(f"Example dataset {dataset} downloaded to {local_example_path}")
@@ -180,10 +178,12 @@ def download_example_dataset(dataset):
     # return
     return local_example_path, os.path.join(local_dataset_path, "config.json")
 
+
 # linopy helpers
 # --------------
 
-def lp_sum(exprs, dim='_term'):
+
+def lp_sum(exprs, dim="_term"):
     """Sum of linear expressions with lp.expressions.merge, returns 0 if list is emtpy
 
     :param exprs: The expressions to sum
@@ -217,7 +217,9 @@ def align_like(da, other, fillna=0.0, astype=None):
     elif isinstance(other, xr.DataArray):
         other = other
     else:
-        raise TypeError(f"other must be a Variable, LinearExpression or DataArray, not {type(other)}")
+        raise TypeError(
+            f"other must be a Variable, LinearExpression or DataArray, not {type(other)}"
+        )
     da = xr.align(da, other, join="right")[0]
     da = da.broadcast_like(other)
     if fillna is not None:
@@ -252,7 +254,9 @@ def linexpr_from_tuple_np(tuples, coords, model):
 
     # to linear expression
     variables = xr.DataArray(np.stack(variables, axis=0), coords=coords, dims=["_term", *coords])
-    coefficients = xr.DataArray(np.stack(coefficients, axis=0), coords=coords, dims=["_term", *coords])
+    coefficients = xr.DataArray(
+        np.stack(coefficients, axis=0), coords=coords, dims=["_term", *coords]
+    )
     xr_ds = xr.Dataset({"coeffs": coefficients, "vars": variables}).transpose(..., "_term")
 
     return lp.LinearExpression(xr_ds, model)
@@ -274,14 +278,18 @@ def xr_like(fill_value, dtype, other, dims):
         coords[dim] = other.coords[dim]
 
     # create the data array
-    da = xr.DataArray(np.full([len(other.coords[dim]) for dim in dims], fill_value, dtype=dtype), coords=coords,
-                      dims=dims)
+    da = xr.DataArray(
+        np.full([len(other.coords[dim]) for dim in dims], fill_value, dtype=dtype),
+        coords=coords,
+        dims=dims,
+    )
 
     # return
     return da
 
+
 def reformat_slicing_index(index, component) -> tuple[str]:
-    """ reformats the slicing index to a tuple of strings that is readable by pytables
+    """reformats the slicing index to a tuple of strings that is readable by pytables
     :param index: slicing index of the resulting dataframe
     :param component: component for which the index is reformatted
     :return: reformatted index
@@ -311,7 +319,10 @@ def reformat_slicing_index(index, component) -> tuple[str]:
     elif isinstance(index, tuple):
         ref_index = []
         if len(index) > len(index_names):
-            warnings.warn(f"Index length {len(index)} is longer than the number of index dimensions {len(index_names)}. Check selected index.", Warning)
+            warnings.warn(
+                f"Index length {len(index)} is longer than the number of index dimensions {len(index_names)}. Check selected index.",
+                Warning,
+            )
         for i, index_name in enumerate(index_names):
             if i >= len(index):
                 break
@@ -328,8 +339,9 @@ def reformat_slicing_index(index, component) -> tuple[str]:
 
     return ref_index
 
-def slice_df_by_index(df,index_tuple) -> dict:
-    """ recreates the slicing index from a tuple of strings and slices the dataframe accordingly
+
+def slice_df_by_index(df, index_tuple) -> dict:
+    """recreates the slicing index from a tuple of strings and slices the dataframe accordingly
     :param df: dataframe to be sliced
     :param index_tuple: tuple of strings representing the slicing index
     :return: sliced dataframe
@@ -354,19 +366,23 @@ def slice_df_by_index(df,index_tuple) -> dict:
             elif index[key] in df.index.get_level_values(key):
                 df = df.xs(index[key], level=key, drop_level=False)
             else:
-                df = pd.DataFrame(columns=df.columns)  # return empty dataframe if value not in index
+                df = pd.DataFrame(
+                    columns=df.columns
+                )  # return empty dataframe if value not in index
     return df
 
-def get_label_position(obj,label:int):
-    """ Get dict of index and coordinate for variable or constraint labels."""
+
+def get_label_position(obj, label: int):
+    """Get dict of index and coordinate for variable or constraint labels."""
     name_element = obj.get_name_by_label(int(label))
     element = obj[name_element]
     if element.ndim > 0:
         selection = element[np.where(element.labels == label)]
-        mapping = (name_element,{k: v.values[0] for k, v in selection.indexes.variables.items()})
+        mapping = (name_element, {k: v.values[0] for k, v in selection.indexes.variables.items()})
     else:
-        mapping = (name_element,{})
+        mapping = (name_element, {})
     return mapping
+
 
 # This functionality is for the IIS constraints
 # ---------------------------------------------
@@ -441,7 +457,7 @@ class IISConstraintParser(object):
                 f.write(var_str)
 
     def write_gurobi_iis(self):
-        """ writes IIS to file """
+        """writes IIS to file"""
         # get the gurobi model
         gurobi_model = self.model.solver_model
         # write the IIS
@@ -463,7 +479,7 @@ class IISConstraintParser(object):
                 if line.startswith(" c"):
                     labels_c.append(int(line.split(":")[0][2:]))
                 elif line.startswith(" x"):
-                    pattern = r'\sx(\d+)\s(.*)'
+                    pattern = r"\sx(\d+)\s(.*)"
                     match = re.match(pattern, line)
                     if match:
                         labels_v.append(int(match.group(1)))
@@ -478,10 +494,9 @@ class IISConstraintParser(object):
         :param coord: The coordinates of the constraint
         :return: The string representation of the constraint
         """
-        coeffs, vars, sign, rhs = xr.broadcast(constraint.coeffs,
-                                               constraint.vars,
-                                               constraint.sign,
-                                               constraint.rhs)
+        coeffs, vars, sign, rhs = xr.broadcast(
+            constraint.coeffs, constraint.vars, constraint.sign, constraint.rhs
+        )
         coeffs = coeffs.sel(coord).values
         vars = vars.sel(coord).values
         sign = sign.sel(coord)[0].item()
@@ -520,9 +535,7 @@ class IISConstraintParser(object):
         indices = [i[0] for i in np.where(con.labels.values == value)]
 
         # Extract the coordinates from the indices
-        coord = {
-            dim: con.labels.indexes[dim][i] for dim, i in zip(con.labels.dims, indices)
-        }
+        coord = {dim: con.labels.indexes[dim][i] for dim, i in zip(con.labels.dims, indices)}
 
         return name, coord
 
@@ -562,6 +575,7 @@ class IISConstraintParser(object):
 # This class is for the scenario analysis
 # ---------------------------------------
 
+
 class ScenarioDict(dict):
     """
     This is a dictionary for the scenario analysis that has some convenience functions
@@ -581,6 +595,7 @@ class ScenarioDict(dict):
 
         # avoid circular imports
         from . import inheritors
+
         self.element_classes = reversed(inheritors.copy())
 
         # set the attributes and expand the dict
@@ -607,19 +622,28 @@ class ScenarioDict(dict):
         for key, value in config_parts.items():
             if key in self.dict:
                 for sub_key, sub_value in self.dict[key].items():
-                    assert sub_key in value.keys(), f"Trying to update {key} with key {sub_key} and value {sub_value}, but the {key} does not have this key!"
+                    assert (
+                        sub_key in value.keys()
+                    ), f"Trying to update {key} with key {sub_key} and value {sub_value}, but the {key} does not have this key!"
                     if type(value[sub_key]) == type(sub_value):
                         value[sub_key] = sub_value
-                    elif isinstance(sub_value, dict): #ToDO check this and make more general -> here only for SolverOptions
+                    elif isinstance(
+                        sub_value, dict
+                    ):  # ToDO check this and make more general -> here only for SolverOptions
                         try:
                             for sub_sub_key, sub_sub_value in sub_value.items():
                                 value[sub_key][sub_sub_key] = sub_sub_value
                         except:
-                            raise ValueError(f"Trying to update {key} with key {sub_key} and value {sub_value} of type {type(sub_value)},"
-                                             f""f"but the {key} has already a value of type {type(value[sub_key])}")
+                            raise ValueError(
+                                f"Trying to update {key} with key {sub_key} and value {sub_value} of type {type(sub_value)},"
+                                f""
+                                f"but the {key} has already a value of type {type(value[sub_key])}"
+                            )
                     else:
-                        raise ValueError(f"Trying to update {key} with key {sub_key} and value {sub_value} of type {type(sub_value)}, "
-                                         f"but the {key} has already a value of type {type(value[sub_key])}")
+                        raise ValueError(
+                            f"Trying to update {key} with key {sub_key} and value {sub_value} of type {type(sub_value)}, "
+                            f"but the {key} has already a value of type {type(value[sub_key])}"
+                        )
 
     @staticmethod
     def expand_lists(scenarios: dict):
@@ -681,8 +705,8 @@ class ScenarioDict(dict):
                 if element in ScenarioDict._setting_elements:
                     if not isinstance(param_dict, dict):
                         continue
-                    elif isinstance(param_dict, dict) and not isinstance(param_dict['value'], list):
-                        scenario[element][param] = param_dict['value']
+                    elif isinstance(param_dict, dict) and not isinstance(param_dict["value"], list):
+                        scenario[element][param] = param_dict["value"]
                 for key in sorted(ScenarioDict._param_dict_keys):
                     if key in param_dict and isinstance(param_dict[key], list):
                         # get the old param dict entry
@@ -705,9 +729,11 @@ class ScenarioDict(dict):
                             # create the name
                             if key + "_fmt" in param_dict:
                                 if "{}" not in param_dict[key + "_fmt"]:
-                                    raise SyntaxError("When setting a format for a name, you need to include a "
-                                                      "placeholder '{}' for its value! No placeholder found in "
-                                                      f"for {key} in {param} in {element} in {scenario['base_scenario']}")
+                                    raise SyntaxError(
+                                        "When setting a format for a name, you need to include a "
+                                        "placeholder '{}' for its value! No placeholder found in "
+                                        f"for {key} in {param} in {element} in {scenario['base_scenario']}"
+                                    )
                                 name = param_dict[key + "_fmt"].format(value)
                                 if element not in ScenarioDict._setting_elements:
                                     del new_scenario[element][param][key + "_fmt"]
@@ -740,7 +766,10 @@ class ScenarioDict(dict):
 
                             # expand this scenario as well
                             expanded_scenarios.extend(
-                                ScenarioDict._expand_scenario(new_scenario, param_map, counter + param_up))
+                                ScenarioDict._expand_scenario(
+                                    new_scenario, param_map, counter + param_up
+                                )
+                            )
 
                         # expansion done
                         return expanded_scenarios
@@ -803,10 +832,11 @@ class ScenarioDict(dict):
             for param, param_dict in element_dict.items():
                 if len(diff := (set(param_dict.keys()) - self._param_dict_keys)) > 0:
                     raise ValueError(
-                        f"The entry for element {element} and param {param} contains invalid entries: {diff}!")
+                        f"The entry for element {element} and param {param} contains invalid entries: {diff}!"
+                    )
 
     @staticmethod
-    def check_if_all_elements_in_model(scenario_dict,element_dict):
+    def check_if_all_elements_in_model(scenario_dict, element_dict):
         """
         Checks if all elements in the scenario_dict are present in the element_dict
         This is used to ensure that all elements in the scenario are defined in the model.
@@ -814,12 +844,19 @@ class ScenarioDict(dict):
         :param scenario_dict: Dictionary containing the scenario elements
         :param element_dict: Dictionary containing the element definitions
         """
-        ignored_elements = ScenarioDict._setting_elements + ScenarioDict._special_elements + list(ScenarioDict._param_dict_keys) + ["EnergySystem"]
+        ignored_elements = (
+            ScenarioDict._setting_elements
+            + ScenarioDict._special_elements
+            + list(ScenarioDict._param_dict_keys)
+            + ["EnergySystem"]
+        )
         relevant_elements = set(scenario_dict.keys()) - set(ignored_elements)
         existing_elements = [e.name for e in element_dict["Element"]]
         for element in relevant_elements:
             if element not in existing_elements:
-                raise KeyError(f"The element '{element}', defined in the scenario file, is not defined in the model.")
+                raise KeyError(
+                    f"The element '{element}', defined in the scenario file, is not defined in the model."
+                )
 
     @staticmethod
     def validate_file_name(fname):
@@ -852,7 +889,13 @@ class ScenarioDict(dict):
             default_f_name = param_dict.get("default", default_f_name)
             default_f_name = self.validate_file_name(default_f_name)
             default_factor = param_dict.get("default_op", default_factor)
-            self._check_if_numeric_default_factor(default_factor, element=element, param=param, default_f_name=default_f_name, op_type="default_op")
+            self._check_if_numeric_default_factor(
+                default_factor,
+                element=element,
+                param=param,
+                default_f_name=default_f_name,
+                op_type="default_op",
+            )
 
         return default_f_name, default_factor
 
@@ -874,7 +917,13 @@ class ScenarioDict(dict):
             default_f_name = param_dict.get("file", default_f_name)
             default_f_name = self.validate_file_name(default_f_name)
             default_factor = param_dict.get("file_op", default_factor)
-            self._check_if_numeric_default_factor(default_factor, element=element, param=param, default_f_name=default_f_name, op_type="file_op")
+            self._check_if_numeric_default_factor(
+                default_factor,
+                element=element,
+                param=param,
+                default_f_name=default_f_name,
+                op_type="file_op",
+            )
 
         return default_f_name, default_factor
 
@@ -893,19 +942,53 @@ class ScenarioDict(dict):
                 return part_file
         return None
 
-    def _check_if_numeric_default_factor(self, default_factor, element, param, default_f_name, op_type):
+    def _check_if_numeric_default_factor(
+        self, default_factor, element, param, default_f_name, op_type
+    ):
         """Check if the default factor is numeric
 
         :param default_factor: The default factor to check
         """
         if not isinstance(default_factor, (int, float)):
-            raise ValueError(f"Default factor {default_factor} of type {type(default_factor)} in {op_type} ({element} -> {param} -> {default_f_name}) is not numeric!")
+            raise ValueError(
+                f"Default factor {default_factor} of type {type(default_factor)} in {op_type} ({element} -> {param} -> {default_f_name}) is not numeric!"
+            )
+
 
 class InputDataChecks:
     """
     This class checks if the input data (folder/file structure, system.py settings, element definitions, etc.) is defined correctly
     """
-    PROHIBITED_DATASET_CHARACTERS = [" ", ".", ":", ",", ";", "!", "?", "(", ")", "[", "]", "{", "}", "<", ">", "&", "|", "*", "^", "%", "$", "#", "@", "`", "~", "\\", "/"]
+
+    PROHIBITED_DATASET_CHARACTERS = [
+        " ",
+        ".",
+        ":",
+        ",",
+        ";",
+        "!",
+        "?",
+        "(",
+        ")",
+        "[",
+        "]",
+        "{",
+        "}",
+        "<",
+        ">",
+        "&",
+        "|",
+        "*",
+        "^",
+        "%",
+        "$",
+        "#",
+        "@",
+        "`",
+        "~",
+        "\\",
+        "/",
+    ]
 
     def __init__(self, config, optimization_setup):
         """
@@ -923,10 +1006,21 @@ class InputDataChecks:
         Checks selection of different technologies in system.py file
         """
         # Checks if at least one technology is selected in the system.py file
-        assert len(self.system.set_conversion_technologies + self.system.set_transport_technologies + self.system.set_storage_technologies) > 0, f"No technology selected in system"
+        assert (
+            len(
+                self.system.set_conversion_technologies
+                + self.system.set_transport_technologies
+                + self.system.set_storage_technologies
+            )
+            > 0
+        ), f"No technology selected in system"
         # Checks if identical technologies are selected multiple times in system.py file and removes possible duplicates
-        for tech_list in ["set_conversion_technologies", "set_transport_technologies", "set_storage_technologies"]:
-            techs_selected = getattr(self.system,tech_list)
+        for tech_list in [
+            "set_conversion_technologies",
+            "set_transport_technologies",
+            "set_storage_technologies",
+        ]:
+            techs_selected = getattr(self.system, tech_list)
             unique_elements = list(np.unique(techs_selected))
             self.system = self.system.model_copy(update={tech_list: unique_elements})
 
@@ -935,13 +1029,26 @@ class InputDataChecks:
         Check if year-related parameters are defined correctly
         """
         # assert that number of optimized years is a positive integer
-        assert isinstance(self.system.optimized_years, int) and self.system.optimized_years > 0, f"Number of optimized years must be a positive integer, however it is {self.system.optimized_years}"
+        assert (
+            isinstance(self.system.optimized_years, int) and self.system.optimized_years > 0
+        ), f"Number of optimized years must be a positive integer, however it is {self.system.optimized_years}"
         # assert that interval between years is a positive integer
-        assert isinstance(self.system.interval_between_years, int) and self.system.interval_between_years > 0, f"Interval between years must be a positive integer, however it is {self.system.interval_between_years}"
-        assert isinstance(self.system.reference_year, int) and self.system.reference_year >= self.analysis.earliest_year_of_data, f"Reference year must be an integer and larger than the defined earliest_year_of_data: {self.analysis.earliest_year_of_data}"
+        assert (
+            isinstance(self.system.interval_between_years, int)
+            and self.system.interval_between_years > 0
+        ), f"Interval between years must be a positive integer, however it is {self.system.interval_between_years}"
+        assert (
+            isinstance(self.system.reference_year, int)
+            and self.system.reference_year >= self.analysis.earliest_year_of_data
+        ), f"Reference year must be an integer and larger than the defined earliest_year_of_data: {self.analysis.earliest_year_of_data}"
         # check if the number of years in the rolling horizon isn't larger than the number of optimized years
-        if self.system.years_in_rolling_horizon > self.system.optimized_years and self.system.use_rolling_horizon:
-            warnings.warn(f"The chosen number of years in the rolling horizon step is larger than the total number of years optimized!")
+        if (
+            self.system.years_in_rolling_horizon > self.system.optimized_years
+            and self.system.use_rolling_horizon
+        ):
+            warnings.warn(
+                f"The chosen number of years in the rolling horizon step is larger than the total number of years optimized!"
+            )
 
     def check_primary_folder_structure(self):
         """
@@ -953,16 +1060,32 @@ class InputDataChecks:
                 raise AssertionError(f"Folder {set_name} does not exist!")
             if isinstance(subsets, dict):
                 for subset_name, subset in subsets.items():
-                    if not os.path.exists(os.path.join(self.analysis.dataset, set_name, subset_name)):
+                    if not os.path.exists(
+                        os.path.join(self.analysis.dataset, set_name, subset_name)
+                    ):
                         raise AssertionError(f"Folder {subset_name} does not exist!")
                 else:
                     for subset_name in subsets:
-                        if not os.path.exists(os.path.join(self.analysis.dataset, set_name, subset_name)):
+                        if not os.path.exists(
+                            os.path.join(self.analysis.dataset, set_name, subset_name)
+                        ):
                             raise AssertionError(f"Folder {subset_name} does not exist!")
 
-        for file_name in ["attributes.json", "base_units.csv", "set_edges.csv", "set_nodes.csv", "unit_definitions.txt"]:
-            if file_name not in os.listdir(os.path.join(self.analysis.dataset, "energy_system")) and file_name.replace('.csv', '.json') not in os.listdir(os.path.join(self.analysis.dataset, "energy_system")):
-                raise FileNotFoundError(f"File {file_name} is missing in the energy_system directory")
+        for file_name in [
+            "attributes.json",
+            "base_units.csv",
+            "set_edges.csv",
+            "set_nodes.csv",
+            "unit_definitions.txt",
+        ]:
+            if file_name not in os.listdir(
+                os.path.join(self.analysis.dataset, "energy_system")
+            ) and file_name.replace(".csv", ".json") not in os.listdir(
+                os.path.join(self.analysis.dataset, "energy_system")
+            ):
+                raise FileNotFoundError(
+                    f"File {file_name} is missing in the energy_system directory"
+                )
 
     def check_existing_technology_data(self):
         """
@@ -970,25 +1093,43 @@ class InputDataChecks:
         """
         # TODO works for two levels of subsets, but not for more
         self.optimization_setup.system.set_technologies = []
-        for set_name, subsets in self.optimization_setup.analysis.subsets["set_technologies"].items():
+        for set_name, subsets in self.optimization_setup.analysis.subsets[
+            "set_technologies"
+        ].items():
             for technology in self.optimization_setup.system[set_name]:
                 if technology not in self.optimization_setup.paths[set_name].keys():
                     # raise error if technology is not in input data
-                    raise FileNotFoundError(f"Technology {technology} selected in config does not exist in input data")
+                    raise FileNotFoundError(
+                        f"Technology {technology} selected in config does not exist in input data"
+                    )
                 elif "attributes.json" not in self.optimization_setup.paths[set_name][technology]:
-                    raise FileNotFoundError(f"The file attributes.json does not exist for the technology {technology}")
-            self.optimization_setup.system.set_technologies.extend(self.optimization_setup.system[set_name])
+                    raise FileNotFoundError(
+                        f"The file attributes.json does not exist for the technology {technology}"
+                    )
+            self.optimization_setup.system.set_technologies.extend(
+                self.optimization_setup.system[set_name]
+            )
             # check subsets of technology_subset
-            assert isinstance(subsets, list), f"Subsets of {set_name} must be a list, dict not implemented"
+            assert isinstance(
+                subsets, list
+            ), f"Subsets of {set_name} must be a list, dict not implemented"
             for subset in subsets:
                 for technology in self.optimization_setup.system[subset]:
                     if technology not in self.optimization_setup.paths[subset].keys():
                         # raise error if technology is not in input data
-                        raise FileNotFoundError(f"Technology {technology} selected in config does not exist in input data")
+                        raise FileNotFoundError(
+                            f"Technology {technology} selected in config does not exist in input data"
+                        )
                     elif "attributes.json" not in self.optimization_setup.paths[subset][technology]:
-                        raise FileNotFoundError(f"The file attributes.json does not exist for the technology {technology}")
-                    self.optimization_setup.system[set_name].extend(self.optimization_setup.system[subset])
-                    self.optimization_setup.system.set_technologies.extend(self.optimization_setup.system[subset])
+                        raise FileNotFoundError(
+                            f"The file attributes.json does not exist for the technology {technology}"
+                        )
+                    self.optimization_setup.system[set_name].extend(
+                        self.optimization_setup.system[subset]
+                    )
+                    self.optimization_setup.system.set_technologies.extend(
+                        self.optimization_setup.system[subset]
+                    )
 
     def check_existing_carrier_data(self):
         """
@@ -998,9 +1139,13 @@ class InputDataChecks:
         for carrier in self.optimization_setup.system.set_carriers:
             if carrier not in self.optimization_setup.paths["set_carriers"].keys():
                 # raise error if carrier is not in input data
-                raise FileNotFoundError(f"Carrier {carrier} selected in config does not exist in input data")
+                raise FileNotFoundError(
+                    f"Carrier {carrier} selected in config does not exist in input data"
+                )
             elif "attributes.json" not in self.optimization_setup.paths["set_carriers"][carrier]:
-                raise FileNotFoundError(f"The file attributes.json does not exist for the carrier {carrier}")
+                raise FileNotFoundError(
+                    f"The file attributes.json does not exist for the carrier {carrier}"
+                )
 
     def check_dataset(self):
         """
@@ -1009,14 +1154,22 @@ class InputDataChecks:
         dataset = os.path.basename(self.analysis.dataset)
         dirname = os.path.dirname(self.analysis.dataset)
         assert os.path.exists(dirname), f"Requested folder {dirname} is not a valid path"
-        assert os.path.exists(self.analysis.dataset), f"The chosen dataset {dataset} does not exist at {self.analysis.dataset} as it is specified in the config"
+        assert os.path.exists(
+            self.analysis.dataset
+        ), f"The chosen dataset {dataset} does not exist at {self.analysis.dataset} as it is specified in the config"
         # check if any character in the dataset name is prohibited
         for char in self.PROHIBITED_DATASET_CHARACTERS:
             if char in dataset:
-                raise ValueError(f"Character {char} is not allowed in the dataset name {dataset}\nProhibited characters: {self.PROHIBITED_DATASET_CHARACTERS}")
+                raise ValueError(
+                    f"Character {char} is not allowed in the dataset name {dataset}\nProhibited characters: {self.PROHIBITED_DATASET_CHARACTERS}"
+                )
         # check if chosen dataset contains a system.py file
-        if not os.path.exists(os.path.join(self.analysis.dataset, "system.py")) and not os.path.exists(os.path.join(self.analysis.dataset, "system.json")):
-            raise FileNotFoundError(f"Neither system.json nor system.py not found in dataset: {self.analysis.dataset}")
+        if not os.path.exists(
+            os.path.join(self.analysis.dataset, "system.py")
+        ) and not os.path.exists(os.path.join(self.analysis.dataset, "system.json")):
+            raise FileNotFoundError(
+                f"Neither system.json nor system.py not found in dataset: {self.analysis.dataset}"
+            )
 
     def check_single_directed_edges(self, set_edges_input):
         """
@@ -1026,10 +1179,16 @@ class InputDataChecks:
         """
         for edge in set_edges_input.values:
             reversed_edge = edge[2] + "-" + edge[1]
-            if reversed_edge not in [edge_string[0] for edge_string in set_edges_input.values] and edge[1] in self.system.set_nodes and edge[2] in self.system.set_nodes:
-                warnings.warn(f"The edge {edge[0]} is single-directed, i.e., the edge {reversed_edge} doesn't exist!")
+            if (
+                reversed_edge not in [edge_string[0] for edge_string in set_edges_input.values]
+                and edge[1] in self.system.set_nodes
+                and edge[2] in self.system.set_nodes
+            ):
+                warnings.warn(
+                    f"The edge {edge[0]} is single-directed, i.e., the edge {reversed_edge} doesn't exist!"
+                )
 
-    def read_system_file(self,config):
+    def read_system_file(self, config):
         """
         Reads the system file and returns the system dictionary
 
@@ -1051,14 +1210,18 @@ class InputDataChecks:
         self.system = new_system
         self.check_no_extra_config_fields(config)
 
-    def check_no_extra_config_fields(self,config,config_name="config"):
-        """ Checks if the config object has no extra fields that are not defined in the default_config """
-        assert len(config.model_extra) == 0, f"The config object '{config_name}' has extra fields that are not defined in the default_config: {config.model_extra}."
+    def check_no_extra_config_fields(self, config, config_name="config"):
+        """Checks if the config object has no extra fields that are not defined in the default_config"""
+        assert (
+            len(config.model_extra) == 0
+        ), f"The config object '{config_name}' has extra fields that are not defined in the default_config: {config.model_extra}."
         for name in config.__class__.model_fields:
             subconfig = getattr(config, name)
             # Detect if the subconfig is a subclass of Subscriptable
-            if isinstance(subconfig.__class__, type) and issubclass(subconfig.__class__, Subscriptable):
-                self.check_no_extra_config_fields(subconfig,config_name = config_name+"/"+name)
+            if isinstance(subconfig.__class__, type) and issubclass(
+                subconfig.__class__, Subscriptable
+            ):
+                self.check_no_extra_config_fields(subconfig, config_name=config_name + "/" + name)
 
     @staticmethod
     def check_carrier_configuration(input_carrier, output_carrier, reference_carrier, name):
@@ -1071,14 +1234,20 @@ class InputDataChecks:
         :param name: name of conversion technology
         """
         # assert that conversion technology has at least an input or an output carrier
-        assert len(input_carrier+output_carrier) > 0, f"Conversion technology {name} has neither an input nor an output carrier!"
+        assert (
+            len(input_carrier + output_carrier) > 0
+        ), f"Conversion technology {name} has neither an input nor an output carrier!"
         # check if reference carrier in input and output carriers and set technology to correspondent carrier
-        assert reference_carrier[0] in (input_carrier + output_carrier), f"reference carrier {reference_carrier} of technology {name} not in input and output carriers {input_carrier + output_carrier}"
+        assert reference_carrier[0] in (
+            input_carrier + output_carrier
+        ), f"reference carrier {reference_carrier} of technology {name} not in input and output carriers {input_carrier + output_carrier}"
         set_input_carrier = set(input_carrier)
         set_output_carrier = set(output_carrier)
         # assert that input and output carrier of conversion tech are different
         common_carriers = set_input_carrier & set_output_carrier
-        assert not common_carriers, f"The conversion technology {name} has the same input and output carrier(s) ({list(common_carriers)})!"
+        assert (
+            not common_carriers
+        ), f"The conversion technology {name} has the same input and output carrier(s) ({list(common_carriers)})!"
 
     @staticmethod
     def check_duplicate_indices(df_input, file_name, folder_path):
@@ -1098,11 +1267,15 @@ class InputDataChecks:
                 values = df_input.loc[duplicate]
                 # check if all the duplicates are of the same value
                 if values.nunique() == 1:
-                    logging.warning(f"The input data file {file_name + '.csv'} at {folder_path} contains duplicate indices with identical values: {df_input.loc[duplicates]}.")
+                    logging.warning(
+                        f"The input data file {file_name + '.csv'} at {folder_path} contains duplicate indices with identical values: {df_input.loc[duplicates]}."
+                    )
                 else:
-                    raise AssertionError(f"The input data file {file_name + '.csv'} at {folder_path} contains duplicate indices with different values: {df_input.loc[duplicates]}.")
+                    raise AssertionError(
+                        f"The input data file {file_name + '.csv'} at {folder_path} contains duplicate indices with different values: {df_input.loc[duplicates]}."
+                    )
             # remove duplicates
-            duplicate_mask = df_input.index.duplicated(keep='first')
+            duplicate_mask = df_input.index.duplicated(keep="first")
             df_input = df_input[~duplicate_mask]
 
         return df_input
@@ -1112,13 +1285,14 @@ class StringUtils:
     """
     This class handles some strings for logging and filenames to tidy up scripts
     """
+
     def __init__(self):
-        """ Initializes the class """
+        """Initializes the class"""
         pass
 
     @classmethod
     def print_optimization_progress(cls, scenario, steps_horizon, step, system):
-        """ prints the current optimization progress
+        """prints the current optimization progress
 
         :param scenario: string of scenario name
         :param steps_horizon: all steps of horizon
@@ -1127,15 +1301,18 @@ class StringUtils:
         """
         scenario_string = ScenarioUtils.scenario_string(scenario)
         if len(steps_horizon) == 1:
-            logging.info(f"\n--- Conduct optimization for perfect foresight {scenario_string}--- \n")
+            logging.info(
+                f"\n--- Conduct optimization for perfect foresight {scenario_string}--- \n"
+            )
         else:
             corresponding_year = system.reference_year + step * system.interval_between_years
             logging.info(
-                f"\n--- Conduct optimization for rolling horizon step for {corresponding_year} ({steps_horizon.index(step) + 1} of {len(steps_horizon)}) {scenario_string}--- \n")
+                f"\n--- Conduct optimization for rolling horizon step for {corresponding_year} ({steps_horizon.index(step) + 1} of {len(steps_horizon)}) {scenario_string}--- \n"
+            )
 
     @classmethod
     def generate_folder_path(cls, config, scenario, scenario_dict, steps_horizon, step):
-        """ generates the folder path for the results
+        """generates the folder path for the results
 
         :param config: config of optimization
         :param scenario: name of scenario
@@ -1238,15 +1415,15 @@ class ScenarioUtils:
     """
 
     def __init__(self):
-        """ Initializes the class """
+        """Initializes the class"""
         pass
 
     @staticmethod
     def scenario_string(scenario):
-        """ creates additional scenario string
+        """creates additional scenario string
 
         :param scenario: scenario name
-        :return: scenario string """
+        :return: scenario string"""
         if scenario != "":
             scenario_string = f"for scenario {scenario} "
         else:
@@ -1255,7 +1432,7 @@ class ScenarioUtils:
 
     @staticmethod
     def clean_scenario_folder(config, out_folder):
-        """ cleans scenario dict when overwritten
+        """cleans scenario dict when overwritten
 
         :param config: config of optimization
         :param out_folder: output folder"""
@@ -1265,9 +1442,12 @@ class ScenarioUtils:
             folder_dict = defaultdict(list)
             for key, value in config.scenarios.items():
                 if value["sub_folder"] != "":
-                    folder_dict[f"scenario_{value['base_scenario']}"].append(f"scenario_{value['sub_folder']}")
                     folder_dict[f"scenario_{value['base_scenario']}"].append(
-                        f"dict_all_sequence_time_steps_{value['sub_folder']}.h5")
+                        f"scenario_{value['sub_folder']}"
+                    )
+                    folder_dict[f"scenario_{value['base_scenario']}"].append(
+                        f"dict_all_sequence_time_steps_{value['sub_folder']}.h5"
+                    )
             for scenario_name, sub_folders in folder_dict.items():
                 scenario_path = os.path.join(out_folder, scenario_name)
                 if os.path.exists(scenario_path) and os.path.isdir(scenario_path):
@@ -1279,13 +1459,16 @@ class ScenarioUtils:
                             logging.info(f"Removing sub-scenario {sub_folder}")
                             shutil.rmtree(sub_folder_path, ignore_errors=True)
                         # the time steps dict
-                        if sub_folder.startswith("dict_all_sequence_time_steps") and sub_folder not in sub_folders:
+                        if (
+                            sub_folder.startswith("dict_all_sequence_time_steps")
+                            and sub_folder not in sub_folders
+                        ):
                             logging.info(f"Removing time steps dict {sub_folder}")
                             os.remove(sub_folder_path)
 
     @staticmethod
     def get_scenarios(config, job_index):
-        """ retrieves and overwrites the scenario dicts
+        """retrieves and overwrites the scenario dicts
 
         :param config: config of optimization
         :param job_index: index of current job, if passed
@@ -1293,14 +1476,20 @@ class ScenarioUtils:
         :return: elements in scenario
         """
         if config.system.conduct_scenario_analysis:
-            scenarios_path = os.path.abspath(os.path.join(config.analysis.dataset, "scenarios.json"))
+            scenarios_path = os.path.abspath(
+                os.path.join(config.analysis.dataset, "scenarios.json")
+            )
             if os.path.exists(scenarios_path):
                 with open(scenarios_path, "r") as file:
                     scenarios = json.load(file)
             else:
-                scenarios_path = os.path.abspath(os.path.join(config.analysis.dataset, "scenarios.py"))
+                scenarios_path = os.path.abspath(
+                    os.path.join(config.analysis.dataset, "scenarios.py")
+                )
                 if not os.path.exists(scenarios_path):
-                    raise FileNotFoundError(f"Neither scenarios.json nor scenarios.py not found in dataset: {config.analysis.dataset}")
+                    raise FileNotFoundError(
+                        f"Neither scenarios.json nor scenarios.py not found in dataset: {config.analysis.dataset}"
+                    )
                 spec = importlib.util.spec_from_file_location("module", scenarios_path)
                 module = importlib.util.module_from_spec(spec)
                 spec.loader.exec_module(module)
@@ -1339,7 +1528,9 @@ class OptimizationError(RuntimeError):
     Exception raised when the optimization problem is infeasible
     """
 
-    def __init__(self, status="The optimization is infeasible or unbounded, or finished with an error"):
+    def __init__(
+        self, status="The optimization is infeasible or unbounded, or finished with an error"
+    ):
         """
         Initializes the class
 

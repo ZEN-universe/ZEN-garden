@@ -1,16 +1,16 @@
 """
 Set default configurations in ZEN_garden.
 
-This module defines default values for all configurations in ZEN_garden. The 
+This module defines default values for all configurations in ZEN_garden. The
 class :class:`Config` serves as a container grouping all model configurations.
 The configurations are further organized in a class structure that resembles
-that of the ZEN-garden input data. The :class:`Config` class thus links to the four 
-main configuration types (``analysis``, ``solver``, ``system``, and ``scenario``), 
-each defined using separate class. Default configurations for the ``system.json`` 
-configurations are located in the class :class:`System`. Whenever a 
-configuration consists of a dictionary, a new class is defined 
+that of the ZEN-garden input data. The :class:`Config` class thus links to the four
+main configuration types (``analysis``, ``solver``, ``system``, and ``scenario``),
+each defined using separate class. Default configurations for the ``system.json``
+configurations are located in the class :class:`System`. Whenever a
+configuration consists of a dictionary, a new class is defined
 to provide a template for the configuration and define all required
-default values.  
+default values.
 
 The current structure of classes in which defaults are set is as follows:
 
@@ -31,7 +31,7 @@ Default values are overwritten by any changes specified in the input files
 ``system.json``, ``scenarios.json``, and ``config.json``.
 """
 
-from pydantic import BaseModel,ConfigDict
+from pydantic import BaseModel, ConfigDict
 from typing import Any, Optional, Union, Literal
 
 
@@ -43,11 +43,11 @@ class Subscriptable(BaseModel):
     ``obj["key"]`` instead of ``obj.key``. Similarly, attribute values can
     be changed in a dictionary like fashion ``obj["key"] = new_value``. Lastly,
     attribute names and values can be called using the methods ``.keys()``,
-    ``.values()``, and ``.items()`` like in a normal dictionary. 
+    ``.values()``, and ``.items()`` like in a normal dictionary.
 
     Inherits from:
         :class:`BaseModel` - Class from the Pydantic package which provides
-        advanced features in input data handling and validation. 
+        advanced features in input data handling and validation.
 
     """
 
@@ -68,6 +68,7 @@ class Subscriptable(BaseModel):
     def values(self) -> Any:
         return self.model_dump().values()
 
+
 class Subsets(Subscriptable):
     set_carriers: list[str] = []
     set_technologies: dict[str, list[str]] | list[str] = {
@@ -78,19 +79,18 @@ class Subsets(Subscriptable):
 
 
 class HeaderDataInputs(Subscriptable):
-    
     """
     Maps input/output headers to internal set names used in ZEN-garden.
 
-    This class defines standard header names for the input and 
+    This class defines standard header names for the input and
     output files of ZEN-garden. It provides a mapping between the column headers
-    of input/output files and internal set names used in the code. For 
+    of input/output files and internal set names used in the code. For
     example, the class attribute "set_nodes" (default value "node") means that
-    any input csv file with column header "node" will be interpreted as 
-    containing elements of the internal set "set_nodes". 
+    any input csv file with column header "node" will be interpreted as
+    containing elements of the internal set "set_nodes".
 
     Inherits from:
-        :class:`Subscriptable` - Provides dictionary-like access to attributes 
+        :class:`Subscriptable` - Provides dictionary-like access to attributes
         and allows input data handling via Pydantic's BaseModel
     """
 
@@ -121,6 +121,7 @@ class System(Subscriptable):
     """
     Class which contains the system configuration. This defines for example the set of carriers, technologies, etc.
     """
+
     set_carriers: list[str] = []
     set_capacity_types: list[str] = ["power", "energy"]
     set_technologies: list[str] = []
@@ -154,11 +155,11 @@ class System(Subscriptable):
     storage_charge_discharge_binary: bool = False
 
 
-
 class Solver(Subscriptable):
     """
     Class which contains the solver configuration. This defines for example the solver options, scaling, etc.
     """
+
     name: str = "highs"
     solver_options: dict = {}
     check_unit_consistency: bool = True
@@ -189,6 +190,7 @@ class TimeSeriesAggregation(Subscriptable):
     """
     Class which contains the time series aggregation configuration. This defines for example the clustering method, etc.
     """
+
     clusterMethod: str = "hierarchical"
     solver: str = "highs"
     hoursPerPeriod: int = 1  # keep this at 1
@@ -202,8 +204,9 @@ class Analysis(Subscriptable):
     """
     Class which contains the analysis configuration. This defines for example the objective function, output settings, etc.
     """
+
     dataset: str = ""
-    objective: Literal['total_cost','total_carbon_emissions'] = "total_cost"
+    objective: Literal["total_cost", "total_carbon_emissions"] = "total_cost"
     sense: str = "min"
     subsets: Subsets = Subsets()
     header_data_inputs: HeaderDataInputs = HeaderDataInputs()
@@ -215,11 +218,11 @@ class Analysis(Subscriptable):
     zen_garden_version: str = None
 
 
-
 class Config(Subscriptable):
     """
     Class which contains the configuration of the model. This includes the configurations of the system, solver, and analysis as well as the dictionary of scenarios.
     """
+
     analysis: Analysis = Analysis()
     solver: Solver = Solver()
     system: System = System()

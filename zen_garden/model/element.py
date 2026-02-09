@@ -4,6 +4,7 @@ Contains methods to add parameters, variables and constraints to the
 optimization problem. Parent class of the Carrier and Technology classes .The class takes the concrete
 optimization model as an input.
 """
+
 import itertools
 import logging
 import os
@@ -17,18 +18,20 @@ from linopy.expressions import LinearExpression
 from pathlib import Path
 from zen_garden.preprocess.extract_input_data import DataInput
 
+
 class Element:
     """
     Class defining a standard Element
     """
+
     # set label
     label = "set_elements"
 
     def __init__(self, element: str, optimization_setup):
-        """ initialization of an element
+        """initialization of an element
 
         :param element: element that is added to the model
-        :param optimization_setup: The OptimizationSetup the element is part of """
+        :param optimization_setup: The OptimizationSetup the element is part of"""
         # set attributes
         self.name = element
         self._name = element
@@ -41,15 +44,20 @@ class Element:
         # get input path
         self.get_input_path()
         # create DataInput object
-        self.data_input = DataInput(element=self, system=self.optimization_setup.system,
-                                    analysis=self.optimization_setup.analysis, solver=self.optimization_setup.solver,
-                                    energy_system=self.energy_system, unit_handling=self.energy_system.unit_handling,
-                                    optimization_setup=self.optimization_setup)
+        self.data_input = DataInput(
+            element=self,
+            system=self.optimization_setup.system,
+            analysis=self.optimization_setup.analysis,
+            solver=self.optimization_setup.solver,
+            energy_system=self.energy_system,
+            unit_handling=self.energy_system.unit_handling,
+            optimization_setup=self.optimization_setup,
+        )
         # dict to save the parameter units element-wise (and save them in the results later on)
         self.units = {}
 
     def get_input_path(self):
-        """ get input path where input data is stored input_path"""
+        """get input path where input data is stored input_path"""
         # get technology type
         class_label = self.label
         # get path dictionary
@@ -66,7 +74,7 @@ class Element:
         self.input_path = Path(paths[class_label][self.name]["folder"])
 
     def store_scenario_dict(self):
-        """ stores scenario dict in each data input object """
+        """stores scenario dict in each data input object"""
         # store scenario dict
         self.data_input.scenario_dict = self.optimization_setup.scenario_dict
 
@@ -74,9 +82,9 @@ class Element:
     # Here, after defining EnergySystem-specific components, the components of the other classes are constructed
     @classmethod
     def construct_model_components(cls, optimization_setup):
-        """ constructs the model components of the class <Element>
+        """constructs the model components of the class <Element>
 
-        :param optimization_setup: The OptimizationSetup the element is part of """
+        :param optimization_setup: The OptimizationSetup the element is part of"""
         logging.info("\n--- Construct model components ---\n")
         pid = os.getpid()
         # construct Sets
@@ -85,39 +93,49 @@ class Element:
         t1 = time.perf_counter()
         if optimization_setup.solver.run_diagnostics:
             logging.info(f"Time to construct Sets: {t1 - t_start:0.1f} seconds")
-            logging.info(f"Memory usage: {psutil.Process(pid).memory_info().rss / 1024 ** 2:0.1f} MB")
+            logging.info(
+                f"Memory usage: {psutil.Process(pid).memory_info().rss / 1024 ** 2:0.1f} MB"
+            )
         # construct Params
         t0 = time.perf_counter()
         cls.construct_params(optimization_setup)
         t1 = time.perf_counter()
         if optimization_setup.solver.run_diagnostics:
             logging.info(f"Time to construct Params: {t1 - t0:0.1f} seconds")
-            logging.info(f"Memory usage: {psutil.Process(pid).memory_info().rss / 1024 ** 2:0.1f} MB")
+            logging.info(
+                f"Memory usage: {psutil.Process(pid).memory_info().rss / 1024 ** 2:0.1f} MB"
+            )
         # construct Vars
         t0 = time.perf_counter()
         cls.construct_vars(optimization_setup)
         t1 = time.perf_counter()
         if optimization_setup.solver.run_diagnostics:
             logging.info(f"Time to construct Vars: {t1 - t0:0.1f} seconds")
-            logging.info(f"Memory usage: {psutil.Process(pid).memory_info().rss / 1024 ** 2:0.1f} MB")
+            logging.info(
+                f"Memory usage: {psutil.Process(pid).memory_info().rss / 1024 ** 2:0.1f} MB"
+            )
         # construct Constraints
         t0 = time.perf_counter()
         cls.construct_constraints(optimization_setup)
         t1 = time.perf_counter()
         if optimization_setup.solver.run_diagnostics:
             logging.info(f"Time to construct Constraints: {t1 - t0:0.1f} seconds")
-            logging.info(f"Memory usage: {psutil.Process(pid).memory_info().rss / 1024 ** 2:0.1f} MB")
+            logging.info(
+                f"Memory usage: {psutil.Process(pid).memory_info().rss / 1024 ** 2:0.1f} MB"
+            )
         # construct Objective
         optimization_setup.energy_system.construct_objective()
         t_end = time.perf_counter()
         if optimization_setup.solver.run_diagnostics:
-            logging.info(f"Total time to construct model components: {t_end - t_start:0.1f} seconds")
+            logging.info(
+                f"Total time to construct model components: {t_end - t_start:0.1f} seconds"
+            )
 
     @classmethod
     def construct_sets(cls, optimization_setup):
-        """ constructs the Sets of the class <Element>
+        """constructs the Sets of the class <Element>
 
-        :param optimization_setup: The OptimizationSetup the element is part of """
+        :param optimization_setup: The OptimizationSetup the element is part of"""
         logging.info("Construct Sets")
         # construct Sets of energy system
         optimization_setup.energy_system.construct_sets()
@@ -127,9 +145,9 @@ class Element:
 
     @classmethod
     def construct_params(cls, optimization_setup):
-        """ constructs the Params of the class <Element>
+        """constructs the Params of the class <Element>
 
-        :param optimization_setup: The OptimizationSetup the element is part of """
+        :param optimization_setup: The OptimizationSetup the element is part of"""
         logging.info("Construct Params")
         # construct Params of energy system
         optimization_setup.energy_system.construct_params()
@@ -139,9 +157,9 @@ class Element:
 
     @classmethod
     def construct_vars(cls, optimization_setup):
-        """ constructs the Vars of the class <Element>
+        """constructs the Vars of the class <Element>
 
-        :param optimization_setup: The OptimizationSetup the element is part of """
+        :param optimization_setup: The OptimizationSetup the element is part of"""
         logging.info("Construct Vars")
         # construct Vars of energy system
         optimization_setup.energy_system.construct_vars()
@@ -151,9 +169,9 @@ class Element:
 
     @classmethod
     def construct_constraints(cls, optimization_setup):
-        """ constructs the Constraints of the class <Element>
+        """constructs the Constraints of the class <Element>
 
-        :param optimization_setup: The OptimizationSetup the element is part of """
+        :param optimization_setup: The OptimizationSetup the element is part of"""
         logging.info("Construct Constraints")
         # construct Constraints of energy system
         optimization_setup.energy_system.construct_constraints()
@@ -164,13 +182,13 @@ class Element:
 
     @classmethod
     def create_custom_set(cls, list_index, optimization_setup):
-        """ creates custom set for model component
+        """creates custom set for model component
 
         :param list_index: list of names of indices
         :param optimization_setup: The OptimizationSetup the element is part of
-        :return list_index: list of names of indices """
+        :return list_index: list of names of indices"""
 
-        list_index=list(list_index)  # make a copy of the list to avoid side effects
+        list_index = list(list_index)  # make a copy of the list to avoid side effects
         sets = optimization_setup.sets
         indexing_sets = optimization_setup.energy_system.indexing_sets
 
@@ -178,7 +196,9 @@ class Element:
         if all(index in sets.sets and not sets.is_indexed(index) for index in list_index):
             list_sets = [sets[index] for index in list_index if index in sets]
             # return indices as cartesian product of sets
-            custom_set = list(itertools.product(*list_sets)) if len(list_sets) > 1 else list(list_sets[0])
+            custom_set = (
+                list(itertools.product(*list_sets)) if len(list_sets) > 1 else list(list_sets[0])
+            )
             return custom_set, list_index
 
         if list_index[0] not in indexing_sets:
@@ -216,7 +236,9 @@ class Element:
 
                 # split in capacity types of power and energy
                 if index == "set_capacity_types":
-                    cls.handle_set_capacity_types_index(element, sets, optimization_setup, list_sets)
+                    cls.handle_set_capacity_types_index(
+                        element, sets, optimization_setup, list_sets
+                    )
                     continue
 
                 raise NotImplementedError(f"Index <{index}> not known")
@@ -250,7 +272,7 @@ class Element:
 
     @classmethod
     def append_set_capex_index(cls, element, optimization_setup, index):
-        """ checks if the capex of a technology needs to be modeled as pwa or linear
+        """checks if the capex of a technology needs to be modeled as pwa or linear
 
         :param element: technology in model
         :param optimization_setup: The OptimizationSetup the element is part of
@@ -258,7 +280,9 @@ class Element:
         :return model_capex: Bool indicating if capex needs to be modeled as pwa or linear"""
 
         if element in optimization_setup.sets["set_conversion_technologies"]:
-            capex_is_pwa = optimization_setup.get_attribute_of_specific_element(cls, element, "capex_is_pwa")
+            capex_is_pwa = optimization_setup.get_attribute_of_specific_element(
+                cls, element, "capex_is_pwa"
+            )
             if "linear" in index and capex_is_pwa:
                 return False
             if "pwa" in index and not capex_is_pwa:
@@ -269,7 +293,7 @@ class Element:
 
     @classmethod
     def append_on_off_modeled(cls, element, optimization_setup, index):
-        """ checks if the on-off-behavior of a technology needs to be modeled.
+        """checks if the on-off-behavior of a technology needs to be modeled.
 
         :param element: technology in model
         :param optimization_setup: The OptimizationSetup the element is part of
@@ -289,22 +313,24 @@ class Element:
 
     @staticmethod
     def handle_set_location_index(element, sets, list_sets):
-        """ handles the set_location index for the custom set
+        """handles the set_location index for the custom set
 
         :param element: element to handle
         :param sets: sets of the optimization setup
         :param list_sets: list of sets to append
         """
-        if (element in sets["set_conversion_technologies"] or
-                element in sets["set_storage_technologies"] or
-                element in sets["set_retrofitting_technologies"]):
+        if (
+            element in sets["set_conversion_technologies"]
+            or element in sets["set_storage_technologies"]
+            or element in sets["set_retrofitting_technologies"]
+        ):
             list_sets.append(sets["set_nodes"])
         elif element in sets["set_transport_technologies"]:
             list_sets.append(sets["set_edges"])
 
     @staticmethod
     def handle_set_capacity_types_index(element, sets, optimization_setup, list_sets):
-        """ handles the set_capacity_types index for the custom set
+        """handles the set_capacity_types index for the custom set
 
         :param element: element to handle
         :param sets: sets of the optimization setup
@@ -319,7 +345,7 @@ class Element:
 
     @classmethod
     def check_on_off_modeled(cls, tech, optimization_setup):
-        """ this classmethod checks if the on-off-behavior of a technology needs to be modeled.
+        """this classmethod checks if the on-off-behavior of a technology needs to be modeled.
         If the technology has a minimum load of 0 for all nodes and time steps,
         and all dependent carriers have a lower bound of 0 (only for conversion technologies modeled as pwa),
         then on-off-behavior is not necessary to model
@@ -328,7 +354,9 @@ class Element:
         :param optimization_setup: The OptimizationSetup the element is part of
         :return model_on_off: Bool indicating if on-off-behaviour (min load) needs to be modeled"""
         # check if any min load
-        unique_min_load = list(set(optimization_setup.get_attribute_of_specific_element(cls, tech, "min_load").values))
+        unique_min_load = list(
+            set(optimization_setup.get_attribute_of_specific_element(cls, tech, "min_load").values)
+        )
         # if only one unique min_load which is zero
         if len(unique_min_load) == 1 and unique_min_load[0] == 0:
             model_on_off = False
@@ -363,8 +391,8 @@ class GenericRule(object):
         self.time_steps = self.energy_system.time_steps
 
     # helper methods for constraint rules
-    def get_year_time_step_array(self,storage=False):
-        """ returns array with year and time steps of each year
+    def get_year_time_step_array(self, storage=False):
+        """returns array with year and time steps of each year
 
         :param storage: boolean indicating if object is a storage object
         """
@@ -384,13 +412,13 @@ class GenericRule(object):
         return times
 
     def get_year_time_step_duration_array(self):
-        """ returns array with year and duration of time steps of each year """
+        """returns array with year and duration of time steps of each year"""
         times = self.get_year_time_step_array()
         times = times * self.parameters.time_steps_operation_duration
         return times
 
     def get_previous_storage_time_step_array(self):
-        """ returns array with storage time steps and previous storage time steps """
+        """returns array with storage time steps and previous storage time steps"""
         times_prev = []
         mask = []
         for ts in self.sets["set_time_steps_storage"]:
@@ -406,30 +434,43 @@ class GenericRule(object):
                 ts_prev = self.energy_system.time_steps.get_previous_storage_time_step(ts)
                 times_prev.append(ts_prev)
                 mask.append(True)
-        mask = xr.DataArray(mask, dims="set_time_steps_storage", coords={"set_time_steps_storage": self.sets["set_time_steps_storage"]})
+        mask = xr.DataArray(
+            mask,
+            dims="set_time_steps_storage",
+            coords={"set_time_steps_storage": self.sets["set_time_steps_storage"]},
+        )
         return times_prev, mask
 
     def get_power2energy_time_step_array(self):
-        """ returns array with power2energy time steps """
-        times = {st: self.energy_system.time_steps.convert_time_step_energy2power(st) for st in self.sets["set_time_steps_storage"]}
-        times = pd.Series(times,name="set_time_steps_operation")
+        """returns array with power2energy time steps"""
+        times = {
+            st: self.energy_system.time_steps.convert_time_step_energy2power(st)
+            for st in self.sets["set_time_steps_storage"]
+        }
+        times = pd.Series(times, name="set_time_steps_operation")
         times.index.name = "set_time_steps_storage"
         return times
 
     def get_storage2year_time_step_array(self):
-        """ returns array with storage2year time steps """
-        times = {st: y for y in self.sets["set_time_steps_yearly"] for st in self.energy_system.time_steps.get_time_steps_year2storage(y)}
-        times = pd.Series(times,name="set_time_steps_yearly")
+        """returns array with storage2year time steps"""
+        times = {
+            st: y
+            for y in self.sets["set_time_steps_yearly"]
+            for st in self.energy_system.time_steps.get_time_steps_year2storage(y)
+        }
+        times = pd.Series(times, name="set_time_steps_yearly")
         times.index.name = "set_time_steps_storage"
         return times
 
     def map_and_expand(self, array, mapping):
-        """ maps and expands array
+        """maps and expands array
 
         :param array: xarray to map and expand
         :param mapping: pd.Series with mapping values
         """
-        assert (isinstance(mapping, pd.Series) or isinstance(mapping.index, pd.Index)), "Mapping must be a pd.Series or with a single-level pd.Index"
+        assert isinstance(mapping, pd.Series) or isinstance(
+            mapping.index, pd.Index
+        ), "Mapping must be a pd.Series or with a single-level pd.Index"
         # get mapping values
         array = array.sel({mapping.name: mapping.values})
         # rename
@@ -439,7 +480,7 @@ class GenericRule(object):
         return array
 
     def align_and_mask(self, expr, mask):
-        """ aligns and masks expr
+        """aligns and masks expr
 
         :param expr: expression to align and mask
         :param mask: mask to apply
@@ -454,8 +495,8 @@ class GenericRule(object):
         expr = expr.where(mask)
         return expr
 
-    def get_flow_expression_conversion(self,techs, nodes, factor=None, rename=False):
-        """ return the flow expression for conversion technologies """
+    def get_flow_expression_conversion(self, techs, nodes, factor=None, rename=False):
+        """return the flow expression for conversion technologies"""
         reference_flows = []
         for t in techs:
             rc = self.sets["set_reference_carriers"][t][0]
@@ -465,21 +506,39 @@ class GenericRule(object):
                 mult = 1
             # TODO can we avoid the indexing here?
             if rc in self.sets["set_input_carriers"][t]:
-                reference_flows.append(mult * self.variables["flow_conversion_input"].loc[t, rc, nodes, :])
+                reference_flows.append(
+                    mult * self.variables["flow_conversion_input"].loc[t, rc, nodes, :]
+                )
             else:
-                reference_flows.append(mult * self.variables["flow_conversion_output"].loc[t, rc, nodes, :])
+                reference_flows.append(
+                    mult * self.variables["flow_conversion_output"].loc[t, rc, nodes, :]
+                )
         if rename:
-            term_reference_flow = lp.merge(reference_flows, dim="set_technologies", join="outer", coords="minimal",
-                                           compat="override", cls=LinearExpression).rename({"set_nodes": "set_location"})
+            term_reference_flow = lp.merge(
+                reference_flows,
+                dim="set_technologies",
+                join="outer",
+                coords="minimal",
+                compat="override",
+                cls=LinearExpression,
+            ).rename({"set_nodes": "set_location"})
         else:
-            term_reference_flow = lp.merge(reference_flows, dim="set_conversion_technologies", join="outer",
-                                           coords="minimal", compat="override", cls=LinearExpression)
+            term_reference_flow = lp.merge(
+                reference_flows,
+                dim="set_conversion_technologies",
+                join="outer",
+                coords="minimal",
+                compat="override",
+                cls=LinearExpression,
+            )
         return term_reference_flow
 
-    def get_flow_expression_storage(self,rename=True):
-        """ return the flow expression for storage technologies """
-        term = (self.variables["flow_storage_charge"] + self.variables["flow_storage_discharge"])
+    def get_flow_expression_storage(self, rename=True):
+        """return the flow expression for storage technologies"""
+        term = self.variables["flow_storage_charge"] + self.variables["flow_storage_discharge"]
         if rename:
-            return term.rename({"set_storage_technologies": "set_technologies", "set_nodes": "set_location"})
+            return term.rename(
+                {"set_storage_technologies": "set_technologies", "set_nodes": "set_location"}
+            )
         else:
             return term

@@ -2,12 +2,13 @@
 Runs the main function of ZEN-Garden.
 Compilation  of the optimization problem.
 """
+
 from .runner import run
 from .cli.zen_garden_cli import create_zen_garden_cli
 import warnings
 
-def run_module(config = "./config.py", dataset = None, 
-               folder_output = None, job_index = None):
+
+def run_module(config="./config.py", dataset=None, folder_output=None, job_index=None):
     """
     Deprecated wrapper for ``zen_garden.runner.run()``.
 
@@ -48,23 +49,18 @@ def run_module(config = "./config.py", dataset = None,
         >>> run("1_base_case")
     """
 
-
     # throw deprecation warning
     warnings.warn(
-        "zen_garden.__main__.run_module() is deprecated and will be removed " \
-        "in ZEN-garden v3.0.0. Please use the new version " \
+        "zen_garden.__main__.run_module() is deprecated and will be removed "
+        "in ZEN-garden v3.0.0. Please use the new version "
         "zen_garden.runner.run() instead.",
         DeprecationWarning,
-        stacklevel=2
+        stacklevel=2,
     )
 
     # run new function
-    return run(
-        config = config, 
-        dataset = dataset, 
-        folder_output=folder_output,
-        job_index=job_index
-        )
+    return run(config=config, dataset=dataset, folder_output=folder_output, job_index=job_index)
+
 
 if __name__ == "__main__":
 

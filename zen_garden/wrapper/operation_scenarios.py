@@ -12,9 +12,7 @@ logger = logging.getLogger(__name__)
 
 
 def validate_inputs(
-    dataset: Path | str,
-    folder_output: Path | str | None,
-    job_index: Iterable[int] | None
+    dataset: Path | str, folder_output: Path | str | None, job_index: Iterable[int] | None
 ) -> tuple[Path, Path, List[int] | None]:
     """Validate and normalize user-provided inputs.
 
@@ -46,8 +44,9 @@ def validate_inputs(
         folder_output = "./outputs/"
     folder_output = Path(folder_output)
     if not (folder_output / dataset.name).exists():
-        raise FileNotFoundError(f"Results for dataset {dataset} do not exist"
-            f" in the folder {folder_output}.")
+        raise FileNotFoundError(
+            f"Results for dataset {dataset} do not exist" f" in the folder {folder_output}."
+        )
 
     if job_index is None:
         job_index_list = None
@@ -66,7 +65,7 @@ def load_scenarios(
     """Load scenario names from simulation results.
 
     This function inspects the results of a previous capacity-expansion run
-    and extracts the scenario names. When a job index is provided, only the 
+    and extracts the scenario names. When a job index is provided, only the
     scenarios corresponding to those indices are returned.
 
     Args:
@@ -105,7 +104,7 @@ def prepare_operational_dataset(
 
     This function derives an operational dataset from the original
     capacity-expansion dataset by copying the base dataset, adding
-    capacity expansion results as existing capacities, and disabling further 
+    capacity expansion results as existing capacities, and disabling further
     investment decisions.
 
     Args:
@@ -113,7 +112,7 @@ def prepare_operational_dataset(
         dataset_op (Path): Destination path for the generated operational dataset.
         folder_output (Path): Path to the directory containing capacity-expansion
             results.
-        scenario (str): Name of the scenario whose results should be used in the 
+        scenario (str): Name of the scenario whose results should be used in the
             operational scenarios.
         scenarios_op (str): Name of the file containing scenario configurations
             for operational analysis. If provided, scenario analysis is enabled
@@ -130,12 +129,7 @@ def prepare_operational_dataset(
         scenarios=scenarios_op,
     )
 
-    utils.capacity_addition_2_existing_capacity(
-        folder_output,
-        dataset,
-        dataset_op,
-        scenario
-    )
+    utils.capacity_addition_2_existing_capacity(folder_output, dataset, dataset_op, scenario)
 
     utils.modify_json(
         dataset_op / "system.json",
@@ -188,7 +182,7 @@ def operation_scenarios(
     folder_output: Path | str = Path("./outputs"),
     job_index: Optional[Iterable[int]] = None,
     scenarios_op: str | None = None,
-    delete_data: bool = False
+    delete_data: bool = False,
 ) -> None:
     """
     Run operational-only simulations derived from expansion results.
@@ -199,15 +193,15 @@ def operation_scenarios(
     cleans up intermediate data.
 
     Args:
-        dataset (str | Path): Path to the original dataset used for 
+        dataset (str | Path): Path to the original dataset used for
             capacity-expansion runs.
         config (str | Path): Path to the simulation configuration file.
-        folder_output (str | Path): Directory containing simulation outputs of 
-            the capacity-planning problem. New operation results will also be 
+        folder_output (str | Path): Directory containing simulation outputs of
+            the capacity-planning problem. New operation results will also be
             saved in this directory. Defaults to "./outputs/".
-        job_index (list[int]): Optional iterable of scenario indices in the 
-            capacity-planning problem to run. Only these scenarios will be 
-            used in the operation-only simulations. If None, all scenarios are 
+        job_index (list[int]): Optional iterable of scenario indices in the
+            capacity-planning problem to run. Only these scenarios will be
+            used in the operation-only simulations. If None, all scenarios are
             processed.
         scenarios_op (str): Name of the scenario configuration for operational
             analysis.
@@ -219,8 +213,7 @@ def operation_scenarios(
         - Executes simulation runs and writes output files to disk.
         - Emits log messages during execution.
     """
-    dataset, folder_output, job_index_list = validate_inputs(
-        dataset, folder_output, job_index)
+    dataset, folder_output, job_index_list = validate_inputs(dataset, folder_output, job_index)
 
     dataset_path = dataset.parent
     dataset_name = dataset.name

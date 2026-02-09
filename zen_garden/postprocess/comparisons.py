@@ -1,6 +1,7 @@
 """
 File that contains functions to compare the results of two or more models.
 """
+
 from zen_garden.postprocess.results import Results
 from zen_garden.postprocess.results.solution_loader import ComponentType
 from typing import Optional, Any
@@ -34,7 +35,7 @@ def compare_model_values(
         f"Comparing the model parameters of {results[0].solution_loader.name, results[1].solution_loader.name} and scenarios {scenarios[0], scenarios[1]}"
     )
 
-    diff_components = get_component_diff(results, component_type,scenarios)
+    diff_components = get_component_diff(results, component_type, scenarios)
 
     diff_dict = {}
     # initialize progress bar
@@ -44,9 +45,7 @@ def compare_model_values(
         pbar.update(1)
         pbar.set_description(f"Compare parameter {component_name}")
 
-        comparison_df = compare_component_values(
-            results, component_name, compare_total, scenarios
-        )
+        comparison_df = compare_component_values(results, component_name, compare_total, scenarios)
 
         if not comparison_df.empty:
             logging.info(f"Parameter {component_name} has different values")
@@ -109,6 +108,7 @@ def compare_configs(
 
     return ans
 
+
 def get_component_diff(
     results: list[Results], component_type: ComponentType, scenarios: list[str]
 ) -> list[str]:
@@ -124,7 +124,9 @@ def get_component_diff(
     component_names_0 = set(
         [
             name
-            for name, component in results_0.solution_loader.scenarios[scenarios[0]].components.items()
+            for name, component in results_0.solution_loader.scenarios[
+                scenarios[0]
+            ].components.items()
             if component.component_type is component_type
         ]
     )
@@ -132,7 +134,9 @@ def get_component_diff(
     component_names_1 = set(
         [
             name
-            for name, component in results_1.solution_loader.scenarios[scenarios[1]].components.items()
+            for name, component in results_1.solution_loader.scenarios[
+                scenarios[1]
+            ].components.items()
             if component.component_type is component_type
         ]
     )
@@ -142,13 +146,9 @@ def get_component_diff(
     common_component = component_names_0.intersection(component_names_1)
 
     if only_in_0:
-        logging.info(
-            f"Components {only_in_1} are missing from {results_1.solution_loader.name}"
-        )
+        logging.info(f"Components {only_in_1} are missing from {results_1.solution_loader.name}")
     elif only_in_1:
-        logging.info(
-            f"Components {only_in_1} are missing from {results_0.solution_loader.name}"
-        )
+        logging.info(f"Components {only_in_1} are missing from {results_0.solution_loader.name}")
     return [i for i in common_component]
 
 
@@ -158,7 +158,7 @@ def compare_dicts(
     result_names: list[str] = ["res_1", "res_2"],
 ) -> Optional[dict[Any, Any]]:
     """
-    Compares two dictionaries and returns only the fields with different values. 
+    Compares two dictionaries and returns only the fields with different values.
 
     :param dict1: first config dict
     :param dict2: second config dict
@@ -168,9 +168,7 @@ def compare_dicts(
     diff_dict = {}
     for key in dict1.keys() | dict2.keys():
         if isinstance(dict1.get(key), dict) and isinstance(dict2.get(key), dict):
-            nested_diff = compare_dicts(
-                dict1.get(key, {}), dict2.get(key, {}), result_names
-            )
+            nested_diff = compare_dicts(dict1.get(key, {}), dict2.get(key, {}), result_names)
             if nested_diff:
                 diff_dict[key] = nested_diff
         elif dict1.get(key) != dict2.get(key):
@@ -188,9 +186,7 @@ def compare_dicts(
     return diff_dict if diff_dict else None
 
 
-def check_and_fill_scenario_list(
-    results: list[Results], scenarios: list[str]
-) -> list[str]:
+def check_and_fill_scenario_list(results: list[Results], scenarios: list[str]) -> list[str]:
     """Checks if both results have the provided scenarios and otherwise returns a list containing twice one common scenario.
 
     :param results: List of results.
@@ -203,9 +199,7 @@ def check_and_fill_scenario_list(
     try:
         common_scenario = get_common_scenario(*results)
     except AssertionError:
-        logging.info(
-            "No common scenario found. Selecting random scenario for each result."
-        )
+        logging.info("No common scenario found. Selecting random scenario for each result.")
         scenarios = [
             next(iter(results[0].solution_loader.scenarios.keys())),
             next(iter(results[1].solution_loader.scenarios.keys())),
@@ -275,6 +269,7 @@ def compare_component_values(
         val_1 = results_1.get_full_ts(component_name, scenario_name=scenario_1)
     return _get_comparison_df(val_0, val_1, result_names, component_name, rtol)
 
+
 def _get_comparison_df(val_0, val_1, result_names, component_name, rtol):
     """
     :param val_0:
@@ -296,9 +291,7 @@ def _get_comparison_df(val_0, val_1, result_names, component_name, rtol):
         val_1 = val_1.sort_index()
     if val_1.shape == val_0.shape:
         if len(val_0.shape) == 2:
-            if not val_0.index.equals(val_1.index) or not val_0.columns.equals(
-                val_1.columns
-            ):
+            if not val_0.index.equals(val_1.index) or not val_0.columns.equals(val_1.columns):
                 mismatched_index = True
         elif not val_0.index.equals(val_1.index):
             mismatched_index = True
@@ -311,14 +304,18 @@ def _get_comparison_df(val_0, val_1, result_names, component_name, rtol):
             mismatched_index = True
 
     if mismatched_index:
-        logging.info(
-            f"Component {component_name} does not have matching index or columns"
+        logging.info(f"Component {component_name} does not have matching index or columns")
+        missing_index = (
+            val_0.index.difference(val_1.index)
+            if len(val_0.index) > len(val_1.index)
+            else val_1.index.difference(val_0.index)
         )
-        missing_index = val_0.index.difference(val_1.index) if len(val_0.index) > len(val_1.index) else val_1.index.difference(val_0.index)
         common_index = val_0.index.intersection(val_1.index)
         val_0_aligned = val_0.loc[common_index]
         val_1_aligned = val_1.loc[common_index]
-        comparison_df_aligned = _get_different_vals(val_0_aligned, val_1_aligned, result_names, rtol)
+        comparison_df_aligned = _get_different_vals(
+            val_0_aligned, val_1_aligned, result_names, rtol
+        )
         wrong_index = comparison_df_aligned.index.union(missing_index)
         comparison_df = pd.concat([val_0, val_1], keys=result_names, axis=1)
         comparison_df = comparison_df.sort_index(axis=1, level=1)
@@ -340,6 +337,7 @@ def _get_comparison_df(val_0, val_1, result_names, component_name, rtol):
             return comparison_df
         return _get_different_vals(val_0, val_1, result_names, rtol)
 
+
 def _get_different_vals(
     val_0: "pd.DataFrame | pd.Series[Any]",
     val_1: "pd.DataFrame | pd.Series[Any]",
@@ -348,7 +346,7 @@ def _get_different_vals(
 ) -> pd.DataFrame:
     """
     Get the different values of two dataframes or series
-    
+
     :param val_0: first dataframe or series
     :param val_1: second dataframe or series
     :param result_names: names of the results

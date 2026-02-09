@@ -2,6 +2,7 @@
 File that contains the classes which initialize parameters, variables and constraints.
 This is a proxy for pyomo parameters, since the construction of parameters has a significant overhead. Indexing within ZEN-garden is also defined here.
 """
+
 import copy
 import itertools
 import logging
@@ -13,6 +14,7 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 from ordered_set import OrderedSet
+
 
 class ZenIndex(object):
     """
@@ -185,10 +187,12 @@ class ZenSet(OrderedSet):
         else:
             return super().__getitem__(item)
 
+
 class Component:
     """
     Class to prepare parameter, variable and constraint data such that it suits the pyomo prerequisites
     """
+
     def __init__(self):
         """
         instantiate object of Component class
@@ -197,7 +201,7 @@ class Component:
 
     @staticmethod
     def compile_doc_string(doc, index_list, name, domain=None):
-        """ compile docstring from doc and index_list
+        """compile docstring from doc and index_list
 
         :param doc: docstring to be compiled
         :param index_list: list of indices
@@ -205,13 +209,17 @@ class Component:
         :param domain: domain of parameter/variable/constraint (e.g., reals, non negative reals, ...)
         :return complete_doc: complete docstring composed of name, doc and dims
         """
-        assert type(doc) == str, f"Docstring {doc} has wrong format. Must be 'str' but is '{type(doc).__name__}'"
+        assert (
+            type(doc) == str
+        ), f"Docstring {doc} has wrong format. Must be 'str' but is '{type(doc).__name__}'"
         # check for prohibited strings
         prohibited_strings = [",", ";", ":", "/", "name", "doc", "dims", "domain"]
         original_doc = copy.copy(doc)
         for string in prohibited_strings:
             if string in doc:
-                logging.warning(f"Docstring '{original_doc}' contains prohibited string '{string}'. Occurrences are dropped.")
+                logging.warning(
+                    f"Docstring '{original_doc}' contains prohibited string '{string}'. Occurrences are dropped."
+                )
                 doc = doc.replace(string, "")
         # joined index names
         joined_index = ",".join(index_list)
@@ -223,7 +231,7 @@ class Component:
 
     @staticmethod
     def get_index_names_data(index_list):
-        """ splits index_list in data and index names
+        """splits index_list in data and index names
 
         :param index_list: list of indices (names and values)
         :return index_values: names of indices
@@ -247,10 +255,11 @@ class Component:
 
 class IndexSet(Component):
     """
-        Class to prepare parameter data for pyomo parameter prerequisites
+    Class to prepare parameter data for pyomo parameter prerequisites
     """
+
     def __init__(self):
-        """ initialization of the IndexSet object """
+        """initialization of the IndexSet object"""
         # base class init
         super().__init__()
 
@@ -275,8 +284,12 @@ class IndexSet(Component):
 
         # added data and docs
         self.sets[name] = ZenSet(data=data, name=name, doc=doc, index_set=index_set)
-        self.coords_dataset = self.coords_dataset.assign_coords({name: np.array(list(self.sets[name].superset))})
-        self.docs[name] = self.compile_doc_string(doc,name=name, index_list= [index_set] if index_set is not None else [])
+        self.coords_dataset = self.coords_dataset.assign_coords(
+            {name: np.array(list(self.sets[name].superset))}
+        )
+        self.docs[name] = self.compile_doc_string(
+            doc, name=name, index_list=[index_set] if index_set is not None else []
+        )
         if index_set is not None:
             self.index_sets[name] = index_set
 
@@ -349,12 +362,14 @@ class IndexSet(Component):
 
         index_list, mask = self.create_variable_mask(coords, index_arrs, index_list, model)
 
-        lower, upper = self.create_variable_bounds(bounds, coords, index_arrs, index_list, index_values)
+        lower, upper = self.create_variable_bounds(
+            bounds, coords, index_arrs, index_list, index_values
+        )
 
         return mask, lower, upper
 
     def create_variable_bounds(self, bounds, coords, index_arrs, index_list, index_values):
-        """ creates the bounds for the variables
+        """creates the bounds for the variables
 
         :param bounds: The bounds of the variable
         :param coords: The coordinates of the variable
@@ -393,7 +408,7 @@ class IndexSet(Component):
         return lower, upper
 
     def create_variable_mask(self, coords, index_arrs, index_list, model):
-        """ creates the mask for the variables
+        """creates the mask for the variables
 
         :param coords: The coordinates of the variable
         :param index_arrs: The index values as xarrays
@@ -476,7 +491,7 @@ class DictParameter(object):
 
 class Parameter(Component):
     def __init__(self, optimization_setup):
-        """ initialization of the parameter object """
+        """initialization of the parameter object"""
         self.optimization_setup = optimization_setup
         self.index_sets = optimization_setup.sets
         super().__init__()
@@ -485,8 +500,17 @@ class Parameter(Component):
         self.dict_parameters = DictParameter()
         self.units = {}
 
-    def add_parameter(self, name, doc, data=None, calling_class=None, index_names=None, set_time_steps=None, capacity_types=False):
-        """ initialization of a parameter
+    def add_parameter(
+        self,
+        name,
+        doc,
+        data=None,
+        calling_class=None,
+        index_names=None,
+        set_time_steps=None,
+        capacity_types=False,
+    ):
+        """initialization of a parameter
 
         :param name: name of parameter
         :param doc: docstring of parameter
@@ -500,10 +524,16 @@ class Parameter(Component):
         dict_of_units = {}
         # TODO make more flexible
         if name == "capex_specific_conversion":
-            component_data, index_list, dict_of_units = calling_class.get_capex_all_elements(optimization_setup=self.optimization_setup, index_names=index_names)
+            component_data, index_list, dict_of_units = calling_class.get_capex_all_elements(
+                optimization_setup=self.optimization_setup, index_names=index_names
+            )
             data = component_data, index_list
         elif data is None:
-            component_data, index_list, dict_of_units = self.optimization_setup.initialize_component(calling_class, name, index_names, set_time_steps, capacity_types)
+            component_data, index_list, dict_of_units = (
+                self.optimization_setup.initialize_component(
+                    calling_class, name, index_names, set_time_steps, capacity_types
+                )
+            )
             data = component_data, index_list
         if name not in self.docs.keys():
             data, index_list = self.get_index_names_data(data)
@@ -535,7 +565,7 @@ class Parameter(Component):
         setattr(self, name, data)
 
     def save_min_max(self, data, name):
-        """ stores min and max parameter
+        """stores min and max parameter
 
         :param data: non default data of parameter and index_names
         :param name: name of parameter
@@ -546,9 +576,13 @@ class Parameter(Component):
             abs_val = data.abs()
             abs_val = abs_val[(abs_val != 0) & (abs_val != np.inf)]
             if not abs_val.empty and not abs_val.isna().all():
-                if isinstance(abs_val.index,pd.MultiIndex):
-                    idxmax = name + "_" + "_".join(map(str, abs_val.index[abs_val.argmax(skipna=True)]))
-                    idxmin = name + "_" + "_".join(map(str, abs_val.index[abs_val.argmin(skipna=True)]))
+                if isinstance(abs_val.index, pd.MultiIndex):
+                    idxmax = (
+                        name + "_" + "_".join(map(str, abs_val.index[abs_val.argmax(skipna=True)]))
+                    )
+                    idxmin = (
+                        name + "_" + "_".join(map(str, abs_val.index[abs_val.argmin(skipna=True)]))
+                    )
                 else:
                     idxmax = f"{name}_{abs_val.index[abs_val.argmax(skipna=True)]}"
                     idxmin = f"{name}_{abs_val.index[abs_val.argmin(skipna=True)]}"
@@ -579,7 +613,7 @@ class Parameter(Component):
 
     @staticmethod
     def get_param_units(data, dict_of_units, index_list, name):
-        """ creates series of units with identical multi-index as data has
+        """creates series of units with identical multi-index as data has
 
         :param data: non default data of parameter and index_names
         :param dict_of_units: units of parameter
@@ -603,7 +637,7 @@ class Parameter(Component):
 
     @staticmethod
     def convert_to_dict(data):
-        """ converts the data to a dict if pd.Series
+        """converts the data to a dict if pd.Series
 
         :param data: non default data of parameter and index_names
         :return data: data as dict
@@ -616,7 +650,7 @@ class Parameter(Component):
         return data
 
     def convert_to_xarr(self, data, index_list):
-        """ converts the data to a dict if pd.Series
+        """converts the data to a dict if pd.Series
 
         :param data: non default data of parameter and index_names
         :param index_list: list of indices
@@ -662,8 +696,19 @@ class Variable(Component):
         self.units = {}
         super().__init__()
 
-    def add_variable(self, model: lp.Model, name, index_sets, unit_category, integer=False, binary=False, bounds=None, doc="", mask=None):
-        """ initialization of a variable
+    def add_variable(
+        self,
+        model: lp.Model,
+        name,
+        index_sets,
+        unit_category,
+        integer=False,
+        binary=False,
+        bounds=None,
+        doc="",
+        mask=None,
+    ):
+        """initialization of a variable
 
         :param model: parent block component of variable, must be linopy model
         :param name: name of variable
@@ -677,11 +722,21 @@ class Variable(Component):
         """
         if name not in self.docs.keys():
             index_values, index_list = self.get_index_names_data(index_sets)
-            mask_index, lower, upper = self.index_sets.indices_to_mask(index_values, index_list, bounds, model)
+            mask_index, lower, upper = self.index_sets.indices_to_mask(
+                index_values, index_list, bounds, model
+            )
             if mask is not None:
-                mask = mask.reindex_like(mask_index,fill_value=False)
+                mask = mask.reindex_like(mask_index, fill_value=False)
                 mask_index = mask_index & mask
-            model.add_variables(lower=lower, upper=upper, integer=integer, binary=binary, name=name, mask=mask_index, coords=mask_index.coords)
+            model.add_variables(
+                lower=lower,
+                upper=upper,
+                integer=integer,
+                binary=binary,
+                name=name,
+                mask=mask_index,
+                coords=mask_index.coords,
+            )
 
             # save variable doc
             if integer:
@@ -698,11 +753,13 @@ class Variable(Component):
                 else:
                     domain = "Reals"
             self.docs[name] = self.compile_doc_string(doc, index_list, name, domain)
-            self.units[name] = self.get_var_units(unit_category, index_values, index_list,mask_index)
+            self.units[name] = self.get_var_units(
+                unit_category, index_values, index_list, mask_index
+            )
         else:
             logging.warning(f"Variable {name} already added. Can only be added once")
 
-    def get_var_units(self, unit_category, var_index_values, index_list,mask=None):
+    def get_var_units(self, unit_category, var_index_values, index_list, mask=None):
         """
          creates series of units with identical multi-index as variable has
 
@@ -723,39 +780,62 @@ class Variable(Component):
         else:
             index = pd.Index(var_index_values)
         unit = self.unit_handling.ureg("dimensionless")
-        distinct_dims = {"money": "[currency]", "distance": "[length]", "time": "[time]", "emissions": "[mass]"}
+        distinct_dims = {
+            "money": "[currency]",
+            "distance": "[length]",
+            "time": "[time]",
+            "emissions": "[mass]",
+        }
         for dim, dim_name in distinct_dims.items():
             if dim in unit_category:
-                dim_unit = [key for key, value in self.unit_handling.base_units.items() if value == dim_name][0]
-                unit = unit * self.unit_handling.ureg(dim_unit)**unit_category[dim]
-        var_units = pd.Series(index=index,dtype=str)
+                dim_unit = [
+                    key for key, value in self.unit_handling.base_units.items() if value == dim_name
+                ][0]
+                unit = unit * self.unit_handling.ureg(dim_unit) ** unit_category[dim]
+        var_units = pd.Series(index=index, dtype=str)
         # variable can have different units
         if "energy_quantity" in unit_category:
             # energy_quantity depends on carrier index level (e.g. flow_import)
             if any("carrier" in carrier_name for carrier_name in var_units.index.names):
                 carrier_level = [level for level in var_units.index.names if "carrier" in level][0]
-                for carrier, energy_quantity in self.unit_handling.carrier_energy_quantities.items():
+                for (
+                    carrier,
+                    energy_quantity,
+                ) in self.unit_handling.carrier_energy_quantities.items():
                     carrier_idx = var_units.index.get_level_values(carrier_level) == carrier
-                    var_units[carrier_idx] = str((unit * energy_quantity ** unit_category["energy_quantity"]).units)
+                    var_units[carrier_idx] = str(
+                        (unit * energy_quantity ** unit_category["energy_quantity"]).units
+                    )
             # energy_quantity depends on technology index level (e.g. capacity)
             else:
-                tech_level = [level for level in var_units.index.names if "technologies" in level][0]
+                tech_level = [level for level in var_units.index.names if "technologies" in level][
+                    0
+                ]
                 for technology in self.optimization_setup.dict_elements["Technology"]:
                     reference_carrier = technology.reference_carrier[0]
-                    energy_quantity = [energy_quantity for carrier, energy_quantity in self.unit_handling.carrier_energy_quantities.items() if carrier == reference_carrier][0]
+                    energy_quantity = [
+                        energy_quantity
+                        for carrier, energy_quantity in self.unit_handling.carrier_energy_quantities.items()
+                        if carrier == reference_carrier
+                    ][0]
                     tech_idx = var_units.index.get_level_values(tech_level) == technology.name
-                    var_units[tech_idx] = str((unit * energy_quantity ** unit_category["energy_quantity"]).units)
+                    var_units[tech_idx] = str(
+                        (unit * energy_quantity ** unit_category["energy_quantity"]).units
+                    )
                 if "set_capacity_types" in var_units.index.names:
                     energy_idx = var_units.index.get_level_values("set_capacity_types") == "energy"
-                    var_units[energy_idx] = var_units[energy_idx].apply(lambda u: str(self.unit_handling.ureg(u+"*hour").units))
+                    var_units[energy_idx] = var_units[energy_idx].apply(
+                        lambda u: str(self.unit_handling.ureg(u + "*hour").units)
+                    )
 
         # variable has constant unit
         else:
             var_units[:] = str(unit.units)
         return var_units[mask.to_series()]
 
+
 class Constraint(Component):
-    def __init__(self, index_sets,model):
+    def __init__(self, index_sets, model):
         """Initialization of a constraint
 
         :param index_sets: A reference to the index sets of the model
@@ -767,7 +847,7 @@ class Constraint(Component):
         super().__init__()
 
     def add_constraint(self, name, constraint, doc=""):
-        """ initialization of a constraint
+        """initialization of a constraint
 
         :param name: name of variable
         :param constraint: either a linopy constraint or a dictionary of constraints or None
@@ -780,25 +860,35 @@ class Constraint(Component):
                 for key, cons in constraint.items():
                     if cons is None or cons == []:
                         return
-                    assert (isinstance(cons, lp.constraints.Constraint) or isinstance(cons, lp.constraints.AnonymousConstraint)), f"Constraint {key} has wrong format. Must be a linopy constraint but is {type(cons).__name__}"
+                    assert isinstance(cons, lp.constraints.Constraint) or isinstance(
+                        cons, lp.constraints.AnonymousConstraint
+                    ), f"Constraint {key} has wrong format. Must be a linopy constraint but is {type(cons).__name__}"
                     if type(key) == tuple:
                         _key = "-".join([str(k) for k in key])
                     else:
                         _key = str(key)
                     _name = f"{name}--{key}"
                     self.add_single_constraint(_name, cons)
-                    self.docs[name] = self.compile_doc_string(doc, index_list=list(cons.indexes), name=_name)
-            elif isinstance(constraint,lp.constraints.Constraint) or isinstance(constraint, lp.constraints.AnonymousConstraint):
+                    self.docs[name] = self.compile_doc_string(
+                        doc, index_list=list(cons.indexes), name=_name
+                    )
+            elif isinstance(constraint, lp.constraints.Constraint) or isinstance(
+                constraint, lp.constraints.AnonymousConstraint
+            ):
                 self.add_single_constraint(name, constraint)
-                self.docs[name] = self.compile_doc_string(doc, index_list=list(constraint.indexes), name= name)
+                self.docs[name] = self.compile_doc_string(
+                    doc, index_list=list(constraint.indexes), name=name
+                )
             else:
-                raise TypeError(f"Constraint {name} has wrong format. Must be either a linopy constraint or a dictionary of constraints but is {type(constraint).__name__}")
+                raise TypeError(
+                    f"Constraint {name} has wrong format. Must be either a linopy constraint or a dictionary of constraints but is {type(constraint).__name__}"
+                )
 
         else:
             logging.warning(f"{name} already added. Can only be added once")
 
     def add_single_constraint(self, name, constraint):
-        """ adds a single constraint to the model
+        """adds a single constraint to the model
 
         :param name: name of variable
         :param constraint: linopy constraint
@@ -810,7 +900,7 @@ class Constraint(Component):
         self._add_con(name, lhs, sign, rhs, mask=mask)
 
     def _add_con(self, name, lhs, sign, rhs, mask=None):
-        """ Adds a constraint to the model
+        """Adds a constraint to the model
 
         :param name: name of the constraint
         :param lhs: left hand side of the constraint
@@ -825,17 +915,19 @@ class Constraint(Component):
         else:
             mask = ~np.isnan(rhs) & np.isfinite(rhs)
         # turn scalar masks into bool (otherwise it will use np.bool)
-        if isinstance(mask,np.bool_):
+        if isinstance(mask, np.bool_):
             mask = bool(mask)
         else:
             self.model.add_constraints(lhs, sign, rhs, name=name, mask=mask)
 
-    def add_pw_constraint(self, model, name, index_values, yvar, xvar, break_points, f_vals, cons_type="EQ"):
+    def add_pw_constraint(
+        self, model, name, index_values, yvar, xvar, break_points, f_vals, cons_type="EQ"
+    ):
         """Adds a piece-wise linear constraint of the type f(x) = y for each index in the index_values, where f is defined
         by the breakpoints and f_vals (x_1, y_1), ..., (x_n, y_n).
 
         Note that these method will create helper variables in form of a S0S2, sources:
-        
+
         * https://support.gurobi.com/hc/en-us/articles/360013421331-How-do-I-model-piecewise-linear-functions-
         * https://medium.com/bcggamma/hands-on-modeling-non-linearity-in-linear-optimization-problems-f9da34c23c9a
 
@@ -864,8 +956,10 @@ class Constraint(Component):
             br = break_points[index_val]
             fv = f_vals[index_val]
             if len(br) != len(fv):
-                raise ValueError("Number of break points should be equal to number of function values for each "
-                                 "index value.")
+                raise ValueError(
+                    "Number of break points should be equal to number of function values for each "
+                    "index value."
+                )
 
             # create sos vars, assure same coords
             sos2_vars = self._get_nonnegative_sos2_vars(model, len(br))
@@ -873,8 +967,12 @@ class Constraint(Component):
             fv = xr.DataArray(fv, coords=sos2_vars.coords)
 
             # add the constraints, give it a valid name
-            model.add_constraints(x.to_linexpr() - (br * sos2_vars).sum() == 0, name=f"{name}_br_{num}")
-            model.add_constraints(y.to_linexpr() - (fv * sos2_vars).sum() == 0, name=f"{name}_fv_{num}")
+            model.add_constraints(
+                x.to_linexpr() - (br * sos2_vars).sum() == 0, name=f"{name}_br_{num}"
+            )
+            model.add_constraints(
+                y.to_linexpr() - (fv * sos2_vars).sum() == 0, name=f"{name}_fv_{num}"
+            )
 
     def _get_nonnegative_sos2_vars(self, model, n):
         """Creates a list of continues nonnegative variables in an SOS2
@@ -886,17 +984,31 @@ class Constraint(Component):
 
         # vars and binaries, we need to take care of all the annoying dimension names
         dim_name = f"sos2_dim_{uuid.uuid1()}"
-        sos2_var = model.add_variables(lower=np.zeros(n), binary=False, name=f"sos2_var_{uuid.uuid1()}", coords=(xr.DataArray(np.arange(n), dims=dim_name), ))
-        sos2_var_bin = model.add_variables(binary=True, name=f"sos2_var_bin_{uuid.uuid1()}", coords=(xr.DataArray(np.arange(n), dims=dim_name), ))
+        sos2_var = model.add_variables(
+            lower=np.zeros(n),
+            binary=False,
+            name=f"sos2_var_{uuid.uuid1()}",
+            coords=(xr.DataArray(np.arange(n), dims=dim_name),),
+        )
+        sos2_var_bin = model.add_variables(
+            binary=True,
+            name=f"sos2_var_bin_{uuid.uuid1()}",
+            coords=(xr.DataArray(np.arange(n), dims=dim_name),),
+        )
 
         # add the constraints
         model.add_constraints(sos2_var.sum() == 1.0)
         model.add_constraints(sos2_var - sos2_var_bin <= 0.0)
         model.add_constraints(sos2_var_bin.sum() <= 2.0)
-        combi_index = xr.DataArray([c for c in combinations(np.arange(n), 2) if c[0] + 1 != c[1]], dims=[dim_name, "combi_dim"])
-        model.add_constraints(sos2_var_bin.sel({dim_name: combi_index[:, 0]}).rename({dim_name: f"{dim_name}_1"})
-                              + sos2_var_bin.sel({dim_name: combi_index[:, 1]}).rename({dim_name: f"{dim_name}_1"})
-                              <= 1.0)
+        combi_index = xr.DataArray(
+            [c for c in combinations(np.arange(n), 2) if c[0] + 1 != c[1]],
+            dims=[dim_name, "combi_dim"],
+        )
+        model.add_constraints(
+            sos2_var_bin.sel({dim_name: combi_index[:, 0]}).rename({dim_name: f"{dim_name}_1"})
+            + sos2_var_bin.sel({dim_name: combi_index[:, 1]}).rename({dim_name: f"{dim_name}_1"})
+            <= 1.0
+        )
 
         return sos2_var
 
@@ -926,18 +1038,36 @@ class Constraint(Component):
         # get the coordinates
         index_arrs = IndexSet.tuple_to_arr(index_values, index_names)
         coords = {name: np.unique(arr.data) for name, arr in zip(index_names, index_arrs)}
-        coords.update({cname: lhs.coords[cname] for cname in lhs.coords if cname != "group" and cname != "_term"})
+        coords.update(
+            {
+                cname: lhs.coords[cname]
+                for cname in lhs.coords
+                if cname != "group" and cname != "_term"
+            }
+        )
         coords_shape = tuple(len(c) for c in coords.values())
         dims = index_names + list(lhs.dims)
         dims.remove("group")
 
         # create the full arrays, note that the lhs needs a _term dimension
-        xr_coeffs = xr.DataArray(np.full(shape=coords_shape + (lhs.coeffs.shape[-1], ), fill_value=np.nan), dims=dims, coords=coords)
-        xr_vars = xr.DataArray(np.full(shape=coords_shape + (lhs.vars.shape[-1], ), fill_value=-1), dims=dims, coords=coords)
+        xr_coeffs = xr.DataArray(
+            np.full(shape=coords_shape + (lhs.coeffs.shape[-1],), fill_value=np.nan),
+            dims=dims,
+            coords=coords,
+        )
+        xr_vars = xr.DataArray(
+            np.full(shape=coords_shape + (lhs.vars.shape[-1],), fill_value=-1),
+            dims=dims,
+            coords=coords,
+        )
 
         # rhs and sign do not have a _term dimension
-        xr_rhs = xr.DataArray(np.full(shape=coords_shape, fill_value=np.nan), dims=dims[:-1], coords=coords)
-        xr_sign = xr.DataArray(np.full(shape=coords_shape, fill_value="="), dims=dims[:-1], coords=coords).astype("U2")
+        xr_rhs = xr.DataArray(
+            np.full(shape=coords_shape, fill_value=np.nan), dims=dims[:-1], coords=coords
+        )
+        xr_sign = xr.DataArray(
+            np.full(shape=coords_shape, fill_value="="), dims=dims[:-1], coords=coords
+        ).astype("U2")
 
         # Assign everything
         for num, index_val in enumerate(index_values):
@@ -953,5 +1083,7 @@ class Constraint(Component):
             return lp.LinearExpression(xr.Dataset({"coeffs": xr_coeffs, "vars": xr_vars}), model)
         else:
             # to full arrays
-            xr_lhs = xr.Dataset({"coeffs": xr_coeffs, "vars": xr_vars,"sign": xr_sign, "rhs": xr_rhs})
-            return lp.constraints.Constraint(xr_lhs,model)
+            xr_lhs = xr.Dataset(
+                {"coeffs": xr_coeffs, "vars": xr_vars, "sign": xr_sign, "rhs": xr_rhs}
+            )
+            return lp.constraints.Constraint(xr_lhs, model)

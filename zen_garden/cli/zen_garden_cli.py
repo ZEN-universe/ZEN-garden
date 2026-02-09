@@ -2,6 +2,7 @@ import argparse
 from zen_garden.runner import run
 import os
 
+
 # ---------------------------------------------------------------------------
 # Command-line interface
 # ---------------------------------------------------------------------------
@@ -45,33 +46,33 @@ def build_parser() -> argparse.ArgumentParser:
         "Run ZEN-Garden with a given config file. By default, the config file "
         "is read from the current working directory. You may specify a config "
         "file with --config. Output is always written to the current working "
-        "directory unless overridden.")
+        "directory unless overridden."
+    )
 
-    parser = argparse.ArgumentParser(description=description,
-                                     add_help=True,
-                                     usage="zen_garden [options]")
+    parser = argparse.ArgumentParser(
+        description=description, add_help=True, usage="zen_garden [options]"
+    )
 
     parser.add_argument(
         "--config",
         type=str,
         required=False,
         default="./config.json",
-        help="Path to a Python or JSON config file."
+        help="Path to a Python or JSON config file.",
     )
     parser.add_argument(
         "--dataset",
         type=str,
         required=False,
         default=None,
-        help="Path to the dataset directory. Overrides config.analysis.dataset."
+        help="Path to the dataset directory. Overrides config.analysis.dataset.",
     )
     parser.add_argument(
         "--folder_output",
         type=str,
         required=False,
         default=None,
-        help=
-        "Path to the output directory. Overrides output settings in config."
+        help="Path to the output directory. Overrides output settings in config.",
     )
     parser.add_argument(
         "--job_index",
@@ -79,19 +80,20 @@ def build_parser() -> argparse.ArgumentParser:
         required=False,
         default=None,
         help="Comma-separated list of scenario indices. If omitted, the "
-        "environment variable specified by --job_index_var is used."
+        "environment variable specified by --job_index_var is used.",
     )
     parser.add_argument(
         "--job_index_var",
         type=str,
         required=False,
         default="SLURM_ARRAY_TASK_ID",
-        help="Environment variable for job index."
+        help="Environment variable for job index.",
     )
 
     return parser
 
-def resolve_job_index(job_index:str, job_index_var:str) -> list[int]:
+
+def resolve_job_index(job_index: str, job_index_var: str) -> list[int]:
     """
     Resolves the job index when running ZEN-garden from the command line.
 
@@ -113,21 +115,22 @@ def resolve_job_index(job_index:str, job_index_var:str) -> list[int]:
     """
     if job_index:
         return [int(i) for i in job_index.split(",")]
-    elif ((env_value := os.environ.get(job_index_var)) is not None):
+    elif (env_value := os.environ.get(job_index_var)) is not None:
         return [int(env_value)]
     else:
         return None
 
+
 def create_zen_garden_cli():
     """
     Entry point for the `zen-garden` command-line interface.
-    
+
     This function creates the command-line interface for running ZEN-garden.
     It first sets up an argument parser; extracts the job index (either from
     the input flax directly or from an environment variable), and then
     calls the ``zen_garden.run()`` function.
 
-    The ``[project.scripts]`` section of the pyproject.toml declares that 
+    The ``[project.scripts]`` section of the pyproject.toml declares that
     this function will be called whenever a user enters ``zen-garden`` into
     the command prompt.
 
@@ -153,7 +156,7 @@ def create_zen_garden_cli():
         --job_index_var (str, optional):
             Name of the environment variable containing the job index.
             Defaults to ``SLURM_ARRAY_TASK_ID``.
-                   
+
     Returns:
         None
 
@@ -161,8 +164,8 @@ def create_zen_garden_cli():
         Basic usage in a command line prompt:
 
         >>> zen-garden --config=".\\config.json" --dataset="1_base_case"
-    """    
-    
+    """
+
     # parse command line arguments
     parser = build_parser()
 
