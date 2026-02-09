@@ -135,7 +135,9 @@ class ZenSet(OrderedSet):
 
         if isinstance(data, dict):
             # init the children
-            self.ordered_data = {k: ZenSet(v, name=f"{name}[{k}]") for k, v in data.items()}
+            self.ordered_data = {
+                k: ZenSet(v, name=f"{name}[{k}]") for k, v in data.items()
+            }
 
             # we set all the supersets
             for child in self.ordered_data.values():
@@ -359,10 +361,13 @@ class IndexSet(Component):
         # get the coords
         index_arrs = IndexSet.tuple_to_arr(index_values, index_list)
         coords = [
-            self.get_coord(data, name) for data, name in zip(index_arrs, index_list, strict=False)
+            self.get_coord(data, name)
+            for data, name in zip(index_arrs, index_list, strict=False)
         ]
 
-        index_list, mask = self.create_variable_mask(coords, index_arrs, index_list, model)
+        index_list, mask = self.create_variable_mask(
+            coords, index_arrs, index_list, model
+        )
 
         lower, upper = self.create_variable_bounds(
             bounds, coords, index_arrs, index_list, index_values
@@ -370,7 +375,9 @@ class IndexSet(Component):
 
         return mask, lower, upper
 
-    def create_variable_bounds(self, bounds, coords, index_arrs, index_list, index_values):
+    def create_variable_bounds(
+        self, bounds, coords, index_arrs, index_list, index_values
+    ):
         """creates the bounds for the variables.
 
         :param bounds: The bounds of the variable
@@ -406,7 +413,9 @@ class IndexSet(Component):
             lower = -np.inf
             upper = np.inf
         else:
-            raise ValueError(f"bounds should be None, tuple, array or callable, is: {bounds}")
+            raise ValueError(
+                f"bounds should be None, tuple, array or callable, is: {bounds}"
+            )
         return lower, upper
 
     def create_variable_mask(self, coords, index_arrs, index_list, model):
@@ -526,8 +535,10 @@ class Parameter(Component):
         dict_of_units = {}
         # TODO make more flexible
         if name == "capex_specific_conversion":
-            component_data, index_list, dict_of_units = calling_class.get_capex_all_elements(
-                optimization_setup=self.optimization_setup, index_names=index_names
+            component_data, index_list, dict_of_units = (
+                calling_class.get_capex_all_elements(
+                    optimization_setup=self.optimization_setup, index_names=index_names
+                )
             )
             data = component_data, index_list
         elif data is None:
@@ -551,7 +562,9 @@ class Parameter(Component):
             # save additional parameters
             self.docs[name] = self.compile_doc_string(doc, index_list, name)
             # save parameter units
-            self.units[name] = self.get_param_units(data, dict_of_units, index_list, name)
+            self.units[name] = self.get_param_units(
+                data, dict_of_units, index_list, name
+            )
         else:
             logging.warning(f"Parameter {name} already added. Can only be added once")
 
@@ -580,10 +593,14 @@ class Parameter(Component):
             if not abs_val.empty and not abs_val.isna().all():
                 if isinstance(abs_val.index, pd.MultiIndex):
                     idxmax = (
-                        name + "_" + "_".join(map(str, abs_val.index[abs_val.argmax(skipna=True)]))
+                        name
+                        + "_"
+                        + "_".join(map(str, abs_val.index[abs_val.argmax(skipna=True)]))
                     )
                     idxmin = (
-                        name + "_" + "_".join(map(str, abs_val.index[abs_val.argmin(skipna=True)]))
+                        name
+                        + "_"
+                        + "_".join(map(str, abs_val.index[abs_val.argmin(skipna=True)]))
                     )
                 else:
                     idxmax = f"{name}_{abs_val.index[abs_val.argmax(skipna=True)]}"
@@ -801,20 +818,26 @@ class Variable(Component):
         if "energy_quantity" in unit_category:
             # energy_quantity depends on carrier index level (e.g. flow_import)
             if any("carrier" in carrier_name for carrier_name in var_units.index.names):
-                carrier_level = [level for level in var_units.index.names if "carrier" in level][0]
+                carrier_level = [
+                    level for level in var_units.index.names if "carrier" in level
+                ][0]
                 for (
                     carrier,
                     energy_quantity,
                 ) in self.unit_handling.carrier_energy_quantities.items():
-                    carrier_idx = var_units.index.get_level_values(carrier_level) == carrier
+                    carrier_idx = (
+                        var_units.index.get_level_values(carrier_level) == carrier
+                    )
                     var_units[carrier_idx] = str(
-                        (unit * energy_quantity ** unit_category["energy_quantity"]).units
+                        (
+                            unit * energy_quantity ** unit_category["energy_quantity"]
+                        ).units
                     )
             # energy_quantity depends on technology index level (e.g. capacity)
             else:
-                tech_level = [level for level in var_units.index.names if "technologies" in level][
-                    0
-                ]
+                tech_level = [
+                    level for level in var_units.index.names if "technologies" in level
+                ][0]
                 for technology in self.optimization_setup.dict_elements["Technology"]:
                     reference_carrier = technology.reference_carrier[0]
                     energy_quantity = [
@@ -822,12 +845,19 @@ class Variable(Component):
                         for carrier, energy_quantity in self.unit_handling.carrier_energy_quantities.items()
                         if carrier == reference_carrier
                     ][0]
-                    tech_idx = var_units.index.get_level_values(tech_level) == technology.name
+                    tech_idx = (
+                        var_units.index.get_level_values(tech_level) == technology.name
+                    )
                     var_units[tech_idx] = str(
-                        (unit * energy_quantity ** unit_category["energy_quantity"]).units
+                        (
+                            unit * energy_quantity ** unit_category["energy_quantity"]
+                        ).units
                     )
                 if "set_capacity_types" in var_units.index.names:
-                    energy_idx = var_units.index.get_level_values("set_capacity_types") == "energy"
+                    energy_idx = (
+                        var_units.index.get_level_values("set_capacity_types")
+                        == "energy"
+                    )
                     var_units[energy_idx] = var_units[energy_idx].apply(
                         lambda u: str(self.unit_handling.ureg(u + "*hour").units)
                     )
@@ -925,7 +955,15 @@ class Constraint(Component):
             self.model.add_constraints(lhs, sign, rhs, name=name, mask=mask)
 
     def add_pw_constraint(
-        self, model, name, index_values, yvar, xvar, break_points, f_vals, cons_type="EQ"
+        self,
+        model,
+        name,
+        index_values,
+        yvar,
+        xvar,
+        break_points,
+        f_vals,
+        cons_type="EQ",
     ):
         """Adds a piece-wise linear constraint of the type f(x) = y for each index in the index_values, where f is defined
         by the breakpoints and f_vals (x_1, y_1), ..., (x_n, y_n).
@@ -1009,14 +1047,20 @@ class Constraint(Component):
             dims=[dim_name, "combi_dim"],
         )
         model.add_constraints(
-            sos2_var_bin.sel({dim_name: combi_index[:, 0]}).rename({dim_name: f"{dim_name}_1"})
-            + sos2_var_bin.sel({dim_name: combi_index[:, 1]}).rename({dim_name: f"{dim_name}_1"})
+            sos2_var_bin.sel({dim_name: combi_index[:, 0]}).rename(
+                {dim_name: f"{dim_name}_1"}
+            )
+            + sos2_var_bin.sel({dim_name: combi_index[:, 1]}).rename(
+                {dim_name: f"{dim_name}_1"}
+            )
             <= 1.0
         )
 
         return sos2_var
 
-    def reorder_group(self, lhs, sign, rhs, index_values, index_names, model, drop=None):
+    def reorder_group(
+        self, lhs, sign, rhs, index_values, index_names, model, drop=None
+    ):
         """Reorders the constraints in a group to have full shape according to index values and names.
 
         :param lhs: The lhs of the constraints
@@ -1042,7 +1086,8 @@ class Constraint(Component):
         # get the coordinates
         index_arrs = IndexSet.tuple_to_arr(index_values, index_names)
         coords = {
-            name: np.unique(arr.data) for name, arr in zip(index_names, index_arrs, strict=False)
+            name: np.unique(arr.data)
+            for name, arr in zip(index_names, index_arrs, strict=False)
         }
         coords.update(
             {
@@ -1069,7 +1114,9 @@ class Constraint(Component):
 
         # rhs and sign do not have a _term dimension
         xr_rhs = xr.DataArray(
-            np.full(shape=coords_shape, fill_value=np.nan), dims=dims[:-1], coords=coords
+            np.full(shape=coords_shape, fill_value=np.nan),
+            dims=dims[:-1],
+            coords=coords,
         )
         xr_sign = xr.DataArray(
             np.full(shape=coords_shape, fill_value="="), dims=dims[:-1], coords=coords
@@ -1086,7 +1133,9 @@ class Constraint(Component):
                     xr_sign.loc[index_val] = sign.sel(group=num).data
 
         if rhs is None and sign is None:
-            return lp.LinearExpression(xr.Dataset({"coeffs": xr_coeffs, "vars": xr_vars}), model)
+            return lp.LinearExpression(
+                xr.Dataset({"coeffs": xr_coeffs, "vars": xr_vars}), model
+            )
         else:
             # to full arrays
             xr_lhs = xr.Dataset(

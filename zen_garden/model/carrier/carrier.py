@@ -44,17 +44,21 @@ class Carrier(Element):
             time_steps="set_base_time_steps_yearly",
             unit_category={"energy_quantity": 1, "time": -1},
         )
-        self.raw_time_series["availability_import"] = self.data_input.extract_input_data(
-            "availability_import",
-            index_sets=["set_nodes", "set_time_steps"],
-            time_steps="set_base_time_steps_yearly",
-            unit_category={"energy_quantity": 1, "time": -1},
+        self.raw_time_series["availability_import"] = (
+            self.data_input.extract_input_data(
+                "availability_import",
+                index_sets=["set_nodes", "set_time_steps"],
+                time_steps="set_base_time_steps_yearly",
+                unit_category={"energy_quantity": 1, "time": -1},
+            )
         )
-        self.raw_time_series["availability_export"] = self.data_input.extract_input_data(
-            "availability_export",
-            index_sets=["set_nodes", "set_time_steps"],
-            time_steps="set_base_time_steps_yearly",
-            unit_category={"energy_quantity": 1, "time": -1},
+        self.raw_time_series["availability_export"] = (
+            self.data_input.extract_input_data(
+                "availability_export",
+                index_sets=["set_nodes", "set_time_steps"],
+                time_steps="set_base_time_steps_yearly",
+                unit_category={"energy_quantity": 1, "time": -1},
+            )
         )
         self.raw_time_series["price_export"] = self.data_input.extract_input_data(
             "price_export",
@@ -94,7 +98,9 @@ class Carrier(Element):
             unit_category={"emissions": 1, "energy_quantity": -1},
         )
         self.price_shed_demand = self.data_input.extract_input_data(
-            "price_shed_demand", index_sets=[], unit_category={"money": 1, "energy_quantity": -1}
+            "price_shed_demand",
+            index_sets=[],
+            unit_category={"money": 1, "energy_quantity": -1},
         )
 
     def overwrite_time_steps(self, base_time_steps):
@@ -205,7 +211,8 @@ class Carrier(Element):
             model,
             name="flow_import",
             index_sets=cls.create_custom_set(
-                ["set_carriers", "set_nodes", "set_time_steps_operation"], optimization_setup
+                ["set_carriers", "set_nodes", "set_time_steps_operation"],
+                optimization_setup,
             ),
             bounds=(0, np.inf),
             doc="node- and time-dependent carrier import from the grid",
@@ -216,7 +223,8 @@ class Carrier(Element):
             model,
             name="flow_export",
             index_sets=cls.create_custom_set(
-                ["set_carriers", "set_nodes", "set_time_steps_operation"], optimization_setup
+                ["set_carriers", "set_nodes", "set_time_steps_operation"],
+                optimization_setup,
             ),
             bounds=(0, np.inf),
             doc="node- and time-dependent carrier export from the grid",
@@ -227,7 +235,8 @@ class Carrier(Element):
             model,
             name="cost_carrier",
             index_sets=cls.create_custom_set(
-                ["set_carriers", "set_nodes", "set_time_steps_operation"], optimization_setup
+                ["set_carriers", "set_nodes", "set_time_steps_operation"],
+                optimization_setup,
             ),
             doc="node- and time-dependent carrier cost due to import and export",
             unit_category={"money": 1, "time": -1},
@@ -245,7 +254,8 @@ class Carrier(Element):
             model,
             name="carbon_emissions_carrier",
             index_sets=cls.create_custom_set(
-                ["set_carriers", "set_nodes", "set_time_steps_operation"], optimization_setup
+                ["set_carriers", "set_nodes", "set_time_steps_operation"],
+                optimization_setup,
             ),
             doc="carbon emissions of importing and exporting carrier",
             unit_category={"emissions": 1, "time": -1},
@@ -263,7 +273,8 @@ class Carrier(Element):
             model,
             name="shed_demand",
             index_sets=cls.create_custom_set(
-                ["set_carriers", "set_nodes", "set_time_steps_operation"], optimization_setup
+                ["set_carriers", "set_nodes", "set_time_steps_operation"],
+                optimization_setup,
             ),
             bounds=(0, np.inf),
             doc="shed demand of carrier",
@@ -274,7 +285,8 @@ class Carrier(Element):
             model,
             name="cost_shed_demand",
             index_sets=cls.create_custom_set(
-                ["set_carriers", "set_nodes", "set_time_steps_operation"], optimization_setup
+                ["set_carriers", "set_nodes", "set_time_steps_operation"],
+                optimization_setup,
             ),
             bounds=(0, np.inf),
             doc="shed demand of carrier",
@@ -377,15 +389,19 @@ class CarrierRules(GenericRule):
 
         """
         term_summed_carbon_emissions_carrier = (
-            self.variables["carbon_emissions_carrier"] * self.get_year_time_step_duration_array()
+            self.variables["carbon_emissions_carrier"]
+            * self.get_year_time_step_duration_array()
         ).sum(["set_carriers", "set_nodes", "set_time_steps_operation"])
         lhs = (
-            self.variables["carbon_emissions_carrier_total"] - term_summed_carbon_emissions_carrier
+            self.variables["carbon_emissions_carrier_total"]
+            - term_summed_carbon_emissions_carrier
         )
         rhs = 0
         constraints = lhs == rhs
 
-        self.constraints.add_constraint("constraint_carbon_emissions_carrier_total", constraints)
+        self.constraints.add_constraint(
+            "constraint_carbon_emissions_carrier_total", constraints
+        )
 
     def constraint_availability_import_export(self):
         """node- and time-dependent carrier availability to import/export from outside the system boundaries.
@@ -411,8 +427,12 @@ class CarrierRules(GenericRule):
         rhs_exp = self.parameters.availability_export
         constraints_exp = lhs_exp <= rhs_exp
 
-        self.constraints.add_constraint("constraint_availability_import", constraints_imp)
-        self.constraints.add_constraint("constraint_availability_export", constraints_exp)
+        self.constraints.add_constraint(
+            "constraint_availability_import", constraints_imp
+        )
+        self.constraints.add_constraint(
+            "constraint_availability_export", constraints_exp
+        )
 
     def constraint_availability_import_export_yearly(self):
         """node- and year-dependent carrier availability to import/export from outside the system boundaries.
@@ -453,8 +473,12 @@ class CarrierRules(GenericRule):
         rhs_exp = self.parameters.availability_export_yearly.where(mask_exp)
         constraints_exp = lhs_exp <= rhs_exp
 
-        self.constraints.add_constraint("constraint_availability_import_yearly", constraints_imp)
-        self.constraints.add_constraint("constraint_availability_export_yearly", constraints_exp)
+        self.constraints.add_constraint(
+            "constraint_availability_import_yearly", constraints_imp
+        )
+        self.constraints.add_constraint(
+            "constraint_availability_export_yearly", constraints_exp
+        )
 
     def constraint_cost_carrier(self):
         """cost of importing and exporting carrier.
@@ -512,7 +536,9 @@ class CarrierRules(GenericRule):
         constraints_shed_demand = lhs_shed_demand <= rhs_shed_demand
 
         self.constraints.add_constraint("constraint_cost_shed_demand", constraints_cost)
-        self.constraints.add_constraint("constraint_limit_shed_demand", constraints_shed_demand)
+        self.constraints.add_constraint(
+            "constraint_limit_shed_demand", constraints_shed_demand
+        )
 
     def constraint_carbon_emissions_carrier(self):
         """carbon emissions of importing and exporting carrier.
@@ -532,10 +558,12 @@ class CarrierRules(GenericRule):
         # convert the carbon intensity carrier from yearly to operation time steps
         # TODO map and expand
         carbon_intensity_carrier_import = (
-            self.parameters.carbon_intensity_carrier_import.broadcast_like(times) * times
+            self.parameters.carbon_intensity_carrier_import.broadcast_like(times)
+            * times
         ).sum("set_time_steps_yearly")
         carbon_intensity_carrier_export = (
-            self.parameters.carbon_intensity_carrier_export.broadcast_like(times) * times
+            self.parameters.carbon_intensity_carrier_export.broadcast_like(times)
+            * times
         ).sum("set_time_steps_yearly")
         lhs = self.variables["carbon_emissions_carrier"] - (
             self.variables["flow_import"] * carbon_intensity_carrier_import
@@ -546,7 +574,9 @@ class CarrierRules(GenericRule):
 
         constraints = lhs == rhs
 
-        self.constraints.add_constraint("constraint_carbon_emissions_carrier", constraints)
+        self.constraints.add_constraint(
+            "constraint_carbon_emissions_carrier", constraints
+        )
 
     def constraint_nodal_energy_balance(self):
         """
@@ -577,7 +607,8 @@ class CarrierRules(GenericRule):
 
         ### index sets
         index_values, index_names = Carrier.create_custom_set(
-            ["set_carriers", "set_nodes", "set_time_steps_operation"], self.optimization_setup
+            ["set_carriers", "set_nodes", "set_time_steps_operation"],
+            self.optimization_setup,
         )
         index = ZenIndex(index_values, index_names)
 
@@ -613,15 +644,20 @@ class CarrierRules(GenericRule):
                     self.parameters.demand.coords["set_time_steps_operation"],
                     xr.DataArray(
                         np.arange(
-                            len(self.sets["set_transport_technologies"]) * (2 * max_edges + 1)
+                            len(self.sets["set_transport_technologies"])
+                            * (2 * max_edges + 1)
                         ),
                         dims=["_term"],
                     ),
                 ],
             )
-            flow_transport_in_coeffs = xr.full_like(flow_transport_in_vars, np.nan, dtype=float)
+            flow_transport_in_coeffs = xr.full_like(
+                flow_transport_in_vars, np.nan, dtype=float
+            )
             flow_transport_out_vars = flow_transport_in_vars.copy()
-            flow_transport_out_coeffs = xr.full_like(flow_transport_in_vars, np.nan, dtype=float)
+            flow_transport_out_coeffs = xr.full_like(
+                flow_transport_in_vars, np.nan, dtype=float
+            )
             for carrier, node in index.get_unique([0, 1]):
                 techs = [
                     tech
@@ -632,45 +668,66 @@ class CarrierRules(GenericRule):
                 edges_out = self.energy_system.calculate_connected_edges(node, "out")
 
                 # get the variables for the in flow
-                in_vars_plus = self.variables["flow_transport"].labels.loc[techs, edges_in, :].data
+                in_vars_plus = (
+                    self.variables["flow_transport"].labels.loc[techs, edges_in, :].data
+                )
                 in_vars_plus = in_vars_plus.reshape((-1, in_vars_plus.shape[-1])).T
                 in_coefs_plus = np.ones_like(in_vars_plus)
                 in_vars_minus = (
-                    self.variables["flow_transport_loss"].labels.loc[techs, edges_in, :].data
+                    self.variables["flow_transport_loss"]
+                    .labels.loc[techs, edges_in, :]
+                    .data
                 )
                 in_vars_minus = in_vars_minus.reshape((-1, in_vars_minus.shape[-1])).T
                 in_coefs_minus = np.ones_like(in_vars_minus)
                 in_vars = np.concatenate([in_vars_plus, in_vars_minus], axis=1)
                 in_coefs = np.concatenate([in_coefs_plus, -in_coefs_minus], axis=1)
-                flow_transport_in_vars.loc[carrier, node, :, : in_vars.shape[-1] - 1] = in_vars
-                flow_transport_in_coeffs.loc[carrier, node, :, : in_coefs.shape[-1] - 1] = in_coefs
+                flow_transport_in_vars.loc[
+                    carrier, node, :, : in_vars.shape[-1] - 1
+                ] = in_vars
+                flow_transport_in_coeffs.loc[
+                    carrier, node, :, : in_coefs.shape[-1] - 1
+                ] = in_coefs
 
                 # get the variables for the out flow
                 out_vars_plus = (
-                    self.variables["flow_transport"].labels.loc[techs, edges_out, :].data
+                    self.variables["flow_transport"]
+                    .labels.loc[techs, edges_out, :]
+                    .data
                 )
                 out_vars_plus = out_vars_plus.reshape((-1, out_vars_plus.shape[-1])).T
                 out_coefs_plus = np.ones_like(out_vars_plus)
-                flow_transport_out_vars.loc[carrier, node, :, : out_vars_plus.shape[-1] - 1] = (
-                    out_vars_plus
-                )
-                flow_transport_out_coeffs.loc[carrier, node, :, : out_coefs_plus.shape[-1] - 1] = (
-                    out_coefs_plus
-                )
+                flow_transport_out_vars.loc[
+                    carrier, node, :, : out_vars_plus.shape[-1] - 1
+                ] = out_vars_plus
+                flow_transport_out_coeffs.loc[
+                    carrier, node, :, : out_coefs_plus.shape[-1] - 1
+                ] = out_coefs_plus
 
             # craete the linear expression
             term_flow_transport_in = lp.LinearExpression(
-                xr.Dataset({"coeffs": flow_transport_in_coeffs, "vars": flow_transport_in_vars}),
+                xr.Dataset(
+                    {"coeffs": flow_transport_in_coeffs, "vars": flow_transport_in_vars}
+                ),
                 self.model,
             )
             term_flow_transport_out = lp.LinearExpression(
-                xr.Dataset({"coeffs": flow_transport_out_coeffs, "vars": flow_transport_out_vars}),
+                xr.Dataset(
+                    {
+                        "coeffs": flow_transport_out_coeffs,
+                        "vars": flow_transport_out_vars,
+                    }
+                ),
                 self.model,
             )
         else:
             # if there is no carrier flow we just create empty arrays
-            term_flow_transport_in = self.variables["flow_import"].where(False).to_linexpr()
-            term_flow_transport_out = self.variables["flow_import"].where(False).to_linexpr()
+            term_flow_transport_in = (
+                self.variables["flow_import"].where(False).to_linexpr()
+            )
+            term_flow_transport_out = (
+                self.variables["flow_import"].where(False).to_linexpr()
+            )
 
         # carrier input and output conversion technologies
         term_carrier_conversion_in = []
@@ -747,31 +804,45 @@ class CarrierRules(GenericRule):
                 )
             # merge and regroup
             term_flow_storage_discharge = lp.merge(
-                term_flow_storage_discharge, dim="group", join="outer", cls=LinearExpression
-            )
-            term_flow_storage_discharge = self.optimization_setup.constraints.reorder_group(
                 term_flow_storage_discharge,
-                None,
-                None,
-                index.get_unique([0]),
-                index_names[:1],
-                self.model,
+                dim="group",
+                join="outer",
+                cls=LinearExpression,
+            )
+            term_flow_storage_discharge = (
+                self.optimization_setup.constraints.reorder_group(
+                    term_flow_storage_discharge,
+                    None,
+                    None,
+                    index.get_unique([0]),
+                    index_names[:1],
+                    self.model,
+                )
             )
             term_flow_storage_charge = lp.merge(
-                term_flow_storage_charge, dim="group", join="outer", cls=LinearExpression
-            )
-            term_flow_storage_charge = self.optimization_setup.constraints.reorder_group(
                 term_flow_storage_charge,
-                None,
-                None,
-                index.get_unique([0]),
-                index_names[:1],
-                self.model,
+                dim="group",
+                join="outer",
+                cls=LinearExpression,
+            )
+            term_flow_storage_charge = (
+                self.optimization_setup.constraints.reorder_group(
+                    term_flow_storage_charge,
+                    None,
+                    None,
+                    index.get_unique([0]),
+                    index_names[:1],
+                    self.model,
+                )
             )
         else:
             # if there is no carrier flow we just create empty arrays
-            term_flow_storage_discharge = self.variables["flow_import"].where(False).to_linexpr()
-            term_flow_storage_charge = self.variables["flow_import"].where(False).to_linexpr()
+            term_flow_storage_discharge = (
+                self.variables["flow_import"].where(False).to_linexpr()
+            )
+            term_flow_storage_charge = (
+                self.variables["flow_import"].where(False).to_linexpr()
+            )
 
         # carrier import, demand and export
         term_carrier_import = self.variables["flow_import"].to_linexpr()

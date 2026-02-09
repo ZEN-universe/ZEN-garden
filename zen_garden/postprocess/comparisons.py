@@ -49,7 +49,9 @@ def compare_model_values(
         pbar.update(1)
         pbar.set_description(f"Compare parameter {component_name}")
 
-        comparison_df = compare_component_values(results, component_name, compare_total, scenarios)
+        comparison_df = compare_component_values(
+            results, component_name, compare_total, scenarios
+        )
 
         if not comparison_df.empty:
             logging.info(f"Parameter {component_name} has different values")
@@ -152,9 +154,13 @@ def get_component_diff(
     common_component = component_names_0.intersection(component_names_1)
 
     if only_in_0:
-        logging.info(f"Components {only_in_1} are missing from {results_1.solution_loader.name}")
+        logging.info(
+            f"Components {only_in_1} are missing from {results_1.solution_loader.name}"
+        )
     elif only_in_1:
-        logging.info(f"Components {only_in_1} are missing from {results_0.solution_loader.name}")
+        logging.info(
+            f"Components {only_in_1} are missing from {results_0.solution_loader.name}"
+        )
     return [i for i in common_component]
 
 
@@ -176,7 +182,9 @@ def compare_dicts(
     diff_dict = {}
     for key in dict1.keys() | dict2.keys():
         if isinstance(dict1.get(key), dict) and isinstance(dict2.get(key), dict):
-            nested_diff = compare_dicts(dict1.get(key, {}), dict2.get(key, {}), result_names)
+            nested_diff = compare_dicts(
+                dict1.get(key, {}), dict2.get(key, {}), result_names
+            )
             if nested_diff:
                 diff_dict[key] = nested_diff
         elif dict1.get(key) != dict2.get(key):
@@ -194,7 +202,9 @@ def compare_dicts(
     return diff_dict if diff_dict else None
 
 
-def check_and_fill_scenario_list(results: list[Results], scenarios: list[str]) -> list[str]:
+def check_and_fill_scenario_list(
+    results: list[Results], scenarios: list[str]
+) -> list[str]:
     """Checks if both results have the provided scenarios and otherwise returns a list containing twice one common scenario.
 
     :param results: List of results.
@@ -207,7 +217,9 @@ def check_and_fill_scenario_list(results: list[Results], scenarios: list[str]) -
     try:
         common_scenario = get_common_scenario(*results)
     except AssertionError:
-        logging.info("No common scenario found. Selecting random scenario for each result.")
+        logging.info(
+            "No common scenario found. Selecting random scenario for each result."
+        )
         scenarios = [
             next(iter(results[0].solution_loader.scenarios.keys())),
             next(iter(results[1].solution_loader.scenarios.keys())),
@@ -301,7 +313,9 @@ def _get_comparison_df(val_0, val_1, result_names, component_name, rtol):
         val_1 = val_1.sort_index()
     if val_1.shape == val_0.shape:
         if len(val_0.shape) == 2:
-            if not val_0.index.equals(val_1.index) or not val_0.columns.equals(val_1.columns):
+            if not val_0.index.equals(val_1.index) or not val_0.columns.equals(
+                val_1.columns
+            ):
                 mismatched_index = True
         elif not val_0.index.equals(val_1.index):
             mismatched_index = True
@@ -314,7 +328,9 @@ def _get_comparison_df(val_0, val_1, result_names, component_name, rtol):
             mismatched_index = True
 
     if mismatched_index:
-        logging.info(f"Component {component_name} does not have matching index or columns")
+        logging.info(
+            f"Component {component_name} does not have matching index or columns"
+        )
         missing_index = (
             val_0.index.difference(val_1.index)
             if len(val_0.index) > len(val_1.index)

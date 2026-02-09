@@ -55,7 +55,8 @@ class EnergySystem:
 
         # create UnitHandling object
         self.unit_handling = UnitHandling(
-            self.input_path, self.optimization_setup.solver.rounding_decimal_points_units
+            self.input_path,
+            self.optimization_setup.solver.rounding_decimal_points_units,
         )
 
         # create DataInput object
@@ -80,11 +81,17 @@ class EnergySystem:
         self.set_nodes = self.data_input.extract_locations()
         self.set_nodes_on_edges = self.calculate_edges_from_nodes()
         self.set_edges = list(self.set_nodes_on_edges.keys())
-        self.set_haversine_distances_edges = self.calculate_haversine_distances_from_nodes()
+        self.set_haversine_distances_edges = (
+            self.calculate_haversine_distances_from_nodes()
+        )
         self.set_technologies = self.system.set_technologies
         # base time steps
         self.set_base_time_steps = list(
-            range(0, self.system.unaggregated_time_steps_per_year * self.system.optimized_years)
+            range(
+                0,
+                self.system.unaggregated_time_steps_per_year
+                * self.system.optimized_years,
+            )
         )
         self.set_base_time_steps_yearly = list(
             range(0, self.system.unaggregated_time_steps_per_year)
@@ -92,7 +99,9 @@ class EnergySystem:
 
         # yearly time steps
         self.set_time_steps_yearly = list(range(self.system.optimized_years))
-        self.set_time_steps_yearly_entire_horizon = copy.deepcopy(self.set_time_steps_yearly)
+        self.set_time_steps_yearly_entire_horizon = copy.deepcopy(
+            self.set_time_steps_yearly
+        )
         time_steps_yearly_duration = self.time_steps.calculate_time_step_duration(
             self.set_time_steps_yearly, self.set_base_time_steps
         )
@@ -133,7 +142,8 @@ class EnergySystem:
             unit_category={"emissions": 1},
         )
         _fraction_year = (
-            self.system.unaggregated_time_steps_per_year / self.system.total_hours_per_year
+            self.system.unaggregated_time_steps_per_year
+            / self.system.total_hours_per_year
         )
         self.carbon_emissions_annual_limit = (
             self.carbon_emissions_annual_limit * _fraction_year
@@ -142,7 +152,9 @@ class EnergySystem:
             "carbon_emissions_budget", index_sets=[], unit_category={"emissions": 1}
         )
         self.carbon_emissions_cumulative_existing = self.data_input.extract_input_data(
-            "carbon_emissions_cumulative_existing", index_sets=[], unit_category={"emissions": 1}
+            "carbon_emissions_cumulative_existing",
+            index_sets=[],
+            unit_category={"emissions": 1},
         )
         # price carbon emissions
         self.price_carbon_emissions = self.data_input.extract_input_data(
@@ -151,15 +163,19 @@ class EnergySystem:
             time_steps="set_time_steps_yearly",
             unit_category={"money": 1, "emissions": -1},
         )
-        self.price_carbon_emissions_budget_overshoot = self.data_input.extract_input_data(
-            "price_carbon_emissions_budget_overshoot",
-            index_sets=[],
-            unit_category={"money": 1, "emissions": -1},
+        self.price_carbon_emissions_budget_overshoot = (
+            self.data_input.extract_input_data(
+                "price_carbon_emissions_budget_overshoot",
+                index_sets=[],
+                unit_category={"money": 1, "emissions": -1},
+            )
         )
-        self.price_carbon_emissions_annual_overshoot = self.data_input.extract_input_data(
-            "price_carbon_emissions_annual_overshoot",
-            index_sets=[],
-            unit_category={"money": 1, "emissions": -1},
+        self.price_carbon_emissions_annual_overshoot = (
+            self.data_input.extract_input_data(
+                "price_carbon_emissions_annual_overshoot",
+                index_sets=[],
+                unit_category={"money": 1, "emissions": -1},
+            )
         )
         # market share unbounded
         self.market_share_unbounded = self.data_input.extract_input_data(
@@ -220,9 +236,12 @@ class EnergySystem:
             c = 2 * np.arctan2(np.sqrt(a), np.sqrt(1 - a))
             distance = radius * c
             set_haversine_distances_of_edges[edge] = distance
-        multiplier = self.unit_handling.get_unit_multiplier("km", attribute_name="distance")
+        multiplier = self.unit_handling.get_unit_multiplier(
+            "km", attribute_name="distance"
+        )
         set_haversine_distances_of_edges = {
-            key: value * multiplier for key, value in set_haversine_distances_of_edges.items()
+            key: value * multiplier
+            for key, value in set_haversine_distances_of_edges.items()
         }
         return set_haversine_distances_of_edges
 
@@ -230,7 +249,8 @@ class EnergySystem:
         """appends technology to carrier in dict_technology_of_carrier.
 
         :param technology: name of technology in model
-        :param list_technology_of_carrier: list of carriers correspondent to technology"""
+        :param list_technology_of_carrier: list of carriers correspondent to technology
+        """
         for carrier in list_technology_of_carrier:
             if carrier not in self.dict_technology_of_carrier:
                 self.dict_technology_of_carrier[carrier] = [technology]
@@ -266,7 +286,8 @@ class EnergySystem:
         """calculates the reversed edge corresponding to an edge.
 
         :param edge: input edge
-        :return _reversed_edge: edge which corresponds to the reversed direction of edge"""
+        :return _reversed_edge: edge which corresponds to the reversed direction of edge
+        """
         _node_out, _node_in = self.set_nodes_on_edges[edge]
         for _reversed_edge in self.set_nodes_on_edges:
             if (
@@ -311,12 +332,16 @@ class EnergySystem:
             set(self.optimization_setup.sets["set_technologies"])
             | set(self.optimization_setup.sets["set_carriers"])
         )
-        self.optimization_setup.sets.add_set(name="set_elements", data=data, doc="Set of elements")
+        self.optimization_setup.sets.add_set(
+            name="set_elements", data=data, doc="Set of elements"
+        )
         # set set_elements to indexing_sets
         self.indexing_sets.append("set_elements")
         # time-steps
         self.optimization_setup.sets.add_set(
-            name="set_base_time_steps", data=self.set_base_time_steps, doc="Set of base time-steps"
+            name="set_base_time_steps",
+            data=self.set_base_time_steps,
+            doc="Set of base time-steps",
         )
         # yearly time steps
         self.optimization_setup.sets.add_set(
@@ -530,7 +555,9 @@ class EnergySystem:
         if self.optimization_setup.analysis.objective == "total_cost":
             objective = self.rules.objective_total_cost(self.optimization_setup.model)
         elif self.optimization_setup.analysis.objective == "total_carbon_emissions":
-            objective = self.rules.objective_total_carbon_emissions(self.optimization_setup.model)
+            objective = self.rules.objective_total_carbon_emissions(
+                self.optimization_setup.model
+            )
         else:
             raise KeyError(
                 f"Objective type {self.optimization_setup.analysis.objective} not known"
@@ -579,7 +606,9 @@ class EnergySystemRules(GenericRule):
 
         lhs = (
             self.variables["carbon_emissions_cumulative"]
-            - self.variables["carbon_emissions_cumulative"].shift(set_time_steps_yearly=1)
+            - self.variables["carbon_emissions_cumulative"].shift(
+                set_time_steps_yearly=1
+            )
             - self.variables["carbon_emissions_annual"].shift(set_time_steps_yearly=1)
             * (self.system.interval_between_years - 1)
             - self.variables["carbon_emissions_annual"]
@@ -590,7 +619,9 @@ class EnergySystemRules(GenericRule):
         ).where(m, 0)
         constraints = lhs == rhs
 
-        self.constraints.add_constraint("constraint_carbon_emissions_cumulative", constraints)
+        self.constraints.add_constraint(
+            "constraint_carbon_emissions_cumulative", constraints
+        )
 
     def constraint_carbon_emissions_annual_limit(self):
         """time dependent carbon emissions limit from technologies and carriers.
@@ -607,7 +638,9 @@ class EnergySystemRules(GenericRule):
         rhs = self.parameters.carbon_emissions_annual_limit
         constraints = lhs <= rhs
 
-        self.constraints.add_constraint("constraint_carbon_emissions_annual_limit", constraints)
+        self.constraints.add_constraint(
+            "constraint_carbon_emissions_annual_limit", constraints
+        )
 
     def constraint_carbon_emissions_budget(self):
         """carbon emissions budget of entire time horizon from technologies and carriers.
@@ -640,7 +673,9 @@ class EnergySystemRules(GenericRule):
         rhs = self.parameters.carbon_emissions_budget
         constraints = lhs <= rhs
 
-        self.constraints.add_constraint("constraint_carbon_emissions_budget", constraints)
+        self.constraints.add_constraint(
+            "constraint_carbon_emissions_budget", constraints
+        )
 
     def constraint_net_present_cost(self):
         """discounts the annual capital flows to calculate the net_present_cost.
@@ -747,7 +782,9 @@ class EnergySystemRules(GenericRule):
         rhs = 0
         constraints = lhs == rhs
 
-        self.constraints.add_constraint("constraint_carbon_emissions_annual", constraints)
+        self.constraints.add_constraint(
+            "constraint_carbon_emissions_annual", constraints
+        )
 
     def constraint_cost_carbon_emissions_total(self):
         """carbon cost associated with the carbon emissions of the system in each year.
@@ -769,12 +806,15 @@ class EnergySystemRules(GenericRule):
 
         lhs = (
             self.variables["cost_carbon_emissions_total"]
-            - self.variables["carbon_emissions_annual"] * self.parameters.price_carbon_emissions
+            - self.variables["carbon_emissions_annual"]
+            * self.parameters.price_carbon_emissions
         )
         # add cost for overshooting carbon emissions budget
         if self.parameters.price_carbon_emissions_budget_overshoot != np.inf:
             lhs -= (
-                self.variables["carbon_emissions_budget_overshoot"].where(mask_last_year)
+                self.variables["carbon_emissions_budget_overshoot"].where(
+                    mask_last_year
+                )
                 * self.parameters.price_carbon_emissions_budget_overshoot.item()
             )
         # add cost for overshooting annual carbon emissions limit
@@ -787,7 +827,9 @@ class EnergySystemRules(GenericRule):
         rhs = 0
         constraints = lhs == rhs
 
-        self.constraints.add_constraint("constraint_cost_carbon_emissions_total", constraints)
+        self.constraints.add_constraint(
+            "constraint_cost_carbon_emissions_total", constraints
+        )
 
     def constraint_cost_total(self):
         """add up all costs from technologies and carriers.

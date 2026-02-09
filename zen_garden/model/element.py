@@ -194,16 +194,22 @@ class Element:
         indexing_sets = optimization_setup.energy_system.indexing_sets
 
         # Case 1: all index sets are already defined in model and no set is indexed
-        if all(index in sets.sets and not sets.is_indexed(index) for index in list_index):
+        if all(
+            index in sets.sets and not sets.is_indexed(index) for index in list_index
+        ):
             list_sets = [sets[index] for index in list_index if index in sets]
             # return indices as cartesian product of sets
             custom_set = (
-                list(itertools.product(*list_sets)) if len(list_sets) > 1 else list(list_sets[0])
+                list(itertools.product(*list_sets))
+                if len(list_sets) > 1
+                else list(list_sets[0])
             )
             return custom_set, list_index
 
         if list_index[0] not in indexing_sets:
-            raise NotImplementedError(f"Index <{list_index[0]}> is not in the indexing sets.")
+            raise NotImplementedError(
+                f"Index <{list_index[0]}> is not in the indexing sets."
+            )
 
         # Case 2: first index is indexed, build custom set based on first index
         custom_set = []
@@ -216,7 +222,9 @@ class Element:
                 if index in sets:
                     append = cls.handle_existing_set(index, element, sets, list_sets)
                     if not append:
-                        raise NotImplementedError(f"Index <{index}> is not known in sets.")
+                        raise NotImplementedError(
+                            f"Index <{index}> is not known in sets."
+                        )
                     continue
 
                 # if index is set_location
@@ -226,13 +234,17 @@ class Element:
 
                 # if set is built for pwa capex:
                 if "set_capex" in index:
-                    append_element = cls.append_set_capex_index(element, optimization_setup, index)
+                    append_element = cls.append_set_capex_index(
+                        element, optimization_setup, index
+                    )
                     continue
 
                 # if set is used to determine if on-off behavior is modeled
                 # exclude technologies which have no min_load
                 if "on_off" in index:
-                    append_element = cls.append_on_off_modeled(element, optimization_setup, index)
+                    append_element = cls.append_on_off_modeled(
+                        element, optimization_setup, index
+                    )
                     continue
 
                 # split in capacity types of power and energy
@@ -278,7 +290,8 @@ class Element:
         :param element: technology in model
         :param optimization_setup: The OptimizationSetup the element is part of
         :param index: index to check
-        :return model_capex: Bool indicating if capex needs to be modeled as pwa or linear"""
+        :return model_capex: Bool indicating if capex needs to be modeled as pwa or linear
+        """
 
         if element in optimization_setup.sets["set_conversion_technologies"]:
             capex_is_pwa = optimization_setup.get_attribute_of_specific_element(
@@ -299,7 +312,8 @@ class Element:
         :param element: technology in model
         :param optimization_setup: The OptimizationSetup the element is part of
         :param index: index to check
-        :return model_on_off: Bool indicating if on-off-behavior (min load) needs to be modeled"""
+        :return model_on_off: Bool indicating if on-off-behavior (min load) needs to be modeled
+        """
 
         model_on_off = cls.check_on_off_modeled(element, optimization_setup)
         if "set_no_on_off" in index:
@@ -353,10 +367,15 @@ class Element:
 
         :param tech: technology in model
         :param optimization_setup: The OptimizationSetup the element is part of
-        :return model_on_off: Bool indicating if on-off-behaviour (min load) needs to be modeled"""
+        :return model_on_off: Bool indicating if on-off-behaviour (min load) needs to be modeled
+        """
         # check if any min load
         unique_min_load = list(
-            set(optimization_setup.get_attribute_of_specific_element(cls, tech, "min_load").values)
+            set(
+                optimization_setup.get_attribute_of_specific_element(
+                    cls, tech, "min_load"
+                ).values
+            )
         )
         # if only one unique min_load which is zero
         if len(unique_min_load) == 1 and unique_min_load[0] == 0:
@@ -432,7 +451,9 @@ class GenericRule(object):
                     times_prev.append(ts)
                     mask.append(False)
             else:
-                ts_prev = self.energy_system.time_steps.get_previous_storage_time_step(ts)
+                ts_prev = self.energy_system.time_steps.get_previous_storage_time_step(
+                    ts
+                )
                 times_prev.append(ts_prev)
                 mask.append(True)
         mask = xr.DataArray(
@@ -536,10 +557,16 @@ class GenericRule(object):
 
     def get_flow_expression_storage(self, rename=True):
         """return the flow expression for storage technologies."""
-        term = self.variables["flow_storage_charge"] + self.variables["flow_storage_discharge"]
+        term = (
+            self.variables["flow_storage_charge"]
+            + self.variables["flow_storage_discharge"]
+        )
         if rename:
             return term.rename(
-                {"set_storage_technologies": "set_technologies", "set_nodes": "set_location"}
+                {
+                    "set_storage_technologies": "set_technologies",
+                    "set_nodes": "set_location",
+                }
             )
         else:
             return term

@@ -33,7 +33,10 @@ def setup_logger(level=logging.INFO):
     :param level: logging level
     """
     logging.basicConfig(
-        stream=sys.stdout, level=level, format="%(message)s", datefmt="%Y-%m-%d %H:%M:%S"
+        stream=sys.stdout,
+        level=level,
+        format="%(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
     )
     logging.captureWarnings(True)
 
@@ -151,7 +154,9 @@ def download_example_dataset(dataset):
 
         # download jupyter notebook
         elif file.filename == notebook_path:
-            notebook_path_local = os.path.join(local_dataset_path, "example_notebook.ipynb")
+            notebook_path_local = os.path.join(
+                local_dataset_path, "example_notebook.ipynb"
+            )
             notebook = json.loads(zenodo_zip.read(file))
             for cell in notebook["cells"]:
                 if cell["cell_type"] == "code":  # Check only code cells
@@ -164,14 +169,17 @@ def download_example_dataset(dataset):
 
     # display status, errors, and warnings
     if not example_found:
-        raise FileNotFoundError(f"Example {dataset} could not be found in the dataset examples!")
+        raise FileNotFoundError(
+            f"Example {dataset} could not be found in the dataset examples!"
+        )
     if not config_found:
         raise FileNotFoundError(
             "Config.json file could not be downloaded from the dataset " "examples!"
         )
     if not notebook_found:
         warnings.warn(
-            "Example jupyter notebook could not be downloaded from the " "dataset examples!",
+            "Example jupyter notebook could not be downloaded from the "
+            "dataset examples!",
             stacklevel=2,
         )
 
@@ -256,11 +264,15 @@ def linexpr_from_tuple_np(tuples, coords, model):
         variables.append(var)
 
     # to linear expression
-    variables = xr.DataArray(np.stack(variables, axis=0), coords=coords, dims=["_term", *coords])
+    variables = xr.DataArray(
+        np.stack(variables, axis=0), coords=coords, dims=["_term", *coords]
+    )
     coefficients = xr.DataArray(
         np.stack(coefficients, axis=0), coords=coords, dims=["_term", *coords]
     )
-    xr_ds = xr.Dataset({"coeffs": coefficients, "vars": variables}).transpose(..., "_term")
+    xr_ds = xr.Dataset({"coeffs": coefficients, "vars": variables}).transpose(
+        ..., "_term"
+    )
 
     return lp.LinearExpression(xr_ds, model)
 
@@ -313,7 +325,9 @@ def reformat_slicing_index(index, component) -> tuple[str]:
         for key, value in index.items():
             if key not in index_names:
                 warnings.warn(
-                    f"Invalid index name '{key}' in index. Skipping.", Warning, stacklevel=2
+                    f"Invalid index name '{key}' in index. Skipping.",
+                    Warning,
+                    stacklevel=2,
                 )
                 continue
             if isinstance(value, list):
@@ -340,7 +354,9 @@ def reformat_slicing_index(index, component) -> tuple[str]:
                 ref_index.append(f"'{index_name}' == '{index[i]}'")
         ref_index = tuple(ref_index)
     else:
-        warnings.warn(f"Invalid index type {type(index)}. Skipping.", Warning, stacklevel=2)
+        warnings.warn(
+            f"Invalid index type {type(index)}. Skipping.", Warning, stacklevel=2
+        )
         ref_index = tuple()
 
     return ref_index
@@ -384,7 +400,10 @@ def get_label_position(obj, label: int):
     element = obj[name_element]
     if element.ndim > 0:
         selection = element[np.where(element.labels == label)]
-        mapping = (name_element, {k: v.values[0] for k, v in selection.indexes.variables.items()})
+        mapping = (
+            name_element,
+            {k: v.values[0] for k, v in selection.indexes.variables.items()},
+        )
     else:
         mapping = (name_element, {})
     return mapping
@@ -568,7 +587,9 @@ class IISConstraintParser(object):
                 if i:
                     # split sign and coefficient
                     coeff_string = f"{float(coeff):+.4}"
-                    res.append(f"{coeff_string[0]} {coeff_string[1:]} {name}{coord_string}")
+                    res.append(
+                        f"{coeff_string[0]} {coeff_string[1:]} {name}{coord_string}"
+                    )
                 else:
                     res.append(f"{float(coeff):.4} {name}{coord_string}")
             return " ".join(res) if len(res) else "None"
@@ -590,7 +611,14 @@ class ScenarioDict(dict):
     This is a dictionary for the scenario analysis that has some convenience functions.
     """
 
-    _param_dict_keys = {"file", "part_file", "file_op", "default", "default_op", "value"}
+    _param_dict_keys = {
+        "file",
+        "part_file",
+        "file_op",
+        "default",
+        "default_op",
+        "value",
+    }
     _special_elements = ["base_scenario", "sub_folder", "param_map"]
     _setting_elements = ["system", "analysis", "solver"]
 
@@ -627,7 +655,11 @@ class ScenarioDict(dict):
         """
         Updates the analysis, system, and solver in the config.
         """
-        config_parts = {"analysis": self.analysis, "system": self.system, "solver": self.solver}
+        config_parts = {
+            "analysis": self.analysis,
+            "system": self.system,
+            "solver": self.solver,
+        }
         for key, value in config_parts.items():
             if key in self.dict:
                 for sub_key, sub_value in self.dict[key].items():
@@ -665,8 +697,12 @@ class ScenarioDict(dict):
         # Important, all for-loops through keys or items in this routine should be sorted!
 
         expanded_scenarios = dict()
-        for scenario_name, scenario_dict in sorted(scenarios.items(), key=lambda x: x[0]):
-            assert type(scenario_dict) == dict, f"Scenario {scenario_name} is not a dictionary!"
+        for scenario_name, scenario_dict in sorted(
+            scenarios.items(), key=lambda x: x[0]
+        ):
+            assert (
+                type(scenario_dict) == dict
+            ), f"Scenario {scenario_name} is not a dictionary!"
             scenario_dict["base_scenario"] = scenario_name
             scenario_dict["sub_folder"] = ""
             scenario_dict["param_map"] = dict()
@@ -762,15 +798,26 @@ class ScenarioDict(dict):
                                 new_scenario["sub_folder"] += "_" + name
 
                             # update the param_map
-                            param_map[new_scenario["sub_folder"]] = deepcopy(old_param_map_entry)
+                            param_map[new_scenario["sub_folder"]] = deepcopy(
+                                old_param_map_entry
+                            )
                             if element not in param_map[new_scenario["sub_folder"]]:
                                 param_map[new_scenario["sub_folder"]][element] = dict()
-                            if param not in param_map[new_scenario["sub_folder"]][element]:
-                                param_map[new_scenario["sub_folder"]][element][param] = dict()
+                            if (
+                                param
+                                not in param_map[new_scenario["sub_folder"]][element]
+                            ):
+                                param_map[new_scenario["sub_folder"]][element][
+                                    param
+                                ] = dict()
                             if element in ScenarioDict._setting_elements:
-                                param_map[new_scenario["sub_folder"]][element][param] = value
+                                param_map[new_scenario["sub_folder"]][element][
+                                    param
+                                ] = value
                             else:
-                                param_map[new_scenario["sub_folder"]][element][param][key] = value
+                                param_map[new_scenario["sub_folder"]][element][param][
+                                    key
+                                ] = value
 
                             # set the param_map of the scenario
                             new_scenario["param_map"] = param_map
@@ -880,7 +927,8 @@ class ScenarioDict(dict):
         fname, ext = os.path.splitext(fname)
         if ext != "":
             warnings.warn(
-                f"The file name {fname}{ext} has an extension {ext}, removing it.", stacklevel=2
+                f"The file name {fname}{ext} has an extension {ext}, removing it.",
+                stacklevel=2,
             )
         return fname
 
@@ -1043,7 +1091,8 @@ class InputDataChecks:
         """
         # assert that number of optimized years is a positive integer
         assert (
-            isinstance(self.system.optimized_years, int) and self.system.optimized_years > 0
+            isinstance(self.system.optimized_years, int)
+            and self.system.optimized_years > 0
         ), f"Number of optimized years must be a positive integer, however it is {self.system.optimized_years}"
         # assert that interval between years is a positive integer
         assert (
@@ -1083,7 +1132,9 @@ class InputDataChecks:
                         if not os.path.exists(
                             os.path.join(self.analysis.dataset, set_name, subset_name)
                         ):
-                            raise AssertionError(f"Folder {subset_name} does not exist!")
+                            raise AssertionError(
+                                f"Folder {subset_name} does not exist!"
+                            )
 
         for file_name in [
             "attributes.json",
@@ -1116,7 +1167,10 @@ class InputDataChecks:
                     raise FileNotFoundError(
                         f"Technology {technology} selected in config does not exist in input data"
                     )
-                elif "attributes.json" not in self.optimization_setup.paths[set_name][technology]:
+                elif (
+                    "attributes.json"
+                    not in self.optimization_setup.paths[set_name][technology]
+                ):
                     raise FileNotFoundError(
                         f"The file attributes.json does not exist for the technology {technology}"
                     )
@@ -1135,7 +1189,8 @@ class InputDataChecks:
                             f"Technology {technology} selected in config does not exist in input data"
                         )
                     elif (
-                        "attributes.json" not in self.optimization_setup.paths[subset][technology]
+                        "attributes.json"
+                        not in self.optimization_setup.paths[subset][technology]
                     ):
                         raise FileNotFoundError(
                             f"The file attributes.json does not exist for the technology {technology}"
@@ -1158,7 +1213,10 @@ class InputDataChecks:
                 raise FileNotFoundError(
                     f"Carrier {carrier} selected in config does not exist in input data"
                 )
-            elif "attributes.json" not in self.optimization_setup.paths["set_carriers"][carrier]:
+            elif (
+                "attributes.json"
+                not in self.optimization_setup.paths["set_carriers"][carrier]
+            ):
                 raise FileNotFoundError(
                     f"The file attributes.json does not exist for the carrier {carrier}"
                 )
@@ -1169,7 +1227,9 @@ class InputDataChecks:
         """
         dataset = os.path.basename(self.analysis.dataset)
         dirname = os.path.dirname(self.analysis.dataset)
-        assert os.path.exists(dirname), f"Requested folder {dirname} is not a valid path"
+        assert os.path.exists(
+            dirname
+        ), f"Requested folder {dirname} is not a valid path"
         assert os.path.exists(
             self.analysis.dataset
         ), f"The chosen dataset {dataset} does not exist at {self.analysis.dataset} as it is specified in the config"
@@ -1196,7 +1256,8 @@ class InputDataChecks:
         for edge in set_edges_input.values:
             reversed_edge = edge[2] + "-" + edge[1]
             if (
-                reversed_edge not in [edge_string[0] for edge_string in set_edges_input.values]
+                reversed_edge
+                not in [edge_string[0] for edge_string in set_edges_input.values]
                 and edge[1] in self.system.set_nodes
                 and edge[2] in self.system.set_nodes
             ):
@@ -1213,7 +1274,9 @@ class InputDataChecks:
         """
         # check if system.json file exists
         if os.path.exists(os.path.join(config.analysis.dataset, "system.json")):
-            with open(os.path.join(config.analysis.dataset, "system.json"), "r") as file:
+            with open(
+                os.path.join(config.analysis.dataset, "system.json"), "r"
+            ) as file:
                 system = json.load(file)
         # otherwise read system.py file
         else:
@@ -1238,10 +1301,14 @@ class InputDataChecks:
             if isinstance(subconfig.__class__, type) and issubclass(
                 subconfig.__class__, Subscriptable
             ):
-                self.check_no_extra_config_fields(subconfig, config_name=config_name + "/" + name)
+                self.check_no_extra_config_fields(
+                    subconfig, config_name=config_name + "/" + name
+                )
 
     @staticmethod
-    def check_carrier_configuration(input_carrier, output_carrier, reference_carrier, name):
+    def check_carrier_configuration(
+        input_carrier, output_carrier, reference_carrier, name
+    ):
         """
         Checks if the chosen input/output and reference carrier combination is reasonable.
 
@@ -1322,7 +1389,9 @@ class StringUtils:
                 f"\n--- Conduct optimization for perfect foresight {scenario_string}--- \n"
             )
         else:
-            corresponding_year = system.reference_year + step * system.interval_between_years
+            corresponding_year = (
+                system.reference_year + step * system.interval_between_years
+            )
             logging.info(
                 f"\n--- Conduct optimization for rolling horizon step for {corresponding_year} ({steps_horizon.index(step) + 1} of {len(steps_horizon)}) {scenario_string}--- \n"
             )
@@ -1354,7 +1423,9 @@ class StringUtils:
                 param_map = scenario_dict["param_map"]
 
                 # get the output scenarios
-                subfolder = subfolder.joinpath(f"scenario_{scenario_dict['sub_folder']}")
+                subfolder = subfolder.joinpath(
+                    f"scenario_{scenario_dict['sub_folder']}"
+                )
                 scenario_name = f"scenario_{scenario_dict['sub_folder']}"
 
         # handle myopic foresight
@@ -1454,7 +1525,10 @@ class ScenarioUtils:
         :param config: config of optimization
         :param out_folder: output folder"""
         # compare to existing sub-scenarios
-        if config.system.conduct_scenario_analysis and config.system.clean_sub_scenarios:
+        if (
+            config.system.conduct_scenario_analysis
+            and config.system.clean_sub_scenarios
+        ):
             # collect all paths that are in the scenario dict
             folder_dict = defaultdict(list)
             for _key, value in config.scenarios.items():
@@ -1472,7 +1546,10 @@ class ScenarioUtils:
                     for sub_folder in existing_sub_folder:
                         # delete the scenario subfolder
                         sub_folder_path = os.path.join(scenario_path, sub_folder)
-                        if os.path.isdir(sub_folder_path) and sub_folder not in sub_folders:
+                        if (
+                            os.path.isdir(sub_folder_path)
+                            and sub_folder not in sub_folders
+                        ):
                             logging.info(f"Removing sub-scenario {sub_folder}")
                             shutil.rmtree(sub_folder_path, ignore_errors=True)
                         # the time steps dict
@@ -1546,7 +1623,8 @@ class OptimizationError(RuntimeError):
     """
 
     def __init__(
-        self, status="The optimization is infeasible or unbounded, or finished with an error"
+        self,
+        status="The optimization is infeasible or unbounded, or finished with an error",
     ):
         """
         Initializes the class.

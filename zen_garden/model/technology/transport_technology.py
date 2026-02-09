@@ -69,15 +69,23 @@ class TransportTechnology(Technology):
         ), "Only one transport loss factor can be specified."
         if "transport_loss_factor_linear" in self.data_input.attribute_dict:
             self.transport_loss_factor = self.data_input.extract_input_data(
-                "transport_loss_factor_linear", index_sets=[], unit_category={"distance": -1}
+                "transport_loss_factor_linear",
+                index_sets=[],
+                unit_category={"distance": -1},
             )
             self.transport_loss_factor = self.transport_loss_factor[0] * self.distance
         elif "transport_loss_factor_exponential" in self.data_input.attribute_dict:
             self.transport_loss_factor = self.data_input.extract_input_data(
-                "transport_loss_factor_exponential", index_sets=[], unit_category={"distance": -1}
+                "transport_loss_factor_exponential",
+                index_sets=[],
+                unit_category={"distance": -1},
             )
-            self.transport_loss_factor = 1 - np.exp(-self.transport_loss_factor[0] * self.distance)
-            self.energy_system.system.set_transport_technologies_loss_exponential.append(self.name)
+            self.transport_loss_factor = 1 - np.exp(
+                -self.transport_loss_factor[0] * self.distance
+            )
+            self.energy_system.system.set_transport_technologies_loss_exponential.append(
+                self.name
+            )
         else:
             raise AttributeError(
                 f"The transport technology {self.name} has neither transport_loss_factor_linear nor transport_loss_factor_exponential attribute."
@@ -106,9 +114,16 @@ class TransportTechnology(Technology):
                     "capex_per_distance_transport",
                     index_sets=["set_edges", "set_time_steps_yearly"],
                     time_steps="set_time_steps_yearly",
-                    unit_category={"money": 1, "distance": -1, "energy_quantity": -1, "time": 1},
+                    unit_category={
+                        "money": 1,
+                        "distance": -1,
+                        "energy_quantity": -1,
+                        "time": 1,
+                    },
                 )
-                self.capex_specific_transport = self.capex_per_distance_transport * self.distance
+                self.capex_specific_transport = (
+                    self.capex_per_distance_transport * self.distance
+                )
             elif "capex_specific_transport" in self.data_input.attribute_dict:
                 self.capex_specific_transport = self.data_input.extract_input_data(
                     "capex_specific_transport",
@@ -125,9 +140,16 @@ class TransportTechnology(Technology):
             self.opex_specific_fixed_per_distance = self.data_input.extract_input_data(
                 "opex_specific_fixed_per_distance",
                 index_sets=["set_edges", "set_time_steps_yearly"],
-                unit_category={"money": 1, "distance": -1, "energy_quantity": -1, "time": 1},
+                unit_category={
+                    "money": 1,
+                    "distance": -1,
+                    "energy_quantity": -1,
+                    "time": 1,
+                },
             )
-            self.opex_specific_fixed = self.opex_specific_fixed_per_distance * self.distance
+            self.opex_specific_fixed = (
+                self.opex_specific_fixed_per_distance * self.distance
+            )
         elif "opex_specific_fixed" in self.data_input.attribute_dict:
             self.opex_specific_fixed = self.data_input.extract_input_data(
                 "opex_specific_fixed",
@@ -145,7 +167,9 @@ class TransportTechnology(Technology):
         fraction_year = self.calculate_fraction_of_year()
         self.opex_specific_fixed = self.opex_specific_fixed * fraction_year
         self.capex_specific_transport = self.capex_specific_transport * fraction_year
-        self.capex_per_distance_transport = self.capex_per_distance_transport * fraction_year
+        self.capex_per_distance_transport = (
+            self.capex_per_distance_transport * fraction_year
+        )
 
     def calculate_capex_of_single_capacity(self, capacity, index):
         """this method calculates the capex of a single existing capacity.
@@ -161,7 +185,8 @@ class TransportTechnology(Technology):
         elif self.energy_system.system.double_capex_transport and capacity != 0:
             return (
                 self.capex_specific_transport[index[0]].iloc[0] * capacity
-                + self.capex_per_distance_transport[index[0]].iloc[0] * self.distance[index[0]]
+                + self.capex_per_distance_transport[index[0]].iloc[0]
+                * self.distance[index[0]]
             )
         else:
             return self.capex_specific_transport[index[0]].iloc[0] * capacity
@@ -207,14 +232,22 @@ class TransportTechnology(Technology):
         # capital cost per unit
         optimization_setup.parameters.add_parameter(
             name="capex_specific_transport",
-            index_names=["set_transport_technologies", "set_edges", "set_time_steps_yearly"],
+            index_names=[
+                "set_transport_technologies",
+                "set_edges",
+                "set_time_steps_yearly",
+            ],
             doc="capex per unit for transport technologies",
             calling_class=cls,
         )
         # capital cost per distance
         optimization_setup.parameters.add_parameter(
             name="capex_per_distance_transport",
-            index_names=["set_transport_technologies", "set_edges", "set_time_steps_yearly"],
+            index_names=[
+                "set_transport_technologies",
+                "set_edges",
+                "set_time_steps_yearly",
+            ],
             doc="capex per distance for transport technologies",
             calling_class=cls,
         )
@@ -354,13 +387,20 @@ class TransportTechnologyRules(GenericRule):
         term_capacity = (
             self.parameters.max_load.loc[techs, edges, :]
             * self.variables["capacity"].loc[techs, "power", edges, time_step_year]
-        ).rename({"set_technologies": "set_transport_technologies", "set_location": "set_edges"})
+        ).rename(
+            {
+                "set_technologies": "set_transport_technologies",
+                "set_location": "set_edges",
+            }
+        )
 
         lhs = term_capacity - self.variables["flow_transport"].loc[techs, edges, :]
         rhs = 0
         constraints = lhs >= rhs
         ### return
-        self.constraints.add_constraint("constraint_capacity_factor_transport", constraints)
+        self.constraints.add_constraint(
+            "constraint_capacity_factor_transport", constraints
+        )
 
     def constraint_opex_emissions_technology_transport(self):
         r"""calculate opex of each technology.
@@ -380,26 +420,44 @@ class TransportTechnologyRules(GenericRule):
         lhs_opex = self.variables["cost_opex_variable"].loc[techs, edges, :] - (
             self.parameters.opex_specific_variable
             * self.variables["flow_transport"].rename(
-                {"set_transport_technologies": "set_technologies", "set_edges": "set_location"}
+                {
+                    "set_transport_technologies": "set_technologies",
+                    "set_edges": "set_location",
+                }
             )
         ).sel({"set_technologies": techs, "set_location": edges})
-        lhs_emissions = self.variables["carbon_emissions_technology"].loc[techs, edges, :] - (
+        lhs_emissions = self.variables["carbon_emissions_technology"].loc[
+            techs, edges, :
+        ] - (
             self.parameters.carbon_intensity_technology
             * self.variables["flow_transport"].rename(
-                {"set_transport_technologies": "set_technologies", "set_edges": "set_location"}
+                {
+                    "set_transport_technologies": "set_technologies",
+                    "set_edges": "set_location",
+                }
             )
-        ).sel({"set_technologies": techs, "set_location": edges})
+        ).sel(
+            {"set_technologies": techs, "set_location": edges}
+        )
         lhs_opex = lhs_opex.rename(
-            {"set_technologies": "set_transport_technologies", "set_location": "set_edges"}
+            {
+                "set_technologies": "set_transport_technologies",
+                "set_location": "set_edges",
+            }
         )
         lhs_emissions = lhs_emissions.rename(
-            {"set_technologies": "set_transport_technologies", "set_location": "set_edges"}
+            {
+                "set_technologies": "set_transport_technologies",
+                "set_location": "set_edges",
+            }
         )
         rhs = 0
         constraints_opex = lhs_opex == rhs
         constraints_emissions = lhs_emissions == rhs
         ### return
-        self.constraints.add_constraint("constraint_opex_technology_transport", constraints_opex)
+        self.constraints.add_constraint(
+            "constraint_opex_technology_transport", constraints_opex
+        )
         self.constraints.add_constraint(
             "constraint_carbon_emissions_technology_transport", constraints_emissions
         )
@@ -424,13 +482,19 @@ class TransportTechnologyRules(GenericRule):
         flow_transport = self.variables["flow_transport"]
         flow_transport_loss = self.variables["flow_transport_loss"]
         # This mask checks the distance between nodes
-        mask = (~np.isinf(self.parameters.distance)).broadcast_like(flow_transport.lower)
-        loss_factor = self.parameters.transport_loss_factor.broadcast_like(flow_transport.lower)
+        mask = (~np.isinf(self.parameters.distance)).broadcast_like(
+            flow_transport.lower
+        )
+        loss_factor = self.parameters.transport_loss_factor.broadcast_like(
+            flow_transport.lower
+        )
         lhs = (flow_transport_loss - loss_factor * flow_transport).where(mask, 0.0)
         rhs = 0
         constraints = lhs == rhs
 
-        self.constraints.add_constraint("constraint_transport_technology_losses_flow", constraints)
+        self.constraints.add_constraint(
+            "constraint_transport_technology_losses_flow", constraints
+        )
 
     def constraint_transport_technology_capex(self):
         r"""definition of the capital expenditures for the transport technology.
@@ -458,9 +522,13 @@ class TransportTechnologyRules(GenericRule):
             return []
         # get the coords
         coords = [
-            self.parameters.capex_per_distance_transport.coords["set_transport_technologies"],
+            self.parameters.capex_per_distance_transport.coords[
+                "set_transport_technologies"
+            ],
             self.parameters.capex_per_distance_transport.coords["set_edges"],
-            self.parameters.capex_per_distance_transport.coords["set_time_steps_yearly"],
+            self.parameters.capex_per_distance_transport.coords[
+                "set_time_steps_yearly"
+            ],
         ]
 
         ### masks
@@ -475,11 +543,17 @@ class TransportTechnologyRules(GenericRule):
         ### auxiliary calculations TODO improve
         term_distance_inf = (
             mask
-            * self.variables["capacity_addition"].loc[coords[0], "power", coords[1], coords[2]]
+            * self.variables["capacity_addition"].loc[
+                coords[0], "power", coords[1], coords[2]
+            ]
         )
         term_distance_not_inf = (1 - mask) * (
-            self.variables["cost_capex_overnight"].loc[coords[0], "power", coords[1], coords[2]]
-            - self.variables["capacity_addition"].loc[coords[0], "power", coords[1], coords[2]]
+            self.variables["cost_capex_overnight"].loc[
+                coords[0], "power", coords[1], coords[2]
+            ]
+            - self.variables["capacity_addition"].loc[
+                coords[0], "power", coords[1], coords[2]
+            ]
             * self.parameters.capex_specific_transport.loc[coords[0], coords[1]]
         )
         # we have an additional check here to avoid binary variables when their coefficient is 0
@@ -495,7 +569,9 @@ class TransportTechnologyRules(GenericRule):
                 ]
                 * (
                     self.parameters.distance.loc[coords[0], coords[1]]
-                    * self.parameters.capex_per_distance_transport.loc[coords[0], coords[1]]
+                    * self.parameters.capex_per_distance_transport.loc[
+                        coords[0], coords[1]
+                    ]
                 )
             )
 
@@ -504,4 +580,6 @@ class TransportTechnologyRules(GenericRule):
         lhs = lhs.where(global_mask)
         rhs = 0
         constraints = lhs == rhs
-        self.constraints.add_constraint("constraint_transport_technology_capex", constraints)
+        self.constraints.add_constraint(
+            "constraint_transport_technology_capex", constraints
+        )

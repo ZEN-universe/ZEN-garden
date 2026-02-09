@@ -104,9 +104,13 @@ def parse_changes_from_pr_body(pr_body: str, pr_number: str, pr_author: str) -> 
     pr_info = f"[[🔀 PR #{pr_number}](https://github.com/ZEN-universe/ZEN-garden/pull/{pr_number}) @{pr_author}]"
 
     # Extract "Detailed list of changes" section
-    match = re.search(r"## *?Detailed list of changes *?\n(.*?)(\n## |$)", pr_body, re.DOTALL)
+    match = re.search(
+        r"## *?Detailed list of changes *?\n(.*?)(\n## |$)", pr_body, re.DOTALL
+    )
     if not match:
-        raise ValueError("PR body does not have a section labeled `Detailed list of changes`")
+        raise ValueError(
+            "PR body does not have a section labeled `Detailed list of changes`"
+        )
 
     changes_section = match.group(1)
 
@@ -268,7 +272,9 @@ def parse_changelog(changelog_file: Path) -> Tuple[str, str, str]:
     return header, unversioned_changes, changelog_existing
 
 
-def parse_unversioned_changes(unversioned_changes: str, categorized_changes: dict) -> dict:
+def parse_unversioned_changes(
+    unversioned_changes: str, categorized_changes: dict
+) -> dict:
     """Extracts bullet-point changes from an unversioned changelog section.
 
     This function scans a markdown-formatted changelog string for sections
@@ -444,7 +450,9 @@ def main():
 
     header, unversioned_changes, changelog_existing = parse_changelog(changelog_file)
 
-    categorized_changes = parse_unversioned_changes(unversioned_changes, categorized_changes)
+    categorized_changes = parse_unversioned_changes(
+        unversioned_changes, categorized_changes
+    )
 
     changelog = update_changelog(
         header, categorized_changes, changelog_existing, semver_bump, new_version

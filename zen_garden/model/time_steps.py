@@ -50,9 +50,15 @@ class TimeStepsDicts(object):
                 for el in dict_all_sequence_time_steps["operation"].keys()
                 if "storage_level" in el
             ][0]
-            self.sequence_time_steps_operation = dict_all_sequence_time_steps["operation"][el_op]
-            self.sequence_time_steps_storage = dict_all_sequence_time_steps["operation"][el_stor]
-            self.sequence_time_steps_yearly = dict_all_sequence_time_steps["yearly"][None]
+            self.sequence_time_steps_operation = dict_all_sequence_time_steps[
+                "operation"
+            ][el_op]
+            self.sequence_time_steps_storage = dict_all_sequence_time_steps[
+                "operation"
+            ][el_stor]
+            self.sequence_time_steps_yearly = dict_all_sequence_time_steps["yearly"][
+                None
+            ]
             self.set_time_steps_operation2year_both_dir()
             self.set_time_steps_storage2year_both_dir()
 
@@ -163,7 +169,9 @@ class TimeStepsDicts(object):
         time_steps_operation2year = {
             key: val
             for key, val in zip(
-                time_steps_combi_operation[0, :], time_steps_combi_operation[1, :], strict=False
+                time_steps_combi_operation[0, :],
+                time_steps_combi_operation[1, :],
+                strict=False,
             )
         }
         self.time_steps_operation2year = time_steps_operation2year
@@ -186,7 +194,9 @@ class TimeStepsDicts(object):
         time_steps_storage2year = {
             key: val
             for key, val in zip(
-                time_steps_combi_storage[0, :], time_steps_combi_storage[1, :], strict=False
+                time_steps_combi_storage[0, :],
+                time_steps_combi_storage[1, :],
+                strict=False,
             )
         }
         self.time_steps_storage2year = time_steps_storage2year
@@ -217,11 +227,14 @@ class TimeStepsDicts(object):
                 counter += unaggregated_time_steps
                 time_steps_end.append(sequence_time_steps[counter - 1])
             self.time_steps_storage_level_startend_year = {
-                start: end for start, end in zip(time_steps_start, time_steps_end, strict=False)
+                start: end
+                for start, end in zip(time_steps_start, time_steps_end, strict=False)
             }
         else:
             self.time_steps_storage_level_startend_year = {
-                self.sequence_time_steps_storage[0]: self.sequence_time_steps_storage[-1]
+                self.sequence_time_steps_storage[0]: self.sequence_time_steps_storage[
+                    -1
+                ]
             }
 
     def get_time_steps_year2operation(self, year=None):

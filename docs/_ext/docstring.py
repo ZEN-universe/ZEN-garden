@@ -95,7 +95,9 @@ class DocstringMethod(SphinxDirective):
 
             filtered = []
             for line in lines:
-                if any(line.strip().startswith(header) for header in google_section_headers):
+                if any(
+                    line.strip().startswith(header) for header in google_section_headers
+                ):
                     break
                 filtered.append(line)
 
@@ -184,7 +186,9 @@ class DocstringClass(SphinxDirective):
 
             filtered = []
             for line in lines:
-                if any(line.strip().startswith(header) for header in google_section_headers):
+                if any(
+                    line.strip().startswith(header) for header in google_section_headers
+                ):
                     break
                 filtered.append(line)
 

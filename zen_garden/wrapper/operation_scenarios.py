@@ -10,7 +10,9 @@ logger = logging.getLogger(__name__)
 
 
 def validate_inputs(
-    dataset: Path | str, folder_output: Path | str | None, job_index: Iterable[int] | None
+    dataset: Path | str,
+    folder_output: Path | str | None,
+    job_index: Iterable[int] | None,
 ) -> tuple[Path, Path, List[int] | None]:
     """Validate and normalize user-provided inputs.
 
@@ -43,7 +45,8 @@ def validate_inputs(
     folder_output = Path(folder_output)
     if not (folder_output / dataset.name).exists():
         raise FileNotFoundError(
-            f"Results for dataset {dataset} do not exist" f" in the folder {folder_output}."
+            f"Results for dataset {dataset} do not exist"
+            f" in the folder {folder_output}."
         )
 
     if job_index is None:
@@ -127,7 +130,9 @@ def prepare_operational_dataset(
         scenarios=scenarios_op,
     )
 
-    utils.capacity_addition_2_existing_capacity(folder_output, dataset, dataset_op, scenario)
+    utils.capacity_addition_2_existing_capacity(
+        folder_output, dataset, dataset_op, scenario
+    )
 
     utils.modify_json(
         dataset_op / "system.json",
@@ -211,7 +216,9 @@ def operation_scenarios(
         - Executes simulation runs and writes output files to disk.
         - Emits log messages during execution.
     """
-    dataset, folder_output, job_index_list = validate_inputs(dataset, folder_output, job_index)
+    dataset, folder_output, job_index_list = validate_inputs(
+        dataset, folder_output, job_index
+    )
 
     dataset_path = dataset.parent
     dataset_name = dataset.name

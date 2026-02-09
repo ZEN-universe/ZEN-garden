@@ -120,7 +120,9 @@ class Postprocess:
 
         # check whether valid mode
         if mode not in ["a", "w"]:
-            ValueError(f"Invalid file write mode {mode} (valid options are 'a' or 'w').")
+            ValueError(
+                f"Invalid file write mode {mode} (valid options are 'a' or 'w')."
+            )
 
         # set the format
         if format is None:
@@ -192,19 +194,27 @@ class Postprocess:
             benchmarking_data["solving_time"] = self.model.solver_model.Runtime
             if "Method" in self.solver.solver_options:
                 if self.solver.solver_options["Method"] == 2:
-                    benchmarking_data["number_iterations"] = self.model.solver_model.BarIterCount
+                    benchmarking_data["number_iterations"] = (
+                        self.model.solver_model.BarIterCount
+                    )
                 else:
-                    benchmarking_data["number_iterations"] = self.model.solver_model.IterCount
+                    benchmarking_data["number_iterations"] = (
+                        self.model.solver_model.IterCount
+                    )
             benchmarking_data["solver_status"] = self.model.solver_model.Status
             benchmarking_data["number_constraints"] = self.model.solver_model.NumConstrs
             benchmarking_data["number_variables"] = self.model.solver_model.NumVars
         elif self.solver.name == "highs":
-            benchmarking_data["solver_status"] = self.model.solver_model.getModelStatus().name
+            benchmarking_data["solver_status"] = (
+                self.model.solver_model.getModelStatus().name
+            )
             benchmarking_data["solving_time"] = self.model.solver_model.getRunTime()
             benchmarking_data["number_iterations"] = (
                 self.model.solver_model.getInfo().simplex_iteration_count
             )
-            benchmarking_data["number_constraints"] = self.model.solver_model.getNumRow()
+            benchmarking_data["number_constraints"] = (
+                self.model.solver_model.getNumRow()
+            )
             benchmarking_data["number_variables"] = self.model.solver_model.getNumCol()
         else:
             logging.info(
@@ -364,7 +374,10 @@ class Postprocess:
             arr = self.model.constraints[name].dual
 
             # skip variables not selected to be saved
-            if self.solver.selected_saved_duals and name not in self.solver.selected_saved_duals:
+            if (
+                self.solver.selected_saved_duals
+                and name not in self.solver.selected_saved_duals
+            ):
                 continue
 
             # extract doc information
@@ -418,7 +431,9 @@ class Postprocess:
         if os.path.isabs(self.analysis.dataset):
             cwd = os.getcwd()
             self.analysis.dataset = os.path.relpath(self.analysis.dataset, cwd)
-            self.analysis.folder_output = os.path.relpath(self.analysis.folder_output, cwd)
+            self.analysis.folder_output = os.path.relpath(
+                self.analysis.folder_output, cwd
+            )
         self.write_file(fname, self.analysis, format="json")
 
     def save_solver(self):
@@ -475,7 +490,10 @@ class Postprocess:
 
         if self.param_map is not None:
             # This we only need to save once
-            if self.system.use_rolling_horizon and self.system.conduct_scenario_analysis:
+            if (
+                self.system.use_rolling_horizon
+                and self.system.conduct_scenario_analysis
+            ):
                 fname = self.name_dir.parent.parent.joinpath("param_map")
             elif self.subfolder != Path(""):
                 fname = self.name_dir.parent.joinpath("param_map")
@@ -519,7 +537,9 @@ class Postprocess:
 
             # This we only need to save once
         if self.system.use_rolling_horizon:
-            fname = self.name_dir.parent.joinpath(f"dict_all_sequence_time_steps{add_on}")
+            fname = self.name_dir.parent.joinpath(
+                f"dict_all_sequence_time_steps{add_on}"
+            )
         else:
             fname = self.name_dir.joinpath(f"dict_all_sequence_time_steps{add_on}")
         dict_sequence_time_steps = self.dict_sequence_time_steps
@@ -589,14 +609,20 @@ class Postprocess:
     def get_time_steps_year2operation(self):
         """Returns a HDF5-Serializable version of the dict_time_steps_year2operation dictionary."""
         ans = {}
-        for year, time_steps in self.energy_system.time_steps.time_steps_year2operation.items():
+        for (
+            year,
+            time_steps,
+        ) in self.energy_system.time_steps.time_steps_year2operation.items():
             ans[str(year)] = time_steps
         return ans
 
     def get_time_steps_year2storage(self):
         """Returns a HDF5-Serializable version of the dict_time_steps_year2storage dictionary."""
         ans = {}
-        for year, time_steps in self.energy_system.time_steps.time_steps_year2storage.items():
+        for (
+            year,
+            time_steps,
+        ) in self.energy_system.time_steps.time_steps_year2storage.items():
             ans[str(year)] = time_steps
         return ans
 
@@ -626,7 +652,12 @@ class Postprocess:
         :return: pd.Series of the docstring
         """
         if doc is not None:
-            return pd.Series(doc.split(";")).str.split(":", expand=True).set_index(0).squeeze()
+            return (
+                pd.Series(doc.split(";"))
+                .str.split(":", expand=True)
+                .set_index(0)
+                .squeeze()
+            )
         else:
             return pd.DataFrame()
 
@@ -650,7 +681,9 @@ class Postprocess:
         else:
             return None
 
-    def _write_h5_file(self, file_name, dictionary, mode="w", complevel=4, complib="blosc"):
+    def _write_h5_file(
+        self, file_name, dictionary, mode="w", complevel=4, complib="blosc"
+    ):
         """Writes the dictionary to a hdf5 file.
 
         :param file_name: The name of the file
@@ -663,7 +696,9 @@ class Postprocess:
             raise FileExistsError(
                 "File already exists. Please set overwrite=True to overwrite the file."
             )
-        with pd.HDFStore(file_name, mode=mode, complevel=complevel, complib=complib) as store:
+        with pd.HDFStore(
+            file_name, mode=mode, complevel=complevel, complib=complib
+        ) as store:
             for key, value in dictionary.items():
                 if not isinstance(key, str):
                     raise TypeError("All dictionary keys must be strings!")
@@ -724,5 +759,7 @@ class Postprocess:
             set(input_dict.keys()) == set(expected_keys)
             or set(input_dict.keys()) == set(expected_keys).union(["units"])
         ):
-            raise ValueError(f"Expected keys are {expected_keys}, but got {input_dict.keys()}")
+            raise ValueError(
+                f"Expected keys are {expected_keys}, but got {input_dict.keys()}"
+            )
         return input_dict, units, docstring, has_units

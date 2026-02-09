@@ -14,7 +14,8 @@ def build_parser_op() -> argparse.ArgumentParser:
         required=False,
         type=str,
         default=None,
-        help="The config file used to run the operation-only model, defaults to " " --config.",
+        help="The config file used to run the operation-only model, defaults to "
+        " --config.",
     )
     parser.add_argument(
         "--dataset_op",

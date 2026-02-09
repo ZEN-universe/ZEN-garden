@@ -62,10 +62,14 @@ class StorageTechnology(Technology):
         )
         # extract existing energy capacity
         self.capacity_addition_min_energy = self.data_input.extract_input_data(
-            "capacity_addition_min_energy", index_sets=[], unit_category={"energy_quantity": 1}
+            "capacity_addition_min_energy",
+            index_sets=[],
+            unit_category={"energy_quantity": 1},
         )
         self.capacity_addition_max_energy = self.data_input.extract_input_data(
-            "capacity_addition_max_energy", index_sets=[], unit_category={"energy_quantity": 1}
+            "capacity_addition_max_energy",
+            index_sets=[],
+            unit_category={"energy_quantity": 1},
         )
         self.capacity_limit_energy = self.data_input.extract_input_data(
             "capacity_limit_energy",
@@ -117,24 +121,30 @@ class StorageTechnology(Technology):
         self.convert_to_fraction_of_capex()
         # calculate capex of existing capacity
         self.capex_capacity_existing = self.calculate_capex_of_capacities_existing()
-        self.capex_capacity_existing_energy = self.calculate_capex_of_capacities_existing(
-            storage_energy=True
+        self.capex_capacity_existing_energy = (
+            self.calculate_capex_of_capacities_existing(storage_energy=True)
         )
         # add flow_storage_inflow time series
-        self.raw_time_series["flow_storage_inflow"] = self.data_input.extract_input_data(
-            "flow_storage_inflow",
-            index_sets=["set_nodes", "set_time_steps"],
-            time_steps="set_base_time_steps_yearly",
-            unit_category={"energy_quantity": 1, "time": -1},
+        self.raw_time_series["flow_storage_inflow"] = (
+            self.data_input.extract_input_data(
+                "flow_storage_inflow",
+                index_sets=["set_nodes", "set_time_steps"],
+                time_steps="set_base_time_steps_yearly",
+                unit_category={"energy_quantity": 1, "time": -1},
+            )
         )
 
     def convert_to_fraction_of_capex(self):
         """this method converts the total capex to fraction of capex, depending on how many hours per year are calculated."""
         fraction_year = self.calculate_fraction_of_year()
         self.opex_specific_fixed = self.opex_specific_fixed * fraction_year
-        self.opex_specific_fixed_energy = self.opex_specific_fixed_energy * fraction_year
+        self.opex_specific_fixed_energy = (
+            self.opex_specific_fixed_energy * fraction_year
+        )
         self.capex_specific_storage = self.capex_specific_storage * fraction_year
-        self.capex_specific_storage_energy = self.capex_specific_storage_energy * fraction_year
+        self.capex_specific_storage_energy = (
+            self.capex_specific_storage_energy * fraction_year
+        )
 
     def calculate_capex_of_single_capacity(self, capacity, index, storage_energy=False):
         """this method calculates the annualized capex of a single existing capacity.
@@ -145,7 +155,9 @@ class StorageTechnology(Technology):
         :return: capex of single capacity
         """
         if storage_energy:
-            absolute_capex = self.capex_specific_storage_energy[index[0]].iloc[0] * capacity
+            absolute_capex = (
+                self.capex_specific_storage_energy[index[0]].iloc[0] * capacity
+            )
         else:
             absolute_capex = self.capex_specific_storage[index[0]].iloc[0] * capacity
         return absolute_capex
@@ -179,21 +191,33 @@ class StorageTechnology(Technology):
         # efficiency charge
         optimization_setup.parameters.add_parameter(
             name="efficiency_charge",
-            index_names=["set_storage_technologies", "set_nodes", "set_time_steps_yearly"],
+            index_names=[
+                "set_storage_technologies",
+                "set_nodes",
+                "set_time_steps_yearly",
+            ],
             doc="efficiency during charging for storage technologies",
             calling_class=cls,
         )
         # efficiency discharge
         optimization_setup.parameters.add_parameter(
             name="efficiency_discharge",
-            index_names=["set_storage_technologies", "set_nodes", "set_time_steps_yearly"],
+            index_names=[
+                "set_storage_technologies",
+                "set_nodes",
+                "set_time_steps_yearly",
+            ],
             doc="efficiency during discharging for storage technologies",
             calling_class=cls,
         )
         #  flow_storage_inflow
         optimization_setup.parameters.add_parameter(
             name="flow_storage_inflow",
-            index_names=["set_storage_technologies", "set_nodes", "set_time_steps_operation"],
+            index_names=[
+                "set_storage_technologies",
+                "set_nodes",
+                "set_time_steps_operation",
+            ],
             doc="energy inflow in storage technologies",
             calling_class=cls,
         )
@@ -383,10 +407,17 @@ class StorageTechnologyRules(GenericRule):
         capacity_limit = self.parameters.capacity_limit
         capacity_limit = self.map_and_expand(capacity_limit, times)
         capacity_limit = capacity_limit.rename(
-            {"set_technologies": "set_storage_technologies", "set_location": "set_nodes"}
+            {
+                "set_technologies": "set_storage_technologies",
+                "set_location": "set_nodes",
+            }
         )
         capacity_limit = capacity_limit.sel(
-            {"set_nodes": nodes, "set_storage_technologies": techs, "set_capacity_types": "power"}
+            {
+                "set_nodes": nodes,
+                "set_storage_technologies": techs,
+                "set_capacity_types": "power",
+            }
         )
         capacity_limit = capacity_limit.rename(
             {"set_time_steps_storage": "set_time_steps_operation"}
@@ -406,7 +437,9 @@ class StorageTechnologyRules(GenericRule):
         rhs = capacity_limit
         constraint_discharge = lhs <= rhs
 
-        self.constraints.add_constraint("constraint_charge_storage_binary", constraint_charge)
+        self.constraints.add_constraint(
+            "constraint_charge_storage_binary", constraint_charge
+        )
         self.constraints.add_constraint(
             "constraint_discharge_storage_binary", constraint_discharge
         )
@@ -441,14 +474,21 @@ class StorageTechnologyRules(GenericRule):
         term_capacity = (
             self.parameters.max_load.loc[techs, nodes, :]
             * self.variables["capacity"].loc[techs, "power", nodes, time_step_year]
-        ).rename({"set_technologies": "set_storage_technologies", "set_location": "set_nodes"})
+        ).rename(
+            {
+                "set_technologies": "set_storage_technologies",
+                "set_location": "set_nodes",
+            }
+        )
 
         # TODO integrate level storage here as well
         lhs = term_capacity - self.get_flow_expression_storage(rename=False)
         rhs = 0
         constraints = lhs >= rhs
         ### return
-        self.constraints.add_constraint("constraint_capacity_factor_storage", constraints)
+        self.constraints.add_constraint(
+            "constraint_capacity_factor_storage", constraints
+        )
 
     def constraint_opex_emissions_technology_storage(self):
         """calculate opex of each technology.
@@ -471,21 +511,34 @@ class StorageTechnologyRules(GenericRule):
         nodes = self.sets["set_nodes"]
         lhs_opex = self.variables["cost_opex_variable"].sel(
             {"set_technologies": techs, "set_location": nodes}
-        ) - (self.parameters.opex_specific_variable * self.get_flow_expression_storage())
+        ) - (
+            self.parameters.opex_specific_variable * self.get_flow_expression_storage()
+        )
         lhs_emissions = self.variables["carbon_emissions_technology"].sel(
             {"set_technologies": techs, "set_location": nodes}
-        ) - (self.parameters.carbon_intensity_technology * self.get_flow_expression_storage())
+        ) - (
+            self.parameters.carbon_intensity_technology
+            * self.get_flow_expression_storage()
+        )
         lhs_opex = lhs_opex.rename(
-            {"set_technologies": "set_storage_technologies", "set_location": "set_nodes"}
+            {
+                "set_technologies": "set_storage_technologies",
+                "set_location": "set_nodes",
+            }
         )
         lhs_emissions = lhs_emissions.rename(
-            {"set_technologies": "set_storage_technologies", "set_location": "set_nodes"}
+            {
+                "set_technologies": "set_storage_technologies",
+                "set_location": "set_nodes",
+            }
         )
         rhs = 0
         constraints_opex = lhs_opex == rhs
         constraints_emissions = lhs_emissions == rhs
 
-        self.constraints.add_constraint("constraint_opex_technology_storage", constraints_opex)
+        self.constraints.add_constraint(
+            "constraint_opex_technology_storage", constraints_opex
+        )
         self.constraints.add_constraint(
             "constraint_carbon_emissions_technology_storage", constraints_emissions
         )
@@ -508,11 +561,16 @@ class StorageTechnologyRules(GenericRule):
         times = self.get_storage2year_time_step_array()
         capacity = self.map_and_expand(self.variables["capacity"], times)
         capacity = capacity.rename(
-            {"set_technologies": "set_storage_technologies", "set_location": "set_nodes"}
+            {
+                "set_technologies": "set_storage_technologies",
+                "set_location": "set_nodes",
+            }
         )
         capacity = capacity.sel({"set_nodes": nodes, "set_storage_technologies": techs})
         storage_level = self.variables["storage_level"]
-        mask_capacity_type = self.variables["capacity"].coords["set_capacity_types"] == "energy"
+        mask_capacity_type = (
+            self.variables["capacity"].coords["set_capacity_types"] == "energy"
+        )
         lhs = (storage_level - capacity).where(mask_capacity_type, 0.0)
         rhs = 0
         constraints = lhs <= rhs
@@ -552,10 +610,14 @@ class StorageTechnologyRules(GenericRule):
         capacity_addition_energy = capacity_addition.sel(
             {"set_storage_technologies": techs, "set_capacity_types": "energy"}
         )
-        lhs = (capacity_addition_energy - capacity_addition_power * e2p_min).where(mask_min)
+        lhs = (capacity_addition_energy - capacity_addition_power * e2p_min).where(
+            mask_min
+        )
         rhs = 0
         constraints_min = lhs >= rhs
-        lhs = (capacity_addition_energy - capacity_addition_power * e2p_max).where(mask_max)
+        lhs = (capacity_addition_energy - capacity_addition_power * e2p_max).where(
+            mask_max
+        )
         constraints_max = lhs <= rhs
 
         self.constraints.add_constraint(
@@ -588,9 +650,9 @@ class StorageTechnologyRules(GenericRule):
         flow_storage_spillage = self.variables.flow_storage_spillage
         time_steps_storage_duration = self.parameters.time_steps_storage_duration
         # reformulate self discharge multiplier as partial geometric series
-        multiplier_w_discharge = (1 - (1 - self_discharge) ** time_steps_storage_duration) / (
-            1 - (1 - self_discharge)
-        )
+        multiplier_w_discharge = (
+            1 - (1 - self_discharge) ** time_steps_storage_duration
+        ) / (1 - (1 - self_discharge))
         multiplier_wo_discharge = time_steps_storage_duration
         multiplier = multiplier_w_discharge.where(
             self_discharge != 0, 0.0
@@ -628,7 +690,9 @@ class StorageTechnologyRules(GenericRule):
         )
         term_flow_charge_discharge = term_flow_charge_discharge * multiplier
         # sum up all terms
-        lhs = (term_delta_storage_level - term_flow_charge_discharge).where(mask_coupling, 0.0)
+        lhs = (term_delta_storage_level - term_flow_charge_discharge).where(
+            mask_coupling, 0.0
+        )
         rhs = 0
         constraints = lhs == rhs
 
@@ -712,7 +776,9 @@ class StorageTechnologyRules(GenericRule):
                     -self.parameters.capex_specific_storage.loc[
                         techs, capacity_types, nodes, times
                     ],
-                    self.variables["capacity_addition"].loc[techs, capacity_types, nodes, times],
+                    self.variables["capacity_addition"].loc[
+                        techs, capacity_types, nodes, times
+                    ],
                 ),
             ],
             coords,
@@ -721,4 +787,6 @@ class StorageTechnologyRules(GenericRule):
         rhs = 0
         constraints = lhs == rhs
 
-        self.constraints.add_constraint("constraint_storage_technology_capex", constraints)
+        self.constraints.add_constraint(
+            "constraint_storage_technology_capex", constraints
+        )

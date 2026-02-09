@@ -25,10 +25,14 @@ def create_zen_example_cli():
 
     """
     # parse the args
-    description = "Downloads an example dataset for ZEN-garden to the current" "working directory"
+    description = (
+        "Downloads an example dataset for ZEN-garden to the current" "working directory"
+    )
 
     parser = argparse.ArgumentParser(
-        description=description, add_help=True, usage="usage: zen-example [--dataset DATASET]"
+        description=description,
+        add_help=True,
+        usage="usage: zen-example [--dataset DATASET]",
     )
 
     parser.add_argument(

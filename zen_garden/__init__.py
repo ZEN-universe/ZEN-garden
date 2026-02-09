@@ -1,7 +1,11 @@
 from . import model, postprocess, preprocess, wrapper
 from .model.element import Element
 from .optimization_setup import OptimizationSetup
-from .postprocess.comparisons import compare_configs, compare_dicts, compare_model_values
+from .postprocess.comparisons import (
+    compare_configs,
+    compare_dicts,
+    compare_model_values,
+)
 from .postprocess.results.results import Results
 from .runner import run
 from .utils import download_example_dataset, get_inheritors
@@ -18,4 +22,6 @@ __all__ = [
 
 # set the element classes of the EnergySystem class
 inheritors = get_inheritors(Element)
-OptimizationSetup.dict_element_classes.update({klass.__name__: klass for klass in inheritors})
+OptimizationSetup.dict_element_classes.update(
+    {klass.__name__: klass for klass in inheritors}
+)

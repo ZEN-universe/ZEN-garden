@@ -42,7 +42,9 @@ class RetrofittingTechnology(ConversionTechnology):
         # get attributes from class <Technology>
         super().store_input_data()
         # get retrofit base technology
-        self.retrofit_base_technology = self.data_input.extract_retrofit_base_technology()
+        self.retrofit_base_technology = (
+            self.data_input.extract_retrofit_base_technology()
+        )
         # get flow_coupling factor and capex
         self.retrofit_flow_coupling_factor = self.data_input.extract_input_data(
             "retrofit_flow_coupling_factor",
@@ -79,7 +81,11 @@ class RetrofittingTechnology(ConversionTechnology):
         # slope of linearly modeled capex
         optimization_setup.parameters.add_parameter(
             name="retrofit_flow_coupling_factor",
-            index_names=["set_retrofitting_technologies", "set_nodes", "set_time_steps_operation"],
+            index_names=[
+                "set_retrofitting_technologies",
+                "set_nodes",
+                "set_time_steps_operation",
+            ],
             capacity_types=False,
             doc="Parameter which specifies the flow coupling between the retrofitting technologies and its base technology",
             calling_class=cls,
@@ -159,7 +165,9 @@ class RetrofittingTechnologyRules(GenericRule):
         retrofit_flow_coupling = self.parameters.retrofit_flow_coupling_factor.rename(
             {"set_retrofitting_technologies": "set_conversion_technologies"}
         )
-        term_flow_retrofit = self.map_and_expand(term_flow_reference, retrofit_base_technologies)
+        term_flow_retrofit = self.map_and_expand(
+            term_flow_reference, retrofit_base_technologies
+        )
         term_flow_base = term_flow_reference.sel(
             {"set_conversion_technologies": self.sets["set_retrofitting_technologies"]}
         )
@@ -167,4 +175,6 @@ class RetrofittingTechnologyRules(GenericRule):
         rhs = 0
         constraints = lhs <= rhs
 
-        self.constraints.add_constraint("constraint_retrofit_flow_coupling", constraints)
+        self.constraints.add_constraint(
+            "constraint_retrofit_flow_coupling", constraints
+        )

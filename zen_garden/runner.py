@@ -65,7 +65,9 @@ def run(config="./config.json", dataset=None, job_index=None, folder_output=None
         config = config.replace(".py", ".json")
     config_path, config_file = os.path.split(os.path.abspath(config))
     if config_file.endswith(".py"):
-        spec = importlib.util.spec_from_file_location("module", Path(config_path) / config_file)
+        spec = importlib.util.spec_from_file_location(
+            "module", Path(config_path) / config_file
+        )
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
         config = module.config
@@ -101,7 +103,9 @@ def run(config="./config.json", dataset=None, job_index=None, folder_output=None
     # overwrite default system and scenario dictionaries
     scenarios, elements = ScenarioUtils.get_scenarios(config, job_index)
     # get the name of the dataset
-    model_name, out_folder = StringUtils.setup_model_folder(config.analysis, config.system)
+    model_name, out_folder = StringUtils.setup_model_folder(
+        config.analysis, config.system
+    )
     # clean sub-scenarios if necessary
     ScenarioUtils.clean_scenario_folder(config, out_folder)
     ### ITERATE THROUGH SCENARIOS
@@ -135,7 +139,9 @@ def run(config="./config.json", dataset=None, job_index=None, folder_output=None
             if not optimization_setup.optimality:
                 # write IIS
                 optimization_setup.write_IIS(scenario)
-                logging.warning(f"Optimization: {optimization_setup.model.termination_condition}")
+                logging.warning(
+                    f"Optimization: {optimization_setup.model.termination_condition}"
+                )
                 break
             if optimization_setup.solver.use_scaling:
                 optimization_setup.scaling.re_scale()

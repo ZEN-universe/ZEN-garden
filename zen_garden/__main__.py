@@ -60,7 +60,9 @@ def run_module(config="./config.py", dataset=None, folder_output=None, job_index
     )
 
     # run new function
-    return run(config=config, dataset=dataset, folder_output=folder_output, job_index=job_index)
+    return run(
+        config=config, dataset=dataset, folder_output=folder_output, job_index=job_index
+    )
 
 
 if __name__ == "__main__":

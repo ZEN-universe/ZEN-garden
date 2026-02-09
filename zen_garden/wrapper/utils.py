@@ -105,7 +105,8 @@ def load_results(out_dir: Path, scenario: str) -> dict:
 
     # Get conversion technologies excluding retrofitting
     set_conversion_not_retrofitting = list(
-        set(system.set_conversion_technologies) - set(system.set_retrofitting_technologies)
+        set(system.set_conversion_technologies)
+        - set(system.set_retrofitting_technologies)
     )
 
     # Get edges from results
@@ -169,7 +170,11 @@ def get_element_folder(dataset_op: Path, element_name: str, tech: str) -> Path:
     """
     if element_name == "set_retrofitting_technologies":
         tech_folder_op = (
-            dataset_op / "set_technologies" / "set_conversion_technologies" / element_name / tech
+            dataset_op
+            / "set_technologies"
+            / "set_conversion_technologies"
+            / element_name
+            / tech
         )
     else:
         tech_folder_op = dataset_op / "set_technologies" / element_name / tech
@@ -177,7 +182,10 @@ def get_element_folder(dataset_op: Path, element_name: str, tech: str) -> Path:
 
 
 def format_capacity_addition(
-    capacity_addition_tech: pd.DataFrame, capacity_type: str, suffix: str, location_name: str
+    capacity_addition_tech: pd.DataFrame,
+    capacity_type: str,
+    suffix: str,
+    location_name: str,
 ) -> pd.DataFrame:
     """
     Format the capacity addition DataFrame for consistency in column names.
@@ -201,7 +209,9 @@ def format_capacity_addition(
     )
 
 
-def aggregate_capacity(capacity_existing: pd.DataFrame, location_name: str) -> pd.DataFrame:
+def aggregate_capacity(
+    capacity_existing: pd.DataFrame, location_name: str
+) -> pd.DataFrame:
     """
     Aggregate capacity data by grouping it by location and year of construction.
 
@@ -213,10 +223,16 @@ def aggregate_capacity(capacity_existing: pd.DataFrame, location_name: str) -> p
     Returns:
         pd.DataFrame: The aggregated DataFrame with summed capacities.
     """
-    return capacity_existing.groupby([location_name, "year_construction"]).sum().reset_index()
+    return (
+        capacity_existing.groupby([location_name, "year_construction"])
+        .sum()
+        .reset_index()
+    )
 
 
-def save_capacity_existing(tech_folder_op: Path, capacity_existing: pd.DataFrame, suffix: str):
+def save_capacity_existing(
+    tech_folder_op: Path, capacity_existing: pd.DataFrame, suffix: str
+):
     """
     Save the aggregated capacity data to a CSV file.
 
@@ -226,7 +242,10 @@ def save_capacity_existing(tech_folder_op: Path, capacity_existing: pd.DataFrame
         suffix (str): The suffix to append to the file name (e.g., '_energy').
     """
     capacity_existing.to_csv(
-        tech_folder_op / f"capacity_existing{suffix}.csv", mode="w", header=True, index=False
+        tech_folder_op / f"capacity_existing{suffix}.csv",
+        mode="w",
+        header=True,
+        index=False,
     )
 
 
@@ -262,7 +281,9 @@ def convert_to_original_units(
     capacity_addition_unit = capacity_units.loc[(tech, capacity_type)]
 
     # Ensure capacity addition is in base units
-    if not np.isclose(unit_handling.get_unit_multiplier(capacity_addition_unit, tech), 1):
+    if not np.isclose(
+        unit_handling.get_unit_multiplier(capacity_addition_unit, tech), 1
+    ):
         raise AssertionError("Model output is not in base units")
 
     # Get capacity_existing units from attributes file
@@ -288,7 +309,9 @@ def convert_to_original_units(
     return capacity_addition_tech
 
 
-def round_capacity(results: dict, rounding_decimal_points: int, has_energy: bool) -> dict:
+def round_capacity(
+    results: dict, rounding_decimal_points: int, has_energy: bool
+) -> dict:
     """
     Round the capacities in the results to remove values below a certain
     threshold.
@@ -309,9 +332,9 @@ def round_capacity(results: dict, rounding_decimal_points: int, has_energy: bool
     idx_keep = capacity_addition["power"] > rounding_value
 
     if has_energy:
-        idx_keep_energy = (capacity_addition["energy"] > rounding_value) | capacity_addition[
-            "energy"
-        ].isna()
+        idx_keep_energy = (
+            capacity_addition["energy"] > rounding_value
+        ) | capacity_addition["energy"].isna()
         idx_keep = idx_keep | idx_keep_energy
 
     results["capacity_addition"] = capacity_addition.loc[idx_keep, :]
@@ -320,7 +343,11 @@ def round_capacity(results: dict, rounding_decimal_points: int, has_energy: bool
 
 
 def add_capacity_additions(
-    dataset_op: Path, results: dict, element_name: str, capacity_type: str, unit_handling
+    dataset_op: Path,
+    results: dict,
+    element_name: str,
+    capacity_type: str,
+    unit_handling,
 ):
     """
     Transfer capacity additions from the results to the dataset for a given
@@ -350,7 +377,9 @@ def add_capacity_additions(
         tech_folder_op = get_element_folder(dataset_op, element_name, tech)
         fp_capacity_existing = tech_folder_op / f"capacity_existing{suffix}.csv"
 
-        capacity_addition_tech = capacity_addition.loc[(tech, capacity_type)].reset_index()
+        capacity_addition_tech = capacity_addition.loc[
+            (tech, capacity_type)
+        ].reset_index()
         capacity_addition_tech = format_capacity_addition(
             capacity_addition_tech, capacity_type, suffix, location_name
         )
@@ -375,9 +404,9 @@ def add_capacity_additions(
                     f"capacity_existing{suffix}": np.float64,
                 },
             )
-            capacity_existing = pd.concat([capacity_existing, capacity_addition_tech]).reset_index(
-                drop=True
-            )
+            capacity_existing = pd.concat(
+                [capacity_existing, capacity_addition_tech]
+            ).reset_index(drop=True)
         else:
             capacity_existing = capacity_addition_tech
 
@@ -431,11 +460,15 @@ def capacity_addition_2_existing_capacity(
 
     has_energy = "energy" in results["capacity_addition"].columns.values
     # Round capacities below tolerance to zero
-    results = round_capacity(results, results["solver"].rounding_decimal_points_units, has_energy)
+    results = round_capacity(
+        results, results["solver"].rounding_decimal_points_units, has_energy
+    )
 
     # Add power capacity additions for different technology sets
     for element_name in results["technologies"].keys():
-        add_capacity_additions(dataset_op, results, element_name, "power", unit_handling)
+        add_capacity_additions(
+            dataset_op, results, element_name, "power", unit_handling
+        )
     # add energy capacity additions if present
     if has_energy:
         add_capacity_additions(

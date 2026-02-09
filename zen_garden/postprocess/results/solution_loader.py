@@ -196,7 +196,9 @@ class Scenario:
             ureg.load_definitions(unit_path)
         return ureg
 
-    def convert_ts2year(self, df: ["pd.DataFrame", "pd.Series"]) -> ["pd.DataFrame", "pd.Series"]:
+    def convert_ts2year(
+        self, df: ["pd.DataFrame", "pd.Series"]
+    ) -> ["pd.DataFrame", "pd.Series"]:
         """converts the yearly ts column to the corresponding year."""
         df = df.copy()
         if isinstance(df, pd.Series):
@@ -338,7 +340,9 @@ class Scenario:
         h5_file = h5py.File(component_info["file_path"])
         version = get_solution_version(self)
         index_names = get_index_names(h5_file, component_name, version)
-        time_index = set(index_names).intersection(set(TimestepType.get_time_steps_names()))
+        time_index = set(index_names).intersection(
+            set(TimestepType.get_time_steps_names())
+        )
         timestep_name = time_index.pop() if len(time_index) > 0 else None
         timestep_type = TimestepType.get_time_step_type(timestep_name)
 
@@ -431,7 +435,9 @@ class SolutionLoader:
                     scenario, component.timestep_type, decision_horizon
                 )
                 time_step_list = {tstep for tstep in time_steps}
-                all_timesteps = current_mf.index.get_level_values(component.timestep_name)
+                all_timesteps = current_mf.index.get_level_values(
+                    component.timestep_name
+                )
                 year_series = current_mf[[i in time_step_list for i in all_timesteps]]
                 series_to_concat.append(year_series)
             else:
@@ -481,7 +487,9 @@ class SolutionLoader:
             # If solution has rolling horizon, load the values for all the foresight
             # steps and combine them.
             pattern = re.compile(r"^MF_\d+(_.*)?$")
-            subfolder_names = list(filter(lambda x: pattern.match(x), os.listdir(scenario.path)))
+            subfolder_names = list(
+                filter(lambda x: pattern.match(x), os.listdir(scenario.path))
+            )
             pd_series_dict = {}
 
             for subfolder_name in subfolder_names:
@@ -493,12 +501,16 @@ class SolutionLoader:
                         continue
                 else:
                     mf_idx = int(subfolder_name.replace("MF_", ""))
-                file_path = os.path.join(scenario.path, subfolder_name, component.file_name)
+                file_path = os.path.join(
+                    scenario.path, subfolder_name, component.file_name
+                )
                 pd_series_dict[mf_idx] = get_df_from_path(
                     file_path, component.name, version, data_type, index
                 )
             if not keep_raw:
-                combined_dataseries = self._combine_dataseries(component, scenario, pd_series_dict)
+                combined_dataseries = self._combine_dataseries(
+                    component, scenario, pd_series_dict
+                )
             else:
                 combined_dataseries = self._concatenate_raw_dataseries(pd_series_dict)
             return combined_dataseries
@@ -537,7 +549,9 @@ class SolutionLoader:
                 scenario_subfolder = scenario_config["sub_folder"]
 
                 if scenario_subfolder != "":
-                    scenario_path = os.path.join(scenario_path, f"scenario_{scenario_subfolder}")
+                    scenario_path = os.path.join(
+                        scenario_path, f"scenario_{scenario_subfolder}"
+                    )
 
                 scenario = Scenario(scenario_path, scenario_name, base_scenario)
 
@@ -547,7 +561,9 @@ class SolutionLoader:
         return ans
 
     @ConditionalCache("enable_cache")
-    def get_timestep_duration(self, scenario: Scenario, component: Component) -> "pd.Series[Any]":
+    def get_timestep_duration(
+        self, scenario: Scenario, component: Component
+    ) -> "pd.Series[Any]":
         """
         The timestep duration is stored as any other component, the only thing is to
         define the correct name depending on the component timestep type.
@@ -723,7 +739,8 @@ class SolutionLoader:
                     filter(lambda x: pattern.match(x), os.listdir(scenario.path))
                 )
                 ans = [
-                    int(subfolder_name.replace("MF_", "")) for subfolder_name in subfolder_names
+                    int(subfolder_name.replace("MF_", ""))
+                    for subfolder_name in subfolder_names
                 ]
             else:  # if no rolling horizon, single optimized year
                 ans = [0]
@@ -844,11 +861,15 @@ def get_doc(h5_file: h5py.File, component_name: str, version: str) -> str:
     Helper-function that returns the documentation of a h5-Group.
     """
     if check_if_v1_leq_v2(version, "v0"):
-        doc = str(np.char.decode(h5_file[component_name + "/docstring"].attrs.get("value")))
+        doc = str(
+            np.char.decode(h5_file[component_name + "/docstring"].attrs.get("value"))
+        )
     else:
         doc = h5_file[component_name].attrs["docstring"].decode()
     if ";" in doc and ":" in doc:
-        doc = "\n".join([f'{v.split(":")[0]}: {v.split(":")[1]}' for v in doc.split(";")])
+        doc = "\n".join(
+            [f'{v.split(":")[0]}: {v.split(":")[1]}' for v in doc.split(";")]
+        )
     return doc
 
 
@@ -892,14 +913,18 @@ def get_df_from_path(
     elif check_if_v1_leq_v2(version, "v2"):
         if data_type == "dataframe":
             try:
-                pd_read = pd.read_hdf(path, component_name, where=index, columns=["value"])
+                pd_read = pd.read_hdf(
+                    path, component_name, where=index, columns=["value"]
+                )
             except:
                 pd_read = pd.read_hdf(path, component_name, columns=["value"])
             # if isinstance(pd_read, pd.DataFrame):
             #     pd_read = pd_read["value"]
         elif data_type == "units":
             try:
-                pd_read = pd.read_hdf(path, component_name, where=index, columns=["units"])
+                pd_read = pd.read_hdf(
+                    path, component_name, where=index, columns=["units"]
+                )
             except:
                 try:
                     pd_read = pd.read_hdf(path, component_name, columns=["units"])

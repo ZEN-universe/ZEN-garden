@@ -45,8 +45,12 @@ class ConversionTechnology(Technology):
         # get reference carrier from class <Technology>
         super().store_carriers()
         # define input and output carrier
-        self.input_carrier = self.data_input.extract_carriers(carrier_type="input_carrier")
-        self.output_carrier = self.data_input.extract_carriers(carrier_type="output_carrier")
+        self.input_carrier = self.data_input.extract_carriers(
+            carrier_type="input_carrier"
+        )
+        self.output_carrier = self.data_input.extract_carriers(
+            carrier_type="output_carrier"
+        )
         self.energy_system.set_technology_of_carrier(
             self.name, self.input_carrier + self.output_carrier
         )
@@ -83,7 +87,9 @@ class ConversionTechnology(Technology):
         """retrieves and stores conversion_factor."""
         # df_input_linear, has_unit_linear = self.data_input.read_pwa_files("conversion_factor")
         dependent_carrier = list(
-            set(self.input_carrier + self.output_carrier).difference(self.reference_carrier)
+            set(self.input_carrier + self.output_carrier).difference(
+                self.reference_carrier
+            )
         )
         if not dependent_carrier:
             self.raw_time_series["conversion_factor"] = None
@@ -102,7 +108,9 @@ class ConversionTechnology(Technology):
             cf_dict = pd.DataFrame.from_dict(cf_dict)
             cf_dict.columns.name = "carrier"
             cf_dict = cf_dict.stack()
-            conversion_factor_levels = [cf_dict.index.names[-1]] + cf_dict.index.names[:-1]
+            conversion_factor_levels = [cf_dict.index.names[-1]] + cf_dict.index.names[
+                :-1
+            ]
             cf_dict = cf_dict.reorder_levels(conversion_factor_levels)
             # extract yearly variation
             self.data_input.extract_yearly_variation("conversion_factor", index_sets)
@@ -118,7 +126,9 @@ class ConversionTechnology(Technology):
             self.capex_specific_conversion = pwa_capex["capex"] * fraction_year
         else:
             self.pwa_capex = pwa_capex
-            self.pwa_capex["capex"] = [value * fraction_year for value in self.pwa_capex["capex"]]
+            self.pwa_capex["capex"] = [
+                value * fraction_year for value in self.pwa_capex["capex"]
+            ]
             # set bounds
             self.pwa_capex["bounds"]["capex"] = tuple(
                 [(bound * fraction_year) for bound in self.pwa_capex["bounds"]["capex"]]
@@ -139,7 +149,9 @@ class ConversionTechnology(Technology):
         if not self.capex_is_pwa:
             capex = self.capex_specific_conversion[index[0]].iloc[0] * capacity
         else:
-            capex = np.interp(capacity, self.pwa_capex["capacity"], self.pwa_capex["capex"])
+            capex = np.interp(
+                capacity, self.pwa_capex["capacity"], self.pwa_capex["capex"]
+            )
         return capex
 
     ### --- getter/setter classmethods
@@ -171,7 +183,9 @@ class ConversionTechnology(Technology):
         if not dict_of_attributes:
             _, index_names = cls.create_custom_set(index_names, optimization_setup)
             return dict_of_attributes, index_names, dict_of_units
-        dict_of_attributes = pd.concat(dict_of_attributes, keys=dict_of_attributes.keys())
+        dict_of_attributes = pd.concat(
+            dict_of_attributes, keys=dict_of_attributes.keys()
+        )
         if not index_names:
             warnings.warn(
                 "Initializing the parameter capex without the specifying the index names will be deprecated!",
@@ -179,7 +193,9 @@ class ConversionTechnology(Technology):
             )
             return dict_of_attributes, dict_of_units
         else:
-            custom_set, index_names = cls.create_custom_set(index_names, optimization_setup)
+            custom_set, index_names = cls.create_custom_set(
+                index_names, optimization_setup
+            )
             dict_of_attributes = optimization_setup.check_for_subindex(
                 dict_of_attributes, custom_set
             )
@@ -192,8 +208,12 @@ class ConversionTechnology(Technology):
 
         :param optimization_setup: The OptimizationSetup the element is part of"""
         # get input carriers
-        input_carriers = optimization_setup.get_attribute_of_all_elements(cls, "input_carrier")
-        output_carriers = optimization_setup.get_attribute_of_all_elements(cls, "output_carrier")
+        input_carriers = optimization_setup.get_attribute_of_all_elements(
+            cls, "input_carrier"
+        )
+        output_carriers = optimization_setup.get_attribute_of_all_elements(
+            cls, "output_carrier"
+        )
         reference_carrier = optimization_setup.get_attribute_of_all_elements(
             cls, "reference_carrier"
         )
@@ -260,7 +280,11 @@ class ConversionTechnology(Technology):
         # minimum annual average capacity factor
         optimization_setup.parameters.add_parameter(
             name="min_full_load_hours_fraction",
-            index_names=["set_conversion_technologies", "set_nodes", "set_time_steps_yearly"],
+            index_names=[
+                "set_conversion_technologies",
+                "set_nodes",
+                "set_time_steps_yearly",
+            ],
             doc="Minimum full load hours as a fraction of the total hours per planning period",
             calling_class=cls,
         )
@@ -314,13 +338,19 @@ class ConversionTechnology(Technology):
                         conversion_factor_upper = 1
                     else:
                         conversion_factor_lower = (
-                            params.conversion_factor.loc[tech, carrier, node_set].min().data
+                            params.conversion_factor.loc[tech, carrier, node_set]
+                            .min()
+                            .data
                         )
                         conversion_factor_upper = (
-                            params.conversion_factor.loc[tech, carrier, node_set].max().data
+                            params.conversion_factor.loc[tech, carrier, node_set]
+                            .max()
+                            .data
                         )
                         if 0 in conversion_factor_upper:
-                            _rounding_tsa = optimization_setup.solver.rounding_decimal_points_tsa
+                            _rounding_tsa = (
+                                optimization_setup.solver.rounding_decimal_points_tsa
+                            )
                             raise ValueError(
                                 f"Maximum conversion factor of {tech} for carrier {carrier} is 0.\nOne reason might be that the conversion factor is too small (1e-{_rounding_tsa}), so that it is rounded to 0 after the time series aggregation."
                             )
@@ -424,7 +454,12 @@ class ConversionTechnology(Technology):
 
         # capex
         set_pwa_capex = cls.create_custom_set(
-            ["set_conversion_technologies", "set_capex_pwa", "set_nodes", "set_time_steps_yearly"],
+            [
+                "set_conversion_technologies",
+                "set_capex_pwa",
+                "set_nodes",
+                "set_time_steps_yearly",
+            ],
             optimization_setup,
         )
         set_linear_capex = cls.create_custom_set(
@@ -532,13 +567,20 @@ class ConversionTechnologyRules(GenericRule):
         term_capacity = (
             self.parameters.max_load.loc[techs, nodes, :]
             * self.variables["capacity"].loc[techs, "power", nodes, time_step_year]
-        ).rename({"set_technologies": "set_conversion_technologies", "set_location": "set_nodes"})
+        ).rename(
+            {
+                "set_technologies": "set_conversion_technologies",
+                "set_location": "set_nodes",
+            }
+        )
         term_reference_flow = self.get_flow_expression_conversion(techs, nodes)
         lhs = term_capacity - term_reference_flow
         rhs = 0
         constraints = lhs >= rhs
 
-        self.constraints.add_constraint("constraint_capacity_factor_conversion", constraints)
+        self.constraints.add_constraint(
+            "constraint_capacity_factor_conversion", constraints
+        )
 
     def constraint_minimum_full_load_hours(self):
         """Sets minimum full load hours for each unit.
@@ -599,10 +641,17 @@ class ConversionTechnologyRules(GenericRule):
             * self.system.unaggregated_time_steps_per_year
             * self.variables["capacity"]
             .sel(
-                {"set_technologies": techs, "set_capacity_types": ["power"], "set_location": nodes}
+                {
+                    "set_technologies": techs,
+                    "set_capacity_types": ["power"],
+                    "set_location": nodes,
+                }
             )
             .rename(
-                {"set_technologies": "set_conversion_technologies", "set_location": "set_nodes"}
+                {
+                    "set_technologies": "set_conversion_technologies",
+                    "set_location": "set_nodes",
+                }
             )
         )
         term_annual_production = (
@@ -614,7 +663,9 @@ class ConversionTechnologyRules(GenericRule):
         rhs = 0
         constraints = lhs >= rhs
 
-        self.constraints.add_constraint("constraint_minimum_full_load_hours", constraints)
+        self.constraints.add_constraint(
+            "constraint_minimum_full_load_hours", constraints
+        )
 
     def constraint_opex_emissions_technology_conversion(self):
         """calculate opex and carbon emissions of each technology.
@@ -639,29 +690,45 @@ class ConversionTechnologyRules(GenericRule):
             techs,
             nodes,
             factor=self.parameters.opex_specific_variable.rename(
-                {"set_technologies": "set_conversion_technologies", "set_location": "set_nodes"}
+                {
+                    "set_technologies": "set_conversion_technologies",
+                    "set_location": "set_nodes",
+                }
             ),
         )
         term_reference_flow_emissions = self.get_flow_expression_conversion(
             techs,
             nodes,
             factor=self.parameters.carbon_intensity_technology.rename(
-                {"set_technologies": "set_conversion_technologies", "set_location": "set_nodes"}
+                {
+                    "set_technologies": "set_conversion_technologies",
+                    "set_location": "set_nodes",
+                }
             ),
         )
-        lhs_opex = (1 * self.variables["cost_opex_variable"].loc[techs, nodes, :]).rename(
-            {"set_technologies": "set_conversion_technologies", "set_location": "set_nodes"}
+        lhs_opex = (
+            1 * self.variables["cost_opex_variable"].loc[techs, nodes, :]
+        ).rename(
+            {
+                "set_technologies": "set_conversion_technologies",
+                "set_location": "set_nodes",
+            }
         ) - term_reference_flow_opex
         lhs_emissions = (
             1 * self.variables["carbon_emissions_technology"].loc[techs, nodes, :]
         ).rename(
-            {"set_technologies": "set_conversion_technologies", "set_location": "set_nodes"}
+            {
+                "set_technologies": "set_conversion_technologies",
+                "set_location": "set_nodes",
+            }
         ) - term_reference_flow_emissions
         rhs = 0
         constraints_opex = lhs_opex == rhs
         constraints_emissions = lhs_emissions == rhs
 
-        self.constraints.add_constraint("constraint_opex_technology_conversion", constraints_opex)
+        self.constraints.add_constraint(
+            "constraint_opex_technology_conversion", constraints_opex
+        )
         self.constraints.add_constraint(
             "constraint_carbon_emissions_technology_conversion", constraints_emissions
         )
@@ -683,7 +750,11 @@ class ConversionTechnologyRules(GenericRule):
                 old: new
                 for old, new in zip(
                     list(capex_specific_conversion.dims),
-                    ["set_conversion_technologies", "set_nodes", "set_time_steps_yearly"],
+                    [
+                        "set_conversion_technologies",
+                        "set_nodes",
+                        "set_time_steps_yearly",
+                    ],
                     strict=False,
                 )
             }
@@ -725,14 +796,20 @@ class ConversionTechnologyRules(GenericRule):
             self.variables["capacity_addition"]
             .loc[techs, "power", nodes]
             .rename(
-                {"set_technologies": "set_conversion_technologies", "set_location": "set_nodes"}
+                {
+                    "set_technologies": "set_conversion_technologies",
+                    "set_location": "set_nodes",
+                }
             )
         )
         cost_capex_overnight = (
             self.variables["cost_capex_overnight"]
             .loc[techs, "power", nodes]
             .rename(
-                {"set_technologies": "set_conversion_technologies", "set_location": "set_nodes"}
+                {
+                    "set_technologies": "set_conversion_technologies",
+                    "set_location": "set_nodes",
+                }
             )
         )
 
@@ -743,7 +820,9 @@ class ConversionTechnologyRules(GenericRule):
         constraints_capacity = lhs_capacity == rhs
         constraints_capex = lhs_capex == rhs
         ### return
-        self.constraints.add_constraint("constraint_capacity_coupling", constraints_capacity)
+        self.constraints.add_constraint(
+            "constraint_capacity_coupling", constraints_capacity
+        )
         self.constraints.add_constraint("constraint_capex_coupling", constraints_capex)
 
     def constraint_carrier_conversion(self):
@@ -785,7 +864,9 @@ class ConversionTechnologyRules(GenericRule):
         dc_in.index.names = ["set_conversion_technologies", "set_dependent_carriers"]
         dc_out.index.names = ["set_conversion_technologies", "set_dependent_carriers"]
         combined_dependent_index = xr.align(
-            flow_conversion_input_dep.lower, flow_conversion_output_dep.lower, join="outer"
+            flow_conversion_input_dep.lower,
+            flow_conversion_output_dep.lower,
+            join="outer",
         )[0]
         dc_in = align_like(dc_in.to_xarray(), combined_dependent_index, astype=bool)
         dc_out = align_like(dc_out.to_xarray(), combined_dependent_index, astype=bool)
@@ -796,14 +877,16 @@ class ConversionTechnologyRules(GenericRule):
             join="outer",
             cls=LinearExpression,
         ).where(dc)
-        conversion_factor = align_like(self.parameters.conversion_factor, term_flow_dependent)
+        conversion_factor = align_like(
+            self.parameters.conversion_factor, term_flow_dependent
+        )
         # reference carriers
         flow_conversion_input = self.variables["flow_conversion_input"].broadcast_like(
             conversion_factor
         )
-        flow_conversion_output = self.variables["flow_conversion_output"].broadcast_like(
-            conversion_factor
-        )
+        flow_conversion_output = self.variables[
+            "flow_conversion_output"
+        ].broadcast_like(conversion_factor)
         rc_in = pd.Series(
             {
                 (t, c): True if c in self.sets["set_reference_carriers"][t] else False
