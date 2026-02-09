@@ -1,5 +1,4 @@
-"""
-Class defining the parameters, variables and constraints that hold for all storage
+"""Class defining the parameters, variables and constraints that hold for all storage
 technologies. The class takes the abstract optimization model as an input, and returns
 the parameters, variables and constraints that hold for the storage technologies.
 """
@@ -15,8 +14,7 @@ from .technology import Technology
 
 
 class StorageTechnology(Technology):
-    """
-    Class defining storage technologies.
+    """Class defining storage technologies.
     """
 
     # set label
@@ -24,8 +22,7 @@ class StorageTechnology(Technology):
     location_type = "set_nodes"
 
     def __init__(self, tech, optimization_setup):
-        """
-        init storage technology object.
+        """Init storage technology object.
 
         :param tech: name of added technology
         :param optimization_setup: The OptimizationSetup the element is part of
@@ -35,15 +32,15 @@ class StorageTechnology(Technology):
         self.store_carriers()
 
     def store_carriers(self):
-        """retrieves and stores information on reference, input and output carriers."""
-
+        """Retrieves and stores information on reference, input and output carriers."""
         # get reference carrier from class <Technology>
         super().store_carriers()
 
     def store_input_data(self):
-        """retrieves and stores input data for element as attributes.
+        """Retrieves and stores input data for element as attributes.
 
-        Each Child class overwrites method to store different attributes."""
+        Each Child class overwrites method to store different attributes.
+        """
         # get attributes from class <Technology>
         super().store_input_data()
         # set attributes for parameters of child class <StorageTechnology>
@@ -137,10 +134,11 @@ class StorageTechnology(Technology):
         )
 
     def convert_to_fraction_of_capex(self):
-        """converts the capex and fixed opex to fraction of capex.
+        """Converts the capex and fixed opex to fraction of capex.
 
         this method converts the total capex to fraction of capex, depending on
-        how many hours per year are calculated."""
+        how many hours per year are calculated.
+        """
         fraction_year = self.calculate_fraction_of_year()
         self.opex_specific_fixed = self.opex_specific_fixed * fraction_year
         self.opex_specific_fixed_energy = (
@@ -152,7 +150,7 @@ class StorageTechnology(Technology):
         )
 
     def calculate_capex_of_single_capacity(self, capacity, index, storage_energy=False):
-        """this method calculates the annualized capex of a single existing capacity.
+        """This method calculates the annualized capex of a single existing capacity.
 
         :param capacity: capacity of storage technology
         :param index: index of capacity
@@ -171,16 +169,18 @@ class StorageTechnology(Technology):
     # that correspond to StorageTechnology --- ###
     @classmethod
     def construct_sets(cls, optimization_setup):
-        """constructs the pe.Sets of the class <StorageTechnology>.
+        """Constructs the pe.Sets of the class <StorageTechnology>.
 
-        :param optimization_setup: The OptimizationSetup the element is part of"""
+        :param optimization_setup: The OptimizationSetup the element is part of
+        """
         pass
 
     @classmethod
     def construct_params(cls, optimization_setup):
-        """constructs the pe.Params of the class <StorageTechnology>.
+        """Constructs the pe.Params of the class <StorageTechnology>.
 
-        :param optimization_setup: The OptimizationSetup the element is part of"""
+        :param optimization_setup: The OptimizationSetup the element is part of
+        """
         # energy to power ratio
         optimization_setup.parameters.add_parameter(
             name="energy_to_power_ratio_min",
@@ -250,20 +250,21 @@ class StorageTechnology(Technology):
 
     @classmethod
     def construct_vars(cls, optimization_setup):
-        """constructs the pe.Vars of the class <StorageTechnology>.
+        """Constructs the pe.Vars of the class <StorageTechnology>.
 
-        :param optimization_setup: The OptimizationSetup the element is part of"""
+        :param optimization_setup: The OptimizationSetup the element is part of
+        """
         model = optimization_setup.model
         variables = optimization_setup.variables
         sets = optimization_setup.sets
 
         def flow_storage_bounds(index_values, index_list):
-            """return bounds of carrier_flow for bigM expression.
+            """Return bounds of carrier_flow for bigM expression.
 
             :param index_values: list of tuples with the index values
             :param index_list: The names of the indices
-            :return bounds: bounds of carrier_flow"""
-
+            :return bounds: bounds of carrier_flow
+            """
             # get the arrays
             tech_arr, node_arr, time_arr = sets.tuple_to_arr(index_values, index_list)
             # convert operationTimeStep to time_step_year:
@@ -342,9 +343,10 @@ class StorageTechnology(Technology):
 
     @classmethod
     def construct_constraints(cls, optimization_setup):
-        """constructs the Constraints of the class <StorageTechnology>.
+        """Constructs the Constraints of the class <StorageTechnology>.
 
-        :param optimization_setup: The OptimizationSetup the element is part of"""
+        :param optimization_setup: The OptimizationSetup the element is part of
+        """
         rules = StorageTechnologyRules(optimization_setup)
         # limit flow by capacity and max load
         rules.constraint_capacity_factor_storage()
@@ -373,17 +375,14 @@ class StorageTechnology(Technology):
 
 
 class StorageTechnologyRules(GenericRule):
-    """
-    Rules for the StorageTechnology class.
+    """Rules for the StorageTechnology class.
     """
 
     def __init__(self, optimization_setup):
-        """
-        Inits the rules for a given EnergySystem.
+        """Inits the rules for a given EnergySystem.
 
         :param optimization_setup: The OptimizationSetup the element is part of
         """
-
         super().__init__(optimization_setup)
 
     def constraint_charge_discharge_binary(self):
@@ -505,7 +504,7 @@ class StorageTechnologyRules(GenericRule):
         )
 
     def constraint_opex_emissions_technology_storage(self):
-        """calculate opex of each technology.
+        """Calculate opex of each technology.
 
         .. math::
             O_{h,p,t}^\\mathrm{t} = \\beta_{h,p,t} (\\underline{H}_{k,n,t} +
@@ -566,7 +565,7 @@ class StorageTechnologyRules(GenericRule):
         )
 
     def constraint_storage_level_max(self):
-        """limit maximum storage level to capacity.
+        """Limit maximum storage level to capacity.
 
         .. math::
             L_{k,n,t^\\mathrm{k}} \\le S^\\mathrm{e}_{k,n,y}
@@ -602,7 +601,7 @@ class StorageTechnologyRules(GenericRule):
         self.constraints.add_constraint("constraint_storage_level_max", constraints)
 
     def constraint_capacity_energy_to_power_ratio(self):
-        """limit capacity power to energy ratio.
+        """Limit capacity power to energy ratio.
 
         .. math::
             \\rho_k^{min} S^{e}_{k,n,y} \\le S_{k,n,y}
@@ -618,7 +617,6 @@ class StorageTechnologyRules(GenericRule):
         :math:`\\rho_k^{max}`: maximum power-to-energy ratio of storage :math:`k`
 
         """
-
         techs = self.sets["set_storage_technologies"]
         if len(techs) == 0:
             return None
@@ -654,7 +652,7 @@ class StorageTechnologyRules(GenericRule):
         )
 
     def constraint_couple_storage_level(self):
-        """couple subsequent storage levels (time coupling constraints).
+        """Couple subsequent storage levels (time coupling constraints).
 
         .. math::
             L_{k,n,t^k,y} = L_{k,n,t^k-1,y} (1-\\phi_k)^{\\tau_{t^k}^k} +
@@ -740,7 +738,7 @@ class StorageTechnologyRules(GenericRule):
 
         .. math::
 
-            TODO
+        Todo:
 
         """
         techs = self.sets["set_storage_technologies"]
@@ -757,7 +755,7 @@ class StorageTechnologyRules(GenericRule):
         self.constraints.add_constraint("constraint_flow_storage_spillage", constraints)
 
     def constraint_storage_technology_capex(self):
-        """definition of the capital expenditures for the storage technology.
+        """Definition of the capital expenditures for the storage technology.
 
         .. math::
             CAPEX_{y,n,i} = \\Delta S_{h,p,y} \\alpha_{k,n,y}

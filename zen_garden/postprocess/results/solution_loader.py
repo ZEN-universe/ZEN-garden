@@ -1,5 +1,4 @@
-"""
-This module contains the implementation of a SolutionLoader that reads the solution.
+"""This module contains the implementation of a SolutionLoader that reads the solution.
 """
 
 import copy
@@ -34,8 +33,7 @@ class ComponentType(Enum):
 
     @classmethod
     def get_file_names_maps(cls) -> dict[str, "ComponentType"]:
-        """
-        Method that returns a dictionary that maps the file names to the 
+        """Method that returns a dictionary that maps the file names to the
         component types.
         """
         return {
@@ -53,16 +51,14 @@ class TimestepType(Enum):
 
     @classmethod
     def get_time_steps_names(cls) -> list[str]:
-        """
-        Method that returns a list of timestep names.
+        """Method that returns a list of timestep names.
         :return: get_time_steps_names.
         """
         return [time_step_type.value for time_step_type in cls]
 
     @classmethod
     def get_time_step_type(cls, time_step: str) -> Optional["TimestepType"]:
-        """
-        Method that returns the timestep type given a timestep name.
+        """Method that returns the timestep type given a timestep name.
         :param time_step: The name of the timestep.
         :return: The timestep type.
         """
@@ -73,8 +69,7 @@ class TimestepType(Enum):
 
 
 class Component:
-    """
-    Class that defines a component.
+    """Class that defines a component.
     """
 
     def __init__(
@@ -131,8 +126,7 @@ class Component:
 
 
 class Scenario:
-    """
-    Implementation of the scenario. In this solution version, the analysis and
+    """Implementation of the scenario. In this solution version, the analysis and
     system configs are stored as jsons for each of the scenario in the 
     corresponding folder.
     """
@@ -200,7 +194,7 @@ class Scenario:
     def convert_ts2year(
         self, df: ["pd.DataFrame", "pd.Series"]
     ) -> ["pd.DataFrame", "pd.Series"]:
-        """converts the yearly ts column to the corresponding year."""
+        """Converts the yearly ts column to the corresponding year."""
         df = df.copy()
         if isinstance(df, pd.Series):
             year_index = df.index
@@ -220,7 +214,7 @@ class Scenario:
         return df
 
     def convert_year2ts(self, year: int) -> int:
-        """converts the year to the corresponding time step."""
+        """Converts the year to the corresponding time step."""
         assert isinstance(year, int), (f"Year must be an integer, not "
             f"{type(year)}.")
         ry = self.system.reference_year
@@ -244,8 +238,7 @@ class Scenario:
         return ts
 
     def _read_components(self) -> dict[str, list[str]]:
-        """
-        Create the component instances.
+        """Create the component instances.
 
         The components are stored in three files and the file-names define 
         the types of the component. Furthermore, the timestep name and type 
@@ -329,8 +322,7 @@ class Scenario:
         return self._exists
 
     def get_component(self, component_name: str) -> Component:
-        """
-        Method that returns a component given its name.
+        """Method that returns a component given its name.
         :param component_name: The name of the component.
         :return: The component.
         """
@@ -372,8 +364,7 @@ class Scenario:
 
 
 class SolutionLoader:
-    """
-    Implementation of a SolutionLoader.
+    """Implementation of a SolutionLoader.
     """
 
     def __init__(self, path: str, enable_cache: bool = True) -> None:
@@ -412,8 +403,7 @@ class SolutionLoader:
         scenario: Scenario,
         pd_dict: dict[int, "pd.Series[Any]"],
     ) -> "pd.DataFrame | pd.Series[Any]":
-        """
-        Method that combines the values when a solution is created without 
+        """Method that combines the values when a solution is created without
         perfect foresight given a component, a scenario and a dictionary 
         containing the name of the MF-data (Format: "MF_{year}").
         """
@@ -461,8 +451,7 @@ class SolutionLoader:
         self,
         pd_dict: dict[int, "pd.Series[Any]"],
     ) -> "pd.DataFrame | pd.Series[Any]":
-        """
-        Method that concatenates the raw values when a solution is created 
+        """Method that concatenates the raw values when a solution is created
         without perfect foresight given a component, a scenario and a 
         dictionary containing the name of the MF-data (Format: "MF_{year}"). 
         The raw values are not combined, i.e., the data is kept for all the 
@@ -484,8 +473,7 @@ class SolutionLoader:
         data_type: Literal["dataframe", "units"] = "dataframe",
         index=None,
     ) -> "pd.DataFrame | pd.Series[Any]":
-        """
-        Returns the actual component values given
+        """Returns the actual component values given
         a component and a scenario. Already combines the yearly data if the 
         solution does not use perfect foresight, unless explicitly desired 
         otherwise (keep_raw = True).
@@ -531,8 +519,7 @@ class SolutionLoader:
             return ans
 
     def _read_scenarios(self) -> dict[str, Scenario]:
-        """
-        Create the scenario instances. The definitions of the scenarios are 
+        """Create the scenario instances. The definitions of the scenarios are
         stored in the scenarios.json files. If the solution does not have 
         multiple scenarios, we store the solution as "none".
         """
@@ -574,8 +561,7 @@ class SolutionLoader:
     def get_timestep_duration(
         self, scenario: Scenario, component: Component
     ) -> "pd.Series[Any]":
-        """
-        The timestep duration is stored as any other component, the only thing 
+        """The timestep duration is stored as any other component, the only thing
         is to define the correct name depending on the component timestep type.
         """
         if component.timestep_type is TimestepType.operational:
@@ -608,8 +594,7 @@ class SolutionLoader:
     def get_timesteps(
         self, scenario: Scenario, component: Component, year: int
     ) -> "pd.Series[Any]":
-        """
-        THe timesteps are stored in a file HDF-File called 
+        """THe timesteps are stored in a file HDF-File called
         dict_all_sequence_time_steps saved for each scenario. The name of the 
         dataframe depends on the timestep type.
         """
@@ -646,8 +631,7 @@ class SolutionLoader:
     def get_timesteps_of_years(
         self, scenario: Scenario, ts_type: TimestepType, years: tuple
     ) -> "pd.DataFrame | pd.Series[Any]":
-        """
-        Method that returns the timesteps of the scenario for a given year.
+        """Method that returns the timesteps of the scenario for a given year.
         """
         sequence_time_steps_name = _get_time_steps_file(scenario)
         version = get_solution_version(scenario)
@@ -684,8 +668,7 @@ class SolutionLoader:
     def get_sequence_time_steps(
         self, scenario: Scenario, timestep_type: TimestepType
     ) -> "pd.Series[Any]":
-        """
-        Method that returns the sequence time steps of a scenario.
+        """Method that returns the sequence time steps of a scenario.
 
         Args:
             scenario 
@@ -719,8 +702,7 @@ class SolutionLoader:
         return ans
 
     def get_optimized_years(self, scenario: Scenario) -> list[int]:
-        """
-        Method that returns the years for which the solution was optimized.
+        """Method that returns the years for which the solution was optimized.
         """
         time_steps_file_name = _get_time_steps_file(scenario)
 
@@ -763,8 +745,7 @@ class SolutionLoader:
         self,
         scenario: Scenario,
     ) -> dict[int, int]:
-        """
-        Return time steps that define the start and end of the storage level.
+        """Return time steps that define the start and end of the storage level.
 
         :param scenario: scenario name.
         """
@@ -793,8 +774,7 @@ class SolutionLoader:
 
 #### Helper functions
 def get_first_scenario(scenarios: dict[str, Scenario]) -> Scenario:
-    """
-    Helper-function that returns the first scenario of a dictionary of scenarios.
+    """Helper-function that returns the first scenario of a dictionary of scenarios.
     :param scenarios: The dictionary of scenarios.
 
     :return: The first scenario of the dictionary.
@@ -803,8 +783,7 @@ def get_first_scenario(scenarios: dict[str, Scenario]) -> Scenario:
 
 
 def get_solution_version(scenario: Scenario) -> str:
-    """
-    Helper-function that checks the version of the solution.
+    """Helper-function that checks the version of the solution.
     The order in versions is important as the highest version should be checked 
     last {v1,v2,...}.
 
@@ -822,8 +801,7 @@ def get_solution_version(scenario: Scenario) -> str:
 
 
 def check_if_v1_leq_v2(version1: str, version2: str) -> bool:
-    """
-    Helper-function that compares two versions.
+    """Helper-function that compares two versions.
 
     The comparison is done by checking if version1 <= version2.
     Each version is a string of *.*.* format, where the number of positions is 
@@ -850,10 +828,8 @@ def check_if_v1_leq_v2(version1: str, version2: str) -> bool:
 
 
 def get_index_names(h5_file: h5py.File, component_name: str, version: str) -> list[str]:
+    """Helper-function that returns the pandas dataframe index names of a h5-Group.
     """
-    Helper-function that returns the pandas dataframe index names of a h5-Group.
-    """
-
     if check_if_v1_leq_v2(version, "v0"):
         h5_group = h5_file[component_name + "/dataframe"]
         ans = []
@@ -873,8 +849,7 @@ def get_index_names(h5_file: h5py.File, component_name: str, version: str) -> li
 
 
 def get_doc(h5_file: h5py.File, component_name: str, version: str) -> str:
-    """
-    Helper-function that returns the documentation of a h5-Group.
+    """Helper-function that returns the documentation of a h5-Group.
     """
     if check_if_v1_leq_v2(version, "v0"):
         doc = str(
@@ -890,8 +865,7 @@ def get_doc(h5_file: h5py.File, component_name: str, version: str) -> str:
 
 
 def get_has_units(h5_file: h5py.File, component_name: str, version: str) -> bool:
-    """
-    Helper-function that returns a boolean indicating if the component has 
+    """Helper-function that returns a boolean indicating if the component has
     units.
     """
     if check_if_v1_leq_v2(version, "v0"):
@@ -914,8 +888,7 @@ def get_df_from_path(
     data_type: Literal["dataframe", "units"] = "dataframe",
     index: Optional[tuple[str]] = None,
 ) -> "pd.Series[Any]":
-    """
-    Helper-function that returns a Pandas series given the path of a file and 
+    """Helper-function that returns a Pandas series given the path of a file and
     the component name.
     """
     if index is None:
@@ -983,8 +956,7 @@ def get_df_from_path(
 
 
 def _get_time_steps_file(scenario):
-    """
-    Helper-function that returns the name of the time steps file of a scenario.
+    """Helper-function that returns the name of the time steps file of a scenario.
     :param scenario:
     :return: time_steps_file_name.
     """

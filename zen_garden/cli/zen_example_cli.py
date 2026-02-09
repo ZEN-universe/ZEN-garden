@@ -5,8 +5,7 @@ from zen_garden.utils import download_example_dataset
 
 
 def create_zen_example_cli():
-    """
-    Entry point for the `zen-example` command-line interface.
+    """Entry point for the `zen-example` command-line interface.
 
     Creates a command line interface for downloading the dataset examples.
     The function parses a single required argument ``--dataset`` that

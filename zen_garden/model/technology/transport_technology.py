@@ -1,5 +1,4 @@
-"""
-Class defining the parameters, variables and constraints that hold for all transport
+"""Class defining the parameters, variables and constraints that hold for all transport
 technologies. The class takes the abstract optimization model as an input, and returns
 the parameters, variables and constraints that hold for the transport technologies.
 """
@@ -18,11 +17,11 @@ class TransportTechnology(Technology):
     location_type = "set_edges"
 
     def __init__(self, tech: str, optimization_setup):
-        """init transport technology object.
+        """Init transport technology object.
 
         :param tech: name of added technology
-        :param optimization_setup: The OptimizationSetup the element is part of"""
-
+        :param optimization_setup: The OptimizationSetup the element is part of
+        """
         super().__init__(tech, optimization_setup)
         # dict of reversed edges
         self.dict_reversed_edges = {}
@@ -30,14 +29,15 @@ class TransportTechnology(Technology):
         self.store_carriers()
 
     def store_carriers(self):
-        """retrieves and stores information on reference, input and output carriers."""
+        """Retrieves and stores information on reference, input and output carriers."""
         # get reference carrier from class <Technology>
         super().store_carriers()
 
     def store_input_data(self):
-        """retrieves and stores input data for element as attributes.
+        """Retrieves and stores input data for element as attributes.
 
-        Each Child class overwrites method to store different attributes."""
+        Each Child class overwrites method to store different attributes.
+        """
         # get attributes from class <Technology>
         super().store_input_data()
         # set attributes for parameters of child class <TransportTechnology>
@@ -63,7 +63,7 @@ class TransportTechnology(Technology):
         self.capex_capacity_existing = self.calculate_capex_of_capacities_existing()
 
     def get_transport_loss_factor(self):
-        """get transport loss factor."""
+        """Get transport loss factor."""
         # check which transport loss factor is used
         assert not (
             "transport_loss_factor_linear" in self.data_input.attribute_dict
@@ -95,7 +95,7 @@ class TransportTechnology(Technology):
             )
 
     def get_capex_transport(self):
-        """get capex of transport technology."""
+        """Get capex of transport technology."""
         # check if there are separate capex for capacity and distance
         if self.optimization_setup.system.double_capex_transport:
             # both capex terms must be specified
@@ -173,7 +173,8 @@ class TransportTechnology(Technology):
         """Converts total capex to fraction of capex.
 
         this method converts the total capex to fraction of capex, depending on how
-        many hours per year are calculated."""
+        many hours per year are calculated.
+        """
         fraction_year = self.calculate_fraction_of_year()
         self.opex_specific_fixed = self.opex_specific_fixed * fraction_year
         self.capex_specific_transport = self.capex_specific_transport * fraction_year
@@ -182,7 +183,7 @@ class TransportTechnology(Technology):
         )
 
     def calculate_capex_of_single_capacity(self, capacity, index):
-        """this method calculates the capex of a single existing capacity.
+        """This method calculates the capex of a single existing capacity.
 
         :param capacity: capacity of transport technology
         :param index: index of capacity
@@ -203,7 +204,7 @@ class TransportTechnology(Technology):
 
     ### --- getter/setter classmethods
     def set_reversed_edge(self, edge, reversed_edge):
-        """maps the reversed edge to an edge.
+        """Maps the reversed edge to an edge.
 
         :param edge: edge
         :param reversed_edge: reversed edge
@@ -211,7 +212,7 @@ class TransportTechnology(Technology):
         self.dict_reversed_edges[edge] = reversed_edge
 
     def get_reversed_edge(self, edge):
-        """get the reversed edge corresponding to an edge.
+        """Get the reversed edge corresponding to an edge.
 
         :param edge: edge
         :return: reversed edge
@@ -222,17 +223,18 @@ class TransportTechnology(Technology):
     # that correspond to TransportTechnology --- ###
     @classmethod
     def construct_sets(cls, optimization_setup):
-        """constructs the pe.Sets of the class <TransportTechnology>.
+        """Constructs the pe.Sets of the class <TransportTechnology>.
 
-        :param optimization_setup: The OptimizationSetup the element is part of"""
+        :param optimization_setup: The OptimizationSetup the element is part of
+        """
         pass
 
     @classmethod
     def construct_params(cls, optimization_setup):
-        """constructs the pe.Params of the class <TransportTechnology>.
+        """Constructs the pe.Params of the class <TransportTechnology>.
 
-        :param optimization_setup: The OptimizationSetup the element is part of"""
-
+        :param optimization_setup: The OptimizationSetup the element is part of
+        """
         # distance between nodes
         optimization_setup.parameters.add_parameter(
             name="distance",
@@ -272,20 +274,21 @@ class TransportTechnology(Technology):
 
     @classmethod
     def construct_vars(cls, optimization_setup):
-        """constructs the pe.Vars of the class <TransportTechnology>.
+        """Constructs the pe.Vars of the class <TransportTechnology>.
 
-        :param optimization_setup: The OptimizationSetup the element is part of"""
+        :param optimization_setup: The OptimizationSetup the element is part of
+        """
         model = optimization_setup.model
         variables = optimization_setup.variables
         sets = optimization_setup.sets
 
         def flow_transport_bounds(index_values, index_list):
-            """return bounds of carrier_flow for bigM expression.
+            """Return bounds of carrier_flow for bigM expression.
 
             :param index_values: list of tuples with the index values
             :param index_list: The names of the indices
-            :return bounds: bounds of carrier_flow"""
-
+            :return bounds: bounds of carrier_flow
+            """
             # get the arrays
             tech_arr, edge_arr, time_arr = sets.tuple_to_arr(index_values, index_list)
             # convert operationTimeStep to time_step_year:
@@ -334,9 +337,10 @@ class TransportTechnology(Technology):
 
     @classmethod
     def construct_constraints(cls, optimization_setup):
-        """constructs the Constraints of the class <TransportTechnology>.
+        """Constructs the Constraints of the class <TransportTechnology>.
 
-        :param optimization_setup: The OptimizationSetup the element is part of"""
+        :param optimization_setup: The OptimizationSetup the element is part of
+        """
         rules = TransportTechnologyRules(optimization_setup)
 
         # limit flow by capacity and max load
@@ -353,17 +357,14 @@ class TransportTechnology(Technology):
 
 
 class TransportTechnologyRules(GenericRule):
-    """
-    Rules for the TransportTechnology class.
+    """Rules for the TransportTechnology class.
     """
 
     def __init__(self, optimization_setup):
-        """
-        Inits the rules for a given EnergySystem.
+        """Inits the rules for a given EnergySystem.
 
         :param optimization_setup: The OptimizationSetup the element is part of
         """
-
         super().__init__(optimization_setup)
 
     def constraint_capacity_factor_transport(self):
@@ -411,7 +412,7 @@ class TransportTechnologyRules(GenericRule):
         )
 
     def constraint_opex_emissions_technology_transport(self):
-        """calculate opex of each technology.
+        """Calculate opex of each technology.
 
         .. math::
             O_{j,t,y}^\\mathrm{t} = \\beta_{j,y} F_{j,e,t,y}
@@ -474,7 +475,7 @@ class TransportTechnologyRules(GenericRule):
         )
 
     def constraint_transport_technology_losses_flow(self):
-        """compute the flow losses for a carrier through a transport technology.
+        """Compute the flow losses for a carrier through a transport technology.
 
         .. math::
             \\mathrm{if transport distance set to inf:} F^\\mathrm{l}_{j,e,t} = 0
@@ -490,7 +491,6 @@ class TransportTechnologyRules(GenericRule):
         technology :math:`j` on edge :math:`e` at time :math:`t`
 
         """
-
         if len(self.sets["set_transport_technologies"]) == 0:
             return
         flow_transport = self.variables["flow_transport"]
@@ -511,7 +511,7 @@ class TransportTechnologyRules(GenericRule):
         )
 
     def constraint_transport_technology_capex(self):
-        """definition of the capital expenditures for the transport technology.
+        """Definition of the capital expenditures for the transport technology.
 
         .. math::
             \\mathrm{if transport distance set to inf:} \\Delta S_{j,e,y} = 0
@@ -532,7 +532,6 @@ class TransportTechnologyRules(GenericRule):
         edge :math:`e`
 
         """
-
         ### index sets
         index_values, index_list = Element.create_custom_set(
             ["set_transport_technologies", "set_edges", "set_time_steps_yearly"],

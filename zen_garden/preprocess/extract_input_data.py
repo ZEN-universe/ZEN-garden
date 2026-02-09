@@ -1,5 +1,4 @@
-"""
-Functions to extract the input data from the provided input files.
+"""Functions to extract the input data from the provided input files.
 """
 
 import copy
@@ -14,8 +13,7 @@ from scipy.stats import linregress
 
 
 class DataInput:
-    """
-    Class to extract input data.
+    """Class to extract input data.
     """
 
     def __init__(
@@ -28,14 +26,15 @@ class DataInput:
         unit_handling,
         optimization_setup=None,
     ):
-        """data input object to extract input data.
+        """Data input object to extract input data.
 
         :param element: element for which data is extracted
         :param system: dictionary defining the system
         :param analysis: dictionary defining the analysis framework
         :param solver: dictionary defining the solver
         :param energy_system: instance of class <EnergySystem> to define energy_system
-        :param unit_handling: instance of class <UnitHandling> to convert units"""
+        :param unit_handling: instance of class <UnitHandling> to convert units
+        """
         self.element = element
         self.system = system
         self.analysis = analysis
@@ -55,8 +54,7 @@ class DataInput:
     def extract_input_data(
         self, file_name, index_sets, unit_category, time_steps=None, subelement=None
     ):
-        """
-        reads input data and restructures the dataframe to return 
+        """Reads input data and restructures the dataframe to return
         (multi)indexed dict.
 
         Args:
@@ -67,10 +65,9 @@ class DataInput:
             time_steps: string specifying time_steps
             subelement: string specifying dependent element
         
-        Returns: 
+        Returns:
             dictionary with attribute values    
         """
-
         # generic time steps
         yearly_variation = False
         if not time_steps:
@@ -176,7 +173,7 @@ class DataInput:
     def extract_general_input_data(
         self, df_input, df_output, file_name, index_name_list, default_value, time_steps
     ):
-        """fills df_output with data from df_input.
+        """Fills df_output with data from df_input.
 
         :param df_input: raw input dataframe
         :param df_output: empty output dataframe, only filled with default_value
@@ -184,7 +181,8 @@ class DataInput:
         :param index_name_list: list of name of indices
         :param default_value: default for dataframe
         :param time_steps: specific time_steps of element
-        :return df_output: filled output dataframe"""
+        :return df_output: filled output dataframe
+        """
         df_output_copy = copy.deepcopy(df_output)
         df_input = self.convert_real_to_generic_time_indices(
             df_input, time_steps, file_name, index_name_list
@@ -263,11 +261,11 @@ class DataInput:
         return df_output_copy
 
     def read_input_csv(self, input_file_name):
-        """reads input data and returns raw input dataframe.
+        """Reads input data and returns raw input dataframe.
 
         :param input_file_name: name of selected file
-        :return df_input: pd.DataFrame with input data"""
-
+        :return df_input: pd.DataFrame with input data
+        """
         # append .csv suffix
         input_file_name += ".csv"
 
@@ -291,11 +289,11 @@ class DataInput:
             return None
 
     def read_input_json(self, input_file_name):
-        """reads json input data and returns a dict.
+        """Reads json input data and returns a dict.
 
         :param input_file_name: name of selected file
-        :return data: dict with input data"""
-
+        :return data: dict with input data
+        """
         input_file_name += ".json"
 
         file_names = os.listdir(self.folder_path)
@@ -307,8 +305,7 @@ class DataInput:
             return None
 
     def load_attribute_file(self, filename="attributes"):
-        """
-        loads attribute file. Either as csv (old version) or json (new version)
+        """Loads attribute file. Either as csv (old version) or json (new version)
         :param filename: name of attributes file, default is 'attributes'
         :return: attribute_dict.
         """
@@ -327,7 +324,7 @@ class DataInput:
         return attribute_dict
 
     def _load_attribute_file_json(self, filename):
-        """loads json attributes file.
+        """Loads json attributes file.
 
         :param filename:
         :return: attributes
@@ -358,11 +355,12 @@ class DataInput:
         return attribute_dict
 
     def get_attribute_dict(self, attribute_name):
-        """get attribute dict and factor for attribute.
+        """Get attribute dict and factor for attribute.
 
         :param attribute_name: name of selected attribute
         :return attribute_dict: attribute dict
-        :return factor: factor for attribute"""
+        :return factor: factor for attribute
+        """
         if self.scenario_dict is not None:
             filename, factor = self.scenario_dict.get_default(
                 self.element.name, attribute_name
@@ -379,8 +377,7 @@ class DataInput:
     def extract_attribute(
         self, attribute_name, unit_category, return_unit=False, subelement=None
     ):
-        """
-        Reads input data and restructures the dataframe to return 
+        """Reads input data and restructures the dataframe to return
         (multi)indexed dict.
 
         :param attribute_name: name of selected attribute
@@ -388,7 +385,8 @@ class DataInput:
         :param return_unit: only returns unit
         :param subelement: dependent element for which data is extracted
         :return: attribute value and multiplier
-        :return: unit of attribute"""
+        :return: unit of attribute
+        """
         attribute_dict, factor = self.get_attribute_dict(attribute_name)
         attribute_value, attribute_unit = self._extract_attribute_value(
             attribute_name, attribute_dict
@@ -459,7 +457,7 @@ class DataInput:
             return None
 
     def _extract_attribute_value(self, attribute_name, attribute_dict):
-        """reads attribute value from dict.
+        """Reads attribute value from dict.
 
         :param attribute_name: name of selected attribute
         :param attribute_dict: name of selected attribute
@@ -538,8 +536,7 @@ class DataInput:
         default_value,
         df_output_generic,
     ):
-        """
-        reads and saves the year specific time series data. The year specific 
+        """Reads and saves the year specific time series data. The year specific
         time series are saved in the dictionary 
         self.optimization_setup.year_specific_ts.
 
@@ -597,7 +594,7 @@ class DataInput:
                         ] = (df_output_specific * scenario_factor)
 
     def extract_yearly_variation(self, file_name, index_sets):
-        """reads the yearly variation of a time dependent quantity.
+        """Reads the yearly variation of a time dependent quantity.
 
         Args:
             file_name: name of selected file.
@@ -644,7 +641,7 @@ class DataInput:
             setattr(self, name_yearly_variation, df_output)
 
     def extract_locations(self, extract_nodes=True, extract_coordinates=False):
-        """reads input data to extract nodes or edges.
+        """Reads input data to extract nodes or edges.
 
         Args"
             extract_nodes: boolean to switch between nodes and edges
@@ -706,9 +703,9 @@ class DataInput:
                 )
 
     def extract_carriers(self, carrier_type):
-        """reads input data and extracts conversion carriers.
+        """Reads input data and extracts conversion carriers.
 
-        Returns
+        Returns:
             list: list with input, output or reference carriers of technology
         """
         assert carrier_type in [
@@ -728,7 +725,7 @@ class DataInput:
         return carrier_list
 
     def extract_retrofit_base_technology(self):
-        """extract base technologies for retrofitting technology.
+        """Extract base technologies for retrofitting technology.
 
         :return base_technology: return base technology of retrofit technology
         """
@@ -745,13 +742,15 @@ class DataInput:
         return base_technology
 
     def extract_set_technologies_existing(self, storage_energy=False):
-        """reads input data and creates setExistingCapacity for each technology.
+        """Reads input data and creates setExistingCapacity for each technology.
 
         Args:
             storage_energy: boolean if existing energy capacity of storage 
                 technology (instead of power)
+
         Returns:
-            set_technologies_existing: return set existing technologies"""
+            set_technologies_existing: return set existing technologies
+        """
         # TODO merge changes in extract input data and optimization setup
         set_technologies_existing = np.array([0])
         if self.system.use_capacities_existing:
@@ -778,8 +777,7 @@ class DataInput:
         return set_technologies_existing
 
     def extract_lifetime_existing(self, file_name, index_sets):
-        """
-        Reads input data and restructures the dataframe to return 
+        """Reads input data and restructures the dataframe to return
         (multi)indexed dict.
 
         Args:
@@ -818,8 +816,7 @@ class DataInput:
         return df_output * scenario_factor
 
     def extract_pwa_capex(self):
-        """
-        Reads input data and restructures the dataframe to return 
+        """Reads input data and restructures the dataframe to return
         (multi)indexed dict.
 
         :return pwa_dict: dictionary with pwa parameters
@@ -962,9 +959,10 @@ class DataInput:
             return linear_dict, is_pwa
 
     def read_pwa_capex_files(self):
-        """reads pwa files.
+        """Reads pwa files.
 
-        :return df_input: raw input file"""
+        :return df_input: raw input file
+        """
         df_input = self.read_input_csv("nonlinear_capex")
         has_unit = False
         if df_input is not None:
@@ -1003,8 +1001,7 @@ class DataInput:
         manual_default_value=None,
         subelement=None,
     ):
-        """
-        Creates default output dataframe.
+        """Creates default output dataframe.
 
         Args:
             index_sets: index sets of attribute. Creates (multi)index. 
@@ -1054,8 +1051,7 @@ class DataInput:
         return df_output, default_value, index_name_list
 
     def construct_index_list(self, index_sets, time_steps):
-        """
-        Constructs index list from index sets and returns list of indices and 
+        """Constructs index list from index sets and returns list of indices and
         list of index names.
 
         Args:
@@ -1085,7 +1081,7 @@ class DataInput:
     def convert_real_to_generic_time_indices(
         self, df_input, time_steps, file_name, index_name_list
     ):
-        """convert yearly time indices to generic time indices.
+        """Convert yearly time indices to generic time indices.
 
         :param df_input: raw input dataframe
         :param time_steps: specific time_steps of element
@@ -1259,8 +1255,7 @@ class DataInput:
 
     @staticmethod
     def extract_from_input_without_missing_index(df_input, index_name_list, file_name):
-        """
-        Extracts the demanded values from Input dataframe and
+        """Extracts the demanded values from Input dataframe and
         reformulates dataframe.
 
         :param df_input: raw input dataframe
@@ -1281,8 +1276,7 @@ class DataInput:
     def extract_from_input_with_missing_index(
         df_input, df_output, index_name_list, file_name, missing_index
     ):
-        """
-        Extracts the demanded values from Input dataframe and reformulates 
+        """Extracts the demanded values from Input dataframe and reformulates
         dataframe if the index is missing. Either, the missing index is 
         the column of df_input, or it is actually missing in df_input.
         Then, the values in df_input are extended to all missing index 
@@ -1353,8 +1347,7 @@ class DataInput:
     def extract_from_input_for_capacities_existing(
         df_input, df_output, index_name_list, column, missing_index
     ):
-        """
-        Extracts the demanded values from input dataframe if extracting 
+        """Extracts the demanded values from input dataframe if extracting
         existing capacities.
 
         :param df_input: raw input dataframe

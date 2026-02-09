@@ -1,5 +1,4 @@
-"""
-Class defining the optimization model.
+"""Class defining the optimization model.
 
 The class takes as inputs the properties of the optimization problem. The 
 properties are saved in the dictionaries analysis and system which are passed 
@@ -41,8 +40,7 @@ class OptimizationSetup(object):
     dict_element_classes = {}
 
     def __init__(self, config, scenario_dict: dict, input_data_checks):
-        """
-        Setup optimization of the energy system.
+        """Setup optimization of the energy system.
 
         This function sets up the optimization process for the energy system 
         using the provided configuration, scenario data, and input data checks.
@@ -132,8 +130,7 @@ class OptimizationSetup(object):
         )
 
     def create_paths(self):
-        """
-        This method creates a dictionary with the paths of the data split
+        """This method creates a dictionary with the paths of the data split
         by carriers, networks, technologies.
         """
         ## General Paths
@@ -168,7 +165,7 @@ class OptimizationSetup(object):
                             )
 
     def add_folder_paths(self, set_name, path, subsets=None):
-        """add file paths of element to paths dictionary.
+        """Add file paths of element to paths dictionary.
 
         :param set_name: name of set
         :param path: path to folder
@@ -266,7 +263,7 @@ class OptimizationSetup(object):
                 self.add_element(element_class, item)
 
     def read_input_csv(self):
-        """read the input and conducts the time series aggregation."""
+        """Read the input and conducts the time series aggregation."""
         logging.info("\n--- Read input data of elements --- \n")
         self.energy_system.store_input_data()
         for element in self.dict_elements["Element"]:
@@ -279,10 +276,9 @@ class OptimizationSetup(object):
             element.store_input_data()
 
     def add_element(self, element_class, name):
-        """
-        Add an element to the element_dict with the class labels as key.
+        """Add an element to the element_dict with the class labels as key.
 
-        Args: 
+        Args:
             element_class: Class of the element
             name: Name of the element
         """
@@ -296,11 +292,11 @@ class OptimizationSetup(object):
                 self.dict_elements[cls.__name__].append(instance)
 
     def get_all_elements(self, cls):
-        """get all elements of the class in the energy system."""
+        """Get all elements of the class in the energy system."""
         return self.dict_elements[cls.__name__]
 
     def get_all_names_of_elements(self, cls):
-        """get all names of elements in class.
+        """Get all names of elements in class.
 
         :param cls: class of the elements to return
         :return names_of_elements: list of elements in this class
@@ -312,21 +308,23 @@ class OptimizationSetup(object):
         return names_of_elements
 
     def get_element(self, cls, name: str):
-        """get single element in class by name.
+        """Get single element in class by name.
 
         :param name: name of element
         :param cls: class of the elements to return
-        :return element: return element whose name is matched"""
+        :return element: return element whose name is matched
+        """
         for element in self.get_all_elements(cls=cls):
             if element.name == name:
                 return element
         return None
 
     def get_element_class(self, name: str):
-        """get element class by name. If not an element class, return None.
+        """Get element class by name. If not an element class, return None.
 
         :param name: name of element class
-        :return element_class: return element whose name is matched"""
+        :return element_class: return element whose name is matched
+        """
         element_classes = {
             self.dict_element_classes[class_name].label: self.dict_element_classes[
                 class_name
@@ -339,11 +337,12 @@ class OptimizationSetup(object):
             return None
 
     def get_class_set_of_element(self, element_name: str, klass):
-        """returns the set of all elements in the class of the element.
+        """Returns the set of all elements in the class of the element.
 
         :param element_name: name of element
         :param klass: class of the elements to return
-        :return class_set: set of all elements in the class of the element"""
+        :return class_set: set of all elements in the class of the element
+        """
         class_name = self.get_element(klass, element_name).__class__.label
         class_set = self.sets[class_name]
         return class_set
@@ -355,7 +354,7 @@ class OptimizationSetup(object):
         capacity_types=False,
         return_attribute_is_series=False,
     ):
-        """get attribute values of all elements in a class.
+        """Get attribute values of all elements in a class.
 
         Args:
             cls: class of the elements to return
@@ -366,7 +365,6 @@ class OptimizationSetup(object):
             dict_of_attributes (dict): dict of attribute values
             attribute_is_series: return information on attribute type
         """
-
         class_elements = self.get_all_elements(cls=cls)
         dict_of_attributes = {}
         dict_of_units = {}
@@ -412,9 +410,9 @@ class OptimizationSetup(object):
         dict_of_units,
         capacity_type=None,
     ):
-        """get attribute values of all elements in this class.
+        """Get attribute values of all elements in this class.
 
-        Args
+        Args:
             element: element of class
             attribute_name (str): str name of attribute
             dict_of_attributes (dict): dict of attribute values
@@ -422,7 +420,6 @@ class OptimizationSetup(object):
                 not listed in key
             dict_of_attributes: returns dict of attribute values
         """
-
         attribute_is_series = False
         # add Energy for energy capacity type
         if capacity_type == self.system.set_capacity_types[1]:
@@ -520,12 +517,13 @@ class OptimizationSetup(object):
     def get_attribute_of_specific_element(
         self, cls, element_name: str, attribute_name: str
     ):
-        """get attribute of specific element in class.
+        """Get attribute of specific element in class.
 
         :param cls: class of the elements to return
         :param element_name: str name of element
         :param attribute_name: str name of attribute
-        :return attribute_value: value of attribute"""
+        :return attribute_value: value of attribute
+        """
         # get element
         element = self.get_element(cls, element_name)
         # assert that _element exists and has attribute
@@ -537,7 +535,7 @@ class OptimizationSetup(object):
         return attribute_value
 
     def construct_optimization_problem(self):
-        """constructs the optimization problem."""
+        """Constructs the optimization problem."""
         # create empty ConcreteModel
         if self.solver.solver_dir is not None and not os.path.exists(
             self.solver.solver_dir
@@ -557,7 +555,7 @@ class OptimizationSetup(object):
         )
 
     def get_optimization_horizon(self):
-        """returns list of optimization horizon steps."""
+        """Returns list of optimization horizon steps."""
         # if using rolling horizon
         if self.system.use_rolling_horizon:
             assert (
@@ -601,7 +599,8 @@ class OptimizationSetup(object):
         steps for which the decisions are saved.
 
         :param step_horizon: step of the rolling horizon
-        :return decision_horizon: list of time steps in the decision horizon"""
+        :return decision_horizon: list of time steps in the decision horizon
+        """
         if step_horizon == self.optimized_time_steps[-1]:
             decision_horizon = [step_horizon]
         else:
@@ -612,20 +611,21 @@ class OptimizationSetup(object):
         return decision_horizon
 
     def set_base_configuration(self, scenario="", elements=None):
-        """set base configuration.
+        """Set base configuration.
 
         :param scenario: name of base scenario
-        :param elements: elements in base configuration"""
+        :param elements: elements in base configuration
+        """
         if elements is None:
             elements = {}
         self.base_scenario = scenario
         self.base_configuration = elements
 
     def overwrite_time_indices(self, step_horizon):
-        """select subset of time indices, matching the step horizon.
+        """Select subset of time indices, matching the step horizon.
 
-        :param step_horizon: step of the rolling horizon"""
-
+        :param step_horizon: step of the rolling horizon
+        """
         if self.system.use_rolling_horizon:
             self.step_horizon = step_horizon
             time_steps_yearly_horizon = self.steps_horizon[step_horizon]
@@ -658,8 +658,7 @@ class OptimizationSetup(object):
             self.energy_system.set_time_steps_yearly = time_steps_yearly_horizon
 
     def solve(self):
-        """
-        Create model instance by assigning parameter values and instantiating the sets.
+        """Create model instance by assigning parameter values and instantiating the sets.
         """
         solver_name = self.solver.name
         # remove options that are None
@@ -700,8 +699,7 @@ class OptimizationSetup(object):
             self.optimality = False
 
     def write_IIS(self, scenario=""):
-        """
-        write an ILP file to print the IIS if infeasible. Only possible for gurobi.
+        """Write an ILP file to print the IIS if infeasible. Only possible for gurobi.
         """
         if (
             self.model.termination_condition == "infeasible"
@@ -717,8 +715,7 @@ class OptimizationSetup(object):
             parser.write_parsed_output()
 
     def add_results_of_optimization_step(self, step_horizon):
-        """
-        Adds capacity additions and carbon emissions to the next optimization step.
+        """Adds capacity additions and carbon emissions to the next optimization step.
 
         This function takes the capacity additions and carbon emissions of the
         current optimization step and adds them to the existing capacity and
@@ -742,8 +739,7 @@ class OptimizationSetup(object):
         self.add_carbon_emission_cumulative(decision_horizon)
 
     def add_new_capacity_addition(self, decision_horizon):
-        """
-        Adds the newly built capacity to the existing capacity.
+        """Adds the newly built capacity to the existing capacity.
 
         This function adds installed capacities from the current optimization
         step to existing capacities in the model. It also adds costs from the
@@ -788,8 +784,7 @@ class OptimizationSetup(object):
             tech.add_new_capacity_investment(capacity_investment, decision_horizon)
 
     def add_carbon_emission_cumulative(self, decision_horizon):
-        """
-        Adds current emissions to existing emissions.
+        """Adds current emissions to existing emissions.
 
         This function adds carbon emissions from the current optimization
         step to the existing carbon emissions.
@@ -880,7 +875,7 @@ class OptimizationSetup(object):
         return component_data, index_list, dict_of_units
 
     def check_for_subindex(self, component_data, custom_set):
-        """check if the custom_set can be a subindex of component_data. 
+        """Check if the custom_set can be a subindex of component_data.
         
         returns subindexed component_data.
 

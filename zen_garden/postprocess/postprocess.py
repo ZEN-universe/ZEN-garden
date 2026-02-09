@@ -1,5 +1,4 @@
-"""
-Class is defining the postprocessing of the results.
+"""Class is defining the postprocessing of the results.
 The class takes as inputs the optimization problem (model) and the system 
 configurations (system). The class contains methods to read the results and 
 save them in a result dictionary (resultDict).
@@ -27,8 +26,7 @@ warnings.filterwarnings("ignore", category=NaturalNameWarning)
 
 
 class Postprocess:
-    """
-    Class is defining the postprocessing of the results.
+    """Class is defining the postprocessing of the results.
     """
 
     def __init__(
@@ -40,7 +38,7 @@ class Postprocess:
         scenario_name=None,
         param_map=None,
     ):
-        """postprocessing of the results of the optimization.
+        """Postprocessing of the results of the optimization.
 
         :param model: optimization model
         :param model_name: The name of the model used to name the output folder
@@ -105,7 +103,7 @@ class Postprocess:
             self.save_benchmarking_data()
 
     def write_file(self, name, dictionary, format=None, mode="w"):
-        """Writes the dictionary to file as json, if compression attribute is 
+        """Writes the dictionary to file as json, if compression attribute is
         True, the serialized json is compressed and saved as binary file.
 
         Args:
@@ -118,7 +116,6 @@ class Postprocess:
                 to an existing file. Appending files is currently only supported 
                 for h5 files.
         """
-
         if isinstance(dictionary, BaseModel):
             dictionary = dictionary.model_dump()
 
@@ -191,8 +188,7 @@ class Postprocess:
             )
 
     def save_benchmarking_data(self):
-        """
-        Saves the benchmarking data to a json file.
+        """Saves the benchmarking data to a json file.
         """
         # initialize dictionary
         benchmarking_data = dict()
@@ -243,7 +239,8 @@ class Postprocess:
     def save_sets(self):
         """Saves the Set values to a json file which can then be
         post-processed immediately or loaded and postprocessed at some 
-        other time."""
+        other time.
+        """
         # dataframe serialization
         data_frames = {}
         for set in self.sets:
@@ -293,7 +290,8 @@ class Postprocess:
     def save_param(self):
         """Saves the Param values to a json file which can then be
         post-processed immediately or loaded and postprocessed at some other 
-        time."""
+        time.
+        """
         if not self.solver.save_parameters:
             logging.info("Parameters are not saved")
             return
@@ -332,8 +330,8 @@ class Postprocess:
     def save_var(self):
         """Saves the variable values to a json file which can then be
         post-processed immediately or loaded and postprocessed at some other 
-        time."""
-
+        time.
+        """
         # dataframe serialization
         data_frames = {}
         for name, arr in self.model.solution.items():
@@ -376,7 +374,8 @@ class Postprocess:
     def save_duals(self):
         """Saves the dual variable values to a json file which can then be
         post-processed immediately or loaded and postprocessed at some other 
-        time."""
+        time.
+        """
         if not self.solver.save_duals:
             logging.info("Duals are not saved")
             return
@@ -425,8 +424,7 @@ class Postprocess:
         self.write_file(self.name_dir.joinpath("dual_dict"), data_frames, mode="w")
 
     def save_system(self):
-        """
-        Saves the system dict as json.
+        """Saves the system dict as json.
         """
         if self.system.use_rolling_horizon:
             fname = self.name_dir.parent.joinpath("system")
@@ -435,8 +433,7 @@ class Postprocess:
         self.write_file(fname, self.system, format="json")
 
     def save_analysis(self):
-        """
-        Saves the analysis dict as json.
+        """Saves the analysis dict as json.
         """
         if self.system.use_rolling_horizon:
             fname = self.name_dir.parent.joinpath("analysis")
@@ -452,8 +449,7 @@ class Postprocess:
         self.write_file(fname, self.analysis, format="json")
 
     def save_solver(self):
-        """
-        Saves the solver dict as json.
+        """Saves the solver dict as json.
         """
         # This we only need to save once
         if self.system.use_rolling_horizon:
@@ -469,8 +465,7 @@ class Postprocess:
         self.write_file(fname, self.solver, format="json")
 
     def save_scenarios(self):
-        """
-        Saves the scenario dict as json.
+        """Saves the scenario dict as json.
         """
         # only save the scenarios at the highest level
         root_dir = Path(self.analysis.folder_output).joinpath(self.model_name)
@@ -478,8 +473,7 @@ class Postprocess:
         self.write_file(fname, self.scenarios, format="json")
 
     def save_unit_definitions(self):
-        """
-        Saves the user-defined units as txt.
+        """Saves the user-defined units as txt.
         """
         if self.system.use_rolling_horizon:
             fname = self.name_dir.parent.joinpath("unit_definitions")
@@ -499,10 +493,8 @@ class Postprocess:
         self.write_file(fname, txt, format="txt")
 
     def save_param_map(self):
+        """Saves the param_map dict as yaml.
         """
-        Saves the param_map dict as yaml.
-        """
-
         if self.param_map is not None:
             # This we only need to save once
             if (
@@ -574,7 +566,7 @@ class Postprocess:
         self.write_file(fname, dict_formatted, format="json")
 
     def flatten_dict(self, dictionary):
-        """Creates a copy of the dictionary where all numpy arrays are 
+        """Creates a copy of the dictionary where all numpy arrays are
         recursively flattened to lists such that it can be saved as json file.
 
         :param dictionary: The input dictionary
@@ -602,7 +594,7 @@ class Postprocess:
         return out_dict
 
     def get_index_list(self, doc):
-        """get index list from docstring.
+        """Get index list from docstring.
 
         :param doc: docstring
         :return: index list
@@ -622,8 +614,9 @@ class Postprocess:
         return index_list_final
 
     def get_time_steps_year2operation(self):
-        """Returns a HDF5-Serializable version of the 
-        dict_time_steps_year2operation dictionary."""
+        """Returns a HDF5-Serializable version of the
+        dict_time_steps_year2operation dictionary.
+        """
         ans = {}
         for (
             year,
@@ -633,8 +626,9 @@ class Postprocess:
         return ans
 
     def get_time_steps_year2storage(self):
-        """Returns a HDF5-Serializable version of the 
-        dict_time_steps_year2storage dictionary."""
+        """Returns a HDF5-Serializable version of the
+        dict_time_steps_year2storage dictionary.
+        """
         ans = {}
         for (
             year,
@@ -644,7 +638,7 @@ class Postprocess:
         return ans
 
     def _transform_df(self, df, doc, units=None):
-        """we transform the dataframe to a json string and load it into the 
+        """We transform the dataframe to a json string and load it into the
         dictionary as dict.
 
         :param df: dataframe
@@ -748,7 +742,7 @@ class Postprocess:
 
     @staticmethod
     def _format_dict(input_dict):
-        """format the dictionary to be saved in the hdf file
+        """Format the dictionary to be saved in the hdf file
         :param input_dict: The dictionary to format.
         """
         expected_keys = ["dataframe", "docstring"]

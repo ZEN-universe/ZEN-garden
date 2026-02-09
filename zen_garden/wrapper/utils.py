@@ -11,8 +11,7 @@ from zen_garden.preprocess.unit_handling import UnitHandling
 
 
 def ensure_dir_exists(path: Path):
-    """
-    Ensure that a directory exists. If it doesn't, create it.
+    """Ensure that a directory exists. If it doesn't, create it.
 
     Args:
         path (Path): The directory path to check and create.
@@ -22,8 +21,7 @@ def ensure_dir_exists(path: Path):
 
 
 def copy_file(src: Path, dest: Path):
-    """
-    Copy a single file from the source to the destination.
+    """Copy a single file from the source to the destination.
 
     Args:
         src (Path): The source file path.
@@ -35,8 +33,7 @@ def copy_file(src: Path, dest: Path):
 
 
 def copy_dir(src: Path, dest: Path):
-    """
-    Copy an entire directory from the source to the destination.
+    """Copy an entire directory from the source to the destination.
 
     Args:
         src (Path): The source directory path.
@@ -48,8 +45,7 @@ def copy_dir(src: Path, dest: Path):
 
 
 def remove_existing_dir(dest: Path):
-    """
-    Delete directory and all subdirectories if they exist.
+    """Delete directory and all subdirectories if they exist.
 
     Args:
         dest (Path): Directory to be deleted.
@@ -60,8 +56,7 @@ def remove_existing_dir(dest: Path):
 
 
 def copy_dataset(old_dataset: Path, new_dataset: Path, scenarios=None):
-    """
-    Copy the entire dataset from the old directory to a new directory.
+    """Copy the entire dataset from the old directory to a new directory.
 
     Args:
         old_dataset (Path): The path to the old dataset.
@@ -81,8 +76,7 @@ def copy_dataset(old_dataset: Path, new_dataset: Path, scenarios=None):
 
 
 def load_results(out_dir: Path, scenario: str) -> dict:
-    """
-    Load simulation results from the specified directory and scenario.
+    """Load simulation results from the specified directory and scenario.
 
     Args:
         out_dir (Path): Directory where the results are stored.
@@ -133,8 +127,7 @@ def load_results(out_dir: Path, scenario: str) -> dict:
 
 
 def get_element_location(element_name: str, raw_results: dict):
-    """
-    Get the location (nodes or edges) and the corresponding name for a given
+    """Get the location (nodes or edges) and the corresponding name for a given
     element.
 
     Args:
@@ -156,8 +149,7 @@ def get_element_location(element_name: str, raw_results: dict):
 
 
 def get_element_folder(dataset_op: Path, element_name: str, tech: str) -> Path:
-    """
-    Get the folder path for a specific technology within a given element.
+    """Get the folder path for a specific technology within a given element.
 
     Args:
         dataset_op (Path): The dataset output directory.
@@ -187,8 +179,7 @@ def format_capacity_addition(
     suffix: str,
     location_name: str,
 ) -> pd.DataFrame:
-    """
-    Format the capacity addition DataFrame for consistency in column names.
+    """Format the capacity addition DataFrame for consistency in column names.
 
     Args:
         capacity_addition_tech (pd.DataFrame): The DataFrame with capacity
@@ -212,8 +203,7 @@ def format_capacity_addition(
 def aggregate_capacity(
     capacity_existing: pd.DataFrame, location_name: str
 ) -> pd.DataFrame:
-    """
-    Aggregate capacity data by grouping it by location and year of construction.
+    """Aggregate capacity data by grouping it by location and year of construction.
 
     Args:
         capacity_existing (pd.DataFrame): The DataFrame with existing capacity
@@ -233,8 +223,7 @@ def aggregate_capacity(
 def save_capacity_existing(
     tech_folder_op: Path, capacity_existing: pd.DataFrame, suffix: str
 ):
-    """
-    Save the aggregated capacity data to a CSV file.
+    """Save the aggregated capacity data to a CSV file.
 
     Args:
         tech_folder_op (Path): The path to the technology folder.
@@ -258,8 +247,7 @@ def convert_to_original_units(
     tech_folder_op,
     suffix,
 ):
-    """
-    Convert the capacity addition to the original units of the existing
+    """Convert the capacity addition to the original units of the existing
     capacity.
 
     Args:
@@ -312,8 +300,7 @@ def convert_to_original_units(
 def round_capacity(
     results: dict, rounding_decimal_points: int, has_energy: bool
 ) -> dict:
-    """
-    Round the capacities in the results to remove values below a certain
+    """Round the capacities in the results to remove values below a certain
     threshold.
 
     Args:
@@ -349,8 +336,7 @@ def add_capacity_additions(
     capacity_type: str,
     unit_handling,
 ):
-    """
-    Transfer capacity additions from the results to the dataset for a given
+    """Transfer capacity additions from the results to the dataset for a given
         element and capacity type.
 
     Args:
@@ -418,8 +404,7 @@ def add_capacity_additions(
 
 
 def modify_json(file_path: Path, change_dict: dict):
-    """
-    Modify a JSON file according to a change dictionary.
+    """Modify a JSON file according to a change dictionary.
 
     Args:
         file_path (Path): Path to the JSON file.
@@ -437,8 +422,7 @@ def modify_json(file_path: Path, change_dict: dict):
 def capacity_addition_2_existing_capacity(
     out_dir: Path, dataset: Path, dataset_op: Path, scenario: str
 ):
-    """
-    Add capacity additions from the simulation results to the existing
+    """Add capacity additions from the simulation results to the existing
     capacity dataset.
 
     Args:

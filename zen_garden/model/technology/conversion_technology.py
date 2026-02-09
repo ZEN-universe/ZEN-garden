@@ -1,5 +1,4 @@
-"""
-Class defining the parameters, variables, and constraints of the conversion
+"""Class defining the parameters, variables, and constraints of the conversion
 technologies. The class takes the abstract optimization model as an input and adds
 parameters, variables, and constraints of the conversion technologies.
 """
@@ -20,8 +19,7 @@ from .technology import Technology
 
 
 class ConversionTechnology(Technology):
-    """
-    Class defining conversion technologies.
+    """Class defining conversion technologies.
     """
 
     # set label
@@ -29,19 +27,17 @@ class ConversionTechnology(Technology):
     location_type = "set_nodes"
 
     def __init__(self, tech, optimization_setup):
-        """
-        init conversion technology object.
+        """Init conversion technology object.
 
         :param tech: name of added technology
         :param optimization_setup: The OptimizationSetup the element is part of
         """
-
         super().__init__(tech, optimization_setup)
         # store carriers of conversion technology
         self.store_carriers()
 
     def store_carriers(self):
-        """retrieves and stores information on reference, input and output carriers."""
+        """Retrieves and stores information on reference, input and output carriers."""
         # get reference carrier from class <Technology>
         super().store_carriers()
         # define input and output carrier
@@ -64,7 +60,7 @@ class ConversionTechnology(Technology):
         )
 
     def store_input_data(self):
-        """retrieves and stores input data for element as attributes.
+        """Retrieves and stores input data for element as attributes.
 
         Each Child class overwrites method to store different attributes.
         """
@@ -88,7 +84,7 @@ class ConversionTechnology(Technology):
         self.convert_to_fraction_of_capex()
 
     def get_conversion_factor(self):
-        """retrieves and stores conversion_factor."""
+        """Retrieves and stores conversion_factor."""
         dependent_carrier = list(
             set(self.input_carrier + self.output_carrier).difference(
                 self.reference_carrier
@@ -120,7 +116,7 @@ class ConversionTechnology(Technology):
             self.raw_time_series["conversion_factor"] = cf_dict
 
     def convert_to_fraction_of_capex(self):
-        """this method retrieves the total capex and converts it to annualized capex."""
+        """This method retrieves the total capex and converts it to annualized capex."""
         pwa_capex, self.capex_is_pwa = self.data_input.extract_pwa_capex()
         # annualize cost_capex_overnight
         fraction_year = self.calculate_fraction_of_year()
@@ -140,7 +136,7 @@ class ConversionTechnology(Technology):
         self.capex_capacity_existing = self.calculate_capex_of_capacities_existing()
 
     def calculate_capex_of_single_capacity(self, capacity, index):
-        """this method calculates the annualized capex of a single existing capacity.
+        """This method calculates the annualized capex of a single existing capacity.
 
         :param capacity: existing capacity of technology
         :param index: index of capacity specifying node and time
@@ -160,12 +156,13 @@ class ConversionTechnology(Technology):
     ### --- getter/setter classmethods
     @classmethod
     def get_capex_all_elements(cls, optimization_setup, index_names=None):
-        """similar to Element.get_attribute_of_all_elements but only for capex.
+        """Similar to Element.get_attribute_of_all_elements but only for capex.
         If select_pwa, extract pwa attributes, otherwise linear.
 
         :param optimization_setup: The OptimizationSetup the element is part of
         :param index_names: list of index names
-        :return: dict_of_attributes: returns dict of attribute values"""
+        :return: dict_of_attributes: returns dict of attribute values
+        """
         class_elements = optimization_setup.get_all_elements(cls)
         dict_of_attributes = {}
         dict_of_units = {}
@@ -209,9 +206,10 @@ class ConversionTechnology(Technology):
     #   that correspond to ConversionTechnology --- ###
     @classmethod
     def construct_sets(cls, optimization_setup):
-        """constructs the pe.Sets of the class <ConversionTechnology>.
+        """Constructs the pe.Sets of the class <ConversionTechnology>.
 
-        :param optimization_setup: The OptimizationSetup the element is part of"""
+        :param optimization_setup: The OptimizationSetup the element is part of
+        """
         # get input carriers
         input_carriers = optimization_setup.get_attribute_of_all_elements(
             cls, "input_carrier"
@@ -258,9 +256,10 @@ class ConversionTechnology(Technology):
 
     @classmethod
     def construct_params(cls, optimization_setup):
-        """constructs the pe.Params of the class <ConversionTechnology>.
+        """Constructs the pe.Params of the class <ConversionTechnology>.
 
-        :param optimization_setup: The OptimizationSetup the element is part of"""
+        :param optimization_setup: The OptimizationSetup the element is part of
+        """
         # slope of linearly modeled capex
         optimization_setup.parameters.add_parameter(
             name="capex_specific_conversion",
@@ -305,19 +304,20 @@ class ConversionTechnology(Technology):
 
     @classmethod
     def construct_vars(cls, optimization_setup):
-        """constructs the pe.Vars of the class <ConversionTechnology>.
+        """Constructs the pe.Vars of the class <ConversionTechnology>.
 
-        :param optimization_setup: The OptimizationSetup the element is part of"""
-
+        :param optimization_setup: The OptimizationSetup the element is part of
+        """
         model = optimization_setup.model
         variables = optimization_setup.variables
 
         def flow_conversion_bounds(index_values, index_names):
-            """return bounds of carrier_flow for bigM expression.
+            """Return bounds of carrier_flow for bigM expression.
 
             :param index_values: list of index values
             :param index_names: list of index names
-            :return: bounds: bounds of carrier_flow"""
+            :return: bounds: bounds of carrier_flow
+            """
             params = optimization_setup.parameters
             sets = optimization_setup.sets
             energy_system = optimization_setup.energy_system
@@ -448,9 +448,10 @@ class ConversionTechnology(Technology):
 
     @classmethod
     def construct_constraints(cls, optimization_setup):
-        """constructs the Constraints of the class <ConversionTechnology>.
+        """Constructs the Constraints of the class <ConversionTechnology>.
 
-        :param optimization_setup: optimization setup"""
+        :param optimization_setup: optimization setup
+        """
         model = optimization_setup.model
         constraints = optimization_setup.constraints
         # add pwa constraints
@@ -511,13 +512,14 @@ class ConversionTechnology(Technology):
 
     @classmethod
     def calculate_capex_pwa_breakpoints_values(cls, optimization_setup, set_pwa):
-        """calculates breakpoints and function values for piecewise affine constraint.
+        """Calculates breakpoints and function values for piecewise affine constraint.
 
         :param optimization_setup: The OptimizationSetup the element is part of
         :param set_pwa: set of variable indices in capex approximation,
             for which pwa is performed
         :return: pwa_breakpoints: dict of pwa breakpoint values
-        :return: pwa_values: dict of pwa function values"""
+        :return: pwa_values: dict of pwa function values
+        """
         pwa_breakpoints = {}
         pwa_values = {}
 
@@ -539,8 +541,7 @@ class ConversionTechnology(Technology):
 
 
 class ConversionTechnologyRules(GenericRule):
-    """
-    Rules for the ConversionTechnology class.
+    """Rules for the ConversionTechnology class.
     """
 
     def __init__(self, optimization_setup):
@@ -548,7 +549,6 @@ class ConversionTechnologyRules(GenericRule):
 
         :param optimization_setup: The OptimizationSetup the element is part of
         """
-
         super().__init__(optimization_setup)
 
     def constraint_capacity_factor_conversion(self):
@@ -681,7 +681,7 @@ class ConversionTechnologyRules(GenericRule):
         )
 
     def constraint_opex_emissions_technology_conversion(self):
-        """calculate opex and carbon emissions of each technology.
+        """Calculate opex and carbon emissions of each technology.
 
         .. math::
             O_{h,p,t}^\\mathrm{t} = \\beta_{h,p,t} G_{i,n,t}^\\mathrm{r} \n
@@ -752,7 +752,7 @@ class ConversionTechnologyRules(GenericRule):
         )
 
     def constraint_linear_capex(self):
-        """if capacity and capex have a linear relationship.
+        """If capacity and capex have a linear relationship.
 
         .. math::
             A_{h,p,y}^{approximation} = \\alpha_{h,n,y} \\Delta S_{h,p,y}^{approx}
@@ -800,7 +800,7 @@ class ConversionTechnologyRules(GenericRule):
         self.constraints.add_constraint("constraint_linear_capex", constraints)
 
     def constraint_capacity_capex_coupling(self):
-        """couples capacity variables based on modeling technique.
+        """Couples capacity variables based on modeling technique.
 
         .. math::
             \\Delta S_{h,p,y} = \\Delta S_{h,p,y}^\\mathrm{approx}
@@ -811,7 +811,6 @@ class ConversionTechnologyRules(GenericRule):
         the technology :math:`h` at node :math:`p` in year :math:`y`
 
         """
-
         techs = self.sets["set_conversion_technologies"]
         nodes = self.sets["set_nodes"]
         capacity_addition = (
@@ -848,7 +847,7 @@ class ConversionTechnologyRules(GenericRule):
         self.constraints.add_constraint("constraint_capex_coupling", constraints_capex)
 
     def constraint_carrier_conversion(self):
-        """conversion factor between reference carrier and dependent carrier.
+        """Conversion factor between reference carrier and dependent carrier.
 
         .. math::
             G^\\mathrm{d}_{i,n,t} = \\eta_{i,c,n,y}G^\\mathrm{r}_{i,n,t}

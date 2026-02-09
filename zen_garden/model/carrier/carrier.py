@@ -1,5 +1,4 @@
-"""
-Class defining a generic energy carrier.
+"""Class defining a generic energy carrier.
 
 The class takes as inputs the abstract optimization model. The class adds parameters,
 variables and constraints of a generic carrier and returns the abstract optimization
@@ -16,8 +15,7 @@ from ..element import Element, GenericRule
 
 
 class Carrier(Element):
-    """
-    Class defining a generic energy carrier.
+    """Class defining a generic energy carrier.
     """
 
     # set label
@@ -26,15 +24,17 @@ class Carrier(Element):
     list_of_elements = []
 
     def __init__(self, carrier: str, optimization_setup):
-        """initialization of a generic carrier object.
+        """Initialization of a generic carrier object.
 
         :param carrier: carrier that is added to the model
-        :param optimization_setup: The OptimizationSetup the element is part of"""
+        :param optimization_setup: The OptimizationSetup the element is part of
+        """
         super().__init__(carrier, optimization_setup)
 
     def store_input_data(self):
-        """retrieves and stores input data for element as attributes. Each Child class
-        overwrites method to store different attributes."""
+        """Retrieves and stores input data for element as attributes. Each Child class
+        overwrites method to store different attributes.
+        """
         # store scenario dict
         super().store_scenario_dict()
         # set attributes of carrier
@@ -106,7 +106,7 @@ class Carrier(Element):
         )
 
     def overwrite_time_steps(self, base_time_steps):
-        """overwrites set_time_steps_operation.
+        """Overwrites set_time_steps_operation.
 
         :param base_time_steps: #TODO describe parameter/return
         """
@@ -119,16 +119,18 @@ class Carrier(Element):
     that correspond to Carrier --- """
     @classmethod
     def construct_sets(cls, optimization_setup):
-        """constructs the pe.Sets of the class <Carrier>.
+        """Constructs the pe.Sets of the class <Carrier>.
 
-        :param optimization_setup: The OptimizationSetup the element is part of"""
+        :param optimization_setup: The OptimizationSetup the element is part of
+        """
         pass
 
     @classmethod
     def construct_params(cls, optimization_setup):
-        """constructs the pe.Params of the class <Carrier>.
+        """Constructs the pe.Params of the class <Carrier>.
 
-        :param optimization_setup: The OptimizationSetup the element is part of"""
+        :param optimization_setup: The OptimizationSetup the element is part of
+        """
         # demand of carrier
         optimization_setup.parameters.add_parameter(
             name="demand",
@@ -206,9 +208,10 @@ class Carrier(Element):
 
     @classmethod
     def construct_vars(cls, optimization_setup):
-        """constructs the pe.Vars of the class <Carrier>.
+        """Constructs the pe.Vars of the class <Carrier>.
 
-        :param optimization_setup: The OptimizationSetup the element is part of"""
+        :param optimization_setup: The OptimizationSetup the element is part of
+        """
         model = optimization_setup.model
         variables = optimization_setup.variables
         sets = optimization_setup.sets
@@ -307,9 +310,10 @@ class Carrier(Element):
 
     @classmethod
     def construct_constraints(cls, optimization_setup):
-        """constructs the Constraints of the class <Carrier>.
+        """Constructs the Constraints of the class <Carrier>.
 
-        :param optimization_setup: The OptimizationSetup the element is part of"""
+        :param optimization_setup: The OptimizationSetup the element is part of
+        """
         rules = CarrierRules(optimization_setup)
 
         # limit import/export flow by availability
@@ -343,24 +347,21 @@ class Carrier(Element):
 
 
 class CarrierRules(GenericRule):
-    """
-    Rules for the Carrier class.
+    """Rules for the Carrier class.
     """
 
     def __init__(self, optimization_setup):
-        """
-        Inits the rules for a given EnergySystem.
+        """Inits the rules for a given EnergySystem.
 
         :param optimization_setup: The OptimizationSetup the element is part of
         """
-
         super().__init__(optimization_setup)
 
     # Rule-based constraints
     # ----------------------
 
     def constraint_cost_carrier_total(self):
-        """total cost of importing and exporting carrier.
+        """Total cost of importing and exporting carrier.
 
         .. math::
             C_y^{\\mathcal{C}} = \\sum_{c\\in\\mathcal{C}}\\sum_{n\\in\\mathcal{N}}
@@ -390,7 +391,7 @@ class CarrierRules(GenericRule):
         self.constraints.add_constraint("constraint_cost_carrier_total", constraints)
 
     def constraint_carbon_emissions_carrier_total(self):
-        """total carbon emissions of importing and exporting carrier.
+        """Total carbon emissions of importing and exporting carrier.
 
         .. math::
             E_y^{\\mathcal{C}} = \\sum_{c\\in\\mathcal{C}}\\sum_{n\\in\\mathcal{N}}
@@ -436,7 +437,6 @@ class CarrierRules(GenericRule):
         at node :math:`n` and time step :math:`t`
 
         """
-
         lhs_imp = self.variables["flow_import"]
         rhs_imp = self.parameters.availability_import
         constraints_imp = lhs_imp <= rhs_imp
@@ -506,7 +506,7 @@ class CarrierRules(GenericRule):
         )
 
     def constraint_cost_carrier(self):
-        """cost of importing and exporting carrier.
+        """Cost of importing and exporting carrier.
 
         .. math::
            O_{c,n,t} = \\underline{u}_{c,n,t} \\underline{U}_{c,n,t} -
@@ -522,7 +522,6 @@ class CarrierRules(GenericRule):
         node :math:`n` and time step :math:`t`
 
         """
-
         ### formulate constraint
         lhs = (
             self.variables["cost_carrier"]
@@ -535,7 +534,7 @@ class CarrierRules(GenericRule):
         self.constraints.add_constraint("constraint_cost_carrier", constraints)
 
     def constraint_cost_limit_shed_demand(self):
-        """cost and limit of shedding demand of carrier.
+        """Cost and limit of shedding demand of carrier.
 
         .. math::
            O_{c,n,t}^{\\mathrm{shed}\\ \\mathrm{demand}} = D_{c,n,t} \\nu_c \n
@@ -551,7 +550,6 @@ class CarrierRules(GenericRule):
 
 
         """
-
         ### mask for finite price, otherwise the shed demand is zero
         mask = self.parameters.price_shed_demand != np.inf
 
@@ -575,7 +573,7 @@ class CarrierRules(GenericRule):
         )
 
     def constraint_carbon_emissions_carrier(self):
-        """carbon emissions of importing and exporting carrier.
+        """Carbon emissions of importing and exporting carrier.
 
         .. math::
            \\theta_{c,n,t}^{\\mathrm{carrier}} = \\underline{\\epsilon_c}
@@ -617,8 +615,7 @@ class CarrierRules(GenericRule):
         )
 
     def constraint_nodal_energy_balance(self):
-        """
-        nodal energy balance for each time step.
+        """Nodal energy balance for each time step.
 
         .. math::
             0 = -(d_{c,n,t}-D_{c,n,t})
@@ -654,7 +651,6 @@ class CarrierRules(GenericRule):
 
 
         """
-
         ### index sets
         index_values, index_names = Carrier.create_custom_set(
             ["set_carriers", "set_nodes", "set_time_steps_operation"],

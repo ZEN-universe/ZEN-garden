@@ -1,5 +1,4 @@
-"""
-This module contains the Results class, which is used to extract and process 
+"""This module contains the Results class, which is used to extract and process
 the results of a model run.
 """
 
@@ -29,13 +28,11 @@ NestedDict = dict[str, str | list[str]]
 
 
 class Results:
-    """
-    The Results class is used to extract and process the results of a model run.
+    """The Results class is used to extract and process the results of a model run.
     """
 
     def __init__(self, path: str, enable_cache: bool = True):
-        """
-        Initializes the Results class.
+        """Initializes the Results class.
 
         :param path: Path to the results folder
         """
@@ -64,8 +61,7 @@ class Results:
             Union[NestedTuple, NestedDict, list[str], str, float, int]
         ] = None,
     ) -> Optional[Union[dict[str, "pd.DataFrame | pd.Series[Any]"], pd.Series]]:
-        """
-        Returns the raw results without any further processing.
+        """Returns the raw results without any further processing.
 
         Transforms a parameter or variable dataframe (compressed) string into 
         an actual pandas dataframe.
@@ -80,7 +76,6 @@ class Results:
         Returns:
             DataFrame: The corresponding dataframe
         """
-
         scenario_names = (
             list(self.solution_loader.scenarios.keys())
             if scenario_name is None
@@ -137,7 +132,7 @@ class Results:
     ) -> "pd.DataFrame":
         """Calculates the full timeseries per scenario.
 
-        Args: 
+        Args:
             scenario: The scenario for with the component should be extracted 
                 (only if needed)
             component: Component for the Series
@@ -365,8 +360,7 @@ class Results:
         keep_raw: Optional[bool] = False,
         index: tuple[str] = None,
     ) -> "pd.DataFrame | pd.Series[Any]":
-        """
-        Calculates the total values of a component for a specific scenario.
+        """Calculates the total values of a component for a specific scenario.
 
         :param scenario: Scenario
         :param component: Component
@@ -438,10 +432,9 @@ class Results:
             Union[NestedTuple, NestedDict, list[str], str, float, int]
         ] = None,
     ) -> "pd.DataFrame | pd.Series[Any]":
-        """
-        Calculates the total values of a component for a all scenarios.
+        """Calculates the total values of a component for a all scenarios.
 
-        Args: 
+        Args:
             component_name: Name of the component. Should not be used for dual 
                 variables!
             year: Filter the results by a given year
@@ -449,10 +442,9 @@ class Results:
             keep_raw: Keep the raw values of the rolling horizon optimization
             index: slicing index of the resulting dataframe
         
-        Returns
+        Returns:
             DataFrame: Total values of the component
         """
-
         # Throw error if used for a dual variable
         if component_name in self.get_component_names("dual"):
             raise ValueError(
@@ -498,8 +490,7 @@ class Results:
         scenarios_dict: dict[str, "pd.DataFrame | pd.Series[Any]"],
         scenario_names: list[str],
     ) -> pd.DataFrame:
-        """
-        Concatenates a dict of the form str: Data to one dataframe.
+        """Concatenates a dict of the form str: Data to one dataframe.
 
         Args:
             scenarios_dict: Dict containing the scenario names as key and the 
@@ -529,7 +520,7 @@ class Results:
     def _get_annuity(
         self, scenario: Scenario, discount_to_first_step: bool = True
     ) -> pd.Series:
-        """discounts the duals.
+        """Discounts the duals.
 
         Args:
             discount_to_first_step: apply annuity to first year of interval or 
@@ -588,7 +579,7 @@ class Results:
             Union[NestedTuple, NestedDict, list[str], str, float, int]
         ] = None,
     ) -> Optional["pd.DataFrame | pd.Series[Any]"]:
-        """extracts the dual variables of a component.
+        """Extracts the dual variables of a component.
 
         Args:
             component_name: Name of dual
@@ -626,8 +617,7 @@ class Results:
         droplevel: bool = True,
         convert_to_yearly_unit: bool = False,
     ) -> None | Series | str:
-        """
-        Extracts the unit of a given Component. If no scenario is given, a 
+        """Extracts the unit of a given Component. If no scenario is given, a
         random one is taken.
 
         Args:
@@ -700,8 +690,7 @@ class Results:
     def _convert_to_pint_units(
         self, u: str, convert_to_yearly_unit: bool, component_name: str
     ) -> str:
-        """
-        Converts a string to a pint unit.
+        """Converts a string to a pint unit.
         """
         component = None
         for s in self.solution_loader.scenarios:
@@ -732,8 +721,7 @@ class Results:
         return u_return
 
     def get_system(self, scenario_name: Optional[str] = None) -> System:
-        """
-        Extract system configurations from a scenario.
+        """Extract system configurations from a scenario.
 
         Extracts system configurations from the results of a scenario. This
         ensures the tractability of model configurations. System configurations
@@ -761,8 +749,7 @@ class Results:
         return self.solution_loader.scenarios[scenario_name].system
 
     def get_analysis(self, scenario_name: Optional[str] = None) -> Analysis:
-        """
-        Extract analysis configurations from a scenario.
+        """Extract analysis configurations from a scenario.
 
         Extracts analysis configurations from the results of a scenario. This
         ensures the tractability of model configurations. Analysis 
@@ -791,8 +778,7 @@ class Results:
         return self.solution_loader.scenarios[scenario_name].analysis
 
     def get_solver(self, scenario_name: Optional[str] = None) -> Solver:
-        """
-        Extract solver configurations from a scenario.
+        """Extract solver configurations from a scenario.
 
         Extracts solver configurations from the results of a scenario. This
         ensures the tractability of model configurations. Solver configurations
@@ -821,8 +807,7 @@ class Results:
         return self.solution_loader.scenarios[scenario_name].solver
 
     def get_doc(self, component_name: str) -> str:
-        """
-        Extracts the documentation of a given Component.
+        """Extracts the documentation of a given Component.
 
         :param component_name: Name of the component
         :return: The corresponding documentation
@@ -843,8 +828,7 @@ class Results:
     def get_index_names(
         self, component_name: str, scenario_name: Optional[str] = None
     ) -> list[str]:
-        """
-        Docstring for get_index_names.
+        """Docstring for get_index_names.
 
         :param self: Description
         :param component_name: Description
@@ -867,8 +851,7 @@ class Results:
         return component.index_names
 
     def get_years(self, scenario_name: Optional[str] = None) -> list[int]:
-        """
-        Extracts the years of a given Scenario. If no scenario is given, a 
+        """Extracts the years of a given Scenario. If no scenario is given, a
         random one is taken.
 
         :param scenario_name: Name of the scenario
@@ -881,8 +864,7 @@ class Results:
         return years
 
     def has_MF(self, scenario_name: Optional[str] = None) -> bool:
-        """
-        Extracts the System config of a given Scenario. If no scenario is given, 
+        """Extracts the System config of a given Scenario. If no scenario is given,
         a random one is taken.
 
         :param scenario_name: Name of the scenario
@@ -894,8 +876,7 @@ class Results:
         return scenario.system.use_rolling_horizon
 
     def get_coords(self, scenario_name: Optional[str] = None) -> Optional[pd.DataFrame]:
-        """
-        Extracts the coordinates of the nodes of a given Scenario. If no 
+        """Extracts the coordinates of the nodes of a given Scenario. If no
         scenario is given, a random one is taken.
 
         :param scenario_name: Name of the scenario
@@ -923,7 +904,7 @@ class Results:
     def calculate_connected_edges(
         self, node: str, direction: str, set_nodes_on_edges: dict[str, str]
     ):
-        """calculates connected edges going in (direction = 'in') or going out 
+        """Calculates connected edges going in (direction = 'in') or going out
         (direction = 'out').
 
         Args:
@@ -965,7 +946,6 @@ class Results:
         :param scenario_name: name of the scenario
         :return: filtered pd.Dataframe containing only the provided carrier
         """
-
         if "carrier" not in dataframe.index.names:
             reference_carriers = self.get_df(
                 "set_reference_carriers", scenario_name=scenario_name
@@ -989,7 +969,7 @@ class Results:
     def edit_carrier_flows(
         self, data: pd.DataFrame, node: str, direction: str, scenario: str
     ) -> pd.DataFrame:
-        """Extracts data of carrier_flow variable as needed for the 
+        """Extracts data of carrier_flow variable as needed for the
         plot_energy_balance function.
 
         :param data: pd.DataFrame containing data to extract
@@ -1017,7 +997,7 @@ class Results:
     def get_energy_balance_dataframes(
         self, node: str, carrier: str, year: int, scenario_name: Optional[str] = None
     ) -> dict[str, "pd.Series[Any]"]:
-        """Returns a dictionary with all dataframes that are relevant for 
+        """Returns a dictionary with all dataframes that are relevant for
         the energy balance. The dataframes "flow_transport_in" and 
         "flow_transport_out" contain the data of "flow_transport", filtered 
         for in / out flow.

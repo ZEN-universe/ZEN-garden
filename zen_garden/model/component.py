@@ -1,5 +1,4 @@
-"""
-File that contains the classes which initialize parameters, variables and constraints.
+"""File that contains the classes which initialize parameters, variables and constraints.
 This is a proxy for pyomo parameters, since the construction of parameters has a
 significant overhead. Indexing within ZEN-garden is also defined here.
 """
@@ -18,8 +17,7 @@ from ordered_set import OrderedSet
 
 
 class ZenIndex(object):
-    """
-    A multiindex class that can be easily used with xarray.
+    """A multiindex class that can be easily used with xarray.
     """
 
     def __init__(self, index_values, index_names=None):
@@ -29,7 +27,6 @@ class ZenIndex(object):
         :param index_names: Optional list of index names as strings, if the length does
                             not match the tuple length, it is ignored
         """
-
         # if there are no values, we create a dummy index
         if len(index_values) == 0:
             self.index = None
@@ -50,7 +47,6 @@ class ZenIndex(object):
         :param as_array: If True, the return value a list of xarrays
         :return: A list of tuples if given multiple levels, otherwise a list of values
         """
-
         # empty index
         if self.index is None:
             return []
@@ -73,7 +69,6 @@ class ZenIndex(object):
         :return: A single list or xr.DataArray if only one level is given, otherwise
             a list of lists or xr.DataArrays
         """
-
         # empty index
         if self.index is None:
             return []
@@ -105,10 +100,8 @@ class ZenIndex(object):
         return vals[0]
 
     def __repr__(self):
+        """The representation of the ZenIndex.
         """
-        The representation of the ZenIndex.
-        """
-
         # empty index
         if self.index is None:
             return "ZenIndex: Empty"
@@ -117,8 +110,7 @@ class ZenIndex(object):
 
 
 class ZenSet(OrderedSet):
-    """
-    Similiar to pyomo.Set.
+    """Similiar to pyomo.Set.
     """
 
     def __init__(self, data, name="", doc="", index_set="UnnamedIndex"):
@@ -164,20 +156,17 @@ class ZenSet(OrderedSet):
         super().__init__(data)
 
     def is_indexed(self):
-        """
-        Check if the set is indexed, just here because pyomo has it.
+        """Check if the set is indexed, just here because pyomo has it.
         """
         return self.indexed
 
     def get_index_name(self):
-        """
-        Returns the index name if indexed.
+        """Returns the index name if indexed.
         """
         return self.index_set
 
     def __repr__(self):
-        """
-        Return a string representation of the set.
+        """Return a string representation of the set.
         """
         return f"{super().__repr__()} indexed={self.indexed}"
 
@@ -194,19 +183,17 @@ class ZenSet(OrderedSet):
 
 
 class Component:
-    """
-    Class to prepare parameter, variable and constraint data to suit linopy.
+    """Class to prepare parameter, variable and constraint data to suit linopy.
     """
 
     def __init__(self):
-        """
-        instantiate object of Component class.
+        """Instantiate object of Component class.
         """
         self.docs = {}
 
     @staticmethod
     def compile_doc_string(doc, index_list, name, domain=None):
-        """compile docstring from doc and index_list.
+        """Compile docstring from doc and index_list.
 
         :param doc: docstring to be compiled
         :param index_list: list of indices
@@ -239,7 +226,7 @@ class Component:
 
     @staticmethod
     def get_index_names_data(index_list):
-        """splits index_list in data and index names.
+        """Splits index_list in data and index names.
 
         :param index_list: list of indices (names and values)
         :return index_values: names of indices
@@ -262,12 +249,11 @@ class Component:
 
 
 class IndexSet(Component):
-    """
-    Class to prepare parameter data for pyomo parameter prerequisites.
+    """Class to prepare parameter data for pyomo parameter prerequisites.
     """
 
     def __init__(self):
-        """initialization of the IndexSet object."""
+        """Initialization of the IndexSet object."""
         # base class init
         super().__init__()
 
@@ -286,7 +272,6 @@ class IndexSet(Component):
         :param doc: The docstring of the set
         :param index_set: The name of the index set if the set it self is indexed
         """
-
         if name in self.sets:
             logging.warning(f"{name} already added. Will be overwritten!")
 
@@ -307,7 +292,6 @@ class IndexSet(Component):
         :param name: The name of the set
         :return: True if indexed, False otherwise
         """
-
         return name in self.index_sets
 
     def get_index_name(self, name):
@@ -316,7 +300,6 @@ class IndexSet(Component):
         :param name: The name of the indexed set
         :return: The name of the index set
         """
-
         if not self.is_indexed(name=name):
             raise ValueError(f"Set {name} is not an indexed set!")
         return self.index_sets[name]
@@ -330,7 +313,6 @@ class IndexSet(Component):
         :param unique: If True, the values are unique
         :return: A list of arrays
         """
-
         # if the list is empty
         if len(index_values) == 0:
             return tuple(xr.DataArray([]) for _ in index_list)
@@ -364,7 +346,6 @@ class IndexSet(Component):
             match existing indices are renamed to match the model
         :return: The mask as xarray
         """
-
         # get the coords
         index_arrs = IndexSet.tuple_to_arr(index_values, index_list)
         coords = [
@@ -385,7 +366,7 @@ class IndexSet(Component):
     def create_variable_bounds(
         self, bounds, coords, index_arrs, index_list, index_values
     ):
-        """creates the bounds for the variables.
+        """Creates the bounds for the variables.
 
         :param bounds: The bounds of the variable
         :param coords: The coordinates of the variable
@@ -426,7 +407,7 @@ class IndexSet(Component):
         return lower, upper
 
     def create_variable_mask(self, coords, index_arrs, index_list, model):
-        """creates the mask for the variables.
+        """Creates the mask for the variables.
 
         :param coords: The coordinates of the variable
         :param index_arrs: The index values as xarrays
@@ -461,7 +442,6 @@ class IndexSet(Component):
         :param name: The name of the set
         :return: The proper coordinate
         """
-
         if name in self and len(data) > 0:
             return self.coords_dataset.coords[name]
         else:
@@ -473,7 +453,6 @@ class IndexSet(Component):
         :param name: The name of the set to get
         :return: The set that has the name
         """
-
         return self.sets[name]
 
     def __contains__(self, item):
@@ -482,7 +461,6 @@ class IndexSet(Component):
         :param item: The item to check
         :return: True if item is contained, False otherwies
         """
-
         return item in self.sets
 
     def __iter__(self):
@@ -490,13 +468,11 @@ class IndexSet(Component):
 
         :return: The iterator
         """
-
         return iter(self.sets.values())
 
 
 class DictParameter(object):
-    """
-    This is a helper class to store the dictionary parameters.
+    """This is a helper class to store the dictionary parameters.
     """
 
     def add_param(self, name, data):
@@ -505,13 +481,12 @@ class DictParameter(object):
         :param name: The name of the param
         :param data: The data of the param
         """
-
         setattr(self, name, data)
 
 
 class Parameter(Component):
     def __init__(self, optimization_setup):
-        """initialization of the parameter object."""
+        """Initialization of the parameter object."""
         self.optimization_setup = optimization_setup
         self.index_sets = optimization_setup.sets
         super().__init__()
@@ -530,7 +505,7 @@ class Parameter(Component):
         set_time_steps=None,
         capacity_types=False,
     ):
-        """initialization of a parameter.
+        """Initialization of a parameter.
 
         :param name: name of parameter
         :param doc: docstring of parameter
@@ -541,7 +516,6 @@ class Parameter(Component):
         :param set_time_steps: time steps, only if calling_class is EnergySystem
         :param capacity_types: boolean if extracted for capacities
         """
-
         dict_of_units = {}
         # TODO make more flexible
         if name == "capex_specific_conversion":
@@ -587,12 +561,11 @@ class Parameter(Component):
         :param name: The name of the param
         :param data: The data
         """
-
         # set parameter
         setattr(self, name, data)
 
     def save_min_max(self, data, name):
-        """stores min and max parameter.
+        """Stores min and max parameter.
 
         :param data: non default data of parameter and index_names
         :param name: name of parameter
@@ -644,7 +617,7 @@ class Parameter(Component):
 
     @staticmethod
     def get_param_units(data, dict_of_units, index_list, name):
-        """creates series of units with identical multi-index as data has.
+        """Creates series of units with identical multi-index as data has.
 
         :param data: non default data of parameter and index_names
         :param dict_of_units: units of parameter
@@ -668,7 +641,7 @@ class Parameter(Component):
 
     @staticmethod
     def convert_to_dict(data):
-        """converts the data to a dict if pd.Series.
+        """Converts the data to a dict if pd.Series.
 
         :param data: non default data of parameter and index_names
         :return data: data as dict
@@ -681,7 +654,7 @@ class Parameter(Component):
         return data
 
     def convert_to_xarr(self, data, index_list):
-        """converts the data to a dict if pd.Series.
+        """Converts the data to a dict if pd.Series.
 
         :param data: non default data of parameter and index_names
         :param index_list: list of indices
@@ -716,8 +689,7 @@ class Parameter(Component):
 
 class Variable(Component):
     def __init__(self, optimization_setup):
-        """
-        Initialization of a variable.
+        """Initialization of a variable.
 
         :param optimization_setup: OptimizationSetup object
         """
@@ -739,7 +711,7 @@ class Variable(Component):
         doc="",
         mask=None,
     ):
-        """initialization of a variable.
+        """Initialization of a variable.
 
         :param model: parent block component of variable, must be linopy model
         :param name: name of variable
@@ -791,8 +763,7 @@ class Variable(Component):
             logging.warning(f"Variable {name} already added. Can only be added once")
 
     def get_var_units(self, unit_category, var_index_values, index_list, mask=None):
-        """
-         creates series of units with identical multi-index as variable has.
+        """Creates series of units with identical multi-index as variable has.
 
         :param unit_category: dict defining the dimensionality of the variable's unit
         :param var_index_values: list of variable index values
@@ -887,18 +858,17 @@ class Constraint(Component):
         :param index_sets: A reference to the index sets of the model
         :param model: A reference to the linopy model
         """
-
         self.index_sets = index_sets
         self.model = model
         super().__init__()
 
     def add_constraint(self, name, constraint, doc=""):
-        """initialization of a constraint.
+        """Initialization of a constraint.
 
         :param name: name of variable
         :param constraint: a linopy constraint or a dictionary of constraints or None
-        :param doc: docstring of variable"""
-
+        :param doc: docstring of variable
+        """
         if name not in self.docs.keys():
             if constraint is None or constraint == []:
                 return
@@ -937,7 +907,7 @@ class Constraint(Component):
             logging.warning(f"{name} already added. Can only be added once")
 
     def add_single_constraint(self, name, constraint):
-        """adds a single constraint to the model.
+        """Adds a single constraint to the model.
 
         :param name: name of variable
         :param constraint: linopy constraint
@@ -957,7 +927,6 @@ class Constraint(Component):
         :param rhs: right hand side of the constraint
         :param mask: An optional mask to only add the constraint for certain indices
         """
-
         # get the mask, where rhs is not nan and rhs is finite
         if mask is not None:
             mask = ~np.isnan(rhs) & np.isfinite(rhs) & mask
@@ -1005,7 +974,6 @@ class Constraint(Component):
             for each index
         :param cons_type: Type of the constraint (currently only EQ supported)
         """
-
         if cons_type != "EQ":
             raise NotImplementedError("Currently only EQ constraints are supported")
 
@@ -1046,7 +1014,6 @@ class Constraint(Component):
         :param n: The number of variables to create
         :return: A list of variables that are SOS2 constrained
         """
-
         # vars and binaries, we need to take care of all the annoying dimension names
         dim_name = f"sos2_dim_{uuid.uuid1()}"
         sos2_var = model.add_variables(
@@ -1097,7 +1064,6 @@ class Constraint(Component):
         :param drop: Which group to drop (the dummy group
         :return: An anonymous constraint
         """
-
         # drop if necessary
         lhs = lhs.data
         if drop is not None:

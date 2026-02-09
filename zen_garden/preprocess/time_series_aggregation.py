@@ -1,5 +1,4 @@
-"""
-Functions to apply time series aggregation to time series.
+"""Functions to apply time series aggregation to time series.
 """
 
 import copy
@@ -14,13 +13,11 @@ from zen_garden.model.energy_system import EnergySystem
 
 
 class TimeSeriesAggregation(object):
-    """
-    Class containing methods to apply time series aggregation.
+    """Class containing methods to apply time series aggregation.
     """
 
     def __init__(self, energy_system: EnergySystem):
-        """
-        Initializes the time series aggregation. The data is aggregated 
+        """Initializes the time series aggregation. The data is aggregated
         for a single year and then concatenated.
 
         :param energy_system: The energy system to use
@@ -99,8 +96,7 @@ class TimeSeriesAggregation(object):
         )
 
     def select_ts_of_all_elements(self):
-        """
-        This method retrieves the raw time series for the aggregation of all 
+        """This method retrieves the raw time series for the aggregation of all
         input data sets.
         """
         dict_raw_ts = {}
@@ -116,8 +112,7 @@ class TimeSeriesAggregation(object):
             self.df_ts_raw = pd.Series()
 
     def substitute_column_names(self, direction="flatten", year_specific=False):
-        """
-        This method substitutes the column names to have flat columns names 
+        """This method substitutes the column names to have flat columns names
         (otherwise sklearn warning).
 
         :param direction: flatten or raise
@@ -133,7 +128,7 @@ class TimeSeriesAggregation(object):
             self.typical_periods.columns = self.column_names_original
 
     def run_tsa(self, year_specific=None):
-        """this method runs the time series aggregation."""
+        """This method runs the time series aggregation."""
         # substitute column names
         self.substitute_column_names(direction="flatten", year_specific=year_specific)
         # create aggregation object
@@ -171,8 +166,7 @@ class TimeSeriesAggregation(object):
             self.conducted_tsa = True
 
     def set_aggregated_ts_all_elements(self):
-        """
-        This method sets the aggregated time series and sets the necessary 
+        """This method sets the aggregated time series and sets the necessary
         attributes after the aggregation.
         """
         # sort typical periods to avoid indexing past lexsort depth
@@ -230,8 +224,7 @@ class TimeSeriesAggregation(object):
                 element.aggregated = True
 
     def get_excluded_ts(self):
-        """
-        Gets the names of all elements and parameter ts that shall be 
+        """Gets the names of all elements and parameter ts that shall be
         excluded from the time series aggregation.
         """
         self.excluded_ts = []
@@ -301,10 +294,11 @@ class TimeSeriesAggregation(object):
             self.excluded_ts.sort()
 
     def manually_aggregate_ts(self, df):
-        """manually aggregates time series for excluded parameters.
+        """Manually aggregates time series for excluded parameters.
 
         :param df: dataframe that is manually aggregated
-        :return agg_df: aggregated dataframe"""
+        :return agg_df: aggregated dataframe
+        """
         agg_df = pd.DataFrame(index=self.set_time_steps, columns=df.columns)
         tsa_options = self.analysis.time_series_aggregation
         if tsa_options["representationMethod"] == "meanRepresentation":
@@ -342,13 +336,13 @@ class TimeSeriesAggregation(object):
         return agg_df.astype(float)
 
     def extract_raw_ts(self, element, header_set_time_steps):
-        """
-        Extract the time series from an element and concatenates the 
+        """Extract the time series from an element and concatenates the
         non-constant time series to a pd.DataFrame.
 
         :param element: element of the optimization
         :param header_set_time_steps: name of set_time_steps
-        :return df_ts_raw: pd.DataFrame with non-constant time series"""
+        :return df_ts_raw: pd.DataFrame with non-constant time series
+        """
         dict_raw_ts = {}
         raw_ts = element.raw_time_series
         for ts in raw_ts:
@@ -374,8 +368,7 @@ class TimeSeriesAggregation(object):
         return df_ts_raw
 
     def run_tsa_for_year_specific_ts(self, new_sequence_time_steps):
-        """
-        This method runs the time series aggregation for year-specific time 
+        """This method runs the time series aggregation for year-specific time
         series.
 
         Args:
@@ -457,8 +450,7 @@ class TimeSeriesAggregation(object):
         return new_sequence_time_steps
 
     def link_time_steps(self):
-        """
-        Calculates the necessary overlapping time steps of the investment and 
+        """Calculates the necessary overlapping time steps of the investment and
         operation of a technology for all years. 
 
         It sets the union of the time steps for investment, operation and years.
@@ -492,8 +484,7 @@ class TimeSeriesAggregation(object):
                 self.overwrite_ts_without_expanded_timeindex(element)
 
     def overwrite_ts_with_expanded_timeindex(self, element, old_sequence_time_steps):
-        """
-        This method expands the aggregated time series to match the extended 
+        """This method expands the aggregated time series to match the extended
         operational time steps because of matching the investment and 
         operational time sequences.
 
@@ -536,8 +527,7 @@ class TimeSeriesAggregation(object):
                 setattr(element, ts, new_ts)
 
     def overwrite_ts_without_expanded_timeindex(self, element):
-        """
-        Multiply the time series with the yearly variation if the element's 
+        """Multiply the time series with the yearly variation if the element's
         time series are not aggregated.
 
         :param element: element of the optimization
@@ -557,8 +547,7 @@ class TimeSeriesAggregation(object):
                 setattr(element, ts, new_ts)
 
     def multiply_yearly_variation(self, element, ts_name, ts, year_specific=None):
-        """
-        Multiplies time series with the yearly variation of the time series.
+        """Multiplies time series with the yearly variation of the time series.
         
         The index of the variation is the same as the original time series, 
         just time and year substituted.
@@ -622,12 +611,13 @@ class TimeSeriesAggregation(object):
         return ts
 
     def add_year_specific_ts(self, element, ts, new_ts, header_set_time_steps):
-        """this method adds a year specific time series for an element.
+        """This method adds a year specific time series for an element.
 
         :param element: element of the time series
         :param ts: time series to add
         :param new_ts: new time series to add year specific values to
-        :param header_set_time_steps: name of set_time_steps"""
+        :param header_set_time_steps: name of set_time_steps
+        """
         if self.conducted_tsa:
             for year in self.year_specific_tsa.keys():
                 if (element.name, ts) in self.year_specific_tsa[year].keys():
@@ -680,7 +670,7 @@ class TimeSeriesAggregation(object):
         return new_ts
 
     def repeat_sequence_time_steps_for_all_years(self):
-        """this method repeats the operational time series for all years."""
+        """This method repeats the operational time series for all years."""
         logging.info("Repeat the time series sequences for all years")
         optimized_years = len(self.energy_system.set_time_steps_yearly)
         # concatenate the order of time steps and link with investment and yearly 
@@ -699,8 +689,7 @@ class TimeSeriesAggregation(object):
         self.time_steps.set_time_steps_operation2year_both_dir()
 
     def calculate_time_steps_storage_level(self):
-        """
-        Calculates the number of time steps on the storage level, 
+        """Calculates the number of time steps on the storage level,
         and the sequence in which the storage levels are connected.
         """
         sequence_time_steps = self.time_steps.sequence_time_steps_operation
@@ -751,8 +740,7 @@ class TimeSeriesAggregation(object):
         self.time_steps.set_time_steps_storage_startend(self.optimization_setup.system)
 
     def unique_time_steps_multiple_indices(self, list_sequence_time_steps):
-        """
-        Returns the unique time steps of multiple time grids.
+        """Returns the unique time steps of multiple time grids.
 
         Args:
             list_sequence_time_steps: list of operational and investment time steps
@@ -797,7 +785,7 @@ class TimeSeriesAggregation(object):
         return (set_time_steps, time_steps_duration, sequence_time_steps)
 
     def single_ts_tsa(self):
-        """manually aggregates the constant time series to single ts."""
+        """Manually aggregates the constant time series to single ts."""
         if self.number_typical_periods > 1:
             logging.warning(
                 "You are trying to aggregate constant time series to more than "
@@ -821,11 +809,12 @@ class TimeSeriesAggregation(object):
     def set_time_attributes(
         self, set_time_steps, time_steps_duration, sequence_time_steps
     ):
-        """this method sets the operational time attributes of an element.
+        """This method sets the operational time attributes of an element.
 
         :param set_time_steps: set_time_steps of operation
         :param time_steps_duration: time_steps_duration of operation
-        :param sequence_time_steps: sequence of operation"""
+        :param sequence_time_steps: sequence of operation
+        """
         self.set_time_steps = set_time_steps
         self.time_steps_duration = time_steps_duration
         self.sequence_time_steps = sequence_time_steps

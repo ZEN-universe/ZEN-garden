@@ -1,5 +1,4 @@
-"""
-Set default configurations in ZEN_garden.
+"""Set default configurations in ZEN_garden.
 
 This module defines default values for all configurations in ZEN_garden. The
 class :class:`Config` serves as a container grouping all model configurations.
@@ -37,8 +36,7 @@ from pydantic import BaseModel, ConfigDict
 
 
 class Subscriptable(BaseModel):
-    """
-    Allows dictionary-like access to class attributes.
+    """Allows dictionary-like access to class attributes.
 
     This class allows dictionary-like access to class attributes, such as
     ``obj["key"]`` instead of ``obj.key``. Similarly, attribute values can
@@ -80,8 +78,7 @@ class Subsets(Subscriptable):
 
 
 class HeaderDataInputs(Subscriptable):
-    """
-    Maps input/output headers to internal set names used in ZEN-garden.
+    """Maps input/output headers to internal set names used in ZEN-garden.
 
     This class defines standard header names for the input and
     output files of ZEN-garden. It provides a mapping between the column headers
@@ -119,8 +116,7 @@ class HeaderDataInputs(Subscriptable):
 
 
 class System(Subscriptable):
-    """
-    Class which contains the system configuration. 
+    """Class which contains the system configuration.
     
     This defines for example the set of carriers, technologies, etc.
     """
@@ -159,8 +155,7 @@ class System(Subscriptable):
 
 
 class Solver(Subscriptable):
-    """
-    Class which contains the solver configuration. 
+    """Class which contains the solver configuration.
     
     This defines for example the solver options, scaling, etc.
     """
@@ -194,8 +189,7 @@ class Solver(Subscriptable):
 
 
 class TimeSeriesAggregation(Subscriptable):
-    """
-    Class which contains the time series aggregation configuration. 
+    """Class which contains the time series aggregation configuration.
     
     This defines for example the clustering method, etc.
     """
@@ -210,8 +204,7 @@ class TimeSeriesAggregation(Subscriptable):
 
 
 class Analysis(Subscriptable):
-    """
-    Class which contains the analysis configuration. 
+    """Class which contains the analysis configuration.
     
     This defines for example the objective function, output settings, etc.
     """
@@ -230,8 +223,7 @@ class Analysis(Subscriptable):
 
 
 class Config(Subscriptable):
-    """
-    Class which contains the configuration of the model. 
+    """Class which contains the configuration of the model.
     
     This includes the configurations of the system, solver, and analysis as 
     well as the dictionary of scenarios.

@@ -187,8 +187,7 @@ def operation_scenarios(
     scenarios_op: str | None = None,
     delete_data: bool = False,
 ) -> None:
-    """
-    Run operational-only simulations derived from expansion results.
+    """Run operational-only simulations derived from expansion results.
 
     This is the main orchestration function for running operational
     scenarios. For each selected scenario, it validates inputs, prepares

@@ -2,8 +2,7 @@ from zen_temple.main import parse_arguments_and_run
 
 
 def create_zen_visualization_cli():
-    """
-    Entry point for the `zen-visualization` command-line interface.
+    """Entry point for the `zen-visualization` command-line interface.
 
     This function initializes and runs the command-line interface (CLI)
     for the ZEN-garden visualization platform. It delegates argument parsing

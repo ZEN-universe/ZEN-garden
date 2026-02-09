@@ -1,5 +1,4 @@
-"""
-File which contains the unit handling and scaling class.
+"""File which contains the unit handling and scaling class.
 """
 
 import itertools
@@ -22,8 +21,7 @@ from zen_garden.utils import get_label_position
 
 
 class UnitHandling:
-    """
-    A class for managing and converting units in an energy system model.
+    """A class for managing and converting units in an energy system model.
 
     This class facilitates unit consistency checks, dimensionality analysis, and
     unit conversions in energy systems models, particularly those that involve
@@ -42,8 +40,7 @@ class UnitHandling:
     """
 
     def __init__(self, folder_path, rounding_decimal_points_units):
-        """
-        Initializes an instance of the UnitHandling class.
+        """Initializes an instance of the UnitHandling class.
 
         This constructor processes and stores the system's base unit definitions
         and other configurations. It also defines the rounding tolerance for
@@ -64,8 +61,7 @@ class UnitHandling:
         self.carrier_energy_quantities = {}
 
     def get_base_units(self):
-        """
-        Extracts and initializes the base units of the energy system.
+        """Extracts and initializes the base units of the energy system.
 
         This method loads unit definitions, processes them to extract base
         units, and constructs the dimensionality matrix for the system.
@@ -163,8 +159,7 @@ class UnitHandling:
             "can be directly constructed from the others")
 
     def extract_base_units(self):
-        """
-        Extracts the base units from either a CSV or JSON file.
+        """Extracts the base units from either a CSV or JSON file.
 
         If the CSV file (``base_units.csv``) is not found, the method will
         fall back on a JSON file (``base_units.json``) to load the base units.
@@ -206,8 +201,7 @@ class UnitHandling:
         return list_base_units
 
     def calculate_combined_unit(self, input_unit, return_combination=False):
-        """
-        Represents the input unit as a combination of base units.
+        """Represents the input unit as a combination of base units.
 
         This method constructs a combined unit by converting an input unit into
         a set of base units. It first checks the dimensionality of the input
@@ -295,7 +289,7 @@ class UnitHandling:
     def _get_combined_unit_of_different_matrix(
         self, dim_matrix_reduced, dim_vector, input_unit
     ):
-        """calculates the combined unit for a different dimensionality matrix.
+        """Calculates the combined unit for a different dimensionality matrix.
         We substitute base units by the dependent units and try again.
         If the matrix is singular we solve the overdetermined problem.
 
@@ -386,8 +380,7 @@ class UnitHandling:
     def get_unit_multiplier(
         self, input_unit, attribute_name, path=None, combined_unit=None
     ):
-        """
-        Calculates the multiplier for converting an input unit into the base
+        """Calculates the multiplier for converting an input unit into the base
         units.
 
         This method computes the scaling factor (multiplier) needed to convert
@@ -453,8 +446,7 @@ class UnitHandling:
     def convert_unit_into_base_units(
         self, input_unit, get_multiplier=False, attribute_name=None, path=None
     ):
-        """
-        Converts an input unit into base units.
+        """Converts an input unit into base units.
 
         This method converts an input unit into the equivalent base units,
         following the dimensional analysis process to express the `input_unit`
@@ -499,8 +491,7 @@ class UnitHandling:
             return attribute_unit_in_base_units
 
     def consistency_checks_input_units(self, optimization_setup):
-        """
-        Performs unit consistency checks on the input data.
+        """Performs unit consistency checks on the input data.
 
         This method checks whether the units of the parameters defined in the
         input CSV files are consistent with the system's dimensional framework.
@@ -669,8 +660,7 @@ class UnitHandling:
     def _check_for_power_power(
         self, energy_quantity_units, energy_quantity_units_check
     ):
-        """
-        Adjusts conversion factors or retrofit flow coupling factor units from 
+        """Adjusts conversion factors or retrofit flow coupling factor units from
         power/power to energy/energy if needed.
 
         This helper method tries to resolve unit inconsistencies that might
@@ -725,8 +715,7 @@ class UnitHandling:
         reference_carrier_name,
         unit_dict,
     ):
-        """
-        Asserts that the units of the attributes of an element are consistent
+        """Asserts that the units of the attributes of an element are consistent
         with the system's dimensional framework.
 
         This method checks if the units of attributes defined in the input
@@ -843,8 +832,7 @@ class UnitHandling:
             )
 
     def _is_inconsistent(self, energy_quantity_units, exclude_strings=None):
-        """
-        Checks if the units of the attributes of an element are inconsistent.
+        """Checks if the units of the attributes of an element are inconsistent.
 
         This method identifies inconsistencies in the units of attributes
         by comparing the energy  quantity terms across all attributes. It allows
@@ -878,8 +866,7 @@ class UnitHandling:
             return False
 
     def _get_units_of_wrong_attributes(self, wrong_atts, unit_dict):
-        """
-        Gets units of attributes showing wrong units.
+        """Gets units of attributes showing wrong units.
 
         This method retrieves the units in base units for attributes that have
         inconsistent energy quantities based on the provided `wrong_atts`.
@@ -907,8 +894,7 @@ class UnitHandling:
     def _write_inconsistent_units_file(
         self, inconsistent_attributes, item_name, analysis, reference_carrier_name=None
     ):
-        """
-        Writes a file documenting attributes and their units that cause unit
+        """Writes a file documenting attributes and their units that cause unit
         inconsistency.
 
         This method writes a JSON file that contains a record of the
@@ -941,8 +927,7 @@ class UnitHandling:
             json.dump(inconsistent_attributes_dict, json_file)
 
     def _get_attributes_with_least_often_appearing_unit(self, energy_quantity_units):
-        """
-        Finds attributes that have the least commonly appearing unit.
+        """Finds attributes that have the least commonly appearing unit.
 
         This method identifies the attributes with the least frequent unit occurrence.
         The assumption is that the least frequent unit is most likely the incorrect one.
@@ -978,8 +963,7 @@ class UnitHandling:
         return attributes_with_lowest_appearance
 
     def get_most_often_appearing_energy_unit(self, energy_units):
-        """
-        Finds the most commonly appearing energy unit for a carrier's attributes.
+        """Finds the most commonly appearing energy unit for a carrier's attributes.
 
         This method identifies the most frequently used energy unit across the
         attributes of a given carrier, which is assumed to be the correct one.
@@ -1007,8 +991,7 @@ class UnitHandling:
     def _get_conversion_factor_units(
         self, conversion_element, unit_specs, reference_carrier, elements
     ):
-        """
-        Splits conversion factor units into dependent and reference carrier units.
+        """Splits conversion factor units into dependent and reference carrier units.
 
         This method takes a conversion factor and splits its units into two parts:
         one for the dependent carrier and one for the reference carrier. This is
@@ -1127,8 +1110,7 @@ class UnitHandling:
         return conversion_factor_units
 
     def _get_number_of_division_signs_energy_quantity(self, carrier_units, power=False):
-        """
-        Counts the number of division signs in a carrier's energy or power unit.
+        """Counts the number of division signs in a carrier's energy or power unit.
 
         This method counts the number of division signs ("/") in the most
         common energy or power unit of a carrier's attributes. It helps
@@ -1163,8 +1145,7 @@ class UnitHandling:
         return len(str(energy_unit_ref_carrier.units).split("/")) - 1
 
     def _remove_non_energy_units(self, unit_specs, attribute_name):
-        """
-        Removes all non-energy dimensions from a unit by multiplication/division.
+        """Removes all non-energy dimensions from a unit by multiplication/division.
 
         This method strips non-energy units (e.g., mass, time, etc.) from the
         specified unit and leaves only the energy quantity part. This is used
@@ -1204,8 +1185,7 @@ class UnitHandling:
         return {attribute_name: unit}
 
     def save_carrier_energy_quantities(self, optimization_setup):
-        """
-        Saves energy quantity units of carriers after consistency checks.
+        """Saves energy quantity units of carriers after consistency checks.
 
         This method stores the energy quantities of the carriers after they
         have been verified for unit consistency. It ensures that the units of
@@ -1228,8 +1208,7 @@ class UnitHandling:
             )
 
     def set_base_unit_combination(self, input_unit, attribute):
-        """
-        Converts the input unit to the corresponding base unit.
+        """Converts the input unit to the corresponding base unit.
 
         This method takes an input unit and converts it to its base unit
         equivalent, which can be used for further unit analysis. It also handles
@@ -1264,8 +1243,7 @@ class UnitHandling:
             }
 
     def set_attribute_values(self, df_output, attribute):
-        """
-        Saves the values of an attribute from a dataframe output.
+        """Saves the values of an attribute from a dataframe output.
 
         This method stores the values of a given attribute from a dataframe into
         the class' internal dictionary for future use.
@@ -1280,8 +1258,7 @@ class UnitHandling:
             self.dict_attribute_values[attribute]["values"] = df_output
 
     def check_if_invalid_hourstring(self, input_unit):
-        """
-        Checks if "h" in the input unit refers to the Planck constant.
+        """Checks if "h" in the input unit refers to the Planck constant.
 
         This method ensures that the string "h" is not mistaken for the
         Planck constant when specifying time units in the system. It will 
@@ -1299,8 +1276,7 @@ class UnitHandling:
             "as the planck constant)")
 
     def define_ton_as_metric(self):
-        """
-        Redefines the "ton" as a metric ton.
+        """Redefines the "ton" as a metric ton.
 
         This method redefines the unit "ton" to represent the metric ton, 
         ensuring consistency across the system when dealing with mass units.
@@ -1308,8 +1284,7 @@ class UnitHandling:
         self.ureg.define("ton = metric_ton")
 
     def redefine_standard_units(self):
-        """
-        Redefines standard units required in the system.
+        """Redefines standard units required in the system.
 
         This method sets up standard units such as "Euro", "year", and "ton",
         and ensures that the system handles leap years correctly.
@@ -1320,8 +1295,7 @@ class UnitHandling:
 
     @staticmethod
     def check_pos_neg_boolean(array, axis=None):
-        """
-        Checks if array contains only positive or negative booleans (-1, 0, 1).
+        """Checks if array contains only positive or negative booleans (-1, 0, 1).
 
         This method verifies if the input array contains values that are either
         positive or negative booleans, which is often used to check binary
@@ -1356,13 +1330,12 @@ class UnitHandling:
 # ToDo slight numerical errors after rescaling -> dependent on solver -> 
 # for gurobi very accurate
 class Scaling:
-    """
-    This class scales the optimization model before solving it and rescales the 
+    """This class scales the optimization model before solving it and rescales the
     solution.
     """
 
     def __init__(self, model, algorithm=None, include_rhs=True):
-        """initializes scaling instance.
+        """Initializes scaling instance.
 
         Args:
             model: optimization model
@@ -1388,8 +1361,7 @@ class Scaling:
         self.scaling_time = 0
 
     def initiate_A_matrix(self):
-        """
-        Constructs the A matrix and the right hand side of the constraints.
+        """Constructs the A matrix and the right hand side of the constraints.
 
         """
         self.A_matrix = self.model.constraints.to_matrix(filter_missings=False)
@@ -1415,8 +1387,7 @@ class Scaling:
         self.rhs_copy = self.rhs.copy()  # necessary for printing of numerics
 
     def re_scale(self):
-        """
-        Rescales the solution of the optimization model.
+        """Rescales the solution of the optimization model.
         """
         model = self.model
         for name_var in model.variables:
@@ -1427,8 +1398,7 @@ class Scaling:
             )
 
     def analyze_numerics(self):
-        """
-        Analyzes the numerics of the optimization model.
+        """Analyzes the numerics of the optimization model.
         """
         # print numerics if no scaling is activated
         self.initiate_A_matrix()
@@ -1436,8 +1406,7 @@ class Scaling:
         self.print_numerics(0, True)
 
     def run_scaling(self):
-        """
-        Runs the scaling algorithm. Function called in runner.py.
+        """Runs the scaling algorithm. Function called in runner.py.
         """
         logging.info("\n--- Start Scaling ---\n")
         t0 = time.perf_counter()
@@ -1449,11 +1418,10 @@ class Scaling:
         logging.info(f"\nTime to Scale Problem: {t1 - t0:0.1f} seconds\n")
 
     def replace_data(self, name):
-        """
-        Replaces the data (coefficients) of the lhs and rhs of the constraint 
+        """Replaces the data (coefficients) of the lhs and rhs of the constraint
         with the scaled data.
 
-        Args: 
+        Args:
             name: name of the constraint for which the data is replaced with 
                 the scaled data
         """
@@ -1482,8 +1450,7 @@ class Scaling:
             )
 
     def adjust_upper_lower_bounds_variables(self):
-        """
-        Adjusts the upper and lower bounds of the variables whose coefficients 
+        """Adjusts the upper and lower bounds of the variables whose coefficients
         are scaled. If the bounds are not scaled, the problem might get 
         infeasible.
         """
@@ -1499,8 +1466,7 @@ class Scaling:
             ] * scaling_factors ** (-1)
 
     def adjust_scaling_factors_of_skipped_rows(self, name):
-        """
-        Adjusts the column scaling factors corresponding to variables that are 
+        """Adjusts the column scaling factors corresponding to variables that are
         part of rows that are skipped. If the scaling factors are not adjusted, 
         the problem cannot be rescaled to the original problem.
 
@@ -1517,8 +1483,7 @@ class Scaling:
         self.D_c_inv[mask_variables[indices]] = 1
 
     def adjust_int_variables(self):
-        """
-        Adjusts the column scaling factors corresponding to binary and integer 
+        """Adjusts the column scaling factors corresponding to binary and integer
         variables. These columns are skipped in the scaling process since 
         scaling is solely valid for continuous variables.
         """
@@ -1529,8 +1494,7 @@ class Scaling:
                 self.D_c_inv[vars[var].labels.data[mask]] = 1
 
     def overwrite_problem(self):
-        """
-        Overwrites the optimization problem with the scaled data.
+        """Overwrites the optimization problem with the scaled data.
         """
         # pre-check variables -> skip binary and integer variables
         self.adjust_int_variables()
@@ -1564,11 +1528,11 @@ class Scaling:
         )
 
     def get_min(self, A_matrix):
-        """
-        Gets the minimum values each column or row of the A matrix.
+        """Gets the minimum values each column or row of the A matrix.
 
         Args:
             A_matrix: A matrix of the optimization model (scipy.sparse.csr_matrix)
+
         Returns:
             np.array: Minimum values of each column or row
         """
@@ -1591,12 +1555,11 @@ class Scaling:
     def get_full_geom(
         self, A_matrix, axis
     ):  # Very slow and less effective than simplified geom norm
-        """
-        Gets the full geometric mean of each column or row of the A matrix.
+        """Gets the full geometric mean of each column or row of the A matrix.
         Note, this funtcion is very slow and is not yet ready to be used in the 
         scaling process.
 
-        Args: 
+        Args:
             A_matrix: A matrix of the optimization model 
                 (scipy.sparse.csr_matrix)
             axis: axis along which the geometric mean is calculated
@@ -1613,8 +1576,7 @@ class Scaling:
         return geom
 
     def update_A(self, vector, axis):
-        """
-        Updates the A matrix with the current scaling vector.
+        """Updates the A matrix with the current scaling vector.
         This function does not overwrite the original optimization model 
         but is used for the scaling process.
 
@@ -1633,8 +1595,7 @@ class Scaling:
             self.D_c_inv = self.D_c_inv * vector
 
     def print_numerics_of_last_iteration(self):
-        """
-        Prints the numerics of the last iteration of the scaling process.
+        """Prints the numerics of the last iteration of the scaling process.
         """
         self.A_matrix = (
             sp.sparse.diags(self.D_r_inv, 0, format="csr")
@@ -1647,8 +1608,7 @@ class Scaling:
     def generate_numerics_string(
         self, label, index=None, A_matrix=None, var=None, is_rhs=False
     ):
-        """
-        Generates a string for log-outputs during scaling.
+        """Generates a string for log-outputs during scaling.
 
         :param label: label of the constraint
         :param index: index of the A matrix
@@ -1673,8 +1633,7 @@ class Scaling:
             return f"{A_matrix[index]} {var_str} in {cons_str}"
 
     def print_numerics(self, i, no_scaling=False, benchmarking_output=False):
-        """
-        Prints the numerics of the optimization model.
+        """Prints the numerics of the optimization model.
 
         Args:
             i: iteration of the scaling process
@@ -1761,8 +1720,7 @@ class Scaling:
             self.last_rhs_range = range_rhs
 
     def iter_scaling(self):
-        """
-        Generates the row and column scaling factors.
+        """Generates the row and column scaling factors.
         """
         # transform A matrix to csr matrix for better computational properties
         self.A_matrix.eliminate_zeros()

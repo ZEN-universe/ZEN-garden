@@ -1,5 +1,4 @@
-"""
-Runs the main function of ZEN-Garden.
+"""Runs the main function of ZEN-Garden.
 Compilation  of the optimization problem.
 """
 
@@ -10,8 +9,7 @@ from .runner import run
 
 
 def run_module(config="./config.py", dataset=None, folder_output=None, job_index=None):
-    """
-    Deprecated wrapper for ``zen_garden.runner.run()``.
+    """Deprecated wrapper for ``zen_garden.runner.run()``.
 
     This function mirrors the behavior of
     ``zen_garden.runner.run()`` and exists solely for backward
@@ -49,7 +47,6 @@ def run_module(config="./config.py", dataset=None, folder_output=None, job_index
         >>> download_example_dataset("1_base_case")
         >>> run("1_base_case")
     """
-
     # throw deprecation warning
     warnings.warn(
         "zen_garden.__main__.run_module() is deprecated and will be removed "

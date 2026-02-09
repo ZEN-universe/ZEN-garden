@@ -95,8 +95,7 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def resolve_job_index(job_index: str, job_index_var: str) -> list[int]:
-    """
-    Resolves the job index when running ZEN-garden from the command line.
+    """Resolves the job index when running ZEN-garden from the command line.
 
     If the job index is directly specified using the ``job_index`` command-line
     flag, those values are used. Otherwise, the job index is extracted from the
@@ -123,8 +122,7 @@ def resolve_job_index(job_index: str, job_index_var: str) -> list[int]:
 
 
 def create_zen_garden_cli():
-    """
-    Entry point for the `zen-garden` command-line interface.
+    """Entry point for the `zen-garden` command-line interface.
 
     This function creates the command-line interface for running ZEN-garden.
     It first sets up an argument parser; extracts the job index (either from
@@ -166,7 +164,6 @@ def create_zen_garden_cli():
 
         >>> zen-garden --config=".\\config.json" --dataset="1_base_case"
     """
-
     # parse command line arguments
     parser = build_parser()
 

@@ -1,5 +1,4 @@
-"""
-This function runs ZEN garden,it is executed in the __main__.py script.
+"""This function runs ZEN garden,it is executed in the __main__.py script.
 Compilation  of the optimization problem.
 """
 
@@ -22,8 +21,7 @@ setup_logger()
 
 
 def run(config="./config.json", dataset=None, job_index=None, folder_output=None):
-    """
-    Run ZEN-garden.
+    """Run ZEN-garden.
 
     This function is the primary programmatic entry point for running
     ZEN-garden. When called, it reads the configuration, loads the model
@@ -52,7 +50,6 @@ def run(config="./config.json", dataset=None, job_index=None, folder_output=None
         >>> download_example_dataset("1_base_case")
         >>> run("1_base_case")
     """
-
     # print the version
     version = importlib.metadata.version("zen-garden")
     logging.info(f"Running ZEN-garden version: {version}")

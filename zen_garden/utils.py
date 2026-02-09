@@ -1,5 +1,4 @@
-"""
-Class is defining to read in the results of an Optimization problem.
+"""Class is defining to read in the results of an Optimization problem.
 """
 
 import importlib.util
@@ -28,7 +27,7 @@ from zen_garden.default_config import Subscriptable
 
 
 def setup_logger(level=logging.INFO):
-    """set up logger.
+    """Set up logger.
 
     :param level: logging level
     """
@@ -42,13 +41,11 @@ def setup_logger(level=logging.INFO):
 
 
 def get_inheritors(klass):
-    """
-    Get all child classes of a given class.
+    """Get all child classes of a given class.
 
     :param klass: The class to get all children
     :return: All children as a set
     """
-
     subclasses = OrderedSet()
     work = [klass]
     while work:
@@ -61,8 +58,7 @@ def get_inheritors(klass):
 
 
 def download_example_dataset(dataset):
-    """
-    Downloads a dataset example to the current working directory. The function
+    """Downloads a dataset example to the current working directory. The function
     downloads the ZEN-garden dataset examples from the ZEN-garden Zenodo
     repository. It then extracts the dataset specified by the user and saves
     it to the current working directory. In addition, it also downloads a
@@ -96,7 +92,6 @@ def download_example_dataset(dataset):
         >>> download_dataset_example("1_base_case")
 
     """
-
     # retrieve Zenodo metadata
     url = metadata("zen_garden").get_all("Project-URL")
     url = [u.split(", ")[1] for u in url if u.split(", ")[0] == "Zenodo"][0]
@@ -201,7 +196,6 @@ def lp_sum(exprs, dim="_term"):
     :param dim: Along which dimension to merge
     :return: The sum of the expressions
     """
-
     # emtpy sum
     if len(exprs) == 0:
         return 0
@@ -242,8 +236,7 @@ def align_like(da, other, fillna=0.0, astype=None):
 
 
 def linexpr_from_tuple_np(tuples, coords, model):
-    """
-    Transforms tuples of (coeff, var) into a linopy linear expression.
+    """Transforms tuples of (coeff, var) into a linopy linear expression.
      
     Uses numpy broadcasting.
 
@@ -252,7 +245,6 @@ def linexpr_from_tuple_np(tuples, coords, model):
     :param model: The model to which the linear expression belongs
     :return: A linear expression
     """
-
     # get actual coords
     if not isinstance(coords, xr.core.dataarray.DataArrayCoordinates):
         coords = xr.DataArray(coords=coords).coords
@@ -282,7 +274,7 @@ def linexpr_from_tuple_np(tuples, coords, model):
 
 
 def xr_like(fill_value, dtype, other, dims):
-    """Create an xarray with fill value and dtype like the other object. 
+    """Create an xarray with fill value and dtype like the other object.
     
     Only contains the given dimensions.
 
@@ -292,7 +284,6 @@ def xr_like(fill_value, dtype, other, dims):
     :param dims: The dimensions to use
     :return: An object like the other object but only containing the given dimensions
     """
-
     # get the coords
     coords = {}
     for dim in dims:
@@ -310,7 +301,7 @@ def xr_like(fill_value, dtype, other, dims):
 
 
 def reformat_slicing_index(index, component) -> tuple[str]:
-    """reformats the slicing index to a tuple of strings that is readable by pytables
+    """Reformats the slicing index to a tuple of strings that is readable by pytables
     :param index: slicing index of the resulting dataframe
     :param component: component for which the index is reformatted
     :return: reformatted index.
@@ -370,7 +361,7 @@ def reformat_slicing_index(index, component) -> tuple[str]:
 
 
 def slice_df_by_index(df, index_tuple) -> dict:
-    """recreate the slicing index from a tuple of strings and slice the dataframe. 
+    """Recreate the slicing index from a tuple of strings and slice the dataframe.
 
     :param df: dataframe to be sliced
     :param index_tuple: tuple of strings representing the slicing index
@@ -422,8 +413,7 @@ def get_label_position(obj, label: int):
 
 
 class IISConstraintParser(object):
-    """
-    This class is used to parse the IIS constraints and print them in a nice way
+    """This class is used to parse the IIS constraints and print them in a nice way
     Most functions here are just copied from linopy 0.2.x.
     """
 
@@ -434,8 +424,7 @@ class IISConstraintParser(object):
     SIGNS_pretty = {EQUAL: "=", GREATER_EQUAL: "≥", LESS_EQUAL: "≤"}
 
     def __init__(self, iis_file, model):
-        """
-        Initializes the IIS constraint parser.
+        """Initializes the IIS constraint parser.
 
         :param iis_file: The file containing the IIS
         :param model: The model to which the IIS belongs
@@ -490,7 +479,7 @@ class IISConstraintParser(object):
                 f.write(var_str)
 
     def write_gurobi_iis(self):
-        """writes IIS to file."""
+        """Writes IIS to file."""
         # get the gurobi model
         gurobi_model = self.model.solver_model
         # write the IIS
@@ -502,7 +491,6 @@ class IISConstraintParser(object):
 
         :return: A list of labels
         """
-
         labels_c = []
         labels_v = []
         lines_v = {}
@@ -520,8 +508,7 @@ class IISConstraintParser(object):
         return labels_c, labels_v, lines_v
 
     def print_single_constraint(self, constraint, coord):
-        """
-        Print a single constraint based on the constraint object.
+        """Print a single constraint based on the constraint object.
 
         :param constraint: The constraint object
         :param coord: The coordinates of the constraint
@@ -542,27 +529,23 @@ class IISConstraintParser(object):
 
     @staticmethod
     def print_coord(coord):
-        """
-        Print the coordinates.
+        """Print the coordinates.
 
         :param coord: The coordinates to print
         :return: The string representation of the coordinates
         """
-
         if isinstance(coord, dict):
             coord = coord.values()
         return "[" + ", ".join([str(c) for c in coord]) + "]" if len(coord) else ""
 
     @staticmethod
     def get_label_position(constraints, value):
-        """
-        Get tuple of name and coordinate for variable labels.
+        """Get tuple of name and coordinate for variable labels.
 
         :param constraints: The constraints object
         :param value: The value to get the label for
         :return: The name and coordinate of the variable
         """
-
         name = constraints.get_name_by_label(value)
         con = constraints[name]
         indices = [i[0] for i in np.where(con.labels.values == value)]
@@ -577,8 +560,7 @@ class IISConstraintParser(object):
 
     @staticmethod
     def print_single_expression(c, v, model):
-        """
-        This is a linopy routine but without max terms
+        """This is a linopy routine but without max terms
         Print a single linear expression based on the coefficients and variables.
 
         :param c: The coefficients of the expression
@@ -615,8 +597,7 @@ class IISConstraintParser(object):
 
 
 class ScenarioDict(dict):
-    """
-    This is a dictionary for the scenario analysis that has some convenience functions.
+    """This is a dictionary for the scenario analysis that has some convenience functions.
     """
 
     _param_dict_keys = {
@@ -637,7 +618,6 @@ class ScenarioDict(dict):
         :param optimization_setup: The optimization setup corresponding to the scenario
         :param paths: The paths to the elements
         """
-
         # avoid circular imports
         from . import inheritors
 
@@ -661,8 +641,7 @@ class ScenarioDict(dict):
         self.update_config()
 
     def update_config(self):
-        """
-        Updates the analysis, system, and solver in the config.
+        """Updates the analysis, system, and solver in the config.
         """
         config_parts = {
             "analysis": self.analysis,
@@ -711,7 +690,6 @@ class ScenarioDict(dict):
             dict: The expanded dict, where all necessary parameters are expanded 
             and subpaths are set
         """
-
         # Important, all for-loops through keys or items in this routine should be 
         # sorted!
 
@@ -746,7 +724,6 @@ class ScenarioDict(dict):
         :param counter: The counter for the scenario
         :return: A list of scenarios
         """
-
         # get the default
         if param_map is None:
             param_map = dict()
@@ -861,7 +838,6 @@ class ScenarioDict(dict):
         :param init_dict: The initial dict
         :return: A new dict which can be used for the scenario analysis
         """
-
         new_dict = init_dict.copy()
         for element_class in self.element_classes:
             current_set = element_class.label
@@ -896,7 +872,6 @@ class ScenarioDict(dict):
 
         :param vali_dict: The dictionary to validate
         """
-
         for element, element_dict in vali_dict.items():
             if element in self._special_elements or element in self._setting_elements:
                 continue
@@ -913,8 +888,7 @@ class ScenarioDict(dict):
 
     @staticmethod
     def check_if_all_elements_in_model(scenario_dict, element_dict):
-        """
-        Checks if all elements in scenario_dict are present in the element_dict.
+        """Checks if all elements in scenario_dict are present in the element_dict.
         
         This is used to ensure that all elements in the scenario are defined in 
         the model.
@@ -946,7 +920,6 @@ class ScenarioDict(dict):
         :param fname: The file name to validte
         :return: The validated file name
         """
-
         fname, ext = os.path.splitext(fname)
         if ext != "":
             warnings.warn(
@@ -956,8 +929,7 @@ class ScenarioDict(dict):
         return fname
 
     def get_default(self, element, param):
-        """
-        Return the name where the default value should be read out.
+        """Return the name where the default value should be read out.
 
         Args:
             element: The element name
@@ -967,7 +939,6 @@ class ScenarioDict(dict):
             and factor are returned, otherwise the default entry is returned 
             with a factor of 1
         """
-
         # These are the default values
         default_f_name = "attributes"
         default_factor = 1.0
@@ -999,7 +970,6 @@ class ScenarioDict(dict):
             factor are returned, otherwise the default entry is returned with 
             a factor of 1
         """
-
         # These are the default values
         default_f_name = param
         default_factor = 1.0
@@ -1020,8 +990,7 @@ class ScenarioDict(dict):
         return default_f_name, default_factor
 
     def get_param_part_file(self, element, param):
-        """
-        Return the partial file name where the parameter values should be read out.
+        """Return the partial file name where the parameter values should be read out.
 
         Args:
             element: the element name
@@ -1055,8 +1024,7 @@ class ScenarioDict(dict):
 
 
 class InputDataChecks:
-    """
-    This class checks if the input data (folder/file structure, system.py settings, 
+    """This class checks if the input data (folder/file structure, system.py settings,
     element definitions, etc.) is defined correctly.
     """
 
@@ -1091,8 +1059,7 @@ class InputDataChecks:
     ]
 
     def __init__(self, config, optimization_setup):
-        """
-        Initialize the class.
+        """Initialize the class.
 
         Args:
             config: config object used to extract the analysis, system and solver 
@@ -1104,8 +1071,7 @@ class InputDataChecks:
         self.optimization_setup = optimization_setup
 
     def check_technology_selections(self):
-        """
-        Checks selection of different technologies in system.py file.
+        """Checks selection of different technologies in system.py file.
         """
         # Checks if at least one technology is selected in the system.py file
         assert (
@@ -1128,8 +1094,7 @@ class InputDataChecks:
             self.system = self.system.model_copy(update={tech_list: unique_elements})
 
     def check_year_definitions(self):
-        """
-        Check if year-related parameters are defined correctly.
+        """Check if year-related parameters are defined correctly.
         """
         # assert that number of optimized years is a positive integer
         assert (
@@ -1161,11 +1126,9 @@ class InputDataChecks:
             )
 
     def check_primary_folder_structure(self):
-        """
-        Checks if the primary folder structure (set_conversion_technology, 
+        """Checks if the primary folder structure (set_conversion_technology,
         set_transport_technology, ..., energy_system) is provided correctly.
         """
-
         for set_name, subsets in self.analysis.subsets.model_dump().items():
             if not os.path.exists(os.path.join(self.analysis.dataset, set_name)):
                 raise AssertionError(f"Folder {set_name} does not exist!")
@@ -1201,8 +1164,7 @@ class InputDataChecks:
                 )
 
     def check_existing_technology_data(self):
-        """
-        This method checks the existing technology input data and only regards 
+        """This method checks the existing technology input data and only regards
         those technology elements for which folders containing the attributes.json 
         file exist.
         """
@@ -1257,8 +1219,7 @@ class InputDataChecks:
                     )
 
     def check_existing_carrier_data(self):
-        """
-        Checks the existing carrier data and only regards those carriers for 
+        """Checks the existing carrier data and only regards those carriers for
         which folders exist.
         """
         # check if carriers exist
@@ -1278,8 +1239,7 @@ class InputDataChecks:
                 )
 
     def check_dataset(self):
-        """
-        Ensures that the dataset chosen in the config does exist and contains a 
+        """Ensures that the dataset chosen in the config does exist and contains a
         system.py file.
         """
         dataset = os.path.basename(self.analysis.dataset)
@@ -1309,8 +1269,7 @@ class InputDataChecks:
             )
 
     def check_single_directed_edges(self, set_edges_input):
-        """
-        Checks if single-directed edges exist in the dataset (e.g. CH-DE exists, 
+        """Checks if single-directed edges exist in the dataset (e.g. CH-DE exists,
         DE-CH doesn't) and raises a warning.
 
         Args:
@@ -1332,8 +1291,7 @@ class InputDataChecks:
                 )
 
     def read_system_file(self, config):
-        """
-        Reads the system file and returns the system dictionary.
+        """Reads the system file and returns the system dictionary.
 
         :param config: config object
         """
@@ -1357,7 +1315,8 @@ class InputDataChecks:
 
     def check_no_extra_config_fields(self, config, config_name="config"):
         """Checks if the config object has no extra fields that are not defined
-        in the default_config."""
+        in the default_config.
+        """
         assert (
             len(config.model_extra) == 0
         ), (f"The config object '{config_name}' has extra fields that are not "
@@ -1376,8 +1335,7 @@ class InputDataChecks:
     def check_carrier_configuration(
         input_carrier, output_carrier, reference_carrier, name
     ):
-        """
-        Check the chosen input/output/reference carrier combination.
+        """Check the chosen input/output/reference carrier combination.
 
         :param input_carrier: input carrier of conversion technology
         :param output_carrier: output carrier of conversion technology
@@ -1405,8 +1363,7 @@ class InputDataChecks:
 
     @staticmethod
     def check_duplicate_indices(df_input, file_name, folder_path):
-        """
-        Checks if df_input contains any duplicate indices and either removes 
+        """Checks if df_input contains any duplicate indices and either removes
         them if they are of identical value or raises an error otherwise.
 
         :param df_input: raw input dataframe
@@ -1441,8 +1398,7 @@ class InputDataChecks:
 
 
 class StringUtils:
-    """
-    This class handles strings for logging and filenames to tidy up scripts.
+    """This class handles strings for logging and filenames to tidy up scripts.
     """
 
     def __init__(self):
@@ -1451,7 +1407,7 @@ class StringUtils:
 
     @classmethod
     def print_optimization_progress(cls, scenario, steps_horizon, step, system):
-        """prints the current optimization progress.
+        """Prints the current optimization progress.
 
         :param scenario: string of scenario name
         :param steps_horizon: all steps of horizon
@@ -1476,7 +1432,7 @@ class StringUtils:
 
     @classmethod
     def generate_folder_path(cls, config, scenario, scenario_dict, steps_horizon, step):
-        """generates the folder path for the results.
+        """Generates the folder path for the results.
 
         :param config: config of optimization
         :param scenario: name of scenario
@@ -1519,7 +1475,7 @@ class StringUtils:
 
     @classmethod
     def setup_model_folder(cls, analysis, system):
-        """return model name while conducting some tests.
+        """Return model name while conducting some tests.
 
         :param analysis: analysis of optimization
         :param system: system of optimization
@@ -1532,7 +1488,7 @@ class StringUtils:
 
     @classmethod
     def setup_output_folder(cls, analysis, system):
-        """return model name while conducting some tests.
+        """Return model name while conducting some tests.
 
         :param analysis: analysis of optimization
         :param system: system of optimization
@@ -1566,7 +1522,7 @@ class StringUtils:
 
     @staticmethod
     def get_output_folder(analysis):
-        """return name of output folder.
+        """Return name of output folder.
 
         :param analysis: analysis of optimization
         :return: output folder
@@ -1577,8 +1533,7 @@ class StringUtils:
 
 
 class ScenarioUtils:
-    """
-    This class handles some stuff for scenarios to tidy up scripts.
+    """This class handles some stuff for scenarios to tidy up scripts.
     """
 
     def __init__(self):
@@ -1587,10 +1542,11 @@ class ScenarioUtils:
 
     @staticmethod
     def scenario_string(scenario):
-        """creates additional scenario string.
+        """Creates additional scenario string.
 
         :param scenario: scenario name
-        :return: scenario string"""
+        :return: scenario string
+        """
         if scenario != "":
             scenario_string = f"for scenario {scenario} "
         else:
@@ -1599,10 +1555,11 @@ class ScenarioUtils:
 
     @staticmethod
     def clean_scenario_folder(config, out_folder):
-        """cleans scenario dict when overwritten.
+        """Cleans scenario dict when overwritten.
 
         :param config: config of optimization
-        :param out_folder: output folder"""
+        :param out_folder: output folder
+        """
         # compare to existing sub-scenarios
         if (
             config.system.conduct_scenario_analysis
@@ -1641,7 +1598,7 @@ class ScenarioUtils:
 
     @staticmethod
     def get_scenarios(config, job_index):
-        """retrieves and overwrites the scenario dicts.
+        """Retrieves and overwrites the scenario dicts.
 
         :param config: config of optimization
         :param job_index: index of current job, if passed
@@ -1698,16 +1655,14 @@ class ScenarioUtils:
 
 
 class OptimizationError(RuntimeError):
-    """
-    Exception raised when the optimization problem is infeasible.
+    """Exception raised when the optimization problem is infeasible.
     """
 
     def __init__(
         self,
         status="The optimization is infeasible or unbounded, or finished with an error",
     ):
-        """
-        Initializes the class.
+        """Initializes the class.
 
         :param status: The message to display
         """

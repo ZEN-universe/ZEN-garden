@@ -1,5 +1,4 @@
-"""
-File that contains functions to compare the results of two or more models.
+"""File that contains functions to compare the results of two or more models.
 """
 
 import logging
@@ -27,7 +26,6 @@ def compare_model_values(
     :param scenarios: None, str or tuple of scenarios
     :return: a dictionary with diverging results
     """
-
     if scenarios is None:
         scenarios = []
     scenarios = check_and_fill_scenario_list(results, scenarios)
@@ -66,8 +64,7 @@ def compare_configs(
     results: list[Results],
     scenarios: list[str] = None,
 ) -> dict[str, Any]:
-    """
-    Compares the configs of two results, namely the Analysis-Config and the 
+    """Compares the configs of two results, namely the Analysis-Config and the
     System-config.
 
     :param results: List of results
@@ -124,7 +121,7 @@ def compare_configs(
 def get_component_diff(
     results: list[Results], component_type: ComponentType, scenarios: list[str]
 ) -> list[str]:
-    """returns a list with the differences in component names.
+    """Returns a list with the differences in component names.
 
     :param results: list with results
     :param component_type: component type to compare
@@ -175,8 +172,7 @@ def compare_dicts(
     dict2: dict[Any, Any],
     result_names: list[str] = None,
 ) -> Optional[dict[Any, Any]]:
-    """
-    Compares two dictionaries and returns only the fields with different values.
+    """Compares two dictionaries and returns only the fields with different values.
 
     :param dict1: first config dict
     :param dict2: second config dict
@@ -252,8 +248,7 @@ def check_and_fill_scenario_list(
 
 
 def get_common_scenario(results_1: Results, results_2: Results) -> str:
-    """
-    Returns the name of a common scenario that are in both provided results.
+    """Returns the name of a common scenario that are in both provided results.
 
     :param results_1: Results 1
     :param results_2: Results 2
@@ -303,8 +298,7 @@ def compare_component_values(
 
 
 def _get_comparison_df(val_0, val_1, result_names, component_name, rtol):
-    """
-    :param val_0:
+    """:param val_0:
     :param val_1:
     :param result_names:
     :param component_name:
@@ -383,8 +377,7 @@ def _get_different_vals(
     result_names: list[str],
     rtol: float,
 ) -> pd.DataFrame:
-    """
-    Get the different values of two dataframes or series.
+    """Get the different values of two dataframes or series.
 
     :param val_0: first dataframe or series
     :param val_1: second dataframe or series
