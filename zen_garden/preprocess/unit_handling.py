@@ -794,13 +794,15 @@ class UnitHandling:
                     item.name,
                     analysis=optimization_setup.analysis,
                 )
+                units_of_wrong_attributes = self._get_units_of_wrong_attributes(
+                        wrong_atts=attributes_with_lowest_appearance, 
+                        unit_dict=unit_dict
+                )
                 raise AssertionError(
                     f"The attribute units of the {item.__class__.__name__} "
                     f"{item.name} are not consistent! Most probably, the "
                     f"unit(s) of the attribute(s) "
-                    f"{self._get_units_of_wrong_attributes(
-                        wrong_atts=attributes_with_lowest_appearance, 
-                        unit_dict=unit_dict)} are wrong."
+                    f"{units_of_wrong_attributes} are wrong."
                 )
             else:
                 self._write_inconsistent_units_file(
