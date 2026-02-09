@@ -84,12 +84,20 @@ def run(config="./config.json", dataset=None, job_index=None, folder_output=None
         # logging.info(f"Overwriting dataset to: {dataset_path}")
         config.analysis.dataset = dataset
     if folder_output is not None:
-        config.analysis.folder_output = os.path.abspath(folder_output)
-        config.solver.solver_dir = os.path.abspath(folder_output)
+        if not Path(folder_output).is_absolute():
+            folder_output = os.path.abspath(Path(config_path) / folder_output)
+        config.analysis.folder_output = folder_output
+        config.solver.solver_dir = folder_output
     logging.info(f"Optimizing for dataset {config.analysis.dataset}")
     # get the abs path to avoid working dir stuff
-    config.analysis.dataset = os.path.abspath(config.analysis.dataset)
-    config.analysis.folder_output = os.path.abspath(config.analysis.folder_output)
+    if not Path(config.analysis.dataset).is_absolute():
+        config.analysis.dataset = os.path.abspath(
+            Path(config_path) / config.analysis.dataset
+        )
+    if not Path(config.analysis.folder_output).is_absolute():
+        config.analysis.folder_output = os.path.abspath(
+            Path(config_path) / config.analysis.folder_output
+        )
     config.analysis.zen_garden_version = version
     ### SYSTEM CONFIGURATION
     input_data_checks = InputDataChecks(config=config, optimization_setup=None)
