@@ -56,7 +56,7 @@ def run_module(config="./config.py", dataset=None, folder_output=None, job_index
         stacklevel=2,
     )
 
-    # run 
+    # run
     return run(
         config=config, dataset=dataset, folder_output=folder_output, job_index=job_index
     )

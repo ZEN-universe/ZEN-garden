@@ -93,11 +93,11 @@ def run(config="./config.json", dataset=None, job_index=None, folder_output=None
     if not Path(config.analysis.dataset).is_absolute():
         config.analysis.dataset = os.path.abspath(
             Path(config_path) / config.analysis.dataset
-            )
+        )
     if not Path(config.analysis.folder_output).is_absolute():
         config.analysis.folder_output = os.path.abspath(
             Path(config_path) / config.analysis.folder_output
-            )
+        )
     config.analysis.zen_garden_version = version
     ### SYSTEM CONFIGURATION
     input_data_checks = InputDataChecks(config=config, optimization_setup=None)
