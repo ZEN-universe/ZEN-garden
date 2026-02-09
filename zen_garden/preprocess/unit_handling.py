@@ -826,12 +826,14 @@ class UnitHandling:
             self._write_inconsistent_units_file(
                 energy_quantity_units, item.name, analysis=optimization_setup.analysis
             )
+            units_of_wrong_attributes = self._get_units_of_wrong_attributes(
+                    wrong_atts=energy_quantity_units, 
+                    unit_dict=unit_dict
+            )
             raise AssertionError(
                 f"The attribute units defined in the energy_system are not "
                 f"consistent! Most probably, the unit(s) of the attribute(s) "
-                f"{self._get_units_of_wrong_attributes(
-                    wrong_atts=energy_quantity_units, 
-                    unit_dict=unit_dict)} are wrong."
+                f"{units_of_wrong_attributes} are wrong."
             )
 
     def _is_inconsistent(self, energy_quantity_units, exclude_strings=None):
