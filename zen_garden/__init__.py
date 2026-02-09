@@ -1,4 +1,4 @@
-from . import model, postprocess, preprocess, wrapper
+from . import wrapper
 from .model.element import Element
 from .optimization_setup import OptimizationSetup
 from .postprocess.comparisons import (
@@ -16,7 +16,9 @@ __all__ = [
     "download_example_dataset",
     "compare_model_value",
     "compare_configs",
+    "compare_model_values",
     "compare_dicts",
+    "wrapper"
 ]
 
 
