@@ -3,7 +3,10 @@
 This file gets automatically updated in ZEN-garden's continuous integration 
 procedures. Do not edit the file manually.
 
-## [Unversioned Changes] - 2026-02-09 
+## [v2.9.6] - 2026-02-09 
+
+### Bug Fixes 🐛
+- Fixes bug when data folder is not in the cwd but in a different location. Allows the path to be different and saves the results there. [[🔀 PR #1222](https://github.com/ZEN-universe/ZEN-garden/pull/1222) @jacob-mannhardt]
 
 ### Maintenance Tasks 🧹
 - reformat and lint ZEN-garden code to match style guidelines. The code now passes checks from the formatter ``Black`` and the linter ``Ruff``. [[🔀 PR #1220](https://github.com/ZEN-universe/ZEN-garden/pull/1220) @csfunke]
