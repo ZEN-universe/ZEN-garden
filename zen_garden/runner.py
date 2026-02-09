@@ -145,7 +145,8 @@ def run(config="./config.json", dataset=None, job_index=None, folder_output=None
                 break
             if optimization_setup.solver.use_scaling:
                 optimization_setup.scaling.re_scale()
-            # save new capacity additions and cumulative carbon emissions for next time step
+            # save new capacity additions and cumulative carbon emissions 
+            # for next time step
             if optimization_setup.system.use_rolling_horizon:
                 optimization_setup.add_results_of_optimization_step(step)
             # EVALUATE RESULTS

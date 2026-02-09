@@ -229,7 +229,8 @@ def align_like(da, other, fillna=0.0, astype=None):
         other = other
     else:
         raise TypeError(
-            f"other must be a Variable, LinearExpression or DataArray, not {type(other)}"
+            "other must be a Variable, LinearExpression or DataArray, "
+            f"not {type(other)}"
         )
     da = xr.align(da, other, join="right")[0]
     da = da.broadcast_like(other)
@@ -241,7 +242,10 @@ def align_like(da, other, fillna=0.0, astype=None):
 
 
 def linexpr_from_tuple_np(tuples, coords, model):
-    """Transforms tuples of (coeff, var) into a linopy linear expression, but uses numpy broadcasting.
+    """
+    Transforms tuples of (coeff, var) into a linopy linear expression.
+     
+    Uses numpy broadcasting.
 
     :param tuples: Tuple of (coeff, var)
     :param coords: The coordinates of the final linear expression
@@ -278,7 +282,9 @@ def linexpr_from_tuple_np(tuples, coords, model):
 
 
 def xr_like(fill_value, dtype, other, dims):
-    """Creates an xarray with fill value and dtype like the other object but only containing the given dimensions.
+    """Create an xarray with fill value and dtype like the other object. 
+    
+    Only contains the given dimensions.
 
     :param fill_value: The value to fill the data with
     :param dtype: dtype of the data
@@ -339,7 +345,8 @@ def reformat_slicing_index(index, component) -> tuple[str]:
         ref_index = []
         if len(index) > len(index_names):
             warnings.warn(
-                f"Index length {len(index)} is longer than the number of index dimensions {len(index_names)}. Check selected index.",
+                f"Index length {len(index)} is longer than the number of index "\
+                f"dimensions {len(index_names)}. Check selected index.",
                 Warning,
                 stacklevel=2,
             )
@@ -363,7 +370,8 @@ def reformat_slicing_index(index, component) -> tuple[str]:
 
 
 def slice_df_by_index(df, index_tuple) -> dict:
-    """recreates the slicing index from a tuple of strings and slices the dataframe accordingly
+    """recreate the slicing index from a tuple of strings and slice the dataframe. 
+
     :param df: dataframe to be sliced
     :param index_tuple: tuple of strings representing the slicing index
     :return: sliced dataframe.
@@ -645,7 +653,8 @@ class ScenarioDict(dict):
         self.validate_dict(expanded_dict)
         self.dict = expanded_dict
 
-        # super init TODO adds both system and "system"  (same for analysis) to the dict - necessary?
+        # super init TODO adds both system and "system"  (same for analysis) 
+        # to the dict - necessary?
         super().__init__(self.dict)
 
         # finally we update the analysis, system, and solver in the config
@@ -665,43 +674,53 @@ class ScenarioDict(dict):
                 for sub_key, sub_value in self.dict[key].items():
                     assert (
                         sub_key in value.keys()
-                    ), f"Trying to update {key} with key {sub_key} and value {sub_value}, but the {key} does not have this key!"
-                    if type(value[sub_key]) == type(sub_value):
+                    ), (f"Trying to update {key} with key {sub_key} and value "
+                        f"{sub_value}, but the {key} does not have this key!"
+                    )
+                    if type(value[sub_key]) is type(sub_value):
                         value[sub_key] = sub_value
                     elif isinstance(
                         sub_value, dict
-                    ):  # ToDO check this and make more general -> here only for SolverOptions
+                    ):  # ToDO check and generalize -> here only for SolverOptions
                         try:
                             for sub_sub_key, sub_sub_value in sub_value.items():
                                 value[sub_key][sub_sub_key] = sub_sub_value
-                        except:
+                        except Exception as err:
                             raise ValueError(
-                                f"Trying to update {key} with key {sub_key} and value {sub_value} of type {type(sub_value)},"
-                                f""
-                                f"but the {key} has already a value of type {type(value[sub_key])}"
-                            )
+                                f"Trying to update {key} with key {sub_key} and value " 
+                                f"{sub_value} of type {type(sub_value)}, "
+                                f"but the {key} has already a value of type "
+                                f"{type(value[sub_key])}"
+                            ) from err
                     else:
                         raise ValueError(
-                            f"Trying to update {key} with key {sub_key} and value {sub_value} of type {type(sub_value)}, "
-                            f"but the {key} has already a value of type {type(value[sub_key])}"
+                            f"Trying to update {key} with key {sub_key} and value "
+                            f"{sub_value} of type {type(sub_value)}, "
+                            f"but the {key} has already a value of type "
+                            f"{type(value[sub_key])}"
                         )
 
     @staticmethod
     def expand_lists(scenarios: dict):
-        """Expands all lists of parameters in the all scenarios and returns a new dict.
+        """Expand parameter lists in the all scenarios and return a new dict.
 
-        :param scenarios: The initial dict of scenarios
-        :return: The expanded dict, where all necessary parameters are expanded and subpaths are set
+        Args:
+            scenarios (dict): The initial dict of scenarios
+        
+        Returns:
+            dict: The expanded dict, where all necessary parameters are expanded 
+            and subpaths are set
         """
 
-        # Important, all for-loops through keys or items in this routine should be sorted!
+        # Important, all for-loops through keys or items in this routine should be 
+        # sorted!
 
         expanded_scenarios = dict()
         for scenario_name, scenario_dict in sorted(
             scenarios.items(), key=lambda x: x[0]
         ):
             assert (
-                type(scenario_dict) == dict
+                type(scenario_dict) is dict
             ), f"Scenario {scenario_name} is not a dictionary!"
             scenario_dict["base_scenario"] = scenario_name
             scenario_dict["sub_folder"] = ""
@@ -740,12 +759,9 @@ class ScenarioDict(dict):
             # we do not expand these
             if element in ScenarioDict._special_elements:
                 continue
-            # check for dict items in settings elements
-            # if element in ScenarioDict._setting_elements and dict not in [type(v) for v in element_dict.values()]:
-            #     continue
-
-            # check for 'system' analysis' and 'solver' keys and see whether they are dicts and have a list in them,
-            # on ly then do the list expansion, otherwise proceed as always.
+            # check for 'system' analysis' and 'solver' keys and see whether they are 
+            # dicts and have a list in them, only then do the list expansion, 
+            # otherwise proceed as always.
             for param, param_dict in sorted(element_dict.items(), key=lambda x: x[0]):
                 if element in ScenarioDict._setting_elements:
                     if not isinstance(param_dict, dict):
@@ -777,14 +793,15 @@ class ScenarioDict(dict):
                             if key + "_fmt" in param_dict:
                                 if "{}" not in param_dict[key + "_fmt"]:
                                     raise SyntaxError(
-                                        "When setting a format for a name, you need to include a "
-                                        "placeholder '{}' for its value! No placeholder found in "
-                                        f"for {key} in {param} in {element} in {scenario['base_scenario']}"
+                                        "When setting a format for a name, you need to "
+                                        "include a placeholder '{}' for its value! No "
+                                        f"placeholder found for {key} in {param} in "
+                                        f"{element} in {scenario['base_scenario']}"
                                     )
                                 name = param_dict[key + "_fmt"].format(value)
                                 if element not in ScenarioDict._setting_elements:
                                     del new_scenario[element][param][key + "_fmt"]
-                                # we don't need to increment the param for the next expansion
+                                #don't need to increment the param for next expansion
                                 param_up = 0
                             else:
                                 name = f"p{counter:02d}_{num:03d}"
@@ -890,14 +907,17 @@ class ScenarioDict(dict):
             for param, param_dict in element_dict.items():
                 if len(diff := (set(param_dict.keys()) - self._param_dict_keys)) > 0:
                     raise ValueError(
-                        f"The entry for element {element} and param {param} contains invalid entries: {diff}!"
+                        f"The entry for element {element} and param {param} "
+                        f"contains invalid entries: {diff}!"
                     )
 
     @staticmethod
     def check_if_all_elements_in_model(scenario_dict, element_dict):
         """
-        Checks if all elements in the scenario_dict are present in the element_dict
-        This is used to ensure that all elements in the scenario are defined in the model.
+        Checks if all elements in scenario_dict are present in the element_dict.
+        
+        This is used to ensure that all elements in the scenario are defined in 
+        the model.
 
         :param scenario_dict: Dictionary containing the scenario elements
         :param element_dict: Dictionary containing the element definitions
@@ -913,12 +933,15 @@ class ScenarioDict(dict):
         for element in relevant_elements:
             if element not in existing_elements:
                 raise KeyError(
-                    f"The element '{element}', defined in the scenario file, is not defined in the model."
+                    f"The element '{element}', defined in the scenario file, "
+                    "is not defined in the model."
                 )
 
     @staticmethod
     def validate_file_name(fname):
-        """Checks if the file name has an extension, it is expected to not have an extension.
+        """Checks if the file name has an extension.
+        
+        It is expected to not have an extension.
 
         :param fname: The file name to validte
         :return: The validated file name
@@ -933,12 +956,16 @@ class ScenarioDict(dict):
         return fname
 
     def get_default(self, element, param):
-        """Return the name where the default value should be read out.
+        """
+        Return the name where the default value should be read out.
 
-        :param element: The element name
-        :param param: The parameter of the element
-        :return: If the entry is overwritten by the scenario analysis the entry and factor are returned, otherwise
-                 the default entry is returned with a factor of 1
+        Args:
+            element: The element name
+            param: The parameter of the element
+        
+        Returns: If the entry is overwritten by the scenario analysis the entry 
+            and factor are returned, otherwise the default entry is returned 
+            with a factor of 1
         """
 
         # These are the default values
@@ -963,10 +990,14 @@ class ScenarioDict(dict):
     def get_param_file(self, element, param):
         """Return the file name where the parameter values should be read out.
 
-        :param element: The element name
-        :param param: The parameter of the element
-        :return: If the entry is overwritten by the scenario analysis the entry and factor are returned, otherwise
-                 the default entry is returned with a factor of 1
+        Args:
+            element: The element name
+            param: The parameter of the element
+        
+        Returns:
+            If the entry is overwritten by the scenario analysis the entry and 
+            factor are returned, otherwise the default entry is returned with 
+            a factor of 1
         """
 
         # These are the default values
@@ -990,10 +1021,16 @@ class ScenarioDict(dict):
 
     def get_param_part_file(self, element, param):
         """
-        Return the partial file name where the parameter values should be read out
-        :param element: the element name
-        :param param: the parameter of the element for which the partial file name is returned
-        :return:  If the entry is overwritten by the scenario analysis the entry, otherwise None.
+        Return the partial file name where the parameter values should be read out.
+
+        Args:
+            element: the element name
+            param: the parameter of the element for which the partial file name is 
+                returned
+        
+        Returns:
+            If the entry is overwritten by the scenario analysis the entry, 
+            otherwise None.
         """
         if element in self.dict and param in (element_dict := self.dict[element]):
             param_dict = element_dict[param]
@@ -1012,13 +1049,15 @@ class ScenarioDict(dict):
         """
         if not isinstance(default_factor, (int, float)):
             raise ValueError(
-                f"Default factor {default_factor} of type {type(default_factor)} in {op_type} ({element} -> {param} -> {default_f_name}) is not numeric!"
+                f"Default factor {default_factor} of type {type(default_factor)} in "
+                f"{op_type} ({element} -> {param} -> {default_f_name}) is not numeric!"
             )
 
 
 class InputDataChecks:
     """
-    This class checks if the input data (folder/file structure, system.py settings, element definitions, etc.) is defined correctly.
+    This class checks if the input data (folder/file structure, system.py settings, 
+    element definitions, etc.) is defined correctly.
     """
 
     PROHIBITED_DATASET_CHARACTERS = [
@@ -1055,8 +1094,10 @@ class InputDataChecks:
         """
         Initialize the class.
 
-        :param config: config object used to extract the analysis, system and solver dictionaries
-        :param optimization_setup: OptimizationSetup instance
+        Args:
+            config: config object used to extract the analysis, system and solver 
+                dictionaries
+            optimization_setup: OptimizationSetup instance
         """
         self.system = config.system
         self.analysis = config.analysis
@@ -1075,7 +1116,8 @@ class InputDataChecks:
             )
             > 0
         ), "No technology selected in system"
-        # Checks if identical technologies are selected multiple times in system.py file and removes possible duplicates
+        # Checks if identical technologies are selected multiple times in system.py 
+        # file and removes possible duplicates
         for tech_list in [
             "set_conversion_technologies",
             "set_transport_technologies",
@@ -1093,29 +1135,35 @@ class InputDataChecks:
         assert (
             isinstance(self.system.optimized_years, int)
             and self.system.optimized_years > 0
-        ), f"Number of optimized years must be a positive integer, however it is {self.system.optimized_years}"
+        ), ("Number of optimized years must be a positive integer, however it "
+            f"is {self.system.optimized_years}")
         # assert that interval between years is a positive integer
         assert (
             isinstance(self.system.interval_between_years, int)
             and self.system.interval_between_years > 0
-        ), f"Interval between years must be a positive integer, however it is {self.system.interval_between_years}"
+        ), ("Interval between years must be a positive integer, however it is "
+            f"{self.system.interval_between_years}")
         assert (
             isinstance(self.system.reference_year, int)
             and self.system.reference_year >= self.analysis.earliest_year_of_data
-        ), f"Reference year must be an integer and larger than the defined earliest_year_of_data: {self.analysis.earliest_year_of_data}"
-        # check if the number of years in the rolling horizon isn't larger than the number of optimized years
+        ), ("Reference year must be an integer and larger than the defined "
+            f"earliest_year_of_data: {self.analysis.earliest_year_of_data}")
+        # check if the number of years in the rolling horizon isn't larger than 
+        # the number of optimized years
         if (
             self.system.years_in_rolling_horizon > self.system.optimized_years
             and self.system.use_rolling_horizon
         ):
             warnings.warn(
-                "The chosen number of years in the rolling horizon step is larger than the total number of years optimized!",
+                "The chosen number of years in the rolling horizon step is "
+                "larger than the total number of years optimized!",
                 stacklevel=2,
             )
 
     def check_primary_folder_structure(self):
         """
-        Checks if the primary folder structure (set_conversion_technology, set_transport_technology, ..., energy_system) is provided correctly.
+        Checks if the primary folder structure (set_conversion_technology, 
+        set_transport_technology, ..., energy_system) is provided correctly.
         """
 
         for set_name, subsets in self.analysis.subsets.model_dump().items():
@@ -1154,7 +1202,9 @@ class InputDataChecks:
 
     def check_existing_technology_data(self):
         """
-        This method checks the existing technology input data and only regards those technology elements for which folders containing the attributes.json file exist.
+        This method checks the existing technology input data and only regards 
+        those technology elements for which folders containing the attributes.json 
+        file exist.
         """
         # TODO works for two levels of subsets, but not for more
         self.optimization_setup.system.set_technologies = []
@@ -1165,14 +1215,16 @@ class InputDataChecks:
                 if technology not in self.optimization_setup.paths[set_name].keys():
                     # raise error if technology is not in input data
                     raise FileNotFoundError(
-                        f"Technology {technology} selected in config does not exist in input data"
+                        f"Technology {technology} selected in config does not "
+                        "exist in input data"
                     )
                 elif (
                     "attributes.json"
                     not in self.optimization_setup.paths[set_name][technology]
                 ):
                     raise FileNotFoundError(
-                        f"The file attributes.json does not exist for the technology {technology}"
+                        "The file attributes.json does not exist for the "
+                        f"technology {technology}"
                     )
             self.optimization_setup.system.set_technologies.extend(
                 self.optimization_setup.system[set_name]
@@ -1186,14 +1238,16 @@ class InputDataChecks:
                     if technology not in self.optimization_setup.paths[subset].keys():
                         # raise error if technology is not in input data
                         raise FileNotFoundError(
-                            f"Technology {technology} selected in config does not exist in input data"
+                            f"Technology {technology} selected in config does "
+                            "not exist in input data"
                         )
                     elif (
                         "attributes.json"
                         not in self.optimization_setup.paths[subset][technology]
                     ):
                         raise FileNotFoundError(
-                            f"The file attributes.json does not exist for the technology {technology}"
+                            "The file attributes.json does not exist for the "
+                            "technology {technology}"
                         )
                     self.optimization_setup.system[set_name].extend(
                         self.optimization_setup.system[subset]
@@ -1204,14 +1258,16 @@ class InputDataChecks:
 
     def check_existing_carrier_data(self):
         """
-        Checks the existing carrier data and only regards those carriers for which folders exist.
+        Checks the existing carrier data and only regards those carriers for 
+        which folders exist.
         """
         # check if carriers exist
         for carrier in self.optimization_setup.system.set_carriers:
             if carrier not in self.optimization_setup.paths["set_carriers"].keys():
                 # raise error if carrier is not in input data
                 raise FileNotFoundError(
-                    f"Carrier {carrier} selected in config does not exist in input data"
+                    f"Carrier {carrier} selected in config does not exist in" 
+                    "input data"
                 )
             elif (
                 "attributes.json"
@@ -1223,7 +1279,8 @@ class InputDataChecks:
 
     def check_dataset(self):
         """
-        Ensures that the dataset chosen in the config does exist and contains a system.py file.
+        Ensures that the dataset chosen in the config does exist and contains a 
+        system.py file.
         """
         dataset = os.path.basename(self.analysis.dataset)
         dirname = os.path.dirname(self.analysis.dataset)
@@ -1232,26 +1289,33 @@ class InputDataChecks:
         ), f"Requested folder {dirname} is not a valid path"
         assert os.path.exists(
             self.analysis.dataset
-        ), f"The chosen dataset {dataset} does not exist at {self.analysis.dataset} as it is specified in the config"
+        ), (f"The chosen dataset {dataset} does not exist at "
+            f"{self.analysis.dataset} as it is specified in the config")
         # check if any character in the dataset name is prohibited
         for char in self.PROHIBITED_DATASET_CHARACTERS:
             if char in dataset:
                 raise ValueError(
-                    f"Character {char} is not allowed in the dataset name {dataset}\nProhibited characters: {self.PROHIBITED_DATASET_CHARACTERS}"
+                    f"Character {char} is not allowed in the dataset name "
+                    f"{dataset}\nProhibited characters: "
+                    f"{self.PROHIBITED_DATASET_CHARACTERS}"
                 )
         # check if chosen dataset contains a system.py file
         if not os.path.exists(
             os.path.join(self.analysis.dataset, "system.py")
         ) and not os.path.exists(os.path.join(self.analysis.dataset, "system.json")):
             raise FileNotFoundError(
-                f"Neither system.json nor system.py not found in dataset: {self.analysis.dataset}"
+                f"Neither system.json nor system.py not found in dataset: "
+                f"{self.analysis.dataset}"
             )
 
     def check_single_directed_edges(self, set_edges_input):
         """
-        Checks if single-directed edges exist in the dataset (e.g. CH-DE exists, DE-CH doesn't) and raises a warning.
+        Checks if single-directed edges exist in the dataset (e.g. CH-DE exists, 
+        DE-CH doesn't) and raises a warning.
 
-        :param set_edges_input: DataFrame containing set of edges defined in set_edges.csv
+        Args:
+            set_edges_input: DataFrame containing set of edges defined in 
+                set_edges.csv
         """
         for edge in set_edges_input.values:
             reversed_edge = edge[2] + "-" + edge[1]
@@ -1262,7 +1326,8 @@ class InputDataChecks:
                 and edge[2] in self.system.set_nodes
             ):
                 warnings.warn(
-                    f"The edge {edge[0]} is single-directed, i.e., the edge {reversed_edge} doesn't exist!",
+                    f"The edge {edge[0]} is single-directed, i.e., the edge "
+                    f"{reversed_edge} doesn't exist!",
                     stacklevel=2,
                 )
 
@@ -1291,10 +1356,12 @@ class InputDataChecks:
         self.check_no_extra_config_fields(config)
 
     def check_no_extra_config_fields(self, config, config_name="config"):
-        """Checks if the config object has no extra fields that are not defined in the default_config."""
+        """Checks if the config object has no extra fields that are not defined
+        in the default_config."""
         assert (
             len(config.model_extra) == 0
-        ), f"The config object '{config_name}' has extra fields that are not defined in the default_config: {config.model_extra}."
+        ), (f"The config object '{config_name}' has extra fields that are not "
+            f"defined in the default_config: {config.model_extra}.")
         for name in config.__class__.model_fields:
             subconfig = getattr(config, name)
             # Detect if the subconfig is a subclass of Subscriptable
@@ -1310,33 +1377,37 @@ class InputDataChecks:
         input_carrier, output_carrier, reference_carrier, name
     ):
         """
-        Checks if the chosen input/output and reference carrier combination is reasonable.
+        Check the chosen input/output/reference carrier combination.
 
         :param input_carrier: input carrier of conversion technology
         :param output_carrier: output carrier of conversion technology
         :param reference_carrier: reference carrier of technology
         :param name: name of conversion technology
         """
-        # assert that conversion technology has at least an input or an output carrier
+        # assert that conversion technology has at least an input/output carrier
         assert (
             len(input_carrier + output_carrier) > 0
         ), f"Conversion technology {name} has neither an input nor an output carrier!"
-        # check if reference carrier in input and output carriers and set technology to correspondent carrier
+        # check if reference carrier in input and output carriers and set 
+        # technology to correspondent carrier
         assert reference_carrier[0] in (
             input_carrier + output_carrier
-        ), f"reference carrier {reference_carrier} of technology {name} not in input and output carriers {input_carrier + output_carrier}"
+        ), (f"reference carrier {reference_carrier} of technology {name} not "
+            f"in input and output carriers {input_carrier + output_carrier}")
         set_input_carrier = set(input_carrier)
         set_output_carrier = set(output_carrier)
         # assert that input and output carrier of conversion tech are different
         common_carriers = set_input_carrier & set_output_carrier
         assert (
             not common_carriers
-        ), f"The conversion technology {name} has the same input and output carrier(s) ({list(common_carriers)})!"
+        ), (f"The conversion technology {name} has the same input and output "
+            f"carrier(s) ({list(common_carriers)})!")
 
     @staticmethod
     def check_duplicate_indices(df_input, file_name, folder_path):
         """
-        Checks if df_input contains any duplicate indices and either removes them if they are of identical value or raises an error otherwise.
+        Checks if df_input contains any duplicate indices and either removes 
+        them if they are of identical value or raises an error otherwise.
 
         :param df_input: raw input dataframe
         :param folder_path: the path of the folder containing the selected file
@@ -1352,11 +1423,15 @@ class InputDataChecks:
                 # check if all the duplicates are of the same value
                 if values.nunique() == 1:
                     logging.warning(
-                        f"The input data file {file_name + '.csv'} at {folder_path} contains duplicate indices with identical values: {df_input.loc[duplicates]}."
+                        f"The input data file {file_name + '.csv'} at "
+                        f"{folder_path} contains duplicate indices with "
+                        f"identical values: {df_input.loc[duplicates]}."
                     )
                 else:
                     raise AssertionError(
-                        f"The input data file {file_name + '.csv'} at {folder_path} contains duplicate indices with different values: {df_input.loc[duplicates]}."
+                        f"The input data file {file_name + '.csv'} at "
+                        f"{folder_path} contains duplicate indices with "
+                        f"different values: {df_input.loc[duplicates]}."
                     )
             # remove duplicates
             duplicate_mask = df_input.index.duplicated(keep="first")
@@ -1367,7 +1442,7 @@ class InputDataChecks:
 
 class StringUtils:
     """
-    This class handles some strings for logging and filenames to tidy up scripts.
+    This class handles strings for logging and filenames to tidy up scripts.
     """
 
     def __init__(self):
@@ -1386,14 +1461,17 @@ class StringUtils:
         scenario_string = ScenarioUtils.scenario_string(scenario)
         if len(steps_horizon) == 1:
             logging.info(
-                f"\n--- Conduct optimization for perfect foresight {scenario_string}--- \n"
+                f"\n--- Conduct optimization for perfect foresight "
+                f"{scenario_string}--- \n"
             )
         else:
-            corresponding_year = (
+            (
                 system.reference_year + step * system.interval_between_years
             )
             logging.info(
-                f"\n--- Conduct optimization for rolling horizon step for {corresponding_year} ({steps_horizon.index(step) + 1} of {len(steps_horizon)}) {scenario_string}--- \n"
+                "\n--- Conduct optimization for rolling horizon step for "
+                "{corresponding_year} ({steps_horizon.index(step) + 1} of "
+                "{len(steps_horizon)}) {scenario_string}--- \n"
             )
 
     @classmethod
@@ -1476,7 +1554,8 @@ class StringUtils:
             if analysis.overwrite_output:
                 logging.warning("Existing files will be overwritten!")
                 if not system.conduct_scenario_analysis:
-                    # TODO fix for scenario analysis, shared folder for all scenarios, so not robust for parallel process
+                    # TODO fix for scenario analysis, shared folder for all 
+                    # scenarios, so not robust for parallel process
                     for filename in os.listdir(out_folder):
                         file_path = os.path.join(out_folder, filename)
                         if os.path.isfile(file_path) or os.path.islink(file_path):
@@ -1582,7 +1661,8 @@ class ScenarioUtils:
                 )
                 if not os.path.exists(scenarios_path):
                     raise FileNotFoundError(
-                        f"Neither scenarios.json nor scenarios.py not found in dataset: {config.analysis.dataset}"
+                        f"Neither scenarios.json nor scenarios.py not found in "
+                        f"dataset: {config.analysis.dataset}"
                     )
                 spec = importlib.util.spec_from_file_location("module", scenarios_path)
                 module = importlib.util.module_from_spec(spec)
