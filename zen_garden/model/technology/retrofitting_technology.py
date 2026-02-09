@@ -16,7 +16,7 @@ from .conversion_technology import ConversionTechnology
 
 class RetrofittingTechnology(ConversionTechnology):
     """
-    Class defining retrofitting technologies
+    Class defining retrofitting technologies.
     """
 
     # set label
@@ -25,7 +25,7 @@ class RetrofittingTechnology(ConversionTechnology):
 
     def __init__(self, tech, optimization_setup):
         """
-        init conversion technology object
+        init conversion technology object.
 
         :param tech: name of added technology
         :param optimization_setup: The OptimizationSetup the element is part of
@@ -33,12 +33,12 @@ class RetrofittingTechnology(ConversionTechnology):
         super().__init__(tech, optimization_setup)
 
     def store_carriers(self):
-        """retrieves and stores information on reference, input and output carriers"""
+        """retrieves and stores information on reference, input and output carriers."""
         # get reference carrier from class <Technology>
         super().store_carriers()
 
     def store_input_data(self):
-        """retrieves and stores input data for element as attributes. Each Child class overwrites method to store different attributes"""
+        """retrieves and stores input data for element as attributes. Each Child class overwrites method to store different attributes."""
         # get attributes from class <Technology>
         super().store_input_data()
         # get retrofit base technology
@@ -53,7 +53,7 @@ class RetrofittingTechnology(ConversionTechnology):
     ### --- classmethods to construct sets, parameters, variables, and constraints, that correspond to ConversionTechnology --- ###
     @classmethod
     def construct_sets(cls, optimization_setup):
-        """constructs the pe.Sets of the class <RetrofittingTechnology>
+        """constructs the pe.Sets of the class <RetrofittingTechnology>.
 
         :param optimization_setup: The OptimizationSetup the element is part of"""
 
@@ -72,7 +72,7 @@ class RetrofittingTechnology(ConversionTechnology):
 
     @classmethod
     def construct_params(cls, optimization_setup):
-        """constructs the pe.Params of the class <RetrofittingTechnology>
+        """constructs the pe.Params of the class <RetrofittingTechnology>.
 
         :param optimization_setup: The OptimizationSetup the element is part of"""
 
@@ -87,7 +87,7 @@ class RetrofittingTechnology(ConversionTechnology):
 
     @classmethod
     def construct_constraints(cls, optimization_setup):
-        """constructs the Constraints of the class <RetrofittingTechnology>
+        """constructs the Constraints of the class <RetrofittingTechnology>.
 
         :param optimization_setup: The OptimizationSetup the element is part of"""
         # add pwa constraints
@@ -99,11 +99,11 @@ class RetrofittingTechnology(ConversionTechnology):
 
 class RetrofittingTechnologyRules(GenericRule):
     """
-    Rules for the RetrofittingTechnology class
+    Rules for the RetrofittingTechnology class.
     """
 
     def __init__(self, optimization_setup):
-        """Inits the rules for a given EnergySystem
+        """Inits the rules for a given EnergySystem.
 
         :param optimization_setup: The OptimizationSetup the element is part of
         """
@@ -111,7 +111,7 @@ class RetrofittingTechnologyRules(GenericRule):
         super().__init__(optimization_setup)
 
     def constraint_retrofit_flow_coupling(self):
-        r"""couples reference flow variables based on modeling technique
+        r"""couples reference flow variables based on modeling technique.
 
         .. math::
             \mathrm{if\ reference\ carrier\ in\ input\ carriers}\ \\underline{G}_{i,n,t}^\mathrm{r} = G^\mathrm{d,approximation}_{i,n,t}

@@ -21,11 +21,11 @@ from .time_steps import TimeStepsDicts
 
 class EnergySystem:
     """
-    Class defining a standard energy system
+    Class defining a standard energy system.
     """
 
     def __init__(self, optimization_setup):
-        """initialization of the energy_system
+        """initialization of the energy_system.
 
         :param optimization_setup: The OptimizationSetup of the EnergySystem class"""
 
@@ -73,7 +73,7 @@ class EnergySystem:
         self.units = {}
 
     def store_input_data(self):
-        """retrieves and stores input data for element as attributes. Each Child class overwrites method to store different attributes"""
+        """retrieves and stores input data for element as attributes. Each Child class overwrites method to store different attributes."""
         # store scenario dict
         self.data_input.scenario_dict = self.optimization_setup.scenario_dict
         # in class <EnergySystem>, all sets are constructed
@@ -174,7 +174,7 @@ class EnergySystem:
         )
 
     def calculate_edges_from_nodes(self):
-        """calculates set_nodes_on_edges from set_nodes
+        """calculates set_nodes_on_edges from set_nodes.
 
         :return set_nodes_on_edges: dict with edges and corresponding nodes"""
 
@@ -190,7 +190,7 @@ class EnergySystem:
 
     def calculate_haversine_distances_from_nodes(self):
         """
-        Computes the distance in kilometers between two nodes by using their lon lat coordinates and the Haversine formula
+        Computes the distance in kilometers between two nodes by using their lon lat coordinates and the Haversine formula.
 
         :return: dict containing all edges along with their distances
         """
@@ -227,7 +227,7 @@ class EnergySystem:
         return set_haversine_distances_of_edges
 
     def set_technology_of_carrier(self, technology, list_technology_of_carrier):
-        """appends technology to carrier in dict_technology_of_carrier
+        """appends technology to carrier in dict_technology_of_carrier.
 
         :param technology: name of technology in model
         :param list_technology_of_carrier: list of carriers correspondent to technology"""
@@ -239,7 +239,7 @@ class EnergySystem:
                 self.dict_technology_of_carrier[carrier].append(technology)
 
     def calculate_connected_edges(self, node, direction: str):
-        """calculates connected edges going in (direction = 'in') or going out (direction = 'out')
+        """calculates connected edges going in (direction = 'in') or going out (direction = 'out').
 
         :param node: current node, connected by edges
         :param direction: direction of edges, either in or out. In: node = endnode, out: node = startnode
@@ -259,7 +259,7 @@ class EnergySystem:
         return _set_connected_edges
 
     def calculate_reversed_edge(self, edge):
-        """calculates the reversed edge corresponding to an edge
+        """calculates the reversed edge corresponding to an edge.
 
         :param edge: input edge
         :return _reversed_edge: edge which corresponds to the reversed direction of edge"""
@@ -277,7 +277,7 @@ class EnergySystem:
     ### --- methods to construct sets, parameters, variables, and constraints, that correspond to EnergySystem --- ###
 
     def construct_sets(self):
-        """constructs the pe.Sets of the class <EnergySystem>"""
+        """constructs the pe.Sets of the class <EnergySystem>."""
         # construct pe.Sets of the class <EnergySystem>
         # nodes
         self.optimization_setup.sets.add_set(
@@ -340,7 +340,7 @@ class EnergySystem:
         )
 
     def construct_params(self):
-        """constructs the pe.Params of the class <EnergySystem>"""
+        """constructs the pe.Params of the class <EnergySystem>."""
 
         cls = self.__class__
         parameters = self.optimization_setup.parameters
@@ -422,7 +422,7 @@ class EnergySystem:
         )
 
     def construct_vars(self):
-        """constructs the pe.Vars of the class <EnergySystem>"""
+        """constructs the pe.Vars of the class <EnergySystem>."""
         variables = self.optimization_setup.variables
         sets = self.optimization_setup.sets
         model = self.optimization_setup.model
@@ -486,7 +486,7 @@ class EnergySystem:
         )
 
     def construct_constraints(self):
-        """constructs the constraints of the class <EnergySystem>"""
+        """constructs the constraints of the class <EnergySystem>."""
         logging.info("Construct Constraints of EnergySystem")
 
         # create the rules
@@ -519,7 +519,7 @@ class EnergySystem:
         self.rules.constraint_carbon_emissions_annual_overshoot()
 
     def construct_objective(self):
-        """constructs the pe.Objective of the class <EnergySystem>"""
+        """constructs the pe.Objective of the class <EnergySystem>."""
         logging.info("Construct pe.Objective")
 
         # get selected objective rule
@@ -540,12 +540,12 @@ class EnergySystem:
 
 class EnergySystemRules(GenericRule):
     """
-    This class takes care of the rules for the EnergySystem
+    This class takes care of the rules for the EnergySystem.
     """
 
     def __init__(self, optimization_setup):
         """
-        Inits the constraints for a given energy system
+        Inits the constraints for a given energy system.
 
         :param optimization_setup: The OptimizationSetup of the EnergySystem class
         """
@@ -553,7 +553,7 @@ class EnergySystemRules(GenericRule):
         super().__init__(optimization_setup)
 
     def constraint_carbon_emissions_cumulative(self):
-        """cumulative carbon emissions over time
+        """cumulative carbon emissions over time.
 
         .. math::
             \\mathrm{First\\ planning\\ period}\\ y = y_0,\\quad E_y^\\mathrm{cum} = E_y
@@ -587,7 +587,7 @@ class EnergySystemRules(GenericRule):
         self.constraints.add_constraint("constraint_carbon_emissions_cumulative", constraints)
 
     def constraint_carbon_emissions_annual_limit(self):
-        """time dependent carbon emissions limit from technologies and carriers
+        """time dependent carbon emissions limit from technologies and carriers.
 
         .. math::
             E_y\\leq e_y
@@ -606,7 +606,7 @@ class EnergySystemRules(GenericRule):
     def constraint_carbon_emissions_budget(self):
         """carbon emissions budget of entire time horizon from technologies and carriers.
         The prediction extends until the end of the horizon, i.e.,
-        last optimization time step plus the current carbon emissions until the end of the horizon
+        last optimization time step plus the current carbon emissions until the end of the horizon.
 
         .. math::
             E_y^\\mathrm{cum} + (dy-1)  E_y - E_y^\\mathrm{bo} \\leq e^b
@@ -637,7 +637,7 @@ class EnergySystemRules(GenericRule):
         self.constraints.add_constraint("constraint_carbon_emissions_budget", constraints)
 
     def constraint_net_present_cost(self):
-        """discounts the annual capital flows to calculate the net_present_cost
+        """discounts the annual capital flows to calculate the net_present_cost.
 
         .. math::
             NPC_y = \\sum_{i \\in [0,dy(y))-1]} \\left( \\dfrac{1}{1+r} \\right)^{\\left(dy (y-y_0) + i \\right)} C_y
@@ -677,7 +677,7 @@ class EnergySystemRules(GenericRule):
         self.constraints.add_constraint("constraint_net_present_cost", constraints)
 
     def constraint_carbon_emissions_budget_overshoot(self):
-        """ensures carbon emissions overshoot of carbon budget is zero when carbon emissions price for budget overshoot is inf
+        """ensures carbon emissions overshoot of carbon budget is zero when carbon emissions price for budget overshoot is inf.
 
         .. math::
             \\mathrm{if } \\mu^{bo} =\\infty \\mathrm{,then: }E_y^\\mathrm{bo} = 0
@@ -698,7 +698,7 @@ class EnergySystemRules(GenericRule):
         self.constraints.add_constraint("constraint_carbon_emissions_budget_overshoot", constraints)
 
     def constraint_carbon_emissions_annual_overshoot(self):
-        """ensures annual carbon emissions overshoot is zero when carbon emissions price for annual overshoot is inf
+        """ensures annual carbon emissions overshoot is zero when carbon emissions price for annual overshoot is inf.
 
         .. math::
             \\mathrm{if } \\mu^o =\\infty \\mathrm{,then: } E_y^\\mathrm{o} = 0
@@ -719,7 +719,7 @@ class EnergySystemRules(GenericRule):
         self.constraints.add_constraint("constraint_carbon_emissions_annual_overshoot", constraints)
 
     def constraint_carbon_emissions_annual(self):
-        """add up all carbon emissions from technologies and carriers
+        """add up all carbon emissions from technologies and carriers.
 
         .. math::
             E_y = E_{y,\\mathcal{H}} + E_{y,\\mathcal{C}}
@@ -740,7 +740,7 @@ class EnergySystemRules(GenericRule):
         self.constraints.add_constraint("constraint_carbon_emissions_annual", constraints)
 
     def constraint_cost_carbon_emissions_total(self):
-        """carbon cost associated with the carbon emissions of the system in each year
+        """carbon cost associated with the carbon emissions of the system in each year.
 
         .. math::
             OPEX_y^\\mathrm{c} = E_y\\mu + E_y^\\mathrm{o}\\mu^\\mathrm{o}
@@ -780,7 +780,7 @@ class EnergySystemRules(GenericRule):
         self.constraints.add_constraint("constraint_cost_carbon_emissions_total", constraints)
 
     def constraint_cost_total(self):
-        """add up all costs from technologies and carriers
+        """add up all costs from technologies and carriers.
 
         .. math::
             C_y = CAPEX_y + OPEX_y^\\mathrm{t} + OPEX_y^\\mathrm{c} + OPEX_y^\\mathrm{e}
@@ -809,7 +809,7 @@ class EnergySystemRules(GenericRule):
     # ---------------
 
     def objective_total_cost(self, model):
-        """objective function to minimize the total net present cost
+        """objective function to minimize the total net present cost.
 
         .. math::
             J = \\sum_{y\\in\\mathcal{Y}} NPC_y
@@ -820,7 +820,7 @@ class EnergySystemRules(GenericRule):
         return model.variables["net_present_cost"].sum("set_time_steps_yearly")
 
     def objective_total_carbon_emissions(self, model):
-        """objective function to minimize total emissions
+        """objective function to minimize total emissions.
 
         .. math::
             J = E^{\\mathrm{cum}}_Y

@@ -54,7 +54,7 @@ class TimestepType(Enum):
     def get_time_steps_names(cls) -> list[str]:
         """
         Method that returns a list of timestep names.
-        :return: get_time_steps_names
+        :return: get_time_steps_names.
         """
         return [time_step_type.value for time_step_type in cls]
 
@@ -197,7 +197,7 @@ class Scenario:
         return ureg
 
     def convert_ts2year(self, df: ["pd.DataFrame", "pd.Series"]) -> ["pd.DataFrame", "pd.Series"]:
-        """converts the yearly ts column to the corresponding year"""
+        """converts the yearly ts column to the corresponding year."""
         df = df.copy()
         if isinstance(df, pd.Series):
             year_index = df.index
@@ -216,7 +216,7 @@ class Scenario:
         return df
 
     def convert_year2ts(self, year: int) -> int:
-        """converts the year to the corresponding time step"""
+        """converts the year to the corresponding time step."""
         assert isinstance(year, int), f"Year must be an integer, not {type(year)}."
         ry = self.system.reference_year
         del_y = self.system.interval_between_years
@@ -228,7 +228,7 @@ class Scenario:
         ):
             warnings.warn(
                 f"Selecting the yearly time steps ({year}) instead of the actual year ({ry + del_y*year}) is deprecated. Please use the actual year.",
-                DeprecationWarning,
+                DeprecationWarning, stacklevel=2,
             )
             ts = year
         else:
@@ -815,7 +815,7 @@ def check_if_v1_leq_v2(version1: str, version2: str) -> bool:
 
 def get_index_names(h5_file: h5py.File, component_name: str, version: str) -> list[str]:
     """
-    Helper-function that returns the pandas dataframe index names of a h5-Group
+    Helper-function that returns the pandas dataframe index names of a h5-Group.
     """
 
     if check_if_v1_leq_v2(version, "v0"):
@@ -838,7 +838,7 @@ def get_index_names(h5_file: h5py.File, component_name: str, version: str) -> li
 
 def get_doc(h5_file: h5py.File, component_name: str, version: str) -> str:
     """
-    Helper-function that returns the documentation of a h5-Group
+    Helper-function that returns the documentation of a h5-Group.
     """
     if check_if_v1_leq_v2(version, "v0"):
         doc = str(np.char.decode(h5_file[component_name + "/docstring"].attrs.get("value")))
@@ -883,7 +883,7 @@ def get_df_from_path(
     if check_if_v1_leq_v2(version, "v0"):
         pd_read = pd.read_hdf(path, component_name + f"/{data_type}")
         with h5py.File(path, "r") as h5_file:
-            data = h5_file[component_name + f"/{data_type}"][:]
+            h5_file[component_name + f"/{data_type}"][:]
         if len(index) > 0:
             pd_read = slice_df_by_index(pd_read, index)
     elif check_if_v1_leq_v2(version, "v2"):
@@ -940,7 +940,7 @@ def _get_time_steps_file(scenario):
     """
     Helper-function that returns the name of the time steps file of a scenario.
     :param scenario:
-    :return: time_steps_file_name
+    :return: time_steps_file_name.
     """
     time_steps_file_name = [
         os.path.splitext(i)[0]

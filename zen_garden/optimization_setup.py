@@ -38,7 +38,7 @@ class OptimizationSetup(object):
     dict_element_classes = {}
 
     def __init__(self, config, scenario_dict: dict, input_data_checks):
-        """setup optimization setup of the energy system
+        """setup optimization setup of the energy system.
 
         :param config: config object used to extract the analysis, system and solver dictionaries
         :param scenario_dict: dictionary defining the scenario
@@ -110,7 +110,7 @@ class OptimizationSetup(object):
     def create_paths(self):
         """
         This method creates a dictionary with the paths of the data split
-        by carriers, networks, technologies
+        by carriers, networks, technologies.
         """
         ## General Paths
         # define path to access dataset related to the current analysis
@@ -139,13 +139,15 @@ class OptimizationSetup(object):
                         if self.system[element]:
                             self.add_folder_paths(element, self.paths[element]["folder"])
 
-    def add_folder_paths(self, set_name, path, subsets=[]):
-        """add file paths of element to paths dictionary
+    def add_folder_paths(self, set_name, path, subsets=None):
+        """add file paths of element to paths dictionary.
 
         :param set_name: name of set
         :param path: path to folder
         :param subsets: list of subsets
         """
+        if subsets is None:
+            subsets = []
         for element in next(os.walk(path))[1]:
             if element not in subsets:
                 self.paths[set_name][element] = dict()
@@ -162,7 +164,7 @@ class OptimizationSetup(object):
                 self.paths[element]["folder"] = os.path.join(path, element)
 
     def _find_parent_set(self, dictionary, subset, path=None):
-        """This method finds the parent sets of a subset
+        """This method finds the parent sets of a subset.
 
         :param dictionary: dictionary of subsets
         :param subset: subset to find parent sets of
@@ -231,7 +233,7 @@ class OptimizationSetup(object):
                 self.add_element(element_class, item)
 
     def read_input_csv(self):
-        """reads the input data of the energy system and elements and conducts the time series aggregation"""
+        """reads the input data of the energy system and elements and conducts the time series aggregation."""
         logging.info("\n--- Read input data of elements --- \n")
         self.energy_system.store_input_data()
         for element in self.dict_elements["Element"]:
@@ -243,7 +245,7 @@ class OptimizationSetup(object):
 
     def add_element(self, element_class, name):
         """
-        Adds an element to the element_dict with the class labels as key
+        Adds an element to the element_dict with the class labels as key.
 
         :param element_class: Class of the element
         :param name: Name of the element
@@ -285,7 +287,7 @@ class OptimizationSetup(object):
         return None
 
     def get_element_class(self, name: str):
-        """get element class by name. If not an element class, return None
+        """get element class by name. If not an element class, return None.
 
         :param name: name of element class
         :return element_class: return element whose name is matched"""
@@ -299,7 +301,7 @@ class OptimizationSetup(object):
             return None
 
     def get_class_set_of_element(self, element_name: str, klass):
-        """returns the set of all elements in the class of the element
+        """returns the set of all elements in the class of the element.
 
         :param element_name: name of element
         :param klass: class of the elements to return
@@ -311,7 +313,7 @@ class OptimizationSetup(object):
     def get_attribute_of_all_elements(
         self, cls, attribute_name: str, capacity_types=False, return_attribute_is_series=False
     ):
-        """get attribute values of all elements in a class
+        """get attribute values of all elements in a class.
 
         :param cls: class of the elements to return
         :param attribute_name: str name of attribute
@@ -360,7 +362,7 @@ class OptimizationSetup(object):
     def append_attribute_of_element_to_dict(
         self, element, attribute_name, dict_of_attributes, dict_of_units, capacity_type=None
     ):
-        """get attribute values of all elements in this class
+        """get attribute values of all elements in this class.
 
         :param element: element of class
         :param attribute_name: str name of attribute
@@ -455,7 +457,7 @@ class OptimizationSetup(object):
         return dict_of_attributes, attribute_is_series, dict_of_units
 
     def get_attribute_of_specific_element(self, cls, element_name: str, attribute_name: str):
-        """get attribute of specific element in class
+        """get attribute of specific element in class.
 
         :param cls: class of the elements to return
         :param element_name: str name of element
@@ -472,7 +474,7 @@ class OptimizationSetup(object):
         return attribute_value
 
     def construct_optimization_problem(self):
-        """constructs the optimization problem"""
+        """constructs the optimization problem."""
         # create empty ConcreteModel
         if self.solver.solver_dir is not None and not os.path.exists(self.solver.solver_dir):
             os.makedirs(self.solver.solver_dir)
@@ -490,7 +492,7 @@ class OptimizationSetup(object):
         )
 
     def get_optimization_horizon(self):
-        """returns list of optimization horizon steps"""
+        """returns list of optimization horizon steps."""
         # if using rolling horizon
         if self.system.use_rolling_horizon:
             assert (
@@ -521,7 +523,7 @@ class OptimizationSetup(object):
         return list(self.steps_horizon.keys())
 
     def get_decision_horizon(self, step_horizon):
-        """returns the decision horizon for the optimization step, i.e., the time steps for which the decisions are saved
+        """returns the decision horizon for the optimization step, i.e., the time steps for which the decisions are saved.
 
         :param step_horizon: step of the rolling horizon
         :return decision_horizon: list of time steps in the decision horizon"""
@@ -534,16 +536,18 @@ class OptimizationSetup(object):
             decision_horizon = list(range(step_horizon, next_optimization_step))
         return decision_horizon
 
-    def set_base_configuration(self, scenario="", elements={}):
-        """set base configuration
+    def set_base_configuration(self, scenario="", elements=None):
+        """set base configuration.
 
         :param scenario: name of base scenario
         :param elements: elements in base configuration"""
+        if elements is None:
+            elements = {}
         self.base_scenario = scenario
         self.base_configuration = elements
 
     def overwrite_time_indices(self, step_horizon):
-        """select subset of time indices, matching the step horizon
+        """select subset of time indices, matching the step horizon.
 
         :param step_horizon: step of the rolling horizon"""
 
@@ -577,7 +581,7 @@ class OptimizationSetup(object):
             self.energy_system.set_time_steps_yearly = time_steps_yearly_horizon
 
     def solve(self):
-        """Create model instance by assigning parameter values and instantiating the sets"""
+        """Create model instance by assigning parameter values and instantiating the sets."""
         solver_name = self.solver.name
         # remove options that are None
         solver_options = {
@@ -617,7 +621,7 @@ class OptimizationSetup(object):
             self.optimality = False
 
     def write_IIS(self, scenario=""):
-        """write an ILP file to print the IIS if infeasible. Only possible for gurobi"""
+        """write an ILP file to print the IIS if infeasible. Only possible for gurobi."""
         if self.model.termination_condition == "infeasible" and self.solver.name == "gurobi":
             output_folder = StringUtils.get_output_folder(self.analysis)
             ilp_file = os.path.join(
@@ -776,7 +780,7 @@ class OptimizationSetup(object):
         return component_data, index_list, dict_of_units
 
     def check_for_subindex(self, component_data, custom_set):
-        """this method checks if the custom_set can be a subindex of component_data and returns subindexed component_data
+        """this method checks if the custom_set can be a subindex of component_data and returns subindexed component_data.
 
         :param component_data: extracted data as pd.Series
         :param custom_set: custom set as subindex of component_data

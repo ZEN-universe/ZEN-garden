@@ -59,7 +59,7 @@ class Results:
     ) -> Optional[Union[dict[str, "pd.DataFrame | pd.Series[Any]"], pd.Series]]:
         """
         Returns the raw results without any further processing.
-        Transforms a parameter or variable dataframe (compressed) string into an actual pandas dataframe
+        Transforms a parameter or variable dataframe (compressed) string into an actual pandas dataframe.
 
         :component_name string: The string to decode
         :scenario_name: Which scenario to take. If none is specified, all are returned.
@@ -118,7 +118,7 @@ class Results:
         keep_raw: Optional[bool] = False,
         index: tuple[str] = None,
     ) -> "pd.DataFrame":
-        """Calculates the full timeseries per scenario
+        """Calculates the full timeseries per scenario.
 
         :param scenario: The scenario for with the component should be extracted (only if needed)
         :param component: Component for the Series
@@ -262,7 +262,7 @@ class Results:
         keep_raw: Optional[bool] = False,
         index: Optional[Union[NestedTuple, NestedDict, list[str], str, float, int]] = None,
     ) -> "pd.DataFrame | pd.Series[Any]":
-        """Calculates the full timeseries
+        """Calculates the full timeseries.
 
         :param component_name: Name of the component
         :param scenario_name: The scenario for with the component should be extracted (only if needed)
@@ -442,7 +442,7 @@ class Results:
         return total_value
 
     def _get_annuity(self, scenario: Scenario, discount_to_first_step: bool = True) -> pd.Series:
-        """discounts the duals
+        """discounts the duals.
 
         :param discount_to_first_step: apply annuity to first year of interval or entire interval
         :param scenario: scenario name whose results are assessed
@@ -489,7 +489,7 @@ class Results:
         keep_raw: Optional[bool] = False,
         index: Optional[Union[NestedTuple, NestedDict, list[str], str, float, int]] = None,
     ) -> Optional["pd.DataFrame | pd.Series[Any]"]:
-        """extracts the dual variables of a component
+        """extracts the dual variables of a component.
 
         :param component_name: Name of dual
         :param scenario_name: Scenario Name
@@ -724,7 +724,7 @@ class Results:
         self, component_name: str, scenario_name: Optional[str] = None
     ) -> list[str]:
         """
-        Docstring for get_index_names
+        Docstring for get_index_names.
 
         :param self: Description
         :param component_name: Description
@@ -797,7 +797,7 @@ class Results:
     def calculate_connected_edges(
         self, node: str, direction: str, set_nodes_on_edges: dict[str, str]
     ):
-        """calculates connected edges going in (direction = 'in') or going out (direction = 'out')
+        """calculates connected edges going in (direction = 'in') or going out (direction = 'out').
 
         :param node: current node, connected by edges
         :param direction: direction of edges, either in or out. In: node = endnode, out: node = startnode
@@ -849,7 +849,7 @@ class Results:
     def edit_carrier_flows(
         self, data: pd.DataFrame, node: str, direction: str, scenario: str
     ) -> pd.DataFrame:
-        """Extracts data of carrier_flow variable as needed for the plot_energy_balance function
+        """Extracts data of carrier_flow variable as needed for the plot_energy_balance function.
 
         :param data: pd.DataFrame containing data to extract
         :param node: node of interest
@@ -935,7 +935,7 @@ class Results:
         return ans
 
     def get_component_names(self, component_type: str) -> list[str]:
-        """Returns the names of all components of a given type
+        """Returns the names of all components of a given type.
 
         :param component_type: Type of the component
         :return: List of component names

@@ -105,7 +105,7 @@ def run(config="./config.json", dataset=None, job_index=None, folder_output=None
     # clean sub-scenarios if necessary
     ScenarioUtils.clean_scenario_folder(config, out_folder)
     ### ITERATE THROUGH SCENARIOS
-    for scenario, scenario_dict in zip(scenarios, elements):
+    for scenario, scenario_dict in zip(scenarios, elements, strict=False):
         # FORMULATE THE OPTIMIZATION PROBLEM
         # add the scenario_dict and read input data
         optimization_setup = OptimizationSetup(

@@ -1,5 +1,5 @@
 """
-Functions to extract the input data from the provided input files
+Functions to extract the input data from the provided input files.
 """
 
 import copy
@@ -15,7 +15,7 @@ from scipy.stats import linregress
 
 class DataInput:
     """
-    Class to extract input data
+    Class to extract input data.
     """
 
     def __init__(
@@ -28,7 +28,7 @@ class DataInput:
         unit_handling,
         optimization_setup=None,
     ):
-        """data input object to extract input data
+        """data input object to extract input data.
 
         :param element: element for which data is extracted
         :param system: dictionary defining the system
@@ -55,7 +55,7 @@ class DataInput:
     def extract_input_data(
         self, file_name, index_sets, unit_category, time_steps=None, subelement=None
     ):
-        """reads input data and restructures the dataframe to return (multi)indexed dict
+        """reads input data and restructures the dataframe to return (multi)indexed dict.
 
         :param file_name: name of selected file.
         :param index_sets: index sets of attribute. Creates (multi)index. Corresponds to order in pe.Set/pe.Param
@@ -157,7 +157,7 @@ class DataInput:
     def extract_general_input_data(
         self, df_input, df_output, file_name, index_name_list, default_value, time_steps
     ):
-        """fills df_output with data from df_input
+        """fills df_output with data from df_input.
 
         :param df_input: raw input dataframe
         :param df_output: empty output dataframe, only filled with default_value
@@ -237,7 +237,7 @@ class DataInput:
         return df_output_copy
 
     def read_input_csv(self, input_file_name):
-        """reads input data and returns raw input dataframe
+        """reads input data and returns raw input dataframe.
 
         :param input_file_name: name of selected file
         :return df_input: pd.DataFrame with input data"""
@@ -261,7 +261,7 @@ class DataInput:
             return None
 
     def read_input_json(self, input_file_name):
-        """reads json input data and returns a dict
+        """reads json input data and returns a dict.
 
         :param input_file_name: name of selected file
         :return data: dict with input data"""
@@ -280,7 +280,7 @@ class DataInput:
         """
         loads attribute file. Either as csv (old version) or json (new version)
         :param filename: name of attributes file, default is 'attributes'
-        :return: attribute_dict
+        :return: attribute_dict.
         """
         if os.path.exists(self.folder_path / f"{filename}.json"):
             attribute_dict = self._load_attribute_file_json(filename=filename)
@@ -294,7 +294,7 @@ class DataInput:
         return attribute_dict
 
     def _load_attribute_file_json(self, filename):
-        """loads json attributes file
+        """loads json attributes file.
 
         :param filename:
         :return: attributes
@@ -306,7 +306,7 @@ class DataInput:
         if type(data) == list:
             warnings.warn(
                 "The list format in attributes.json [{...}] is deprecated. Use a dict format instead {...}.",
-                DeprecationWarning,
+                DeprecationWarning, stacklevel=2,
             )
             for item in data:
                 for k, v in item.items():
@@ -323,7 +323,7 @@ class DataInput:
         return attribute_dict
 
     def get_attribute_dict(self, attribute_name):
-        """get attribute dict and factor for attribute
+        """get attribute dict and factor for attribute.
 
         :param attribute_name: name of selected attribute
         :return attribute_dict: attribute dict
@@ -340,7 +340,7 @@ class DataInput:
         return attribute_dict, factor
 
     def extract_attribute(self, attribute_name, unit_category, return_unit=False, subelement=None):
-        """reads input data and restructures the dataframe to return (multi)indexed dict
+        """reads input data and restructures the dataframe to return (multi)indexed dict.
 
         :param attribute_name: name of selected attribute
         :param unit_category: dict defining the dimensions of the parameter's unit
@@ -412,7 +412,7 @@ class DataInput:
             return None
 
     def _extract_attribute_value(self, attribute_name, attribute_dict):
-        """reads attribute value from dict
+        """reads attribute value from dict.
 
         :param attribute_name: name of selected attribute
         :param attribute_dict: name of selected attribute
@@ -439,7 +439,7 @@ class DataInput:
 
                     warnings.warn(
                         f"\nAttribute {attribute_name} is not yet included in your model. Automatic assign default_value:{attribute_dict[attribute_name]['default_value']}, unit: {attribute_dict[attribute_name]['unit']}\n",
-                        DeprecationWarning,
+                        DeprecationWarning, stacklevel=2,
                     )
 
                 # CASE 2: The attribute has a new name
@@ -448,7 +448,7 @@ class DataInput:
                     attribute_dict[attribute_name] = attribute_dict.pop(old_name)
 
                     warnings.warn(
-                        f"Attribute {old_name} is now called {attribute_name}", DeprecationWarning
+                        f"Attribute {old_name} is now called {attribute_name}", DeprecationWarning, stacklevel=2
                     )
 
             else:
@@ -475,7 +475,7 @@ class DataInput:
         self, file_name, index_name_list, time_steps, subelement, default_value, df_output_generic
     ):
         """
-        reads and saves the year specific time series data. The year specific time series are saved in the dictionary self.optimization_setup.year_specific_ts
+        reads and saves the year specific time series data. The year specific time series are saved in the dictionary self.optimization_setup.year_specific_ts.
 
         :param file_name: name of selected file
         :param index_name_list: list of name of indices
@@ -529,7 +529,7 @@ class DataInput:
                         ] = (df_output_specific * scenario_factor)
 
     def extract_yearly_variation(self, file_name, index_sets):
-        """reads the yearly variation of a time dependent quantity
+        """reads the yearly variation of a time dependent quantity.
 
         :param file_name: name of selected file.
         :param index_sets: index sets of attribute. Creates (multi)index. Corresponds to order in pe.Set/pe.Param
@@ -618,7 +618,7 @@ class DataInput:
                 )
 
     def extract_carriers(self, carrier_type):
-        """reads input data and extracts conversion carriers
+        """reads input data and extracts conversion carriers.
 
         :return carrier_list: list with input, output or reference carriers of technology"""
         assert carrier_type in [
@@ -636,7 +636,7 @@ class DataInput:
         return carrier_list
 
     def extract_retrofit_base_technology(self):
-        """extract base technologies for retrofitting technology
+        """extract base technologies for retrofitting technology.
 
         :return base_technology: return base technology of retrofit technology"""
         attribute_name = "retrofit_flow_coupling_factor"
@@ -651,7 +651,7 @@ class DataInput:
         return base_technology
 
     def extract_set_technologies_existing(self, storage_energy=False):
-        """reads input data and creates setExistingCapacity for each technology
+        """reads input data and creates setExistingCapacity for each technology.
 
         :param storage_energy: boolean if existing energy capacity of storage technology (instead of power)
         :return set_technologies_existing: return set existing technologies"""
@@ -681,7 +681,7 @@ class DataInput:
         return set_technologies_existing
 
     def extract_lifetime_existing(self, file_name, index_sets):
-        """reads input data and restructures the dataframe to return (multi)indexed dict
+        """reads input data and restructures the dataframe to return (multi)indexed dict.
 
         :param file_name:  name of selected file
         :param index_sets: index sets of attribute. Creates (multi)index. Corresponds to order in pe.Set/pe.Param
@@ -714,7 +714,7 @@ class DataInput:
         return df_output * scenario_factor
 
     def extract_pwa_capex(self):
-        """reads input data and restructures the dataframe to return (multi)indexed dict
+        """reads input data and restructures the dataframe to return (multi)indexed dict.
 
         :return pwa_dict: dictionary with pwa parameters"""
         attribute_name = "capex_specific_conversion"
@@ -845,7 +845,7 @@ class DataInput:
             return linear_dict, is_pwa
 
     def read_pwa_capex_files(self):
-        """reads pwa files
+        """reads pwa files.
 
         :return df_input: raw input file"""
         df_input = self.read_input_csv("nonlinear_capex")
@@ -884,7 +884,7 @@ class DataInput:
         manual_default_value=None,
         subelement=None,
     ):
-        """creates default output dataframe
+        """creates default output dataframe.
 
         :param index_sets: index sets of attribute. Creates (multi)index. Corresponds to order in pe.Set/pe.Param
         :param unit_category: dict defining the dimensions of the parameter's unit
@@ -927,7 +927,7 @@ class DataInput:
         return df_output, default_value, index_name_list
 
     def construct_index_list(self, index_sets, time_steps):
-        """constructs index list from index sets and returns list of indices and list of index names
+        """constructs index list from index sets and returns list of indices and list of index names.
 
         :param index_sets: index sets of attribute. Creates (multi)index. Corresponds to order in pe.Set/pe.Param
         :param time_steps: specific time_steps of element
@@ -954,7 +954,7 @@ class DataInput:
     def convert_real_to_generic_time_indices(
         self, df_input, time_steps, file_name, index_name_list
     ):
-        """convert yearly time indices to generic time indices
+        """convert yearly time indices to generic time indices.
 
         :param df_input: raw input dataframe
         :param time_steps: specific time_steps of element
@@ -972,7 +972,7 @@ class DataInput:
             if "time" in df_input.axes[1]:
                 warnings.warn(
                     f"The column header 'time' (used in {file_name}) will not be supported for input data with yearly time steps any longer! Use the header 'year' instead",
-                    DeprecationWarning,
+                    DeprecationWarning, stacklevel=2,
                 )
                 df_input = df_input.rename(
                     {self.index_names["set_time_steps"]: self.index_names["set_time_steps_yearly"]},
@@ -1013,7 +1013,7 @@ class DataInput:
             if max(df_input.loc[:, temporal_header]) < self.analysis.earliest_year_of_data:
                 warnings.warn(
                     f"Generic time indices (used in {file_name}) will not be supported for input data with yearly time steps any longer! Use the corresponding years (e.g. 2022,2023,...) as time indices instead",
-                    DeprecationWarning,
+                    DeprecationWarning, stacklevel=2,
                 )
                 return df_input
             # assert that correct temporal index_set to get corresponding index_name is given (i.e. set_time_steps_yearly for input data with yearly time steps)(otherwise extract_general_input_data() will find a missing_index)
@@ -1082,7 +1082,7 @@ class DataInput:
             year2step = {
                 year: step
                 for year, step in zip(
-                    self.energy_system.set_time_steps_years, getattr(self.energy_system, time_steps)
+                    self.energy_system.set_time_steps_years, getattr(self.energy_system, time_steps), strict=False
                 )
             }
             df_input[temporal_header] = df_input[temporal_header].apply(
@@ -1092,7 +1092,7 @@ class DataInput:
 
     @staticmethod
     def extract_from_input_without_missing_index(df_input, index_name_list, file_name):
-        """extracts the demanded values from Input dataframe and reformulates dataframe
+        """extracts the demanded values from Input dataframe and reformulates dataframe.
 
         :param df_input: raw input dataframe
         :param index_name_list: list of name of indices
@@ -1173,7 +1173,7 @@ class DataInput:
     def extract_from_input_for_capacities_existing(
         df_input, df_output, index_name_list, column, missing_index
     ):
-        """extracts the demanded values from input dataframe if extracting existing capacities
+        """extracts the demanded values from input dataframe if extracting existing capacities.
 
         :param df_input: raw input dataframe
         :param df_output: default output dataframe

@@ -183,7 +183,7 @@ class UnitHandling:
             warnings.warn(
                 'The base unit for time is intended to be "hour" but is not found in the base_units file. '
                 "If this is intentional, make sure that your settings and input data are aligned with this change.",
-                UserWarning,
+                UserWarning, stacklevel=2,
             )
         return list_base_units
 
@@ -249,7 +249,7 @@ class UnitHandling:
                 base_combination = pd.Series(index=self.dim_matrix.columns, data=0)
                 base_combination[dim_matrix_reduced.columns] = combination_solution
                 # compose relevant units to dimensionless combined unit
-                for unit, power in zip(dim_matrix_reduced.columns, combination_solution):
+                for unit, power in zip(dim_matrix_reduced.columns, combination_solution, strict=False):
                     combined_unit *= self.ureg(unit) ** (-1 * power)
             else:
                 base_combination, combined_unit = self._get_combined_unit_of_different_matrix(
@@ -265,7 +265,7 @@ class UnitHandling:
     def _get_combined_unit_of_different_matrix(self, dim_matrix_reduced, dim_vector, input_unit):
         """calculates the combined unit for a different dimensionality matrix.
         We substitute base units by the dependent units and try again.
-        If the matrix is singular we solve the overdetermined problem
+        If the matrix is singular we solve the overdetermined problem.
 
         :param dim_matrix_reduced: dimensionality matrix without dependent units
         :param dim_vector: dimensionality vector of input unit
@@ -320,7 +320,7 @@ class UnitHandling:
                     # compose relevant units to dimensionless combined unit
                     base_combination[dim_matrix_reduced_temp.columns] = combination_solution_temp
                     for unit_temp, power_temp in zip(
-                        dim_matrix_reduced_temp.columns, combination_solution_temp
+                        dim_matrix_reduced_temp.columns, combination_solution_temp, strict=False
                     ):
                         combined_unit *= self.ureg(unit_temp) ** (-1 * power_temp)
                     calculated_multiplier = True
@@ -393,7 +393,7 @@ class UnitHandling:
         self, input_unit, get_multiplier=False, attribute_name=None, path=None
     ):
         """
-        Converts an input unit into base units
+        Converts an input unit into base units.
 
         This method converts an input unit into the equivalent base units,
         following the dimensional analysis process to express the `input_unit`
@@ -424,7 +424,7 @@ class UnitHandling:
             combined_unit, base_combination = self.calculate_combined_unit(
                 input_unit, return_combination=True
             )
-            for unit, power in zip(base_combination.index, base_combination):
+            for unit, power in zip(base_combination.index, base_combination, strict=False):
                 attribute_unit_in_base_units *= self.ureg(unit) ** power
         # calculate the multiplier to convert the attribute unit into base units
         if get_multiplier:
@@ -915,7 +915,7 @@ class UnitHandling:
             ]
             assert all(
                 correct_unit_string
-            ), f"The conversion factor string(s) {[u for u,s in zip(units,correct_unit_string) if not s]} of technology {conversion_element.name} must not contain an asterisk '*' unless it is enclosed in parentheses '()'"
+            ), f"The conversion factor string(s) {[u for u,s in zip(units,correct_unit_string, strict=False) if not s]} of technology {conversion_element.name} must not contain an asterisk '*' unless it is enclosed in parentheses '()'"
 
             # problem: we don't know which parts of cf unit belong to which carrier for units of format different from "unit/unit" (e.g. kg/h/kW)
             # method: compare number of division signs of conversion factor unit with number of division signs of corresponding carrier element energy/power quantity
@@ -1182,11 +1182,11 @@ class UnitHandling:
 # ToDo slight numerical errors after rescaling -> dependent on solver -> for gurobi very accurate
 class Scaling:
     """
-    This class scales the optimization model before solving it and rescales the solution
+    This class scales the optimization model before solving it and rescales the solution.
     """
 
     def __init__(self, model, algorithm=None, include_rhs=True):
-        """initializes scaling instance
+        """initializes scaling instance.
 
         :param model: optimization model
         :param algorithm: list of scaling algorithms
@@ -1210,7 +1210,7 @@ class Scaling:
 
     def initiate_A_matrix(self):
         """
-        Constructs the A matrix and the right hand side of the constraints
+        Constructs the A matrix and the right hand side of the constraints.
 
         """
         self.A_matrix = self.model.constraints.to_matrix(filter_missings=False)
@@ -1234,7 +1234,7 @@ class Scaling:
 
     def re_scale(self):
         """
-        Rescales the solution of the optimization model
+        Rescales the solution of the optimization model.
         """
         model = self.model
         for name_var in model.variables:
@@ -1246,7 +1246,7 @@ class Scaling:
 
     def analyze_numerics(self):
         """
-        Analyzes the numerics of the optimization model
+        Analyzes the numerics of the optimization model.
         """
         # print numerics if no scaling is activated
         self.initiate_A_matrix()
@@ -1268,7 +1268,7 @@ class Scaling:
 
     def replace_data(self, name):
         """
-        Replaces the data (coefficients) of the lhs and rhs of the constraint with the scaled data
+        Replaces the data (coefficients) of the lhs and rhs of the constraint with the scaled data.
 
         :param name: name of the constraint for which the data is replaced with the scaled data
         """
@@ -1364,7 +1364,7 @@ class Scaling:
 
     def get_min(self, A_matrix):
         """
-        Gets the minimum values each column or row of the A matrix
+        Gets the minimum values each column or row of the A matrix.
 
         :param A_matrix: A matrix of the optimization model (scipy.sparse.csr_matrix)
         :return: minimum values of each column or row (np.array)

@@ -28,7 +28,7 @@ from zen_garden.default_config import Subscriptable
 
 
 def setup_logger(level=logging.INFO):
-    """set up logger
+    """set up logger.
 
     :param level: logging level
     """
@@ -40,7 +40,7 @@ def setup_logger(level=logging.INFO):
 
 def get_inheritors(klass):
     """
-    Get all child classes of a given class
+    Get all child classes of a given class.
 
     :param klass: The class to get all children
     :return: All children as a set
@@ -171,7 +171,7 @@ def download_example_dataset(dataset):
         )
     if not notebook_found:
         warnings.warn(
-            "Example jupyter notebook could not be downloaded from the " "dataset examples!"
+            "Example jupyter notebook could not be downloaded from the " "dataset examples!", stacklevel=2
         )
 
     # print output
@@ -186,7 +186,7 @@ def download_example_dataset(dataset):
 
 
 def lp_sum(exprs, dim="_term"):
-    """Sum of linear expressions with lp.expressions.merge, returns 0 if list is emtpy
+    """Sum of linear expressions with lp.expressions.merge, returns 0 if list is emtpy.
 
     :param exprs: The expressions to sum
     :param dim: Along which dimension to merge
@@ -204,7 +204,7 @@ def lp_sum(exprs, dim="_term"):
 
 
 def align_like(da, other, fillna=0.0, astype=None):
-    """Aligns a data array like another data array
+    """Aligns a data array like another data array.
 
     :param da: The data array to align
     :param other: The data array to align to
@@ -232,7 +232,7 @@ def align_like(da, other, fillna=0.0, astype=None):
 
 
 def linexpr_from_tuple_np(tuples, coords, model):
-    """Transforms tuples of (coeff, var) into a linopy linear expression, but uses numpy broadcasting
+    """Transforms tuples of (coeff, var) into a linopy linear expression, but uses numpy broadcasting.
 
     :param tuples: Tuple of (coeff, var)
     :param coords: The coordinates of the final linear expression
@@ -265,7 +265,7 @@ def linexpr_from_tuple_np(tuples, coords, model):
 
 
 def xr_like(fill_value, dtype, other, dims):
-    """Creates an xarray with fill value and dtype like the other object but only containing the given dimensions
+    """Creates an xarray with fill value and dtype like the other object but only containing the given dimensions.
 
     :param fill_value: The value to fill the data with
     :param dtype: dtype of the data
@@ -294,7 +294,7 @@ def reformat_slicing_index(index, component) -> tuple[str]:
     """reformats the slicing index to a tuple of strings that is readable by pytables
     :param index: slicing index of the resulting dataframe
     :param component: component for which the index is reformatted
-    :return: reformatted index
+    :return: reformatted index.
     """
     if index is None:
         return tuple()
@@ -311,7 +311,7 @@ def reformat_slicing_index(index, component) -> tuple[str]:
         ref_index = []
         for key, value in index.items():
             if key not in index_names:
-                warnings.warn(f"Invalid index name '{key}' in index. Skipping.", Warning)
+                warnings.warn(f"Invalid index name '{key}' in index. Skipping.", Warning, stacklevel=2)
                 continue
             if isinstance(value, list):
                 ref_index.append(f"'{key}' in {value}")
@@ -323,7 +323,7 @@ def reformat_slicing_index(index, component) -> tuple[str]:
         if len(index) > len(index_names):
             warnings.warn(
                 f"Index length {len(index)} is longer than the number of index dimensions {len(index_names)}. Check selected index.",
-                Warning,
+                Warning, stacklevel=2,
             )
         for i, index_name in enumerate(index_names):
             if i >= len(index):
@@ -336,7 +336,7 @@ def reformat_slicing_index(index, component) -> tuple[str]:
                 ref_index.append(f"'{index_name}' == '{index[i]}'")
         ref_index = tuple(ref_index)
     else:
-        warnings.warn(f"Invalid index type {type(index)}. Skipping.", Warning)
+        warnings.warn(f"Invalid index type {type(index)}. Skipping.", Warning, stacklevel=2)
         ref_index = tuple()
 
     return ref_index
@@ -346,7 +346,7 @@ def slice_df_by_index(df, index_tuple) -> dict:
     """recreates the slicing index from a tuple of strings and slices the dataframe accordingly
     :param df: dataframe to be sliced
     :param index_tuple: tuple of strings representing the slicing index
-    :return: sliced dataframe
+    :return: sliced dataframe.
     """
     index = {}
     for index_str in index_tuple:
@@ -393,7 +393,7 @@ def get_label_position(obj, label: int):
 class IISConstraintParser(object):
     """
     This class is used to parse the IIS constraints and print them in a nice way
-    Most functions here are just copied from linopy 0.2.x
+    Most functions here are just copied from linopy 0.2.x.
     """
 
     EQUAL = "="
@@ -404,7 +404,7 @@ class IISConstraintParser(object):
 
     def __init__(self, iis_file, model):
         """
-        Initializes the IIS constraint parser
+        Initializes the IIS constraint parser.
 
         :param iis_file: The file containing the IIS
         :param model: The model to which the IIS belongs
@@ -421,7 +421,7 @@ class IISConstraintParser(object):
         logging.disable(logging.NOTSET)
 
     def write_parsed_output(self, outfile=None):
-        """Writes the parsed output to a file
+        """Writes the parsed output to a file.
 
         :param outfile: The file to write to
         """
@@ -459,7 +459,7 @@ class IISConstraintParser(object):
                 f.write(var_str)
 
     def write_gurobi_iis(self):
-        """writes IIS to file"""
+        """writes IIS to file."""
         # get the gurobi model
         gurobi_model = self.model.solver_model
         # write the IIS
@@ -467,7 +467,7 @@ class IISConstraintParser(object):
         gurobi_model.write(self.iis_file)
 
     def read_labels(self):
-        """Reads the labels from the IIS file
+        """Reads the labels from the IIS file.
 
         :return: A list of labels
         """
@@ -490,7 +490,7 @@ class IISConstraintParser(object):
 
     def print_single_constraint(self, constraint, coord):
         """
-        Print a single constraint based on the constraint object
+        Print a single constraint based on the constraint object.
 
         :param constraint: The constraint object
         :param coord: The coordinates of the constraint
@@ -512,7 +512,7 @@ class IISConstraintParser(object):
     @staticmethod
     def print_coord(coord):
         """
-        Print the coordinates
+        Print the coordinates.
 
         :param coord: The coordinates to print
         :return: The string representation of the coordinates
@@ -537,7 +537,7 @@ class IISConstraintParser(object):
         indices = [i[0] for i in np.where(con.labels.values == value)]
 
         # Extract the coordinates from the indices
-        coord = {dim: con.labels.indexes[dim][i] for dim, i in zip(con.labels.dims, indices)}
+        coord = {dim: con.labels.indexes[dim][i] for dim, i in zip(con.labels.dims, indices, strict=False)}
 
         return name, coord
 
@@ -570,7 +570,7 @@ class IISConstraintParser(object):
             mask = v != -1
             c, v = c[mask], v[mask]
 
-        expr = list(zip(c, model.variables.get_label_position(v)))
+        expr = list(zip(c, model.variables.get_label_position(v), strict=False))
         return print_line(expr)
 
 
@@ -580,7 +580,7 @@ class IISConstraintParser(object):
 
 class ScenarioDict(dict):
     """
-    This is a dictionary for the scenario analysis that has some convenience functions
+    This is a dictionary for the scenario analysis that has some convenience functions.
     """
 
     _param_dict_keys = {"file", "part_file", "file_op", "default", "default_op", "value"}
@@ -588,7 +588,7 @@ class ScenarioDict(dict):
     _setting_elements = ["system", "analysis", "solver"]
 
     def __init__(self, init_dict, optimization_setup, paths):
-        """Initializes the dictionary from a normal dictionary
+        """Initializes the dictionary from a normal dictionary.
 
         :param init_dict: The dictionary to initialize from
         :param optimization_setup: The optimization setup corresponding to the scenario
@@ -618,7 +618,7 @@ class ScenarioDict(dict):
 
     def update_config(self):
         """
-        Updates the analysis, system, and solver in the config
+        Updates the analysis, system, and solver in the config.
         """
         config_parts = {"analysis": self.analysis, "system": self.system, "solver": self.solver}
         for key, value in config_parts.items():
@@ -649,7 +649,7 @@ class ScenarioDict(dict):
 
     @staticmethod
     def expand_lists(scenarios: dict):
-        """Expands all lists of parameters in the all scenarios and returns a new dict
+        """Expands all lists of parameters in the all scenarios and returns a new dict.
 
         :param scenarios: The initial dict of scenarios
         :return: The expanded dict, where all necessary parameters are expanded and subpaths are set
@@ -677,7 +677,7 @@ class ScenarioDict(dict):
 
     @staticmethod
     def _expand_scenario(scenario: dict, param_map=None, counter=0):
-        """Expands a scenario, returns a list of scenarios
+        """Expands a scenario, returns a list of scenarios.
 
         :param scenario: The scenario to expand
         :param param_map: The parameter map for the scenario
@@ -819,7 +819,7 @@ class ScenarioDict(dict):
         return new_dict
 
     def validate_dict(self, vali_dict):
-        """Validates a dictionary, raises an error if it is not valid
+        """Validates a dictionary, raises an error if it is not valid.
 
         :param vali_dict: The dictionary to validate
         """
@@ -862,7 +862,7 @@ class ScenarioDict(dict):
 
     @staticmethod
     def validate_file_name(fname):
-        """Checks if the file name has an extension, it is expected to not have an extension
+        """Checks if the file name has an extension, it is expected to not have an extension.
 
         :param fname: The file name to validte
         :return: The validated file name
@@ -870,11 +870,11 @@ class ScenarioDict(dict):
 
         fname, ext = os.path.splitext(fname)
         if ext != "":
-            warnings.warn(f"The file name {fname}{ext} has an extension {ext}, removing it.")
+            warnings.warn(f"The file name {fname}{ext} has an extension {ext}, removing it.", stacklevel=2)
         return fname
 
     def get_default(self, element, param):
-        """Return the name where the default value should be read out
+        """Return the name where the default value should be read out.
 
         :param element: The element name
         :param param: The parameter of the element
@@ -902,7 +902,7 @@ class ScenarioDict(dict):
         return default_f_name, default_factor
 
     def get_param_file(self, element, param):
-        """Return the file name where the parameter values should be read out
+        """Return the file name where the parameter values should be read out.
 
         :param element: The element name
         :param param: The parameter of the element
@@ -934,7 +934,7 @@ class ScenarioDict(dict):
         Return the partial file name where the parameter values should be read out
         :param element: the element name
         :param param: the parameter of the element for which the partial file name is returned
-        :return:  If the entry is overwritten by the scenario analysis the entry, otherwise None
+        :return:  If the entry is overwritten by the scenario analysis the entry, otherwise None.
         """
         if element in self.dict and param in (element_dict := self.dict[element]):
             param_dict = element_dict[param]
@@ -947,7 +947,7 @@ class ScenarioDict(dict):
     def _check_if_numeric_default_factor(
         self, default_factor, element, param, default_f_name, op_type
     ):
-        """Check if the default factor is numeric
+        """Check if the default factor is numeric.
 
         :param default_factor: The default factor to check
         """
@@ -959,7 +959,7 @@ class ScenarioDict(dict):
 
 class InputDataChecks:
     """
-    This class checks if the input data (folder/file structure, system.py settings, element definitions, etc.) is defined correctly
+    This class checks if the input data (folder/file structure, system.py settings, element definitions, etc.) is defined correctly.
     """
 
     PROHIBITED_DATASET_CHARACTERS = [
@@ -994,7 +994,7 @@ class InputDataChecks:
 
     def __init__(self, config, optimization_setup):
         """
-        Initialize the class
+        Initialize the class.
 
         :param config: config object used to extract the analysis, system and solver dictionaries
         :param optimization_setup: OptimizationSetup instance
@@ -1005,7 +1005,7 @@ class InputDataChecks:
 
     def check_technology_selections(self):
         """
-        Checks selection of different technologies in system.py file
+        Checks selection of different technologies in system.py file.
         """
         # Checks if at least one technology is selected in the system.py file
         assert (
@@ -1028,7 +1028,7 @@ class InputDataChecks:
 
     def check_year_definitions(self):
         """
-        Check if year-related parameters are defined correctly
+        Check if year-related parameters are defined correctly.
         """
         # assert that number of optimized years is a positive integer
         assert (
@@ -1049,19 +1049,19 @@ class InputDataChecks:
             and self.system.use_rolling_horizon
         ):
             warnings.warn(
-                "The chosen number of years in the rolling horizon step is larger than the total number of years optimized!"
+                "The chosen number of years in the rolling horizon step is larger than the total number of years optimized!", stacklevel=2
             )
 
     def check_primary_folder_structure(self):
         """
-        Checks if the primary folder structure (set_conversion_technology, set_transport_technology, ..., energy_system) is provided correctly
+        Checks if the primary folder structure (set_conversion_technology, set_transport_technology, ..., energy_system) is provided correctly.
         """
 
         for set_name, subsets in self.analysis.subsets.model_dump().items():
             if not os.path.exists(os.path.join(self.analysis.dataset, set_name)):
                 raise AssertionError(f"Folder {set_name} does not exist!")
             if isinstance(subsets, dict):
-                for subset_name, subset in subsets.items():
+                for subset_name, _subset in subsets.items():
                     if not os.path.exists(
                         os.path.join(self.analysis.dataset, set_name, subset_name)
                     ):
@@ -1135,7 +1135,7 @@ class InputDataChecks:
 
     def check_existing_carrier_data(self):
         """
-        Checks the existing carrier data and only regards those carriers for which folders exist
+        Checks the existing carrier data and only regards those carriers for which folders exist.
         """
         # check if carriers exist
         for carrier in self.optimization_setup.system.set_carriers:
@@ -1151,7 +1151,7 @@ class InputDataChecks:
 
     def check_dataset(self):
         """
-        Ensures that the dataset chosen in the config does exist and contains a system.py file
+        Ensures that the dataset chosen in the config does exist and contains a system.py file.
         """
         dataset = os.path.basename(self.analysis.dataset)
         dirname = os.path.dirname(self.analysis.dataset)
@@ -1175,7 +1175,7 @@ class InputDataChecks:
 
     def check_single_directed_edges(self, set_edges_input):
         """
-        Checks if single-directed edges exist in the dataset (e.g. CH-DE exists, DE-CH doesn't) and raises a warning
+        Checks if single-directed edges exist in the dataset (e.g. CH-DE exists, DE-CH doesn't) and raises a warning.
 
         :param set_edges_input: DataFrame containing set of edges defined in set_edges.csv
         """
@@ -1187,12 +1187,12 @@ class InputDataChecks:
                 and edge[2] in self.system.set_nodes
             ):
                 warnings.warn(
-                    f"The edge {edge[0]} is single-directed, i.e., the edge {reversed_edge} doesn't exist!"
+                    f"The edge {edge[0]} is single-directed, i.e., the edge {reversed_edge} doesn't exist!", stacklevel=2
                 )
 
     def read_system_file(self, config):
         """
-        Reads the system file and returns the system dictionary
+        Reads the system file and returns the system dictionary.
 
         :param config: config object
         """
@@ -1213,7 +1213,7 @@ class InputDataChecks:
         self.check_no_extra_config_fields(config)
 
     def check_no_extra_config_fields(self, config, config_name="config"):
-        """Checks if the config object has no extra fields that are not defined in the default_config"""
+        """Checks if the config object has no extra fields that are not defined in the default_config."""
         assert (
             len(config.model_extra) == 0
         ), f"The config object '{config_name}' has extra fields that are not defined in the default_config: {config.model_extra}."
@@ -1228,7 +1228,7 @@ class InputDataChecks:
     @staticmethod
     def check_carrier_configuration(input_carrier, output_carrier, reference_carrier, name):
         """
-        Checks if the chosen input/output and reference carrier combination is reasonable
+        Checks if the chosen input/output and reference carrier combination is reasonable.
 
         :param input_carrier: input carrier of conversion technology
         :param output_carrier: output carrier of conversion technology
@@ -1254,7 +1254,7 @@ class InputDataChecks:
     @staticmethod
     def check_duplicate_indices(df_input, file_name, folder_path):
         """
-        Checks if df_input contains any duplicate indices and either removes them if they are of identical value or raises an error otherwise
+        Checks if df_input contains any duplicate indices and either removes them if they are of identical value or raises an error otherwise.
 
         :param df_input: raw input dataframe
         :param folder_path: the path of the folder containing the selected file
@@ -1285,16 +1285,16 @@ class InputDataChecks:
 
 class StringUtils:
     """
-    This class handles some strings for logging and filenames to tidy up scripts
+    This class handles some strings for logging and filenames to tidy up scripts.
     """
 
     def __init__(self):
-        """Initializes the class"""
+        """Initializes the class."""
         pass
 
     @classmethod
     def print_optimization_progress(cls, scenario, steps_horizon, step, system):
-        """prints the current optimization progress
+        """prints the current optimization progress.
 
         :param scenario: string of scenario name
         :param steps_horizon: all steps of horizon
@@ -1314,7 +1314,7 @@ class StringUtils:
 
     @classmethod
     def generate_folder_path(cls, config, scenario, scenario_dict, steps_horizon, step):
-        """generates the folder path for the results
+        """generates the folder path for the results.
 
         :param config: config of optimization
         :param scenario: name of scenario
@@ -1355,7 +1355,7 @@ class StringUtils:
 
     @classmethod
     def setup_model_folder(cls, analysis, system):
-        """return model name while conducting some tests
+        """return model name while conducting some tests.
 
         :param analysis: analysis of optimization
         :param system: system of optimization
@@ -1368,7 +1368,7 @@ class StringUtils:
 
     @classmethod
     def setup_output_folder(cls, analysis, system):
-        """return model name while conducting some tests
+        """return model name while conducting some tests.
 
         :param analysis: analysis of optimization
         :param system: system of optimization
@@ -1401,7 +1401,7 @@ class StringUtils:
 
     @staticmethod
     def get_output_folder(analysis):
-        """return name of output folder
+        """return name of output folder.
 
         :param analysis: analysis of optimization
         :return: output folder
@@ -1413,16 +1413,16 @@ class StringUtils:
 
 class ScenarioUtils:
     """
-    This class handles some stuff for scenarios to tidy up scripts
+    This class handles some stuff for scenarios to tidy up scripts.
     """
 
     def __init__(self):
-        """Initializes the class"""
+        """Initializes the class."""
         pass
 
     @staticmethod
     def scenario_string(scenario):
-        """creates additional scenario string
+        """creates additional scenario string.
 
         :param scenario: scenario name
         :return: scenario string"""
@@ -1434,7 +1434,7 @@ class ScenarioUtils:
 
     @staticmethod
     def clean_scenario_folder(config, out_folder):
-        """cleans scenario dict when overwritten
+        """cleans scenario dict when overwritten.
 
         :param config: config of optimization
         :param out_folder: output folder"""
@@ -1442,7 +1442,7 @@ class ScenarioUtils:
         if config.system.conduct_scenario_analysis and config.system.clean_sub_scenarios:
             # collect all paths that are in the scenario dict
             folder_dict = defaultdict(list)
-            for key, value in config.scenarios.items():
+            for _key, value in config.scenarios.items():
                 if value["sub_folder"] != "":
                     folder_dict[f"scenario_{value['base_scenario']}"].append(
                         f"scenario_{value['sub_folder']}"
@@ -1470,7 +1470,7 @@ class ScenarioUtils:
 
     @staticmethod
     def get_scenarios(config, job_index):
-        """retrieves and overwrites the scenario dicts
+        """retrieves and overwrites the scenario dicts.
 
         :param config: config of optimization
         :param job_index: index of current job, if passed
@@ -1527,14 +1527,14 @@ class ScenarioUtils:
 
 class OptimizationError(RuntimeError):
     """
-    Exception raised when the optimization problem is infeasible
+    Exception raised when the optimization problem is infeasible.
     """
 
     def __init__(
         self, status="The optimization is infeasible or unbounded, or finished with an error"
     ):
         """
-        Initializes the class
+        Initializes the class.
 
         :param status: The message to display
         """

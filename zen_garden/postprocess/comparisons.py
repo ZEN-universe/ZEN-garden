@@ -17,9 +17,9 @@ def compare_model_values(
     results: list[Results],
     component_type: ComponentType | str,
     compare_total: bool = True,
-    scenarios: list[str] = [],
+    scenarios: list[str] = None,
 ) -> dict[str, pd.DataFrame]:
-    """Compares the input data of two or more results
+    """Compares the input data of two or more results.
 
     :param results: list of results
     :param component_type: component type to compare
@@ -28,6 +28,8 @@ def compare_model_values(
     :return: a dictionary with diverging results
     """
 
+    if scenarios is None:
+        scenarios = []
     scenarios = check_and_fill_scenario_list(results, scenarios)
 
     if isinstance(component_type, str):
@@ -58,7 +60,7 @@ def compare_model_values(
 
 def compare_configs(
     results: list[Results],
-    scenarios: list[str] = [],
+    scenarios: list[str] = None,
 ) -> dict[str, Any]:
     """
     Compares the configs of two results, namely the Analysis-Config and the System-config.
@@ -67,6 +69,8 @@ def compare_configs(
     :param scenarios: List of scenarios to filter by
     :return: dictionary with diverging configs
     """
+    if scenarios is None:
+        scenarios = []
     ans: dict[str, Any] = {}
 
     scenarios = check_and_fill_scenario_list(results, scenarios)
@@ -114,7 +118,7 @@ def compare_configs(
 def get_component_diff(
     results: list[Results], component_type: ComponentType, scenarios: list[str]
 ) -> list[str]:
-    """returns a list with the differences in component names
+    """returns a list with the differences in component names.
 
     :param results: list with results
     :param component_type: component type to compare
@@ -157,7 +161,7 @@ def get_component_diff(
 def compare_dicts(
     dict1: dict[Any, Any],
     dict2: dict[Any, Any],
-    result_names: list[str] = ["res_1", "res_2"],
+    result_names: list[str] = None,
 ) -> Optional[dict[Any, Any]]:
     """
     Compares two dictionaries and returns only the fields with different values.
@@ -167,6 +171,8 @@ def compare_dicts(
     :param result_names: names of results
     :return: diff dict
     """
+    if result_names is None:
+        result_names = ["res_1", "res_2"]
     diff_dict = {}
     for key in dict1.keys() | dict2.keys():
         if isinstance(dict1.get(key), dict) and isinstance(dict2.get(key), dict):
@@ -244,10 +250,10 @@ def compare_component_values(
     results: list[Results],
     component_name: str,
     compare_total: bool,
-    scenarios: list[str] = [],
+    scenarios: list[str] = None,
     rtol: float = 1e-3,
 ) -> pd.DataFrame:
-    """Compares component values of two results
+    """Compares component values of two results.
 
     :param results: list with results
     :param component_name: component name
@@ -256,6 +262,8 @@ def compare_component_values(
     :param rtol: relative tolerance of equal values
     :return: dictionary with diverging component values
     """
+    if scenarios is None:
+        scenarios = []
     scenarios = check_and_fill_scenario_list(results, scenarios)
 
     result_names = [result.solution_loader.name for result in results]
@@ -347,7 +355,7 @@ def _get_different_vals(
     rtol: float,
 ) -> pd.DataFrame:
     """
-    Get the different values of two dataframes or series
+    Get the different values of two dataframes or series.
 
     :param val_0: first dataframe or series
     :param val_1: second dataframe or series
