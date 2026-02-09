@@ -95,8 +95,12 @@ line-length = 79
 fix = false
 
 [tool.ruff.lint]
-select = ["E", "F", "I", "B"]
+select = ["E", "F", "I", "B", "D400", "D415"] # add D in future
 ignore = []
+
+[tool.ruff.pydocstyle]
+docstring-line-length = 72
+convention = "google"
 
 [tool.ruff.lint.isort]
 known-first-party = ["your_package_name"]
