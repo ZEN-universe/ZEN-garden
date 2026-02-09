@@ -23,7 +23,17 @@ sys.path.append(os.path.abspath("_ext"))
 
 project = "ZEN-garden"
 copyright = "2025, Reliability and Risk Engineering lab, ETH Zurich"
-author = "Jacob Mannhardt, Alissa Ganter, Johannes Burger, Francesco de Marco, Lukas Kunz, Lukas Schmidt-Engelbertz, Nour Boulos, Christoph Funke, Giovanni Sansavini"
+author = (
+    "Jacob Mannhardt, "
+    "Alissa Ganter, "
+    "Johannes Burger, "
+    "Francesco de Marco, "
+    "Lukas Kunz, "
+    "Lukas Schmidt-Engelbertz, "
+    "Nour Boulos, "
+    "Christoph Funke, "
+    "Giovanni Sansavini"
+)
 release = get_version("zen_garden")
 language = "en"
 
