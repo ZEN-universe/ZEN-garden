@@ -1,14 +1,10 @@
-from . import model
-from . import postprocess
-from . import preprocess
-from . import wrapper
-from .utils import get_inheritors
+from . import model, postprocess, preprocess, wrapper
 from .model.element import Element
 from .optimization_setup import OptimizationSetup
-from .runner import run
+from .postprocess.comparisons import compare_configs, compare_dicts, compare_model_values
 from .postprocess.results.results import Results
-from .utils import download_example_dataset
-from .postprocess.comparisons import compare_model_values, compare_configs, compare_dicts
+from .runner import run
+from .utils import download_example_dataset, get_inheritors
 
 __all__ = [
     "run",

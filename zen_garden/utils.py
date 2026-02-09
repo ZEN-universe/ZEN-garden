@@ -2,27 +2,29 @@
 Class is defining to read in the results of an Optimization problem.
 """
 
+import importlib.util
+import io
 import json
 import logging
 import os
+import re
+import shutil
 import sys
 import warnings
-import importlib.util
+import zipfile
 from collections import defaultdict
-import re
-from ordered_set import OrderedSet
+from copy import deepcopy
+from importlib.metadata import metadata
+from pathlib import Path
+
 import linopy as lp
 import numpy as np
-import xarray as xr
-import shutil
-from copy import deepcopy
-from pathlib import Path
-from zen_garden.default_config import Subscriptable
-import requests
-from importlib.metadata import metadata
-import zipfile
-import io
 import pandas as pd
+import requests
+import xarray as xr
+from ordered_set import OrderedSet
+
+from zen_garden.default_config import Subscriptable
 
 
 def setup_logger(level=logging.INFO):
@@ -1013,7 +1015,7 @@ class InputDataChecks:
                 + self.system.set_storage_technologies
             )
             > 0
-        ), f"No technology selected in system"
+        ), "No technology selected in system"
         # Checks if identical technologies are selected multiple times in system.py file and removes possible duplicates
         for tech_list in [
             "set_conversion_technologies",
@@ -1047,7 +1049,7 @@ class InputDataChecks:
             and self.system.use_rolling_horizon
         ):
             warnings.warn(
-                f"The chosen number of years in the rolling horizon step is larger than the total number of years optimized!"
+                "The chosen number of years in the rolling horizon step is larger than the total number of years optimized!"
             )
 
     def check_primary_folder_structure(self):
@@ -1513,7 +1515,7 @@ class ScenarioUtils:
                 scenarios = [list(config.scenarios.keys())[jx] for jx in job_index]
                 elements = [list(config.scenarios.values())[jx] for jx in job_index]
             else:
-                logging.info(f"Running all scenarios sequentially")
+                logging.info("Running all scenarios sequentially")
                 scenarios = config.scenarios.keys()
                 elements = config.scenarios.values()
         # Nothing to do with the scenarios

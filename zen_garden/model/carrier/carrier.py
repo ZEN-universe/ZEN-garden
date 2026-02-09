@@ -5,12 +5,11 @@ The class takes as inputs the abstract optimization model. The class adds parame
 constraints of a generic carrier and returns the abstract optimization model.
 """
 
-import logging
 
 import linopy as lp
-from linopy.expressions import LinearExpression
 import numpy as np
 import xarray as xr
+from linopy.expressions import LinearExpression
 
 from ..component import ZenIndex
 from ..element import Element, GenericRule
@@ -107,7 +106,7 @@ class Carrier(Element):
         set_time_steps_operation = self.energy_system.time_steps.encode_time_step(
             base_time_steps=base_time_steps, time_step_type="operation"
         )
-        setattr(self, "set_time_steps_operation", set_time_steps_operation.squeeze().tolist())
+        self.set_time_steps_operation = set_time_steps_operation.squeeze().tolist()
 
     ### --- classmethods to construct sets, parameters, variables, and constraints, that correspond to Carrier --- ###
     @classmethod

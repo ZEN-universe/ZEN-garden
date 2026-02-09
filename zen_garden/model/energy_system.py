@@ -6,6 +6,7 @@ optimization model as an input.
 
 import copy
 import logging
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -14,8 +15,8 @@ import xarray as xr
 from zen_garden.model.element import GenericRule
 from zen_garden.preprocess.extract_input_data import DataInput
 from zen_garden.preprocess.unit_handling import UnitHandling
+
 from .time_steps import TimeStepsDicts
-from pathlib import Path
 
 
 class EnergySystem:

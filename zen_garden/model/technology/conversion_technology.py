@@ -5,16 +5,18 @@ constraints of the conversion technologies.
 """
 
 import itertools
+import warnings
 
+import linopy as lp
 import numpy as np
 import pandas as pd
 import xarray as xr
-import linopy as lp
 from linopy.expressions import LinearExpression
+
 from zen_garden.utils import align_like
-from .technology import Technology
+
 from ..element import GenericRule
-import warnings
+from .technology import Technology
 
 
 class ConversionTechnology(Technology):
@@ -172,7 +174,7 @@ class ConversionTechnology(Technology):
         dict_of_attributes = pd.concat(dict_of_attributes, keys=dict_of_attributes.keys())
         if not index_names:
             warnings.warn(
-                f"Initializing the parameter capex without the specifying the index names will be deprecated!"
+                "Initializing the parameter capex without the specifying the index names will be deprecated!"
             )
             return dict_of_attributes, dict_of_units
         else:
@@ -481,7 +483,7 @@ class ConversionTechnology(Technology):
                 tech = index
             # retrieve pwa variables
             pwa_parameter = optimization_setup.get_attribute_of_specific_element(
-                cls, tech, f"pwa_capex"
+                cls, tech, "pwa_capex"
             )
             pwa_breakpoints[index] = pwa_parameter["capacity_addition"]
             pwa_values[index] = pwa_parameter["capex"]

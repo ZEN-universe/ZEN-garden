@@ -8,14 +8,15 @@ optimization model as an input.
 import itertools
 import logging
 import os
-
-import pandas as pd
-import xarray as xr
-import linopy as lp
-import psutil
 import time
-from linopy.expressions import LinearExpression
 from pathlib import Path
+
+import linopy as lp
+import pandas as pd
+import psutil
+import xarray as xr
+from linopy.expressions import LinearExpression
+
 from zen_garden.preprocess.extract_input_data import DataInput
 
 

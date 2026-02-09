@@ -10,8 +10,8 @@
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
 import os
-import sys
 import shutil
+import sys
 from importlib.metadata import version as get_version
 from pathlib import Path
 

@@ -2,9 +2,10 @@
 This file implements a helper class to deal with timesteps
 """
 
+import logging
+
 import numpy as np
 import pandas as pd
-import logging
 
 
 class TimeStepsDicts(object):

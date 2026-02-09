@@ -7,20 +7,19 @@ The class contains methods to read the results and save them in a result diction
 import json
 import logging
 import os
+import warnings
 from pathlib import Path
 
 import numpy as np
-import pint
-from tables import NaturalNameWarning
-import warnings
 import pandas as pd
+import pint
 import xarray as xr
-from filelock import FileLock
 import yaml
+from filelock import FileLock
 from pydantic import BaseModel
+from tables import NaturalNameWarning
 
 from ..optimization_setup import OptimizationSetup
-
 
 # Warnings
 warnings.filterwarnings("ignore", category=NaturalNameWarning)
@@ -120,7 +119,7 @@ class Postprocess:
             dictionary = dictionary.model_dump()
 
         # check whether valid mode
-        if not mode in ["a", "w"]:
+        if mode not in ["a", "w"]:
             ValueError(f"Invalid file write mode {mode} (valid options are 'a' or 'w').")
 
         # set the format

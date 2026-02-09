@@ -2,13 +2,15 @@
 File that contains functions to compare the results of two or more models.
 """
 
+import logging
+from typing import Any, Optional
+
+import numpy as np
+import pandas as pd
+from tqdm import tqdm
+
 from zen_garden.postprocess.results import Results
 from zen_garden.postprocess.results.solution_loader import ComponentType
-from typing import Optional, Any
-import logging
-from tqdm import tqdm
-import pandas as pd
-import numpy as np
 
 
 def compare_model_values(

@@ -3,10 +3,11 @@ Functions to extract the input data from the provided input files
 """
 
 import copy
+import json
 import logging
 import os
-import json
 import warnings
+
 import numpy as np
 import pandas as pd
 from scipy.stats import linregress
@@ -43,7 +44,7 @@ class DataInput:
         self.scenario_dict = None
         self.unit_handling = unit_handling
         # extract folder path
-        self.folder_path = getattr(self.element, "input_path")
+        self.folder_path = self.element.input_path
         # get names of indices
         self.index_names = self.analysis.header_data_inputs
         # load attributes file
@@ -1018,7 +1019,7 @@ class DataInput:
             # assert that correct temporal index_set to get corresponding index_name is given (i.e. set_time_steps_yearly for input data with yearly time steps)(otherwise extract_general_input_data() will find a missing_index)
             assert (
                 temporal_header in index_name_list
-            ), f"Input data with yearly time steps and therefore the temporal header 'year' needs to be extracted with index_sets=['set_time_steps_yearly'] instead of index_sets=['set_time_steps']"
+            ), "Input data with yearly time steps and therefore the temporal header 'year' needs to be extracted with index_sets=['set_time_steps_yearly'] instead of index_sets=['set_time_steps']"
             # set index
             index_names_column = df_input.columns.intersection(index_name_list).to_list()
             df_input = df_input.set_index(index_names_column)

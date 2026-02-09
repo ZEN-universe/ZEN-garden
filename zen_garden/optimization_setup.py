@@ -16,15 +16,14 @@ import linopy as lp
 import numpy as np
 import pandas as pd
 
-from zen_garden.model.component import Parameter, Variable, Constraint, IndexSet
+from zen_garden.model.component import Constraint, IndexSet, Parameter, Variable
 from zen_garden.model.element import Element
 from zen_garden.model.energy_system import EnergySystem
 from zen_garden.model.technology.technology import Technology
+from zen_garden.preprocess.parameter_change_log import parameter_change_log
 from zen_garden.preprocess.time_series_aggregation import TimeSeriesAggregation
 from zen_garden.preprocess.unit_handling import Scaling
-from zen_garden.preprocess.parameter_change_log import parameter_change_log
-
-from zen_garden.utils import ScenarioDict, IISConstraintParser, StringUtils
+from zen_garden.utils import IISConstraintParser, ScenarioDict, StringUtils
 
 
 class OptimizationSetup(object):

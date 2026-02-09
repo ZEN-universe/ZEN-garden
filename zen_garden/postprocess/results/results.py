@@ -2,25 +2,26 @@
 This module contains the Results class, which is used to extract and process the results of a model run.
 """
 
+import importlib
+import json
+import logging
+import os
+from pathlib import Path
+from typing import Any, Literal, Optional, Union
+
 import numpy as np
+import pandas as pd
 from pandas import Series
 
+from zen_garden.default_config import Analysis, Config, Solver, System
 from zen_garden.postprocess.results.solution_loader import (
-    SolutionLoader,
-    Scenario,
     Component,
-    TimestepType,
     ComponentType,
+    Scenario,
+    SolutionLoader,
+    TimestepType,
 )
-from zen_garden.default_config import Config, Analysis, Solver, System
 from zen_garden.utils import reformat_slicing_index
-import pandas as pd
-from typing import Optional, Any, Literal, Union
-import importlib
-import os
-import logging
-import json
-from pathlib import Path
 
 NestedTuple = tuple[list[str]] | tuple[str]
 NestedDict = dict[str, str | list[str]]

@@ -2,20 +2,22 @@
 File which contains the unit handling and scaling class.
 """
 
+import itertools
+import json
 import logging
+import os
+import time
 import warnings
+from pathlib import Path
+
 import numpy as np
 import pandas as pd
 import scipy as sp
-import json
-import os
-import itertools
-import time
 from pint import UnitRegistry
 from pint.util import column_echelon_form
-from pathlib import Path
-from zen_garden.model.technology.technology import Technology
+
 from zen_garden.model.carrier.carrier import Carrier
+from zen_garden.model.technology.technology import Technology
 from zen_garden.utils import get_label_position
 
 
@@ -576,7 +578,7 @@ class UnitHandling:
                 reference_carrier.name,
                 unit_dict,
             )
-        logging.info(f"Parameter unit consistency is fulfilled!")
+        logging.info("Parameter unit consistency is fulfilled!")
         self.save_carrier_energy_quantities(optimization_setup)
 
     def _check_for_power_power(self, energy_quantity_units, energy_quantity_units_check):
@@ -1255,7 +1257,7 @@ class Scaling:
         """
         Runs the scaling algorithm. Function called in runner.py.
         """
-        logging.info(f"\n--- Start Scaling ---\n")
+        logging.info("\n--- Start Scaling ---\n")
         t0 = time.perf_counter()
         self.initiate_A_matrix()
         self.iter_scaling()
@@ -1499,7 +1501,7 @@ class Scaling:
         else:
             # Prints
             if no_scaling:
-                logging.info(f"\n--- Analyze Numerics ---\n")
+                logging.info("\n--- Analyze Numerics ---\n")
             else:
                 logging.info(f"\n--- Numerics at iteration {i} ---\n")
             print("Max value of A matrix: " + cons_str_max)

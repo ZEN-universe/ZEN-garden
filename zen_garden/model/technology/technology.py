@@ -13,7 +13,7 @@ import pandas as pd
 import xarray as xr
 from linopy.expressions import LinearExpression
 
-from ..component import ZenIndex, IndexSet
+from ..component import IndexSet, ZenIndex
 from ..element import Element, GenericRule
 
 

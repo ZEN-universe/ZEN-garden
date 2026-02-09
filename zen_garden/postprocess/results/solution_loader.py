@@ -3,20 +3,22 @@ This module contains the implementation of a SolutionLoader that reads the solut
 """
 
 import copy
-import warnings
-import re
 import json
-import os
-import h5py  # type: ignore
-import pint
-import pandas as pd
-import numpy as np
 import logging
-
-from typing import Optional, Any, Literal
+import os
+import re
+import warnings
 from enum import Enum
-from zen_garden.default_config import Analysis, System, Solver
+from typing import Any, Literal, Optional
+
+import h5py  # type: ignore
+import numpy as np
+import pandas as pd
+import pint
+
+from zen_garden.default_config import Analysis, Solver, System
 from zen_garden.utils import slice_df_by_index
+
 from .cache import ConditionalCache
 
 
@@ -900,7 +902,7 @@ def get_df_from_path(
                     pd_read = pd.read_hdf(path, component_name, columns=["units"])
                 except IndexError:
                     logging.warning(
-                        f"Cannot retrieve units. Make sure you have updated the environment to the latest version."
+                        "Cannot retrieve units. Make sure you have updated the environment to the latest version."
                     )
                     return pd.Series([])
         else:

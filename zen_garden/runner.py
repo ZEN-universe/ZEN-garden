@@ -3,17 +3,19 @@ This function runs ZEN garden,it is executed in the __main__.py script.
 Compilation  of the optimization problem.
 """
 
+import importlib
 import importlib.util
-from pathlib import Path
+import json
 import logging
 import os
-import importlib
+import warnings
+from pathlib import Path
+
+import zen_garden.default_config as default_config
+
 from .optimization_setup import OptimizationSetup
 from .postprocess.postprocess import Postprocess
-from .utils import setup_logger, InputDataChecks, StringUtils, ScenarioUtils
-import zen_garden.default_config as default_config
-import json
-import warnings
+from .utils import InputDataChecks, ScenarioUtils, StringUtils, setup_logger
 
 # we setup the logger here
 setup_logger()

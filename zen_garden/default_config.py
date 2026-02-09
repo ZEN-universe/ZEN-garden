@@ -31,8 +31,9 @@ Default values are overwritten by any changes specified in the input files
 ``system.json``, ``scenarios.json``, and ``config.json``.
 """
 
+from typing import Any, Literal, Optional, Union
+
 from pydantic import BaseModel, ConfigDict
-from typing import Any, Optional, Union, Literal
 
 
 class Subscriptable(BaseModel):

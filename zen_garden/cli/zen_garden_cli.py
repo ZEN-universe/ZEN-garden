@@ -1,6 +1,7 @@
 import argparse
-from zen_garden.runner import run
 import os
+
+from zen_garden.runner import run
 
 
 # ---------------------------------------------------------------------------

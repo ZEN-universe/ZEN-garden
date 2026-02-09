@@ -3,9 +3,10 @@ Runs the main function of ZEN-Garden.
 Compilation  of the optimization problem.
 """
 
-from .runner import run
-from .cli.zen_garden_cli import create_zen_garden_cli
 import warnings
+
+from .cli.zen_garden_cli import create_zen_garden_cli
+from .runner import run
 
 
 def run_module(config="./config.py", dataset=None, folder_output=None, job_index=None):

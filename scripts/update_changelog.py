@@ -21,9 +21,8 @@ environment for use in subsequent workflow steps.
 
 import os
 import re
-from datetime import date, datetime
-from importlib.metadata import version as get_version
 import tomllib  # Python 3.11+
+from datetime import date, datetime
 from pathlib import Path
 from typing import Tuple
 

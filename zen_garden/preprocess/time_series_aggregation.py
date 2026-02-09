@@ -3,13 +3,14 @@ Functions to apply time series aggregation to time series
 """
 
 import copy
-
-import pandas as pd
-import numpy as np
 import logging
+
+import numpy as np
+import pandas as pd
 import tsam.timeseriesaggregation as tsam
-from zen_garden.model.energy_system import EnergySystem
+
 from zen_garden.model.element import Element
+from zen_garden.model.energy_system import EnergySystem
 
 
 class TimeSeriesAggregation(object):
@@ -143,7 +144,7 @@ class TimeSeriesAggregation(object):
         self.typical_periods = self.typical_periods.sort_index(axis=1)
         # sets the aggregated time series of each element
         for element in self.optimization_setup.get_all_elements(Element):
-            raw_ts = getattr(element, "raw_time_series")
+            raw_ts = element.raw_time_series
             # iterate through raw time series
             for ts in raw_ts:
                 if raw_ts[ts] is None:
@@ -279,7 +280,7 @@ class TimeSeriesAggregation(object):
         :param header_set_time_steps: name of set_time_steps
         :return df_ts_raw: pd.DataFrame with non-constant time series"""
         dict_raw_ts = {}
-        raw_ts = getattr(element, "raw_time_series")
+        raw_ts = element.raw_time_series
         for ts in raw_ts:
             if raw_ts[ts] is None:
                 continue

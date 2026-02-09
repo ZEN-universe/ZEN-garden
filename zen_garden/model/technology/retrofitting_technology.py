@@ -5,11 +5,13 @@ constraints of the retrofitting technologies.
 """
 
 import itertools
+
 import pandas as pd
 
 from zen_garden.utils import align_like
-from .conversion_technology import ConversionTechnology
+
 from ..element import GenericRule
+from .conversion_technology import ConversionTechnology
 
 
 class RetrofittingTechnology(ConversionTechnology):

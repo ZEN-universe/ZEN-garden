@@ -1,12 +1,13 @@
 from __future__ import annotations
-from docutils import nodes
-from sphinx.application import Sphinx
-from sphinx.util.docutils import SphinxDirective, SphinxRole
-from sphinx.util.typing import ExtensionMetadata
-from docutils.statemachine import ViewList
-from sphinx.util.nodes import nested_parse_with_titles
+
 import importlib
-import pdb
+
+from docutils import nodes
+from docutils.statemachine import ViewList
+from sphinx.application import Sphinx
+from sphinx.util.docutils import SphinxDirective
+from sphinx.util.nodes import nested_parse_with_titles
+from sphinx.util.typing import ExtensionMetadata
 
 """
 TO DUBUG:

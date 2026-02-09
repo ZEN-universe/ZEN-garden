@@ -7,9 +7,9 @@ constraints that hold for the transport technologies.
 import numpy as np
 import xarray as xr
 
-from .technology import Technology
 from ..component import IndexSet
 from ..element import Element, GenericRule
+from .technology import Technology
 
 
 class TransportTechnology(Technology):

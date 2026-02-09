@@ -1,12 +1,10 @@
-from pathlib import Path
-from typing import Iterable, List, Optional, Sequence
-
-import shutil
 import logging
+import shutil
+from pathlib import Path
+from typing import Iterable, List, Optional
 
-from zen_garden import run, Results
+from zen_garden import Results, run
 from zen_garden.wrapper import utils
-
 
 logger = logging.getLogger(__name__)
 

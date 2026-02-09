@@ -1,6 +1,7 @@
+import argparse
+
 from zen_garden.cli.zen_garden_cli import build_parser, resolve_job_index
 from zen_garden.wrapper.operation_scenarios import operation_scenarios
-import argparse
 
 
 def build_parser_op() -> argparse.ArgumentParser:
