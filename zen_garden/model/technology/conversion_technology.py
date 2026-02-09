@@ -174,7 +174,8 @@ class ConversionTechnology(Technology):
         dict_of_attributes = pd.concat(dict_of_attributes, keys=dict_of_attributes.keys())
         if not index_names:
             warnings.warn(
-                "Initializing the parameter capex without the specifying the index names will be deprecated!", stacklevel=2
+                "Initializing the parameter capex without the specifying the index names will be deprecated!",
+                stacklevel=2,
             )
             return dict_of_attributes, dict_of_units
         else:
@@ -521,7 +522,9 @@ class ConversionTechnologyRules(GenericRule):
         times = self.parameters.max_load.coords["set_time_steps_operation"]
         time_step_year = xr.DataArray(
             [
-                self.optimization_setup.energy_system.time_steps.convert_time_step_operation2year(t)
+                self.optimization_setup.energy_system.time_steps.convert_time_step_operation2year(
+                    t
+                )
                 for t in times.data
             ],
             coords=[times],
@@ -680,7 +683,8 @@ class ConversionTechnologyRules(GenericRule):
                 old: new
                 for old, new in zip(
                     list(capex_specific_conversion.dims),
-                    ["set_conversion_technologies", "set_nodes", "set_time_steps_yearly"], strict=False,
+                    ["set_conversion_technologies", "set_nodes", "set_time_steps_yearly"],
+                    strict=False,
                 )
             }
         )

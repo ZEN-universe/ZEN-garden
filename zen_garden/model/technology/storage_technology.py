@@ -407,7 +407,9 @@ class StorageTechnologyRules(GenericRule):
         constraint_discharge = lhs <= rhs
 
         self.constraints.add_constraint("constraint_charge_storage_binary", constraint_charge)
-        self.constraints.add_constraint("constraint_discharge_storage_binary", constraint_discharge)
+        self.constraints.add_constraint(
+            "constraint_discharge_storage_binary", constraint_discharge
+        )
 
     def constraint_capacity_factor_storage(self):
         """Load is limited by the installed capacity and the maximum load factor for storage technologies.
@@ -429,7 +431,9 @@ class StorageTechnologyRules(GenericRule):
         times = self.variables.coords["set_time_steps_operation"]
         time_step_year = xr.DataArray(
             [
-                self.optimization_setup.energy_system.time_steps.convert_time_step_operation2year(t)
+                self.optimization_setup.energy_system.time_steps.convert_time_step_operation2year(
+                    t
+                )
                 for t in times.data
             ],
             coords=[times],
@@ -700,7 +704,9 @@ class StorageTechnologyRules(GenericRule):
             [
                 (
                     1.0,
-                    self.variables["cost_capex_overnight"].loc[techs, capacity_types, nodes, times],
+                    self.variables["cost_capex_overnight"].loc[
+                        techs, capacity_types, nodes, times
+                    ],
                 ),
                 (
                     -self.parameters.capex_specific_storage.loc[

@@ -162,7 +162,9 @@ class TimeStepsDicts(object):
         # calculate operation2year
         time_steps_operation2year = {
             key: val
-            for key, val in zip(time_steps_combi_operation[0, :], time_steps_combi_operation[1, :], strict=False)
+            for key, val in zip(
+                time_steps_combi_operation[0, :], time_steps_combi_operation[1, :], strict=False
+            )
         }
         self.time_steps_operation2year = time_steps_operation2year
         # calculate year2operation
@@ -183,7 +185,9 @@ class TimeStepsDicts(object):
         # calculate storage2year
         time_steps_storage2year = {
             key: val
-            for key, val in zip(time_steps_combi_storage[0, :], time_steps_combi_storage[1, :], strict=False)
+            for key, val in zip(
+                time_steps_combi_storage[0, :], time_steps_combi_storage[1, :], strict=False
+            )
         }
         self.time_steps_storage2year = time_steps_storage2year
         # calculate year2storage

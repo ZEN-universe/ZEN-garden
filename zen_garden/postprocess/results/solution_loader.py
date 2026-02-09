@@ -228,7 +228,8 @@ class Scenario:
         ):
             warnings.warn(
                 f"Selecting the yearly time steps ({year}) instead of the actual year ({ry + del_y*year}) is deprecated. Please use the actual year.",
-                DeprecationWarning, stacklevel=2,
+                DeprecationWarning,
+                stacklevel=2,
             )
             ts = year
         else:
@@ -721,7 +722,9 @@ class SolutionLoader:
                 subfolder_names = list(
                     filter(lambda x: pattern.match(x), os.listdir(scenario.path))
                 )
-                ans = [int(subfolder_name.replace("MF_", "")) for subfolder_name in subfolder_names]
+                ans = [
+                    int(subfolder_name.replace("MF_", "")) for subfolder_name in subfolder_names
+                ]
             else:  # if no rolling horizon, single optimized year
                 ans = [0]
 

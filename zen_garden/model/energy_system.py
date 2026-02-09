@@ -247,12 +247,16 @@ class EnergySystem:
         if direction == "in":
             # second entry is node into which the flow goes
             _set_connected_edges = [
-                edge for edge in self.set_nodes_on_edges if self.set_nodes_on_edges[edge][1] == node
+                edge
+                for edge in self.set_nodes_on_edges
+                if self.set_nodes_on_edges[edge][1] == node
             ]
         elif direction == "out":
             # first entry is node out of which the flow starts
             _set_connected_edges = [
-                edge for edge in self.set_nodes_on_edges if self.set_nodes_on_edges[edge][0] == node
+                edge
+                for edge in self.set_nodes_on_edges
+                if self.set_nodes_on_edges[edge][0] == node
             ]
         else:
             raise KeyError(f"invalid direction '{direction}'")
@@ -528,7 +532,9 @@ class EnergySystem:
         elif self.optimization_setup.analysis.objective == "total_carbon_emissions":
             objective = self.rules.objective_total_carbon_emissions(self.optimization_setup.model)
         else:
-            raise KeyError(f"Objective type {self.optimization_setup.analysis.objective} not known")
+            raise KeyError(
+                f"Objective type {self.optimization_setup.analysis.objective} not known"
+            )
 
         # get selected objective sense
         sense = self.optimization_setup.analysis.sense
@@ -695,7 +701,9 @@ class EnergySystemRules(GenericRule):
         else:
             constraints = None
 
-        self.constraints.add_constraint("constraint_carbon_emissions_budget_overshoot", constraints)
+        self.constraints.add_constraint(
+            "constraint_carbon_emissions_budget_overshoot", constraints
+        )
 
     def constraint_carbon_emissions_annual_overshoot(self):
         """ensures annual carbon emissions overshoot is zero when carbon emissions price for annual overshoot is inf.
@@ -716,7 +724,9 @@ class EnergySystemRules(GenericRule):
         else:
             constraints = None
 
-        self.constraints.add_constraint("constraint_carbon_emissions_annual_overshoot", constraints)
+        self.constraints.add_constraint(
+            "constraint_carbon_emissions_annual_overshoot", constraints
+        )
 
     def constraint_carbon_emissions_annual(self):
         """add up all carbon emissions from technologies and carriers.

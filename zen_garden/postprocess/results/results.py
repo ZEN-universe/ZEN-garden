@@ -321,7 +321,9 @@ class Results:
         """
         if index is None:
             index = tuple()
-        series = self.solution_loader.get_component_data(scenario, component, keep_raw, index=index)
+        series = self.solution_loader.get_component_data(
+            scenario, component, keep_raw, index=index
+        )
 
         if year is None:
             years = [i for i in range(0, scenario.system.optimized_years)]
@@ -356,9 +358,9 @@ class Results:
                 ans.insert(len(ans.columns), year, total_value[timestep_list].sum(axis=1, skipna=False))  # type: ignore # noqa
 
         if "mf" in ans.index.names:
-            ans = ans.reorder_levels([i for i in ans.index.names if i != "mf"] + ["mf"]).sort_index(
-                axis=0
-            )
+            ans = ans.reorder_levels(
+                [i for i in ans.index.names if i != "mf"] + ["mf"]
+            ).sort_index(axis=0)
         ans = scenario.convert_ts2year(ans)
         return ans
 
@@ -537,7 +539,8 @@ class Results:
             if self.get_analysis(scenario_name=scenario_name).objective == "total_cost":
                 component_name = "net_present_cost"
             elif (
-                self.get_analysis(scenario_name=scenario_name).objective == "total_carbon_emissions"
+                self.get_analysis(scenario_name=scenario_name).objective
+                == "total_carbon_emissions"
             ):
                 component_name = "carbon_emissions_annual"
             else:
@@ -905,7 +908,9 @@ class Results:
         for component, factor in components.items():
 
             if component == "flow_transport_in":
-                full_ts = self.get_full_ts("flow_transport", scenario_name=scenario_name, year=year)
+                full_ts = self.get_full_ts(
+                    "flow_transport", scenario_name=scenario_name, year=year
+                )
                 transport_loss = self.get_full_ts(
                     "flow_transport_loss", scenario_name=scenario_name, year=year
                 )
@@ -915,7 +920,9 @@ class Results:
                     full_ts - transport_loss, node, "in", scenario_name
                 )
             elif component == "flow_transport_out":
-                full_ts = self.get_full_ts("flow_transport", scenario_name=scenario_name, year=year)
+                full_ts = self.get_full_ts(
+                    "flow_transport", scenario_name=scenario_name, year=year
+                )
                 if full_ts.empty:
                     continue
                 full_ts = self.edit_carrier_flows(full_ts, node, "out", scenario_name)

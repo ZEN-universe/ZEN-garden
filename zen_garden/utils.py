@@ -171,7 +171,8 @@ def download_example_dataset(dataset):
         )
     if not notebook_found:
         warnings.warn(
-            "Example jupyter notebook could not be downloaded from the " "dataset examples!", stacklevel=2
+            "Example jupyter notebook could not be downloaded from the " "dataset examples!",
+            stacklevel=2,
         )
 
     # print output
@@ -311,7 +312,9 @@ def reformat_slicing_index(index, component) -> tuple[str]:
         ref_index = []
         for key, value in index.items():
             if key not in index_names:
-                warnings.warn(f"Invalid index name '{key}' in index. Skipping.", Warning, stacklevel=2)
+                warnings.warn(
+                    f"Invalid index name '{key}' in index. Skipping.", Warning, stacklevel=2
+                )
                 continue
             if isinstance(value, list):
                 ref_index.append(f"'{key}' in {value}")
@@ -323,7 +326,8 @@ def reformat_slicing_index(index, component) -> tuple[str]:
         if len(index) > len(index_names):
             warnings.warn(
                 f"Index length {len(index)} is longer than the number of index dimensions {len(index_names)}. Check selected index.",
-                Warning, stacklevel=2,
+                Warning,
+                stacklevel=2,
             )
         for i, index_name in enumerate(index_names):
             if i >= len(index):
@@ -537,7 +541,10 @@ class IISConstraintParser(object):
         indices = [i[0] for i in np.where(con.labels.values == value)]
 
         # Extract the coordinates from the indices
-        coord = {dim: con.labels.indexes[dim][i] for dim, i in zip(con.labels.dims, indices, strict=False)}
+        coord = {
+            dim: con.labels.indexes[dim][i]
+            for dim, i in zip(con.labels.dims, indices, strict=False)
+        }
 
         return name, coord
 
@@ -707,7 +714,9 @@ class ScenarioDict(dict):
                 if element in ScenarioDict._setting_elements:
                     if not isinstance(param_dict, dict):
                         continue
-                    elif isinstance(param_dict, dict) and not isinstance(param_dict["value"], list):
+                    elif isinstance(param_dict, dict) and not isinstance(
+                        param_dict["value"], list
+                    ):
                         scenario[element][param] = param_dict["value"]
                 for key in sorted(ScenarioDict._param_dict_keys):
                     if key in param_dict and isinstance(param_dict[key], list):
@@ -870,7 +879,9 @@ class ScenarioDict(dict):
 
         fname, ext = os.path.splitext(fname)
         if ext != "":
-            warnings.warn(f"The file name {fname}{ext} has an extension {ext}, removing it.", stacklevel=2)
+            warnings.warn(
+                f"The file name {fname}{ext} has an extension {ext}, removing it.", stacklevel=2
+            )
         return fname
 
     def get_default(self, element, param):
@@ -1049,7 +1060,8 @@ class InputDataChecks:
             and self.system.use_rolling_horizon
         ):
             warnings.warn(
-                "The chosen number of years in the rolling horizon step is larger than the total number of years optimized!", stacklevel=2
+                "The chosen number of years in the rolling horizon step is larger than the total number of years optimized!",
+                stacklevel=2,
             )
 
     def check_primary_folder_structure(self):
@@ -1122,7 +1134,9 @@ class InputDataChecks:
                         raise FileNotFoundError(
                             f"Technology {technology} selected in config does not exist in input data"
                         )
-                    elif "attributes.json" not in self.optimization_setup.paths[subset][technology]:
+                    elif (
+                        "attributes.json" not in self.optimization_setup.paths[subset][technology]
+                    ):
                         raise FileNotFoundError(
                             f"The file attributes.json does not exist for the technology {technology}"
                         )
@@ -1187,7 +1201,8 @@ class InputDataChecks:
                 and edge[2] in self.system.set_nodes
             ):
                 warnings.warn(
-                    f"The edge {edge[0]} is single-directed, i.e., the edge {reversed_edge} doesn't exist!", stacklevel=2
+                    f"The edge {edge[0]} is single-directed, i.e., the edge {reversed_edge} doesn't exist!",
+                    stacklevel=2,
                 )
 
     def read_system_file(self, config):

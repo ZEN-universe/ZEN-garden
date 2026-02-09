@@ -5,7 +5,6 @@ The class takes as inputs the abstract optimization model. The class adds parame
 constraints of a generic carrier and returns the abstract optimization model.
 """
 
-
 import linopy as lp
 import numpy as np
 import xarray as xr

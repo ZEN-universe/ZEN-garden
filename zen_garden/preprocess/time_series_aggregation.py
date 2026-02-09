@@ -34,7 +34,8 @@ class TimeSeriesAggregation(object):
         # if set_time_steps as input (because already aggregated), use this as base time step, otherwise self.set_base_time_steps
         self.set_base_time_steps = self.energy_system.set_base_time_steps_yearly
         self.number_typical_periods = min(
-            self.system.unaggregated_time_steps_per_year, self.system.aggregated_time_steps_per_year
+            self.system.unaggregated_time_steps_per_year,
+            self.system.aggregated_time_steps_per_year,
         )
         self.conducted_tsa = False
         self.get_excluded_ts()
@@ -495,7 +496,9 @@ class TimeSeriesAggregation(object):
         if self.conducted_tsa:
             for year in self.year_specific_tsa.keys():
                 if (element.name, ts) in self.year_specific_tsa[year].keys():
-                    base_time_steps = self.energy_system.time_steps.decode_time_step(year, "yearly")
+                    base_time_steps = self.energy_system.time_steps.decode_time_step(
+                        year, "yearly"
+                    )
                     element_time_steps = self.energy_system.time_steps.encode_time_step(
                         base_time_steps, time_step_type="operation"
                     )
@@ -510,7 +513,9 @@ class TimeSeriesAggregation(object):
         else:
             for year in self.optimization_setup.year_specific_ts.keys():
                 if (element.name, ts) in self.optimization_setup.year_specific_ts[year].keys():
-                    base_time_steps = self.energy_system.time_steps.decode_time_step(year, "yearly")
+                    base_time_steps = self.energy_system.time_steps.decode_time_step(
+                        year, "yearly"
+                    )
                     element_time_steps = self.energy_system.time_steps.encode_time_step(
                         base_time_steps, time_step_type="operation"
                     )

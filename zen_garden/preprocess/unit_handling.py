@@ -183,7 +183,8 @@ class UnitHandling:
             warnings.warn(
                 'The base unit for time is intended to be "hour" but is not found in the base_units file. '
                 "If this is intentional, make sure that your settings and input data are aligned with this change.",
-                UserWarning, stacklevel=2,
+                UserWarning,
+                stacklevel=2,
             )
         return list_base_units
 
@@ -249,7 +250,9 @@ class UnitHandling:
                 base_combination = pd.Series(index=self.dim_matrix.columns, data=0)
                 base_combination[dim_matrix_reduced.columns] = combination_solution
                 # compose relevant units to dimensionless combined unit
-                for unit, power in zip(dim_matrix_reduced.columns, combination_solution, strict=False):
+                for unit, power in zip(
+                    dim_matrix_reduced.columns, combination_solution, strict=False
+                ):
                     combined_unit *= self.ureg(unit) ** (-1 * power)
             else:
                 base_combination, combined_unit = self._get_combined_unit_of_different_matrix(
@@ -290,7 +293,9 @@ class UnitHandling:
                 if np.linalg.matrix_rank(dim_matrix_reduced_temp) == np.size(
                     dim_matrix_reduced_temp, 1
                 ):
-                    combination_solution_temp = np.linalg.solve(dim_matrix_reduced_temp, dim_vector)
+                    combination_solution_temp = np.linalg.solve(
+                        dim_matrix_reduced_temp, dim_vector
+                    )
                 # if singular, check if zero row in matrix corresponds to zero row in unit dimensionality
                 else:
                     zero_row = dim_matrix_reduced_temp.index[~dim_matrix_reduced_temp.any(axis=1)]
@@ -551,7 +556,11 @@ class UnitHandling:
                             self._remove_non_energy_units(unit_specs, "capacity_" + key)
                         )
                 # units of input/output/reference carrier not of interest for consistency
-                elif attribute_name not in ["input_carrier", "output_carrier", "reference_carrier"]:
+                elif attribute_name not in [
+                    "input_carrier",
+                    "output_carrier",
+                    "reference_carrier",
+                ]:
                     energy_quantity_units.update(
                         self._remove_non_energy_units(unit_specs, attribute_name)
                     )
@@ -612,7 +621,9 @@ class UnitHandling:
                 for key, value in energy_quantity_units.items()
                 if any(es in key for es in exclude_strings)
             }
-            time_base_unit = [key for key, value in self.base_units.items() if value == "[time]"][0]
+            time_base_unit = [key for key, value in self.base_units.items() if value == "[time]"][
+                0
+            ]
             for key, value in cf_energy_quantity_units.items():
                 # if conversion factor unit is in not in energy units, try to convert it to energy units by multiplying with time base unit
                 if value != non_cf_energy_quantity_unit:
@@ -923,8 +934,8 @@ class UnitHandling:
                 carrier for carrier in elements if carrier.name == dependent_carrier_name
             ][0]
 
-            div_signs_dependent_carrier_energy = self._get_number_of_division_signs_energy_quantity(
-                dependent_carrier.units
+            div_signs_dependent_carrier_energy = (
+                self._get_number_of_division_signs_energy_quantity(dependent_carrier.units)
             )
             div_signs_ref_carrier_energy = self._get_number_of_division_signs_energy_quantity(
                 reference_carrier.units

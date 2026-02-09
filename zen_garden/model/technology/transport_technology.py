@@ -344,7 +344,9 @@ class TransportTechnologyRules(GenericRule):
         times = self.variables["flow_transport"].coords["set_time_steps_operation"]
         time_step_year = xr.DataArray(
             [
-                self.optimization_setup.energy_system.time_steps.convert_time_step_operation2year(t)
+                self.optimization_setup.energy_system.time_steps.convert_time_step_operation2year(
+                    t
+                )
                 for t in times.data
             ],
             coords=[times],
@@ -472,7 +474,8 @@ class TransportTechnologyRules(GenericRule):
 
         ### auxiliary calculations TODO improve
         term_distance_inf = (
-            mask * self.variables["capacity_addition"].loc[coords[0], "power", coords[1], coords[2]]
+            mask
+            * self.variables["capacity_addition"].loc[coords[0], "power", coords[1], coords[2]]
         )
         term_distance_not_inf = (1 - mask) * (
             self.variables["cost_capex_overnight"].loc[coords[0], "power", coords[1], coords[2]]

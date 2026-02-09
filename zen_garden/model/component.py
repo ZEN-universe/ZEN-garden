@@ -358,7 +358,9 @@ class IndexSet(Component):
 
         # get the coords
         index_arrs = IndexSet.tuple_to_arr(index_values, index_list)
-        coords = [self.get_coord(data, name) for data, name in zip(index_arrs, index_list, strict=False)]
+        coords = [
+            self.get_coord(data, name) for data, name in zip(index_arrs, index_list, strict=False)
+        ]
 
         index_list, mask = self.create_variable_mask(coords, index_arrs, index_list, model)
 
@@ -789,7 +791,9 @@ class Variable(Component):
         for dim, dim_name in distinct_dims.items():
             if dim in unit_category:
                 dim_unit = [
-                    key for key, value in self.unit_handling.base_units.items() if value == dim_name
+                    key
+                    for key, value in self.unit_handling.base_units.items()
+                    if value == dim_name
                 ][0]
                 unit = unit * self.unit_handling.ureg(dim_unit) ** unit_category[dim]
         var_units = pd.Series(index=index, dtype=str)
@@ -1037,7 +1041,9 @@ class Constraint(Component):
 
         # get the coordinates
         index_arrs = IndexSet.tuple_to_arr(index_values, index_names)
-        coords = {name: np.unique(arr.data) for name, arr in zip(index_names, index_arrs, strict=False)}
+        coords = {
+            name: np.unique(arr.data) for name, arr in zip(index_names, index_arrs, strict=False)
+        }
         coords.update(
             {
                 cname: lhs.coords[cname]

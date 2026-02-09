@@ -306,7 +306,8 @@ class DataInput:
         if type(data) == list:
             warnings.warn(
                 "The list format in attributes.json [{...}] is deprecated. Use a dict format instead {...}.",
-                DeprecationWarning, stacklevel=2,
+                DeprecationWarning,
+                stacklevel=2,
             )
             for item in data:
                 for k, v in item.items():
@@ -439,7 +440,8 @@ class DataInput:
 
                     warnings.warn(
                         f"\nAttribute {attribute_name} is not yet included in your model. Automatic assign default_value:{attribute_dict[attribute_name]['default_value']}, unit: {attribute_dict[attribute_name]['unit']}\n",
-                        DeprecationWarning, stacklevel=2,
+                        DeprecationWarning,
+                        stacklevel=2,
                     )
 
                 # CASE 2: The attribute has a new name
@@ -448,7 +450,9 @@ class DataInput:
                     attribute_dict[attribute_name] = attribute_dict.pop(old_name)
 
                     warnings.warn(
-                        f"Attribute {old_name} is now called {attribute_name}", DeprecationWarning, stacklevel=2
+                        f"Attribute {old_name} is now called {attribute_name}",
+                        DeprecationWarning,
+                        stacklevel=2,
                     )
 
             else:
@@ -923,7 +927,9 @@ class DataInput:
             for key, value in default_value["value"].items():
                 df_output[key] = value
         else:
-            df_output = pd.Series(index=index_multi_index, data=default_value["value"], dtype=float)
+            df_output = pd.Series(
+                index=index_multi_index, data=default_value["value"], dtype=float
+            )
         return df_output, default_value, index_name_list
 
     def construct_index_list(self, index_sets, time_steps):
@@ -972,10 +978,15 @@ class DataInput:
             if "time" in df_input.axes[1]:
                 warnings.warn(
                     f"The column header 'time' (used in {file_name}) will not be supported for input data with yearly time steps any longer! Use the header 'year' instead",
-                    DeprecationWarning, stacklevel=2,
+                    DeprecationWarning,
+                    stacklevel=2,
                 )
                 df_input = df_input.rename(
-                    {self.index_names["set_time_steps"]: self.index_names["set_time_steps_yearly"]},
+                    {
+                        self.index_names["set_time_steps"]: self.index_names[
+                            "set_time_steps_yearly"
+                        ]
+                    },
                     axis=1,
                 )
             # does not contain annual index
@@ -993,8 +1004,8 @@ class DataInput:
                 requested_index_values_in_columns = requested_index_values.intersection(
                     df_input.columns
                 )
-                requested_index_values_years_in_columns = requested_index_values_years.intersection(
-                    df_input.columns
+                requested_index_values_years_in_columns = (
+                    requested_index_values_years.intersection(df_input.columns)
                 )
                 if (
                     not requested_index_values_in_columns
@@ -1013,7 +1024,8 @@ class DataInput:
             if max(df_input.loc[:, temporal_header]) < self.analysis.earliest_year_of_data:
                 warnings.warn(
                     f"Generic time indices (used in {file_name}) will not be supported for input data with yearly time steps any longer! Use the corresponding years (e.g. 2022,2023,...) as time indices instead",
-                    DeprecationWarning, stacklevel=2,
+                    DeprecationWarning,
+                    stacklevel=2,
                 )
                 return df_input
             # assert that correct temporal index_set to get corresponding index_name is given (i.e. set_time_steps_yearly for input data with yearly time steps)(otherwise extract_general_input_data() will find a missing_index)
@@ -1082,7 +1094,9 @@ class DataInput:
             year2step = {
                 year: step
                 for year, step in zip(
-                    self.energy_system.set_time_steps_years, getattr(self.energy_system, time_steps), strict=False
+                    self.energy_system.set_time_steps_years,
+                    getattr(self.energy_system, time_steps),
+                    strict=False,
                 )
             }
             df_input[temporal_header] = df_input[temporal_header].apply(

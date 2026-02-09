@@ -761,11 +761,13 @@ class OptimizationSetup(object):
             if index_names is None:
                 raise ValueError(f"Index names for {component_name} not specified")
             custom_set, index_list = calling_class.create_custom_set(index_names, self)
-            component_data, dict_of_units, attribute_is_series = self.get_attribute_of_all_elements(
-                calling_class,
-                component_name,
-                capacity_types=capacity_types,
-                return_attribute_is_series=True,
+            component_data, dict_of_units, attribute_is_series = (
+                self.get_attribute_of_all_elements(
+                    calling_class,
+                    component_name,
+                    capacity_types=capacity_types,
+                    return_attribute_is_series=True,
+                )
             )
             if np.size(custom_set):
                 if attribute_is_series:
