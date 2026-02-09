@@ -10,19 +10,30 @@
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
 import os
-import sys
 import shutil
+import sys
 from importlib.metadata import version as get_version
 from pathlib import Path
-sys.path.insert(0, os.path.abspath('..'))
-sys.path.append(os.path.abspath('_ext'))
+
+sys.path.insert(0, os.path.abspath(".."))
+sys.path.append(os.path.abspath("_ext"))
 
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
-project = 'ZEN-garden'
-copyright = '2025, Reliability and Risk Engineering lab, ETH Zurich'
-author = 'Jacob Mannhardt, Alissa Ganter, Johannes Burger, Francesco de Marco, Lukas Kunz, Lukas Schmidt-Engelbertz, Nour Boulos, Christoph Funke, Giovanni Sansavini'
+project = "ZEN-garden"
+copyright = "2025, Reliability and Risk Engineering lab, ETH Zurich"
+author = (
+    "Jacob Mannhardt, "
+    "Alissa Ganter, "
+    "Johannes Burger, "
+    "Francesco de Marco, "
+    "Lukas Kunz, "
+    "Lukas Schmidt-Engelbertz, "
+    "Nour Boulos, "
+    "Christoph Funke, "
+    "Giovanni Sansavini"
+)
 release = get_version("zen_garden")
 language = "en"
 
@@ -31,22 +42,23 @@ language = "en"
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
-extensions = ['sphinx.ext.autodoc',
-              'sphinx.ext.napoleon',
-              'sphinx.ext.mathjax',
-              'sphinx.ext.autodoc',
-              'sphinx.ext.autosummary',
-              'sphinx.ext.intersphinx',
-              'sphinx.ext.todo',
-#              "sphinx.ext.autosectionlabel",
-              'sphinx_reredirects',
-              'nbsphinx',
-              'nbsphinx_link',
-              'myst_parser',
-              "sphinx.ext.imgconverter",  # for SVG conversion
-              "sphinxcontrib.mermaid", # for class diagrams
-              "docstring" # custom extension for inserting docstring text
-             ]
+extensions = [
+    "sphinx.ext.autodoc",
+    "sphinx.ext.napoleon",
+    "sphinx.ext.mathjax",
+    "sphinx.ext.autodoc",
+    "sphinx.ext.autosummary",
+    "sphinx.ext.intersphinx",
+    "sphinx.ext.todo",
+    #              "sphinx.ext.autosectionlabel",
+    "sphinx_reredirects",
+    "nbsphinx",
+    "nbsphinx_link",
+    "myst_parser",
+    "sphinx.ext.imgconverter",  # for SVG conversion
+    "sphinxcontrib.mermaid",  # for class diagrams
+    "docstring",  # custom extension for inserting docstring text
+]
 # allow errors in the notebooks
 nbsphinx_allow_errors = True
 
@@ -61,8 +73,8 @@ napoleon_use_ivar = False
 
 # Specify the special members to include in the documentation
 autodoc_default_options = {
-    'members': True,
-    'special-members': '__init__',
+    "members": True,
+    "special-members": "__init__",
 }
 
 numfig = True
@@ -71,25 +83,36 @@ numfig = True
 autodoc_typehints_format = "short"
 
 # Add any paths that contain templates here, relative to this directory.
-templates_path = ['_templates']
+templates_path = ["_templates"]
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
 # exclude all jupyter notebooks
-exclude_patterns = ['_build', 'dataset_examples', 'Thumbs.db', '.DS_Store', '**.ipynb_checkpoints',
-                    'files/tutorial/add_carrier.rst', 'files/tutorial/add_policy.rst', 
-                    'files/tutorial/add_technology.rst', 'files/tutorial/add_transport.rst', 
-                    'files/tutorial/handle_infeasibilities.rst', 'files/api_v2/**', 
-                    'files/dataset_examples/**', 'files/developer_guide/testing.rst', 'files/references/release_notes.rst']
+exclude_patterns = [
+    "_build",
+    "dataset_examples",
+    "Thumbs.db",
+    ".DS_Store",
+    "**.ipynb_checkpoints",
+    "files/tutorial/add_carrier.rst",
+    "files/tutorial/add_policy.rst",
+    "files/tutorial/add_technology.rst",
+    "files/tutorial/add_transport.rst",
+    "files/tutorial/handle_infeasibilities.rst",
+    "files/api_v2/**",
+    "files/dataset_examples/**",
+    "files/developer_guide/testing.rst",
+    "files/references/release_notes.rst",
+]
 
 
 mermaid = {
-    'theme': 'default',
-    'startOnLoad': True,
-    'mermaidConfig': {
-        'themeVariables': {
-            'primaryColor': '#ffcc00',
+    "theme": "default",
+    "startOnLoad": True,
+    "mermaidConfig": {
+        "themeVariables": {
+            "primaryColor": "#ffcc00",
         },
     },
 }
@@ -100,7 +123,7 @@ mermaid = {
 # a list of builtin themes.
 #
 # html_theme = 'sphinx_book_theme'
-html_theme = 'furo'
+html_theme = "furo"
 
 # Theme-specific options to customize the look of a theme
 # For a list of options available for each theme, see the documentation.
@@ -123,7 +146,7 @@ html_theme_options = {
 }
 
 
-# The name for this set of Sphinx documents.  
+# The name for this set of Sphinx documents.
 html_title = "ZEN-garden"
 html_short_title = "ZEN-garden"
 
@@ -137,6 +160,7 @@ html_favicon = "files/figures/general/zen_garden_logo_text.png"
 # so a file named "default.css" will overwrite the builtin "default.css".
 # html_static_path = ['_static']
 
+
 ## ----------------------------------------------------------------------------
 # copy changelog to allow it to appear in the documentation.
 # GitHub expects the changelog in the root directory
@@ -146,6 +170,7 @@ def copy_changelog(app):
     dst = Path(app.confdir) / "files" / "api" / "generated" / "changelog.md"
     if src.exists():
         shutil.copy(src, dst)
+
 
 def setup(app):
     app.connect("builder-inited", copy_changelog)

@@ -1,35 +1,43 @@
+"""Class is defining the postprocessing of the results.
+The class takes as inputs the optimization problem (model) and the system
+configurations (system). The class contains methods to read the results and
+save them in a result dictionary (resultDict).
 """
-Class is defining the postprocessing of the results.
-The class takes as inputs the optimization problem (model) and the system configurations (system).
-The class contains methods to read the results and save them in a result dictionary (resultDict).
-"""
+
 import json
 import logging
 import os
+import warnings
 from pathlib import Path
 
 import numpy as np
-import pint
-from tables import NaturalNameWarning
-import warnings
 import pandas as pd
+import pint
 import xarray as xr
-from filelock import FileLock
 import yaml
+from filelock import FileLock
 from pydantic import BaseModel
+from tables import NaturalNameWarning
 
 from ..optimization_setup import OptimizationSetup
 
-
 # Warnings
-warnings.filterwarnings('ignore', category=NaturalNameWarning)
+warnings.filterwarnings("ignore", category=NaturalNameWarning)
+
 
 class Postprocess:
-    """
-    Class is defining the postprocessing of the results
-    """
-    def __init__(self, optimization_setup: OptimizationSetup, scenarios, model_name, subfolder=None, scenario_name=None, param_map=None):
-        """postprocessing of the results of the optimization
+    """Class is defining the postprocessing of the results."""
+
+    def __init__(
+        self,
+        optimization_setup: OptimizationSetup,
+        scenarios,
+        model_name,
+        subfolder=None,
+        scenario_name=None,
+        param_map=None,
+    ):
+        """Postprocessing of the results of the optimization.
 
         :param model: optimization model
         :param model_name: The name of the model used to name the output folder
@@ -59,7 +67,8 @@ class Postprocess:
 
         # deal with the subfolder
         self.subfolder = subfolder
-        # here we make use of the fact that None and "" both evaluate to False but any non-empty string doesn't
+        # here we make use of the fact that None and "" both evaluate to
+        # False but any non-empty string doesn't
         if subfolder != Path(""):
             # check if mf within scenario analysis
             if isinstance(self.subfolder, tuple):
@@ -92,33 +101,40 @@ class Postprocess:
         if self.solver.run_diagnostics:
             self.save_benchmarking_data()
 
-    def write_file(self, name, dictionary, format=None, mode = 'w'):
-        """Writes the dictionary to file as json, if compression attribute is True, the serialized json is compressed
-            and saved as binary file
+    def write_file(self, name, dictionary, format=None, mode="w"):
+        """Writes the dictionary to file as json, if compression attribute is
+        True, the serialized json is compressed and saved as binary file.
 
-        :param name: Filename without extension
-        :param dictionary: The dictionary to save
-        :param format: Force the format to use, if None use output_format attribute of instance
-        :param mode: Writting mode for python file. The two options are 'w' and
-            'a'. The former create a new file while the latter will append to an
-            existing file. Appending files is currently only supported for h5 
-            files. 
+        Args:
+            name: Filename without extension
+            dictionary: The dictionary to save
+            format: Force the format to use, if None use output_format attribute
+                of instance
+            mode: Writing mode for python file. The two options are 'w' and
+                'a'. The former create a new file while the latter will append
+                to an existing file. Appending files is currently only supported
+                for h5 files.
         """
-
         if isinstance(dictionary, BaseModel):
             dictionary = dictionary.model_dump()
 
         # check whether valid mode
-        if not mode in ["a", "w"]:
-            ValueError(f"Invalid file write mode {mode} (valid options are 'a' or 'w').")
+        if mode not in ["a", "w"]:
+            ValueError(
+                f"Invalid file write mode {mode} (valid options are 'a' or " "'w')."
+            )
 
         # set the format
         if format is None:
             format = self.output_format
 
         # only allow append mode for h5 files
-        if mode == 'a' and format != "h5":
-            raise ValueError(f"Write mode {mode} not available for output format {format}. If include_operation_only_phase = true, outputs must be saved in h5 files.")
+        if mode == "a" and format != "h5":
+            raise ValueError(
+                f"Write mode {mode} not available for output format {format}. "
+                "If include_operation_only_phase = true, outputs must be saved "
+                "in h5 files."
+            )
 
         if format == "yml":
             # serialize to string
@@ -164,12 +180,13 @@ class Postprocess:
                     with open(f_name, f_mode, encoding="utf-8") as outfile:
                         outfile.write(dictionary)
         else:
-            raise AssertionError(f"The specified output format {format}, chosen in the config, is not supported")
+            raise AssertionError(
+                f"The specified output format {format}, chosen in the config, "
+                "is not supported"
+            )
 
     def save_benchmarking_data(self):
-        """
-        Saves the benchmarking data to a json file
-        """
+        """Saves the benchmarking data to a json file."""
         # initialize dictionary
         benchmarking_data = dict()
         # get the benchmarking data
@@ -178,32 +195,49 @@ class Postprocess:
             benchmarking_data["solving_time"] = self.model.solver_model.Runtime
             if "Method" in self.solver.solver_options:
                 if self.solver.solver_options["Method"] == 2:
-                    benchmarking_data["number_iterations"] = self.model.solver_model.BarIterCount
+                    benchmarking_data["number_iterations"] = (
+                        self.model.solver_model.BarIterCount
+                    )
                 else:
-                    benchmarking_data["number_iterations"] = self.model.solver_model.IterCount
+                    benchmarking_data["number_iterations"] = (
+                        self.model.solver_model.IterCount
+                    )
             benchmarking_data["solver_status"] = self.model.solver_model.Status
             benchmarking_data["number_constraints"] = self.model.solver_model.NumConstrs
             benchmarking_data["number_variables"] = self.model.solver_model.NumVars
         elif self.solver.name == "highs":
-            benchmarking_data["solver_status"] = self.model.solver_model.getModelStatus().name
+            benchmarking_data["solver_status"] = (
+                self.model.solver_model.getModelStatus().name
+            )
             benchmarking_data["solving_time"] = self.model.solver_model.getRunTime()
-            benchmarking_data["number_iterations"] = self.model.solver_model.getInfo().simplex_iteration_count
-            benchmarking_data["number_constraints"] = self.model.solver_model.getNumRow()
+            benchmarking_data["number_iterations"] = (
+                self.model.solver_model.getInfo().simplex_iteration_count
+            )
+            benchmarking_data["number_constraints"] = (
+                self.model.solver_model.getNumRow()
+            )
             benchmarking_data["number_variables"] = self.model.solver_model.getNumCol()
         else:
-            logging.info(f"Saving benchmarking data for solver {self.solver.name} has not been implemented yet")
+            logging.info(
+                f"Saving benchmarking data for solver {self.solver.name} has "
+                "not been implemented yet"
+            )
 
         benchmarking_data["scaling_time"] = self.scaling.scaling_time
         # get numerical range
-        range_lhs, range_rhs = self.scaling.print_numerics(0, no_scaling=False,benchmarking_output= True)
+        range_lhs, range_rhs = self.scaling.print_numerics(
+            0, no_scaling=False, benchmarking_output=True
+        )
         benchmarking_data["numerical_range_lhs"] = range_lhs
         benchmarking_data["numerical_range_rhs"] = range_rhs
-        fname = self.name_dir.joinpath('benchmarking')
+        fname = self.name_dir.joinpath("benchmarking")
         self.write_file(fname, benchmarking_data, format="json")
 
     def save_sets(self):
-        """ Saves the Set values to a json file which can then be
-        post-processed immediately or loaded and postprocessed at some other time"""
+        """Saves the Set values to a json file which can then be
+        post-processed immediately or loaded and postprocessed at some
+        other time.
+        """
         # dataframe serialization
         data_frames = {}
         for set in self.sets:
@@ -246,13 +280,15 @@ class Postprocess:
             df = pd.DataFrame(data=data, columns=["value"], index=indices)
             # update dict
             doc = self.sets.docs[set.name]
-            data_frames[index_name[0]] = self._transform_df(df,doc)
+            data_frames[index_name[0]] = self._transform_df(df, doc)
 
-        self.write_file(self.name_dir.joinpath('set_dict'), data_frames)
+        self.write_file(self.name_dir.joinpath("set_dict"), data_frames)
 
     def save_param(self):
-        """ Saves the Param values to a json file which can then be
-        post-processed immediately or loaded and postprocessed at some other time"""
+        """Saves the Param values to a json file which can then be
+        post-processed immediately or loaded and postprocessed at some other
+        time.
+        """
         if not self.solver.save_parameters:
             logging.info("Parameters are not saved")
             return
@@ -260,7 +296,10 @@ class Postprocess:
         # dataframe serialization
         data_frames = {}
         for param in self.params.docs.keys():
-            if self.solver.selected_saved_parameters and param not in self.solver.selected_saved_parameters:
+            if (
+                self.solver.selected_saved_parameters
+                and param not in self.solver.selected_saved_parameters
+            ):
                 continue
             # get the values
             vals = getattr(self.params, param)
@@ -278,28 +317,29 @@ class Postprocess:
             if len(df.index.names) == len(index_list):
                 df.index.names = index_list
 
-            units = self._unit_df(units,df.index)
+            units = self._unit_df(units, df.index)
             # update dict
             data_frames[param] = self._transform_df(df, doc, units)
 
         # write to json
-        self.write_file(self.name_dir.joinpath('param_dict'), data_frames)
+        self.write_file(self.name_dir.joinpath("param_dict"), data_frames)
 
     def save_var(self):
-        """ Saves the variable values to a json file which can then be
-        post-processed immediately or loaded and postprocessed at some other time"""
-
+        """Saves the variable values to a json file which can then be
+        post-processed immediately or loaded and postprocessed at some other
+        time.
+        """
         # dataframe serialization
         data_frames = {}
         for name, arr in self.model.solution.items():
 
             # skip variables not selected to be saved
             if (
-                self.solver.selected_saved_variables 
+                self.solver.selected_saved_variables
                 and name not in self.solver.selected_saved_variables
             ):
                 continue
-            
+
             # extract doc information
             if name in self.vars.docs:
                 doc = self.vars.docs[name]
@@ -319,21 +359,20 @@ class Postprocess:
             if len(df.index.names) == len(index_list):
                 df.index.names = index_list
 
-            units = self._unit_df(units,df.index)
+            units = self._unit_df(units, df.index)
 
-            # transform the dataframe to a json string and load it into the dictionary as dict
-            data_frames[name] = self._transform_df(df,doc,units)
-        
+            # transform the dataframe to a json string and load it into the
+            # dictionary as dict
+            data_frames[name] = self._transform_df(df, doc, units)
+
         # write file
-        self.write_file(
-            self.name_dir.joinpath('var_dict'), 
-            data_frames, 
-            mode = 'w'
-        )
+        self.write_file(self.name_dir.joinpath("var_dict"), data_frames, mode="w")
 
     def save_duals(self):
-        """ Saves the dual variable values to a json file which can then be
-        post-processed immediately or loaded and postprocessed at some other time"""
+        """Saves the dual variable values to a json file which can then be
+        post-processed immediately or loaded and postprocessed at some other
+        time.
+        """
         if not self.solver.save_duals:
             logging.info("Duals are not saved")
             return
@@ -346,11 +385,11 @@ class Postprocess:
 
             # skip variables not selected to be saved
             if (
-                self.solver.selected_saved_duals 
+                self.solver.selected_saved_duals
                 and name not in self.solver.selected_saved_duals
             ):
                 continue
-            
+
             # extract doc information
             if name in self.constraints.docs:
                 doc = self.constraints.docs[name]
@@ -374,75 +413,64 @@ class Postprocess:
             if len(df.index.names) == len(index_list):
                 df.index.names = index_list
 
-            # we transform the dataframe to a json string and load it into the dictionary as dict
-            data_frames[name] = self._transform_df(df,doc)
+            # we transform the dataframe to a json string and load it into the
+            # dictionary as dict
+            data_frames[name] = self._transform_df(df, doc)
 
         # write file
-        self.write_file(
-            self.name_dir.joinpath('dual_dict'), 
-            data_frames, 
-            mode = 'w'
-        )
+        self.write_file(self.name_dir.joinpath("dual_dict"), data_frames, mode="w")
 
     def save_system(self):
-        """
-        Saves the system dict as json
-        """
+        """Saves the system dict as json."""
         if self.system.use_rolling_horizon:
-            fname = self.name_dir.parent.joinpath('system')
+            fname = self.name_dir.parent.joinpath("system")
         else:
-            fname = self.name_dir.joinpath('system')
+            fname = self.name_dir.joinpath("system")
         self.write_file(fname, self.system, format="json")
 
     def save_analysis(self):
-        """
-        Saves the analysis dict as json
-        """
+        """Saves the analysis dict as json."""
         if self.system.use_rolling_horizon:
-            fname = self.name_dir.parent.joinpath('analysis')
+            fname = self.name_dir.parent.joinpath("analysis")
         else:
-            fname = self.name_dir.joinpath('analysis')
+            fname = self.name_dir.joinpath("analysis")
         # remove cwd path part to avoid saving the absolute path
         if os.path.isabs(self.analysis.dataset):
             cwd = os.getcwd()
-            self.analysis.dataset = os.path.relpath(self.analysis.dataset,cwd)
-            self.analysis.folder_output = os.path.relpath(self.analysis.folder_output, cwd)
+            self.analysis.dataset = os.path.relpath(self.analysis.dataset, cwd)
+            self.analysis.folder_output = os.path.relpath(
+                self.analysis.folder_output, cwd
+            )
         self.write_file(fname, self.analysis, format="json")
 
     def save_solver(self):
-        """
-        Saves the solver dict as json
-        """
+        """Saves the solver dict as json."""
         # This we only need to save once
         if self.system.use_rolling_horizon:
-            fname = self.name_dir.parent.joinpath('solver')
+            fname = self.name_dir.parent.joinpath("solver")
         else:
-            fname = self.name_dir.joinpath('solver')
-        
+            fname = self.name_dir.joinpath("solver")
+
         # remove cwd path part to avoid saving the absolute path
         if os.path.isabs(self.solver.solver_dir):
             cwd = os.getcwd()
-            self.solver.solver_dir = os.path.relpath(self.solver.solver_dir,cwd)
-        # save    
+            self.solver.solver_dir = os.path.relpath(self.solver.solver_dir, cwd)
+        # save
         self.write_file(fname, self.solver, format="json")
 
     def save_scenarios(self):
-        """
-        Saves the scenario dict as json
-        """
+        """Saves the scenario dict as json."""
         # only save the scenarios at the highest level
         root_dir = Path(self.analysis.folder_output).joinpath(self.model_name)
-        fname = root_dir.joinpath('scenarios')
+        fname = root_dir.joinpath("scenarios")
         self.write_file(fname, self.scenarios, format="json")
 
     def save_unit_definitions(self):
-        """
-        Saves the user-defined units as txt
-        """
+        """Saves the user-defined units as txt."""
         if self.system.use_rolling_horizon:
-            fname = self.name_dir.parent.joinpath('unit_definitions')
+            fname = self.name_dir.parent.joinpath("unit_definitions")
         else:
-            fname = self.name_dir.joinpath('unit_definitions')
+            fname = self.name_dir.joinpath("unit_definitions")
 
         lines = []
         ureg = self.energy_system.unit_handling.ureg
@@ -450,40 +478,54 @@ class Postprocess:
         all_units = ureg._units
         default_units = pint.UnitRegistry()._units
         user_units = list(set(all_units.items()).difference(default_units.items()))
-        for name, unit in user_units:
+        for _name, unit in user_units:
             if hasattr(unit, "raw") and f"{unit.raw}\n" not in lines:
                 lines.append(f"{unit.raw}\n")
         txt = "".join(lines)
         self.write_file(fname, txt, format="txt")
 
     def save_param_map(self):
-        """
-        Saves the param_map dict as yaml
-        """
-
+        """Saves the param_map dict as yaml."""
         if self.param_map is not None:
             # This we only need to save once
-            if self.system.use_rolling_horizon and self.system.conduct_scenario_analysis:
-                fname = self.name_dir.parent.parent.joinpath('param_map')
+            if (
+                self.system.use_rolling_horizon
+                and self.system.conduct_scenario_analysis
+            ):
+                fname = self.name_dir.parent.parent.joinpath("param_map")
             elif self.subfolder != Path(""):
-                fname = self.name_dir.parent.joinpath('param_map')
+                fname = self.name_dir.parent.joinpath("param_map")
             else:
-                fname = self.name_dir.joinpath('param_map')
+                fname = self.name_dir.joinpath("param_map")
             self.write_file(fname, self.param_map, format="yml")
 
     def save_sequence_time_steps(self, scenario=None):
-        """Saves the dict_all_sequence_time_steps dict as json
+        """Saves the dict_all_sequence_time_steps dict as json.
 
         :param scenario: name of scenario for which results are postprocessed
         """
         # extract and save sequence time steps, we transform the arrays to lists
-        self.dict_sequence_time_steps = self.flatten_dict(self.energy_system.time_steps.get_sequence_time_steps_dict())
-        self.dict_sequence_time_steps["optimized_time_steps"] = self.optimization_setup.optimized_time_steps
-        self.dict_sequence_time_steps["time_steps_operation_duration"] = self.energy_system.time_steps.time_steps_operation_duration
-        self.dict_sequence_time_steps["time_steps_storage_duration"] = self.energy_system.time_steps.time_steps_storage_duration
-        self.dict_sequence_time_steps["time_steps_storage_level_startend_year"] = self.energy_system.time_steps.time_steps_storage_level_startend_year
-        self.dict_sequence_time_steps["time_steps_year2operation"] = self.get_time_steps_year2operation()
-        self.dict_sequence_time_steps["time_steps_year2storage"] = self.get_time_steps_year2storage()
+        self.dict_sequence_time_steps = self.flatten_dict(
+            self.energy_system.time_steps.get_sequence_time_steps_dict()
+        )
+        self.dict_sequence_time_steps["optimized_time_steps"] = (
+            self.optimization_setup.optimized_time_steps
+        )
+        self.dict_sequence_time_steps["time_steps_operation_duration"] = (
+            self.energy_system.time_steps.time_steps_operation_duration
+        )
+        self.dict_sequence_time_steps["time_steps_storage_duration"] = (
+            self.energy_system.time_steps.time_steps_storage_duration
+        )
+        self.dict_sequence_time_steps["time_steps_storage_level_startend_year"] = (
+            self.energy_system.time_steps.time_steps_storage_level_startend_year
+        )
+        self.dict_sequence_time_steps["time_steps_year2operation"] = (
+            self.get_time_steps_year2operation()
+        )
+        self.dict_sequence_time_steps["time_steps_year2storage"] = (
+            self.get_time_steps_year2storage()
+        )
 
         # add the scenario name
         if scenario is not None:
@@ -493,26 +535,30 @@ class Postprocess:
 
             # This we only need to save once
         if self.system.use_rolling_horizon:
-            fname = self.name_dir.parent.joinpath(f'dict_all_sequence_time_steps{add_on}')
+            fname = self.name_dir.parent.joinpath(
+                f"dict_all_sequence_time_steps{add_on}"
+            )
         else:
-            fname = self.name_dir.joinpath(f'dict_all_sequence_time_steps{add_on}')
+            fname = self.name_dir.joinpath(f"dict_all_sequence_time_steps{add_on}")
         dict_sequence_time_steps = self.dict_sequence_time_steps
         dict_formatted = {}
-        for k,v in dict_sequence_time_steps.items():
+        for k, v in dict_sequence_time_steps.items():
             if isinstance(v, np.ndarray):
                 dict_formatted[k] = v.tolist()
             elif isinstance(v, dict):
-                dict_formatted[k] = {str(kk): vv.tolist() if isinstance(vv, np.ndarray) else str(vv) for kk, vv in v.items()}
+                dict_formatted[k] = {
+                    str(kk): vv.tolist() if isinstance(vv, np.ndarray) else str(vv)
+                    for kk, vv in v.items()
+                }
             elif isinstance(v, list):
                 dict_formatted[k] = v
             else:
                 NotImplementedError(f"Type {type(v)} not supported for key {k}")
         self.write_file(fname, dict_formatted, format="json")
 
-
     def flatten_dict(self, dictionary):
-        """Creates a copy of the dictionary where all numpy arrays are recursively flattened to lists such that it can
-            be saved as json file
+        """Creates a copy of the dictionary where all numpy arrays are
+        recursively flattened to lists such that it can be saved as json file.
 
         :param dictionary: The input dictionary
         :return: A copy of the dictionary containing lists instead of arrays
@@ -524,7 +570,7 @@ class Postprocess:
         for k, v in dictionary.items():
             # transform the key None to 'null'
             if k is None:
-                k = 'null'
+                k = "null"
 
             # recursive call
             if isinstance(v, dict):
@@ -539,7 +585,7 @@ class Postprocess:
         return out_dict
 
     def get_index_list(self, doc):
-        """ get index list from docstring
+        """Get index list from docstring.
 
         :param doc: docstring
         :return: index list
@@ -553,25 +599,38 @@ class Postprocess:
         index_list_final = []
         for index in index_list:
             if index in self.analysis.header_data_inputs.keys():
-                index_list_final.append(self.analysis.header_data_inputs[index])  # else:  #     pass  #     # index_list_final.append(index)
+                index_list_final.append(
+                    self.analysis.header_data_inputs[index]
+                )  # else:  #     pass  #     # index_list_final.append(index)
         return index_list_final
 
     def get_time_steps_year2operation(self):
-        """ Returns a HDF5-Serializable version of the dict_time_steps_year2operation dictionary."""
+        """Returns a HDF5-Serializable version of the
+        dict_time_steps_year2operation dictionary.
+        """
         ans = {}
-        for year, time_steps in self.energy_system.time_steps.time_steps_year2operation.items():
+        for (
+            year,
+            time_steps,
+        ) in self.energy_system.time_steps.time_steps_year2operation.items():
             ans[str(year)] = time_steps
         return ans
 
     def get_time_steps_year2storage(self):
-        """ Returns a HDF5-Serializable version of the dict_time_steps_year2storage dictionary."""
+        """Returns a HDF5-Serializable version of the
+        dict_time_steps_year2storage dictionary.
+        """
         ans = {}
-        for year, time_steps in self.energy_system.time_steps.time_steps_year2storage.items():
+        for (
+            year,
+            time_steps,
+        ) in self.energy_system.time_steps.time_steps_year2storage.items():
             ans[str(year)] = time_steps
         return ans
 
     def _transform_df(self, df, doc, units=None):
-        """we transform the dataframe to a json string and load it into the dictionary as dict
+        """We transform the dataframe to a json string and load it into the
+        dictionary as dict.
 
         :param df: dataframe
         :param doc: doc string
@@ -584,22 +643,30 @@ class Postprocess:
             else:
                 dataframe = {"dataframe": df, "docstring": doc}
         else:
-            raise AssertionError(f"The specified output format {self.output_format}, chosen in the config, is not supported")
+            raise AssertionError(
+                f"The specified output format {self.output_format}, chosen in "
+                "the config, is not supported"
+            )
         return dataframe
 
     def _doc_to_df(self, doc):
-        """Transforms the docstring to a dataframe
+        """Transforms the docstring to a dataframe.
 
         :param doc: doc string
         :return: pd.Series of the docstring
         """
         if doc is not None:
-            return pd.Series(doc.split(";")).str.split(":",expand=True).set_index(0).squeeze()
+            return (
+                pd.Series(doc.split(";"))
+                .str.split(":", expand=True)
+                .set_index(0)
+                .squeeze()
+            )
         else:
             return pd.DataFrame()
 
     def _unit_df(self, units, index):
-        """Transforms the units to a series
+        """Transforms the units to a series.
 
         :param units: units string
         :param index: index of the target dataframe
@@ -612,12 +679,16 @@ class Postprocess:
                 units.index.names = index.names
                 return units
             else:
-                raise AssertionError("The length of the units does not match the length of the index")
+                raise AssertionError(
+                    "The length of the units does not match the length of the " "index"
+                )
         else:
             return None
 
-    def _write_h5_file(self, file_name, dictionary, mode = 'w', complevel=4,complib="blosc"):
-        """Writes the dictionary to a hdf5 file
+    def _write_h5_file(
+        self, file_name, dictionary, mode="w", complevel=4, complib="blosc"
+    ):
+        """Writes the dictionary to a hdf5 file.
 
         :param file_name: The name of the file
         :param dictionary: The dictionary to save
@@ -625,9 +696,14 @@ class Postprocess:
             'a'. The former create a new file while the latter will append to an
             existing file.
         """
-        if mode == 'w' and not self.overwrite and os.path.exists(file_name):
-            raise FileExistsError("File already exists. Please set overwrite=True to overwrite the file.")
-        with pd.HDFStore(file_name, mode=mode, complevel=complevel, complib=complib) as store:
+        if mode == "w" and not self.overwrite and os.path.exists(file_name):
+            raise FileExistsError(
+                "File already exists. Please set overwrite=True to overwrite "
+                "the file."
+            )
+        with pd.HDFStore(
+            file_name, mode=mode, complevel=complevel, complib=complib
+        ) as store:
             for key, value in dictionary.items():
                 if not isinstance(key, str):
                     raise TypeError("All dictionary keys must be strings!")
@@ -635,7 +711,7 @@ class Postprocess:
                     input_dict, units, docstring, has_units = self._format_dict(value)
                     if not input_dict["dataframe"].empty:
                         df = input_dict["dataframe"]
-                        store.put(key, df, format='table')
+                        store.put(key, df, format="table")
                         # add additional attributes
                         index_names = df.index.names
                         index_names = ",".join([str(name) for name in index_names])
@@ -644,7 +720,7 @@ class Postprocess:
                         store.get_storer(key).attrs["has_units"] = has_units
                         store.get_storer(key).attrs["index_names"] = index_names
                         if has_units:
-                            store.put(key + "_units", units, format='table')
+                            store.put(key + "_units", units, format="table")
                         # remove "_i_table" to reduce file size
                         try:
                             store.remove(key + "/_i_table")
@@ -656,8 +732,8 @@ class Postprocess:
 
     @staticmethod
     def _format_dict(input_dict):
-        """ format the dictionary to be saved in the hdf file
-        :param input_dict: The dictionary to format
+        """Format the dictionary to be saved in the hdf file
+        :param input_dict: The dictionary to format.
         """
         expected_keys = ["dataframe", "docstring"]
         if "dataframe" in input_dict:
@@ -672,16 +748,24 @@ class Postprocess:
             docstring = None
         if "units" in input_dict:
             units = input_dict["units"]
-            assert isinstance(units, pd.Series), f"Units must be a pandas Series, but is {type(units)}"
+            assert isinstance(
+                units, pd.Series
+            ), f"Units must be a pandas Series, but is {type(units)}"
             df = input_dict["dataframe"]
-            assert units.index.intersection(df.index).equals(
-                units.index), f"Units index {units.index} does not match dataframe index {df.index}"
+            assert units.index.intersection(df.index).equals(units.index), (
+                f"Units index {units.index} does not match dataframe "
+                f"index {df.index}"
+            )
             units.name = "units"
             has_units = True
         else:
             has_units = False
             units = None
-        if not (set(input_dict.keys()) == set(expected_keys) or set(input_dict.keys()) == set(expected_keys).union(
-                ["units"])):
-            raise ValueError(f"Expected keys are {expected_keys}, but got {input_dict.keys()}")
+        if not (
+            set(input_dict.keys()) == set(expected_keys)
+            or set(input_dict.keys()) == set(expected_keys).union(["units"])
+        ):
+            raise ValueError(
+                f"Expected keys are {expected_keys}, but got " f"{input_dict.keys()}"
+            )
         return input_dict, units, docstring, has_units
