@@ -596,7 +596,7 @@ class IISConstraintParser(object):
 
 
 class ScenarioDict(dict):
-    """This is a dictionary for the scenario analysis that has some convenience functions."""
+    """Dictionary for the scenario analysis that has some convenience functions."""
 
     _param_dict_keys = {
         "file",

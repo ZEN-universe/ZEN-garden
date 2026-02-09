@@ -478,10 +478,9 @@ class OptimizationSetup(object):
                         "unit_in_base_units"
                     ].units
                 elif attribute_name == "capex_per_distance_transport":
+                    base_units = self.energy_system.unit_handling.base_units.items()
                     length_base_unit = [
-                        key
-                        for key, value in self.energy_system.unit_handling.base_units.items()
-                        if value == "[length]"
+                        key for key, value in base_units if value == "[length]"
                     ][0]
                     dict_of_units[combined_key] = element.units["opex_specific_fixed"][
                         "unit_in_base_units"
@@ -660,7 +659,7 @@ class OptimizationSetup(object):
             self.energy_system.set_time_steps_yearly = time_steps_yearly_horizon
 
     def solve(self):
-        """Create model instance by assigning parameter values and instantiating the sets."""
+        """Create model instance by assigning parameter values and initializing sets."""
         solver_name = self.solver.name
         # remove options that are None
         solver_options = {
@@ -700,7 +699,7 @@ class OptimizationSetup(object):
             self.optimality = False
 
     def write_IIS(self, scenario=""):
-        """Write an ILP file to print the IIS if infeasible. Only possible for gurobi."""
+        """Write an ILP file to print the IIS if infeasible and using Gurobi."""
         if (
             self.model.termination_condition == "infeasible"
             and self.solver.name == "gurobi"

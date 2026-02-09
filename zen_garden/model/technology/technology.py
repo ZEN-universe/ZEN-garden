@@ -1,4 +1,4 @@
-"""Class defining the parameters, variables and constraints that hold for all technologies.
+"""Defines the parameters, variables and constraints that hold for all technologies.
 The class takes the abstract optimization model as an input, and returns the parameters,
 variables and constraints that hold for all technologies.
 """
@@ -17,7 +17,7 @@ from ..element import Element, GenericRule
 
 
 class Technology(Element):
-    """Class defining parameters, variables and constraints holding for all technologies."""
+    """Defines parameters, variables and constraints holding for all technologies."""
 
     # set label
     label = "set_technologies"

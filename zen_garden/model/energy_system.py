@@ -648,7 +648,7 @@ class EnergySystemRules(GenericRule):
         )
 
     def constraint_carbon_emissions_budget(self):
-        r"""Carbon emissions budget of whole time horizon from technologies and carriers.
+        r"""Carbon emissions budget of whole time horizon.
         The prediction extends until the end of the horizon, i.e., last optimization
         time step plus the current carbon emissions until the end of the horizon.
 

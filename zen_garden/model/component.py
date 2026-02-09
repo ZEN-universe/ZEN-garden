@@ -1,4 +1,4 @@
-"""File that contains the classes which initialize parameters, variables and constraints.
+"""Contains the classes which initialize parameters, variables and constraints.
 This is a proxy for pyomo parameters, since the construction of parameters has a
 significant overhead. Indexing within ZEN-garden is also defined here.
 """
@@ -813,9 +813,10 @@ class Variable(Component):
                 ][0]
                 for technology in self.optimization_setup.dict_elements["Technology"]:
                     reference_carrier = technology.reference_carrier[0]
+                    carrier_eq = self.unit_handling.carrier_energy_quantities.items()
                     energy_quantity = [
                         energy_quantity
-                        for carrier, energy_quantity in self.unit_handling.carrier_energy_quantities.items()
+                        for carrier, energy_quantity in carrier_eq
                         if carrier == reference_carrier
                     ][0]
                     tech_idx = (
