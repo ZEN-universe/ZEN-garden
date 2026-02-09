@@ -109,19 +109,21 @@ class UnitHandling:
                 # if same unit twice (same order of magnitude and same dimensionality)
                 if len(self.dim_matrix[duplicate].shape) > 1:
                     logging.warning(
-                        f"The base unit <{duplicate}> was defined more than once. Duplicates are dropped."
+                        f"The base unit <{duplicate}> was defined more than once. "
+                        "Duplicates are dropped."
                     )
                     _duplicateDim = self.dim_matrix[duplicate].T.drop_duplicates().T
                     self.dim_matrix = self.dim_matrix.drop(duplicate, axis=1)
                     self.dim_matrix[duplicate] = _duplicateDim
                 else:
                     raise KeyError(
-                        f"More than one base unit defined for dimensionality {self.base_units[duplicate]} (e.g., {duplicate})"
+                        f"More than one base unit defined for dimensionality "
+                        f"{self.base_units[duplicate]} (e.g., {duplicate})"
                     )
         # get linearly dependent units
-        M, I, pivot = column_echelon_form(np.array(self.dim_matrix), ntype=float)
+        M, I_Mat, pivot = column_echelon_form(np.array(self.dim_matrix), ntype=float)
         M = np.array(M).squeeze()
-        I = np.array(I).squeeze()
+        I_Mat = np.array(I_Mat).squeeze()
         pivot = np.array(pivot).squeeze()
         # index of linearly dependent units in M and I
         idx_lin_dep = np.squeeze(np.argwhere(np.all(M == 0, axis=1)))
@@ -132,7 +134,7 @@ class UnitHandling:
         self.dim_analysis["dependent_units"] = self.dim_matrix.columns[
             idx_lin_dep_dim_matrix
         ]
-        dependent_dims = I[idx_lin_dep, :]
+        dependent_dims = I_Mat[idx_lin_dep, :]
         # if only one dependent unit
         if len(self.dim_analysis["dependent_units"]) == 1:
             dependent_dims = dependent_dims.reshape(1, dependent_dims.size)
@@ -145,16 +147,20 @@ class UnitHandling:
             assert np.size(pos_ones, axis=0) == len(
                 self.dim_analysis["dependent_units"]
             ), (
-                f"Cannot determine order of dependent base units {self.dim_analysis['dependent_units']}, "
-                f"because diagonal of dimensions of the dependent units cannot be determined."
+                f"Cannot determine order of dependent base units "
+                f"{self.dim_analysis['dependent_units']}, "
+                f"because diagonal of dimensions of the dependent units cannot "
+                "be determined."
             )
             # pivot dependent dims
             dependent_dims = dependent_dims[pos_ones[:, 1], :]
         self.dim_analysis["dependent_dims"] = dependent_dims
-        # check that no base unit can be directly constructed from the others (e.g., GJ from GW and hour)
+        # check that no base unit can be directly constructed from the others 
+        # (e.g., GJ from GW and hour)
         assert not UnitHandling.check_pos_neg_boolean(
             dependent_dims, axis=1
-        ), f"At least one of the base units {list(self.base_units.keys())} can be directly constructed from the others"
+        ), (f"At least one of the base units {list(self.base_units.keys())} "
+            "can be directly constructed from the others")
 
     def extract_base_units(self):
         """
@@ -181,7 +187,8 @@ class UnitHandling:
                 .values.tolist()
             )
             logging.warning(
-                "DeprecationWarning: Specifying the base units in .csv file format is deprecated. Use the .json file format instead."
+                "DeprecationWarning: Specifying the base units in .csv file "
+                "format is deprecated. Use the .json file format instead."
             )
         else:
             with open(os.path.join(self.folder_path, "base_units.json"), "r") as f:
@@ -189,8 +196,10 @@ class UnitHandling:
             list_base_units = data["unit"]
         if "hour" not in list_base_units:
             warnings.warn(
-                'The base unit for time is intended to be "hour" but is not found in the base_units file. '
-                "If this is intentional, make sure that your settings and input data are aligned with this change.",
+                "The base unit for time is intended to be `hour` but is not "
+                "found in the base_units file."
+                "If this is intentional, make sure that your settings and "
+                "input data are aligned with this change.",
                 UserWarning,
                 stacklevel=2,
             )
@@ -207,7 +216,8 @@ class UnitHandling:
         and returns the combined unit.
 
         Args:
-            input_unit (str): The input unit to be converted (e.g., ``kg``, ``m/s``).
+            input_unit (str): The input unit to be converted (e.g., 
+                ``kg``, ``m/s``).
             return_combination (bool): If True, also returns the base unit
                 combination, in addition to the combined unit.
 
@@ -241,7 +251,8 @@ class UnitHandling:
                 self.dim_matrix.columns[self.dim_matrix.isin(dim_vector).all(axis=0)][0]
             )
             combined_unit *= base_unit ** (-1)
-        # if inverse of unit (with a different multiplier) is already in base units (e.g. 1/km and km)
+        # if inverse of unit (with a different multiplier) is already in base 
+        # units (e.g. 1/km and km)
         elif (self.dim_matrix * -1).isin(dim_vector).all(axis=0).any():
             base_combination = (self.dim_matrix * -1).isin(dim_vector).all(
                 axis=0
@@ -317,7 +328,8 @@ class UnitHandling:
                     combination_solution_temp = np.linalg.solve(
                         dim_matrix_reduced_temp, dim_vector
                     )
-                # if singular, check if zero row in matrix corresponds to zero row in unit dimensionality
+                # if singular, check if zero row in matrix corresponds to zero row in 
+                # unit dimensionality
                 else:
                     zero_row = dim_matrix_reduced_temp.index[
                         ~dim_matrix_reduced_temp.any(axis=1)
@@ -347,7 +359,8 @@ class UnitHandling:
                         # if not solution is found
                         else:
                             continue
-                    # definitely not a solution because zero row corresponds to nonzero dimensionality
+                    # definitely not a solution because zero row corresponds to nonzero 
+                    # dimensionality
                     else:
                         continue
                 if UnitHandling.check_pos_neg_boolean(combination_solution_temp):
@@ -365,7 +378,8 @@ class UnitHandling:
                     break
         assert (
             calculated_multiplier
-        ), f"Cannot establish base unit conversion for {input_unit} from base units {self.base_units.keys()}"
+        ), (f"Cannot establish base unit conversion for {input_unit} from base "
+            f"units {self.base_units.keys()}")
         return base_combination, combined_unit
 
     # ToDo: check if combined_unit is described correctly in the header
@@ -400,13 +414,16 @@ class UnitHandling:
             AssertionError: If the multiplier is smaller than the rounding
                 tolerance.
         """
-        # if input unit is already in base units --> the input unit is base unit, multiplier = 1
+        # if input unit is already in base units --> the input unit is base 
+        # unit, multiplier = 1
         if input_unit in self.base_units:
             return 1
         # if input unit is nan --> dimensionless old definition
-        elif type(input_unit) != str and np.isnan(input_unit):
+        elif type(input_unit) is not str and np.isnan(input_unit):
             logging.warning(
-                f"DeprecationWarning: Parameter {attribute_name} of {Path(path).name} has no unit (assign unit '1' to unitless parameters)"
+                f"DeprecationWarning: Parameter {attribute_name} of "
+                f"{Path(path).name} has no unit (assign unit '1' to unitless "
+                "parameters)"
             )
             return 1
         else:
@@ -419,13 +436,17 @@ class UnitHandling:
                 combined_unit = self.calculate_combined_unit(input_unit)
             assert (
                 combined_unit.to_base_units().unitless
-            ), f"The unit conversion of unit {input_unit} did not resolve to a dimensionless conversion factor. Something went wrong."
+            ), (f"The unit conversion of unit {input_unit} did not "
+                "resolve to a dimensionless conversion factor. "
+                "Something went wrong.")
             # magnitude of combined unit is multiplier
             multiplier = combined_unit.to_base_units().magnitude
             # check that multiplier is larger than rounding tolerance
             assert multiplier >= 10 ** (
                 -self.rounding_decimal_points_units
-            ), f"Multiplier {multiplier} of unit {input_unit} in parameter {attribute_name} is smaller than rounding tolerance {10 ** (-self.rounding_decimal_points_units)}"
+            ), (f"Multiplier {multiplier} of unit {input_unit} in parameter "
+                f"{attribute_name} is smaller than rounding tolerance "
+                f"{10 ** (-self.rounding_decimal_points_units)}")
             # round to decimal points
             return round(multiplier, self.rounding_decimal_points_units)
 
@@ -506,13 +527,17 @@ class UnitHandling:
         for item in items:
             energy_quantity_units = {}
             unit_dict = item.units
-            # since technology elements have a lot of parameters related to their reference carrier, their unit consistency must be checked together (second if for retrofit techs)
+            # since technology elements have a lot of parameters related to 
+            # their reference carrier, their unit consistency must be checked 
+            # together (second if for retrofit techs)
             if isinstance(item, Technology):
                 reference_carrier = optimization_setup.get_element(
                     cls=Carrier, name=item.reference_carrier[0]
                 )
                 unit_dict.update(reference_carrier.units)
-            # add units of conversion factors/flow coupling factors to carrier units to perform consistency checks (works only since carriers are located at end of optimization_setup.dict_elements)
+            # add units of conversion factors/flow coupling factors to carrier 
+            # units to perform consistency checks (works only since carriers 
+            # are located at end of optimization_setup.dict_elements)
             if isinstance(item, Carrier):
                 for tech_name, cf_dict in conversion_factor_units.items():
                     for dependent_carrier, unit_pair in cf_dict.items():
@@ -555,7 +580,6 @@ class UnitHandling:
                         )
                     )
                 elif attribute_name == "retrofit_flow_coupling_factor":
-                    # reference_carrier = optimization_setup.get_element(cls=Carrier,name=item.retrofit_reference_carrier[0])
                     base_technology = optimization_setup.get_element(
                         cls=Technology, name=item.retrofit_base_technology[0]
                     )
@@ -570,8 +594,13 @@ class UnitHandling:
                 elif unit_specs["unit_category"] == {}:
                     assert unit_specs["unit_in_base_units"] == self.ureg(
                         "dimensionless"
-                    ), f"The attribute {attribute_name} of {item.__class__.__name__} {item.name} is per definition dimensionless. However, its unit was defined as {unit_specs['unit_in_base_units']}."
-                # check if nonlinear capex file exists for conversion technology since the units defined there overwrite the attributes file units
+                    ), (f"The attribute {attribute_name} of "
+                        f"{item.__class__.__name__} {item.name} is per "
+                        "definition dimensionless. However, its unit was "
+                        f"defined as {unit_specs['unit_in_base_units']}.")
+                # check if nonlinear capex file exists for conversion technology 
+                # since the units defined there overwrite the attributes file 
+                # units
                 elif attribute_name == "capex_specific_conversion" and hasattr(
                     item, "units_nonlinear_capex_files"
                 ):
@@ -598,7 +627,8 @@ class UnitHandling:
                         energy_quantity_units.update(
                             self._remove_non_energy_units(unit_specs, "capacity_" + key)
                         )
-                # units of input/output/reference carrier not of interest for consistency
+                # units of input/output/reference carrier not of interest for 
+                # consistency
                 elif attribute_name not in [
                     "input_carrier",
                     "output_carrier",
@@ -607,7 +637,8 @@ class UnitHandling:
                     energy_quantity_units.update(
                         self._remove_non_energy_units(unit_specs, attribute_name)
                     )
-            # remove attributes whose units became dimensionless since they don't have an energy quantity
+            # remove attributes whose units became dimensionless since they don't 
+            # have an energy quantity
             energy_quantity_units_check = {
                 key: value.to_base_units().units
                 for key, value in energy_quantity_units.items()
@@ -639,7 +670,8 @@ class UnitHandling:
         self, energy_quantity_units, energy_quantity_units_check
     ):
         """
-        Adjusts conversion factors or retrofit flow coupling factor units from power/power to energy/energy if needed.
+        Adjusts conversion factors or retrofit flow coupling factor units from 
+        power/power to energy/energy if needed.
 
         This helper method tries to resolve unit inconsistencies that might
         arise due to the units of conversion factors or retrofit flow coupling
@@ -674,7 +706,8 @@ class UnitHandling:
                 key for key, value in self.base_units.items() if value == "[time]"
             ][0]
             for key, value in cf_energy_quantity_units.items():
-                # if conversion factor unit is in not in energy units, try to convert it to energy units by multiplying with time base unit
+                # if conversion factor unit is in not in energy units, try to 
+                # convert it to energy units by multiplying with time base unit
                 if value != non_cf_energy_quantity_unit:
                     energy_quantity_units[key] = value * self.ureg(time_base_unit)
                     energy_quantity_units_check[key] = (
@@ -740,7 +773,9 @@ class UnitHandling:
                     analysis=optimization_setup.analysis,
                 )
                 raise AssertionError(
-                    f"Unit inconsistency! Most probably, the {item.name} unit(s) of the conversion factor(s) with dependent carrier {name_pairs_cf} are wrong."
+                    f"Unit inconsistency! Most probably, the {item.name} "
+                    "unit(s) of the conversion factor(s) with dependent "
+                    f"carrier {name_pairs_cf} are wrong."
                 )
             # check if there is a retrofit flow coupling factor with wrong units
             wrong_rf_atts = {
@@ -759,7 +794,9 @@ class UnitHandling:
                     analysis=optimization_setup.analysis,
                 )
                 raise AssertionError(
-                    f"Unit inconsistency! Most probably, the {item.name} unit(s) of the retrofit flow coupling factor(s) with dependent carrier {name_pairs_rf} are wrong."
+                    f"Unit inconsistency! Most probably, the {item.name} "
+                    f"unit(s) of the retrofit flow coupling factor(s) with "
+                    f"dependent carrier {name_pairs_rf} are wrong."
                 )
             if item.__class__ is Carrier:
                 self._write_inconsistent_units_file(
@@ -768,7 +805,12 @@ class UnitHandling:
                     analysis=optimization_setup.analysis,
                 )
                 raise AssertionError(
-                    f"The attribute units of the {item.__class__.__name__} {item.name} are not consistent! Most probably, the unit(s) of the attribute(s) {self._get_units_of_wrong_attributes(wrong_atts=attributes_with_lowest_appearance, unit_dict=unit_dict)} are wrong."
+                    f"The attribute units of the {item.__class__.__name__} "
+                    f"{item.name} are not consistent! Most probably, the "
+                    f"unit(s) of the attribute(s) "
+                    f"{self._get_units_of_wrong_attributes(
+                        wrong_atts=attributes_with_lowest_appearance, 
+                        unit_dict=unit_dict)} are wrong."
                 )
             else:
                 self._write_inconsistent_units_file(
@@ -778,15 +820,26 @@ class UnitHandling:
                     reference_carrier_name=reference_carrier_name,
                 )
                 raise AssertionError(
-                    f"The attribute units of the {item.__class__.__name__} {item.name} and its reference carrier {reference_carrier_name} are not consistent! Most propably, the unit(s) of the attribute(s) {self._get_units_of_wrong_attributes(wrong_atts=attributes_with_lowest_appearance, unit_dict=unit_dict)} are wrong."
+                    f"The attribute units of the {item.__class__.__name__} "
+                    f"{item.name} and its reference carrier "
+                    f"{reference_carrier_name} are not consistent! Most "
+                    f"probably, the unit(s) of the attribute(s) "
+                    f"{self._get_units_of_wrong_attributes(
+                        wrong_atts=attributes_with_lowest_appearance, 
+                        unit_dict=unit_dict)} are wrong."
                 )
-        # since energy system doesn't have any attributes with energy dimension, its dict must be empty
+        # since energy system doesn't have any attributes with energy dimension, 
+        # its dict must be empty
         elif item not in elements and len(energy_quantity_units_check) != 0:
             self._write_inconsistent_units_file(
                 energy_quantity_units, item.name, analysis=optimization_setup.analysis
             )
             raise AssertionError(
-                f"The attribute units defined in the energy_system are not consistent! Most probably, the unit(s) of the attribute(s) {self._get_units_of_wrong_attributes(wrong_atts=energy_quantity_units, unit_dict=unit_dict)} are wrong."
+                f"The attribute units defined in the energy_system are not "
+                f"consistent! Most probably, the unit(s) of the attribute(s) "
+                f"{self._get_units_of_wrong_attributes(
+                    wrong_atts=energy_quantity_units, 
+                    unit_dict=unit_dict)} are wrong."
             )
 
     def _is_inconsistent(self, energy_quantity_units, exclude_strings=None):
@@ -905,7 +958,8 @@ class UnitHandling:
         """
         min_unit_count = np.inf
         attributes_with_lowest_appearance = {}
-        # count for all unique units how many times they appear to get an estimate which unit most likely is the wrong one
+        # count for all unique units how many times they appear to get an estimate 
+        # which unit most likely is the wrong one
         for distinct_unit in set(energy_quantity_units.values()):
             unit_count = list(energy_quantity_units.values()).count(distinct_unit)
             if (
@@ -941,7 +995,8 @@ class UnitHandling:
         """
         max_unit_count = 0
         correct_value = None
-        # count for all unique units how many times they appear to get an estimate which unit most likely is the correct one
+        # count for all unique units how many times they appear to get an estimate 
+        # which unit most likely is the correct one
         for distinct_unit in set(energy_units.values()):
             unit_count = list(energy_units.values()).count(distinct_unit)
             if unit_count > max_unit_count:
@@ -978,7 +1033,10 @@ class UnitHandling:
         for dependent_carrier_name, cf_unit_specs in unit_specs.items():
             assert (
                 cf_unit_specs["unit"] != "1"
-            ), f"Since there doesn't exist a conversion_factor file for the technology {conversion_element.name}, the attribute conversion_factor_default must be defined with units to ensure unit consistency"
+            ), (f"Since there doesn't exist a conversion_factor file for the "
+                f"technology {conversion_element.name}, the attribute "
+                f"conversion_factor_default must be defined with units to "
+                f"ensure unit consistency")
             units = cf_unit_specs["unit"].split("/")
             # check that no asterisk in unit strings without parentheses
             correct_unit_string = [
@@ -987,10 +1045,18 @@ class UnitHandling:
             ]
             assert all(
                 correct_unit_string
-            ), f"The conversion factor string(s) {[u for u,s in zip(units,correct_unit_string, strict=False) if not s]} of technology {conversion_element.name} must not contain an asterisk '*' unless it is enclosed in parentheses '()'"
+            ), (f"The conversion factor string(s)" 
+                f"{[u for u,s in zip(units,correct_unit_string, strict=False) 
+                    if not s]} of technology {conversion_element.name} "
+                f"must not contain an asterisk '*' unless it is enclosed "
+                "in parentheses '()'")
 
-            # problem: we don't know which parts of cf unit belong to which carrier for units of format different from "unit/unit" (e.g. kg/h/kW)
-            # method: compare number of division signs of conversion factor unit with number of division signs of corresponding carrier element energy/power quantity
+            # problem: we don't know which parts of cf unit belong to which 
+            # carrier for units of format different from "unit/unit" (e.g. 
+            # kg/h/kW)
+            # method: compare number of division signs of conversion factor 
+            # unit with number of division signs of corresponding carrier 
+            # element energy/power quantity
             dependent_carrier = [
                 carrier
                 for carrier in elements
@@ -1025,7 +1091,8 @@ class UnitHandling:
                 div_signs_ref_carrier_power + div_signs_dependent_carrier_power
             )
 
-            # conversion factor unit must be defined as energy/energy or power/power in the corresponding carrier energy quantity units
+            # conversion factor unit must be defined as energy/energy or 
+            # power/power in the corresponding carrier energy quantity units
             # Check if the conversion factor is defined as energy/energy
             factor_units = {}
             if len(units) - 2 == number_of_division_signs_energy:
@@ -1047,7 +1114,11 @@ class UnitHandling:
                 ]
             else:
                 raise AssertionError(
-                    f"The conversion factor units of technology {conversion_element.name} must be defined as power/power or energy/energy of input/output carrier divided by reference carrier, e.g. MW/MW, MW/kg/s or GWh/GWh, kg/MWh etc."
+                    f"The conversion factor units of technology "
+                    f"{conversion_element.name} must be defined as power/power "
+                    f"or energy/energy of input/output carrier divided by "
+                    f"reference carrier, e.g. MW/MW, MW/kg/s or GWh/GWh, "
+                    f"kg/MWh etc."
                 )
             # recombine the separated units carrier-wise to the initial fraction
             for key, value in factor_units.items():
@@ -1067,7 +1138,8 @@ class UnitHandling:
         Args:
             carrier_units (dict): The units of the carrier element.
             power (bool, optional): If `True`, it counts the number of division
-                signs in the power unit (energy divided by time). Defaults to `False`.
+                signs in the power unit (energy divided by time). Defaults to 
+                `False`.
 
         Returns:
             int:
@@ -1174,7 +1246,7 @@ class UnitHandling:
                 input_unit, return_combination=True
             )
         # if input unit is nan --> dimensionless old definition
-        elif type(input_unit) != str and np.isnan(input_unit):
+        elif type(input_unit) is not str and np.isnan(input_unit):
             base_unit_combination = pd.Series(index=self.dim_matrix.columns, data=0)
         else:
             # convert to string
@@ -1199,8 +1271,10 @@ class UnitHandling:
         the class' internal dictionary for future use.
 
         Args:
-            df_output (DataFrame): The dataframe containing the output values for attributes.
-            attribute (str): The name of the attribute whose values are being saved.
+            df_output (DataFrame): The dataframe containing the output values 
+                for attributes.
+            attribute (str): The name of the attribute whose values are being 
+                saved.
         """
         if attribute in self.dict_attribute_values.keys():
             self.dict_attribute_values[attribute]["values"] = df_output
@@ -1210,8 +1284,8 @@ class UnitHandling:
         Checks if "h" in the input unit refers to the Planck constant.
 
         This method ensures that the string "h" is not mistaken for the
-        Planck constant when specifying time units in the system. It will raise
-        an error if "h" is used incorrectly.
+        Planck constant when specifying time units in the system. It will 
+        raise an error if "h" is used incorrectly.
 
         Args:
             input_unit (str): The unit string to be checked.
@@ -1220,14 +1294,16 @@ class UnitHandling:
         _list_units = [_item[0] for _item in _tuple_units]
         assert (
             "planck_constant" not in _list_units
-        ), f"Error in input unit '{input_unit}'. Did you want to define hour? Use 'hour' instead of 'h' ('h' is interpreted as the planck constant)"
+        ), (f"Error in input unit '{input_unit}'. Did you want to "
+            "define hour? Use 'hour' instead of 'h' ('h' is interpreted "
+            "as the planck constant)")
 
     def define_ton_as_metric(self):
         """
         Redefines the "ton" as a metric ton.
 
-        This method redefines the unit "ton" to represent the metric ton, ensuring
-        consistency across the system when dealing with mass units.
+        This method redefines the unit "ton" to represent the metric ton, 
+        ensuring consistency across the system when dealing with mass units.
         """
         self.ureg.define("ton = metric_ton")
 
@@ -1245,7 +1321,7 @@ class UnitHandling:
     @staticmethod
     def check_pos_neg_boolean(array, axis=None):
         """
-        Checks if the array contains only positive or negative booleans (-1, 0, 1).
+        Checks if array contains only positive or negative booleans (-1, 0, 1).
 
         This method verifies if the input array contains values that are either
         positive or negative booleans, which is often used to check binary
@@ -1274,25 +1350,30 @@ class UnitHandling:
         return is_pos_neg_boolean
 
 
-# ToDo get rid of A matrix dependency -> for big models slowest part; can we use the data structure of linopy directly to determine column and row scaling factors
-# ToDo slight numerical errors after rescaling -> dependent on solver -> for gurobi very accurate
+# ToDo get rid of A matrix dependency -> for big models slowest part; 
+# can we use the data structure of linopy directly to determine column and 
+# row scaling factors.
+# ToDo slight numerical errors after rescaling -> dependent on solver -> 
+# for gurobi very accurate
 class Scaling:
     """
-    This class scales the optimization model before solving it and rescales the solution.
+    This class scales the optimization model before solving it and rescales the 
+    solution.
     """
 
     def __init__(self, model, algorithm=None, include_rhs=True):
         """initializes scaling instance.
 
-        :param model: optimization model
-        :param algorithm: list of scaling algorithms
-        :param include_rhs: bool whether to include the right hand side in the scaling
+        Args:
+            model: optimization model
+            algorithm: list of scaling algorithms
+            include_rhs: bool whether to include the right hand side in the scaling
 
         """
         # optimization model to perform scaling on
         if algorithm is None:
             algorithm = ["geom"]
-        elif type(algorithm) == str:
+        elif type(algorithm) is str:
             logging.warning(
                 "Please provide a list of scaling algorithms, not a single string."
             )
@@ -1322,11 +1403,14 @@ class Scaling:
             mask = np.atleast_1d(labels != -2).nonzero()
             try:
                 self.rhs += constraint.rhs.data[mask].tolist()
-            except:
+            except Exception:
                 self.rhs += [constraint.rhs.data]
         self.rhs = np.array(
             self.rhs
-        )  # np.abs(np.array(self.rhs)) -> could get rid of all the other np.ads in iter_sclaing() etc. but then print numerics only includes absolute values
+        )
+         # np.abs(np.array(self.rhs)) -> could get rid of all the other np.ads 
+         # in iter_sclaing() etc. but then print numerics only includes absolute 
+         # values
         self.rhs[self.rhs == np.inf] = 0
         self.rhs_copy = self.rhs.copy()  # necessary for printing of numerics
 
@@ -1366,9 +1450,12 @@ class Scaling:
 
     def replace_data(self, name):
         """
-        Replaces the data (coefficients) of the lhs and rhs of the constraint with the scaled data.
+        Replaces the data (coefficients) of the lhs and rhs of the constraint 
+        with the scaled data.
 
-        :param name: name of the constraint for which the data is replaced with the scaled data
+        Args: 
+            name: name of the constraint for which the data is replaced with 
+                the scaled data
         """
         constraint = self.model.constraints[name]
         # Get data
@@ -1396,8 +1483,9 @@ class Scaling:
 
     def adjust_upper_lower_bounds_variables(self):
         """
-        Adjusts the upper and lower bounds of the variables whose coefficients are scaled.
-        If the bounds are not scaled, the problem might get infeasible.
+        Adjusts the upper and lower bounds of the variables whose coefficients 
+        are scaled. If the bounds are not scaled, the problem might get 
+        infeasible.
         """
         vars = self.model.variables
         for var in vars:
@@ -1412,13 +1500,17 @@ class Scaling:
 
     def adjust_scaling_factors_of_skipped_rows(self, name):
         """
-        Adjusts the column scaling factors corresponding to variables that are part of rows that are skipped.
-        If the scaling factors are not adjusted, the problem cannot be rescaled to the original problem.
+        Adjusts the column scaling factors corresponding to variables that are 
+        part of rows that are skipped. If the scaling factors are not adjusted, 
+        the problem cannot be rescaled to the original problem.
 
-        :param name: name of the constraint for which the scaling factors are adjusted
+        Args:
+            name: name of the constraint for which the scaling factors are 
+                adjusted
         """
         constraint = self.model.constraints[name]
-        # rows -> unnecessary to adjust scaling factor of rows with binary and integer variables as skipped anyways
+        # rows -> unnecessary to adjust scaling factor of rows with binary and 
+        # integer variables as skipped anyways
         # cols
         mask_variables = constraint.vars.data
         indices = np.where(mask_variables != -1)
@@ -1426,8 +1518,9 @@ class Scaling:
 
     def adjust_int_variables(self):
         """
-        Adjusts the column scaling factors corresponding to binary and integer variables.
-        These columns are skipped in the scaling process since scaling is solely valid for continous variables.
+        Adjusts the column scaling factors corresponding to binary and integer 
+        variables. These columns are skipped in the scaling process since 
+        scaling is solely valid for continuous variables.
         """
         vars = self.model.variables
         for var in vars:
@@ -1441,7 +1534,8 @@ class Scaling:
         """
         # pre-check variables -> skip binary and integer variables
         self.adjust_int_variables()
-        # adjust scaling factors that have inf or nan values -> not really necessary anymore but might be a good security check
+        # adjust scaling factors that have inf or nan values -> not 
+        # really necessary anymore but might be a good security check
         self.D_c_inv[self.D_c_inv == np.inf] = 1
         self.D_r_inv[self.D_r_inv == np.inf] = 1
         self.D_c_inv = np.nan_to_num(self.D_c_inv, nan=1)
@@ -1456,7 +1550,8 @@ class Scaling:
         # overwrite constraints
         for name_con in self.model.constraints:
             # overwrite data
-            # check if only integers are allowed in scaling: if yes skip and overwrite scaling vector
+            # check if only integers are allowed in scaling: if yes skip 
+            # and overwrite scaling vector
             if self.model.constraints[name_con].coeffs.dtype == int:
                 continue
             else:
@@ -1472,13 +1567,19 @@ class Scaling:
         """
         Gets the minimum values each column or row of the A matrix.
 
-        :param A_matrix: A matrix of the optimization model (scipy.sparse.csr_matrix)
-        :return: minimum values of each column or row (np.array)
+        Args:
+            A_matrix: A matrix of the optimization model (scipy.sparse.csr_matrix)
+        Returns:
+            np.array: Minimum values of each column or row
         """
         d = A_matrix.data
         try:
             mins_values = np.minimum.reduceat(np.abs(d), A_matrix.indptr[:-1])
-        except:  # necessary if multiple columns and rows at the end of the matrix without entries -> if not only last entry of indptr is len(data) and therefore out of range
+
+        # necessary if multiple columns and rows at the end of the matrix 
+        # without entries -> if not only last entry of indptr is len(data) and 
+        # therefore out of range
+        except Exception:  
             last_empty_entries = A_matrix.indptr[A_matrix.indptr == len(d)]
             non_empty_entries = A_matrix.indptr[A_matrix.indptr < len(d)]
             mins_values = np.minimum.reduceat(np.abs(d), non_empty_entries)
@@ -1492,11 +1593,16 @@ class Scaling:
     ):  # Very slow and less effective than simplified geom norm
         """
         Gets the full geometric mean of each column or row of the A matrix.
-        Note, this funtcion is very slow and is not yet ready to be used in the scaling process.
+        Note, this funtcion is very slow and is not yet ready to be used in the 
+        scaling process.
 
-        :param A_matrix: A matrix of the optimization model (scipy.sparse.csr_matrix)
-        :param axis: axis along which the geometric mean is calculated
-        :return: geometric mean of each column or row
+        Args: 
+            A_matrix: A matrix of the optimization model 
+                (scipy.sparse.csr_matrix)
+            axis: axis along which the geometric mean is calculated
+        
+        Returns:
+            geometric mean of each column or row
         """
         d = A_matrix.data
         geom = np.ones(len(A_matrix.indptr) - 1)
@@ -1509,10 +1615,13 @@ class Scaling:
     def update_A(self, vector, axis):
         """
         Updates the A matrix with the current scaling vector.
-        This function does not overwrite the original optimization model but is used for the scaling process.
+        This function does not overwrite the original optimization model 
+        but is used for the scaling process.
 
-        :param vector: vector to update current scaling vectors
-        :param axis: axis for which the scaling vector is updated (0 for rows, 1 for columns)
+        Args:
+            vector: vector to update current scaling vectors
+            axis: axis for which the scaling vector is updated (0 for 
+                rows, 1 for columns)
 
         """
         if axis == 1:
@@ -1551,27 +1660,34 @@ class Scaling:
         if is_rhs:
             cons_str = get_label_position(self.model.constraints, label)
             cons_str = (
-                f"{cons_str[0]}[{','.join([str(l) for l in cons_str[1].values()])}]"
+                f"{cons_str[0]}[{','.join([str(k) for k in cons_str[1].values()])}]"
             )
             return f"{self.rhs[label]} in {cons_str}"
         else:
             cons_str = get_label_position(self.model.constraints, label)
             cons_str = (
-                f"{cons_str[0]}[{','.join([str(l) for l in cons_str[1].values()])}]"
+                f"{cons_str[0]}[{','.join([str(k) for k in cons_str[1].values()])}]"
             )
             var_str = get_label_position(self.model.variables, var)
-            var_str = f"{var_str[0]}[{','.join([str(l) for l in var_str[1].values()])}]"
+            var_str = f"{var_str[0]}[{','.join([str(k) for k in var_str[1].values()])}]"
             return f"{A_matrix[index]} {var_str} in {cons_str}"
 
     def print_numerics(self, i, no_scaling=False, benchmarking_output=False):
         """
         Prints the numerics of the optimization model.
 
-        :param i: iteration of the scaling process
-        :param no_scaling: bool whether no scaling is activated. Then only numerics are printed.
-        :param benchmarking_output: bool whether data for benchmarking is collected
-        :param cond_number: bool whether the condition number of the A matrix is computed
-        :return: numerical range of the A matrix and the right hand side as well as the condition number of the A matrix (if benchmarking_output is True
+        Args:
+            i: iteration of the scaling process
+            no_scaling: bool whether no scaling is activated. Then only numerics
+                are printed.
+            benchmarking_output: bool whether data for benchmarking is collected
+            cond_number: bool whether the condition number of the A matrix is 
+                computed
+        
+        Returns:
+            numerical range of the A matrix and the right hand side as well as 
+                the condition number of the A matrix (if benchmarking_output is 
+                True
         """
         data_coo = self.A_matrix.tocoo()
         A_abs = np.abs(data_coo.data)
