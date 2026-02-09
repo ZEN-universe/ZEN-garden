@@ -1,5 +1,6 @@
 """
-This module contains the Results class, which is used to extract and process the results of a model run.
+This module contains the Results class, which is used to extract and process 
+the results of a model run.
 """
 
 import importlib
@@ -65,13 +66,19 @@ class Results:
     ) -> Optional[Union[dict[str, "pd.DataFrame | pd.Series[Any]"], pd.Series]]:
         """
         Returns the raw results without any further processing.
-        Transforms a parameter or variable dataframe (compressed) string into an actual pandas dataframe.
 
-        :component_name string: The string to decode
-        :scenario_name: Which scenario to take. If none is specified, all are returned.
-        :data_type: The type of data to extract. Either 'dataframe' or 'units'
-        :index: slicing index of the resulting dataframe
-        :return: The corresponding dataframe
+        Transforms a parameter or variable dataframe (compressed) string into 
+        an actual pandas dataframe.
+
+        Args:
+            component_name (string): The string to decode
+            scenario_name: Which scenario to take. If none is specified, all are 
+                returned.
+            data_type: The type of data to extract. Either 'dataframe' or 'units'
+            index: slicing index of the resulting dataframe
+        
+        Returns:
+            DataFrame: The corresponding dataframe
         """
 
         scenario_names = (
@@ -85,7 +92,9 @@ class Results:
             scenario = self.solution_loader.scenarios[scenario_name]
             if component_name not in scenario.components:
                 logging.warning(
-                    f"Component {component_name} not found. If you expected this component to be present, the solution is probably empty and therefore skipped."
+                    f"Component {component_name} not found. If you expected "
+                    "this component to be present, the solution is probably "
+                    "empty and therefore skipped."
                 )
                 return pd.Series()
             component = scenario.get_component(component_name)
@@ -110,7 +119,9 @@ class Results:
                 )
             if len(ans) == 0:
                 logging.warning(
-                    f"Component {component_name} not found. If you expected this component to be present, the solution is probably empty and therefore skipped."
+                    f"Component {component_name} not found. If you expected "
+                    "this component to be present, the solution is probably "
+                    "empty and therefore skipped."
                 )
                 return {}
         return ans
@@ -126,15 +137,21 @@ class Results:
     ) -> "pd.DataFrame":
         """Calculates the full timeseries per scenario.
 
-        :param scenario: The scenario for with the component should be extracted (only if needed)
-        :param component: Component for the Series
-        :param discount_to_first_step: apply annuity to first year of interval or entire interval
-        :param year: year of which full time series is selected
-        :param keep_raw: Keep the raw values of the rolling horizon optimization
-        :param index: slicing index of the resulting dataframe
-        :return: Full timeseries
+        Args: 
+            scenario: The scenario for with the component should be extracted 
+                (only if needed)
+            component: Component for the Series
+            discount_to_first_step: apply annuity to first year of interval or 
+                entire interval
+            year: year of which full time series is selected
+            keep_raw: Keep the raw values of the rolling horizon optimization
+            index: slicing index of the resulting dataframe
+
+        Returns:
+            Full timeseries
         """
-        assert component.timestep_type is not None, "Component has no timestep type."
+        assert component.timestep_type is not None, ("Component has no "
+            "timestep type.")
 
         if index is None:
             index = tuple()
@@ -159,7 +176,8 @@ class Results:
                     scenario, component.timestep_type, tuple(years)
                 ).values
                 index = index + (
-                    f"{component.timestep_type.value} in [{', '.join(time_steps.astype(str))}]",
+                    f"{component.timestep_type.value} in "
+                    f"[{', '.join(time_steps.astype(str))}]",
                 )
                 select_year_time_steps = True
         series = self.solution_loader.get_component_data(
@@ -206,7 +224,8 @@ class Results:
                     ]
                 output_df = series[sequence_timesteps]
             elif component.timestep_type is TimestepType.storage:
-                # for storage components, the last timestep is the final state, linear interpolation is used
+                # for storage components, the last timestep is the final state, 
+                # linear interpolation is used
                 last_occurrences = sequence_timesteps.drop_duplicates(keep="last")
                 first_occurrences = sequence_timesteps.drop_duplicates(keep="first")
                 last_occurrences = pd.Series(
@@ -271,7 +290,8 @@ class Results:
                 output_df = output_df[sequence_timesteps.index]
             else:
                 raise ValueError(
-                    f"Invalid timestep type {component.timestep_type} for component {component}"
+                    f"Invalid timestep type {component.timestep_type} for "
+                    "component {component}"
                 )
         except KeyError:
             output_df = series
@@ -293,13 +313,18 @@ class Results:
     ) -> "pd.DataFrame | pd.Series[Any]":
         """Calculates the full timeseries.
 
-        :param component_name: Name of the component
-        :param scenario_name: The scenario for with the component should be extracted (only if needed)
-        :param discount_to_first_step: apply annuity to first year of interval or entire interval
-        :param year: year of which full time series is selected
-        :param keep_raw: Keep the raw values of the rolling horizon optimization
-        :param index: slicing index of the resulting dataframe
-        :return: Full timeseries
+        Args:
+            component_name: Name of the component
+            scenario_name: The scenario for with the component should be 
+                extracted (only if needed)
+            discount_to_first_step: apply annuity to first year of interval or 
+                entire interval
+            year: year of which full time series is selected
+            keep_raw: Keep the raw values of the rolling horizon optimization
+            index: slicing index of the resulting dataframe
+        
+        Returns:
+           Full timeseries
         """
         if scenario_name is None:
             scenario_names = list(self.solution_loader.scenarios)
@@ -324,7 +349,9 @@ class Results:
             )
         if len(scenarios_dict) == 0:
             logging.warning(
-                f"Component {component_name} not found. If you expected this component to be present, the solution is probably empty and therefore skipped."
+                f"Component {component_name} not found. If you expected "
+                "this component to be present, the solution is probably empty "
+                "and therefore skipped."
             )
             return pd.Series()
 
@@ -376,17 +403,23 @@ class Results:
         )
 
         unstacked_series = series.unstack(component.timestep_name)
-        total_value = unstacked_series.multiply(timestep_duration, axis=1)  # type: ignore
+        total_value = unstacked_series.multiply(timestep_duration, axis=1)
 
         ans = pd.DataFrame(index=unstacked_series.index)
 
         for y in years:
             timesteps = self.solution_loader.get_timesteps(scenario, component, int(y))
             try:
-                ans.insert(len(ans.columns), y, total_value[timesteps].sum(axis=1, skipna=False))  # type: ignore
+                ans.insert(
+                    len(ans.columns), y, 
+                    total_value[timesteps].sum(axis=1, skipna=False)
+                ) 
             except KeyError:
                 timestep_list = [i for i in timesteps if i in total_value]
-                ans.insert(len(ans.columns), year, total_value[timestep_list].sum(axis=1, skipna=False))  # type: ignore # noqa
+                ans.insert(
+                    len(ans.columns), year, 
+                    total_value[timestep_list].sum(axis=1, skipna=False)
+                )
 
         if "mf" in ans.index.names:
             ans = ans.reorder_levels(
@@ -408,12 +441,16 @@ class Results:
         """
         Calculates the total values of a component for a all scenarios.
 
-        :param component_name: Name of the component. Should not be used for dual variables!
-        :param year: Filter the results by a given year
-        :param scenario_name: Filter the results by a given scenario
-        :param keep_raw: Keep the raw values of the rolling horizon optimization
-        :param index: slicing index of the resulting dataframe
-        :return: Total values of the component
+        Args: 
+            component_name: Name of the component. Should not be used for dual 
+                variables!
+            year: Filter the results by a given year
+            scenario_name: Filter the results by a given scenario
+            keep_raw: Keep the raw values of the rolling horizon optimization
+            index: slicing index of the resulting dataframe
+        
+        Returns
+            DataFrame: Total values of the component
         """
 
         # Throw error if used for a dual variable
@@ -448,7 +485,9 @@ class Results:
 
         if len(scenarios_dict) == 0:
             logging.warning(
-                f"Component {component_name} not found. If you expected this component to be present, the solution is probably empty and therefore skipped."
+                f"Component {component_name} not found. If you expected this "
+                "component to be present, the solution is probably empty and "
+                "therefore skipped."
             )
             return pd.Series()
 
@@ -462,8 +501,12 @@ class Results:
         """
         Concatenates a dict of the form str: Data to one dataframe.
 
-        :param scenarios_dict: Dict containing the scenario names as key and the values as values.
-        :return: Concatenated dataframe
+        Args:
+            scenarios_dict: Dict containing the scenario names as key and the 
+                values as values.
+
+        Returns:
+            Concatenated dataframe
         """
         if len(scenario_names) == 1:
             ans = scenarios_dict[scenario_names[0]]
@@ -475,7 +518,8 @@ class Results:
             ).T
         else:
             try:
-                total_value = pd.concat(scenarios_dict, keys=scenarios_dict.keys())  # type: ignore # noqa
+                # type: ignore # noqa
+                total_value = pd.concat(scenarios_dict, keys=scenarios_dict.keys())  
             except Exception:
                 total_value = pd.concat(
                     scenarios_dict, keys=scenarios_dict.keys(), axis=1
@@ -487,9 +531,13 @@ class Results:
     ) -> pd.Series:
         """discounts the duals.
 
-        :param discount_to_first_step: apply annuity to first year of interval or entire interval
-        :param scenario: scenario name whose results are assessed
-        :return: annuity of the duals
+        Args:
+            discount_to_first_step: apply annuity to first year of interval or 
+                entire interval
+            scenario: scenario name whose results are assessed
+        
+        Returns:
+            annuity of the duals
         """
         system = scenario.system
         discount_rate_component = scenario.get_component("discount_rate")
@@ -542,13 +590,17 @@ class Results:
     ) -> Optional["pd.DataFrame | pd.Series[Any]"]:
         """extracts the dual variables of a component.
 
-        :param component_name: Name of dual
-        :param scenario_name: Scenario Name
-        :param year: Year
-        :param discount_to_first_step: apply annuity to first year of interval or entire interval
-        :param keep_raw: Keep the raw values of the rolling horizon optimization
-        :param index: slicing index of the resulting dataframe
-        :return: Duals of the component
+        Args:
+            component_name: Name of dual
+            scenario_name: Scenario Name
+            year: Year
+            discount_to_first_step: apply annuity to first year of interval or 
+                entire interval
+            keep_raw: Keep the raw values of the rolling horizon optimization
+            index: slicing index of the resulting dataframe
+
+        Returns:
+            DataFrame: Duals of the component
         """
         if not self.get_solver(scenario_name=scenario_name).save_duals:
             logging.warning("Duals are not calculated. Skip.")
@@ -575,14 +627,20 @@ class Results:
         convert_to_yearly_unit: bool = False,
     ) -> None | Series | str:
         """
-        Extracts the unit of a given Component. If no scenario is given, a random one is taken.
+        Extracts the unit of a given Component. If no scenario is given, a 
+        random one is taken.
 
-        :param component_name: Name of the component
-        :param scenario_name: Name of the scenario
-        :param index: slicing index of the resulting dataframe
-        :param droplevel: Drop the location and time levels of the multiindex
-        :param convert_to_yearly_unit: If True, the unit is converted to a yearly unit, i.e., for components with an operational time step type, the unit is multiplied by hours.
-        :return: The corresponding unit
+        Args:
+            component_name: Name of the component
+            scenario_name: Name of the scenario
+            index: slicing index of the resulting dataframe
+            droplevel: Drop the location and time levels of the multiindex
+            convert_to_yearly_unit: If True, the unit is converted to a 
+                yearly unit, i.e., for components with an operational time step 
+                type, the unit is multiplied by hours.
+        
+        Returns:
+            DataFrame: The corresponding unit
         """
         if scenario_name is None:
             scenario_name = next(iter(self.solution_loader.scenarios.keys()))
@@ -596,11 +654,13 @@ class Results:
                 component_name = "carbon_emissions_annual"
             else:
                 raise ValueError(
-                    f"Invalid objective function {self.get_analysis(scenario_name=scenario_name).objective}"
+                    f"Invalid objective function "
+                    f"{self.get_analysis(scenario_name=scenario_name).objective}"
                 )
             if component_name not in self.get_component_names("variable"):
                 logging.warning(
-                    f"Component {component_name} not found in {self.get_analysis(scenario_name=scenario_name)}"
+                    f"Component {component_name} not found in "
+                    f"{self.get_analysis(scenario_name=scenario_name)}"
                 )
         units = self.get_df(
             component_name, scenario_name=scenario_name, data_type="units", index=index
@@ -659,7 +719,8 @@ class Results:
             if convert_to_yearly_unit and timestep_type is TimestepType.operational:
                 u = u * self.ureg.h
             u_return = f"{u.u:~D}"
-        # if the unit is not in the pint registry, change the string manually (normally when the unit_definition.txt is not saved)
+        # if the unit is not in the pint registry, change the string manually 
+        # (normally when the unit_definition.txt is not saved)
         except Exception:
             if convert_to_yearly_unit and timestep_type is TimestepType.operational:
                 if u.endswith(" / hour"):
@@ -704,9 +765,9 @@ class Results:
         Extract analysis configurations from a scenario.
 
         Extracts analysis configurations from the results of a scenario. This
-        ensures the tractability of model configurations. Analysis configurations
-        are those specified under the ``analysis`` object in the ``config.json``
-        file.
+        ensures the tractability of model configurations. Analysis 
+        configurations are those specified under the ``analysis`` object in 
+        the ``config.json`` file.
 
         Args:
             scenario_name (str, optional): The name of the scenario for which
@@ -721,8 +782,8 @@ class Results:
 
             >>> from zen_garden.postprocess.results.results import Results
             >>> r = Results(path='<result_folder>')
-            >>> r.get_analysis() # analysis configurations of first scenario
-            >>> r.get_analysis('scenario_name') # analysis configuration of "scenario_name"
+            >>> r.get_analysis() # analysis config of first scenario
+            >>> r.get_analysis('scenario_name') # analysis config of "scenario_name"
 
         """
         if scenario_name is None:
@@ -773,7 +834,8 @@ class Results:
                 break
         if component is None:
             logging.warning(
-                f"Component {component_name} not found and the documentation cannot be returned."
+                f"Component {component_name} not found and the documentation "
+                "cannot be returned."
             )
             return ""
         return component.doc
@@ -797,7 +859,8 @@ class Results:
         scenario = self.solution_loader.scenarios[scenario_name]
         if component_name not in scenario.components:
             logging.warning(
-                f"Component {component_name} not found and the index names cannot be returned."
+                f"Component {component_name} not found and the index names "
+                "cannot be returned."
             )
             return []
         component = scenario.get_component(component_name)
@@ -805,7 +868,8 @@ class Results:
 
     def get_years(self, scenario_name: Optional[str] = None) -> list[int]:
         """
-        Extracts the years of a given Scenario. If no scenario is given, a random one is taken.
+        Extracts the years of a given Scenario. If no scenario is given, a 
+        random one is taken.
 
         :param scenario_name: Name of the scenario
         :return: List of years
@@ -818,7 +882,8 @@ class Results:
 
     def has_MF(self, scenario_name: Optional[str] = None) -> bool:
         """
-        Extracts the System config of a given Scenario. If no scenario is given, a random one is taken.
+        Extracts the System config of a given Scenario. If no scenario is given, 
+        a random one is taken.
 
         :param scenario_name: Name of the scenario
         :return: The corresponding System config
@@ -830,7 +895,8 @@ class Results:
 
     def get_coords(self, scenario_name: Optional[str] = None) -> Optional[pd.DataFrame]:
         """
-        Extracts the coordinates of the nodes of a given Scenario. If no scenario is given, a random one is taken.
+        Extracts the coordinates of the nodes of a given Scenario. If no 
+        scenario is given, a random one is taken.
 
         :param scenario_name: Name of the scenario
         :return: The corresponding coordinates
@@ -842,25 +908,33 @@ class Results:
             coords = pd.DataFrame(system.coords).T
             if coords.empty:
                 print(
-                    f"Coordinates of nodes are not saved for version {self.get_analysis().zen_garden_version}."
+                    f"Coordinates of nodes are not saved for version "
+                    f"{self.get_analysis().zen_garden_version}."
                 )
                 return None
             return pd.DataFrame(system.coords).T
         else:
             print(
-                f"Coordinates of nodes are not saved for version {self.get_analysis().zen_garden_version}."
+                f"Coordinates of nodes are not saved for version "
+                f"{self.get_analysis().zen_garden_version}."
             )
             return None
 
     def calculate_connected_edges(
         self, node: str, direction: str, set_nodes_on_edges: dict[str, str]
     ):
-        """calculates connected edges going in (direction = 'in') or going out (direction = 'out').
+        """calculates connected edges going in (direction = 'in') or going out 
+        (direction = 'out').
 
-        :param node: current node, connected by edges
-        :param direction: direction of edges, either in or out. In: node = endnode, out: node = startnode
-        :param set_nodes_on_edges: set of nodes on edges
-        :return set_connected_edges: list of connected edges"""
+        Args:
+            node: current node, connected by edges
+            direction: direction of edges, either in or out. In: 
+                node = endnode, out: node = startnode
+            set_nodes_on_edges: set of nodes on edges
+        
+        Returns:
+            set_connected_edges: list of connected edges
+        """
         if direction == "in":
             # second entry is node into which the flow goes
             set_connected_edges = [
@@ -883,7 +957,8 @@ class Results:
         self, dataframe: pd.DataFrame, carrier: str, scenario_name: str
     ) -> pd.DataFrame:
         """Returns a dataframe that only contains the desired carrier.
-        If carrier is not contained in the dataframe, the technologies that have the provided reference carrier are returned.
+        If carrier is not contained in the dataframe, the technologies that 
+        have the provided reference carrier are returned.
 
         :param dataframe: pd.Dataframe containing the base data
         :param carrier: name of the carrier
@@ -904,7 +979,8 @@ class Results:
                     )
             return data_extracted
 
-        # check if desired carrier isn't contained in data (otherwise .loc raises an error)
+        # check if desired carrier isn't contained in data 
+        # (otherwise .loc raises an error)
         if carrier not in dataframe.index.get_level_values("carrier"):
             return pd.DataFrame()
 
@@ -913,7 +989,8 @@ class Results:
     def edit_carrier_flows(
         self, data: pd.DataFrame, node: str, direction: str, scenario: str
     ) -> pd.DataFrame:
-        """Extracts data of carrier_flow variable as needed for the plot_energy_balance function.
+        """Extracts data of carrier_flow variable as needed for the 
+        plot_energy_balance function.
 
         :param data: pd.DataFrame containing data to extract
         :param node: node of interest
@@ -940,8 +1017,10 @@ class Results:
     def get_energy_balance_dataframes(
         self, node: str, carrier: str, year: int, scenario_name: Optional[str] = None
     ) -> dict[str, "pd.Series[Any]"]:
-        """Returns a dictionary with all dataframes that are relevant for the energy balance.
-        The dataframes "flow_transport_in" and "flow_transport_out" contain the data of "flow_transport", filtered for in / out flow.
+        """Returns a dictionary with all dataframes that are relevant for 
+        the energy balance. The dataframes "flow_transport_in" and 
+        "flow_transport_out" contain the data of "flow_transport", filtered 
+        for in / out flow.
 
         :param node: Node of interest
         :param carrier: Carrier of interest
@@ -1013,7 +1092,8 @@ class Results:
         """
         assert (
             component_type in ComponentType.get_component_type_names()
-        ), f"Invalid component type: {component_type}. Valid types are: {ComponentType.get_component_type_names()}"
+        ), (f"Invalid component type: {component_type}. Valid types are: "
+            f"{ComponentType.get_component_type_names()}")
         list_names = []
         for scenario in self.solution_loader.scenarios:
             for cn in self.solution_loader.scenarios[scenario].component_types[

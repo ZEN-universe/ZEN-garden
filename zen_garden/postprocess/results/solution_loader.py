@@ -35,7 +35,8 @@ class ComponentType(Enum):
     @classmethod
     def get_file_names_maps(cls) -> dict[str, "ComponentType"]:
         """
-        Method that returns a dictionary that maps the file names to the component types.
+        Method that returns a dictionary that maps the file names to the 
+        component types.
         """
         return {
             "param_dict.h5": ComponentType.parameter,
@@ -132,8 +133,8 @@ class Component:
 class Scenario:
     """
     Implementation of the scenario. In this solution version, the analysis and
-    system configs are stored as jsons for each of the scenario in the corresponding
-    folder.
+    system configs are stored as jsons for each of the scenario in the 
+    corresponding folder.
     """
 
     def __init__(self, path: str, name: str, base_scenario: str) -> None:
@@ -207,7 +208,8 @@ class Scenario:
             year_index = df.columns
         assert pd.api.types.is_any_real_numeric_dtype(
             year_index
-        ), f"DataFrame columns must be numeric to convert to year, not {year_index.to_list()}."
+        ), (f"DataFrame columns must be numeric to convert to year, not "
+            f"{year_index.to_list()}.")
         ry = self.system.reference_year
         del_y = self.system.interval_between_years
         years = [ry + i * del_y for i in year_index]
@@ -219,7 +221,8 @@ class Scenario:
 
     def convert_year2ts(self, year: int) -> int:
         """converts the year to the corresponding time step."""
-        assert isinstance(year, int), f"Year must be an integer, not {type(year)}."
+        assert isinstance(year, int), (f"Year must be an integer, not "
+            f"{type(year)}.")
         ry = self.system.reference_year
         del_y = self.system.interval_between_years
         all_years = [ry + i * del_y for i in range(self.system.optimized_years)]
@@ -229,7 +232,9 @@ class Scenario:
             self.system.optimized_years
         ):
             warnings.warn(
-                f"Selecting the yearly time steps ({year}) instead of the actual year ({ry + del_y*year}) is deprecated. Please use the actual year.",
+                f"Selecting the yearly time steps ({year}) instead of the "
+                f"actual year ({ry + del_y*year}) is deprecated. Please use "
+                "the actual year.",
                 DeprecationWarning,
                 stacklevel=2,
             )
@@ -242,9 +247,10 @@ class Scenario:
         """
         Create the component instances.
 
-        The components are stored in three files and the file-names define the types of
-        the component. Furthermore, the timestep name and type are derived by checking
-        if any of the defined time steps name is in the index of the dataframe.
+        The components are stored in three files and the file-names define 
+        the types of the component. Furthermore, the timestep name and type 
+        are derived by checking if any of the defined time steps name is 
+        in the index of the dataframe.
         """
         component_types: dict[str, list[str]] = {
             t: [] for t in ComponentType.get_component_type_names()
@@ -330,7 +336,9 @@ class Scenario:
         """
         if component_name not in self.components:
             raise KeyError(
-                f"Component {component_name} not found in scenario {self.name}. Available components: {list(self.components.keys())}"
+                f"Component {component_name} not found in scenario " 
+                f"{self.name}. Available components: "
+                f"{list(self.components.keys())}"
             )
 
         component_info = self.components[component_name]
@@ -405,9 +413,9 @@ class SolutionLoader:
         pd_dict: dict[int, "pd.Series[Any]"],
     ) -> "pd.DataFrame | pd.Series[Any]":
         """
-        Method that combines the values when a solution is created without perfect
-        foresight given a component, a scenario and a dictionary containing the name of
-        the MF-data (Format: "MF_{year}").
+        Method that combines the values when a solution is created without 
+        perfect foresight given a component, a scenario and a dictionary 
+        containing the name of the MF-data (Format: "MF_{year}").
         """
         series_to_concat = []
         optimized_years = sorted(pd_dict.keys())
@@ -454,10 +462,11 @@ class SolutionLoader:
         pd_dict: dict[int, "pd.Series[Any]"],
     ) -> "pd.DataFrame | pd.Series[Any]":
         """
-        Method that concatenates the raw values when a solution is created without perfect
-        foresight given a component, a scenario and a dictionary containing the name of
-        the MF-data (Format: "MF_{year}"). The raw values are not combined, i.e.,
-        the data is kept for all the foresight steps.
+        Method that concatenates the raw values when a solution is created 
+        without perfect foresight given a component, a scenario and a 
+        dictionary containing the name of the MF-data (Format: "MF_{year}"). 
+        The raw values are not combined, i.e., the data is kept for all the 
+        foresight steps.
         """
         series = pd.concat(pd_dict, keys=pd_dict.keys())
         series = series.sort_index(level=0)
@@ -477,8 +486,9 @@ class SolutionLoader:
     ) -> "pd.DataFrame | pd.Series[Any]":
         """
         Returns the actual component values given
-        a component and a scenario. Already combines the yearly data if the solution does
-        not use perfect foresight, unless explicitly desired otherwise (keep_raw = True).
+        a component and a scenario. Already combines the yearly data if the 
+        solution does not use perfect foresight, unless explicitly desired 
+        otherwise (keep_raw = True).
         """
         if index is None:
             index = tuple()
@@ -522,9 +532,9 @@ class SolutionLoader:
 
     def _read_scenarios(self) -> dict[str, Scenario]:
         """
-        Create the scenario instances. The definitions of the scenarios are stored in the
-        scenarios.json files. If the solution does not have multiple scenarios, we store
-        the solution as "none".
+        Create the scenario instances. The definitions of the scenarios are 
+        stored in the scenarios.json files. If the solution does not have 
+        multiple scenarios, we store the solution as "none".
         """
         scenarios_json_path = os.path.join(self.path, "scenarios.json")
         ans: dict[str, Scenario] = {}
@@ -544,8 +554,8 @@ class SolutionLoader:
 
                 base_scenario = scenario_config["base_scenario"]
 
-                # Some scenarios have additional parameter definitions that are stored in
-                # subfolders.
+                # Some scenarios have additional parameter definitions that are 
+                # stored in subfolders.
                 scenario_subfolder = scenario_config["sub_folder"]
 
                 if scenario_subfolder != "":
@@ -565,8 +575,8 @@ class SolutionLoader:
         self, scenario: Scenario, component: Component
     ) -> "pd.Series[Any]":
         """
-        The timestep duration is stored as any other component, the only thing is to
-        define the correct name depending on the component timestep type.
+        The timestep duration is stored as any other component, the only thing 
+        is to define the correct name depending on the component timestep type.
         """
         if component.timestep_type is TimestepType.operational:
             timestep_duration_name = "time_steps_operation_duration"
@@ -599,8 +609,9 @@ class SolutionLoader:
         self, scenario: Scenario, component: Component, year: int
     ) -> "pd.Series[Any]":
         """
-        THe timesteps are stored in a file HDF-File called dict_all_sequence_time_steps
-        saved for each scenario. The name of the dataframe depends on the timestep type.
+        THe timesteps are stored in a file HDF-File called 
+        dict_all_sequence_time_steps saved for each scenario. The name of the 
+        dataframe depends on the timestep type.
         """
         time_steps_file_name = _get_time_steps_file(scenario)
 
@@ -675,9 +686,10 @@ class SolutionLoader:
     ) -> "pd.Series[Any]":
         """
         Method that returns the sequence time steps of a scenario.
-        :param scenario:
-        :param timestep_type:
-        :return:
+
+        Args:
+            scenario 
+            timestep_type
         """
         time_steps_file_name = _get_time_steps_file(scenario)
 
@@ -732,7 +744,7 @@ class SolutionLoader:
                 ans = ans["optimized_time_steps"]
 
         # if old version of the solution
-        except:
+        except Exception:
             if scenario.has_rh:
                 pattern = re.compile(r"^MF_\d+$")
                 subfolder_names = list(
@@ -752,9 +764,9 @@ class SolutionLoader:
         scenario: Scenario,
     ) -> dict[int, int]:
         """
-        Method that returns time steps that define the start and end of the storage level
-        :param scenario:
-        :return:
+        Return time steps that define the start and end of the storage level.
+
+        :param scenario: scenario name.
         """
         version = get_solution_version(scenario)
         if check_if_v1_leq_v2(version, "v1"):
@@ -793,7 +805,8 @@ def get_first_scenario(scenarios: dict[str, Scenario]) -> Scenario:
 def get_solution_version(scenario: Scenario) -> str:
     """
     Helper-function that checks the version of the solution.
-    The order in versions is important as the highest version should be checked last {v1,v2,...}.
+    The order in versions is important as the highest version should be checked 
+    last {v1,v2,...}.
 
     :param scenario: The scenario for which the version should be checked.
 
@@ -811,8 +824,11 @@ def get_solution_version(scenario: Scenario) -> str:
 def check_if_v1_leq_v2(version1: str, version2: str) -> bool:
     """
     Helper-function that compares two versions.
+
     The comparison is done by checking if version1 <= version2.
-    Each version is a string of *.*.* format, where the number of positions is arbitrary.
+    Each version is a string of *.*.* format, where the number of positions is 
+    arbitrary.
+
     :param version1: The first version.
     :param version2: The second version.
 
@@ -875,7 +891,8 @@ def get_doc(h5_file: h5py.File, component_name: str, version: str) -> str:
 
 def get_has_units(h5_file: h5py.File, component_name: str, version: str) -> bool:
     """
-    Helper-function that returns a boolean indicating if the component has units.
+    Helper-function that returns a boolean indicating if the component has 
+    units.
     """
     if check_if_v1_leq_v2(version, "v0"):
         has_units = "units" in h5_file[component_name]
@@ -898,8 +915,8 @@ def get_df_from_path(
     index: Optional[tuple[str]] = None,
 ) -> "pd.Series[Any]":
     """
-    Helper-function that returns a Pandas series given the path of a file and the
-    component name.
+    Helper-function that returns a Pandas series given the path of a file and 
+    the component name.
     """
     if index is None:
         index = tuple()
@@ -916,7 +933,7 @@ def get_df_from_path(
                 pd_read = pd.read_hdf(
                     path, component_name, where=index, columns=["value"]
                 )
-            except:
+            except Exception:
                 pd_read = pd.read_hdf(path, component_name, columns=["value"])
             # if isinstance(pd_read, pd.DataFrame):
             #     pd_read = pd_read["value"]
@@ -925,12 +942,13 @@ def get_df_from_path(
                 pd_read = pd.read_hdf(
                     path, component_name, where=index, columns=["units"]
                 )
-            except:
+            except Exception:
                 try:
                     pd_read = pd.read_hdf(path, component_name, columns=["units"])
                 except IndexError:
                     logging.warning(
-                        "Cannot retrieve units. Make sure you have updated the environment to the latest version."
+                        "Cannot retrieve units. Make sure you have updated the "
+                        "environment to the latest version."
                     )
                     return pd.Series([])
         else:
@@ -939,12 +957,12 @@ def get_df_from_path(
         if data_type == "dataframe":
             try:
                 pd_read = pd.read_hdf(path, component_name, where=index)
-            except:
+            except Exception:
                 pd_read = pd.read_hdf(path, component_name)
         elif data_type == "units":
             try:
                 pd_read = pd.read_hdf(path, component_name + "_units", where=index)
-            except:
+            except Exception:
                 pd_read = pd.read_hdf(path, component_name + "_units")
         else:
             raise ValueError(f"Data type {data_type} not supported.")
