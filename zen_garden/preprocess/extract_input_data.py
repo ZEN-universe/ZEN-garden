@@ -644,7 +644,7 @@ class DataInput:
     def extract_locations(self, extract_nodes=True, extract_coordinates=False):
         """Reads input data to extract nodes or edges.
 
-        Args"
+        Args
             extract_nodes: boolean to switch between nodes and edges
             extract_coordinates: boolean to switch between nodes and
                 nodes + coordinates
