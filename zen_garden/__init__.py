@@ -1,4 +1,7 @@
-from . import wrapper
+import importlib
+import pkgutil
+
+from . import model, wrapper
 from .model.element import Element
 from .optimization_setup import OptimizationSetup
 from .postprocess.comparisons import (
@@ -21,6 +24,8 @@ __all__ = [
     "wrapper",
 ]
 
+for _, module, _ in pkgutil.walk_packages(model.__path__, prefix=f"{model.__name__}."):
+    importlib.import_module(module)
 
 # set the element classes of the EnergySystem class
 inheritors = get_inheritors(Element)
