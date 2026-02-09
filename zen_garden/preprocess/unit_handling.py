@@ -1030,10 +1030,12 @@ class UnitHandling:
                 ("*" in u and u[0] == "(" and u[1] == ")") or ("*" not in u)
                 for u in units
             ]
+            conversion_factors = [
+                u for u, s in zip(units, correct_unit_string, strict=False) if not s
+            ]
             assert all(correct_unit_string), (
                 f"The conversion factor string(s)"
-                f"{[u for u,s in zip(units,correct_unit_string, strict=False) 
-                    if not s]} of technology {conversion_element.name} "
+                f"{conversion_factors} of technology {conversion_element.name} "
                 f"must not contain an asterisk '*' unless it is enclosed "
                 "in parentheses '()'"
             )
