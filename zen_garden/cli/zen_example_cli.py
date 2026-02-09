@@ -26,7 +26,8 @@ def create_zen_example_cli():
     """
     # parse the args
     description = (
-        "Downloads an example dataset for ZEN-garden to the current" "working directory"
+        "Downloads an example dataset for ZEN-garden to the current" 
+        "working directory"
     )
 
     parser = argparse.ArgumentParser(

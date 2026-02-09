@@ -1,10 +1,11 @@
 """
 Class defining the optimization model.
 
-The class takes as inputs the properties of the optimization problem. The properties are saved in the
-dictionaries analysis and system which are passed to the class. After initializing the model, the
-class adds carriers and technologies to the model and returns it.
-The class also includes a method to solve the optimization problem.
+The class takes as inputs the properties of the optimization problem. The 
+properties are saved in the dictionaries analysis and system which are passed 
+to the class. After initializing the model, the class adds carriers and 
+technologies to the model and returns it. The class also includes a method to 
+solve the optimization problem.
 """
 
 import copy
@@ -28,32 +29,45 @@ from zen_garden.utils import IISConstraintParser, ScenarioDict, StringUtils
 
 class OptimizationSetup(object):
     """Class defining the optimization model.
-    The class takes as inputs the properties of the optimization problem. The properties are saved in the
-    dictionaries analysis and system which are passed to the class. After initializing the model, the
-    class adds carriers and technologies to the model and returns it.
-    The class also includes a method to solve the optimization problem.
+
+    The class takes as inputs the properties of the optimization problem. The 
+    properties are saved in the dictionaries analysis and system which are 
+    passed to the class. After initializing the model, the class adds carriers 
+    and technologies to the model and returns it. The class also includes a \
+    method to solve the optimization problem.
     """
 
     # dict of element classes, this dict is filled in the __init__ of the package
     dict_element_classes = {}
 
     def __init__(self, config, scenario_dict: dict, input_data_checks):
-        """setup optimization setup of the energy system.
+        """
+        Setup optimization of the energy system.
 
-        :param config: config object used to extract the analysis, system and solver dictionaries
-        :param scenario_dict: dictionary defining the scenario
-        :param input_data_checks: input data checks object
+        This function sets up the optimization process for the energy system 
+        using the provided configuration, scenario data, and input data checks.
+
+        Args:
+            config (Config): Config object used to extract the analysis, system, 
+                and solver dictionaries.
+            scenario_dict (dict): Dictionary defining the scenario, including 
+                data such as resources, demand, etc.
+            input_data_checks (InputDataChecks): Input data checks object to 
+                verify the integrity of the input data.
+
         """
         self.analysis = copy.deepcopy(config.analysis)
         self.system = copy.deepcopy(config.system)
         self.solver = copy.deepcopy(config.solver)
         self.input_data_checks = input_data_checks
         self.input_data_checks.optimization_setup = self
-        # create a dictionary with the paths to access the model inputs and check if input data exists
+        # create a dictionary with the paths to access the model inputs 
+        # check if input data exists
         self.create_paths()
         # dict to update elements according to scenario
         self.scenario_dict = ScenarioDict(scenario_dict, self, self.paths)
-        # check if all needed data inputs for the chosen technologies exist and remove non-existent
+        # check if all needed data inputs for the chosen technologies exist 
+        # remove non-existent inputs
         self.input_data_checks.check_existing_technology_data()
         # empty dict of elements (will be filled with class_name: instance_list)
         self.dict_elements = defaultdict(list)
@@ -198,14 +212,15 @@ class OptimizationSetup(object):
         return []
 
     def add_elements(self):
-        """This method sets up the parameters, variables and constraints of the carriers of the optimization problem."""
+        """Set up the parameters, variables and constraints of the carriers."""
         logging.info("\n--- Add elements to model--- \n")
         for element_name in self.element_list:
             element_class = self.dict_element_classes[element_name]
             element_name = element_class.label
             element_set = self.system[element_name]
 
-            # before adding the carriers, get set_carriers and check if carrier data exists
+            # before adding the carriers, get set_carriers 
+            # check if carrier data exists
             if element_name == "set_carriers":
                 element_set = self.energy_system.set_carriers
                 self.system.set_carriers = element_set
@@ -251,7 +266,7 @@ class OptimizationSetup(object):
                 self.add_element(element_class, item)
 
     def read_input_csv(self):
-        """reads the input data of the energy system and elements and conducts the time series aggregation."""
+        """read the input and conducts the time series aggregation."""
         logging.info("\n--- Read input data of elements --- \n")
         self.energy_system.store_input_data()
         for element in self.dict_elements["Element"]:
@@ -265,10 +280,11 @@ class OptimizationSetup(object):
 
     def add_element(self, element_class, name):
         """
-        Adds an element to the element_dict with the class labels as key.
+        Add an element to the element_dict with the class labels as key.
 
-        :param element_class: Class of the element
-        :param name: Name of the element
+        Args: 
+            element_class: Class of the element
+            name: Name of the element
         """
         # get the instance
         instance = element_class(name, self)
@@ -341,12 +357,15 @@ class OptimizationSetup(object):
     ):
         """get attribute values of all elements in a class.
 
-        :param cls: class of the elements to return
-        :param attribute_name: str name of attribute
-        :param capacity_types: boolean if attributes extracted for all capacity types
-        :param return_attribute_is_series: boolean if information on attribute type is returned
-        :return dict_of_attributes: returns dict of attribute values
-        :return attribute_is_series: return information on attribute type"""
+        Args:
+            cls: class of the elements to return
+            attribute_name (str): name of attribute
+            capacity_types (boolean): if attributes extracted for all capacity types
+            return_attribute_is_series (boolean): if information on attribute type is 
+                returned
+            dict_of_attributes (dict): dict of attribute values
+            attribute_is_series: return information on attribute type
+        """
 
         class_elements = self.get_all_elements(cls=cls)
         dict_of_attributes = {}
@@ -395,11 +414,14 @@ class OptimizationSetup(object):
     ):
         """get attribute values of all elements in this class.
 
-        :param element: element of class
-        :param attribute_name: str name of attribute
-        :param dict_of_attributes: dict of attribute values
-        :param capacity_type: capacity type for which attribute extracted. If None, not listed in key
-        :return dict_of_attributes: returns dict of attribute values"""
+        Args
+            element: element of class
+            attribute_name (str): str name of attribute
+            dict_of_attributes (dict): dict of attribute values
+            capacity_type: capacity type for which attribute extracted. If None, 
+                not listed in key
+            dict_of_attributes: returns dict of attribute values
+        """
 
         attribute_is_series = False
         # add Energy for energy capacity type
@@ -418,9 +440,9 @@ class OptimizationSetup(object):
                     f"Element {element.name} does not have attribute {attribute_name}"
                 )
         attribute = getattr(element, attribute_name)
-        assert not isinstance(
-            attribute, pd.DataFrame
-        ), f"Not yet implemented for pd.DataFrames. Wrong format for element {element.name}"
+        assert not isinstance(attribute, pd.DataFrame), \
+            ("Not yet implemented for pd.DataFrames. Wrong format for" 
+             f"element {element.name}")
         # add attribute to dict_of_attributes
         if attribute is None:
             return dict_of_attributes, False, dict_of_units
@@ -460,7 +482,8 @@ class OptimizationSetup(object):
                 elif attribute_name == "capex_per_distance_transport":
                     length_base_unit = [
                         key
-                        for key, value in self.energy_system.unit_handling.base_units.items()
+                        for key, value 
+                        in self.energy_system.unit_handling.base_units.items()
                         if value == "[length]"
                     ][0]
                     dict_of_units[combined_key] = element.units["opex_specific_fixed"][
@@ -473,8 +496,12 @@ class OptimizationSetup(object):
                 if attribute.index == 0:
                     dict_of_attributes[combined_key] = attribute.squeeze()
                     attribute_is_series = False
-                # since single-directed edges are allowed to exist (e.g. CH-DE exists, DE-CH doesn't), TransportTechnology attributes shared with other technologies (such as capacity existing)
-                # mustn't be squeezed even-though the attributes length is smaller than 1. Otherwise, pd.concat(dict_of_attributes) messes up in initialize_component(), leading to an error further on in the code.
+                # since single-directed edges are allowed to exist (e.g. CH-DE exists, 
+                # DE-CH doesn't), TransportTechnology attributes shared with other 
+                # technologies (such as capacity existing)
+                # mustn't be squeezed even-though the attributes length is smaller than 
+                # 1. Otherwise, pd.concat(dict_of_attributes) messes up in 
+                # initialize_component(), leading to an error further on in the code.
                 else:
                     dict_of_attributes[combined_key] = attribute
                     attribute_is_series = True
@@ -536,7 +563,10 @@ class OptimizationSetup(object):
             assert (
                 self.system.years_in_rolling_horizon
                 >= self.system.years_in_decision_horizon
-            ), f"There must be at least the same number of years in the rolling horizon as the decision horizon. years_in_rolling_horizon ({self.system.years_in_rolling_horizon}) < years_in_decision_horizon ({self.system.years_in_decision_horizon})"
+            ), ("There must be at least the same number of years in the rolling"
+                "horizon as the decision horizon. years_in_rolling_horizon"
+                f"({self.system.years_in_rolling_horizon}) < years_in_decision_horizon "
+                f"({self.system.years_in_decision_horizon})")
             self.years_in_horizon = self.system.years_in_rolling_horizon
             time_steps_yearly = self.energy_system.set_time_steps_yearly
             # skip years_in_decision_horizon years
@@ -565,7 +595,10 @@ class OptimizationSetup(object):
         return list(self.steps_horizon.keys())
 
     def get_decision_horizon(self, step_horizon):
-        """returns the decision horizon for the optimization step, i.e., the time steps for which the decisions are saved.
+        """Return the decision horizon.
+        
+        Returns the decision horizon for the optimization step, i.e., the time 
+        steps for which the decisions are saved.
 
         :param step_horizon: step of the rolling horizon
         :return decision_horizon: list of time steps in the decision horizon"""
@@ -625,7 +658,9 @@ class OptimizationSetup(object):
             self.energy_system.set_time_steps_yearly = time_steps_yearly_horizon
 
     def solve(self):
-        """Create model instance by assigning parameter values and instantiating the sets."""
+        """
+        Create model instance by assigning parameter values and instantiating the sets.
+        """
         solver_name = self.solver.name
         # remove options that are None
         solver_options = {
@@ -665,7 +700,9 @@ class OptimizationSetup(object):
             self.optimality = False
 
     def write_IIS(self, scenario=""):
-        """write an ILP file to print the IIS if infeasible. Only possible for gurobi."""
+        """
+        write an ILP file to print the IIS if infeasible. Only possible for gurobi.
+        """
         if (
             self.model.termination_condition == "infeasible"
             and self.solver.name == "gurobi"
@@ -786,14 +823,16 @@ class OptimizationSetup(object):
         set_time_steps=None,
         capacity_types=False,
     ):
-        """this method initializes a modeling component by extracting the stored input data.
+        """Initialize a modeling component by extracting the stored input data.
 
-        :param calling_class: class from where the method is called
-        :param component_name: name of modeling component
-        :param index_names: names of index sets, only if calling_class is not EnergySystem
-        :param set_time_steps: time steps, only if calling_class is EnergySystem
-        :param capacity_types: boolean if extracted for capacities
-        :return component_data: data to initialize the component"""
+        Args:
+            calling_class: class from where the method is called
+            component_name: name of modeling component
+            index_names: names of index sets, only if calling_class is not EnergySystem
+            set_time_steps: time steps, only if calling_class is EnergySystem
+            capacity_types: boolean if extracted for capacities
+            component_data: data to initialize the component
+        """
         # if calling class is EnergySystem
         if calling_class == EnergySystem:
             component = getattr(self.energy_system, component_name)
@@ -808,7 +847,7 @@ class OptimizationSetup(object):
                 index_list = []
             if set_time_steps:
                 component_data = component[self.sets[set_time_steps]]
-            elif type(component) == float:
+            elif type(component) is float:
                 component_data = component
             else:
                 component_data = component.squeeze()
@@ -841,11 +880,14 @@ class OptimizationSetup(object):
         return component_data, index_list, dict_of_units
 
     def check_for_subindex(self, component_data, custom_set):
-        """this method checks if the custom_set can be a subindex of component_data and returns subindexed component_data.
+        """check if the custom_set can be a subindex of component_data. 
+        
+        returns subindexed component_data.
 
         :param component_data: extracted data as pd.Series
         :param custom_set: custom set as subindex of component_data
-        :return component_data: extracted subindexed data as pd.Series"""
+        :return component_data: extracted subindexed data as pd.Series
+        """
         # if custom_set is subindex of component_data, return subset of component_data
         try:
             if len(component_data) == len(custom_set) and len(custom_set[0]) == len(
@@ -855,7 +897,7 @@ class OptimizationSetup(object):
             else:
                 return component_data[custom_set]
         # else delete trivial index levels (that have a single value) and try again
-        except:
+        except Exception:
             _custom_index = pd.Index(custom_set)
             _reduced_custom_index = _custom_index.copy()
             for _level, _shape in enumerate(_custom_index.levshape):
@@ -865,7 +907,8 @@ class OptimizationSetup(object):
                 component_data = component_data[_reduced_custom_index]
                 component_data.index = _custom_index
                 return component_data
-            except KeyError:
+            except KeyError as err2:
                 raise KeyError(
-                    f"the custom set {custom_set} cannot be used as a subindex of {component_data.index}"
-                )
+                    f"the custom set {custom_set} cannot be used as a subindex of" 
+                    f"{component_data.index}"
+                ) from err2

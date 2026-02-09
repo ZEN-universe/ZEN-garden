@@ -120,7 +120,9 @@ class HeaderDataInputs(Subscriptable):
 
 class System(Subscriptable):
     """
-    Class which contains the system configuration. This defines for example the set of carriers, technologies, etc.
+    Class which contains the system configuration. 
+    
+    This defines for example the set of carriers, technologies, etc.
     """
 
     set_carriers: list[str] = []
@@ -158,7 +160,9 @@ class System(Subscriptable):
 
 class Solver(Subscriptable):
     """
-    Class which contains the solver configuration. This defines for example the solver options, scaling, etc.
+    Class which contains the solver configuration. 
+    
+    This defines for example the solver options, scaling, etc.
     """
 
     name: str = "highs"
@@ -191,7 +195,9 @@ class Solver(Subscriptable):
 
 class TimeSeriesAggregation(Subscriptable):
     """
-    Class which contains the time series aggregation configuration. This defines for example the clustering method, etc.
+    Class which contains the time series aggregation configuration. 
+    
+    This defines for example the clustering method, etc.
     """
 
     clusterMethod: str = "hierarchical"
@@ -205,7 +211,9 @@ class TimeSeriesAggregation(Subscriptable):
 
 class Analysis(Subscriptable):
     """
-    Class which contains the analysis configuration. This defines for example the objective function, output settings, etc.
+    Class which contains the analysis configuration. 
+    
+    This defines for example the objective function, output settings, etc.
     """
 
     dataset: str = ""
@@ -223,7 +231,10 @@ class Analysis(Subscriptable):
 
 class Config(Subscriptable):
     """
-    Class which contains the configuration of the model. This includes the configurations of the system, solver, and analysis as well as the dictionary of scenarios.
+    Class which contains the configuration of the model. 
+    
+    This includes the configurations of the system, solver, and analysis as 
+    well as the dictionary of scenarios.
     """
 
     analysis: Analysis = Analysis()
