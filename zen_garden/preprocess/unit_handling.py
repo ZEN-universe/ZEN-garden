@@ -809,14 +809,16 @@ class UnitHandling:
                     analysis=optimization_setup.analysis,
                     reference_carrier_name=reference_carrier_name,
                 )
+                units_of_wrong_attributes = self._get_units_of_wrong_attributes(
+                        wrong_atts=attributes_with_lowest_appearance, 
+                        unit_dict=unit_dict
+                )
                 raise AssertionError(
                     f"The attribute units of the {item.__class__.__name__} "
                     f"{item.name} and its reference carrier "
                     f"{reference_carrier_name} are not consistent! Most "
                     f"probably, the unit(s) of the attribute(s) "
-                    f"{self._get_units_of_wrong_attributes(
-                        wrong_atts=attributes_with_lowest_appearance, 
-                        unit_dict=unit_dict)} are wrong."
+                    f"{units_of_wrong_attributes} are wrong."
                 )
         # since energy system doesn't have any attributes with energy dimension,
         # its dict must be empty
