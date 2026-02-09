@@ -209,7 +209,7 @@ class DocstringClass(SphinxDirective):
 
 def setup(app: Sphinx) -> ExtensionMetadata:
     """
-    Setup directives
+    Setup directives.
 
     This function is required in order to register the directives with
     Sphynx. The name of the directives, as seen by the user, is set here.
