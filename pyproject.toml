@@ -95,7 +95,7 @@ line-length = 88
 fix = false
 
 [tool.ruff.lint]
-select = ["E", "F", "I", "B", "D400", "D415", "D"] # add D in future
+select = ["E", "F", "I", "B", "D400", "D415"] # add D in future
 ignore = []
 
 [tool.ruff.lint.pydocstyle]

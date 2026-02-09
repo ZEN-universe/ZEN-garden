@@ -37,10 +37,10 @@ jobs:
           pip install --upgrade -e .[dev]
 
       - name: Run Black
-        run: black --check . || true
+        run: black --check .
 
       - name: Run Ruff
-        run: ruff check . || true
+        run: ruff check .
 
       - name: Run Mypy
         run: mypy . || true
