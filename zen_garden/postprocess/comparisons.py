@@ -36,7 +36,9 @@ def compare_model_values(
         component_type = ComponentType(component_type)
 
     logging.info(
-        f"Comparing the model parameters of {results[0].solution_loader.name, results[1].solution_loader.name} and scenarios {scenarios[0], scenarios[1]}"
+        "Comparing the model parameters of "
+        f"{results[0].solution_loader.name, results[1].solution_loader.name} "
+        f"and scenarios {scenarios[0], scenarios[1]}"
     )
 
     diff_components = get_component_diff(results, component_type, scenarios)
@@ -65,7 +67,8 @@ def compare_configs(
     scenarios: list[str] = None,
 ) -> dict[str, Any]:
     """
-    Compares the configs of two results, namely the Analysis-Config and the System-config.
+    Compares the configs of two results, namely the Analysis-Config and the 
+    System-config.
 
     :param results: List of results
     :param scenarios: List of scenarios to filter by
@@ -81,7 +84,8 @@ def compare_configs(
         if scenarios[i] not in results[i].solution_loader.scenarios:
             random_scenario = next(iter(results[i].solution_loader.scenarios.keys()))
             logging.info(
-                f"{scenarios[i]} not in {results[i].solution_loader.name}, choosing {random_scenario}."
+                f"{scenarios[i]} not in {results[i].solution_loader.name}, "
+                f"choosing {random_scenario}."
             )
             scenarios[i] = random_scenario
 
@@ -155,11 +159,13 @@ def get_component_diff(
 
     if only_in_0:
         logging.info(
-            f"Components {only_in_1} are missing from {results_1.solution_loader.name}"
+            f"Components {only_in_1} are missing from "
+            f"{results_1.solution_loader.name}"
         )
     elif only_in_1:
         logging.info(
-            f"Components {only_in_1} are missing from {results_0.solution_loader.name}"
+            f"Components {only_in_1} are missing from "
+            f"{results_0.solution_loader.name}"
         )
     return [i for i in common_component]
 
@@ -205,7 +211,9 @@ def compare_dicts(
 def check_and_fill_scenario_list(
     results: list[Results], scenarios: list[str]
 ) -> list[str]:
-    """Checks if both results have the provided scenarios and otherwise returns a list containing twice one common scenario.
+    """Checks if both results have the provided scenarios.
+    
+    Returns a list containing twice one common scenario.
 
     :param results: List of results.
     :param scenarios: List of names of scenario.
@@ -218,7 +226,8 @@ def check_and_fill_scenario_list(
         common_scenario = get_common_scenario(*results)
     except AssertionError:
         logging.info(
-            "No common scenario found. Selecting random scenario for each result."
+            "No common scenario found. Selecting random scenario for each "
+            "result."
         )
         scenarios = [
             next(iter(results[0].solution_loader.scenarios.keys())),
@@ -253,7 +262,8 @@ def get_common_scenario(results_1: Results, results_2: Results) -> str:
     common_scenarios = set(results_1.solution_loader.scenarios.keys()).intersection(
         results_2.solution_loader.scenarios.keys()
     )
-    assert len(common_scenarios) > 0, "No common scenarios between provided scenarios."
+    assert len(common_scenarios) > 0, ("No common scenarios between "
+        "provided scenarios.")
 
     return next(iter(common_scenarios))
 
@@ -321,7 +331,9 @@ def _get_comparison_df(val_0, val_1, result_names, component_name, rtol):
             mismatched_index = True
     else:
         logging.info(
-            f"Component {component_name} changed shape from {val_0.shape} ({result_names[0]}) to {val_1.shape} ({result_names[1]})"
+            f"Component {component_name} changed shape from "
+            f"{val_0.shape} ({result_names[0]}) to {val_1.shape} "
+            f"({result_names[1]})"
         )
         mismatched_shape = True
         if not val_0.index.equals(val_1.index):
@@ -329,7 +341,8 @@ def _get_comparison_df(val_0, val_1, result_names, component_name, rtol):
 
     if mismatched_index:
         logging.info(
-            f"Component {component_name} does not have matching index or columns"
+            f"Component {component_name} does not have matching "
+            f"index or columns"
         )
         missing_index = (
             val_0.index.difference(val_1.index)

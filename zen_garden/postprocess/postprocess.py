@@ -1,7 +1,8 @@
 """
 Class is defining the postprocessing of the results.
-The class takes as inputs the optimization problem (model) and the system configurations (system).
-The class contains methods to read the results and save them in a result dictionary (resultDict).
+The class takes as inputs the optimization problem (model) and the system 
+configurations (system). The class contains methods to read the results and 
+save them in a result dictionary (resultDict).
 """
 
 import json
@@ -69,7 +70,8 @@ class Postprocess:
 
         # deal with the subfolder
         self.subfolder = subfolder
-        # here we make use of the fact that None and "" both evaluate to False but any non-empty string doesn't
+        # here we make use of the fact that None and "" both evaluate to 
+        # False but any non-empty string doesn't
         if subfolder != Path(""):
             # check if mf within scenario analysis
             if isinstance(self.subfolder, tuple):
@@ -103,16 +105,18 @@ class Postprocess:
             self.save_benchmarking_data()
 
     def write_file(self, name, dictionary, format=None, mode="w"):
-        """Writes the dictionary to file as json, if compression attribute is True, the serialized json is compressed
-            and saved as binary file.
+        """Writes the dictionary to file as json, if compression attribute is 
+        True, the serialized json is compressed and saved as binary file.
 
-        :param name: Filename without extension
-        :param dictionary: The dictionary to save
-        :param format: Force the format to use, if None use output_format attribute of instance
-        :param mode: Writting mode for python file. The two options are 'w' and
-            'a'. The former create a new file while the latter will append to an
-            existing file. Appending files is currently only supported for h5
-            files.
+        Args:
+            name: Filename without extension
+            dictionary: The dictionary to save
+            format: Force the format to use, if None use output_format attribute 
+                of instance
+            mode: Writing mode for python file. The two options are 'w' and
+                'a'. The former create a new file while the latter will append 
+                to an existing file. Appending files is currently only supported 
+                for h5 files.
         """
 
         if isinstance(dictionary, BaseModel):
@@ -121,7 +125,8 @@ class Postprocess:
         # check whether valid mode
         if mode not in ["a", "w"]:
             ValueError(
-                f"Invalid file write mode {mode} (valid options are 'a' or 'w')."
+                f"Invalid file write mode {mode} (valid options are 'a' or "
+                "'w')."
             )
 
         # set the format
@@ -131,7 +136,9 @@ class Postprocess:
         # only allow append mode for h5 files
         if mode == "a" and format != "h5":
             raise ValueError(
-                f"Write mode {mode} not available for output format {format}. If include_operation_only_phase = true, outputs must be saved in h5 files."
+                f"Write mode {mode} not available for output format {format}. "
+                "If include_operation_only_phase = true, outputs must be saved "
+                "in h5 files."
             )
 
         if format == "yml":
@@ -179,7 +186,8 @@ class Postprocess:
                         outfile.write(dictionary)
         else:
             raise AssertionError(
-                f"The specified output format {format}, chosen in the config, is not supported"
+                f"The specified output format {format}, chosen in the config, "
+                "is not supported"
             )
 
     def save_benchmarking_data(self):
@@ -218,7 +226,8 @@ class Postprocess:
             benchmarking_data["number_variables"] = self.model.solver_model.getNumCol()
         else:
             logging.info(
-                f"Saving benchmarking data for solver {self.solver.name} has not been implemented yet"
+                f"Saving benchmarking data for solver {self.solver.name} has "
+                "not been implemented yet"
             )
 
         benchmarking_data["scaling_time"] = self.scaling.scaling_time
@@ -233,7 +242,8 @@ class Postprocess:
 
     def save_sets(self):
         """Saves the Set values to a json file which can then be
-        post-processed immediately or loaded and postprocessed at some other time."""
+        post-processed immediately or loaded and postprocessed at some 
+        other time."""
         # dataframe serialization
         data_frames = {}
         for set in self.sets:
@@ -282,7 +292,8 @@ class Postprocess:
 
     def save_param(self):
         """Saves the Param values to a json file which can then be
-        post-processed immediately or loaded and postprocessed at some other time."""
+        post-processed immediately or loaded and postprocessed at some other 
+        time."""
         if not self.solver.save_parameters:
             logging.info("Parameters are not saved")
             return
@@ -320,7 +331,8 @@ class Postprocess:
 
     def save_var(self):
         """Saves the variable values to a json file which can then be
-        post-processed immediately or loaded and postprocessed at some other time."""
+        post-processed immediately or loaded and postprocessed at some other 
+        time."""
 
         # dataframe serialization
         data_frames = {}
@@ -354,7 +366,8 @@ class Postprocess:
 
             units = self._unit_df(units, df.index)
 
-            # transform the dataframe to a json string and load it into the dictionary as dict
+            # transform the dataframe to a json string and load it into the 
+            # dictionary as dict
             data_frames[name] = self._transform_df(df, doc, units)
 
         # write file
@@ -362,7 +375,8 @@ class Postprocess:
 
     def save_duals(self):
         """Saves the dual variable values to a json file which can then be
-        post-processed immediately or loaded and postprocessed at some other time."""
+        post-processed immediately or loaded and postprocessed at some other 
+        time."""
         if not self.solver.save_duals:
             logging.info("Duals are not saved")
             return
@@ -403,7 +417,8 @@ class Postprocess:
             if len(df.index.names) == len(index_list):
                 df.index.names = index_list
 
-            # we transform the dataframe to a json string and load it into the dictionary as dict
+            # we transform the dataframe to a json string and load it into the 
+            # dictionary as dict
             data_frames[name] = self._transform_df(df, doc)
 
         # write file
@@ -559,8 +574,8 @@ class Postprocess:
         self.write_file(fname, dict_formatted, format="json")
 
     def flatten_dict(self, dictionary):
-        """Creates a copy of the dictionary where all numpy arrays are recursively flattened to lists such that it can
-            be saved as json file.
+        """Creates a copy of the dictionary where all numpy arrays are 
+        recursively flattened to lists such that it can be saved as json file.
 
         :param dictionary: The input dictionary
         :return: A copy of the dictionary containing lists instead of arrays
@@ -607,7 +622,8 @@ class Postprocess:
         return index_list_final
 
     def get_time_steps_year2operation(self):
-        """Returns a HDF5-Serializable version of the dict_time_steps_year2operation dictionary."""
+        """Returns a HDF5-Serializable version of the 
+        dict_time_steps_year2operation dictionary."""
         ans = {}
         for (
             year,
@@ -617,7 +633,8 @@ class Postprocess:
         return ans
 
     def get_time_steps_year2storage(self):
-        """Returns a HDF5-Serializable version of the dict_time_steps_year2storage dictionary."""
+        """Returns a HDF5-Serializable version of the 
+        dict_time_steps_year2storage dictionary."""
         ans = {}
         for (
             year,
@@ -627,7 +644,8 @@ class Postprocess:
         return ans
 
     def _transform_df(self, df, doc, units=None):
-        """we transform the dataframe to a json string and load it into the dictionary as dict.
+        """we transform the dataframe to a json string and load it into the 
+        dictionary as dict.
 
         :param df: dataframe
         :param doc: doc string
@@ -641,7 +659,8 @@ class Postprocess:
                 dataframe = {"dataframe": df, "docstring": doc}
         else:
             raise AssertionError(
-                f"The specified output format {self.output_format}, chosen in the config, is not supported"
+                f"The specified output format {self.output_format}, chosen in "
+                "the config, is not supported"
             )
         return dataframe
 
@@ -676,7 +695,8 @@ class Postprocess:
                 return units
             else:
                 raise AssertionError(
-                    "The length of the units does not match the length of the index"
+                    "The length of the units does not match the length of the "
+                    "index"
                 )
         else:
             return None
@@ -694,7 +714,8 @@ class Postprocess:
         """
         if mode == "w" and not self.overwrite and os.path.exists(file_name):
             raise FileExistsError(
-                "File already exists. Please set overwrite=True to overwrite the file."
+                "File already exists. Please set overwrite=True to overwrite "
+                "the file."
             )
         with pd.HDFStore(
             file_name, mode=mode, complevel=complevel, complib=complib
@@ -749,7 +770,8 @@ class Postprocess:
             df = input_dict["dataframe"]
             assert units.index.intersection(df.index).equals(
                 units.index
-            ), f"Units index {units.index} does not match dataframe index {df.index}"
+            ), (f"Units index {units.index} does not match dataframe "
+                f"index {df.index}")
             units.name = "units"
             has_units = True
         else:
@@ -760,6 +782,7 @@ class Postprocess:
             or set(input_dict.keys()) == set(expected_keys).union(["units"])
         ):
             raise ValueError(
-                f"Expected keys are {expected_keys}, but got {input_dict.keys()}"
+                f"Expected keys are {expected_keys}, but got "
+                f"{input_dict.keys()}"
             )
         return input_dict, units, docstring, has_units
