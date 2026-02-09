@@ -1,6 +1,7 @@
 """
 File that contains the classes which initialize parameters, variables and constraints.
-This is a proxy for pyomo parameters, since the construction of parameters has a significant overhead. Indexing within ZEN-garden is also defined here.
+This is a proxy for pyomo parameters, since the construction of parameters has a
+significant overhead. Indexing within ZEN-garden is also defined here.
 """
 
 import copy
@@ -25,8 +26,8 @@ class ZenIndex(object):
         """Initialize the multiindex.
 
         :param index_values: A list of index values as tuples
-        :param index_names: Optional list of index names as strings, if the length does not match the tuple length,
-                            it is ignored
+        :param index_names: Optional list of index names as strings, if the length does
+                            not match the tuple length, it is ignored
         """
 
         # if there are no values, we create a dummy index
@@ -47,7 +48,7 @@ class ZenIndex(object):
 
         :param levels: A list of levels eithes by position or name
         :param as_array: If True, the return value a list of xarrays
-        :return: A list of tuples if multiple levels are given, otherwise a list of values
+        :return: A list of tuples if given multiple levels, otherwise a list of values
         """
 
         # empty index
@@ -69,7 +70,8 @@ class ZenIndex(object):
         :param levels: A single level or a list of levels to get the values for
         :param dtype: The dtype of the return value, either list or xr.DataArray
         :param unique: If True, only unique values are returned
-        :return: A single list or xr.DataArray if only one level is given, otherwise a list of lists or xr.DataArrays
+        :return: A single list or xr.DataArray if only one level is given, otherwise
+            a list of lists or xr.DataArrays
         """
 
         # empty index
@@ -122,7 +124,8 @@ class ZenSet(OrderedSet):
     def __init__(self, data, name="", doc="", index_set="UnnamedIndex"):
         """Initialize the set.
 
-        :param data: The data of the set, either an iterable or a dictionary for an indexed set
+        :param data: The data of the set, either an iterable or a dictionary for
+            an indexed set
         :param name: The name of the set
         :param doc: The corresponding docstring
         :param index_set: The name of the index set
@@ -192,7 +195,7 @@ class ZenSet(OrderedSet):
 
 class Component:
     """
-    Class to prepare parameter, variable and constraint data such that it suits the pyomo prerequisites.
+    Class to prepare parameter, variable and constraint data to suit linopy.
     """
 
     def __init__(self):
@@ -208,19 +211,22 @@ class Component:
         :param doc: docstring to be compiled
         :param index_list: list of indices
         :param name: name of parameter/variable/constraint
-        :param domain: domain of parameter/variable/constraint (e.g., reals, non negative reals, ...)
+        :param domain: domain of parameter/variable/constraint
+            (e.g., reals, non negative reals, ...)
         :return complete_doc: complete docstring composed of name, doc and dims
         """
-        assert (
-            type(doc) == str
-        ), f"Docstring {doc} has wrong format. Must be 'str' but is '{type(doc).__name__}'"
+        assert isinstance(doc, str), (
+            f"Docstring {doc} has wrong format. Must be 'str' "
+            f"but is '{type(doc).__name__}'"
+        )
         # check for prohibited strings
         prohibited_strings = [",", ";", ":", "/", "name", "doc", "dims", "domain"]
         original_doc = copy.copy(doc)
         for string in prohibited_strings:
             if string in doc:
                 logging.warning(
-                    f"Docstring '{original_doc}' contains prohibited string '{string}'. Occurrences are dropped."
+                    f"Docstring '{original_doc}' contains prohibited "
+                    f"string '{string}'. Occurrences are dropped."
                 )
                 doc = doc.replace(string, "")
         # joined index names
@@ -296,7 +302,7 @@ class IndexSet(Component):
             self.index_sets[name] = index_set
 
     def is_indexed(self, name):
-        """Checks if the set with the name is indexed, convenience method for ZenSet["name"].is_indexed().
+        """Checks if the set with the name is indexed.
 
         :param name: The name of the set
         :return: True if indexed, False otherwise
@@ -305,7 +311,7 @@ class IndexSet(Component):
         return name in self.index_sets
 
     def get_index_name(self, name):
-        """Returns the index name of an indexed set, convenience method for ZenSet["name"].get_index_name().
+        """Returns the index name of an indexed set.
 
         :param name: The name of the indexed set
         :return: The name of the index set
@@ -317,7 +323,7 @@ class IndexSet(Component):
 
     @staticmethod
     def tuple_to_arr(index_values, index_list, unique=False):
-        """Transforms a list of tuples into a list of xarrays containing all elements from the corresponding tuple entry.
+        """Transforms list of tuples into a list of xarrays with everything from tuple.
 
         :param index_values: The list of tuples with the index values
         :param index_list: The names of the indices, used in case of emtpy values
@@ -352,9 +358,10 @@ class IndexSet(Component):
 
         :param index_values: A list of index values (tuples)
         :param index_list: The list of the names of the indices
-        :param bounds: Either None, tuple, array or callable to define the bounds of the variable
-        :param model: The model to which the mask belongs, note that indices which don't match existing indices are
-                      renamed to match the model
+        :param bounds: Either None, tuple, array or callable to define the bounds of
+            the variable
+        :param model: The model to which the mask belongs, note that indices which don't
+            match existing indices are renamed to match the model
         :return: The mask as xarray
         """
 
@@ -424,15 +431,15 @@ class IndexSet(Component):
         :param coords: The coordinates of the variable
         :param index_arrs: The index values as xarrays
         :param index_list: The list of the index names
-        :param model: The model to which the mask belongs, note that indices which don't match existing indices are
-                      renamed to match the model
+        :param model: The model to which the mask belongs, note that indices which
+            don't match existing indices are renamed to match the model
         :return: The mask as xarray
         """
         # save the index names under different names if they are empty
         if model is not None:
             index_names = []
             for index_name, coord in zip(index_list, coords, strict=False):
-                # we check if there is already an index with the same name but a different size
+                # Check if there is already an index with same name but different size
                 if coord.size == 0 and index_name in model.variables.coords:
                     index_names.append(index_name + f"_{uuid.uuid4()}")
                 else:
@@ -444,9 +451,11 @@ class IndexSet(Component):
         return index_list, mask
 
     def get_coord(self, data, name):
-        """Transforms the data into a proper coordinate. If the name of the data is in a set, the sets superset is
-        returned otherwise all unique data values are returned, this is to avoid having sets with the same name
-        and different values.
+        """Transforms data into a coordinate to avoid same name with different values.
+
+        Transforms the data into a proper coordinate. If the name of the data is in
+        a set, the sets superset is returned otherwise all unique data values are
+        returned, this is to avoid having sets with the same name and different values.
 
         :param data: The data to transform
         :param name: The name of the set
@@ -527,7 +536,8 @@ class Parameter(Component):
         :param doc: docstring of parameter
         :param data: non default data of parameter and index_names
         :param calling_class: class type of the object add_parameter is called for
-        :param index_names: names of index sets, only if calling_class is not EnergySystem
+        :param index_names: names of index sets, only if calling_class is
+            not EnergySystem
         :param set_time_steps: time steps, only if calling_class is EnergySystem
         :param capacity_types: boolean if extracted for capacities
         """
@@ -569,8 +579,10 @@ class Parameter(Component):
             logging.warning(f"Parameter {name} already added. Can only be added once")
 
     def add_helper_parameter(self, name, data):
-        """Adds a helper param. Note that this param won't be added to the docs and therefore not saved in the results.
-        Also, the data is taken as is and is not transformed.
+        """Adding a helper parameter that is not added to the docs and results.
+
+        Adds a helper param. Note that this param is not added to the docs and therefore
+         not saved in the results. Also, the data is taken as is and is not transformed.
 
         :param name: The name of the param
         :param data: The data
@@ -841,8 +853,8 @@ class Variable(Component):
                 for technology in self.optimization_setup.dict_elements["Technology"]:
                     reference_carrier = technology.reference_carrier[0]
                     energy_quantity = [
-                        energy_quantity
-                        for carrier, energy_quantity in self.unit_handling.carrier_energy_quantities.items()
+                        energy_quantity for carrier, energy_quantity
+                        in self.unit_handling.carrier_energy_quantities.items()
                         if carrier == reference_carrier
                     ][0]
                     tech_idx = (
@@ -884,7 +896,7 @@ class Constraint(Component):
         """initialization of a constraint.
 
         :param name: name of variable
-        :param constraint: either a linopy constraint or a dictionary of constraints or None
+        :param constraint: a linopy constraint or a dictionary of constraints or None
         :param doc: docstring of variable"""
 
         if name not in self.docs.keys():
@@ -896,8 +908,9 @@ class Constraint(Component):
                         return
                     assert isinstance(cons, lp.constraints.Constraint) or isinstance(
                         cons, lp.constraints.AnonymousConstraint
-                    ), f"Constraint {key} has wrong format. Must be a linopy constraint but is {type(cons).__name__}"
-                    if type(key) == tuple:
+                    ), (f"Constraint {key} has wrong format. "
+                        f"Must be a linopy constraint but is {type(cons).__name__}")
+                    if isinstance(key, tuple):
                         _key = "-".join([str(k) for k in key])
                     else:
                         _key = str(key)
@@ -915,7 +928,9 @@ class Constraint(Component):
                 )
             else:
                 raise TypeError(
-                    f"Constraint {name} has wrong format. Must be either a linopy constraint or a dictionary of constraints but is {type(constraint).__name__}"
+                    f"Constraint {name} has wrong format. Must be either a linopy "
+                    f"constraint or a dictionary of constraints but "
+                    f"is {type(constraint).__name__}"
                 )
 
         else:
@@ -963,10 +978,13 @@ class Constraint(Component):
         xvar,
         break_points,
         f_vals,
-        cons_type="EQ",
+        cons_type="EQ"
     ):
-        """Adds a piece-wise linear constraint of the type f(x) = y for each index in the index_values, where f is defined
-        by the breakpoints and f_vals (x_1, y_1), ..., (x_n, y_n).
+        """Adding piece-wise linear constraints to the model.
+
+        Adds a piece-wise linear constraint of the type f(x) = y for each index in the
+        index_values, where f is defined by the breakpoints and
+        f_vals (x_1, y_1), ..., (x_n, y_n).
 
         Note that these method will create helper variables in form of a S0S2, sources:
 
@@ -975,11 +993,16 @@ class Constraint(Component):
 
         :param model: The model to add the constraints to
         :param name: The name of the constraint
-        :param index_values: A list of index values that will be used to build the constraints
-        :param yvar: The name of the yvar, a variable compatible with the index values used for y
-        :param xvar: The name of the xvar, a variable compatible with the index values used for x
-        :param break_points: A mapping index -> list that provides the breakpoints for each index
-        :param f_vals: A mapping index -> list that provides the function values for each index
+        :param index_values: A list of index values that will be used to build the
+            constraints
+        :param yvar: The name of the yvar, a variable compatible with the index
+            values used for y
+        :param xvar: The name of the xvar, a variable compatible with the index
+            values used for x
+        :param break_points: A mapping index -> list that provides the breakpoints
+            for each index
+        :param f_vals: A mapping index -> list that provides the function values
+            for each index
         :param cons_type: Type of the constraint (currently only EQ supported)
         """
 
@@ -999,8 +1022,8 @@ class Constraint(Component):
             fv = f_vals[index_val]
             if len(br) != len(fv):
                 raise ValueError(
-                    "Number of break points should be equal to number of function values for each "
-                    "index value."
+                    "Number of break points should be equal to number of function "
+                    "values for each index value."
                 )
 
             # create sos vars, assure same coords
@@ -1061,11 +1084,13 @@ class Constraint(Component):
     def reorder_group(
         self, lhs, sign, rhs, index_values, index_names, model, drop=None
     ):
-        """Reorders the constraints in a group to have full shape according to index values and names.
+        """Reorders constraints in a group to get full shape based on indexes and names.
 
         :param lhs: The lhs of the constraints
-        :param sign: The sign of the constraints, can be None if only lhs should be restructured
-        :param rhs: The rhs of the constraints, can be None if only lhs should be restructured
+        :param sign: The sign of the constraints, can be None if only lhs should
+            be restructured
+        :param rhs: The rhs of the constraints, can be None if only lhs should
+            be restructured
         :param index_values: The index values corresponding to the group numbers
         :param index_names: The index names of the indices
         :param model: The model

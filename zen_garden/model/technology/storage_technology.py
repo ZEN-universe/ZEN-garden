@@ -1,7 +1,7 @@
 """
-Class defining the parameters, variables and constraints that hold for all storage technologies.
-The class takes the abstract optimization model as an input, and returns the parameters, variables and
-constraints that hold for the storage technologies.
+Class defining the parameters, variables and constraints that hold for all storage
+technologies. The class takes the abstract optimization model as an input, and returns
+the parameters, variables and constraints that hold for the storage technologies.
 """
 
 import numpy as np
@@ -41,7 +41,9 @@ class StorageTechnology(Technology):
         super().store_carriers()
 
     def store_input_data(self):
-        """retrieves and stores input data for element as attributes. Each Child class overwrites method to store different attributes."""
+        """retrieves and stores input data for element as attributes.
+
+        Each Child class overwrites method to store different attributes."""
         # get attributes from class <Technology>
         super().store_input_data()
         # set attributes for parameters of child class <StorageTechnology>
@@ -135,7 +137,10 @@ class StorageTechnology(Technology):
         )
 
     def convert_to_fraction_of_capex(self):
-        """this method converts the total capex to fraction of capex, depending on how many hours per year are calculated."""
+        """converts the capex and fixed opex to fraction of capex.
+
+        this method converts the total capex to fraction of capex, depending on
+        how many hours per year are calculated."""
         fraction_year = self.calculate_fraction_of_year()
         self.opex_specific_fixed = self.opex_specific_fixed * fraction_year
         self.opex_specific_fixed_energy = (
@@ -162,7 +167,8 @@ class StorageTechnology(Technology):
             absolute_capex = self.capex_specific_storage[index[0]].iloc[0] * capacity
         return absolute_capex
 
-    ### --- classmethods to construct sets, parameters, variables, and constraints, that correspond to StorageTechnology --- ###
+    ### --- classmethods to construct sets, parameters, variables, and constraints,
+    # that correspond to StorageTechnology --- ###
     @classmethod
     def construct_sets(cls, optimization_setup):
         """constructs the pe.Sets of the class <StorageTechnology>.
@@ -260,14 +266,11 @@ class StorageTechnology(Technology):
 
             # get the arrays
             tech_arr, node_arr, time_arr = sets.tuple_to_arr(index_values, index_list)
-            # convert operationTimeStep to time_step_year: operationTimeStep -> base_time_step -> time_step_year
+            # convert operationTimeStep to time_step_year:
+            #   operationTimeStep -> base_time_step -> time_step_year
+            ts = optimization_setup.energy_system.time_steps
             time_step_year = xr.DataArray(
-                [
-                    optimization_setup.energy_system.time_steps.convert_time_step_operation2year(
-                        time
-                    )
-                    for time in time_arr.data
-                ]
+                [ts.convert_time_step_operation2year(time) for time in time_arr.data]
             )
             lower = (
                 model.variables["capacity"]
@@ -322,7 +325,8 @@ class StorageTechnology(Technology):
             name="flow_storage_spillage",
             index_sets=(index_values, index_names),
             bounds=(0, np.inf),
-            doc="storage spillage of storage technology on node i in each storage time step",
+            doc="storage spillage of storage technology on node i in each "
+                "storage time step",
             unit_category={"energy_quantity": 1, "time": -1},
         )
         # charge discharge binary
@@ -383,20 +387,29 @@ class StorageTechnologyRules(GenericRule):
         super().__init__(optimization_setup)
 
     def constraint_charge_discharge_binary(self):
-        """
-        Ensure that the storage technology cannot charge and discharge simultaneously within the same operational time step.
-        This is only active if the storage_charge_discharge_binary flag in the system.json file is set to True.
+        """Avoid simultaneous charge and discharge of storage technologies.
+
+        Ensure that the storage technology cannot charge and discharge simultaneously
+        within the same operational time step. This is only active if the
+        storage_charge_discharge_binary flag in the system.json file is set to True.
 
         .. math::
-            \\underline{H}_{k,n,t,y} \\le B^\\mathrm{charge}_{k,n,t,y} s^\\mathrm{max, power}_{k,n,y}
+            \\underline{H}_{k,n,t,y} \\le B^\\mathrm{charge}_{k,n,t,y}
+            s^\\mathrm{max, power}_{k,n,y}
 
         .. math::
-            \\overline{H}_{k,n,t,y} \\le (1-B^\\mathrm{charge}_{k,n,t,y}) s^\\mathrm{max, power}_{k,n,y}
+            \\overline{H}_{k,n,t,y} \\le (1-B^\\mathrm{charge}_{k,n,t,y})
+            s^\\mathrm{max, power}_{k,n,y}
 
-        :math:`\\underline{H}_{k,n,t,y}`: carrier flow into storage technology :math:`k` on node :math:`n` and time :math:`t` in year :math:`y` \n
-        :math:`\\overline{H}_{k,n,t,y}`: carrier flow out of storage technology :math:`k`on node :math:`n` and time :math:`t` in year :math:`y` \n
-        :math:`s^\\mathrm{max, power}_{k,n,y}`: power capacity limit of storage technology :math:`k` at location :math:`n` in year :math:`y` \n
-        :math:`B^\\mathrm{charge}_{k,n,t,y}`: binary variable indicating whether the storage technology :math:`k` is in charging mode (1) or discharging mode (0) at location :math:`n` at time step :math:`t` in year :math:`y` \n
+        :math:`\\underline{H}_{k,n,t,y}`: carrier flow into storage technology :math:`k`
+        on node :math:`n` and time :math:`t` in year :math:`y` \n
+        :math:`\\overline{H}_{k,n,t,y}`: carrier flow out of storage
+        technology :math:`k`on node :math:`n` and time :math:`t` in year :math:`y` \n
+        :math:`s^\\mathrm{max, power}_{k,n,y}`: power capacity limit of storage
+        technology :math:`k` at location :math:`n` in year :math:`y` \n
+        :math:`B^\\mathrm{charge}_{k,n,t,y}`: binary variable indicating whether the
+        storage technology :math:`k` is in charging mode (1) or discharging mode (0) at
+        location :math:`n` at time step :math:`t` in year :math:`y` \n
         """
         techs = self.sets["set_storage_technologies"]
         nodes = self.sets["set_nodes"]
@@ -445,15 +458,20 @@ class StorageTechnologyRules(GenericRule):
         )
 
     def constraint_capacity_factor_storage(self):
-        """Load is limited by the installed capacity and the maximum load factor for storage technologies.
+        """Limits load of storage technologies by capacity and maximum load factor.
 
         .. math::
-            \\underline{H}_{k,n,t,y}+\\overline{H}_{k,n,t,y}\\leq m^{\\mathrm{max}}_{k,n,t,y}S_{k,n,y}
+            \\underline{H}_{k,n,t,y}+\\overline{H}_{k,n,t,y}\\leq
+            m^{\\mathrm{max}}_{k,n,t,y}S_{k,n,y}
 
-        :math:`\\underline{H}_{k,n,t,y}`: carrier flow into storage technology :math:`k` on node :math:`n` and time :math:`t` in year :math:`y` \n
-        :math:`\\overline{H}_{k,n,t,y}`: carrier flow out of storage technology :math:`k`on node :math:`n` and time :math:`t` in year :math:`y` \n
-        :math:`m^{\\mathrm{max}}_{k,n,t,y}`: maximum load factor for storage technology :math:`k` on node :math:`n` and time :math:`t` in year :math:`y` \n
-        :math:`S_{k,n,y}`: storage capacity of storage technology :math:`k` on node :math:`n` in year :math:`y`
+        :math:`\\underline{H}_{k,n,t,y}`: carrier flow into storage technology :math:`k`
+        on node :math:`n` and time :math:`t` in year :math:`y` \n
+        :math:`\\overline{H}_{k,n,t,y}`: carrier flow out of storage
+        technology :math:`k`on node :math:`n` and time :math:`t` in year :math:`y` \n
+        :math:`m^{\\mathrm{max}}_{k,n,t,y}`: maximum load factor for storage
+        technology :math:`k` on node :math:`n` and time :math:`t` in year :math:`y` \n
+        :math:`S_{k,n,y}`: storage capacity of storage technology :math:`k` on
+        node :math:`n` in year :math:`y`
 
 
         """
@@ -462,13 +480,9 @@ class StorageTechnologyRules(GenericRule):
             return
         nodes = self.sets["set_nodes"]
         times = self.variables.coords["set_time_steps_operation"]
+        ts = self.optimization_setup.energy_system.time_steps
         time_step_year = xr.DataArray(
-            [
-                self.optimization_setup.energy_system.time_steps.convert_time_step_operation2year(
-                    t
-                )
-                for t in times.data
-            ],
+            [ts.convert_time_step_operation2year(t) for t in times.data],
             coords=[times],
         )
         term_capacity = (
@@ -494,15 +508,23 @@ class StorageTechnologyRules(GenericRule):
         """calculate opex of each technology.
 
         .. math::
-            O_{h,p,t}^\\mathrm{t} = \\beta_{h,p,t} (\\underline{H}_{k,n,t} + \\overline{H}_{k,n,t}) \n
-            \\theta_{h,p,t}^{\\mathrm{tech}} = \\epsilon_h (\\underline{H}_{k,n,t} + \\overline{H}_{k,n,t})
+            O_{h,p,t}^\\mathrm{t} = \\beta_{h,p,t} (\\underline{H}_{k,n,t} +
+            \\overline{H}_{k,n,t}) \n
+            \\theta_{h,p,t}^{\\mathrm{tech}} = \\epsilon_h (\\underline{H}_{k,n,t} +
+            \\overline{H}_{k,n,t})
 
-        :math:`O_{h,p,t}^\\mathrm{t}`: variable operational expenditures for storage technology :math:`h` on node :math:`n` and time :math:`t` \n
-        :math:`\\beta_{h,p,t}`: specific variable operational expenditures for storage technology :math:`h` on node :math:`n` and time :math:`t` \n
-        :math:`\\underline{H}_{k,n,t}`: carrier flow into storage technology :math:`k` on node :math:`n` and time :math:`t` \n
-        :math:`\\overline{H}_{k,n,t}`: carrier flow out of storage technology :math:`k` on node :math:`n` and time :math:`t` \n
-        :math:`\\theta_{h,p,t}^{\\mathrm{tech}}`: carbon emissions for storage technology :math:`h` on node :math:`n` and time :math:`t` \n
-        :math:`\\epsilon_h`: carbon intensity for operating storage technology :math:`h` on node :math:`n`
+        :math:`O_{h,p,t}^\\mathrm{t}`: variable operational expenditures for storage
+        technology :math:`h` on node :math:`n` and time :math:`t` \n
+        :math:`\\beta_{h,p,t}`: specific variable operational expenditures for storage
+        technology :math:`h` on node :math:`n` and time :math:`t` \n
+        :math:`\\underline{H}_{k,n,t}`: carrier flow into storage technology :math:`k`
+        on node :math:`n` and time :math:`t` \n
+        :math:`\\overline{H}_{k,n,t}`: carrier flow out of storage technology :math:`k`
+        on node :math:`n` and time :math:`t` \n
+        :math:`\\theta_{h,p,t}^{\\mathrm{tech}}`: carbon emissions for storage
+        technology :math:`h` on node :math:`n` and time :math:`t` \n
+        :math:`\\epsilon_h`: carbon intensity for operating storage technology :math:`h`
+        on node :math:`n`
 
         """
         techs = self.sets["set_storage_technologies"]
@@ -549,8 +571,10 @@ class StorageTechnologyRules(GenericRule):
         .. math::
             L_{k,n,t^\\mathrm{k}} \\le S^\\mathrm{e}_{k,n,y}
 
-        :math:`L_{k,n,t^\\mathrm{k}}`: storage level of storage technology :math:`k` on node :math:`n` and time :math:`t` \n
-        :math:`S^\\mathrm{e}_{k,n,y}`: energy capacity of storage technology :math:`k` on node :math:`n` in year :math:`y`
+        :math:`L_{k,n,t^\\mathrm{k}}`: storage level of storage technology :math:`k`
+        on node :math:`n` and time :math:`t` \n
+        :math:`S^\\mathrm{e}_{k,n,y}`: energy capacity of storage technology :math:`k`
+        on node :math:`n` in year :math:`y`
 
         """
         techs = self.sets["set_storage_technologies"]
@@ -586,8 +610,10 @@ class StorageTechnologyRules(GenericRule):
         .. math::
             S_{k,n,y} \\le \\rho_k^{max} S^{e}_{k,n,y}
 
-        :math:`S^{\\mathrm{power}}_{k,n,y}`: installed capacity in terms of power of storage :math:`k` at node :math:`n` in year :math:`y` \n
-        :math:`S^{e}_{k,n,y}`: installed capacity in terms of energy of storage :math:`k` at node :math:`n` in year :math:`y` \n
+        :math:`S^{\\mathrm{power}}_{k,n,y}`: installed capacity in terms of power of
+        storage :math:`k` at node :math:`n` in year :math:`y` \n
+        :math:`S^{e}_{k,n,y}`: installed capacity in terms of energy of
+        storage :math:`k` at node :math:`n` in year :math:`y` \n
         :math:`\\rho_k^{min}`: minimum power-to-energy ratio of storage :math:`k` \n
         :math:`\\rho_k^{max}`: maximum power-to-energy ratio of storage :math:`k`
 
@@ -631,15 +657,26 @@ class StorageTechnologyRules(GenericRule):
         """couple subsequent storage levels (time coupling constraints).
 
         .. math::
-            L_{k,n,t^k,y} = L_{k,n,t^k-1,y} (1-\\phi_k)^{\\tau_{t^k}^k} + (\\underline{\\eta}_k \\underline{H}_{k,n,\\sigma(t^k),y} - \\frac{\\overline{H}_{k,n,\\sigma(t^k),y}}{\\overline{\\eta}_k}) \\sum^{\\tau_{t^k}^k-1}_{\\tilde{t}^k=0} (1-\\phi_k)^{\\tilde{t}^k}
+            L_{k,n,t^k,y} = L_{k,n,t^k-1,y} (1-\\phi_k)^{\\tau_{t^k}^k} +
+            (\\underline{\\eta}_k \\underline{H}_{k,n,\\sigma(t^k),y} -
+            \\frac{\\overline{H}_{k,n,\\sigma(t^k),y}}{\\overline{\\eta}_k})
+            \\sum^{\\tau_{t^k}^k-1}_{\\tilde{t}^k=0} (1-\\phi_k)^{\\tilde{t}^k}
 
-        :math:`L_{k,n,t^k,y}`: storage level of storage technology :math:`k` on node :math:`n` and time :math:`t^k` in year :math:`y` \n
+        :math:`L_{k,n,t^k,y}`: storage level of storage technology :math:`k` on
+        node :math:`n` and time :math:`t^k` in year :math:`y` \n
         :math:`\\phi_k`: self discharge rate of storage technology :math:`k` \n
-        :math:`\\tau_{t^k}^k`: duration of storage level time step of storage technology :math:`k` \n
-        :math:`\\underline{\\eta}_k`: efficiency during charging of storage technology :math:`k` \n
-        :math:`\\overline{\\eta}_k`: efficiency during discharging of storage technology :math:`k` \n
-        :math:`\\underline{H}_{k,n,\\sigma(t^k),y}`: charge flow into storage technology :math:`k` on node :math:`n` and time :math:`\\sigma(t^k)` in year :math:`y` \n
-        :math:`\\overline{H}_{k,n,\\sigma(t^k),y}`: discharge flow out of storage technology :math:`k` on node :math:`n` and time :math:`\\sigma(t^k)` in year :math:`y`
+        :math:`\\tau_{t^k}^k`: duration of storage level time step of storage
+        technology :math:`k` \n
+        :math:`\\underline{\\eta}_k`: efficiency during charging of storage
+        technology :math:`k` \n
+        :math:`\\overline{\\eta}_k`: efficiency during discharging of storage
+        technology :math:`k` \n
+        :math:`\\underline{H}_{k,n,\\sigma(t^k),y}`: charge flow into storage
+        technology :math:`k` on node :math:`n` and time :math:`\\sigma(t^k)` in
+        year :math:`y` \n
+        :math:`\\overline{H}_{k,n,\\sigma(t^k),y}`: discharge flow out of storage
+        technology :math:`k` on node :math:`n` and time :math:`\\sigma(t^k)` in
+        year :math:`y`
 
         """
         techs = self.sets["set_storage_technologies"]
@@ -699,7 +736,7 @@ class StorageTechnologyRules(GenericRule):
         self.constraints.add_constraint("constraint_couple_storage_level", constraints)
 
     def constraint_flow_storage_spillage(self):
-        """Impose that the flow_energy_spillage cannot be greater than the flow_storage_inflow.
+        """Ensure that flow_energy_spillage is not greater than the flow_storage_inflow.
 
         .. math::
 
@@ -725,8 +762,10 @@ class StorageTechnologyRules(GenericRule):
         .. math::
             CAPEX_{y,n,i} = \\Delta S_{h,p,y} \\alpha_{k,n,y}
 
-        :math:`\\Delta S_{h,p,y}`: capacity addition of storage technology :math:`h` on node :math:`n` in year :math:`y` \n
-        :math:`\\alpha_{k,n,y}`: specific capex of storage technology :math:`k` on node :math:`n` in year :math:`y`
+        :math:`\\Delta S_{h,p,y}`: capacity addition of storage technology :math:`h`
+        on node :math:`n` in year :math:`y` \n
+        :math:`\\alpha_{k,n,y}`: specific capex of storage technology :math:`k` on
+        node :math:`n` in year :math:`y`
 
 
         """

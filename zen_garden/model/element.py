@@ -1,8 +1,8 @@
 """
 Class defining a standard Element.
 Contains methods to add parameters, variables and constraints to the
-optimization problem. Parent class of the Carrier and Technology classes .The class takes the concrete
-optimization model as an input.
+optimization problem. Parent class of the Carrier and Technology classes.
+The class takes the concrete optimization model as an input.
 """
 
 import itertools
@@ -54,7 +54,7 @@ class Element:
             unit_handling=self.energy_system.unit_handling,
             optimization_setup=self.optimization_setup,
         )
-        # dict to save the parameter units element-wise (and save them in the results later on)
+        # dict to save the parameter units element-wise and to save them in the results
         self.units = {}
 
     def get_input_path(self):
@@ -79,8 +79,10 @@ class Element:
         # store scenario dict
         self.data_input.scenario_dict = self.optimization_setup.scenario_dict
 
-    ### --- classmethods to construct sets, parameters, variables, and constraints, that correspond to Element --- ###
-    # Here, after defining EnergySystem-specific components, the components of the other classes are constructed
+    ### --- classmethods to construct sets, parameters, variables, and constraints,
+    #  corresponding to Element --- ###
+    # Here, after defining EnergySystem-specific components,
+    #   the components of the other classes are constructed
     @classmethod
     def construct_model_components(cls, optimization_setup):
         """constructs the model components of the class <Element>.
@@ -94,42 +96,38 @@ class Element:
         t1 = time.perf_counter()
         if optimization_setup.solver.run_diagnostics:
             logging.info(f"Time to construct Sets: {t1 - t_start:0.1f} seconds")
-            logging.info(
-                f"Memory usage: {psutil.Process(pid).memory_info().rss / 1024 ** 2:0.1f} MB"
-            )
+            mem_usage = psutil.Process(pid).memory_info().rss / 1024 ** 2
+            logging.info(f"Memory usage: {mem_usage:0.1f} MB")
         # construct Params
         t0 = time.perf_counter()
         cls.construct_params(optimization_setup)
         t1 = time.perf_counter()
         if optimization_setup.solver.run_diagnostics:
             logging.info(f"Time to construct Params: {t1 - t0:0.1f} seconds")
-            logging.info(
-                f"Memory usage: {psutil.Process(pid).memory_info().rss / 1024 ** 2:0.1f} MB"
-            )
+            mem_usage = psutil.Process(pid).memory_info().rss / 1024 ** 2
+            logging.info(f"Memory usage: {mem_usage:0.1f} MB")
         # construct Vars
         t0 = time.perf_counter()
         cls.construct_vars(optimization_setup)
         t1 = time.perf_counter()
         if optimization_setup.solver.run_diagnostics:
             logging.info(f"Time to construct Vars: {t1 - t0:0.1f} seconds")
-            logging.info(
-                f"Memory usage: {psutil.Process(pid).memory_info().rss / 1024 ** 2:0.1f} MB"
-            )
+            mem_usage = psutil.Process(pid).memory_info().rss / 1024 ** 2
+            logging.info(f"Memory usage: {mem_usage:0.1f} MB")
         # construct Constraints
         t0 = time.perf_counter()
         cls.construct_constraints(optimization_setup)
         t1 = time.perf_counter()
         if optimization_setup.solver.run_diagnostics:
             logging.info(f"Time to construct Constraints: {t1 - t0:0.1f} seconds")
-            logging.info(
-                f"Memory usage: {psutil.Process(pid).memory_info().rss / 1024 ** 2:0.1f} MB"
-            )
+            mem_usage = psutil.Process(pid).memory_info().rss / 1024 ** 2
+            logging.info(f"Memory usage: {mem_usage:0.1f} MB")
         # construct Objective
         optimization_setup.energy_system.construct_objective()
-        t_end = time.perf_counter()
         if optimization_setup.solver.run_diagnostics:
             logging.info(
-                f"Total time to construct model components: {t_end - t_start:0.1f} seconds"
+                f"Total time to construct model components: "
+                f"{time.perf_counter() - t_start:0.1f} seconds"
             )
 
     @classmethod
@@ -290,7 +288,7 @@ class Element:
         :param element: technology in model
         :param optimization_setup: The OptimizationSetup the element is part of
         :param index: index to check
-        :return model_capex: Bool indicating if capex needs to be modeled as pwa or linear
+        :return model_capex: Bool indicating if capex must be modeled as pwa or linear
         """
 
         if element in optimization_setup.sets["set_conversion_technologies"]:
@@ -307,12 +305,12 @@ class Element:
 
     @classmethod
     def append_on_off_modeled(cls, element, optimization_setup, index):
-        """checks if the on-off-behavior of a technology needs to be modeled.
+        """checks if the on-off-behavior (min-load) of a technology needs to be modeled.
 
         :param element: technology in model
         :param optimization_setup: The OptimizationSetup the element is part of
         :param index: index to check
-        :return model_on_off: Bool indicating if on-off-behavior (min load) needs to be modeled
+        :return model_on_off: Bool indicating if on-off-behavior needs to be modeled
         """
 
         model_on_off = cls.check_on_off_modeled(element, optimization_setup)
@@ -360,14 +358,15 @@ class Element:
 
     @classmethod
     def check_on_off_modeled(cls, tech, optimization_setup):
-        """this classmethod checks if the on-off-behavior of a technology needs to be modeled.
-        If the technology has a minimum load of 0 for all nodes and time steps,
-        and all dependent carriers have a lower bound of 0 (only for conversion technologies modeled as pwa),
-        then on-off-behavior is not necessary to model.
+        """classmethod checks if on-off-behavior of a technology needs to be modeled.
+
+        If the technology has a minimum load of 0 for all nodes and time steps, and all
+        dependent carriers have a lower bound of 0 (only for conversion technologies
+        modeled as pwa), then on-off-behavior is not necessary to model.
 
         :param tech: technology in model
         :param optimization_setup: The OptimizationSetup the element is part of
-        :return model_on_off: Bool indicating if on-off-behaviour (min load) needs to be modeled
+        :return model_on_off: Bool indicating if on-off-behaviour needs to be modeled
         """
         # check if any min load
         unique_min_load = list(
@@ -389,8 +388,8 @@ class Element:
 
 class GenericRule(object):
     """
-    This class implements a generic rule for the model, which can be used to init the other rules of the technologies
-    and carriers.
+    This class implements a generic rule for the model, which can be used to init the
+    other rules of the technologies and carriers.
     """
 
     def __init__(self, optimization_setup):

@@ -1,7 +1,7 @@
 """
-Class defining the parameters, variables, and constraints of the retrofitting technologies.
-The class takes the abstract optimization model as an input and adds parameters, variables, and
-constraints of the retrofitting technologies.
+Class defining the parameters, variables, and constraints of the retrofitting
+technologies. The class takes the abstract optimization model as an input and adds
+parameters, variables, and constraints of the retrofitting technologies.
 """
 
 import itertools
@@ -38,7 +38,9 @@ class RetrofittingTechnology(ConversionTechnology):
         super().store_carriers()
 
     def store_input_data(self):
-        """retrieves and stores input data for element as attributes. Each Child class overwrites method to store different attributes."""
+        """retrieves and stores input data for element as attributes.
+
+        Each Child class overwrites method to store different attributes."""
         # get attributes from class <Technology>
         super().store_input_data()
         # get retrofit base technology
@@ -52,7 +54,8 @@ class RetrofittingTechnology(ConversionTechnology):
             unit_category={},
         )
 
-    ### --- classmethods to construct sets, parameters, variables, and constraints, that correspond to ConversionTechnology --- ###
+    ### --- classmethods to construct sets, parameters, variables, and constraints,
+    # that correspond to ConversionTechnology --- ###
     @classmethod
     def construct_sets(cls, optimization_setup):
         """constructs the pe.Sets of the class <RetrofittingTechnology>.
@@ -68,7 +71,8 @@ class RetrofittingTechnology(ConversionTechnology):
         optimization_setup.sets.add_set(
             name="set_retrofitting_base_technologies",
             data=retrofit_base_technology,
-            doc="set of base technologies for a specific retrofitting technology. Indexed by set_retrofitting_technologies",
+            doc="set of base technologies for a specific retrofitting technology. "
+                "Indexed by set_retrofitting_technologies",
             index_set="set_retrofitting_technologies",
         )
 
@@ -87,7 +91,8 @@ class RetrofittingTechnology(ConversionTechnology):
                 "set_time_steps_operation",
             ],
             capacity_types=False,
-            doc="Parameter which specifies the flow coupling between the retrofitting technologies and its base technology",
+            doc="Parameter which specifies the flow coupling between the retrofitting "
+                "technologies and its base technology",
             calling_class=cls,
         )
 
@@ -120,9 +125,11 @@ class RetrofittingTechnologyRules(GenericRule):
         r"""couples reference flow variables based on modeling technique.
 
         .. math::
-            \mathrm{if\ reference\ carrier\ in\ input\ carriers}\ \\underline{G}_{i,n,t}^\mathrm{r} = G^\mathrm{d,approximation}_{i,n,t}
+            \mathrm{if\ reference\ carrier\ in\ input\ carriers}\
+            \\underline{G}_{i,n,t}^\mathrm{r} = G^\mathrm{d,approximation}_{i,n,t}
         .. math::
-            \mathrm{if\ reference\ carrier\ in\ output\ carriers}\ \\overline{G}_{i,n,t}^\mathrm{r} = G^\mathrm{d,approximation}_{i,n,t}
+            \mathrm{if\ reference\ carrier\ in\ output\ carriers}\
+            \\overline{G}_{i,n,t}^\mathrm{r} = G^\mathrm{d,approximation}_{i,n,t}
 
         """
         flow_conversion_input = self.variables["flow_conversion_input"]

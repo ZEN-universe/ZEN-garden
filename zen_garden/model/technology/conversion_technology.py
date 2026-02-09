@@ -1,7 +1,7 @@
 """
-Class defining the parameters, variables, and constraints of the conversion technologies.
-The class takes the abstract optimization model as an input and adds parameters, variables, and
-constraints of the conversion technologies.
+Class defining the parameters, variables, and constraints of the conversion
+technologies. The class takes the abstract optimization model as an input and adds
+parameters, variables, and constraints of the conversion technologies.
 """
 
 import itertools
@@ -54,7 +54,8 @@ class ConversionTechnology(Technology):
         self.energy_system.set_technology_of_carrier(
             self.name, self.input_carrier + self.output_carrier
         )
-        # check if reference carrier in input and output carriers and set technology to correspondent carrier
+        # check if reference carrier in input and output carriers and
+        #   set technology to correspondent carrier
         self.optimization_setup.input_data_checks.check_carrier_configuration(
             input_carrier=self.input_carrier,
             output_carrier=self.output_carrier,
@@ -63,7 +64,10 @@ class ConversionTechnology(Technology):
         )
 
     def store_input_data(self):
-        """retrieves and stores input data for element as attributes. Each Child class overwrites method to store different attributes."""
+        """retrieves and stores input data for element as attributes.
+
+        Each Child class overwrites method to store different attributes.
+        """
         # get attributes from class <Technology>
         super().store_input_data()
         # get conversion efficiency and capex
@@ -85,7 +89,6 @@ class ConversionTechnology(Technology):
 
     def get_conversion_factor(self):
         """retrieves and stores conversion_factor."""
-        # df_input_linear, has_unit_linear = self.data_input.read_pwa_files("conversion_factor")
         dependent_carrier = list(
             set(self.input_carrier + self.output_carrier).difference(
                 self.reference_carrier
@@ -162,7 +165,7 @@ class ConversionTechnology(Technology):
 
         :param optimization_setup: The OptimizationSetup the element is part of
         :param index_names: list of index names
-        :return dict_of_attributes: returns dict of attribute values"""
+        :return: dict_of_attributes: returns dict of attribute values"""
         class_elements = optimization_setup.get_all_elements(cls)
         dict_of_attributes = {}
         dict_of_units = {}
@@ -188,7 +191,8 @@ class ConversionTechnology(Technology):
         )
         if not index_names:
             warnings.warn(
-                "Initializing the parameter capex without the specifying the index names will be deprecated!",
+                "Initializing the parameter capex without the specifying the "
+                "index names will be deprecated!",
                 stacklevel=2,
             )
             return dict_of_attributes, dict_of_units
@@ -201,7 +205,8 @@ class ConversionTechnology(Technology):
             )
             return dict_of_attributes, index_names, dict_of_units
 
-    ### --- classmethods to construct sets, parameters, variables, and constraints, that correspond to ConversionTechnology --- ###
+    ### --- classmethods to construct sets, parameters, variables, and constraints,
+    #   that correspond to ConversionTechnology --- ###
     @classmethod
     def construct_sets(cls, optimization_setup):
         """constructs the pe.Sets of the class <ConversionTechnology>.
@@ -225,21 +230,24 @@ class ConversionTechnology(Technology):
         optimization_setup.sets.add_set(
             name="set_input_carriers",
             data=input_carriers,
-            doc="set of carriers that are an input to a specific conversion technology. Indexed by set_conversion_technologies",
+            doc="set of carriers that are an input to a specific conversion "
+                "technology. Indexed by set_conversion_technologies",
             index_set="set_conversion_technologies",
         )
         # output carriers of technology
         optimization_setup.sets.add_set(
             name="set_output_carriers",
             data=output_carriers,
-            doc="set of carriers that are an output to a specific conversion technology. Indexed by set_conversion_technologies",
+            doc="set of carriers that are an output to a specific conversion "
+                "technology. Indexed by set_conversion_technologies",
             index_set="set_conversion_technologies",
         )
         # dependent carriers of technology
         optimization_setup.sets.add_set(
             name="set_dependent_carriers",
             data=dependent_carriers,
-            doc="set of carriers that are an output to a specific conversion technology. Indexed by set_conversion_technologies",
+            doc="set of carriers that are an output to a specific conversion "
+                "technology. Indexed by set_conversion_technologies",
             index_set="set_conversion_technologies",
         )
 
@@ -262,7 +270,7 @@ class ConversionTechnology(Technology):
                 "set_nodes",
                 "set_time_steps_yearly",
             ],
-            doc="Parameter which specifies the slope of the capex if approximated linearly",
+            doc="Parameter specifying the slope of the capex if approximated linearly",
             calling_class=cls,
         )
         # slope of linearly modeled conversion efficiencies
@@ -285,7 +293,8 @@ class ConversionTechnology(Technology):
                 "set_nodes",
                 "set_time_steps_yearly",
             ],
-            doc="Minimum full load hours as a fraction of the total hours per planning period",
+            doc="Minimum full load hours as a fraction of the total hours "
+                "per planning period",
             calling_class=cls,
         )
 
@@ -308,7 +317,7 @@ class ConversionTechnology(Technology):
 
             :param index_values: list of index values
             :param index_names: list of index names
-            :return bounds: bounds of carrier_flow"""
+            :return: bounds: bounds of carrier_flow"""
             params = optimization_setup.parameters
             sets = optimization_setup.sets
             energy_system = optimization_setup.energy_system
@@ -352,7 +361,10 @@ class ConversionTechnology(Technology):
                                 optimization_setup.solver.rounding_decimal_points_tsa
                             )
                             raise ValueError(
-                                f"Maximum conversion factor of {tech} for carrier {carrier} is 0.\nOne reason might be that the conversion factor is too small (1e-{_rounding_tsa}), so that it is rounded to 0 after the time series aggregation."
+                                f"Maximum conversion factor of {tech} for carrier "
+                                f"{carrier} is 0.\n Potentially, the conversion factor "
+                                f"is too small (1e-{_rounding_tsa}), so that it is "
+                                f"rounded to 0 after the time series aggregation."
                             )
 
                     lower.loc[tech, carrier, ...] = (
@@ -487,7 +499,7 @@ class ConversionTechnology(Technology):
                 name="constraint_capex_pwa",
             )
         if set_linear_capex[0]:
-            # if set_linear_capex contains technologies: (note we give the coordinates nice names)
+            # if set_linear_capex contains technologies:
             rules.constraint_linear_capex()
         # Coupling constraints
         rules.constraint_capacity_capex_coupling()
@@ -499,12 +511,13 @@ class ConversionTechnology(Technology):
 
     @classmethod
     def calculate_capex_pwa_breakpoints_values(cls, optimization_setup, set_pwa):
-        """calculates the breakpoints and function values for piecewise affine constraint.
+        """calculates breakpoints and function values for piecewise affine constraint.
 
         :param optimization_setup: The OptimizationSetup the element is part of
-        :param set_pwa: set of variable indices in capex approximation, for which pwa is performed
-        :return pwa_breakpoints: dict of pwa breakpoint values
-        :return pwa_values: dict of pwa function values"""
+        :param set_pwa: set of variable indices in capex approximation,
+            for which pwa is performed
+        :return: pwa_breakpoints: dict of pwa breakpoint values
+        :return: pwa_values: dict of pwa function values"""
         pwa_breakpoints = {}
         pwa_values = {}
 
@@ -544,9 +557,12 @@ class ConversionTechnologyRules(GenericRule):
         .. math::
             G_{i,n,t}^\\mathrm{r} \\leq m^{\\mathrm{max}}_{i,n,t}S_{i,n,y}
 
-        :math:`m_{i,n,t}^{\\mathrm{max}}`: maximum load factor of the technology :math:`i` at node :math:`n` in time step :math:`t` \n
-        :math:`S_{i,n,y}`: installed capacity of the technology :math:`i` at node :math:`n` in year :math:`y` \n
-        :math:`G_{i,n,t}^\\mathrm{r}`: reference carrier flow of the technology :math:`i` at node :math:`n` in time step :math:`t`
+        :math:`m_{i,n,t}^{\\mathrm{max}}`: maximum load factor of the
+        technology :math:`i` at node :math:`n` in time step :math:`t` \n
+        :math:`S_{i,n,y}`: installed capacity of the technology :math:`i` at
+        node :math:`n` in year :math:`y` \n
+        :math:`G_{i,n,t}^\\mathrm{r}`: reference carrier flow of the
+        technology :math:`i` at node :math:`n` in time step :math:`t`
 
 
         """
@@ -557,9 +573,7 @@ class ConversionTechnologyRules(GenericRule):
         times = self.parameters.max_load.coords["set_time_steps_operation"]
         time_step_year = xr.DataArray(
             [
-                self.optimization_setup.energy_system.time_steps.convert_time_step_operation2year(
-                    t
-                )
+                self.energy_system.time_steps.convert_time_step_operation2year(t)
                 for t in times.data
             ],
             coords=[times],
@@ -627,7 +641,6 @@ class ConversionTechnologyRules(GenericRule):
         if len(techs) == 0:
             return
         nodes = self.sets["set_nodes"]
-        self.sets["set_time_steps_yearly"]
         # define mask
         min_full_load_hours_fraction = self.parameters.min_full_load_hours_fraction
         mask = xr.DataArray(
@@ -674,11 +687,16 @@ class ConversionTechnologyRules(GenericRule):
             O_{h,p,t}^\\mathrm{t} = \\beta_{h,p,t} G_{i,n,t}^\\mathrm{r} \n
             \\theta_{h,p,t} = \\epsilon_h G_{i,n,t}^\\mathrm{r}
 
-        :math:`O_{h,p,t}^\\mathrm{t}`: variable opex of the technology :math:`h` at node :math:`p` in time step :math:`t` \n
-        :math:`\\beta_{h,p,t}`: specific variable opex of the technology :math:`h` at node :math:`p` in time step :math:`t` \n
-        :math:`G_{i,n,t}^\\mathrm{r}`: reference carrier flow of the technology :math:`i` at node :math:`n` in time step :math:`t` \n
-        :math:`\\theta^{\\mathrm{tech}}_{h,p,t}`: carbon emissions of operating the technology :math:`h` at node :math:`p` in time step :math:`t` \n
-        :math:`\\epsilon_h`: carbon intensity of the reference carrier of technology :math:`h`
+        :math:`O_{h,p,t}^\\mathrm{t}`: variable opex of the technology :math:`h` at
+        node :math:`p` in time step :math:`t` \n
+        :math:`\\beta_{h,p,t}`: specific variable opex of the technology :math:`h` at
+        node :math:`p` in time step :math:`t` \n
+        :math:`G_{i,n,t}^\\mathrm{r}`: reference carrier flow of the
+        technology :math:`i` at node :math:`n` in time step :math:`t` \n
+        :math:`\\theta^{\\mathrm{tech}}_{h,p,t}`: carbon emissions of operating the
+        technology :math:`h` at node :math:`p` in time step :math:`t` \n
+        :math:`\\epsilon_h`: carbon intensity of the reference carrier of
+        technology :math:`h`
 
 
         """
@@ -739,9 +757,12 @@ class ConversionTechnologyRules(GenericRule):
         .. math::
             A_{h,p,y}^{approximation} = \\alpha_{h,n,y} \\Delta S_{h,p,y}^{approx}
 
-        :math:`A_{h,p,y}^{approx}`: approximated capex of the technology :math:`h` at node :math:`p` in year :math:`y` \n
-        :math:`\\alpha_{h,n,y}`: specific capex of the technology :math:`h` at node :math:`n` in year :math:`y` \n
-        :math:`\\Delta S_{h,p,y}^{approx}`: approximated capacity of the technology :math:`h` at node :math:`p` in year :math:`y`
+        :math:`A_{h,p,y}^{approx}`: approximated capex of the technology :math:`h`
+        at node :math:`p` in year :math:`y` \n
+        :math:`\\alpha_{h,n,y}`: specific capex of the technology :math:`h` at
+        node :math:`n` in year :math:`y` \n
+        :math:`\\Delta S_{h,p,y}^{approx}`: approximated capacity of the
+        technology :math:`h` at node :math:`p` in year :math:`y`
 
         """
         capex_specific_conversion = self.parameters.capex_specific_conversion
@@ -784,9 +805,10 @@ class ConversionTechnologyRules(GenericRule):
         .. math::
             \\Delta S_{h,p,y} = \\Delta S_{h,p,y}^\\mathrm{approx}
 
-        :math:`\\Delta S_{h,p,y}`: capacity addition of the technology :math:`h` at node :math:`p` in year :math:`y` \n
-        :math:`\\Delta S_{h,p,y}^\\mathrm{approx}`: approximated capacity addition of the technology :math:`h` at node :math:`p` in year :math:`y`
-
+        :math:`\\Delta S_{h,p,y}`: capacity addition of the technology :math:`h` at
+        node :math:`p` in year :math:`y` \n
+        :math:`\\Delta S_{h,p,y}^\\mathrm{approx}`: approximated capacity addition of
+        the technology :math:`h` at node :math:`p` in year :math:`y`
 
         """
 
@@ -831,9 +853,13 @@ class ConversionTechnologyRules(GenericRule):
         .. math::
             G^\\mathrm{d}_{i,n,t} = \\eta_{i,c,n,y}G^\\mathrm{r}_{i,n,t}
 
-        :math:`G^\\mathrm{d}_{i,n,t}`: dependent carrier flow of the technology :math:`i` at node :math:`n` in time step :math:`t` \n
-        :math:`\\eta_{i,c,n,y}`: conversion factor of the technology :math:`i` from reference carrier to dependent carrier :math:`c` at node :math:`n` in year :math:`y` \n
-        :math:`G^\\mathrm{r}_{i,n,t}`: reference carrier flow of the technology :math:`i` at node :math:`n` in time step :math:`t`
+        :math:`G^\\mathrm{d}_{i,n,t}`: dependent carrier flow of the
+        technology :math:`i` at node :math:`n` in time step :math:`t` \n
+        :math:`\\eta_{i,c,n,y}`: conversion factor of the technology :math:`i` from
+        reference carrier to dependent carrier :math:`c` at node :math:`n`
+        in year :math:`y` \n
+        :math:`G^\\mathrm{r}_{i,n,t}`: reference carrier flow of the
+        technology :math:`i` at node :math:`n` in time step :math:`t`
 
         """
         # dependent carriers

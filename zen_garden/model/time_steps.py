@@ -9,9 +9,11 @@ import pandas as pd
 
 
 class TimeStepsDicts(object):
-    """
-    This class implements some simple helper functions that can deal with the time steps of the optimization setup.
-    It is very similar to EnergySystem functions and is meant to avoid the import of packages that can cause conflicts.
+    """Helper class to deal with time steps of the optimization setup.
+
+    This class implements some simple helper functions that can deal with the time
+    steps of the optimization setup. It is very similar to EnergySystem functions and
+    is meant to avoid the import of packages that can cause conflicts.
     """
 
     def __init__(self, dict_all_sequence_time_steps=None):
@@ -77,7 +79,7 @@ class TimeStepsDicts(object):
         Get sequence ot time steps of element.
 
         :param time_step_type: type of time step (operation, storage or yearly)
-        :return sequence_time_steps: list of time steps corresponding to base time step
+        :return: sequence_time_steps: list of time steps corresponding to base time step
         """
         if time_step_type == "operation":
             return self.sequence_time_steps_operation
@@ -92,7 +94,7 @@ class TimeStepsDicts(object):
         """
         Returns all dicts of sequence of time steps.
 
-        :return dict_all_sequence_time_steps: dict of all dict_sequence_time_steps
+        :return: dict_all_sequence_time_steps: dict of all dict_sequence_time_steps
         """
 
         dict_all_sequence_time_steps = {
@@ -103,13 +105,15 @@ class TimeStepsDicts(object):
         return dict_all_sequence_time_steps
 
     def encode_time_step(self, base_time_steps: int, time_step_type: str = None):
-        """
-        Encodes baseTimeStep, i.e., retrieves the time step of an element corresponding to baseTimeStep of model.
-        baseTimeStep of model --> timeStep of element.
+        """Encodes baseTimeStep to timeStep of element.
 
-        :param base_time_steps: base time step of model for which the corresponding time index is extracted
+        Encodes baseTimeStep, i.e., retrieves the time step of an element corresponding
+        to baseTimeStep of model. baseTimeStep of model --> timeStep of element.
+
+        :param base_time_steps: base time step of model for which the corresponding
+            time index is extracted
         :param time_step_type: invest or operation. Only relevant for technologies
-        :return outputTimeStep: time step of element
+        :return: outputTimeStep: time step of element
         """
         sequence_time_steps = self.get_sequence_time_steps(time_step_type)
         # get time step duration
@@ -120,14 +124,15 @@ class TimeStepsDicts(object):
         return element_time_step
 
     def decode_time_step(self, element_time_step: int, time_step_type: str = None):
-        """
-        Decodes timeStep, i.e., retrieves the baseTimeStep corresponding to the variableTimeStep of a element.
-        timeStep of element --> baseTimeStep of model.
+        """Decodes timeStep to baseTimeStep of model.
 
-        :param element: element of model, i.e., carrier or technology
+        Decodes timeStep, i.e., retrieves the baseTimeStep corresponding to the
+        variableTimeStep of a element. timeStep of element --> baseTimeStep of model.
+
         :param element_time_step: time step of element
-        :param time_step_type: invest or operation. Only relevant for technologies, None for carrier
-        :return baseTimeStep: baseTimeStep of model
+        :param time_step_type: invest or operation. Only relevant for technologies,
+            None for carrier
+        :return: baseTimeStep of model
         """
         sequence_time_steps = self.get_sequence_time_steps(time_step_type)
         # find where element_time_step in sequence of element time steps
@@ -139,15 +144,17 @@ class TimeStepsDicts(object):
 
         :param input_time_steps: input time steps
         :param base_time_steps: manual list of base time steps
-        :return time_step_duration_dict: dict with duration of each time step"""
+        :return: time_step_duration_dict: dict with duration of each time step"""
         duration_input_time_steps = len(base_time_steps) / len(input_time_steps)
         time_step_duration_dict = {
             time_step: int(duration_input_time_steps) for time_step in input_time_steps
         }
         if not duration_input_time_steps.is_integer():
             logging.warning(
-                f"The duration of each time step {duration_input_time_steps} of input time steps {input_time_steps} does not evaluate to an integer. \n"
-                f"The duration of the last time step is set to compensate for the difference"
+                f"The duration of each time step {duration_input_time_steps} of input "
+                f"time steps {input_time_steps} does not evaluate to an integer. \n"
+                f"The duration of the last time step is set to compensate for "
+                f"the difference"
             )
             duration_last_time_step = len(base_time_steps) - sum(
                 time_step_duration_dict[key]
@@ -158,7 +165,7 @@ class TimeStepsDicts(object):
         return time_step_duration_dict
 
     def set_time_steps_operation2year_both_dir(self):
-        """calculates the conversion of operational time steps to invest/yearly time steps."""
+        """converts operational time steps to investment/yearly time steps."""
         sequence_operation = self.sequence_time_steps_operation
         sequence_yearly = self.sequence_time_steps_yearly
         time_steps_combi_operation = np.vstack(
@@ -184,7 +191,7 @@ class TimeStepsDicts(object):
         self.time_steps_year2operation = time_steps_year2operation
 
     def set_time_steps_storage2year_both_dir(self):
-        """calculates the conversion of storage time steps to invest/yearly time steps."""
+        """converts storage time steps to investment/yearly time steps."""
         sequence_storage = self.sequence_time_steps_storage
         sequence_yearly = self.sequence_time_steps_yearly
         time_steps_combi_storage = np.vstack(
@@ -209,7 +216,10 @@ class TimeStepsDicts(object):
         self.time_steps_year2storage = time_steps_year2storage
 
     def set_time_steps_storage_startend(self, system):
-        """sets the dict of matching the last time step of the year in the storage level domain to the first.
+        """matches last time step of the year to the first for storage level time steps.
+
+        sets the dict of matching the last time step of the year in the
+        storage level domain to the first.
 
         :param system: dictionary defining the system
         """
@@ -238,7 +248,7 @@ class TimeStepsDicts(object):
             }
 
     def get_time_steps_year2operation(self, year=None):
-        """gets the dict of converting the invest time steps to the operation time steps of technologies.
+        """gets conversion dict from invest time steps to operation time steps of techs.
 
         :param year: year of interest
         :return: time_steps_year2operation of the specified element (at specified year)
@@ -249,14 +259,14 @@ class TimeStepsDicts(object):
             return self.time_steps_year2operation[year]
 
     def get_time_steps_storage2year(self):
-        """gets the dict of converting the storage time steps to the invest time steps of technologies.
+        """gets conversion dict from storage time steps to invest time steps of techs.
 
         :return: time_steps_storage2year of the specified element
         """
         return self.time_steps_storage2year
 
     def get_time_steps_year2storage(self, year=None):
-        """gets the dict of converting the invest time steps to the storage time steps of technologies.
+        """gets conversion dict from invest time steps to storage time steps of techs.
 
         :param year: year of interest
         :return: time_steps_year2storage of the specified element (at specified year)
@@ -267,7 +277,7 @@ class TimeStepsDicts(object):
             return self.time_steps_year2storage[year]
 
     def get_time_steps_storage_startend(self, time_step):
-        """gets the dict of converting the operational time steps to the invest time steps of technologies.
+        """gets conversion dict from operation time steps to invest time steps of techs.
 
         :param time_step: #TODO describe parameter/return
         :return: #TODO describe parameter/return
@@ -281,7 +291,7 @@ class TimeStepsDicts(object):
         """gets the storage time step before in the sequence.
 
         :param time_step: current time step
-        :return previous_time_step: previous time step
+        :return: previous_time_step: previous time step
         """
         sequence = self.sequence_time_steps_storage
         previous_time_step = sequence[np.where(sequence == time_step)[0] - 1][0]
@@ -291,7 +301,7 @@ class TimeStepsDicts(object):
         """decodes list of years to base time steps.
 
         :param element_time_steps: time steps of year
-        :return full_base_time_steps: full list of time steps"""
+        :return: full_base_time_steps: full list of time steps"""
         list_base_time_steps = []
         for year in element_time_steps:
             list_base_time_steps.append(self.decode_time_step(year, "yearly"))
@@ -299,7 +309,10 @@ class TimeStepsDicts(object):
         return full_base_time_steps
 
     def convert_time_step_energy2power(self, time_step_energy):
-        """converts the time step of the energy quantities of a storage technology to the time step of the power quantities.
+        """converts energy time steps to power time steps of storage technologies.
+
+        converts the time step of the energy quantities of a storage technology
+        to the time step of the power quantities.
 
         :param time_step_energy: time step of energy quantities
         :return: time step of power quantities

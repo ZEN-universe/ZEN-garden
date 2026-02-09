@@ -1,7 +1,7 @@
 """
-Class defining the parameters, variables and constraints that hold for all transport technologies.
-The class takes the abstract optimization model as an input, and returns the parameters, variables and
-constraints that hold for the transport technologies.
+Class defining the parameters, variables and constraints that hold for all transport
+technologies. The class takes the abstract optimization model as an input, and returns
+the parameters, variables and constraints that hold for the transport technologies.
 """
 
 import numpy as np
@@ -35,7 +35,9 @@ class TransportTechnology(Technology):
         super().store_carriers()
 
     def store_input_data(self):
-        """retrieves and stores input data for element as attributes. Each Child class overwrites method to store different attributes."""
+        """retrieves and stores input data for element as attributes.
+
+        Each Child class overwrites method to store different attributes."""
         # get attributes from class <Technology>
         super().store_input_data()
         # set attributes for parameters of child class <TransportTechnology>
@@ -88,7 +90,8 @@ class TransportTechnology(Technology):
             )
         else:
             raise AttributeError(
-                f"The transport technology {self.name} has neither transport_loss_factor_linear nor transport_loss_factor_exponential attribute."
+                f"The transport technology {self.name} has neither of the attributes: "
+                f"transport_loss_factor_linear nor transport_loss_factor_exponential."
             )
 
     def get_capex_transport(self):
@@ -108,7 +111,8 @@ class TransportTechnology(Technology):
                 time_steps="set_time_steps_yearly",
                 unit_category={"money": 1, "distance": -1},
             )
-        else:  # Here only capex_specific is used, and capex_per_distance_transport is set to Zero.
+        else:
+            # Only capex_specific is used, capex_per_distance_transport is set to Zero.
             if "capex_per_distance_transport" in self.data_input.attribute_dict:
                 self.capex_per_distance_transport = self.data_input.extract_input_data(
                     "capex_per_distance_transport",
@@ -133,7 +137,9 @@ class TransportTechnology(Technology):
                 )
             else:
                 raise AttributeError(
-                    f"The transport technology {self.name} has neither capex_per_distance_transport nor capex_specific_transport attribute."
+                    f"The transport technology {self.name} has neither "
+                    f"capex_per_distance_transport nor capex_specific_transport "
+                    f"attribute."
                 )
             self.capex_per_distance_transport = self.capex_specific_transport * 0.0
         if "opex_specific_fixed_per_distance" in self.data_input.attribute_dict:
@@ -159,11 +165,15 @@ class TransportTechnology(Technology):
             )
         else:
             raise AttributeError(
-                f"The transport technology {self.name} has neither opex_specific_fixed_per_distance nor opex_specific_fixed attribute."
+                f"The transport technology {self.name} has neither "
+                f"opex_specific_fixed_per_distance nor opex_specific_fixed attribute."
             )
 
     def convert_to_fraction_of_capex(self):
-        """this method converts the total capex to fraction of capex, depending on how many hours per year are calculated."""
+        """Converts total capex to fraction of capex.
+
+        this method converts the total capex to fraction of capex, depending on how
+        many hours per year are calculated."""
         fraction_year = self.calculate_fraction_of_year()
         self.opex_specific_fixed = self.opex_specific_fixed * fraction_year
         self.capex_specific_transport = self.capex_specific_transport * fraction_year
@@ -208,7 +218,8 @@ class TransportTechnology(Technology):
         """
         return self.dict_reversed_edges[edge]
 
-    ### --- classmethods to construct sets, parameters, variables, and constraints, that correspond to TransportTechnology --- ###
+    ### --- classmethods to construct sets, parameters, variables, and constraints,
+    # that correspond to TransportTechnology --- ###
     @classmethod
     def construct_sets(cls, optimization_setup):
         """constructs the pe.Sets of the class <TransportTechnology>.
@@ -277,14 +288,11 @@ class TransportTechnology(Technology):
 
             # get the arrays
             tech_arr, edge_arr, time_arr = sets.tuple_to_arr(index_values, index_list)
-            # convert operationTimeStep to time_step_year: operationTimeStep -> base_time_step -> time_step_year
+            # convert operationTimeStep to time_step_year:
+            #   operationTimeStep -> base_time_step -> time_step_year
+            ts = optimization_setup.energy_system.time_steps
             time_step_year = xr.DataArray(
-                [
-                    optimization_setup.energy_system.time_steps.convert_time_step_operation2year(
-                        time
-                    )
-                    for time in time_arr.data
-                ]
+                [ts.convert_time_step_operation2year(time) for time in time_arr.data]
             )
 
             lower = (
@@ -319,7 +327,8 @@ class TransportTechnology(Technology):
             name="flow_transport_loss",
             index_sets=(index_values, index_names),
             bounds=(0, np.inf),
-            doc="carrier flow lost due to resistances etc. by transporting carrier through transport technology on edge i and time t",
+            doc="carrier flow lost due to resistances etc. by transporting carrier "
+                "through transport technology on edge i and time t",
             unit_category={"energy_quantity": 1, "time": -1},
         )
 
@@ -358,15 +367,18 @@ class TransportTechnologyRules(GenericRule):
         super().__init__(optimization_setup)
 
     def constraint_capacity_factor_transport(self):
-        r"""Load is limited by the installed capacity and the maximum load factor.
+        """Load is limited by the installed capacity and the maximum load factor.
 
         .. math::
-            \ F_{j,e,t,y}^\mathrm{r} \\leq m^{\mathrm{max}}_{j,e,t,y}S_{j,e,y}
+            F_{j,e,t,y}^\\mathrm{r} \\leq m^{\\mathrm{max}}_{j,e,t,y}S_{j,e,y}
 
 
-        :math:`F_{j,e,t,y}^\mathrm{r}`: Reference flow of carrier through transport technology :math:`j` on edge :math:`i` and time :math:`t` in year :math:`y` \n
-        :math:`m^{\mathrm{max}}_{j,e,t,y}`: Maximum load factor of transport technology :math:`j` on edge :math:`i` and time :math:`t` in year :math:`y` \n
-        :math:`S_{j,e,y}`: Capacity of transport technology :math:`j` on edge :math:`i` in year :math:`y`
+        :math:`F_{j,e,t,y}^\\mathrm{r}`: Reference flow of carrier through transport
+        technology :math:`j` on edge :math:`i` and time :math:`t` in year :math:`y` \n
+        :math:`m^{\\mathrm{max}}_{j,e,t,y}`: Maximum load factor of transport
+        technology :math:`j` on edge :math:`i` and time :math:`t` in year :math:`y` \n
+        :math:`S_{j,e,y}`: Capacity of transport technology :math:`j` on
+        edge :math:`i` in year :math:`y`
 
 
         """
@@ -375,13 +387,9 @@ class TransportTechnologyRules(GenericRule):
             return
         edges = self.sets["set_edges"]
         times = self.variables["flow_transport"].coords["set_time_steps_operation"]
+        ts = self.optimization_setup.energy_system.time_steps
         time_step_year = xr.DataArray(
-            [
-                self.optimization_setup.energy_system.time_steps.convert_time_step_operation2year(
-                    t
-                )
-                for t in times.data
-            ],
+            [ts.convert_time_step_operation2year(t) for t in times.data],
             coords=[times],
         )
         term_capacity = (
@@ -403,14 +411,17 @@ class TransportTechnologyRules(GenericRule):
         )
 
     def constraint_opex_emissions_technology_transport(self):
-        r"""calculate opex of each technology.
+        """calculate opex of each technology.
 
         .. math::
-            O_{j,t,y}^\mathrm{t} = \\beta_{j,y} F_{j,e,t,y}
+            O_{j,t,y}^\\mathrm{t} = \\beta_{j,y} F_{j,e,t,y}
 
-        :math:`O_{h,p,t}^\mathrm{t}`: Variable operating expenditures of transport technology :math:`j` on edge :math:`e` at time :math:`t` in year :math:`y` \n
-        :math:`\\beta_{j,y}`: Specific variable operating expenditures of transport technology :math:`j` in year :math:`y` \n
-        :math:`F_{j,e,t,y}`: Reference flow of carrier through transport technology :math:`j` on edge :math:`e` at time :math:`t` in year :math:`y`
+        :math:`O_{h,p,t}^\\mathrm{t}`: Variable operating expenditures of transport
+        technology :math:`j` on edge :math:`e` at time :math:`t` in year :math:`y` \n
+        :math:`\\beta_{j,y}`: Specific variable operating expenditures of transport
+        technology :math:`j` in year :math:`y` \n
+        :math:`F_{j,e,t,y}`: Reference flow of carrier through transport
+        technology :math:`j` on edge :math:`e` at time :math:`t` in year :math:`y`
 
         """
         techs = self.sets["set_transport_technologies"]
@@ -463,17 +474,20 @@ class TransportTechnologyRules(GenericRule):
         )
 
     def constraint_transport_technology_losses_flow(self):
-        r"""compute the flow losses for a carrier through a transport technology.
+        """compute the flow losses for a carrier through a transport technology.
 
         .. math::
-            \mathrm{if\ transport\ distance\ set\ to\ inf:}\ F^\mathrm{l}_{j,e,t} = 0
+            \\mathrm{if transport distance set to inf:} F^\\mathrm{l}_{j,e,t} = 0
         .. math::
-            \mathrm{else:}\ F^\mathrm{l}_{j,e,t} = h_{j,e} \\rho_{j} F_{j,e,t}
+            \\mathrm{else:} F^\\mathrm{l}_{j,e,t} = h_{j,e} \\rho_{j} F_{j,e,t}
 
-        :math:`F^\mathrm{l}_{j,e,t}`: Flow losses of carrier through transport technology :math:`j` on edge :math:`e` at time :math:`t` \n
-        :math:`h_{j,e}`: Transport distance for transport technology :math:`j` on edge :math:`e` \n
+        :math:`F^\\mathrm{l}_{j,e,t}`: Flow losses of carrier through transport
+        technology :math:`j` on edge :math:`e` at time :math:`t` \n
+        :math:`h_{j,e}`: Transport distance for transport technology :math:`j` on
+        edge :math:`e` \n
         :math:`\\rho_{j}`: Loss factor for transport technology :math:`j` \n
-        :math:`F_{j,e,t}`: Reference flow of carrier through transport technology :math:`j` on edge :math:`e` at time :math:`t`
+        :math:`F_{j,e,t}`: Reference flow of carrier through transport
+        technology :math:`j` on edge :math:`e` at time :math:`t`
 
         """
 
@@ -497,18 +511,25 @@ class TransportTechnologyRules(GenericRule):
         )
 
     def constraint_transport_technology_capex(self):
-        r"""definition of the capital expenditures for the transport technology.
+        """definition of the capital expenditures for the transport technology.
 
         .. math::
-            \mathrm{if\ transport\ distance\ set\ to\ inf:}\ \Delta S_{j,e,y} = 0
+            \\mathrm{if transport distance set to inf:} \\Delta S_{j,e,y} = 0
         .. math::
-            \mathrm{else:}\ CAPEX_{j,e,y} = \\Delta S_{j,e,y} \\alpha_{j,y}^{\mathrm{const}} + \\Delta S_{j,e,y} h_{j,e} \\alpha^\mathrm{dist}_{j,e,y}
+            \\mathrm{else:} CAPEX_{j,e,y} = \\Delta S_{j,e,y}
+            \\alpha_{j,y}^{\\mathrm{const}} +
+            \\Delta S_{j,e,y} h_{j,e} \\alpha^\\mathrm{dist}_{j,e,y}
 
-        :math:`\Delta S_{j,e,y}`: Capacity addition of transport technology :math:`j` on edge :math:`e` in year :math:`y` \n
-        :math:`CAPEX_{j,e,y}`: Capital expenditures of transport technology :math:`j` on edge :math:`e` in year :math:`y` \n
-        :math:`\\alpha_{j,y}^{\mathrm{const}}`: Specific constant capital expenditures of transport technology :math:`j` in year :math:`y` \n
-        :math:`\\alpha^\mathrm{dist}_{j,e,y}`: Specific capital expenditures per distance of transport technology :math:`j` on edge :math:`e` in year :math:`y` \n
-        :math:`h_{j,e}`: Transport distance for transport technology :math:`j` on edge :math:`e`
+        :math:`\\Delta S_{j,e,y}`: Capacity addition of transport technology :math:`j`
+        on edge :math:`e` in year :math:`y` \n
+        :math:`CAPEX_{j,e,y}`: Capital expenditures of transport technology :math:`j`
+        on edge :math:`e` in year :math:`y` \n
+        :math:`\\alpha_{j,y}^{\\mathrm{const}}`: Specific constant capital expenditures
+        of transport technology :math:`j` in year :math:`y`
+        :math:`\\alpha^\\mathrm{dist}_{j,e,y}`: Specific capital expenditures per
+        distance of transport technology :math:`j` on edge :math:`e` in year :math:`y`
+        :math:`h_{j,e}`: Transport distance for transport technology :math:`j` on
+        edge :math:`e`
 
         """
 
@@ -556,7 +577,7 @@ class TransportTechnologyRules(GenericRule):
             ]
             * self.parameters.capex_specific_transport.loc[coords[0], coords[1]]
         )
-        # we have an additional check here to avoid binary variables when their coefficient is 0
+        # Additional check to avoid binary variables when their coefficient is 0
         if np.any(
             self.parameters.distance.loc[coords[0], coords[1]]
             * self.parameters.capex_per_distance_transport.loc[coords[0], coords[1]]

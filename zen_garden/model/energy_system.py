@@ -1,7 +1,8 @@
 """
 Class defining a standard EnergySystem.
-Contains methods to construct the energy system from the given input data and that defines the variables, parameters and constraints which apply to the Energy System. The class takes the abstract
-optimization model as an input.
+Contains methods to construct the energy system from the given input data and that
+defines the variables, parameters and constraints which apply to the Energy System.
+The class takes the abstract optimization model as an input.
 """
 
 import copy
@@ -74,7 +75,7 @@ class EnergySystem:
         self.units = {}
 
     def store_input_data(self):
-        """retrieves and stores input data for element as attributes. Each Child class overwrites method to store different attributes."""
+        """retrieves and stores input data for EnergySystem as attributes."""
         # store scenario dict
         self.data_input.scenario_dict = self.optimization_setup.scenario_dict
         # in class <EnergySystem>, all sets are constructed
@@ -112,7 +113,8 @@ class EnergySystem:
             ]
         )
         self.time_steps.sequence_time_steps_yearly = self.sequence_time_steps_yearly
-        # list containing simulated years (needed for convert_real_to_generic_time_indices() in extract_input_data.py)
+        # list containing simulated years
+        #   (needed for convert_real_to_generic_time_indices() in extract_input_data.py)
         self.set_time_steps_years = list(
             range(
                 self.system.reference_year,
@@ -121,7 +123,9 @@ class EnergySystem:
                 self.system.interval_between_years,
             )
         )
-        # parameters whose time-dependant data should not be interpolated (for years without data) in the extract_input_data.py convert_real_to_generic_time_indices() function
+        """ parameters whose time-dependant data should not be interpolated
+            (for years without data) in the extract_input_data.py
+            convert_real_to_generic_time_indices() function"""
         self.parameters_interpolation_off = self.data_input.read_input_json(
             "parameters_interpolation_off"
         )
@@ -192,7 +196,7 @@ class EnergySystem:
     def calculate_edges_from_nodes(self):
         """calculates set_nodes_on_edges from set_nodes.
 
-        :return set_nodes_on_edges: dict with edges and corresponding nodes"""
+        :return: set_nodes_on_edges: dict with edges and corresponding nodes"""
 
         set_nodes_on_edges = {}
         # read edge file
@@ -206,7 +210,10 @@ class EnergySystem:
 
     def calculate_haversine_distances_from_nodes(self):
         """
-        Computes the distance in kilometers between two nodes by using their lon lat coordinates and the Haversine formula.
+        Computes the distance (in km) between two nodes.
+
+        The Haversine function is used to compute the distance in kilometers based on
+         their lon lat coordinates.
 
         :return: dict containing all edges along with their distances
         """
@@ -259,11 +266,12 @@ class EnergySystem:
                 self.dict_technology_of_carrier[carrier].append(technology)
 
     def calculate_connected_edges(self, node, direction: str):
-        """calculates connected edges going in (direction = 'in') or going out (direction = 'out').
+        """calculates connected edges going in or going out.
 
         :param node: current node, connected by edges
-        :param direction: direction of edges, either in or out. In: node = endnode, out: node = startnode
-        :return _set_connected_edges: list of connected edges"""
+        :param direction: direction of edges, either in or out. In: node = endnode,
+            out: node = startnode
+        :return: _set_connected_edges: list of connected edges"""
         if direction == "in":
             # second entry is node into which the flow goes
             _set_connected_edges = [
@@ -286,7 +294,7 @@ class EnergySystem:
         """calculates the reversed edge corresponding to an edge.
 
         :param edge: input edge
-        :return _reversed_edge: edge which corresponds to the reversed direction of edge
+        :return: _reversed_edge: edge corresponding to the reversed direction of edge
         """
         _node_out, _node_in = self.set_nodes_on_edges[edge]
         for _reversed_edge in self.set_nodes_on_edges:
@@ -296,10 +304,12 @@ class EnergySystem:
             ):
                 return _reversed_edge
         raise KeyError(
-            f"Edge {edge} has no reversed edge. However, at least one transport technology is bidirectional"
+            f"Edge {edge} has no reversed edge. "
+            f"However, at least one transport technology is bidirectional"
         )
 
-    ### --- methods to construct sets, parameters, variables, and constraints, that correspond to EnergySystem --- ###
+    ### --- methods to construct sets, parameters, variables, and constraints, that
+    # correspond to EnergySystem --- ###
 
     def construct_sets(self):
         """constructs the pe.Sets of the class <EnergySystem>."""
@@ -316,7 +326,8 @@ class EnergySystem:
         self.optimization_setup.sets.add_set(
             name="set_nodes_on_edges",
             data=self.set_nodes_on_edges,
-            doc="Set of nodes that constitute an edge. Edge connects first node with second node.",
+            doc="Set of nodes that constitute an edge. "
+                "Edge connects first node with second node.",
             index_set="set_edges",
         )
         # carriers
@@ -403,7 +414,8 @@ class EnergySystem:
         # carbon emissions budget
         parameters.add_parameter(
             name="carbon_emissions_budget",
-            doc="Parameter which specifies the total budget of carbon emissions until the end of the entire time horizon",
+            doc="Parameter which specifies the total budget of carbon emissions "
+                "until the end of the entire time horizon",
             calling_class=cls,
         )
         # carbon emissions budget
@@ -477,7 +489,8 @@ class EnergySystem:
             name="carbon_emissions_budget_overshoot",
             index_sets=sets["set_time_steps_yearly"],
             bounds=(0, np.inf),
-            doc="overshoot carbon emissions of energy system at the end of the time horizon",
+            doc="overshoot carbon emissions of energy system "
+                "at the end of the time horizon",
             unit_category={"emissions": 1},
         )
         # carbon emission overshoot
@@ -589,9 +602,11 @@ class EnergySystemRules(GenericRule):
         """cumulative carbon emissions over time.
 
         .. math::
-            \\mathrm{First\\ planning\\ period}\\ y = y_0,\\quad E_y^\\mathrm{cum} = E_y
+            \\mathrm{First\\ planning\\ period}\\ y = y_0,
+            \\quad E_y^\\mathrm{cum} = E_y
         .. math::
-            \\mathrm{Subsequent\\ periods}\\ y > y_0, \\quad E_y^{cum} = E_{y-1}^{cum} + (dy-1)E_{y-1}+E_y
+            \\mathrm{Subsequent\\ periods}\\ y > y_0,
+            \\quad E_y^{cum} = E_{y-1}^{cum} + (dy-1)E_{y-1}+E_y
 
         :math:`dy`: interval between planning periods \n
         :math:`E_y`: annual carbon emissions in year :math:`y` \n
@@ -643,16 +658,18 @@ class EnergySystemRules(GenericRule):
         )
 
     def constraint_carbon_emissions_budget(self):
-        """carbon emissions budget of entire time horizon from technologies and carriers.
-        The prediction extends until the end of the horizon, i.e.,
-        last optimization time step plus the current carbon emissions until the end of the horizon.
+        """carbon emissions budget of whole time horizon from technologies and carriers.
+        The prediction extends until the end of the horizon, i.e., last optimization
+        time step plus the current carbon emissions until the end of the horizon.
 
         .. math::
             E_y^\\mathrm{cum} + (dy-1)  E_y - E_y^\\mathrm{bo} \\leq e^b
 
-        :math:`E_y^\\mathrm{cum}`: cumulative carbon emissions of energy system in year :math:`y` \n
+        :math:`E_y^\\mathrm{cum}`: cumulative carbon emissions of energy
+        system in year :math:`y` \n
         :math:`E_y`: annual carbon emissions of energy system in year :math:`y` \n
-        :math:`E_y^\\mathrm{bo}`: cumulative carbon emissions budget overshoot of energy system \n
+        :math:`E_y^\\mathrm{bo}`: cumulative carbon emissions budget overshoot
+        of energy system \n
         :math:`e^b`: carbon emissions budget of energy system
 
         """
@@ -681,7 +698,8 @@ class EnergySystemRules(GenericRule):
         """discounts the annual capital flows to calculate the net_present_cost.
 
         .. math::
-            NPC_y = \\sum_{i \\in [0,dy(y))-1]} \\left( \\dfrac{1}{1+r} \\right)^{\\left(dy (y-y_0) + i \\right)} C_y
+            NPC_y = \\sum_{i \\in [0,dy(y))-1]}
+            \\left( \\dfrac{1}{1+r} \\right)^{\\left(dy (y-y_0) + i \\right)} C_y
 
         :math:`NPC_y`: net present cost of energy system in year :math:`y` \n
         :math:`C_y`: total cost of energy system in year :math:`y` \n
@@ -718,12 +736,16 @@ class EnergySystemRules(GenericRule):
         self.constraints.add_constraint("constraint_net_present_cost", constraints)
 
     def constraint_carbon_emissions_budget_overshoot(self):
-        """ensures carbon emissions overshoot of carbon budget is zero when carbon emissions price for budget overshoot is inf.
+        """Enforces zero budget overshoot if price for budget overshoot is inf.
+
+        ensures carbon emissions overshoot of carbon budget is zero when
+        carbon emissions price for budget overshoot is inf.
 
         .. math::
             \\mathrm{if } \\mu^{bo} =\\infty \\mathrm{,then: }E_y^\\mathrm{bo} = 0
 
-        :math:`E_y^\\mathrm{bo}`: overshoot carbon emissions of energy system at the end of the time horizon \n
+        :math:`E_y^\\mathrm{bo}`: overshoot carbon emissions of energy system at
+        the end of the time horizon \n
         :math:`\\mu^{bo}`: carbon price for budget overshoot
 
 
@@ -741,12 +763,16 @@ class EnergySystemRules(GenericRule):
         )
 
     def constraint_carbon_emissions_annual_overshoot(self):
-        """ensures annual carbon emissions overshoot is zero when carbon emissions price for annual overshoot is inf.
+        """Enforces zero annual overshoot if price for annual overshoot is inf.
+
+        ensures annual carbon emissions overshoot is zero when carbon
+        emissions price for annual overshoot is inf.
 
         .. math::
             \\mathrm{if } \\mu^o =\\infty \\mathrm{,then: } E_y^\\mathrm{o} = 0
 
-        :math:`E_y^\\mathrm{o}`: overshoot of the annual carbon emissions limit of energy system \n
+        :math:`E_y^\\mathrm{o}`: overshoot of the annual carbon emissions limit
+        of energy system \n
         :math:`\\mu^o`: carbon price for annual overshoot
 
         """
@@ -769,7 +795,8 @@ class EnergySystemRules(GenericRule):
         .. math::
             E_y = E_{y,\\mathcal{H}} + E_{y,\\mathcal{C}}
 
-        :math:`E_{y,\\mathcal{H}}`: carbon emissions from technologies in year :math:`y` \n
+        :math:`E_{y,\\mathcal{H}}`: carbon emissions from technologies in
+        year :math:`y` \n
         :math:`E_{y,\\mathcal{C}}`: carbon emissions from carriers in year :math
 
         """
@@ -839,9 +866,12 @@ class EnergySystemRules(GenericRule):
 
         :math:`C_y`: total cost of energy system in year :math:`y` \n
         :math:`CAPEX_y`: annual capital expenditures in year :math:`y` \n
-        :math:`OPEX_y^\\mathrm{t}`: annual operational expenditures for operating technologies in year :math:`y` \n
-        :math:`OPEX_y^\\mathrm{c}`: annual operational expenditures for for importing and exporting carriers in year :math:`y` \n
-        :math:`OPEX_y^\\mathrm{e}`: annual operational expenditures for carbon emissions in year :math:`y`
+        :math:`OPEX_y^\\mathrm{t}`: annual operational expenditures for operating
+        technologies in year :math:`y` \n
+        :math:`OPEX_y^\\mathrm{c}`: annual operational expenditures for for importing
+        and exporting carriers in year :math:`y` \n
+        :math:`OPEX_y^\\mathrm{e}`: annual operational expenditures for carbon
+        emissions in year :math:`y`
 
         """
 
@@ -877,7 +907,8 @@ class EnergySystemRules(GenericRule):
         .. math::
             J = E^{\\mathrm{cum}}_Y
 
-        :math:`E^{\\mathrm{cum}}_Y`: cumulative carbon emissions at the end of the time horizon
+        :math:`E^{\\mathrm{cum}}_Y`: cumulative carbon emissions at the end of
+        the time horizon
 
         :param model: optimization model
         :return: total carbon emissions objective function
