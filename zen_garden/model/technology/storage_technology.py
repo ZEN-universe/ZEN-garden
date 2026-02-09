@@ -326,7 +326,7 @@ class StorageTechnology(Technology):
             index_sets=(index_values, index_names),
             bounds=(0, np.inf),
             doc="storage spillage of storage technology on node i in each "
-                "storage time step",
+            "storage time step",
             unit_category={"energy_quantity": 1, "time": -1},
         )
         # charge discharge binary

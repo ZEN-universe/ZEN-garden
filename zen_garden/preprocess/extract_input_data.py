@@ -57,14 +57,14 @@ class DataInput:
 
         Args:
             file_name: name of selected file.
-            index_sets: index sets of attribute. Creates (multi)index. 
+            index_sets: index sets of attribute. Creates (multi)index.
                 Corresponds to order in pe.Set/pe.Param
             unit_category: dict defining the dimensions of the parameter's unit
             time_steps: string specifying time_steps
             subelement: string specifying dependent element
-        
+
         Returns:
-            dictionary with attribute values    
+            dictionary with attribute values
         """
         # generic time steps
         yearly_variation = False
@@ -116,10 +116,10 @@ class DataInput:
             )
             df_input = self.read_input_csv(file_name)
 
-        assert (
-            df_input is not None or default_value is not None
-        ), (f"input file for attribute {file_name} could not be imported and no "
-            "default value is given.")
+        assert df_input is not None or default_value is not None, (
+            f"input file for attribute {file_name} could not be imported and no "
+            "default value is given."
+        )
         if df_input is not None and not df_input.empty:
             # get subelement dataframe
             if subelement is not None and subelement in df_input.columns:
@@ -186,17 +186,18 @@ class DataInput:
             df_input, time_steps, file_name, index_name_list
         )
 
-        assert df_input.columns is not None, (f"Input file '{file_name}' has "
-            "no columns")
+        assert df_input.columns is not None, (
+            f"Input file '{file_name}' has " "no columns"
+        )
         # set index by index_name_list
         missing_index = list(
             set(index_name_list)
             - set(index_name_list).intersection(set(df_input.columns))
         )
-        assert (
-            len(missing_index) <= 1
-        ), (f"More than one the requested index sets ({missing_index}) are "
-            "missing from input file for {file_name}")
+        assert len(missing_index) <= 1, (
+            f"More than one the requested index sets ({missing_index}) are "
+            "missing from input file for {file_name}"
+        )
 
         # no indices missing
         if len(missing_index) == 0:
@@ -253,8 +254,10 @@ class DataInput:
         common_index = df_output_copy.index.intersection(df_input.index)
         assert default_value is not None or len(common_index) == len(
             df_output_copy.index
-        ), (f"Input for {file_name} does not provide entire dataset and no "
-            "default given in attributes.json")
+        ), (
+            f"Input for {file_name} does not provide entire dataset and no "
+            "default given in attributes.json"
+        )
         df_output_copy.loc[common_index] = df_input.loc[common_index]
         return df_output_copy
 
@@ -275,7 +278,7 @@ class DataInput:
                 header=0,
                 index_col=None,
             )
-            # check for header name duplicates (pd.read_csv() adds a dot and a 
+            # check for header name duplicates (pd.read_csv() adds a dot and a
             # number to duplicate headers)
             if any("." in col for col in df_input.columns):
                 raise AssertionError(
@@ -408,8 +411,8 @@ class DataInput:
                     path=self.folder_path,
                 )
             )
-            # don't convert unit of conversion factor to base units since e.g. 
-            # kWh/kWh would become 1 (however, conversion factors' unit consistency 
+            # don't convert unit of conversion factor to base units since e.g.
+            # kWh/kWh would become 1 (however, conversion factors' unit consistency
             # must be checked with the corresponding carriers)
             if attribute_name == "conversion_factor":
                 if attribute_name not in self.element.units:
@@ -425,7 +428,7 @@ class DataInput:
                         "unit": attribute_unit,
                     }
                 }
-            # don't try to save input-/output carrier if they don't exist for a 
+            # don't try to save input-/output carrier if they don't exist for a
             # conversion technology
             elif not (
                 pd.isna(attribute_value)
@@ -535,7 +538,7 @@ class DataInput:
         df_output_generic,
     ):
         """Reads and saves the year specific time series data. The year specific
-        time series are saved in the dictionary 
+        time series are saved in the dictionary
         self.optimization_setup.year_specific_ts.
 
         :param file_name: name of selected file
@@ -596,10 +599,10 @@ class DataInput:
 
         Args:
             file_name: name of selected file.
-            index_sets: index sets of attribute. Creates (multi)index. 
+            index_sets: index sets of attribute. Creates (multi)index.
                 Corresponds to order in pe.Set/pe.Param
         """
-        # remove intra-yearly time steps from index set and add inter-yearly 
+        # remove intra-yearly time steps from index set and add inter-yearly
         # time steps
         index_sets = copy.deepcopy(index_sets)
         index_sets.remove("set_time_steps")
@@ -643,7 +646,7 @@ class DataInput:
 
         Args"
             extract_nodes: boolean to switch between nodes and edges
-            extract_coordinates: boolean to switch between nodes and 
+            extract_coordinates: boolean to switch between nodes and
                 nodes + coordinates
         """
         if extract_nodes:
@@ -665,29 +668,29 @@ class DataInput:
                     missing_nodes = list(
                         set(set_nodes_config).difference(set_nodes_input)
                     )
-                    assert (
-                        len(missing_nodes) == 0
-                    ), (f"The nodes {missing_nodes} were declared in the "
+                    assert len(missing_nodes) == 0, (
+                        f"The nodes {missing_nodes} were declared in the "
                         "config but do not exist in the input file "
-                        f"{os.path.join(self.folder_path, 'set_nodes')}")
+                        f"{os.path.join(self.folder_path, 'set_nodes')}"
+                    )
                 if not isinstance(set_nodes_config, list):
                     set_nodes_config = set_nodes_config.to_list()
                 set_nodes_config.sort()
-                # assert that no transport technology is selected if only 
+                # assert that no transport technology is selected if only
                 # one node is given
                 assert (
                     len(set_nodes_config) > 1
                     or len(self.system.set_transport_technologies) == 0
-                ), (f"Only one node is given in the system file. "
+                ), (
+                    f"Only one node is given in the system file. "
                     f"Transport technologies are not allowed in this case. "
-                    f"You selected {self.system.set_transport_technologies}")
+                    f"You selected {self.system.set_transport_technologies}"
+                )
                 return set_nodes_config
         else:
             set_edges_input = self.read_input_csv("set_edges")
             input_checks = self.energy_system.optimization_setup.input_data_checks
-            input_checks.check_single_directed_edges(
-                set_edges_input=set_edges_input
-            )
+            input_checks.check_single_directed_edges(set_edges_input=set_edges_input)
             if set_edges_input is not None:
                 set_edges = set_edges_input[
                     (set_edges_input["node_from"].isin(self.energy_system.set_nodes))
@@ -711,13 +714,16 @@ class DataInput:
             "output_carrier",
             "reference_carrier",
             "retrofit_reference_carrier",
-        ], ("carrier type must be either input_carrier, output_carrier, """
-            "retrofit_reference_carrier, or reference_carrier")
+        ], (
+            "carrier type must be either input_carrier, output_carrier, "
+            ""
+            "retrofit_reference_carrier, or reference_carrier"
+        )
         carrier_list = self.extract_attribute(carrier_type, unit_category=None)
-        assert (
-            carrier_type != "reference_carrier" or len(carrier_list) == 1
-        ), (f"Reference_carrier must be a single carrier, but {carrier_list} "
-            f"are given for {self.element.name}")
+        assert carrier_type != "reference_carrier" or len(carrier_list) == 1, (
+            f"Reference_carrier must be a single carrier, but {carrier_list} "
+            f"are given for {self.element.name}"
+        )
         if carrier_list == [""]:
             carrier_list = []
         return carrier_list
@@ -733,17 +739,17 @@ class DataInput:
         base_technology = attribute_dict[attribute_name][technology_type]
         if isinstance(base_technology, str):
             base_technology = base_technology.strip().split(" ")
-        assert (
-            len(base_technology) == 1
-        ), (f"retrofit base technology must be a single technology, "
-            f"but {base_technology} are given for {self.element.name}")
+        assert len(base_technology) == 1, (
+            f"retrofit base technology must be a single technology, "
+            f"but {base_technology} are given for {self.element.name}"
+        )
         return base_technology
 
     def extract_set_technologies_existing(self, storage_energy=False):
         """Reads input data and creates setExistingCapacity for each technology.
 
         Args:
-            storage_energy: boolean if existing energy capacity of storage 
+            storage_energy: boolean if existing energy capacity of storage
                 technology (instead of power)
 
         Returns:
@@ -780,7 +786,7 @@ class DataInput:
 
         Args:
             file_name:  name of selected file
-            index_sets: index sets of attribute. Creates (multi)index. 
+            index_sets: index sets of attribute. Creates (multi)index.
                 Corresponds to order in pe.Set/pe.Param
             df_output: return existing capacity and existing lifetime
         """
@@ -1002,12 +1008,12 @@ class DataInput:
         """Creates default output dataframe.
 
         Args:
-            index_sets: index sets of attribute. Creates (multi)index. 
+            index_sets: index sets of attribute. Creates (multi)index.
                 Corresponds to order in pe.Set/pe.Param
             unit_category: dict defining the dimensions of the parameter's unit
             file_name: name of selected file.
             time_steps: specific time_steps of subelement
-            manual_default_value: if given, use manual_default_value instead 
+            manual_default_value: if given, use manual_default_value instead
                 of searching for default value in attributes.json
             subelement: dependent element for which data is extracted
         """
@@ -1053,7 +1059,7 @@ class DataInput:
         list of index names.
 
         Args:
-            index_sets: index sets of attribute. Creates (multi)index. 
+            index_sets: index sets of attribute. Creates (multi)index.
                 Corresponds to order in pe.Set/pe.Param
             time_steps: specific time_steps of element
             index_list: list of indices
@@ -1093,7 +1099,7 @@ class DataInput:
             time_steps == "set_time_steps_yearly"
             or time_steps == "set_time_steps_yearly_entire_horizon"
         ):
-            # check if temporal header of input data is still given as 'time' 
+            # check if temporal header of input data is still given as 'time'
             # instead of 'year'
             if "time" in df_input.axes[1]:
                 warnings.warn(
@@ -1160,16 +1166,16 @@ class DataInput:
                     stacklevel=2,
                 )
                 return df_input
-            # assert that correct temporal index_set to get corresponding 
-            # index_name is given (i.e. set_time_steps_yearly for input data 
-            # with yearly time steps)(otherwise extract_general_input_data() 
+            # assert that correct temporal index_set to get corresponding
+            # index_name is given (i.e. set_time_steps_yearly for input data
+            # with yearly time steps)(otherwise extract_general_input_data()
             # will find a missing_index)
-            assert (
-                temporal_header in index_name_list
-            ), ("Input data with yearly time steps and therefore the temporal "
+            assert temporal_header in index_name_list, (
+                "Input data with yearly time steps and therefore the temporal "
                 "header 'year' needs to be extracted with "
                 "index_sets=['set_time_steps_yearly'] instead of "
-                "index_sets=['set_time_steps']")
+                "index_sets=['set_time_steps']"
+            )
             # set index
             index_names_column = df_input.columns.intersection(
                 index_name_list
@@ -1263,10 +1269,10 @@ class DataInput:
         """
         if index_name_list:
             df_input = df_input.set_index(index_name_list)
-        assert (
-            len(df_input.columns) == 1
-        ), (f"Input file for {file_name} has more than one value "
-            "column: {df_input.columns.to_list()}")
+        assert len(df_input.columns) == 1, (
+            f"Input file for {file_name} has more than one value "
+            "column: {df_input.columns.to_list()}"
+        )
         df_input = df_input.squeeze(axis=1)
         return df_input
 
@@ -1275,9 +1281,9 @@ class DataInput:
         df_input, df_output, index_name_list, file_name, missing_index
     ):
         """Extracts the demanded values from Input dataframe and reformulates
-        dataframe if the index is missing. Either, the missing index is 
+        dataframe if the index is missing. Either, the missing index is
         the column of df_input, or it is actually missing in df_input.
-        Then, the values in df_input are extended to all missing index 
+        Then, the values in df_input are extended to all missing index
         values.
 
         Args:
@@ -1286,17 +1292,17 @@ class DataInput:
             index_name_list: list of name of indices
             file_name: name of selected file
             missing_index: missing index in df_input
-        
+
         Returns:
             pandas.DataFrame: reformulated input dataframe
         """
         index_name_list.remove(missing_index)
         if not index_name_list:
             # assert that single value
-            assert (
-                df_input.size == 1
-            ), (f"Cannot establish unique values for file {file_name} because "
-                "of too many columns or not overlapping index")
+            assert df_input.size == 1, (
+                f"Cannot establish unique values for file {file_name} because "
+                "of too many columns or not overlapping index"
+            )
             val_input = df_input.squeeze()
             df_output[:] = val_input
             df_input = df_output.copy()
@@ -1328,10 +1334,10 @@ class DataInput:
                     df_input_index_temp.get_level_values(df_input.index.names[0])
                 ].squeeze(axis=1)
             else:
-                assert (
-                    df_input_temp.index.names[-1] != "time"
-                ), ("Only works if columns contain time index and not for "
-                    "{df_input_temp.index.names[-1]}")
+                assert df_input_temp.index.names[-1] != "time", (
+                    "Only works if columns contain time index and not for "
+                    "{df_input_temp.index.names[-1]}"
+                )
                 df_input = df_input_temp.to_frame().apply(
                     lambda row: df_input.loc[row.name[0:-1], str(row.name[-1])], axis=1
                 )

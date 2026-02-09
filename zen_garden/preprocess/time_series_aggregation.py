@@ -29,7 +29,7 @@ class TimeSeriesAggregation(object):
         self.system = self.optimization_setup.system
         self.analysis = self.optimization_setup.analysis
         self.header_set_time_steps = self.analysis.header_data_inputs.set_time_steps
-        # if set_time_steps as input (because already aggregated), use this as 
+        # if set_time_steps as input (because already aggregated), use this as
         # base time step, otherwise self.set_base_time_steps
         self.set_base_time_steps = self.energy_system.set_base_time_steps_yearly
         self.number_typical_periods = min(
@@ -52,10 +52,10 @@ class TimeSeriesAggregation(object):
                 self.run_tsa()
             # nothing to aggregate
             else:
-                assert (
-                    len(self.excluded_ts) == 0
-                ), ("Do not exclude any time series from aggregation, if there "
-                    "is then nothing else to aggregate!")
+                assert len(self.excluded_ts) == 0, (
+                    "Do not exclude any time series from aggregation, if there "
+                    "is then nothing else to aggregate!"
+                )
                 # aggregate to single time step
                 self.single_ts_tsa()
         else:
@@ -79,12 +79,12 @@ class TimeSeriesAggregation(object):
             self.set_aggregated_ts_all_elements()
         # set aggregated time steps to time step object
         self.time_steps.set_aggregated_time_steps(self)
-        # repeat order of operational time steps and link with investment and 
+        # repeat order of operational time steps and link with investment and
         # yearly time steps
         self.repeat_sequence_time_steps_for_all_years()
         logging.info("Calculate operational time steps for storage levels")
         self.calculate_time_steps_storage_level()
-        # overwrite duration of operational and storage time steps in energy 
+        # overwrite duration of operational and storage time steps in energy
         # system
         self.energy_system.time_steps_operation_duration = pd.Series(
             self.time_steps.time_steps_operation_duration
@@ -145,7 +145,7 @@ class TimeSeriesAggregation(object):
             ),
             representationMethod=(
                 self.analysis.time_series_aggregation.representationMethod
-            )
+            ),
         )
         # create typical periods
         self.typical_periods = self.aggregation.createTypicalPeriods().reset_index(
@@ -348,7 +348,7 @@ class TimeSeriesAggregation(object):
                 continue
             raw_ts[ts].name = ts
             df_ts = raw_ts[ts].unstack(level=header_set_time_steps).T
-            # select time series that are not constant (rows have more 
+            # select time series that are not constant (rows have more
             # than 1 unique entries)
             df_ts_non_constant = df_ts[
                 df_ts.columns[df_ts.apply(lambda column: len(np.unique(column)) != 1)]
@@ -370,14 +370,14 @@ class TimeSeriesAggregation(object):
         series.
 
         Args:
-            new_sequence_time_steps: old sequence of time steps that is now 
-                overwritten with new sequence of year specific TSA for 
+            new_sequence_time_steps: old sequence of time steps that is now
+                overwritten with new sequence of year specific TSA for
                 respective year
-            new_sequence_time_steps: new sequence of time steps updated with 
+            new_sequence_time_steps: new sequence of time steps updated with
                 year specific TSA sequence
         """
         header_set_time_steps = self.analysis.header_data_inputs.set_time_steps
-        # only run specific TSA if TSA is activated and set_base_time_steps > 
+        # only run specific TSA if TSA is activated and set_base_time_steps >
         # aggregated_time_steps
         if (
             self.number_typical_periods < np.size(self.set_base_time_steps)
@@ -430,10 +430,10 @@ class TimeSeriesAggregation(object):
                     self.run_tsa(year_specific=year)
                 # nothing to aggregate
                 else:  # ToDo can this be removed?
-                    assert (
-                        len(self.excluded_ts) == 0
-                    ), ("Do not exclude any time series from aggregation if "
-                        "there is then nothing else to aggregate!")
+                    assert len(self.excluded_ts) == 0, (
+                        "Do not exclude any time series from aggregation if "
+                        "there is then nothing else to aggregate!"
+                    )
                     # aggregate to single time step
                     self.single_ts_tsa()
                 # overwrite time_step_sequence here
@@ -449,7 +449,7 @@ class TimeSeriesAggregation(object):
 
     def link_time_steps(self):
         """Calculates the necessary overlapping time steps of the investment and
-        operation of a technology for all years. 
+        operation of a technology for all years.
 
         It sets the union of the time steps for investment, operation and years.
         """
@@ -483,7 +483,7 @@ class TimeSeriesAggregation(object):
 
     def overwrite_ts_with_expanded_timeindex(self, element, old_sequence_time_steps):
         """This method expands the aggregated time series to match the extended
-        operational time steps because of matching the investment and 
+        operational time steps because of matching the investment and
         operational time sequences.
 
         :param element: element of the optimization
@@ -546,8 +546,8 @@ class TimeSeriesAggregation(object):
 
     def multiply_yearly_variation(self, element, ts_name, ts, year_specific=None):
         """Multiplies time series with the yearly variation of the time series.
-        
-        The index of the variation is the same as the original time series, 
+
+        The index of the variation is the same as the original time series,
         just time and year substituted.
 
         :param element: technology of the optimization
@@ -671,7 +671,7 @@ class TimeSeriesAggregation(object):
         """This method repeats the operational time series for all years."""
         logging.info("Repeat the time series sequences for all years")
         optimized_years = len(self.energy_system.set_time_steps_yearly)
-        # concatenate the order of time steps and link with investment and yearly 
+        # concatenate the order of time steps and link with investment and yearly
         # time steps
         old_sequence_time_steps = self.time_steps.sequence_time_steps_operation
         new_sequence_time_steps = np.hstack([old_sequence_time_steps] * optimized_years)
@@ -680,7 +680,7 @@ class TimeSeriesAggregation(object):
             new_sequence_time_steps
         )
         self.time_steps.sequence_time_steps_operation = new_sequence_time_steps
-        # calculate the time steps in operation to link with investment and yearly 
+        # calculate the time steps in operation to link with investment and yearly
         # time steps
         self.link_time_steps()
         # set operation2year and year2operation time steps
@@ -742,7 +742,7 @@ class TimeSeriesAggregation(object):
 
         Args:
             list_sequence_time_steps: list of operational and investment time steps
-        
+
         Returns:
             tuple: (set_time_steps, time_steps_duration, sequence_time_steps)
                 time steps, duration and sequence
@@ -759,7 +759,7 @@ class TimeSeriesAggregation(object):
                 return_index=True,
             )
         )
-        # if unique yearly time steps (row 1) are the same as original, or if 
+        # if unique yearly time steps (row 1) are the same as original, or if
         # the operational time series (row 0) only has one unique time step
         if (
             len(np.unique(combined_sequence_time_steps[1, :]))

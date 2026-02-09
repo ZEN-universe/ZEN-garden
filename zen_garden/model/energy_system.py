@@ -324,7 +324,7 @@ class EnergySystem:
             name="set_nodes_on_edges",
             data=self.set_nodes_on_edges,
             doc="Set of nodes that constitute an edge. "
-                "Edge connects first node with second node.",
+            "Edge connects first node with second node.",
             index_set="set_edges",
         )
         # carriers
@@ -411,7 +411,7 @@ class EnergySystem:
         parameters.add_parameter(
             name="carbon_emissions_budget",
             doc="Parameter which specifies the total budget of carbon emissions "
-                "until the end of the entire time horizon",
+            "until the end of the entire time horizon",
             calling_class=cls,
         )
         # carbon emissions budget
@@ -486,7 +486,7 @@ class EnergySystem:
             index_sets=sets["set_time_steps_yearly"],
             bounds=(0, np.inf),
             doc="overshoot carbon emissions of energy system "
-                "at the end of the time horizon",
+            "at the end of the time horizon",
             unit_category={"emissions": 1},
         )
         # carbon emission overshoot

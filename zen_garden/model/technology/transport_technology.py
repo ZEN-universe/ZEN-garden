@@ -331,7 +331,7 @@ class TransportTechnology(Technology):
             index_sets=(index_values, index_names),
             bounds=(0, np.inf),
             doc="carrier flow lost due to resistances etc. by transporting carrier "
-                "through transport technology on edge i and time t",
+            "through transport technology on edge i and time t",
             unit_category={"energy_quantity": 1, "time": -1},
         )
 

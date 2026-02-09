@@ -228,7 +228,7 @@ class ConversionTechnology(Technology):
             name="set_input_carriers",
             data=input_carriers,
             doc="set of carriers that are an input to a specific conversion "
-                "technology. Indexed by set_conversion_technologies",
+            "technology. Indexed by set_conversion_technologies",
             index_set="set_conversion_technologies",
         )
         # output carriers of technology
@@ -236,7 +236,7 @@ class ConversionTechnology(Technology):
             name="set_output_carriers",
             data=output_carriers,
             doc="set of carriers that are an output to a specific conversion "
-                "technology. Indexed by set_conversion_technologies",
+            "technology. Indexed by set_conversion_technologies",
             index_set="set_conversion_technologies",
         )
         # dependent carriers of technology
@@ -244,7 +244,7 @@ class ConversionTechnology(Technology):
             name="set_dependent_carriers",
             data=dependent_carriers,
             doc="set of carriers that are an output to a specific conversion "
-                "technology. Indexed by set_conversion_technologies",
+            "technology. Indexed by set_conversion_technologies",
             index_set="set_conversion_technologies",
         )
 
@@ -292,7 +292,7 @@ class ConversionTechnology(Technology):
                 "set_time_steps_yearly",
             ],
             doc="Minimum full load hours as a fraction of the total hours "
-                "per planning period",
+            "per planning period",
             calling_class=cls,
         )
 

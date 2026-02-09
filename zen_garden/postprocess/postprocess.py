@@ -1,6 +1,6 @@
 """Class is defining the postprocessing of the results.
-The class takes as inputs the optimization problem (model) and the system 
-configurations (system). The class contains methods to read the results and 
+The class takes as inputs the optimization problem (model) and the system
+configurations (system). The class contains methods to read the results and
 save them in a result dictionary (resultDict).
 """
 
@@ -67,7 +67,7 @@ class Postprocess:
 
         # deal with the subfolder
         self.subfolder = subfolder
-        # here we make use of the fact that None and "" both evaluate to 
+        # here we make use of the fact that None and "" both evaluate to
         # False but any non-empty string doesn't
         if subfolder != Path(""):
             # check if mf within scenario analysis
@@ -108,11 +108,11 @@ class Postprocess:
         Args:
             name: Filename without extension
             dictionary: The dictionary to save
-            format: Force the format to use, if None use output_format attribute 
+            format: Force the format to use, if None use output_format attribute
                 of instance
             mode: Writing mode for python file. The two options are 'w' and
-                'a'. The former create a new file while the latter will append 
-                to an existing file. Appending files is currently only supported 
+                'a'. The former create a new file while the latter will append
+                to an existing file. Appending files is currently only supported
                 for h5 files.
         """
         if isinstance(dictionary, BaseModel):
@@ -121,8 +121,7 @@ class Postprocess:
         # check whether valid mode
         if mode not in ["a", "w"]:
             ValueError(
-                f"Invalid file write mode {mode} (valid options are 'a' or "
-                "'w')."
+                f"Invalid file write mode {mode} (valid options are 'a' or " "'w')."
             )
 
         # set the format
@@ -236,7 +235,7 @@ class Postprocess:
 
     def save_sets(self):
         """Saves the Set values to a json file which can then be
-        post-processed immediately or loaded and postprocessed at some 
+        post-processed immediately or loaded and postprocessed at some
         other time.
         """
         # dataframe serialization
@@ -287,7 +286,7 @@ class Postprocess:
 
     def save_param(self):
         """Saves the Param values to a json file which can then be
-        post-processed immediately or loaded and postprocessed at some other 
+        post-processed immediately or loaded and postprocessed at some other
         time.
         """
         if not self.solver.save_parameters:
@@ -327,7 +326,7 @@ class Postprocess:
 
     def save_var(self):
         """Saves the variable values to a json file which can then be
-        post-processed immediately or loaded and postprocessed at some other 
+        post-processed immediately or loaded and postprocessed at some other
         time.
         """
         # dataframe serialization
@@ -362,7 +361,7 @@ class Postprocess:
 
             units = self._unit_df(units, df.index)
 
-            # transform the dataframe to a json string and load it into the 
+            # transform the dataframe to a json string and load it into the
             # dictionary as dict
             data_frames[name] = self._transform_df(df, doc, units)
 
@@ -371,7 +370,7 @@ class Postprocess:
 
     def save_duals(self):
         """Saves the dual variable values to a json file which can then be
-        post-processed immediately or loaded and postprocessed at some other 
+        post-processed immediately or loaded and postprocessed at some other
         time.
         """
         if not self.solver.save_duals:
@@ -414,7 +413,7 @@ class Postprocess:
             if len(df.index.names) == len(index_list):
                 df.index.names = index_list
 
-            # we transform the dataframe to a json string and load it into the 
+            # we transform the dataframe to a json string and load it into the
             # dictionary as dict
             data_frames[name] = self._transform_df(df, doc)
 
@@ -681,8 +680,7 @@ class Postprocess:
                 return units
             else:
                 raise AssertionError(
-                    "The length of the units does not match the length of the "
-                    "index"
+                    "The length of the units does not match the length of the " "index"
                 )
         else:
             return None
@@ -754,10 +752,10 @@ class Postprocess:
                 units, pd.Series
             ), f"Units must be a pandas Series, but is {type(units)}"
             df = input_dict["dataframe"]
-            assert units.index.intersection(df.index).equals(
-                units.index
-            ), (f"Units index {units.index} does not match dataframe "
-                f"index {df.index}")
+            assert units.index.intersection(df.index).equals(units.index), (
+                f"Units index {units.index} does not match dataframe "
+                f"index {df.index}"
+            )
             units.name = "units"
             has_units = True
         else:
@@ -768,7 +766,6 @@ class Postprocess:
             or set(input_dict.keys()) == set(expected_keys).union(["units"])
         ):
             raise ValueError(
-                f"Expected keys are {expected_keys}, but got "
-                f"{input_dict.keys()}"
+                f"Expected keys are {expected_keys}, but got " f"{input_dict.keys()}"
             )
         return input_dict, units, docstring, has_units

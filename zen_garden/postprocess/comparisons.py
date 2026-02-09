@@ -207,7 +207,7 @@ def check_and_fill_scenario_list(
     results: list[Results], scenarios: list[str]
 ) -> list[str]:
     """Checks if both results have the provided scenarios.
-    
+
     Returns a list containing twice one common scenario.
 
     :param results: List of results.
@@ -221,8 +221,7 @@ def check_and_fill_scenario_list(
         common_scenario = get_common_scenario(*results)
     except AssertionError:
         logging.info(
-            "No common scenario found. Selecting random scenario for each "
-            "result."
+            "No common scenario found. Selecting random scenario for each " "result."
         )
         scenarios = [
             next(iter(results[0].solution_loader.scenarios.keys())),
@@ -256,8 +255,9 @@ def get_common_scenario(results_1: Results, results_2: Results) -> str:
     common_scenarios = set(results_1.solution_loader.scenarios.keys()).intersection(
         results_2.solution_loader.scenarios.keys()
     )
-    assert len(common_scenarios) > 0, ("No common scenarios between "
-        "provided scenarios.")
+    assert len(common_scenarios) > 0, (
+        "No common scenarios between " "provided scenarios."
+    )
 
     return next(iter(common_scenarios))
 
@@ -334,8 +334,7 @@ def _get_comparison_df(val_0, val_1, result_names, component_name, rtol):
 
     if mismatched_index:
         logging.info(
-            f"Component {component_name} does not have matching "
-            f"index or columns"
+            f"Component {component_name} does not have matching " f"index or columns"
         )
         missing_index = (
             val_0.index.difference(val_1.index)

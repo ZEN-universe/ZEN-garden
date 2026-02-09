@@ -489,7 +489,7 @@ class Technology(Element):
                 cls, "reference_carrier"
             ),
             doc="set of all reference carriers correspondent to a technology. "
-                "Indexed by set_technologies",
+            "Indexed by set_technologies",
             index_set="set_technologies",
         )
         # add pe.Sets of the child classes
@@ -536,7 +536,7 @@ class Technology(Element):
             index_names=["set_technologies", "set_capacity_types"],
             capacity_types=True,
             doc="Parameter which specifies the minimum capacity addition "
-                "that can be installed",
+            "that can be installed",
             calling_class=cls,
         )
         # maximum capacity addition
@@ -545,7 +545,7 @@ class Technology(Element):
             index_names=["set_technologies", "set_capacity_types"],
             capacity_types=True,
             doc="Parameter which specifies the maximum capacity addition "
-                "that can be installed",
+            "that can be installed",
             calling_class=cls,
         )
         # unbounded capacity addition
@@ -553,7 +553,7 @@ class Technology(Element):
             name="capacity_addition_unbounded",
             index_names=["set_technologies"],
             doc="Parameter which specifies the unbounded capacity addition that can be "
-                "added each year (only for delayed technology deployment)",
+            "added each year (only for delayed technology deployment)",
             calling_class=cls,
         )
         # lifetime existing technologies
@@ -578,7 +578,7 @@ class Technology(Element):
             ],
             capacity_types=True,
             doc="Parameter which specifies the total capex of an existing technology "
-                "which still has to be paid",
+            "which still has to be paid",
             calling_class=cls,
         )
         # variable specific opex
@@ -617,7 +617,7 @@ class Technology(Element):
             name="depreciation_time",
             index_names=["set_technologies"],
             doc="Parameter which specifies the depreciation time of a "
-                "newly built technology",
+            "newly built technology",
             calling_class=cls,
         )
         # construction_time newly built technologies
@@ -625,7 +625,7 @@ class Technology(Element):
             name="construction_time",
             index_names=["set_technologies"],
             doc="Parameter which specifies the construction time of a "
-                "newly built technology",
+            "newly built technology",
             calling_class=cls,
         )
         # maximum diffusion rate, i.e., increase in capacity
@@ -633,7 +633,7 @@ class Technology(Element):
             name="max_diffusion_rate",
             index_names=["set_technologies", "set_time_steps_yearly"],
             doc="Parameter which specifies the maximum diffusion rate which is the "
-                "maximum increase in capacity between investment steps",
+            "maximum increase in capacity between investment steps",
             calling_class=cls,
         )
         # capacity_limit of technologies
@@ -658,7 +658,7 @@ class Technology(Element):
                 "set_time_steps_operation",
             ],
             doc="Parameter which specifies the minimum load of technology "
-                "relative to installed capacity",
+            "relative to installed capacity",
             calling_class=cls,
         )
         # maximum load relative to capacity
@@ -670,7 +670,7 @@ class Technology(Element):
                 "set_time_steps_operation",
             ],
             doc="Parameter which specifies the maximum load of technology relative to "
-                "installed capacity",
+            "installed capacity",
             calling_class=cls,
         )
         # carbon intensity
@@ -687,7 +687,7 @@ class Technology(Element):
                 optimization_setup, type_existing_quantity="capacity"
             ),
             doc="Parameter which specifies the total available capacity of existing "
-                "technologies at the beginning of the optimization",
+            "technologies at the beginning of the optimization",
             calling_class=cls,
         )
         optimization_setup.parameters.add_parameter(
@@ -696,7 +696,7 @@ class Technology(Element):
                 optimization_setup, type_existing_quantity="cost_capex_overnight"
             ),
             doc="Parameter which specifies the total capex of existing technologies at "
-                "the beginning of the optimization",
+            "the beginning of the optimization",
             calling_class=cls,
         )
 
@@ -824,7 +824,7 @@ class Technology(Element):
             ),
             bounds=(0, np.inf),
             doc="size of built technology (invested capacity after construction) "
-                "at location l and time t",
+            "at location l and time t",
             unit_category={"energy_quantity": 1, "time": -1},
         )
         # invested_capacity technology
@@ -885,7 +885,7 @@ class Technology(Element):
             index_sets=sets["set_time_steps_yearly"],
             bounds=(0, np.inf),
             doc="total capex for installing all technologies in all locations "
-                "at all times",
+            "at all times",
             unit_category={"money": 1},
         )
         # opex
@@ -1008,7 +1008,7 @@ class Technology(Element):
             ),
             mask=mask_on_off,
             doc="Binary variable which equals 1 when technology is switched on at "
-                "location l and time t",
+            "location l and time t",
             binary=True,
             unit_category=None,
         )
@@ -2004,10 +2004,10 @@ class TechnologyRules(GenericRule):
         # assert that no big-M is inf
         sel_big_M = (big_M.where(mask_on_off) == np.inf).to_series()
         big_M_elements = sel_big_M[sel_big_M].index.droplevel(2).unique().to_list()
-        assert (
-            ~sel_big_M.any()
-        ), (f"Big-M is inf for {big_M_elements}. "
-            f"Please set finite capacity limits of the technologies.")
+        assert ~sel_big_M.any(), (
+            f"Big-M is inf for {big_M_elements}. "
+            f"Please set finite capacity limits of the technologies."
+        )
         # flows
         list_flow_reference = []
         if len(conversion_techs) > 0:

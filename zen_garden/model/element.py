@@ -95,7 +95,7 @@ class Element:
         t1 = time.perf_counter()
         if optimization_setup.solver.run_diagnostics:
             logging.info(f"Time to construct Sets: {t1 - t_start:0.1f} seconds")
-            mem_usage = psutil.Process(pid).memory_info().rss / 1024 ** 2
+            mem_usage = psutil.Process(pid).memory_info().rss / 1024**2
             logging.info(f"Memory usage: {mem_usage:0.1f} MB")
         # construct Params
         t0 = time.perf_counter()
@@ -103,7 +103,7 @@ class Element:
         t1 = time.perf_counter()
         if optimization_setup.solver.run_diagnostics:
             logging.info(f"Time to construct Params: {t1 - t0:0.1f} seconds")
-            mem_usage = psutil.Process(pid).memory_info().rss / 1024 ** 2
+            mem_usage = psutil.Process(pid).memory_info().rss / 1024**2
             logging.info(f"Memory usage: {mem_usage:0.1f} MB")
         # construct Vars
         t0 = time.perf_counter()
@@ -111,7 +111,7 @@ class Element:
         t1 = time.perf_counter()
         if optimization_setup.solver.run_diagnostics:
             logging.info(f"Time to construct Vars: {t1 - t0:0.1f} seconds")
-            mem_usage = psutil.Process(pid).memory_info().rss / 1024 ** 2
+            mem_usage = psutil.Process(pid).memory_info().rss / 1024**2
             logging.info(f"Memory usage: {mem_usage:0.1f} MB")
         # construct Constraints
         t0 = time.perf_counter()
@@ -119,7 +119,7 @@ class Element:
         t1 = time.perf_counter()
         if optimization_setup.solver.run_diagnostics:
             logging.info(f"Time to construct Constraints: {t1 - t0:0.1f} seconds")
-            mem_usage = psutil.Process(pid).memory_info().rss / 1024 ** 2
+            mem_usage = psutil.Process(pid).memory_info().rss / 1024**2
             logging.info(f"Memory usage: {mem_usage:0.1f} MB")
         # construct Objective
         optimization_setup.energy_system.construct_objective()

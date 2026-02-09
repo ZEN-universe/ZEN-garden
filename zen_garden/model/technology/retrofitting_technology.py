@@ -69,7 +69,7 @@ class RetrofittingTechnology(ConversionTechnology):
             name="set_retrofitting_base_technologies",
             data=retrofit_base_technology,
             doc="set of base technologies for a specific retrofitting technology. "
-                "Indexed by set_retrofitting_technologies",
+            "Indexed by set_retrofitting_technologies",
             index_set="set_retrofitting_technologies",
         )
 
@@ -89,7 +89,7 @@ class RetrofittingTechnology(ConversionTechnology):
             ],
             capacity_types=False,
             doc="Parameter which specifies the flow coupling between the retrofitting "
-                "technologies and its base technology",
+            "technologies and its base technology",
             calling_class=cls,
         )
 

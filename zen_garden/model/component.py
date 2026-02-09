@@ -814,8 +814,8 @@ class Variable(Component):
                 for technology in self.optimization_setup.dict_elements["Technology"]:
                     reference_carrier = technology.reference_carrier[0]
                     energy_quantity = [
-                        energy_quantity for carrier, energy_quantity
-                        in self.unit_handling.carrier_energy_quantities.items()
+                        energy_quantity
+                        for carrier, energy_quantity in self.unit_handling.carrier_energy_quantities.items()
                         if carrier == reference_carrier
                     ][0]
                     tech_idx = (
@@ -868,8 +868,10 @@ class Constraint(Component):
                         return
                     assert isinstance(cons, lp.constraints.Constraint) or isinstance(
                         cons, lp.constraints.AnonymousConstraint
-                    ), (f"Constraint {key} has wrong format. "
-                        f"Must be a linopy constraint but is {type(cons).__name__}")
+                    ), (
+                        f"Constraint {key} has wrong format. "
+                        f"Must be a linopy constraint but is {type(cons).__name__}"
+                    )
                     if isinstance(key, tuple):
                         _key = "-".join([str(k) for k in key])
                     else:
@@ -937,7 +939,7 @@ class Constraint(Component):
         xvar,
         break_points,
         f_vals,
-        cons_type="EQ"
+        cons_type="EQ",
     ):
         """Adding piece-wise linear constraints to the model.
 

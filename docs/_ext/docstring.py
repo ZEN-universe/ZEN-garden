@@ -143,7 +143,7 @@ class DocstringClass(SphinxDirective):
 
     Example:
 
-    .. docstring_class:: 
+    .. docstring_class::
        zen_garden.model.objects.technology.conversion_technology.
        ConversionTechnologyRules
     """

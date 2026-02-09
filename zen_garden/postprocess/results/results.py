@@ -62,16 +62,16 @@ class Results:
     ) -> Optional[Union[dict[str, "pd.DataFrame | pd.Series[Any]"], pd.Series]]:
         """Returns the raw results without any further processing.
 
-        Transforms a parameter or variable dataframe (compressed) string into 
+        Transforms a parameter or variable dataframe (compressed) string into
         an actual pandas dataframe.
 
         Args:
             component_name (string): The string to decode
-            scenario_name: Which scenario to take. If none is specified, all are 
+            scenario_name: Which scenario to take. If none is specified, all are
                 returned.
             data_type: The type of data to extract. Either 'dataframe' or 'units'
             index: slicing index of the resulting dataframe
-        
+
         Returns:
             DataFrame: The corresponding dataframe
         """
@@ -132,10 +132,10 @@ class Results:
         """Calculates the full timeseries per scenario.
 
         Args:
-            scenario: The scenario for with the component should be extracted 
+            scenario: The scenario for with the component should be extracted
                 (only if needed)
             component: Component for the Series
-            discount_to_first_step: apply annuity to first year of interval or 
+            discount_to_first_step: apply annuity to first year of interval or
                 entire interval
             year: year of which full time series is selected
             keep_raw: Keep the raw values of the rolling horizon optimization
@@ -144,8 +144,7 @@ class Results:
         Returns:
             Full timeseries
         """
-        assert component.timestep_type is not None, ("Component has no "
-            "timestep type.")
+        assert component.timestep_type is not None, "Component has no " "timestep type."
 
         if index is None:
             index = tuple()
@@ -218,7 +217,7 @@ class Results:
                     ]
                 output_df = series[sequence_timesteps]
             elif component.timestep_type is TimestepType.storage:
-                # for storage components, the last timestep is the final state, 
+                # for storage components, the last timestep is the final state,
                 # linear interpolation is used
                 last_occurrences = sequence_timesteps.drop_duplicates(keep="last")
                 first_occurrences = sequence_timesteps.drop_duplicates(keep="first")
@@ -309,14 +308,14 @@ class Results:
 
         Args:
             component_name: Name of the component
-            scenario_name: The scenario for with the component should be 
+            scenario_name: The scenario for with the component should be
                 extracted (only if needed)
-            discount_to_first_step: apply annuity to first year of interval or 
+            discount_to_first_step: apply annuity to first year of interval or
                 entire interval
             year: year of which full time series is selected
             keep_raw: Keep the raw values of the rolling horizon optimization
             index: slicing index of the resulting dataframe
-        
+
         Returns:
            Full timeseries
         """
@@ -404,14 +403,16 @@ class Results:
             timesteps = self.solution_loader.get_timesteps(scenario, component, int(y))
             try:
                 ans.insert(
-                    len(ans.columns), y, 
-                    total_value[timesteps].sum(axis=1, skipna=False)
-                ) 
+                    len(ans.columns),
+                    y,
+                    total_value[timesteps].sum(axis=1, skipna=False),
+                )
             except KeyError:
                 timestep_list = [i for i in timesteps if i in total_value]
                 ans.insert(
-                    len(ans.columns), year, 
-                    total_value[timestep_list].sum(axis=1, skipna=False)
+                    len(ans.columns),
+                    year,
+                    total_value[timestep_list].sum(axis=1, skipna=False),
                 )
 
         if "mf" in ans.index.names:
@@ -434,13 +435,13 @@ class Results:
         """Calculates the total values of a component for a all scenarios.
 
         Args:
-            component_name: Name of the component. Should not be used for dual 
+            component_name: Name of the component. Should not be used for dual
                 variables!
             year: Filter the results by a given year
             scenario_name: Filter the results by a given scenario
             keep_raw: Keep the raw values of the rolling horizon optimization
             index: slicing index of the resulting dataframe
-        
+
         Returns:
             DataFrame: Total values of the component
         """
@@ -492,7 +493,7 @@ class Results:
         """Concatenates a dict of the form str: Data to one dataframe.
 
         Args:
-            scenarios_dict: Dict containing the scenario names as key and the 
+            scenarios_dict: Dict containing the scenario names as key and the
                 values as values.
 
         Returns:
@@ -509,7 +510,7 @@ class Results:
         else:
             try:
                 # type: ignore # noqa
-                total_value = pd.concat(scenarios_dict, keys=scenarios_dict.keys())  
+                total_value = pd.concat(scenarios_dict, keys=scenarios_dict.keys())
             except Exception:
                 total_value = pd.concat(
                     scenarios_dict, keys=scenarios_dict.keys(), axis=1
@@ -522,10 +523,10 @@ class Results:
         """Discounts the duals.
 
         Args:
-            discount_to_first_step: apply annuity to first year of interval or 
+            discount_to_first_step: apply annuity to first year of interval or
                 entire interval
             scenario: scenario name whose results are assessed
-        
+
         Returns:
             annuity of the duals
         """
@@ -584,7 +585,7 @@ class Results:
             component_name: Name of dual
             scenario_name: Scenario Name
             year: Year
-            discount_to_first_step: apply annuity to first year of interval or 
+            discount_to_first_step: apply annuity to first year of interval or
                 entire interval
             keep_raw: Keep the raw values of the rolling horizon optimization
             index: slicing index of the resulting dataframe
@@ -624,10 +625,10 @@ class Results:
             scenario_name: Name of the scenario
             index: slicing index of the resulting dataframe
             droplevel: Drop the location and time levels of the multiindex
-            convert_to_yearly_unit: If True, the unit is converted to a 
-                yearly unit, i.e., for components with an operational time step 
+            convert_to_yearly_unit: If True, the unit is converted to a
+                yearly unit, i.e., for components with an operational time step
                 type, the unit is multiplied by hours.
-        
+
         Returns:
             DataFrame: The corresponding unit
         """
@@ -706,7 +707,7 @@ class Results:
             if convert_to_yearly_unit and timestep_type is TimestepType.operational:
                 u = u * self.ureg.h
             u_return = f"{u.u:~D}"
-        # if the unit is not in the pint registry, change the string manually 
+        # if the unit is not in the pint registry, change the string manually
         # (normally when the unit_definition.txt is not saved)
         except Exception:
             if convert_to_yearly_unit and timestep_type is TimestepType.operational:
@@ -750,8 +751,8 @@ class Results:
         """Extract analysis configurations from a scenario.
 
         Extracts analysis configurations from the results of a scenario. This
-        ensures the tractability of model configurations. Analysis 
-        configurations are those specified under the ``analysis`` object in 
+        ensures the tractability of model configurations. Analysis
+        configurations are those specified under the ``analysis`` object in
         the ``config.json`` file.
 
         Args:
@@ -907,10 +908,10 @@ class Results:
 
         Args:
             node: current node, connected by edges
-            direction: direction of edges, either in or out. In: 
+            direction: direction of edges, either in or out. In:
                 node = endnode, out: node = startnode
             set_nodes_on_edges: set of nodes on edges
-        
+
         Returns:
             set_connected_edges: list of connected edges
         """
@@ -936,7 +937,7 @@ class Results:
         self, dataframe: pd.DataFrame, carrier: str, scenario_name: str
     ) -> pd.DataFrame:
         """Returns a dataframe that only contains the desired carrier.
-        If carrier is not contained in the dataframe, the technologies that 
+        If carrier is not contained in the dataframe, the technologies that
         have the provided reference carrier are returned.
 
         :param dataframe: pd.Dataframe containing the base data
@@ -957,7 +958,7 @@ class Results:
                     )
             return data_extracted
 
-        # check if desired carrier isn't contained in data 
+        # check if desired carrier isn't contained in data
         # (otherwise .loc raises an error)
         if carrier not in dataframe.index.get_level_values("carrier"):
             return pd.DataFrame()
@@ -996,8 +997,8 @@ class Results:
         self, node: str, carrier: str, year: int, scenario_name: Optional[str] = None
     ) -> dict[str, "pd.Series[Any]"]:
         """Returns a dictionary with all dataframes that are relevant for
-        the energy balance. The dataframes "flow_transport_in" and 
-        "flow_transport_out" contain the data of "flow_transport", filtered 
+        the energy balance. The dataframes "flow_transport_in" and
+        "flow_transport_out" contain the data of "flow_transport", filtered
         for in / out flow.
 
         :param node: Node of interest
@@ -1068,10 +1069,10 @@ class Results:
         :param component_type: Type of the component
         :return: List of component names
         """
-        assert (
-            component_type in ComponentType.get_component_type_names()
-        ), (f"Invalid component type: {component_type}. Valid types are: "
-            f"{ComponentType.get_component_type_names()}")
+        assert component_type in ComponentType.get_component_type_names(), (
+            f"Invalid component type: {component_type}. Valid types are: "
+            f"{ComponentType.get_component_type_names()}"
+        )
         list_names = []
         for scenario in self.solution_loader.scenarios:
             for cn in self.solution_loader.scenarios[scenario].component_types[

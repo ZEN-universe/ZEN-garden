@@ -18,7 +18,7 @@ __all__ = [
     "compare_configs",
     "compare_model_values",
     "compare_dicts",
-    "wrapper"
+    "wrapper",
 ]
 
 
