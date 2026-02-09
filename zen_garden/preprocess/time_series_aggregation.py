@@ -1,5 +1,4 @@
-"""Functions to apply time series aggregation to time series.
-"""
+"""Functions to apply time series aggregation to time series."""
 
 import copy
 import logging
@@ -13,8 +12,7 @@ from zen_garden.model.energy_system import EnergySystem
 
 
 class TimeSeriesAggregation(object):
-    """Class containing methods to apply time series aggregation.
-    """
+    """Class containing methods to apply time series aggregation."""
 
     def __init__(self, energy_system: EnergySystem):
         """Initializes the time series aggregation. The data is aggregated

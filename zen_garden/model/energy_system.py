@@ -20,8 +20,7 @@ from .time_steps import TimeStepsDicts
 
 
 class EnergySystem:
-    """Class defining a standard energy system.
-    """
+    """Class defining a standard energy system."""
 
     def __init__(self, optimization_setup):
         """Initialization of the energy_system.
@@ -582,8 +581,7 @@ class EnergySystem:
 
 
 class EnergySystemRules(GenericRule):
-    """This class takes care of the rules for the EnergySystem.
-    """
+    """This class takes care of the rules for the EnergySystem."""
 
     def __init__(self, optimization_setup):
         """Inits the constraints for a given energy system.
@@ -593,7 +591,7 @@ class EnergySystemRules(GenericRule):
         super().__init__(optimization_setup)
 
     def constraint_carbon_emissions_cumulative(self):
-        """Cumulative carbon emissions over time.
+        r"""Cumulative carbon emissions over time.
 
         .. math::
             \\mathrm{First\\ planning\\ period}\\ y = y_0,
@@ -632,7 +630,7 @@ class EnergySystemRules(GenericRule):
         )
 
     def constraint_carbon_emissions_annual_limit(self):
-        """Time dependent carbon emissions limit from technologies and carriers.
+        r"""Time dependent carbon emissions limit from technologies and carriers.
 
         .. math::
             E_y\\leq e_y
@@ -650,7 +648,7 @@ class EnergySystemRules(GenericRule):
         )
 
     def constraint_carbon_emissions_budget(self):
-        """Carbon emissions budget of whole time horizon from technologies and carriers.
+        r"""Carbon emissions budget of whole time horizon from technologies and carriers.
         The prediction extends until the end of the horizon, i.e., last optimization
         time step plus the current carbon emissions until the end of the horizon.
 
@@ -686,7 +684,7 @@ class EnergySystemRules(GenericRule):
         )
 
     def constraint_net_present_cost(self):
-        """Discounts the annual capital flows to calculate the net_present_cost.
+        r"""Discounts the annual capital flows to calculate the net_present_cost.
 
         .. math::
             NPC_y = \\sum_{i \\in [0,dy(y))-1]}
@@ -727,7 +725,7 @@ class EnergySystemRules(GenericRule):
         self.constraints.add_constraint("constraint_net_present_cost", constraints)
 
     def constraint_carbon_emissions_budget_overshoot(self):
-        """Enforces zero budget overshoot if price for budget overshoot is inf.
+        r"""Enforces zero budget overshoot if price for budget overshoot is inf.
 
         ensures carbon emissions overshoot of carbon budget is zero when
         carbon emissions price for budget overshoot is inf.
@@ -753,7 +751,7 @@ class EnergySystemRules(GenericRule):
         )
 
     def constraint_carbon_emissions_annual_overshoot(self):
-        """Enforces zero annual overshoot if price for annual overshoot is inf.
+        r"""Enforces zero annual overshoot if price for annual overshoot is inf.
 
         ensures annual carbon emissions overshoot is zero when carbon
         emissions price for annual overshoot is inf.
@@ -780,7 +778,7 @@ class EnergySystemRules(GenericRule):
         )
 
     def constraint_carbon_emissions_annual(self):
-        """Add up all carbon emissions from technologies and carriers.
+        r"""Add up all carbon emissions from technologies and carriers.
 
         .. math::
             E_y = E_{y,\\mathcal{H}} + E_{y,\\mathcal{C}}
@@ -803,7 +801,7 @@ class EnergySystemRules(GenericRule):
         )
 
     def constraint_cost_carbon_emissions_total(self):
-        """Carbon cost associated with the carbon emissions of the system in each year.
+        r"""Carbon cost associated with the carbon emissions of the system in each year.
 
         .. math::
             OPEX_y^\\mathrm{c} = E_y\\mu + E_y^\\mathrm{o}\\mu^\\mathrm{o}
@@ -848,7 +846,7 @@ class EnergySystemRules(GenericRule):
         )
 
     def constraint_cost_total(self):
-        """Add up all costs from technologies and carriers.
+        r"""Add up all costs from technologies and carriers.
 
         .. math::
             C_y = CAPEX_y + OPEX_y^\\mathrm{t} + OPEX_y^\\mathrm{c} + OPEX_y^\\mathrm{e}
@@ -879,7 +877,7 @@ class EnergySystemRules(GenericRule):
     # ---------------
 
     def objective_total_cost(self, model):
-        """Objective function to minimize the total net present cost.
+        r"""Objective function to minimize the total net present cost.
 
         .. math::
             J = \\sum_{y\\in\\mathcal{Y}} NPC_y
@@ -890,7 +888,7 @@ class EnergySystemRules(GenericRule):
         return model.variables["net_present_cost"].sum("set_time_steps_yearly")
 
     def objective_total_carbon_emissions(self, model):
-        """Objective function to minimize total emissions.
+        r"""Objective function to minimize total emissions.
 
         .. math::
             J = E^{\\mathrm{cum}}_Y

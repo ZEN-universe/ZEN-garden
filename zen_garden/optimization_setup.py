@@ -658,8 +658,7 @@ class OptimizationSetup(object):
             self.energy_system.set_time_steps_yearly = time_steps_yearly_horizon
 
     def solve(self):
-        """Create model instance by assigning parameter values and instantiating the sets.
-        """
+        """Create model instance by assigning parameter values and instantiating the sets."""
         solver_name = self.solver.name
         # remove options that are None
         solver_options = {
@@ -699,8 +698,7 @@ class OptimizationSetup(object):
             self.optimality = False
 
     def write_IIS(self, scenario=""):
-        """Write an ILP file to print the IIS if infeasible. Only possible for gurobi.
-        """
+        """Write an ILP file to print the IIS if infeasible. Only possible for gurobi."""
         if (
             self.model.termination_condition == "infeasible"
             and self.solver.name == "gurobi"

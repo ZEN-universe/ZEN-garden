@@ -14,8 +14,7 @@ from .conversion_technology import ConversionTechnology
 
 
 class RetrofittingTechnology(ConversionTechnology):
-    """Class defining retrofitting technologies.
-    """
+    """Class defining retrofitting technologies."""
 
     # set label
     label = "set_retrofitting_technologies"
@@ -108,8 +107,7 @@ class RetrofittingTechnology(ConversionTechnology):
 
 
 class RetrofittingTechnologyRules(GenericRule):
-    """Rules for the RetrofittingTechnology class.
-    """
+    """Rules for the RetrofittingTechnology class."""
 
     def __init__(self, optimization_setup):
         """Inits the rules for a given EnergySystem.

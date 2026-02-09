@@ -17,8 +17,7 @@ from ordered_set import OrderedSet
 
 
 class ZenIndex(object):
-    """A multiindex class that can be easily used with xarray.
-    """
+    """A multiindex class that can be easily used with xarray."""
 
     def __init__(self, index_values, index_names=None):
         """Initialize the multiindex.
@@ -100,8 +99,7 @@ class ZenIndex(object):
         return vals[0]
 
     def __repr__(self):
-        """The representation of the ZenIndex.
-        """
+        """The representation of the ZenIndex."""
         # empty index
         if self.index is None:
             return "ZenIndex: Empty"
@@ -110,8 +108,7 @@ class ZenIndex(object):
 
 
 class ZenSet(OrderedSet):
-    """Similiar to pyomo.Set.
-    """
+    """Similiar to pyomo.Set."""
 
     def __init__(self, data, name="", doc="", index_set="UnnamedIndex"):
         """Initialize the set.
@@ -156,18 +153,15 @@ class ZenSet(OrderedSet):
         super().__init__(data)
 
     def is_indexed(self):
-        """Check if the set is indexed, just here because pyomo has it.
-        """
+        """Check if the set is indexed, just here because pyomo has it."""
         return self.indexed
 
     def get_index_name(self):
-        """Returns the index name if indexed.
-        """
+        """Returns the index name if indexed."""
         return self.index_set
 
     def __repr__(self):
-        """Return a string representation of the set.
-        """
+        """Return a string representation of the set."""
         return f"{super().__repr__()} indexed={self.indexed}"
 
     def __getitem__(self, item):
@@ -183,12 +177,10 @@ class ZenSet(OrderedSet):
 
 
 class Component:
-    """Class to prepare parameter, variable and constraint data to suit linopy.
-    """
+    """Class to prepare parameter, variable and constraint data to suit linopy."""
 
     def __init__(self):
-        """Instantiate object of Component class.
-        """
+        """Instantiate object of Component class."""
         self.docs = {}
 
     @staticmethod
@@ -249,8 +241,7 @@ class Component:
 
 
 class IndexSet(Component):
-    """Class to prepare parameter data for pyomo parameter prerequisites.
-    """
+    """Class to prepare parameter data for pyomo parameter prerequisites."""
 
     def __init__(self):
         """Initialization of the IndexSet object."""
@@ -472,8 +463,7 @@ class IndexSet(Component):
 
 
 class DictParameter(object):
-    """This is a helper class to store the dictionary parameters.
-    """
+    """This is a helper class to store the dictionary parameters."""
 
     def add_param(self, name, data):
         """Add a parameter.

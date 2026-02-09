@@ -122,7 +122,7 @@ def resolve_job_index(job_index: str, job_index_var: str) -> list[int]:
 
 
 def create_zen_garden_cli():
-    """Entry point for the `zen-garden` command-line interface.
+    r"""Entry point for the `zen-garden` command-line interface.
 
     This function creates the command-line interface for running ZEN-garden.
     It first sets up an argument parser; extracts the job index (either from

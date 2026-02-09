@@ -28,8 +28,7 @@ NestedDict = dict[str, str | list[str]]
 
 
 class Results:
-    """The Results class is used to extract and process the results of a model run.
-    """
+    """The Results class is used to extract and process the results of a model run."""
 
     def __init__(self, path: str, enable_cache: bool = True):
         """Initializes the Results class.
@@ -690,8 +689,7 @@ class Results:
     def _convert_to_pint_units(
         self, u: str, convert_to_yearly_unit: bool, component_name: str
     ) -> str:
-        """Converts a string to a pint unit.
-        """
+        """Converts a string to a pint unit."""
         component = None
         for s in self.solution_loader.scenarios:
             if component_name in self.solution_loader.scenarios[s].components:

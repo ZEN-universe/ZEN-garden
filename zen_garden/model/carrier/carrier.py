@@ -15,8 +15,7 @@ from ..element import Element, GenericRule
 
 
 class Carrier(Element):
-    """Class defining a generic energy carrier.
-    """
+    """Class defining a generic energy carrier."""
 
     # set label
     label = "set_carriers"
@@ -347,8 +346,7 @@ class Carrier(Element):
 
 
 class CarrierRules(GenericRule):
-    """Rules for the Carrier class.
-    """
+    """Rules for the Carrier class."""
 
     def __init__(self, optimization_setup):
         """Inits the rules for a given EnergySystem.
@@ -361,7 +359,7 @@ class CarrierRules(GenericRule):
     # ----------------------
 
     def constraint_cost_carrier_total(self):
-        """Total cost of importing and exporting carrier.
+        r"""Total cost of importing and exporting carrier.
 
         .. math::
             C_y^{\\mathcal{C}} = \\sum_{c\\in\\mathcal{C}}\\sum_{n\\in\\mathcal{N}}
@@ -391,7 +389,7 @@ class CarrierRules(GenericRule):
         self.constraints.add_constraint("constraint_cost_carrier_total", constraints)
 
     def constraint_carbon_emissions_carrier_total(self):
-        """Total carbon emissions of importing and exporting carrier.
+        r"""Total carbon emissions of importing and exporting carrier.
 
         .. math::
             E_y^{\\mathcal{C}} = \\sum_{c\\in\\mathcal{C}}\\sum_{n\\in\\mathcal{N}}
@@ -418,7 +416,7 @@ class CarrierRules(GenericRule):
         )
 
     def constraint_availability_import_export(self):
-        """node- and time-dependent carrier availability to import/export from outside
+        r"""node- and time-dependent carrier availability to import/export from outside
         the system boundaries.
 
         .. math::
@@ -453,7 +451,7 @@ class CarrierRules(GenericRule):
         )
 
     def constraint_availability_import_export_yearly(self):
-        """node- and year-dependent carrier availability to import/export from outside
+        r"""node- and year-dependent carrier availability to import/export from outside
         the system boundaries.
 
         .. math::
@@ -506,7 +504,7 @@ class CarrierRules(GenericRule):
         )
 
     def constraint_cost_carrier(self):
-        """Cost of importing and exporting carrier.
+        r"""Cost of importing and exporting carrier.
 
         .. math::
            O_{c,n,t} = \\underline{u}_{c,n,t} \\underline{U}_{c,n,t} -
@@ -534,7 +532,7 @@ class CarrierRules(GenericRule):
         self.constraints.add_constraint("constraint_cost_carrier", constraints)
 
     def constraint_cost_limit_shed_demand(self):
-        """Cost and limit of shedding demand of carrier.
+        r"""Cost and limit of shedding demand of carrier.
 
         .. math::
            O_{c,n,t}^{\\mathrm{shed}\\ \\mathrm{demand}} = D_{c,n,t} \\nu_c \n
@@ -573,7 +571,7 @@ class CarrierRules(GenericRule):
         )
 
     def constraint_carbon_emissions_carrier(self):
-        """Carbon emissions of importing and exporting carrier.
+        r"""Carbon emissions of importing and exporting carrier.
 
         .. math::
            \\theta_{c,n,t}^{\\mathrm{carrier}} = \\underline{\\epsilon_c}
@@ -615,7 +613,7 @@ class CarrierRules(GenericRule):
         )
 
     def constraint_nodal_energy_balance(self):
-        """Nodal energy balance for each time step.
+        r"""Nodal energy balance for each time step.
 
         .. math::
             0 = -(d_{c,n,t}-D_{c,n,t})

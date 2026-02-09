@@ -1,5 +1,4 @@
-"""File that contains functions to compare the results of two or more models.
-"""
+"""File that contains functions to compare the results of two or more models."""
 
 import logging
 from typing import Any, Optional

@@ -1,5 +1,4 @@
-"""Class is defining to read in the results of an Optimization problem.
-"""
+"""Class is defining to read in the results of an Optimization problem."""
 
 import importlib.util
 import io
@@ -597,8 +596,7 @@ class IISConstraintParser(object):
 
 
 class ScenarioDict(dict):
-    """This is a dictionary for the scenario analysis that has some convenience functions.
-    """
+    """This is a dictionary for the scenario analysis that has some convenience functions."""
 
     _param_dict_keys = {
         "file",
@@ -641,8 +639,7 @@ class ScenarioDict(dict):
         self.update_config()
 
     def update_config(self):
-        """Updates the analysis, system, and solver in the config.
-        """
+        """Updates the analysis, system, and solver in the config."""
         config_parts = {
             "analysis": self.analysis,
             "system": self.system,
@@ -1071,8 +1068,7 @@ class InputDataChecks:
         self.optimization_setup = optimization_setup
 
     def check_technology_selections(self):
-        """Checks selection of different technologies in system.py file.
-        """
+        """Checks selection of different technologies in system.py file."""
         # Checks if at least one technology is selected in the system.py file
         assert (
             len(
@@ -1094,8 +1090,7 @@ class InputDataChecks:
             self.system = self.system.model_copy(update={tech_list: unique_elements})
 
     def check_year_definitions(self):
-        """Check if year-related parameters are defined correctly.
-        """
+        """Check if year-related parameters are defined correctly."""
         # assert that number of optimized years is a positive integer
         assert (
             isinstance(self.system.optimized_years, int)
@@ -1398,8 +1393,7 @@ class InputDataChecks:
 
 
 class StringUtils:
-    """This class handles strings for logging and filenames to tidy up scripts.
-    """
+    """This class handles strings for logging and filenames to tidy up scripts."""
 
     def __init__(self):
         """Initializes the class."""
@@ -1533,8 +1527,7 @@ class StringUtils:
 
 
 class ScenarioUtils:
-    """This class handles some stuff for scenarios to tidy up scripts.
-    """
+    """This class handles some stuff for scenarios to tidy up scripts."""
 
     def __init__(self):
         """Initializes the class."""
@@ -1655,8 +1648,7 @@ class ScenarioUtils:
 
 
 class OptimizationError(RuntimeError):
-    """Exception raised when the optimization problem is infeasible.
-    """
+    """Exception raised when the optimization problem is infeasible."""
 
     def __init__(
         self,

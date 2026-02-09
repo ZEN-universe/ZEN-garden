@@ -1,5 +1,4 @@
-"""Function that loads all classes and subclasses of carrier directory.
-"""
+"""Function that loads all classes and subclasses of carrier directory."""
 
 from pathlib import Path
 

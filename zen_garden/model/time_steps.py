@@ -1,5 +1,4 @@
-"""This file implements a helper class to deal with timesteps.
-"""
+"""This file implements a helper class to deal with timesteps."""
 
 import logging
 

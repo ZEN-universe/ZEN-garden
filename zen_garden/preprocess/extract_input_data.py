@@ -1,5 +1,4 @@
-"""Functions to extract the input data from the provided input files.
-"""
+"""Functions to extract the input data from the provided input files."""
 
 import copy
 import json
@@ -13,8 +12,7 @@ from scipy.stats import linregress
 
 
 class DataInput:
-    """Class to extract input data.
-    """
+    """Class to extract input data."""
 
     def __init__(
         self,

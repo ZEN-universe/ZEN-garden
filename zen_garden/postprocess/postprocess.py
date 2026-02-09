@@ -26,8 +26,7 @@ warnings.filterwarnings("ignore", category=NaturalNameWarning)
 
 
 class Postprocess:
-    """Class is defining the postprocessing of the results.
-    """
+    """Class is defining the postprocessing of the results."""
 
     def __init__(
         self,
@@ -188,8 +187,7 @@ class Postprocess:
             )
 
     def save_benchmarking_data(self):
-        """Saves the benchmarking data to a json file.
-        """
+        """Saves the benchmarking data to a json file."""
         # initialize dictionary
         benchmarking_data = dict()
         # get the benchmarking data
@@ -424,8 +422,7 @@ class Postprocess:
         self.write_file(self.name_dir.joinpath("dual_dict"), data_frames, mode="w")
 
     def save_system(self):
-        """Saves the system dict as json.
-        """
+        """Saves the system dict as json."""
         if self.system.use_rolling_horizon:
             fname = self.name_dir.parent.joinpath("system")
         else:
@@ -433,8 +430,7 @@ class Postprocess:
         self.write_file(fname, self.system, format="json")
 
     def save_analysis(self):
-        """Saves the analysis dict as json.
-        """
+        """Saves the analysis dict as json."""
         if self.system.use_rolling_horizon:
             fname = self.name_dir.parent.joinpath("analysis")
         else:
@@ -449,8 +445,7 @@ class Postprocess:
         self.write_file(fname, self.analysis, format="json")
 
     def save_solver(self):
-        """Saves the solver dict as json.
-        """
+        """Saves the solver dict as json."""
         # This we only need to save once
         if self.system.use_rolling_horizon:
             fname = self.name_dir.parent.joinpath("solver")
@@ -465,16 +460,14 @@ class Postprocess:
         self.write_file(fname, self.solver, format="json")
 
     def save_scenarios(self):
-        """Saves the scenario dict as json.
-        """
+        """Saves the scenario dict as json."""
         # only save the scenarios at the highest level
         root_dir = Path(self.analysis.folder_output).joinpath(self.model_name)
         fname = root_dir.joinpath("scenarios")
         self.write_file(fname, self.scenarios, format="json")
 
     def save_unit_definitions(self):
-        """Saves the user-defined units as txt.
-        """
+        """Saves the user-defined units as txt."""
         if self.system.use_rolling_horizon:
             fname = self.name_dir.parent.joinpath("unit_definitions")
         else:
@@ -493,8 +486,7 @@ class Postprocess:
         self.write_file(fname, txt, format="txt")
 
     def save_param_map(self):
-        """Saves the param_map dict as yaml.
-        """
+        """Saves the param_map dict as yaml."""
         if self.param_map is not None:
             # This we only need to save once
             if (

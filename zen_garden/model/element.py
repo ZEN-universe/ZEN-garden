@@ -20,8 +20,7 @@ from zen_garden.preprocess.extract_input_data import DataInput
 
 
 class Element:
-    """Class defining a standard Element.
-    """
+    """Class defining a standard Element."""
 
     # set label
     label = "set_elements"

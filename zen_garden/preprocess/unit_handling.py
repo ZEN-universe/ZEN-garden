@@ -1,5 +1,4 @@
-"""File which contains the unit handling and scaling class.
-"""
+"""File which contains the unit handling and scaling class."""
 
 import itertools
 import json
@@ -1361,9 +1360,7 @@ class Scaling:
         self.scaling_time = 0
 
     def initiate_A_matrix(self):
-        """Constructs the A matrix and the right hand side of the constraints.
-
-        """
+        """Constructs the A matrix and the right hand side of the constraints."""
         self.A_matrix = self.model.constraints.to_matrix(filter_missings=False)
         self.A_matrix_copy = self.A_matrix.copy()  # necessary for printing of numerics
         self.D_r_inv = np.ones(self.A_matrix.get_shape()[0])
@@ -1387,8 +1384,7 @@ class Scaling:
         self.rhs_copy = self.rhs.copy()  # necessary for printing of numerics
 
     def re_scale(self):
-        """Rescales the solution of the optimization model.
-        """
+        """Rescales the solution of the optimization model."""
         model = self.model
         for name_var in model.variables:
             var = model.variables[name_var]
@@ -1398,16 +1394,14 @@ class Scaling:
             )
 
     def analyze_numerics(self):
-        """Analyzes the numerics of the optimization model.
-        """
+        """Analyzes the numerics of the optimization model."""
         # print numerics if no scaling is activated
         self.initiate_A_matrix()
         self.A_matrix.eliminate_zeros()
         self.print_numerics(0, True)
 
     def run_scaling(self):
-        """Runs the scaling algorithm. Function called in runner.py.
-        """
+        """Runs the scaling algorithm. Function called in runner.py."""
         logging.info("\n--- Start Scaling ---\n")
         t0 = time.perf_counter()
         self.initiate_A_matrix()
@@ -1494,8 +1488,7 @@ class Scaling:
                 self.D_c_inv[vars[var].labels.data[mask]] = 1
 
     def overwrite_problem(self):
-        """Overwrites the optimization problem with the scaled data.
-        """
+        """Overwrites the optimization problem with the scaled data."""
         # pre-check variables -> skip binary and integer variables
         self.adjust_int_variables()
         # adjust scaling factors that have inf or nan values -> not 
@@ -1595,8 +1588,7 @@ class Scaling:
             self.D_c_inv = self.D_c_inv * vector
 
     def print_numerics_of_last_iteration(self):
-        """Prints the numerics of the last iteration of the scaling process.
-        """
+        """Prints the numerics of the last iteration of the scaling process."""
         self.A_matrix = (
             sp.sparse.diags(self.D_r_inv, 0, format="csr")
             .dot(self.A_matrix_copy)
@@ -1720,8 +1712,7 @@ class Scaling:
             self.last_rhs_range = range_rhs
 
     def iter_scaling(self):
-        """Generates the row and column scaling factors.
-        """
+        """Generates the row and column scaling factors."""
         # transform A matrix to csr matrix for better computational properties
         self.A_matrix.eliminate_zeros()
         self.A_matrix = sp.sparse.csr_matrix(self.A_matrix)

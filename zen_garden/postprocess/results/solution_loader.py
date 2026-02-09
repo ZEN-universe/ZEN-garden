@@ -1,5 +1,4 @@
-"""This module contains the implementation of a SolutionLoader that reads the solution.
-"""
+"""This module contains the implementation of a SolutionLoader that reads the solution."""
 
 import copy
 import json
@@ -69,8 +68,7 @@ class TimestepType(Enum):
 
 
 class Component:
-    """Class that defines a component.
-    """
+    """Class that defines a component."""
 
     def __init__(
         self,
@@ -364,8 +362,7 @@ class Scenario:
 
 
 class SolutionLoader:
-    """Implementation of a SolutionLoader.
-    """
+    """Implementation of a SolutionLoader."""
 
     def __init__(self, path: str, enable_cache: bool = True) -> None:
         self.path = path
@@ -631,8 +628,7 @@ class SolutionLoader:
     def get_timesteps_of_years(
         self, scenario: Scenario, ts_type: TimestepType, years: tuple
     ) -> "pd.DataFrame | pd.Series[Any]":
-        """Method that returns the timesteps of the scenario for a given year.
-        """
+        """Method that returns the timesteps of the scenario for a given year."""
         sequence_time_steps_name = _get_time_steps_file(scenario)
         version = get_solution_version(scenario)
         if check_if_v1_leq_v2(version, "v0"):
@@ -702,8 +698,7 @@ class SolutionLoader:
         return ans
 
     def get_optimized_years(self, scenario: Scenario) -> list[int]:
-        """Method that returns the years for which the solution was optimized.
-        """
+        """Method that returns the years for which the solution was optimized."""
         time_steps_file_name = _get_time_steps_file(scenario)
 
         try:
@@ -828,8 +823,7 @@ def check_if_v1_leq_v2(version1: str, version2: str) -> bool:
 
 
 def get_index_names(h5_file: h5py.File, component_name: str, version: str) -> list[str]:
-    """Helper-function that returns the pandas dataframe index names of a h5-Group.
-    """
+    """Helper-function that returns the pandas dataframe index names of a h5-Group."""
     if check_if_v1_leq_v2(version, "v0"):
         h5_group = h5_file[component_name + "/dataframe"]
         ans = []
@@ -849,8 +843,7 @@ def get_index_names(h5_file: h5py.File, component_name: str, version: str) -> li
 
 
 def get_doc(h5_file: h5py.File, component_name: str, version: str) -> str:
-    """Helper-function that returns the documentation of a h5-Group.
-    """
+    """Helper-function that returns the documentation of a h5-Group."""
     if check_if_v1_leq_v2(version, "v0"):
         doc = str(
             np.char.decode(h5_file[component_name + "/docstring"].attrs.get("value"))

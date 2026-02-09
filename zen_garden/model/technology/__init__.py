@@ -1,5 +1,4 @@
-"""Function that loads all classes and subclasses of technology directory.
-"""
+"""Function that loads all classes and subclasses of technology directory."""
 
 from pathlib import Path
 

@@ -14,8 +14,7 @@ from .technology import Technology
 
 
 class StorageTechnology(Technology):
-    """Class defining storage technologies.
-    """
+    """Class defining storage technologies."""
 
     # set label
     label = "set_storage_technologies"
@@ -375,8 +374,7 @@ class StorageTechnology(Technology):
 
 
 class StorageTechnologyRules(GenericRule):
-    """Rules for the StorageTechnology class.
-    """
+    """Rules for the StorageTechnology class."""
 
     def __init__(self, optimization_setup):
         """Inits the rules for a given EnergySystem.
@@ -386,7 +384,7 @@ class StorageTechnologyRules(GenericRule):
         super().__init__(optimization_setup)
 
     def constraint_charge_discharge_binary(self):
-        """Avoid simultaneous charge and discharge of storage technologies.
+        r"""Avoid simultaneous charge and discharge of storage technologies.
 
         Ensure that the storage technology cannot charge and discharge simultaneously
         within the same operational time step. This is only active if the
@@ -457,7 +455,7 @@ class StorageTechnologyRules(GenericRule):
         )
 
     def constraint_capacity_factor_storage(self):
-        """Limits load of storage technologies by capacity and maximum load factor.
+        r"""Limits load of storage technologies by capacity and maximum load factor.
 
         .. math::
             \\underline{H}_{k,n,t,y}+\\overline{H}_{k,n,t,y}\\leq
@@ -504,7 +502,7 @@ class StorageTechnologyRules(GenericRule):
         )
 
     def constraint_opex_emissions_technology_storage(self):
-        """Calculate opex of each technology.
+        r"""Calculate opex of each technology.
 
         .. math::
             O_{h,p,t}^\\mathrm{t} = \\beta_{h,p,t} (\\underline{H}_{k,n,t} +
@@ -565,7 +563,7 @@ class StorageTechnologyRules(GenericRule):
         )
 
     def constraint_storage_level_max(self):
-        """Limit maximum storage level to capacity.
+        r"""Limit maximum storage level to capacity.
 
         .. math::
             L_{k,n,t^\\mathrm{k}} \\le S^\\mathrm{e}_{k,n,y}
@@ -601,7 +599,7 @@ class StorageTechnologyRules(GenericRule):
         self.constraints.add_constraint("constraint_storage_level_max", constraints)
 
     def constraint_capacity_energy_to_power_ratio(self):
-        """Limit capacity power to energy ratio.
+        r"""Limit capacity power to energy ratio.
 
         .. math::
             \\rho_k^{min} S^{e}_{k,n,y} \\le S_{k,n,y}
@@ -652,7 +650,7 @@ class StorageTechnologyRules(GenericRule):
         )
 
     def constraint_couple_storage_level(self):
-        """Couple subsequent storage levels (time coupling constraints).
+        r"""Couple subsequent storage levels (time coupling constraints).
 
         .. math::
             L_{k,n,t^k,y} = L_{k,n,t^k-1,y} (1-\\phi_k)^{\\tau_{t^k}^k} +
@@ -755,7 +753,7 @@ class StorageTechnologyRules(GenericRule):
         self.constraints.add_constraint("constraint_flow_storage_spillage", constraints)
 
     def constraint_storage_technology_capex(self):
-        """Definition of the capital expenditures for the storage technology.
+        r"""Definition of the capital expenditures for the storage technology.
 
         .. math::
             CAPEX_{y,n,i} = \\Delta S_{h,p,y} \\alpha_{k,n,y}
