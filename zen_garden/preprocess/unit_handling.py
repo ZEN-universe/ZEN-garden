@@ -795,8 +795,7 @@ class UnitHandling:
                     analysis=optimization_setup.analysis,
                 )
                 units_of_wrong_attributes = self._get_units_of_wrong_attributes(
-                        wrong_atts=attributes_with_lowest_appearance, 
-                        unit_dict=unit_dict
+                    wrong_atts=attributes_with_lowest_appearance, unit_dict=unit_dict
                 )
                 raise AssertionError(
                     f"The attribute units of the {item.__class__.__name__} "
@@ -812,8 +811,7 @@ class UnitHandling:
                     reference_carrier_name=reference_carrier_name,
                 )
                 units_of_wrong_attributes = self._get_units_of_wrong_attributes(
-                        wrong_atts=attributes_with_lowest_appearance, 
-                        unit_dict=unit_dict
+                    wrong_atts=attributes_with_lowest_appearance, unit_dict=unit_dict
                 )
                 raise AssertionError(
                     f"The attribute units of the {item.__class__.__name__} "
@@ -829,8 +827,7 @@ class UnitHandling:
                 energy_quantity_units, item.name, analysis=optimization_setup.analysis
             )
             units_of_wrong_attributes = self._get_units_of_wrong_attributes(
-                    wrong_atts=energy_quantity_units, 
-                    unit_dict=unit_dict
+                wrong_atts=energy_quantity_units, unit_dict=unit_dict
             )
             raise AssertionError(
                 f"The attribute units defined in the energy_system are not "
