@@ -101,8 +101,11 @@ def parse_changes_from_pr_body(pr_body: str, pr_number: str, pr_author: str) -> 
             or contains unrecognized change types.
     """
     # get pull request information
-    pr_info = f"[[🔀 PR #{pr_number}](https://github.com/ZEN-universe/ZEN-garden/pull/{pr_number}) @{pr_author}]"
-
+    pr_info = (
+        f"[[🔀 PR #{pr_number}]"
+        f"(https://github.com/ZEN-universe/ZEN-garden/pull/{pr_number}) "
+        f"@{pr_author}]"
+    )
     # Extract "Detailed list of changes" section
     match = re.search(
         r"## *?Detailed list of changes *?\n(.*?)(\n## |$)", pr_body, re.DOTALL
