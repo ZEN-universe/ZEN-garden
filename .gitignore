@@ -106,6 +106,9 @@ target/
 profile_default/
 ipython_config.py
 
+# Ruff
+.ruff_cache/
+
 # condaenv
 # temp requirements condaenv: format: condaenv.*.requirements.txt
 # *.requirements.txt

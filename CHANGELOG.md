@@ -3,6 +3,15 @@
 This file gets automatically updated in ZEN-garden's continuous integration 
 procedures. Do not edit the file manually.
 
+## [v2.9.6] - 2026-02-09 
+
+### Bug Fixes 🐛
+- Fixes bug when data folder is not in the cwd but in a different location. Allows the path to be different and saves the results there. [[🔀 PR #1222](https://github.com/ZEN-universe/ZEN-garden/pull/1222) @jacob-mannhardt]
+
+### Maintenance Tasks 🧹
+- reformat and lint ZEN-garden code to match style guidelines. The code now passes checks from the formatter ``Black`` and the linter ``Ruff``. [[🔀 PR #1220](https://github.com/ZEN-universe/ZEN-garden/pull/1220) @csfunke]
+- enforce code formatting (via ``Black``) and linting (via ``Ruff``). All future pull requests must pass these checks to be eligible for merge into the ``main`` branch of ZEN-garden. These checks can be tested locally in a terminal by (i) activating the ZEN-garden environment, (ii) navigating the the ZEN-garden root folder, and (iii) typing ``black .`` and ``ruff --check .`` . [[🔀 PR #1220](https://github.com/ZEN-universe/ZEN-garden/pull/1220) @csfunke]
+
 ## [v2.9.5] - 2026-02-06 
 
 ### Bug Fixes 🐛

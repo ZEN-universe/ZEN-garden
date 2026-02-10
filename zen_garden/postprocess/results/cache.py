@@ -2,8 +2,7 @@ import functools
 
 
 class ConditionalCache:
-    """
-    Decorator to conditionally cache method results based on an instance flag.
+    """Decorator to conditionally cache method results based on an instance flag.
     If the flag is True, the method results are cached using functools.cache.
     Otherwise, the method is called normally without caching.
 

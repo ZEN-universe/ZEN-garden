@@ -33,6 +33,8 @@ Please check all items that apply. If an item is not applicable, please remove i
 ### Code quality
 - [ ] Newly introduced dependencies are added to `pyproject.toml`.
 - [ ] Code changes have been tested locally and all tests pass.
+- [ ] Code has been formatted via ``black .`` in a terminal window.
+- [ ] Linter ``ruff check .`` passes all checks.
 - [ ] Tests for new features were added:
   - [ ] The test is added to `run_tests.py` and `docu_test_cases.md`.
   - [ ] The tested variables are added to `test_variables.json`.
