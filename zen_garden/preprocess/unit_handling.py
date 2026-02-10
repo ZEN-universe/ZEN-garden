@@ -295,8 +295,8 @@ class UnitHandling:
         :param dim_matrix_reduced: dimensionality matrix without dependent units
         :param dim_vector: dimensionality vector of input unit
         :param input_unit: input unit
-        :return base_combination: base combination of input unit
-        :return combined_unit: input unit expressed in base units
+        :return: base_combination: base combination of input unit
+        :return: combined_unit: input unit expressed in base units
         """
         calculated_multiplier = False
         combined_unit = self.ureg(input_unit).units

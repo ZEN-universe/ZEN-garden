@@ -179,7 +179,7 @@ class DataInput:
         :param index_name_list: list of name of indices
         :param default_value: default for dataframe
         :param time_steps: specific time_steps of element
-        :return df_output: filled output dataframe
+        :return: df_output: filled output dataframe
         """
         df_output_copy = copy.deepcopy(df_output)
         df_input = self.convert_real_to_generic_time_indices(
@@ -265,7 +265,7 @@ class DataInput:
         """Reads input data and returns raw input dataframe.
 
         :param input_file_name: name of selected file
-        :return df_input: pd.DataFrame with input data
+        :return: df_input: pd.DataFrame with input data
         """
         # append .csv suffix
         input_file_name += ".csv"
@@ -293,7 +293,7 @@ class DataInput:
         """Reads json input data and returns a dict.
 
         :param input_file_name: name of selected file
-        :return data: dict with input data
+        :return: data: dict with input data
         """
         input_file_name += ".json"
 
@@ -359,8 +359,8 @@ class DataInput:
         """Get attribute dict and factor for attribute.
 
         :param attribute_name: name of selected attribute
-        :return attribute_dict: attribute dict
-        :return factor: factor for attribute
+        :return: attribute_dict: attribute dict
+        :return: factor: factor for attribute
         """
         if self.scenario_dict is not None:
             filename, factor = self.scenario_dict.get_default(
@@ -645,9 +645,9 @@ class DataInput:
         """Reads input data to extract nodes or edges.
 
         Args
-            extract_nodes: boolean to switch between nodes and edges
+            extract_nodes: boolean to switch between nodes and edges \n
             extract_coordinates: boolean to switch between nodes and
-                nodes + coordinates
+            nodes + coordinates
         """
         if extract_nodes:
             set_nodes_config = self.system.set_nodes
@@ -731,7 +731,7 @@ class DataInput:
     def extract_retrofit_base_technology(self):
         """Extract base technologies for retrofitting technology.
 
-        :return base_technology: return base technology of retrofit technology
+        :return: return base technology of retrofit technology
         """
         attribute_name = "retrofit_flow_coupling_factor"
         technology_type = "base_technology"
@@ -788,6 +788,7 @@ class DataInput:
             file_name:  name of selected file
             index_sets: index sets of attribute. Creates (multi)index.
                 Corresponds to order in pe.Set/pe.Param
+        Returns:
             df_output: return existing capacity and existing lifetime
         """
         index_list, index_name_list = self.construct_index_list(index_sets, None)
@@ -823,7 +824,7 @@ class DataInput:
         """Reads input data and restructures the dataframe to return
         (multi)indexed dict.
 
-        :return pwa_dict: dictionary with pwa parameters
+        :return: pwa_dict: dictionary with pwa parameters
         """
         attribute_name = "capex_specific_conversion"
         index_sets = ["set_nodes", "set_time_steps_yearly"]
@@ -965,7 +966,7 @@ class DataInput:
     def read_pwa_capex_files(self):
         """Reads pwa files.
 
-        :return df_input: raw input file
+        :return: df_input: raw input file
         """
         df_input = self.read_input_csv("nonlinear_capex")
         has_unit = False
@@ -1062,6 +1063,7 @@ class DataInput:
             index_sets: index sets of attribute. Creates (multi)index.
                 Corresponds to order in pe.Set/pe.Param
             time_steps: specific time_steps of element
+        Returns:
             index_list: list of indices
             index_name_list: list of name of indices
         """
@@ -1091,7 +1093,7 @@ class DataInput:
         :param time_steps: specific time_steps of element
         :param file_name: name of selected file
         :param index_name_list: list of name of indices
-        :return df_input: input dataframe with generic time indices
+        :return: df_input: input dataframe with generic time indices
         """
         # check if input data is time-dependent and has yearly time steps
         idx_name_year = self.index_names["set_time_steps_yearly"]
@@ -1265,7 +1267,7 @@ class DataInput:
         :param df_input: raw input dataframe
         :param index_name_list: list of name of indices
         :param file_name: name of selected file
-        :return df_input: reformulated input dataframe
+        :return: df_input: reformulated input dataframe
         """
         if index_name_list:
             df_input = df_input.set_index(index_name_list)
@@ -1359,7 +1361,7 @@ class DataInput:
         :param index_name_list: list of name of indices
         :param column: select specific column
         :param missing_index: missing index in df_input
-        :return df_output: filled output dataframe
+        :return: df_output: filled output dataframe
         """
         index_name_list.remove(missing_index)
         df_input = df_input.set_index(index_name_list)
