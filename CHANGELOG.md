@@ -3,7 +3,10 @@
 This file gets automatically updated in ZEN-garden's continuous integration 
 procedures. Do not edit the file manually.
 
-## [Unversioned Changes] - 2026-02-10 
+## [v2.9.7] - 2026-02-10 
+
+### Bug Fixes 🐛
+- make the solver dir path relative to the config path, not the cwd. [[🔀 PR #1226](https://github.com/ZEN-universe/ZEN-garden/pull/1226) @jacob-mannhardt]
 
 ### Documentation Changes 📝
 - Format docstrings so that equations and line breaks are consistent. Also replace `\mathrm{}` for text within equations with `\text{}` [[🔀 PR #1224](https://github.com/ZEN-universe/ZEN-garden/pull/1224) @johburger]
