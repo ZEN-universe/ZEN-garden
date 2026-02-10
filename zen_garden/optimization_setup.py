@@ -299,7 +299,7 @@ class OptimizationSetup(object):
         """Get all names of elements in class.
 
         :param cls: class of the elements to return
-        :return names_of_elements: list of elements in this class
+        :return: names_of_elements: list of elements in this class
         """
         _elements_in_class = self.get_all_elements(cls=cls)
         names_of_elements = []
@@ -312,7 +312,7 @@ class OptimizationSetup(object):
 
         :param name: name of element
         :param cls: class of the elements to return
-        :return element: return element whose name is matched
+        :return: element: return element whose name is matched
         """
         for element in self.get_all_elements(cls=cls):
             if element.name == name:
@@ -323,7 +323,7 @@ class OptimizationSetup(object):
         """Get element class by name. If not an element class, return None.
 
         :param name: name of element class
-        :return element_class: return element whose name is matched
+        :return: element_class: return element whose name is matched
         """
         element_classes = {
             self.dict_element_classes[class_name].label: self.dict_element_classes[
@@ -341,7 +341,7 @@ class OptimizationSetup(object):
 
         :param element_name: name of element
         :param klass: class of the elements to return
-        :return class_set: set of all elements in the class of the element
+        :return: class_set: set of all elements in the class of the element
         """
         class_name = self.get_element(klass, element_name).__class__.label
         class_set = self.sets[class_name]
@@ -521,7 +521,7 @@ class OptimizationSetup(object):
         :param cls: class of the elements to return
         :param element_name: str name of element
         :param attribute_name: str name of attribute
-        :return attribute_value: value of attribute
+        :return: attribute_value: value of attribute
         """
         # get element
         element = self.get_element(cls, element_name)
@@ -600,7 +600,7 @@ class OptimizationSetup(object):
         steps for which the decisions are saved.
 
         :param step_horizon: step of the rolling horizon
-        :return decision_horizon: list of time steps in the decision horizon
+        :return: decision_horizon: list of time steps in the decision horizon
         """
         if step_horizon == self.optimized_time_steps[-1]:
             decision_horizon = [step_horizon]
@@ -880,7 +880,7 @@ class OptimizationSetup(object):
 
         :param component_data: extracted data as pd.Series
         :param custom_set: custom set as subindex of component_data
-        :return component_data: extracted subindexed data as pd.Series
+        :return: component_data: extracted subindexed data as pd.Series
         """
         # if custom_set is subindex of component_data, return subset of component_data
         try:

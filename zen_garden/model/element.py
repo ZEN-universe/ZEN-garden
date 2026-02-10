@@ -188,7 +188,7 @@ class Element:
 
         :param list_index: list of names of indices
         :param optimization_setup: The OptimizationSetup the element is part of
-        :return list_index: list of names of indices
+        :return: list_index: list of names of indices
         """
         list_index = list(list_index)  # make a copy of the list to avoid side effects
         sets = optimization_setup.sets
