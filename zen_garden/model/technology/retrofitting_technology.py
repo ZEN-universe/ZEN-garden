@@ -117,14 +117,14 @@ class RetrofittingTechnologyRules(GenericRule):
         super().__init__(optimization_setup)
 
     def constraint_retrofit_flow_coupling(self):
-        r"""Couples reference flow variables based on modeling technique.
+        """Couples reference flow variables based on modeling technique.
 
         .. math::
-            \mathrm{if\ reference\ carrier\ in\ input\ carriers}\
-            \\underline{G}_{i,n,t}^\mathrm{r} = G^\mathrm{d,approximation}_{i,n,t}
+            \\text{if reference carrier in input carriers}
+            \\underline{G}_{i,n,t}^\\mathrm{r} = G^\\mathrm{d,approximation}_{i,n,t}
         .. math::
-            \mathrm{if\ reference\ carrier\ in\ output\ carriers}\
-            \\overline{G}_{i,n,t}^\mathrm{r} = G^\mathrm{d,approximation}_{i,n,t}
+            \\text{if reference carrier in output carriers}
+            \\overline{G}_{i,n,t}^\\mathrm{r} = G^\\mathrm{d,approximation}_{i,n,t}
 
         """
         flow_conversion_input = self.variables["flow_conversion_input"]

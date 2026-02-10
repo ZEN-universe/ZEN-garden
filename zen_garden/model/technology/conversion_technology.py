@@ -512,12 +512,13 @@ class ConversionTechnology(Technology):
     @classmethod
     def calculate_capex_pwa_breakpoints_values(cls, optimization_setup, set_pwa):
         """Calculates breakpoints and function values for piecewise affine constraint.
-
-        :param optimization_setup: The OptimizationSetup the element is part of
-        :param set_pwa: set of variable indices in capex approximation,
-            for which pwa is performed
-        :return: pwa_breakpoints: dict of pwa breakpoint values
-        :return: pwa_values: dict of pwa function values
+        Args:
+            optimization_setup: The OptimizationSetup the element is part of.
+            set_pwa: Set of variable indices in capex approximation for
+            which pwa is performed.
+        Returns:
+            pwa_breakpoints: Dict of pwa breakpoint values indexed by variable indices.
+            pwa_values: Dict of pwa function values indexed by variable indices.
         """
         pwa_breakpoints = {}
         pwa_values = {}
@@ -550,7 +551,7 @@ class ConversionTechnologyRules(GenericRule):
         super().__init__(optimization_setup)
 
     def constraint_capacity_factor_conversion(self):
-        r"""Load is limited by the installed capacity and the maximum load factor.
+        """Load is limited by the installed capacity and the maximum load factor.
 
         .. math::
             G_{i,n,t}^\\mathrm{r} \\leq m^{\\mathrm{max}}_{i,n,t}S_{i,n,y}
@@ -595,7 +596,7 @@ class ConversionTechnologyRules(GenericRule):
         )
 
     def constraint_minimum_full_load_hours(self):
-        r"""Sets minimum full load hours for each unit.
+        """Sets minimum full load hours for each unit.
 
         This constraint requires that a minimum number of full_load_hours be met
         over the course of year. Full load hours are the amount of hours that
@@ -679,7 +680,7 @@ class ConversionTechnologyRules(GenericRule):
         )
 
     def constraint_opex_emissions_technology_conversion(self):
-        r"""Calculate opex and carbon emissions of each technology.
+        """Calculate opex and carbon emissions of each technology.
 
         .. math::
             O_{h,p,t}^\\mathrm{t} = \\beta_{h,p,t} G_{i,n,t}^\\mathrm{r} \n
@@ -750,7 +751,7 @@ class ConversionTechnologyRules(GenericRule):
         )
 
     def constraint_linear_capex(self):
-        r"""If capacity and capex have a linear relationship.
+        """If capacity and capex have a linear relationship.
 
         .. math::
             A_{h,p,y}^{approximation} = \\alpha_{h,n,y} \\Delta S_{h,p,y}^{approx}
@@ -798,7 +799,7 @@ class ConversionTechnologyRules(GenericRule):
         self.constraints.add_constraint("constraint_linear_capex", constraints)
 
     def constraint_capacity_capex_coupling(self):
-        r"""Couples capacity variables based on modeling technique.
+        """Couples capacity variables based on modeling technique.
 
         .. math::
             \\Delta S_{h,p,y} = \\Delta S_{h,p,y}^\\mathrm{approx}
@@ -845,7 +846,7 @@ class ConversionTechnologyRules(GenericRule):
         self.constraints.add_constraint("constraint_capex_coupling", constraints_capex)
 
     def constraint_carrier_conversion(self):
-        r"""Conversion factor between reference carrier and dependent carrier.
+        """Conversion factor between reference carrier and dependent carrier.
 
         .. math::
             G^\\mathrm{d}_{i,n,t} = \\eta_{i,c,n,y}G^\\mathrm{r}_{i,n,t}

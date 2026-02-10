@@ -295,7 +295,7 @@ class TimeSeriesAggregation(object):
         """Manually aggregates time series for excluded parameters.
 
         :param df: dataframe that is manually aggregated
-        :return agg_df: aggregated dataframe
+        :return: agg_df: aggregated dataframe
         """
         agg_df = pd.DataFrame(index=self.set_time_steps, columns=df.columns)
         tsa_options = self.analysis.time_series_aggregation
@@ -339,7 +339,7 @@ class TimeSeriesAggregation(object):
 
         :param element: element of the optimization
         :param header_set_time_steps: name of set_time_steps
-        :return df_ts_raw: pd.DataFrame with non-constant time series
+        :return: df_ts_raw: pd.DataFrame with non-constant time series
         """
         dict_raw_ts = {}
         raw_ts = element.raw_time_series
@@ -553,7 +553,7 @@ class TimeSeriesAggregation(object):
         :param element: technology of the optimization
         :param ts_name: name of time series
         :param ts: time series
-        :return multipliedTimeSeries: ts multiplied with yearly variation
+        :return: multipliedTimeSeries: ts multiplied with yearly variation
         """
         if hasattr(element.data_input, ts_name + "_yearly_variation"):
             yearly_variation = getattr(

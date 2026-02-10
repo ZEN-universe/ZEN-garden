@@ -360,7 +360,7 @@ class CarrierRules(GenericRule):
     # ----------------------
 
     def constraint_cost_carrier_total(self):
-        r"""Total cost of importing and exporting carrier.
+        """Total cost of importing and exporting carrier.
 
         .. math::
             C_y^{\\mathcal{C}} = \\sum_{c\\in\\mathcal{C}}\\sum_{n\\in\\mathcal{N}}
@@ -369,7 +369,7 @@ class CarrierRules(GenericRule):
 
         :math:`O_{c,n,t}`: cost of importing and exporting carrier :math:`c`
         at node :math:`n` and time step :math:`t`\n
-        :math:`O_{c,n,t}^{\\mathrm{shed}\\ \\mathrm{demand}}`: cost of shedding demand
+        :math:`O_{c,n,t}^{\\mathrm{shed\\ demand}}`: cost of shedding demand
         of carrier :math:`c` at node :math:`n` and time step :math:`t`\n
         :math:`\\tau_t`: duration of time step :math:`t`
 
@@ -390,7 +390,7 @@ class CarrierRules(GenericRule):
         self.constraints.add_constraint("constraint_cost_carrier_total", constraints)
 
     def constraint_carbon_emissions_carrier_total(self):
-        r"""Total carbon emissions of importing and exporting carrier.
+        """Total carbon emissions of importing and exporting carrier.
 
         .. math::
             E_y^{\\mathcal{C}} = \\sum_{c\\in\\mathcal{C}}\\sum_{n\\in\\mathcal{N}}
@@ -417,7 +417,7 @@ class CarrierRules(GenericRule):
         )
 
     def constraint_availability_import_export(self):
-        r"""node- and time-dependent carrier availability to import/export from outside
+        """node- and time-dependent carrier availability to import/export from outside
         the system boundaries.
 
         .. math::
@@ -452,7 +452,7 @@ class CarrierRules(GenericRule):
         )
 
     def constraint_availability_import_export_yearly(self):
-        r"""node- and year-dependent carrier availability to import/export from outside
+        """node- and year-dependent carrier availability to import/export from outside
         the system boundaries.
 
         .. math::
@@ -505,7 +505,7 @@ class CarrierRules(GenericRule):
         )
 
     def constraint_cost_carrier(self):
-        r"""Cost of importing and exporting carrier.
+        """Cost of importing and exporting carrier.
 
         .. math::
            O_{c,n,t} = \\underline{u}_{c,n,t} \\underline{U}_{c,n,t} -
@@ -533,13 +533,13 @@ class CarrierRules(GenericRule):
         self.constraints.add_constraint("constraint_cost_carrier", constraints)
 
     def constraint_cost_limit_shed_demand(self):
-        r"""Cost and limit of shedding demand of carrier.
+        """Cost and limit of shedding demand of carrier.
 
         .. math::
-           O_{c,n,t}^{\\mathrm{shed}\\ \\mathrm{demand}} = D_{c,n,t} \\nu_c \n
+           O_{c,n,t}^{\\mathrm{shed\\ demand}} = D_{c,n,t} \\nu_c \n
            D_{c,n,t} \\leq d_{c,n,t}
 
-        :math:`O_{c,n,t}^{\\mathrm{shed}\\ \\mathrm{demand}}`: total cost of shedding
+        :math:`O_{c,n,t}^{\\mathrm{shed\\ demand}}`: total cost of shedding
         demand of carrier :math:`c` at node :math:`n` and time step :math:`t`\n
         :math:`\\nu_c`: price to shed demand of carrier :math:`c`\n
         :math:`D_{c,n,t}`: shed demand of carrier :math:`c` at node :math:`n` and
@@ -572,7 +572,7 @@ class CarrierRules(GenericRule):
         )
 
     def constraint_carbon_emissions_carrier(self):
-        r"""Carbon emissions of importing and exporting carrier.
+        """Carbon emissions of importing and exporting carrier.
 
         .. math::
            \\theta_{c,n,t}^{\\mathrm{carrier}} = \\underline{\\epsilon_c}
@@ -614,7 +614,7 @@ class CarrierRules(GenericRule):
         )
 
     def constraint_nodal_energy_balance(self):
-        r"""Nodal energy balance for each time step.
+        """Nodal energy balance for each time step.
 
         .. math::
             0 = -(d_{c,n,t}-D_{c,n,t})

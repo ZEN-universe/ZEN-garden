@@ -367,7 +367,7 @@ class TransportTechnologyRules(GenericRule):
         super().__init__(optimization_setup)
 
     def constraint_capacity_factor_transport(self):
-        r"""Load is limited by the installed capacity and the maximum load factor.
+        """Load is limited by the installed capacity and the maximum load factor.
 
         .. math::
             F_{j,e,t,y}^\\mathrm{r} \\leq m^{\\mathrm{max}}_{j,e,t,y}S_{j,e,y}
@@ -411,7 +411,7 @@ class TransportTechnologyRules(GenericRule):
         )
 
     def constraint_opex_emissions_technology_transport(self):
-        r"""Calculate opex of each technology.
+        """Calculate opex of each technology.
 
         .. math::
             O_{j,t,y}^\\mathrm{t} = \\beta_{j,y} F_{j,e,t,y}
@@ -474,12 +474,12 @@ class TransportTechnologyRules(GenericRule):
         )
 
     def constraint_transport_technology_losses_flow(self):
-        r"""Compute the flow losses for a carrier through a transport technology.
+        """Compute the flow losses for a carrier through a transport technology.
 
         .. math::
-            \\mathrm{if transport distance set to inf:} F^\\mathrm{l}_{j,e,t} = 0
+            \\text{if transport distance set to inf: } F^\\mathrm{l}_{j,e,t} = 0
         .. math::
-            \\mathrm{else:} F^\\mathrm{l}_{j,e,t} = h_{j,e} \\rho_{j} F_{j,e,t}
+            \\text{else: } F^\\mathrm{l}_{j,e,t} = h_{j,e} \\rho_{j} F_{j,e,t}
 
         :math:`F^\\mathrm{l}_{j,e,t}`: Flow losses of carrier through transport
         technology :math:`j` on edge :math:`e` at time :math:`t` \n
@@ -510,12 +510,12 @@ class TransportTechnologyRules(GenericRule):
         )
 
     def constraint_transport_technology_capex(self):
-        r"""Definition of the capital expenditures for the transport technology.
+        """Definition of the capital expenditures for the transport technology.
 
         .. math::
-            \\mathrm{if transport distance set to inf:} \\Delta S_{j,e,y} = 0
+            \\text{if transport distance set to inf: } \\Delta S_{j,e,y} = 0
         .. math::
-            \\mathrm{else:} CAPEX_{j,e,y} = \\Delta S_{j,e,y}
+            \\text{else: } CAPEX_{j,e,y} = \\Delta S_{j,e,y}
             \\alpha_{j,y}^{\\mathrm{const}} +
             \\Delta S_{j,e,y} h_{j,e} \\alpha^\\mathrm{dist}_{j,e,y}
 

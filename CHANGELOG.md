@@ -3,6 +3,11 @@
 This file gets automatically updated in ZEN-garden's continuous integration 
 procedures. Do not edit the file manually.
 
+## [Unversioned Changes] - 2026-02-10 
+
+### Documentation Changes 📝
+- Format docstrings so that equations and line breaks are consistent. Also replace `\mathrm{}` for text within equations with `\text{}` [[🔀 PR #1224](https://github.com/ZEN-universe/ZEN-garden/pull/1224) @johburger]
+
 ## [v2.9.6] - 2026-02-09 
 
 ### Bug Fixes 🐛
