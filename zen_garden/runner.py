@@ -89,7 +89,7 @@ def run(config="./config.json", dataset=None, job_index=None, folder_output=None
         config.analysis.folder_output = folder_output
         config.solver.solver_dir = folder_output
     logging.info(f"Optimizing for dataset {config.analysis.dataset}")
-    # get the abs path to avoid working dir stuff
+    # make all paths absolute to the config file path
     if not Path(config.analysis.dataset).is_absolute():
         config.analysis.dataset = os.path.abspath(
             Path(config_path) / config.analysis.dataset
@@ -97,6 +97,10 @@ def run(config="./config.json", dataset=None, job_index=None, folder_output=None
     if not Path(config.analysis.folder_output).is_absolute():
         config.analysis.folder_output = os.path.abspath(
             Path(config_path) / config.analysis.folder_output
+        )
+    if not Path(config.solver.solver_dir).is_absolute():
+        config.solver.solver_dir = os.path.abspath(
+            Path(config_path) / config.solver.solver_dir
         )
     config.analysis.zen_garden_version = version
     ### SYSTEM CONFIGURATION
