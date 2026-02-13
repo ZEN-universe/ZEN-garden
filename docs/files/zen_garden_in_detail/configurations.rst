@@ -127,3 +127,11 @@ You can analyze the numerics of your optimization problem via
 default, four iterations of the scaling algorithm are conducted without 
 including the values of the right-hand-side. :ref:`t_scaling.t_scaling` provides a detailed 
 description of the scaling algorithm.
+
+.. _configuration.plugins:
+
+Activating plugins and passing configurations to plugins is done by modifying the ``plugins`` key
+in the ``config.json``. The key name corresponds to the plugin name to be activated.
+the dictonary under this key defines the configuration for the plugin.
+
+
