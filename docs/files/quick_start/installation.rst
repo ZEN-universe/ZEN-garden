@@ -18,9 +18,11 @@ command prompt.
 
 We recommend working from a conda environment for the installation. If you have 
 not installed Anaconda, you can download it from the 
-`Anaconda website <https://docs.anaconda.com/anaconda/install/>`_. You can check 
-if you have Anaconda installed by running the following command in  a terminal 
-(MacOS)/command prompt (Windows)
+`Anaconda website <https://docs.anaconda.com/anaconda/install/>`_.
+For the general installer and beginner documentation of Python, please visit
+`Python.org <https://www.python.org/about/gettingstarted/>`_.
+You can check if you have Anaconda installed by running the following command in
+a terminal (MacOS)/command prompt (Windows)
 
 .. code:: shell
 

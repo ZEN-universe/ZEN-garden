@@ -46,12 +46,22 @@ more detail. The ``.csv`` files are optional and can be omitted if the default
 values are sufficient. More detail on the use of default values and overwriting 
 them can be found in :ref:`input_structure.attribute_files` and :ref:`input_structure.overwrite_defaults`.
 
-
 .. tip::
   Notation: this guide uses angle brackets ``<>`` whenever to denote places 
   that contain user-specific information. For example, the file path ``<data>``
   indicates that users should replace this text with the file path to their 
-  own dataset directory. 
+  own dataset directory.
+
+.. warning::
+    File paths with more than 260 characters in total length may not be accepted by
+    Windows systems. To avoid this issue, we recommend using shorter names for carriers
+    and technologies. For Windows 10 and newer, a longer file path limit can be
+    enabled by following the instructions from the `Microsoft support
+    <https://learn.microsoft.com/en-us/windows/win32/fileio/maximum-file-path-limitation?tabs=registry>`_.
+
+.. warning::
+    Special characters are not allowed in file or folder names and will lead to errors
+    when running the model.
 
 .. _building.first_model:
 
