@@ -2,10 +2,12 @@ Key;Type;Default Value;Description
 ``name``;``str``;``highs``;select solver
 ``solver_options``;``SolverOptions``;``SolverOptions()``;pass solver options to the selected solver
 ``save_duals``;``bool``;``False``;if true, dual variables are computed, otherwise, computation of dual variables is skipped
+``save_reduced_costs``;``bool``;``False``;if true, reduced costs are computed, otherwise, computation of dual variables is skipped
 ``save_parameters``;``bool``;``True``;if true, parameters are saved, otherwise, parameters are not saved
 ``selected_saved_parameters``;``list[str]``;[];list of parameters to save. If empty, all parameters are saved.
 ``selected_saved_variables``;``list[str]``;[];list of variables to save. If empty, all variables are saved.
 ``selected_saved_duals``;``list[str]``;[];list of duals to save. If empty, all duals are saved. (only if ``save_duals`` is ``True``).
+``selected_saved_reduced_costs``;``list[str]``;[];list variables for which reduced costs are saved. If empty, all reduced costs are saved. (only if ``save_reduced_costs`` is ``True``).
 ``solver_dir``;``str``;``.//outputs//solver_files``;folder path where solver log files are (temporarily) saved
 ``keep_files``;``bool``;``False``;if true, solver log files are saved, otherwise solver log files are deleted after each run
 ``io_api``;``str``;``lp``;api that is used to pass the optimization problem to the solver, must be ``lp``, ``mps``, or ``direct``
