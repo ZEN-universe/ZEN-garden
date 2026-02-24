@@ -370,8 +370,7 @@ class Postprocess:
         self.write_file(self.name_dir.joinpath("var_dict"), data_frames, mode="w")
 
     def save_duals(self):
-        """Saves the dual variable values to a h5 file.
-        """
+        """Saves the dual variable values to a h5 file."""
         if not self.solver.save_duals:
             logging.info("Duals are not saved")
             return
