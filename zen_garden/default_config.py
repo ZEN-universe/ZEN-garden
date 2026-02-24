@@ -167,12 +167,16 @@ class Solver(Subscriptable):
     keep_files: bool = False
     io_api: str = "lp"
     save_duals: bool = False
+    save_reduced_costs: bool = False
     save_parameters: bool = True
     selected_saved_parameters: list = []  # if empty, all parameters are saved
     selected_saved_variables: list = []  # if empty, all variables are saved
     selected_saved_duals: list = (
         []
     )  # if empty, all duals are saved (if save_duals is True)
+    selected_saved_reduced_costs: list = (
+        []
+    )  # if empty, all reduced costs are saved (if save_reduced_costs is True)
     linear_regression_check: dict[str, float] = {
         "eps_intercept": 0.1,
         "epsRvalue": 1 - (1e-5),

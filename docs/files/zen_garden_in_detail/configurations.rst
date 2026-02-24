@@ -105,18 +105,22 @@ for the available solver settings for the solver that you are using.
 For linear optimization problems, the dual variables can be computed and saved 
 by selecting ``save_duals=True``. Saving the duals helps understand the 
 optimality of the solution, but it also strongly increases the file size of the 
-output files. The parameters of the optimization problem can be saved by 
-selecting ``save_parameters=True``. If you only want to save specific 
-parameters, you can specify them in the ``selected_saved_parameters`` list. The 
-same applies to the variables and duals, which can be specified in the
-``selected_saved_variables`` and ``selected_saved_duals`` lists, respectively. The name of the duals corresponds to the name of the constraints.
+output files. Reduced costs can be saved by setting ``save_reduced_costs=True``.
+This can increase significantly the file size of output files.
+The parameters of the optimization problem can be saved by
+selecting ``save_parameters=True``. If you only want to save specific
+parameters, you can specify them in the ``selected_saved_parameters`` list. The
+same applies to the variables, duals and reduced costs, which can be specified in the
+``selected_saved_variables``, ``selected_saved_duals``, and ``selected_saved_reduced_costs``
+ lists, respectively. The name of the duals corresponds to the name of the constraints.
+
 
 .. note::
 
-    Non-selected parameters, variables, and duals are not saved. We recommend to only
-    use the option to skip saving parameters, variables, and duals if you are sure that
-    you do not need them. The visualization platform may not work properly if 
-    you do not save the parameters and variables.
+    Non-selected parameters, variables, reduced costs and duals are not saved.
+    We recommend to only use the option if you are sure that you do not need them.
+    The visualization platform may not work properly if you do not save the
+    parameters and variables.
 
 You can analyze the numerics of your optimization problem via 
 ``analyze_numerics``. In addition, a scaling algorithm is available. Per 
