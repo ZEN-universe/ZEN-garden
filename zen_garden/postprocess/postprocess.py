@@ -91,6 +91,7 @@ class Postprocess:
         self.save_param()
         self.save_var()
         self.save_duals()
+        self.save_reduced_costs()
         self.save_system()
         self.save_analysis()
         self.save_scenarios()
@@ -369,9 +370,7 @@ class Postprocess:
         self.write_file(self.name_dir.joinpath("var_dict"), data_frames, mode="w")
 
     def save_duals(self):
-        """Saves the dual variable values to a json file which can then be
-        post-processed immediately or loaded and postprocessed at some other
-        time.
+        """Saves the dual variable values to a h5 file.
         """
         if not self.solver.save_duals:
             logging.info("Duals are not saved")
@@ -419,6 +418,69 @@ class Postprocess:
 
         # write file
         self.write_file(self.name_dir.joinpath("dual_dict"), data_frames, mode="w")
+
+    def save_reduced_costs(self):
+        """Saves the reduced cost values of variables to a h5 file."""
+        if self.solver.name != "gurobi":
+            logging.info("Reduced costs are only supported for the gurobi solver")
+            return
+
+        if not self.solver.save_reduced_costs:
+            logging.info("Reduced costs are not saved")
+            return
+
+        # dataframe serialization
+        data_frames = {}
+        for name in self.model.variables:
+
+            # skip variables not selected to be saved
+            if (
+                self.solver.selected_saved_reduced_costs
+                and name not in self.solver.selected_saved_reduced_costs
+            ):
+                continue
+
+            # get reduced costs from solver
+            try:
+                arr = self.model.variables[name].get_solver_attribute("RC")
+            except Exception as e:
+                logging.warning(
+                    f"Could not retrieve reduced costs for variable {name}: {e}"
+                )
+                continue
+
+            # extract doc information
+            if name in self.vars.docs:
+                doc = self.vars.docs[name]
+                index_list = self.get_index_list(doc)
+            else:
+                index_list = []
+                doc = None
+
+            # rescale
+            if self.solver.use_scaling:
+                var_labels = self.model.variables[name].labels.data
+                scaling_factor = self.optimization_setup.scaling.D_c_inv[var_labels]
+                arr = arr * scaling_factor
+
+            # create dataframe
+            if len(arr.shape) > 0:
+                df = arr.to_series().dropna()
+            else:
+                df = pd.DataFrame(data=[arr.values], columns=["value"])
+
+            # rename the index
+            if len(df.index.names) == len(index_list):
+                df.index.names = index_list
+
+            # we transform the dataframe to a json string and load it into the
+            # dictionary as dict
+            data_frames[name] = self._transform_df(df, doc)
+
+        # write file
+        self.write_file(
+            self.name_dir.joinpath("reduced_cost_dict"), data_frames, mode="w"
+        )
 
     def save_system(self):
         """Saves the system dict as json."""
