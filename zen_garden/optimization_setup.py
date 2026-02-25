@@ -21,6 +21,7 @@ from zen_garden.model.component import Constraint, IndexSet, Parameter, Variable
 from zen_garden.model.element import Element
 from zen_garden.model.energy_system import EnergySystem
 from zen_garden.model.technology.technology import Technology
+from zen_garden.plugins.loader import register_plugins
 from zen_garden.preprocess.parameter_change_log import parameter_change_log
 from zen_garden.preprocess.time_series_aggregation import TimeSeriesAggregation
 from zen_garden.preprocess.unit_handling import Scaling
@@ -55,6 +56,8 @@ class OptimizationSetup(object):
                 verify the integrity of the input data.
 
         """
+        register_plugins(config.plugins)
+
         self.analysis = copy.deepcopy(config.analysis)
         self.system = copy.deepcopy(config.system)
         self.solver = copy.deepcopy(config.solver)
@@ -536,7 +539,10 @@ class OptimizationSetup(object):
 
     def construct_optimization_problem(self):
         """Constructs the optimization problem."""
-        Events.trigger(Event.before_optimization_construction)
+        Events.trigger(
+            Event.before_optimization_construction,
+            optimization_setup=self
+        )
 
         # create empty ConcreteModel
         if self.solver.solver_dir is not None and not os.path.exists(
@@ -552,7 +558,10 @@ class OptimizationSetup(object):
         # define and construct components of self.model
         Element.construct_model_components(self)
 
-        Events.trigger(Event.after_optimization_construction)
+        Events.trigger(
+            Event.after_optimization_construction,
+            optimization_setup=self
+        )
 
         # Initiate scaling object
         self.scaling = Scaling(
