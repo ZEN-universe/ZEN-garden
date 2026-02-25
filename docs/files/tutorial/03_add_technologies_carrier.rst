@@ -141,9 +141,9 @@ Example Exercise
        ``CH`` to 2 Euro/ton in a the ``price_import.csv`` file.
     i. Finally, add the new technology ``wood_mill`` to the ``set_conversion_technologies`` in ``system.json`` and
        run the model. If you get any unit errors, check that all units are consistently changed.
-    j. How much wood is consumed in CH in 2023?
+    j. How much wood is consumed in both CH and DE in 2023?
 
        `Solution: 6.13 Mtons of wood`
-    k. What share of the electricity consumption in DE is used for the wood mill in 2023?
+    k. What share of the electricity consumption in both CH and DE is used for the wood mill in 2023?
 
        `Solution: 40.11 % (3.06 TWh for wood mill / 7.64 TWh total electricity consumption)`
