@@ -102,7 +102,6 @@ exclude_patterns = [
     "files/tutorial/handle_infeasibilities.rst",
     "files/api_v2/**",
     "files/dataset_examples/**",
-    "files/developer_guide/testing.rst",
     "files/references/release_notes.rst",
 ]
 
