@@ -3,9 +3,11 @@
 This file gets automatically updated in ZEN-garden's continuous integration 
 procedures. Do not edit the file manually.
 
-## [Unversioned Changes] - 2026-02-24 
+## [Unversioned Changes] - 2026-03-06 
 
 ### Documentation Changes 📝
+- update the contribution guide to include new rules on formatting and linting. [[🔀 PR #1234](https://github.com/ZEN-universe/ZEN-garden/pull/1234) @csfunke]
+- create a new section in the developer guide on testing. [[🔀 PR #1234](https://github.com/ZEN-universe/ZEN-garden/pull/1234) @csfunke]
 - add warnings and link to Python. New Python users find a link to Python.org. Also added warnings for the following issues: File paths that exceed 260 characters may lead to errors with Windows and special characters are not compatible with ZEN-garden. [[🔀 PR #1228](https://github.com/ZEN-universe/ZEN-garden/pull/1228) @johburger]
 
 ## [v2.9.7] - 2026-02-10 
