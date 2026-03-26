@@ -1,198 +1,181 @@
 .. _contributing.contributing:
 
 ########################
-Contribution Guide 
+Contribution Guide
 ########################
 
-We welcome any contribution to the ZEN-garden package. Many thanks for 
-contributing to the project and helping to maintain our ZEN-garden!
-This document provides guidelines on how to contribute to the project.
-There are multiple ways to contribute:
+Thank you for your interest in contributing to ZEN-garden! 🎉  
+Community contributions are highly appreciated and help improve the project.
+
+Before submitting changes, please read the following guidelines.  
+There are several ways to contribute:
 
 * :ref:`Reporting bugs or suggesting new features <contributing.issues>`
 * :ref:`Modifying the code <contributing.code>`
 * :ref:`Improving the documentation <documentation.documentation>`
-* :ref:`Writing tests <contributing.tests>`
+* :ref:`Writing tests <testing.testing>`
 
 
 .. _contributing.issues:
 
-Reporting bugs or suggesting new features
-=========================================
+Reporting Bugs or Suggesting Features
+=====================================
 
-If you find a bug, have a feature request or want to suggest an improvement, 
-please create an issue in the `GitHub repository 
-<https://github.com/ZEN-universe/ZEN-garden/issues>`_.
+If you discover a bug, have a feature request, or want to suggest an improvement,
+please create an issue in the 
+`GitHub repository <https://github.com/ZEN-universe/ZEN-garden/issues>`_.
 
 When creating an issue, please follow these guidelines:
 
-* The title should be short and descriptive.
-* The description should contain all the necessary information to understand the 
-  issue.
-* If it is a bug, please provide a minimal working example that reproduces the 
-  bug.
-* Classify the issue according to the typology of issue (e.g. documentation, 
-  enhancement, bug).
+* Use a **short and descriptive title**
+* Provide enough detail to clearly describe the issue or feature
+* For bugs, include a **minimal working example** that reproduces the problem
+* Select the appropriate **issue type** (e.g., bug, enhancement, documentation)
 
 
 .. _contributing.code:
 
-Editing Code in ZEN-garden 
+Editing Code in ZEN-garden
 ==========================
 
-
 GitHub Workflow
-------------------
+---------------
 
-The following steps should be followed to contribute to ZEN-garden:
+All contributions follow the **fork-and-pull request workflow**.
 
-1. Fork and clone the repository, as described in the section on
-   :ref:`installation for developers <dev_install.dev_install>`.
+1. Fork the repository to your personal GitHub account.
+2. Clone your fork locally.
+3. Create a new branch for your changes:
 
-2. Familiarize yourself with ZEN-garden using the qick-start documentation 
-   and the :ref:`tutorials <tutorials_intro.intro>`.
+.. code:: shell
 
-3. In your ZEN-garden fork, create a new branch for your feature:
+    git checkout -b <feature_name>
 
-   .. code::
+4. Implement your changes.
+5. Run formatting, linting, and tests locally.
+6. Submit a **Pull Request (PR)** from your fork to the upstream repository.
 
-       git checkout -b <feature_name>   
-
-4. Make the desired code changes in this new branch.
-
-5. Add documentation about your feature. See the :ref:`documentation 
-   guide <documentation.documentation>` for instructions on how to 
-   add documentation.
-
-6. Test the code changes locally using the ZEN-garden tests. All tests must 
-   pass.
-
-7. Push your code changes to your personal ZEN-garden fork:
-
-   .. code::
-
-       git push --set-upstream <feature_name>    
-
-8. Sign in to your online GitHub repository and go to your feature branch. You 
-   should now see a button titled  ``Compare & pull request``. Click on this button 
-   and follow the instructions to create a pull request.  
+.. note::
+  
+   Contributors **must not create branches directly on the upstream repository**.
+   All development should take place in personal forks.
 
 
 .. _contributing.coding_rules:
 
-Coding rules
-------------
+Coding Standards
+----------------
 
-We follow the `PEP-8 <https://peps.python.org/pep-0008/>`_ coding style:
+ZEN-garden follows the `PEP 8 <https://peps.python.org/pep-0008/>`_ 
+Python style guide with a few project-specific conventions.
 
-* The name of the classes should always be with the first capital letter. The 
-  classes must all have a well written docstring, as described in the :ref:`documentation 
-  guide <documentation.docstring>`.
+**General naming rules:**
 
-* The name of the methods should always be in lower case letters. The name can 
-  be composed by multiple words, separated by underscores. The main methods
-  should all have a proper docstrings, as described in the :ref:`documentation 
-  guide <documentation.docstring>`.
+* Classes: PascalCase (first letter capitalized)
+* Functions and methods: lowercase_with_underscores
+* Variables: lowercase_with_underscores
+* Files: lowercase_with_underscores
+* Folders: lowercase_with_underscores
 
-* Comments are located above the line of code they refer to.
+**Documentation:**
 
-* All files contain a header which the information about the file, e.g., what 
-  the class does.
+* All classes must include a clear docstring
+* Public methods should include *Google-style docstrings*
+* See the :ref:`documentation guide <documentation.docstring>` for details
 
-* All variable names should lowercase. Variable names can be composed of
-  multiple words, separated by underscores.
+**Comments:**
 
-* The files name should always be lowercase. The file names can be composed 
-  of multiple words, separated by underscores.
+* Place comments above the code they describe
+* Use comments to explain *why*, not *what*
 
-* The name of the folders should always be lowercase. The folder names can 
-  be composed by multiple words, separated by underscores.
+**Files:**
+
+* Each file should include a short header describing its purpose.
+
+**Project-specific deviation from PEP-8:**
+
+* Maximum line length: 88 characters
+
+
+.. _contributing.format:
+
+Code Formatting
+---------------
+
+All Python code must be formatted using *Black* before submitting a pull 
+request.
+
+To format the code, run the following command in the repository root:
+
+.. code:: shell
+
+    black .
+
+Pull requests that do not follow the formatting rules may not be merged.
+
+
+.. _contributing.lint:
+
+Linting
+-------
+
+All code must pass linting checks using *Ruff*.
+
+Run the following command in the repository root:
+
+.. code:: shell
+
+    ruff check .
+
+Please resolve all reported issues before submitting a pull request.
+
+Some issues can be fixed automatically:
+
+.. code:: shell
+
+    ruff check . --fix
 
 
 .. _contributing.branch_protections:
 
-ZEN-garden Branch Protections
------------------------------
+Branch Protection Rules
+-----------------------
 
-The main branch of ZEN-garden is protected to prevent unauthorized 
-changes to the model code. The following requirements must be 
-in order to contribute code: 
+The **main branch** of ZEN-garden is protected to ensure code quality and 
+stability.
 
-1. All changes must be submitted through a pull-request.
-   Direct pushes to the main branch of ZEN-garden are not allowed. Pull-requests
-   can only be merged by ZEN-garden administrators.
+The following rules apply:
 
-2. The pull request must be up-to-date with the current main branch of 
-   ZEN-garden before it is merged. If the feature is based on an older 
-   version of ZEN-garden, it must be merged or rebased with the latest 
-   version before the pull request is submitted.
+1. **All changes must be submitted via pull request**
 
-3. Upon submission of a pull request, GitHub automatically runs the ZEN-garden
-   tests (see :ref:`Github Actions <github_actions.github_actions>`). All defined 
-   test cases must pass before the the new feature can be merged into the main
-   branch of ZEN-garden. The status of these tests will appear in the pull
-   request under the status check titled ``linux-64``.
+   Direct pushes to the main branch are not allowed.
+
+2. **Pull requests must be up to date**
+
+   If your branch is outdated, update it by merging or rebasing with 
+   the latest version of the main branch.
+
+3. **All tests must pass**
+
+   GitHub Actions automatically runs the ZEN-garden test suite
+   (see :ref:`Github Actions <github_actions.github_actions>`).
+   All tests must pass before the pull request can be merged.
+
+4. **Code quality checks must pass**
+
+   The **Black** formatter and **Ruff** linter must not report any issues.
 
 
 .. _contributing.merge:
 
-Merging Pull Requests (Administrators only)
+Merging Pull Requests (Administrators Only)
 -------------------------------------------
 
-Once a pull request has been submitted, administrators can merge the pull 
-request into the main branch of ZEN-garden. By the :ref:`branch protection 
-rules <contributing.branch_protections>`, a merge is only possible if all the 
-ZEN-garden tests have passed. 
+Pull requests can only be merged by ZEN-garden administrators.
 
+According to the :ref:`branch protection rules <contributing.branch_protections>`,
+a pull request can only be merged if:
 
-.. _contributing.tests:
-
-Running tests
-=================
-
-After implementing a new feature or fixing a bug, it is important to run the 
-tests to ensure that the changes do not break the existing code. The tests are \
-located in the ``tests`` folder and are written using the `pytest 
-<https://docs.pytest.org/en/stable/>`_ framework. If you add new functionalities, 
-make sure to add a new test that covers the new code.
-
-You can execute the tests by running::
-
-    pytest --cov="zen_garden" -n auto tests/ -v
-
-**Pycharm configuration**
-
-To run the tests, add another Python configuration. The important settings are:
-
-- Change "script" to "module" and set it to "pytest"
-- Set the "Parameters" to: ``--cov="zen_garden" -n auto tests/ -v``
-- Set the python interpreter to the Conda environment that was used to install 
-  the requirements and also has the package installed. **Important**: 
-  This setup will only work for Conda environments that were also declared as 
-  such in PyCharm; if you set the path to the Python executable yourself, you 
-  should create a new proper PyCharm interpreter.
-- Set the "Working directory" to the root directory of the repo.
-
-In the end, your configuration to run the tests should look similar to this:
-
-.. image:: ../figures/developer_guide/pycharm_run_tests.png
-    :alt: run tests
-
-To run the test and also get the coverage report, we use the pipeline settings 
-of the configuration. Add another Python configuration and use the following 
-settings:
-
-- Add a new configuration "Python tests/pytest"
-- Change "script" to "module" and set it to "run_test"
-- Set the python interpreter to the Conda environment that was used to install 
-  the requirements and also has the package installed. **Important**: This setup 
-  will only work for Conda environments that were also declared as such in 
-  PyCharm; if you set the path to the Python executable yourself, you should 
-  create a new proper PyCharm interpreter.
-- Set the "Working directory" to the directory ``tests/testcases`` of the repo.
-
-In the end, your configuration to run the coverage should look similar to this:
-
-.. image:: ../figures/developer_guide/pycharm_coverage.png
-    :alt: run coverage
-
+* All automated tests pass
+* Code quality checks pass
+* The pull request is up to date with the main branch
