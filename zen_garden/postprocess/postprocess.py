@@ -421,7 +421,7 @@ class Postprocess:
     def save_reduced_costs(self):
         """Saves the reduced cost values of variables to a h5 file."""
         if self.solver.name != "gurobi":
-            logging.info("Reduced costs are only supported for the gurobi solver")
+            logging.info("Reduced costs are only supported for gurobi solver")
             return
 
         if not self.solver.save_reduced_costs:
@@ -478,7 +478,7 @@ class Postprocess:
 
         # write file
         self.write_file(
-            self.name_dir.joinpath("reduced_cost_dict"), data_frames, mode="w"
+            self.name_dir.joinpath("reduced_costs_dict"), data_frames, mode="w"
         )
 
     def save_system(self):

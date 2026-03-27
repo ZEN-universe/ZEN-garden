@@ -24,6 +24,7 @@ class ComponentType(Enum):
     parameter: str = "parameter"
     variable: str = "variable"
     dual: str = "dual"
+    reduced_costs: str = "reduced_costs"
     sets: str = "sets"
 
     @classmethod
@@ -40,6 +41,7 @@ class ComponentType(Enum):
             "var_dict.h5": ComponentType.variable,
             "set_dict.h5": ComponentType.sets,
             "dual_dict.h5": ComponentType.dual,
+            "reduced_costs_dict.h5": ComponentType.reduced_costs,
         }
 
 
@@ -385,6 +387,11 @@ class SolutionLoader:
     def has_duals(self) -> bool:
         first_scenario = get_first_scenario(self._scenarios)
         return first_scenario.solver.save_duals
+
+    @property
+    def has_reduced_costs(self) -> bool:
+        first_scenario = get_first_scenario(self._scenarios)
+        return first_scenario.solver.save_reduced_costs
 
     @property
     def has_parameters(self) -> bool:
