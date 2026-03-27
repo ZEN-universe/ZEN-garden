@@ -3,7 +3,10 @@
 This file gets automatically updated in ZEN-garden's continuous integration 
 procedures. Do not edit the file manually.
 
-## [Unversioned Changes] - 2026-03-20 
+## [v2.9.8] - 2026-03-27 
+
+### Bug Fixes 🐛
+- remove lines causing TypeError in ZEN-temple [[🔀 PR #1233](https://github.com/ZEN-universe/ZEN-garden/pull/1233) @manud99]
 
 ### Documentation Changes 📝
 - fix tuorial on adding technologies and carriers. The exercise questions previously did not match the solution. [[🔀 PR #1232](https://github.com/ZEN-universe/ZEN-garden/pull/1232) @jojoethz]
