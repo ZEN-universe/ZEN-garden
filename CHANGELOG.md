@@ -3,10 +3,16 @@
 This file gets automatically updated in ZEN-garden's continuous integration 
 procedures. Do not edit the file manually.
 
-## [Unversioned Changes] - 2026-02-24 
+## [Unversioned Changes] - 2026-03-20 
 
 ### Documentation Changes 📝
+- fix tuorial on adding technologies and carriers. The exercise questions previously did not match the solution. [[🔀 PR #1232](https://github.com/ZEN-universe/ZEN-garden/pull/1232) @jojoethz]
+- update the contribution guide to include new rules on formatting and linting. [[🔀 PR #1234](https://github.com/ZEN-universe/ZEN-garden/pull/1234) @csfunke]
+- create a new section in the developer guide on testing. [[🔀 PR #1234](https://github.com/ZEN-universe/ZEN-garden/pull/1234) @csfunke]
 - add warnings and link to Python. New Python users find a link to Python.org. Also added warnings for the following issues: File paths that exceed 260 characters may lead to errors with Windows and special characters are not compatible with ZEN-garden. [[🔀 PR #1228](https://github.com/ZEN-universe/ZEN-garden/pull/1228) @johburger]
+
+### Maintenance Tasks 🧹
+- remove test dataset that was accidentally pushed to the ZEN-garden root directory. [[🔀 PR #1239](https://github.com/ZEN-universe/ZEN-garden/pull/1239) @csfunke]
 
 ## [v2.9.7] - 2026-02-10 
 
@@ -126,4 +132,4 @@ procedures. Do not edit the file manually.
 
 ## [v0.1.0] - [v2.8.4]
 
-No release notes exist for ZEN garden versions 0.1.0 -> 2.8.4 are unavailable.
+No release notes exist for ZEN garden versions 0.1.0 -> 2.8.4.
