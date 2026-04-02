@@ -1,4 +1,6 @@
-from zen_garden.events import Events, Event
+from zen_garden.events import Event, Events
+from zen_garden.plugins.loader import register_plugins
+
 
 class TestEvents():
     
@@ -63,3 +65,25 @@ class TestEvents():
             
         # Assert
         assert spy == []
+
+    def test_plugin_keep_data_between_events(self):
+        # Arrange
+        plugins = {"fake_plugin": {}}
+        register_plugins(
+            plugins,
+            source_package="tests.unit_tests"
+        )
+        spy = []
+
+        # Act
+        Events.trigger(
+            Event.before_optimization_construction,
+            data_to_keep = "any_data"
+        )
+        Events.trigger(
+            Event.after_optimization_construction,
+            spy = spy
+        )
+
+        # Assert
+        assert "any_data" in spy
