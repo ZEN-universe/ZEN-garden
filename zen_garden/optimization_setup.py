@@ -540,7 +540,7 @@ class OptimizationSetup(object):
     def construct_optimization_problem(self):
         """Constructs the optimization problem."""
         Events.trigger(
-            Event.before_optimization_construction,
+            Event.before_model_construction,
             optimization_setup=self
         )
 
@@ -559,7 +559,7 @@ class OptimizationSetup(object):
         Element.construct_model_components(self)
 
         Events.trigger(
-            Event.after_optimization_construction,
+            Event.after_model_construction,
             optimization_setup=self
         )
 

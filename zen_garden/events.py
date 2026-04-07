@@ -3,8 +3,8 @@ from typing import Callable
 
 
 class Event(Enum):
-    before_optimization_construction = auto()
-    after_optimization_construction = auto()
+    before_model_construction = auto()
+    after_model_construction = auto()
 
 
 class Events:

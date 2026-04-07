@@ -7,14 +7,14 @@ plugins.loader.register_plugins()
 """
 
 # Choose the event that will trigger the function call
-@Events.register(Event.before_optimization_construction)
+@Events.register(Event.before_model_construction)
 def this_will_be_called_first(*args, **kwargs):
     """You can name this function as you wish."""
     global data_to_keep
     data_to_keep = kwargs["any_variable"]
 
 # Choose the event that will trigger the function call
-@Events.register(Event.before_optimization_construction)
+@Events.register(Event.after_model_construction)
 def this_will_be_called_second(*args, **kwargs):
     """You can name this function as you wish."""
     global data_to_keep
