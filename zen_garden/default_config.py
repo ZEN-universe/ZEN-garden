@@ -236,5 +236,6 @@ class Config(Subscriptable):
     analysis: Analysis = Analysis()
     solver: Solver = Solver()
     system: System = System()
+    plugins: dict[str, Any] = {}
 
     scenarios: dict[str, Any] = {"": {}}
