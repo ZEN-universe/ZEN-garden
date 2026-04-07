@@ -21,7 +21,6 @@ from zen_garden.model.component import Constraint, IndexSet, Parameter, Variable
 from zen_garden.model.element import Element
 from zen_garden.model.energy_system import EnergySystem
 from zen_garden.model.technology.technology import Technology
-from zen_garden.plugins.loader import register_plugins
 from zen_garden.preprocess.parameter_change_log import parameter_change_log
 from zen_garden.preprocess.time_series_aggregation import TimeSeriesAggregation
 from zen_garden.preprocess.unit_handling import Scaling
@@ -56,8 +55,6 @@ class OptimizationSetup(object):
                 verify the integrity of the input data.
 
         """
-        register_plugins(config.plugins)
-
         self.analysis = copy.deepcopy(config.analysis)
         self.system = copy.deepcopy(config.system)
         self.solver = copy.deepcopy(config.solver)
