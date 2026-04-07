@@ -17,6 +17,7 @@ class Events:
                 cls.__observers[event] = []
             cls.__observers[event].append(observer)
             return observer
+
         return decorator
 
     @classmethod

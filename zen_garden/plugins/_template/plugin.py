@@ -13,6 +13,7 @@ def this_will_be_called_first(*args, **kwargs):
     global data_to_keep
     data_to_keep = kwargs["any_variable"]
 
+
 # Choose the event that will trigger the function call
 @Events.register(Event.after_model_construction)
 def this_will_be_called_second(*args, **kwargs):
