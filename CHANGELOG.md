@@ -3,6 +3,11 @@
 This file gets automatically updated in ZEN-garden's continuous integration 
 procedures. Do not edit the file manually.
 
+## [Unversioned Changes] - 2026-04-08 
+
+### Documentation Changes 📝
+- Fix wrong country index in tutorial example. The capacity_DE variable in docs/files/tutorial/01_analyze_outputs.rst was mistakenly using "CH" instead of "DE" as the index argument in r.get_total(...), which would have returned Swiss instead of German capacity. [[🔀 PR #1244](https://github.com/ZEN-universe/ZEN-garden/pull/1244) @felixduemig]
+
 ## [v2.9.8] - 2026-03-27 
 
 ### Bug Fixes 🐛
