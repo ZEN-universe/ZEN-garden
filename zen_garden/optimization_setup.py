@@ -16,7 +16,6 @@ import linopy as lp
 import numpy as np
 import pandas as pd
 
-from zen_garden.events import Event, Events
 from zen_garden.model.component import Constraint, IndexSet, Parameter, Variable
 from zen_garden.model.element import Element
 from zen_garden.model.energy_system import EnergySystem
@@ -536,8 +535,6 @@ class OptimizationSetup(object):
 
     def construct_optimization_problem(self):
         """Constructs the optimization problem."""
-        Events.trigger(Event.before_model_construction, optimization_setup=self)
-
         # create empty ConcreteModel
         if self.solver.solver_dir is not None and not os.path.exists(
             self.solver.solver_dir
@@ -551,9 +548,6 @@ class OptimizationSetup(object):
         self.constraints = Constraint(self.sets, self.model)
         # define and construct components of self.model
         Element.construct_model_components(self)
-
-        Events.trigger(Event.after_model_construction, optimization_setup=self)
-
         # Initiate scaling object
         self.scaling = Scaling(
             self.model, self.solver.scaling_algorithm, self.solver.scaling_include_rhs
