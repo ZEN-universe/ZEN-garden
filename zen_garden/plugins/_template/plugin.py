@@ -1,5 +1,5 @@
 """
-A template for a plugin
+A template for a plugin.
 
 Write functions that subscribe to an event if decorated.These functions are executed
 when the execution reaches the trigger to the respective event.
@@ -12,6 +12,7 @@ config = {}
 This config dictionary will be filled by 
 plugins.loader.register_plugins()
 """
+
 
 # Choose the event that will trigger the function call
 @Events.register(Event.test_event)
