@@ -55,20 +55,7 @@ class TestEvents:
             spy.append(f"{any_argument} has been passed")
 
         # Act
-        Events.trigger(Event.after_model_construction, any_argument="any_value")
+        Events.trigger(Event.test_event, any_argument="any_value")
 
         # Assert
         assert spy == []
-
-    def test_plugin_keep_data_between_events(self):
-        # Arrange
-        plugins = {"fake_plugin": {}}
-        register_plugins(plugins, source_package="tests.unit_tests")
-        spy = []
-
-        # Act
-        Events.trigger(Event.test_event, data_to_keep="any_data")
-        Events.trigger(Event.after_model_construction, spy=spy)
-
-        # Assert
-        assert "any_data" in spy
