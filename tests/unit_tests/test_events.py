@@ -8,12 +8,12 @@ class TestEvents:
         # Arrange
         spy = []
 
-        @Events.register(Event.before_model_construction)
+        @Events.register(Event.test_event)
         def any_function():
             spy.append("any_function is executed")
 
         # Act
-        Events.trigger(Event.before_model_construction)
+        Events.trigger(Event.test_event)
 
         # Assert
         assert "any_function is executed" in spy
@@ -22,12 +22,12 @@ class TestEvents:
         # Arrange
         spy = []
 
-        @Events.register(Event.before_model_construction)
+        @Events.register(Event.test_event)
         def any_function(any_argument):
             spy.append(f"{any_argument} has been passed")
 
         # Act
-        Events.trigger(Event.before_model_construction, "any_value")
+        Events.trigger(Event.test_event, "any_value")
 
         # Assert
         assert "any_value has been passed" in spy
@@ -36,12 +36,12 @@ class TestEvents:
         # Arrange
         spy = []
 
-        @Events.register(Event.before_model_construction)
+        @Events.register(Event.test_event)
         def any_function(any_argument):
             spy.append(f"{any_argument} has been passed")
 
         # Act
-        Events.trigger(Event.before_model_construction, any_argument="any_value")
+        Events.trigger(Event.test_event, any_argument="any_value")
 
         # Assert
         assert "any_value has been passed" in spy
@@ -50,7 +50,7 @@ class TestEvents:
         # Arrange
         spy = []
 
-        @Events.register(Event.before_model_construction)
+        @Events.register(Event.test_event)
         def any_function(any_argument):
             spy.append(f"{any_argument} has been passed")
 
@@ -67,7 +67,7 @@ class TestEvents:
         spy = []
 
         # Act
-        Events.trigger(Event.before_model_construction, data_to_keep="any_data")
+        Events.trigger(Event.test_event, data_to_keep="any_data")
         Events.trigger(Event.after_model_construction, spy=spy)
 
         # Assert
