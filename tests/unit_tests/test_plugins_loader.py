@@ -1,4 +1,4 @@
-from zen_garden.plugins.loader import register_plugins
+from zen_garden.plugin_system.loader import register_plugins
 
 
 class TestPluginsLoader:

@@ -1,5 +1,5 @@
-from zen_garden.events import Event, Events
-from zen_garden.plugins.loader import register_plugins
+from zen_garden.plugin_system.events import Event, Events
+from zen_garden.plugin_system.loader import register_plugins
 
 
 class TestEvents:

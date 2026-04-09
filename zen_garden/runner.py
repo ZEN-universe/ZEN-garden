@@ -11,7 +11,7 @@ import warnings
 from pathlib import Path
 
 import zen_garden.default_config as default_config
-from zen_garden.plugins.loader import register_plugins
+from zen_garden.plugin_system.loader import register_plugins
 
 from .optimization_setup import OptimizationSetup
 from .postprocess.postprocess import Postprocess

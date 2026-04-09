@@ -1,4 +1,4 @@
-from zen_garden.events import Event, Events
+from zen_garden.plugin_system.events import Event, Events
 
 config = {}
 

@@ -5,7 +5,7 @@ Write functions that subscribe to an event if decorated.These functions are exec
 when the execution reaches the trigger to the respective event.
 """
 
-from zen_garden.events import Event, Events
+from zen_garden.plugin_system.events import Event, Events
 
 config = {}
 """
