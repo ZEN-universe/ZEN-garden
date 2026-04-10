@@ -22,6 +22,7 @@ ZEN-garden
    ../api/model
    ../api/postprocess
    ../api/preprocess
+   ../api/plugin_system
 
 
 
