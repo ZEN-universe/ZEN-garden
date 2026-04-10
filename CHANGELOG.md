@@ -3,6 +3,12 @@
 This file gets automatically updated in ZEN-garden's continuous integration 
 procedures. Do not edit the file manually.
 
+## [Unversioned Changes] - 2026-04-10 
+
+### Documentation Changes 📝
+- update links in plugin documentation [[🔀 PR #1254](https://github.com/ZEN-universe/ZEN-garden/pull/1254) @JeanWi]
+- add plugin architecture to api reference [[🔀 PR #1254](https://github.com/ZEN-universe/ZEN-garden/pull/1254) @JeanWi]
+
 ## [v2.11.0] - 2026-04-10 
 
 ### New Features ✨
