@@ -4,3 +4,4 @@
 Available Plugins
 ############################
 
+At the moment, there are no plugins available.
