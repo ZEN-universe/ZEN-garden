@@ -3,6 +3,11 @@
 This file gets automatically updated in ZEN-garden's continuous integration 
 procedures. Do not edit the file manually.
 
+## [v2.11.0] - 2026-04-10 
+
+### New Features ✨
+- implement a plugin architecture that allows easy extension of the core ZEN-garden code. [[🔀 PR #1252](https://github.com/ZEN-universe/ZEN-garden/pull/1252) @csfunke]
+
 ## [v2.10.0] - 2026-04-08 
 
 ### New Features ✨
