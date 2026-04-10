@@ -3,10 +3,10 @@ from typing import Callable
 
 
 class Event(Enum):
-    test_event = auto()
+    pass
 
 
-class Events:
+class EventPublisher:
     __observers: dict[Event, list[Callable]] = {}
 
     @classmethod

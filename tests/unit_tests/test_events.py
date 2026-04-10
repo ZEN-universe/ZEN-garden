@@ -1,6 +1,9 @@
-from zen_garden.plugin_system.events import Event, Events
-from zen_garden.plugin_system.loader import register_plugins
+from zen_garden.plugin_system.events import EventPublisher, Event
+from enum import auto
 
+class TestEvent(Event):
+    test_event1 = auto()
+    test_event2 = auto()
 
 class TestEvents:
 
@@ -8,12 +11,12 @@ class TestEvents:
         # Arrange
         spy = []
 
-        @Events.register(Event.test_event)
+        @EventPublisher.register(TestEvent.test_event1)
         def any_function():
             spy.append("any_function is executed")
 
         # Act
-        Events.trigger(Event.test_event)
+        EventPublisher.trigger(TestEvent.test_event1)
 
         # Assert
         assert "any_function is executed" in spy
@@ -22,12 +25,12 @@ class TestEvents:
         # Arrange
         spy = []
 
-        @Events.register(Event.test_event)
+        @EventPublisher.register(TestEvent.test_event1)
         def any_function(any_argument):
             spy.append(f"{any_argument} has been passed")
 
         # Act
-        Events.trigger(Event.test_event, "any_value")
+        EventPublisher.trigger(TestEvent.test_event1, "any_value")
 
         # Assert
         assert "any_value has been passed" in spy
@@ -36,12 +39,12 @@ class TestEvents:
         # Arrange
         spy = []
 
-        @Events.register(Event.test_event)
+        @EventPublisher.register(TestEvent.test_event1)
         def any_function(any_argument):
             spy.append(f"{any_argument} has been passed")
 
         # Act
-        Events.trigger(Event.test_event, any_argument="any_value")
+        EventPublisher.trigger(TestEvent.test_event1, any_argument="any_value")
 
         # Assert
         assert "any_value has been passed" in spy
@@ -50,12 +53,12 @@ class TestEvents:
         # Arrange
         spy = []
 
-        @Events.register(Event.test_event)
+        @EventPublisher.register(TestEvent.test_event1)
         def any_function(any_argument):
             spy.append(f"{any_argument} has been passed")
 
         # Act
-        Events.trigger(Event.test_event, any_argument="any_value")
+        EventPublisher.trigger(TestEvent.test_event2, any_argument="any_value")
 
         # Assert
         assert spy == []
