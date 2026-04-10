@@ -3,21 +3,18 @@
 Unit tests for `EventPublisher` and `Event` semantics.
 """
 
-from enum import auto
+import pytest
 
 from zen_garden.plugin_system.events import Event, EventPublisher
+from zen_garden.plugin_system.loader import register_plugins
 
 
-class TestEvent(Event):
-    """Enum of test events used by the tests.
-
-    Attributes:
-        test_event1: First test event.
-        test_event2: Second test event.
+@pytest.fixture(scope="function", autouse=True)
+def cleanup(request: pytest.FixtureRequest):
     """
-
-    test_event1 = auto()
-    test_event2 = auto()
+    Pytest fixture to clean up registered observers after each test.
+    """
+    request.addfinalizer(EventPublisher.deregister_all)
 
 
 class TestEvents:
@@ -33,12 +30,12 @@ class TestEvents:
         """
         spy = []
 
-        @EventPublisher.register(TestEvent.test_event1)
+        @EventPublisher.register(Event.test_event1)
         def any_function():
             spy.append("any_function is executed")
 
         # Act
-        EventPublisher.trigger(TestEvent.test_event1)
+        EventPublisher.trigger(Event.test_event1)
 
         # Assert
         assert "any_function is executed" in spy
@@ -51,12 +48,12 @@ class TestEvents:
         # Arrange
         spy = []
 
-        @EventPublisher.register(TestEvent.test_event1)
+        @EventPublisher.register(Event.test_event1)
         def any_function(any_argument):
             spy.append(f"{any_argument} has been passed")
 
         # Act
-        EventPublisher.trigger(TestEvent.test_event1, "any_value")
+        EventPublisher.trigger(Event.test_event1, "any_value")
 
         # Assert
         assert "any_value has been passed" in spy
@@ -69,12 +66,12 @@ class TestEvents:
         # Arrange
         spy = []
 
-        @EventPublisher.register(TestEvent.test_event1)
+        @EventPublisher.register(Event.test_event1)
         def any_function(any_argument):
             spy.append(f"{any_argument} has been passed")
 
         # Act
-        EventPublisher.trigger(TestEvent.test_event1, any_argument="any_value")
+        EventPublisher.trigger(Event.test_event1, any_argument="any_value")
 
         # Assert
         assert "any_value has been passed" in spy
@@ -87,12 +84,49 @@ class TestEvents:
         # Arrange
         spy = []
 
-        @EventPublisher.register(TestEvent.test_event1)
+        @EventPublisher.register(Event.test_event1)
         def any_function(any_argument):
             spy.append(f"{any_argument} has been passed")
 
         # Act
-        EventPublisher.trigger(TestEvent.test_event2, any_argument="any_value")
+        EventPublisher.trigger(Event.test_event2, any_argument="any_value")
+
+        # Assert
+        assert spy == []
+
+    def test_plugin_keep_data_between_events(self):
+        """Triggering an event with a global variable.
+
+        Confirms that a plugin can keep data between events using a global variable.
+        """
+        # Arrange
+        plugins = {"fake_plugin": {}}
+        register_plugins(plugins, source_package="tests.unit_tests")
+        spy = []
+
+        # Act
+        EventPublisher.trigger(Event.test_event1, data_to_keep="any_data")
+        EventPublisher.trigger(Event.test_event2, spy=spy)
+
+        # Assert
+        assert "any_data" in spy
+
+    def test_deregistered_observers_are_not_called(self):
+        """Deregister all observers and confirm that no observers are called.
+
+        This test confirms that the `EventPublisher` can clear all registered observers,
+        and that triggering events after deregistration does not call any observers.
+        """
+        # Arrange
+        spy = []
+
+        @EventPublisher.register(Event.test_event1)
+        def any_function(any_argument):
+            spy.append(f"{any_argument} has been passed")
+
+        # Act
+        EventPublisher.deregister_all()
+        EventPublisher.trigger(Event.test_event1, "any_value")
 
         # Assert
         assert spy == []

@@ -12,7 +12,7 @@ config = {}
 
 
 # Choose the event that will trigger the function call
-@EventPublisher.register(Event.test_event)
+@EventPublisher.register(Event.test_event1)
 def this_will_be_called_first(*args, **kwargs):
     """You can name this function as you wish."""
     pass

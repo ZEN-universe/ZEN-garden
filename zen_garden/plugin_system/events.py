@@ -4,7 +4,7 @@ Provides a base `Event` enum and an `EventPublisher` to register and trigger
 events.
 """
 
-from enum import Enum
+from enum import Enum, auto
 from typing import Callable
 
 
@@ -30,7 +30,8 @@ class Event(Enum):
 
     """
 
-    pass
+    test_event1 = auto()
+    test_event2 = auto()
 
 
 class EventPublisher:
@@ -69,6 +70,11 @@ class EventPublisher:
             return observer
 
         return decorator
+
+    @classmethod
+    def deregister_all(cls):
+        """Deregister all observers for all events."""
+        cls.__observers = {}
 
     @classmethod
     def trigger(cls, event: Event, *args, **kwargs):

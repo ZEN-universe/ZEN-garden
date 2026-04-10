@@ -1,24 +1,26 @@
-from tests.unit_tests.test_events import TestEvent
-from zen_garden.plugin_system.events import EventPublisher
+from zen_garden.plugin_system.events import Event, EventPublisher
 
 config = {}
 
 
-@EventPublisher.register(TestEvent.test_event1)
-def first_method(**kwargs):
+@EventPublisher.register(Event.test_event1)
+def define_global_data(**kwargs):
     """
     Testing method.
 
-    Is registered to test_event1 for testing.
+    Is registered to test_event1 for testing and stores the value of
+    "data_to_keep" in the global variable `stored_data`.
     """
-    pass
+    global stored_data
+    stored_data = kwargs["data_to_keep"]
 
 
-@EventPublisher.register(TestEvent.test_event2)
-def second_method(**kwargs):
+@EventPublisher.register(Event.test_event2)
+def append_global_data_to_kwargs(**kwargs):
     """
     Testing method.
 
-    Is registered to test_event2 for testing.
+    Is registered to test_event2 for testing and appends the value
+    of `stored_data` to the list in `kwargs["spy"]`.
     """
-    pass
+    kwargs["spy"].append(stored_data)
