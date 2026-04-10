@@ -28,6 +28,10 @@ class Event(Enum):
 
         >>> EventPublisher.trigger(Event.after_model_construction, any_arg)
 
+
+    Todo:
+        - define event locations in core
+
     """
 
     test_event1 = auto()
@@ -48,9 +52,17 @@ class EventPublisher:
         >>> @EventPublisher.register(Event.after_model_construction)
         >>> def any_function(any_arg):
         >>>     pass
+
+    Todo:
+        - call deregistration in core
     """
 
     __observers: dict[Event, list[Callable]] = {}
+
+    @classmethod
+    def observers(cls):
+        """Returns all observers registered."""
+        return {k: list(v) for k, v in cls.__observers.items()}
 
     @classmethod
     def register(cls, event: Event):

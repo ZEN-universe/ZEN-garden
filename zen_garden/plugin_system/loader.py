@@ -7,6 +7,8 @@ according to the user's configuration (as defined in config.json).
 import importlib
 from types import ModuleType
 
+from zen_garden.plugin_system.events import EventPublisher
+
 
 def register_plugins(
     plugins_config: dict[str, dict], source_package: str = "zen_garden.plugins"
@@ -35,3 +37,7 @@ def register_plugins(
         )
         output[plugin].config.update(config)
     return output
+
+
+def deregister_plugins():
+    EventPublisher.deregister_all()

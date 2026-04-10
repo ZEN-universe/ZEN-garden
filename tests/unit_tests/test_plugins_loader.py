@@ -3,7 +3,18 @@
 Unit tests for `register_plugins` ensuring modules are imported and configs passed.
 """
 
-from zen_garden.plugin_system.loader import register_plugins
+import pytest
+
+from zen_garden.plugin_system.events import EventPublisher
+from zen_garden.plugin_system.loader import deregister_plugins, register_plugins
+
+
+@pytest.fixture(scope="function", autouse=True)
+def cleanup(request: pytest.FixtureRequest):
+    """
+    Pytest fixture to clean up registered observers after each test.
+    """
+    request.addfinalizer(EventPublisher.deregister_all)
 
 
 class TestPluginsLoader:
@@ -41,3 +52,17 @@ class TestPluginsLoader:
 
         # Assert
         assert plugin.config == plugins["fake_plugin"]
+
+    def test_deregister_all_plugins(self):
+        """Deregister all plugins.
+
+        Ensures that all registered observers are removed after calling
+        `EventPublisher.deregister_all`.
+        """
+        plugins = {"fake_plugin": {}}
+        register_plugins(plugins, source_package="tests.unit_tests")
+
+        deregister_plugins()
+
+        # Assert
+        assert len(EventPublisher.observers()) == 0
