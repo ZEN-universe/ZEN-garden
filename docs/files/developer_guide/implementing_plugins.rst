@@ -18,7 +18,7 @@ Plugin contract
 - Location: place your plugin as a package under `zen_garden.plugins`. The loader
   imports the module `...<plugin>.plugin`. You can find a template in
   `zen_garden.plugins._template`
-- Registration: use the `Events` helper to attach functions to events
+- Registration: use the `Event` helper to attach functions to events
   (see `zen_garden.events.Event` for available events). The function will
   be called at the respective event.
 - Config: use the dictonary at `config.plugins` to specify a config to
@@ -32,19 +32,19 @@ The tests include a minimal plugin used as an example. A shortened version:
 .. code-block:: python
 
     # tests/unit_tests/fake_plugin/plugin.py
-    from zen_garden.events import Events, Event
+    from zen_garden.plugin_system.events import EventPublisher
+    from tests.unit_tests.test_events import TestEvent
 
     config = {}
 
-    @Events.register(Event.before_model_construction)
-    def save_data(**kwargs):
-        global _saved
-        _saved = kwargs.get("data_to_keep")
 
-    @Events.register(Event.after_model_construction)
-    def append_saved(**kwargs):
-        kwargs["spy"].append(_saved)
+    @EventPublisher.register(TestEvent.test_event1)
+    def first_method(**kwargs):
+        pass
 
+    @EventPublisher.register(TestEvent.test_event2)
+    def first_method(**kwargs):
+        pass
 
 How the loader uses your plugin
 -------------------------------

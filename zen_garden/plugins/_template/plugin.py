@@ -3,15 +3,12 @@ A template for a plugin.
 
 Write functions that subscribe to an event if decorated.These functions are executed
 when the execution reaches the trigger to the respective event.
+The config dictionary will be filled by plugins.loader.register_plugins()
 """
 
 from zen_garden.plugin_system.events import Event, EventPublisher
 
 config = {}
-"""
-This config dictionary will be filled by 
-plugins.loader.register_plugins()
-"""
 
 
 # Choose the event that will trigger the function call
