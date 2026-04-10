@@ -17,7 +17,7 @@ Key points
   user-provided settings into each plugin's `config` before execution.
 - Use the `EventPublisher.register(Event.<name>)` decorator to attach functions to
   events that will be called by the framework at defined points (for example, 
-  before/after model construction).
+  before/after model construction). 
 
 See also
 --------
