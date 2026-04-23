@@ -335,7 +335,7 @@ Example Exercises
     from zen_garden import Results
     r = Results(path='<result_folder>')
     capacity_CH = r.get_total('capacity', index=("natural_gas_boiler", None, "CH"), year = 0).iloc[0,0]
-    capacity_DE = r.get_total('capacity', index=("natural_gas_boiler", None, "CH"), year = 0).iloc[0,0]
+    capacity_DE = r.get_total('capacity', index=("natural_gas_boiler", None, "DE"), year = 0).iloc[0,0]
     print(f"German Capacity: {capacity_DE}")
     print(f"Swiss Capacity: {capacity_CH}")
     print(f"Total Capacity: {capacity_DE + capacity_CH}")

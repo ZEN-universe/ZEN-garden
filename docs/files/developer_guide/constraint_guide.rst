@@ -71,7 +71,7 @@ Our constraints are always set up in the same way:
         term_product_xp = self.variables["x"] * self.parameters.p
         lhs = term_product_xp + self.variables["y"]
         rhs = self.parameters.p
-        constraints = lhs >= rhs
+        constraints = lhs <= rhs
         self.constraints.add_constraint("constraint_example_constraint_upper",constraints)
         rhs = self.parameters.q
         constraints = lhs >= rhs

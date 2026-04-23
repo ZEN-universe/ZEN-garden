@@ -11,6 +11,7 @@ import warnings
 from pathlib import Path
 
 import zen_garden.default_config as default_config
+from zen_garden.plugin_system.loader import register_plugins
 
 from .optimization_setup import OptimizationSetup
 from .postprocess.postprocess import Postprocess
@@ -78,6 +79,8 @@ def run(config="./config.json", dataset=None, job_index=None, folder_output=None
     else:
         with open(Path(config_path) / config_file, "r") as f:
             config = default_config.Config(**json.load(f))
+
+    register_plugins(config.plugins)
 
     # overwrite the path if necessary
     if dataset is not None:

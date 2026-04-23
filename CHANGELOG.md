@@ -3,7 +3,29 @@
 This file gets automatically updated in ZEN-garden's continuous integration 
 procedures. Do not edit the file manually.
 
-## [Unversioned Changes] - 2026-03-20 
+## [Unversioned Changes] - 2026-04-10 
+
+### Documentation Changes 📝
+- update links in plugin documentation [[🔀 PR #1254](https://github.com/ZEN-universe/ZEN-garden/pull/1254) @JeanWi]
+- add plugin architecture to api reference [[🔀 PR #1254](https://github.com/ZEN-universe/ZEN-garden/pull/1254) @JeanWi]
+
+## [v2.11.0] - 2026-04-10 
+
+### New Features ✨
+- implement a plugin architecture that allows easy extension of the core ZEN-garden code. [[🔀 PR #1252](https://github.com/ZEN-universe/ZEN-garden/pull/1252) @csfunke]
+
+## [v2.10.0] - 2026-04-08 
+
+### New Features ✨
+- add option to export reduced costs to reduced_costs_dict.h5 [[🔀 PR #1231](https://github.com/ZEN-universe/ZEN-garden/pull/1231) @JeanWi]
+
+### Documentation Changes 📝
+- Fix wrong country index in tutorial example. The capacity_DE variable in docs/files/tutorial/01_analyze_outputs.rst was mistakenly using "CH" instead of "DE" as the index argument in r.get_total(...), which would have returned Swiss instead of German capacity. [[🔀 PR #1244](https://github.com/ZEN-universe/ZEN-garden/pull/1244) @felixduemig]
+
+## [v2.9.8] - 2026-03-27 
+
+### Bug Fixes 🐛
+- remove lines causing TypeError in ZEN-temple [[🔀 PR #1233](https://github.com/ZEN-universe/ZEN-garden/pull/1233) @manud99]
 
 ### Documentation Changes 📝
 - fix tuorial on adding technologies and carriers. The exercise questions previously did not match the solution. [[🔀 PR #1232](https://github.com/ZEN-universe/ZEN-garden/pull/1232) @jojoethz]

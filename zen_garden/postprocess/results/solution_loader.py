@@ -887,9 +887,7 @@ def get_df_from_path(
         index = tuple()
 
     if check_if_v1_leq_v2(version, "v0"):
-        pd_read = pd.read_hdf(path, component_name + f"/{data_type}")
-        with h5py.File(path, "r") as h5_file:
-            h5_file[component_name + f"/{data_type}"][:]
+        pd_read = pd.read_hdf(path, f"{component_name}/{data_type}")
         if len(index) > 0:
             pd_read = slice_df_by_index(pd_read, index)
     elif check_if_v1_leq_v2(version, "v2"):
