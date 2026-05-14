@@ -63,7 +63,8 @@ dev = [
     "pytest-cov",
     "black==25.12.0",
     "ruff==0.14.13",
-    "mypy==1.19.1"
+    "mypy==1.19.1",
+    "pre-commit",
 ]
 
 vis = [
