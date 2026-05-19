@@ -37,7 +37,7 @@ dependencies = [
     "ordered-set",
     "pyogrio",
     "psutil",
-    "linopy",
+    "linopy==0.6.7",
     "requests",
     "ipykernel",
     "zen-temple>=0.7.3"
