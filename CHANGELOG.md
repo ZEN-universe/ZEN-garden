@@ -3,7 +3,10 @@
 This file gets automatically updated in ZEN-garden's continuous integration 
 procedures. Do not edit the file manually.
 
-## [Unversioned Changes] - 2026-04-10 
+## [v2.12.0] - 2026-05-19 
+
+### New Features ✨
+- install `pre-commit` to run `ruff --fix` and `black` before creating new commits. [[🔀 PR #1258](https://github.com/ZEN-universe/ZEN-garden/pull/1258) @manud99]
 
 ### Documentation Changes 📝
 - update links in plugin documentation [[🔀 PR #1254](https://github.com/ZEN-universe/ZEN-garden/pull/1254) @JeanWi]
