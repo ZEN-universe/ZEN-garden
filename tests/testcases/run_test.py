@@ -36,11 +36,11 @@ def compare_variables_results(test_model: str, results: Results, folder_path: st
         folder_path: The path to the folder containing the file with the
             correct variables
     """
-    # import json file containing selected variable values of test model 
+    # import json file containing selected variable values of test model
     # collection
     with open(os.path.join(folder_path, "test_variables.json")) as f:
         test_variables = json.load(f)
-    # dictionary to store variable names, indices, values and test values of 
+    # dictionary to store variable names, indices, values and test values of
     # variables which don't match the test values
     failed_variables = defaultdict(dict)
     compare_counter = 0
@@ -93,7 +93,7 @@ def compare_variables_results(test_model: str, results: Results, folder_path: st
                 f"No variables have been compared in {test_model}. If not "
                 f"intended, check the test_variables.json file."
             ),
-            stacklevel=2
+            stacklevel=2,
         )
 
 
@@ -109,7 +109,7 @@ def check_get_total_get_full_ts(
 
     Args:
         get_doc:
-        discount_to_first_step: Apply annuity to first year of interval or 
+        discount_to_first_step: Apply annuity to first year of interval or
             entire interval
         year: Specific year
         specific_scenario: Specific scenario
@@ -394,7 +394,7 @@ def test_3d(folder_path):
         folder_output=os.path.join(folder_path, "outputs"),
     )
 
-    # compare the variables of the optimization setup ## disabled for myopic 
+    # compare the variables of the optimization setup ## disabled for myopic
     # foresight tests!
     # compare_variables(data_set_name, optimization_setup, folder_path)
     # read the results and check again
@@ -413,7 +413,7 @@ def test_3e(folder_path):
         folder_output=os.path.join(folder_path, "outputs"),
     )
 
-    # compare the variables of the optimization setup ## disabled for myopic 
+    # compare the variables of the optimization setup ## disabled for myopic
     # foresight tests!
     # compare_variables(data_set_name, optimization_setup, folder_path)
     # read the results and check again
@@ -430,7 +430,7 @@ def test_3f(folder_path):
         folder_output=os.path.join(folder_path, "outputs"),
     )
 
-    # compare the variables of the optimization setup ## disabled for myopic 
+    # compare the variables of the optimization setup ## disabled for myopic
     # foresight tests!
     # compare_variables(data_set_name, optimization_setup, folder_path)
     # read the results and check again
