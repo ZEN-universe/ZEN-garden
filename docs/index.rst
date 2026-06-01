@@ -71,8 +71,6 @@ Documentation
    :caption: Plugins
 
    files/plugins/overview
-   files/plugins/available_plugins
-
 
 
 .. toctree::
