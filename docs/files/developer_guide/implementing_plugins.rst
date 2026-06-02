@@ -30,7 +30,7 @@ Step 2 — Adapt ``pyproject.toml``
 The plugin must be a valid Python package with a ``pyproject.toml`` that advertises
 itself as a plugin for ZEN-garden. You can adapt the template's ``pyproject.toml``. Essentially you only need
 to change the name. In case your plugin relies on additional packages, you also need to specify the
-dependencies
+dependencies.
 
 Step 3 — Develop your plugin
 -----------------------------
