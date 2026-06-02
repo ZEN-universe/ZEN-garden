@@ -3,8 +3,9 @@
 Unit tests for `register_plugins` ensuring modules are imported and configs passed.
 """
 
-import pytest
 from unittest.mock import patch
+
+import pytest
 
 from zen_garden.plugin_system.events import EventPublisher
 from zen_garden.plugin_system.loader import deregister_plugins, register_plugins
@@ -33,7 +34,10 @@ class TestPluginsLoader:
         plugins = {"fake_plugin": {}}
 
         # Act
-        with patch("zen_garden.plugin_system.loader._discover_entrypoints", return_value=_FAKE_PLUGIN_EP):
+        with patch(
+            "zen_garden.plugin_system.loader._discover_entrypoints",
+            return_value=_FAKE_PLUGIN_EP,
+        ):
             result = register_plugins(plugins)
         from tests.unit_tests.fake_plugin import plugin
 
@@ -49,7 +53,10 @@ class TestPluginsLoader:
         plugins = {"fake_plugin": {"any_parameter": "any_value"}}
 
         # Act
-        with patch("zen_garden.plugin_system.loader._discover_entrypoints", return_value=_FAKE_PLUGIN_EP):
+        with patch(
+            "zen_garden.plugin_system.loader._discover_entrypoints",
+            return_value=_FAKE_PLUGIN_EP,
+        ):
             register_plugins(plugins)
         from tests.unit_tests.fake_plugin import plugin
 
@@ -63,7 +70,10 @@ class TestPluginsLoader:
         `EventPublisher.deregister_all`.
         """
         plugins = {"fake_plugin": {}}
-        with patch("zen_garden.plugin_system.loader._discover_entrypoints", return_value=_FAKE_PLUGIN_EP):
+        with patch(
+            "zen_garden.plugin_system.loader._discover_entrypoints",
+            return_value=_FAKE_PLUGIN_EP,
+        ):
             register_plugins(plugins)
 
         deregister_plugins()
@@ -78,6 +88,8 @@ class TestPluginsLoader:
         """
         plugins = {"nonexistent_plugin": {}}
 
-        with patch("zen_garden.plugin_system.loader._discover_entrypoints", return_value={}):
+        with patch(
+            "zen_garden.plugin_system.loader._discover_entrypoints", return_value={}
+        ):
             with pytest.raises(ModuleNotFoundError, match="nonexistent_plugin"):
                 register_plugins(plugins)

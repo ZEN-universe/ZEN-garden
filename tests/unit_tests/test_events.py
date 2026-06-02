@@ -3,8 +3,9 @@
 Unit tests for `EventPublisher` and `Event` semantics.
 """
 
-import pytest
 from unittest.mock import patch
+
+import pytest
 
 from zen_garden.plugin_system.events import Event, EventPublisher
 from zen_garden.plugin_system.loader import register_plugins
@@ -104,7 +105,10 @@ class TestEvents:
         """
         # Arrange
         plugins = {"fake_plugin": {}}
-        with patch("zen_garden.plugin_system.loader._discover_entrypoints", return_value=_FAKE_PLUGIN_EP):
+        with patch(
+            "zen_garden.plugin_system.loader._discover_entrypoints",
+            return_value=_FAKE_PLUGIN_EP,
+        ):
             register_plugins(plugins)
         spy = []
 
