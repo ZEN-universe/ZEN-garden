@@ -12,6 +12,7 @@ from pathlib import Path
 
 import zen_garden.default_config as default_config
 from zen_garden.plugin_system.loader import register_plugins
+from zen_garden.plugin_system.events import EventPublisher, Event
 
 from .optimization_setup import OptimizationSetup
 from .postprocess.postprocess import Postprocess
@@ -138,6 +139,8 @@ def run(config="./config.json", dataset=None, job_index=None, folder_output=None
             optimization_setup.overwrite_time_indices(step)
             # create optimization problem
             optimization_setup.construct_optimization_problem()
+            EventPublisher.trigger(Event.after_model_construction, optimization_setup=optimization_setup)
+
             if optimization_setup.solver.use_scaling:
                 optimization_setup.scaling.run_scaling()
             elif (

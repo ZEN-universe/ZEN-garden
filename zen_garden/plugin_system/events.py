@@ -34,8 +34,9 @@ class Event(Enum):
 
     """
 
-    test_event1 = auto()
-    test_event2 = auto()
+    _test_event1 = auto()
+    _test_event2 = auto()
+    after_model_construction = auto()
 
 
 class EventPublisher:
