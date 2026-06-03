@@ -17,7 +17,8 @@ ZEN-garden picks it up automatically once it is installed.
 Step 1 — Create a repository
 -------------------------------
 
-Fork the Zen garden plugin template repository on GitHub (add link here).
+Fork the Zen garden plugin template `repository on GitHub
+<https://github.com/ZEN-universe/ZEN-galaxies>`_.
 
 The directory (``plugin_template/``) is the Python package.
 All plugin logic goes into ``plugin.py``. You can define helper modules if you like,
