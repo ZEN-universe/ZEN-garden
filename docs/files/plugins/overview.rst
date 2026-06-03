@@ -10,6 +10,8 @@ A plugin is a small, self-contained Python package that you develop and install
 separately.  ZEN-garden detects installed plugins automatically and runs them at
 well-defined points during execution.
 
+Plugins can either live in their own repositories or in a dedicated  (`ZEN-garden-plugin repository <https://github.com/ZEN-universe/ZEN-garden-plugins>`_)
+
 How it works
 ------------
 
@@ -22,7 +24,9 @@ in the order they were registered.
 
 Available events
 -----------------
-At the moment no events are available.
+At the moment the following events are available:
+
+- ``after_model_construction``: After model construction, before model solving.
 
 
 Plugin discovery
@@ -33,6 +37,12 @@ Plugins are discovered through Python's standard
 mechanism.  When you install a plugin package (``pip install``), it advertises
 itself under the ``zen_garden.plugins`` group.  ZEN-garden then finds and loads it
 automatically — no changes to ZEN-garden are required.
+
+If you are actively developing a plugin, you can install it in *editable* mode with ``pip install -e``:
+
+.. code-block:: shell
+
+    pip install -e path/to/my_plugin
 
 Activating a plugin
 -------------------
@@ -51,8 +61,3 @@ Add the plugin's name to ``config.json`` under the ``"plugins"`` key:
 
 The settings you provide are merged into the plugin's ``config`` dictionary before
 any of its functions are called.
-
-See also
---------
-
-- :ref:`Implementing plugins <dev_guide.implementing_plugins>`
