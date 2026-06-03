@@ -3,6 +3,11 @@
 This file gets automatically updated in ZEN-garden's continuous integration 
 procedures. Do not edit the file manually.
 
+## [v2.12.1] - 2026-06-03 
+
+### Bug Fixes 🐛
+- Fix a small bug in the comparison module that broke the routine. [[🔀 PR #1267](https://github.com/ZEN-universe/ZEN-garden/pull/1267) @jacob-mannhardt]
+
 ## [v2.12.0] - 2026-05-19 
 
 ### New Features ✨
