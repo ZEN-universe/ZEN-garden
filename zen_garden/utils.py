@@ -1420,11 +1420,13 @@ class StringUtils:
                 f"{scenario_string}--- \n"
             )
         else:
-            (system.reference_year + step * system.interval_between_years)
+            corresponding_year = (
+                system.reference_year + step * system.interval_between_years
+            )
             logging.info(
                 "\n--- Conduct optimization for rolling horizon step for "
-                "{corresponding_year} ({steps_horizon.index(step) + 1} of "
-                "{len(steps_horizon)}) {scenario_string}--- \n"
+                f"{corresponding_year} ({steps_horizon.index(step) + 1} of "
+                f"{len(steps_horizon)}) {scenario_string}--- \n"
             )
 
     @classmethod

@@ -6,7 +6,7 @@ from collections import defaultdict
 import numpy as np
 import pytest
 
-from zen_garden import Results, run
+from zen_garden import Results, run, compare_configs, compare_model_values
 from zen_garden.wrapper.operation_scenarios import operation_scenarios
 
 # fixtures
@@ -131,6 +131,17 @@ def check_get_total_get_full_ts(
     if get_doc:
         results.get_doc(test_variables[0])
 
+def check_comparison_functions(results: list[Results], scenarios: list[str]):
+    """
+    Tests the functionality of the Results comparison functions.
+
+    Args:
+        results: List of Results instances
+        scenarios: List of scenario names
+    """
+    cc = compare_configs(results, scenarios)
+    cp = compare_model_values(results, component_type="parameter", scenarios=scenarios)
+    cv = compare_model_values(results, component_type="variable", scenarios=scenarios,compare_total=False)
 
 # All the tests
 ###############
@@ -500,6 +511,12 @@ def test_4a(folder_path):
     compare_variables_results(data_set_name, res, folder_path)
     # test functions get_total() and get_full_ts()
     check_get_total_get_full_ts(res)
+    # test comparison functions
+    res_0 = res
+    res_1 = res
+    scen_0 = list(res_0.solution_loader.scenarios.keys())[0]
+    scen_1 = list(res_0.solution_loader.scenarios.keys())[1]
+    check_comparison_functions([res_0, res_1], [scen_0, scen_1])
 
 
 def test_4b(folder_path):
@@ -702,3 +719,4 @@ def test_10a(folder_path):
 if __name__ == "__main__":
     folder_path = os.path.dirname(__file__)
     test_1j(folder_path)
+
