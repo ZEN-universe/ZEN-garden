@@ -116,8 +116,8 @@ class OptimizationSetup(object):
         # set base scenario
         self.set_base_configuration()
 
-        # read input data into elements
-        self.read_input_csv()
+        # store input data into elements
+        self.store_input_data()
 
         # conduct consistency checks of input units
         self.energy_system.unit_handling.consistency_checks_input_units(
@@ -262,7 +262,7 @@ class OptimizationSetup(object):
             for item in element_set:
                 self.add_element(element_class, item)
 
-    def read_input_csv(self):
+    def store_input_data(self):
         """Read the input and conducts the time series aggregation."""
         logging.info("\n--- Read input data of elements --- \n")
         self.energy_system.store_input_data()
@@ -270,8 +270,7 @@ class OptimizationSetup(object):
             element_class = [
                 k
                 for k, v in self.dict_element_classes.items()
-                if v == element.__class__
-            ][0]
+                if v == element.__class__][0]
             logging.info(f"Create {element_class} {element.name}")
             element.store_input_data()
 

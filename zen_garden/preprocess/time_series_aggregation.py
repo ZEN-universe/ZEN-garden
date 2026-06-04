@@ -30,8 +30,8 @@ class TimeSeriesAggregation(object):
         self.analysis = self.optimization_setup.analysis
         self.header_set_time_steps = self.analysis.header_data_inputs.set_time_steps
         # if set_time_steps as input (because already aggregated), use this as
-        # base time step, otherwise self.set_base_time_steps
-        self.set_base_time_steps = self.energy_system.set_base_time_steps_yearly
+        # base time step, otherwise self.set_base_time_steps_yearly
+        self.set_base_time_steps_yearly = self.energy_system.set_base_time_steps_yearly
         self.number_typical_periods = min(
             self.system.unaggregated_time_steps_per_year,
             self.system.aggregated_time_steps_per_year,
@@ -40,7 +40,7 @@ class TimeSeriesAggregation(object):
         self.get_excluded_ts()
         # if number of time steps >= number of base time steps, skip aggregation
         if (
-            self.number_typical_periods < np.size(self.set_base_time_steps)
+            self.number_typical_periods < np.size(self.set_base_time_steps_yearly)
             and self.system.conduct_time_series_aggregation
         ):
             # select time series
@@ -60,10 +60,10 @@ class TimeSeriesAggregation(object):
                 self.single_ts_tsa()
         else:
             self.typical_periods = pd.DataFrame()
-            set_time_steps = self.set_base_time_steps
+            set_time_steps = self.set_base_time_steps_yearly
             time_step_duration = (
                 self.energy_system.time_steps.calculate_time_step_duration(
-                    set_time_steps, self.set_base_time_steps
+                    set_time_steps, self.set_base_time_steps_yearly
                 )
             )
             sequence_time_steps = np.concatenate(
@@ -377,10 +377,10 @@ class TimeSeriesAggregation(object):
                 year specific TSA sequence
         """
         header_set_time_steps = self.analysis.header_data_inputs.set_time_steps
-        # only run specific TSA if TSA is activated and set_base_time_steps >
-        # aggregated_time_steps
+        # only run specific TSA if TSA is activated and 
+        # set_base_time_steps_yearly > aggregated_time_steps
         if (
-            self.number_typical_periods < np.size(self.set_base_time_steps)
+            self.number_typical_periods < np.size(self.set_base_time_steps_yearly)
             and self.system.conduct_time_series_aggregation
         ):
             for year in self.optimization_setup.year_specific_ts:
