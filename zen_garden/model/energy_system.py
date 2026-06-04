@@ -84,14 +84,14 @@ class EnergySystem:
         )
         self.set_technologies = self.system.set_technologies
         # base time steps
-        self.set_base_time_steps = list(
+        self.set_hours_all_years = list(
             range(
                 0,
                 self.system.unaggregated_time_steps_per_year
                 * self.system.optimized_years,
             )
         )
-        self.set_base_time_steps_yearly = list(
+        self.set_hours = list(
             range(0, self.system.unaggregated_time_steps_per_year)
         )
 
@@ -101,7 +101,7 @@ class EnergySystem:
             self.set_time_steps_yearly
         )
         time_steps_yearly_duration = self.time_steps.calculate_time_step_duration(
-            self.set_time_steps_yearly, self.set_base_time_steps
+            self.set_time_steps_yearly, self.set_hours_all_years
         )
         self.sequence_time_steps_yearly = np.concatenate(
             [
@@ -347,8 +347,8 @@ class EnergySystem:
         self.indexing_sets.append("set_elements")
         # time-steps
         self.optimization_setup.sets.add_set(
-            name="set_base_time_steps",
-            data=self.set_base_time_steps,
+            name="set_hours_all_years",
+            data=self.set_hours_all_years,
             doc="Set of base time-steps",
         )
         # yearly time steps

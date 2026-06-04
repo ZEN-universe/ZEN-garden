@@ -92,8 +92,8 @@ class ConversionTechnology(Technology):
         if not dependent_carrier:
             self.raw_time_series["conversion_factor"] = None
         else:
-            index_sets = ["set_nodes", "set_time_steps"]
-            time_steps = "set_base_time_steps_yearly"
+            index_sets = ["set_nodes", "set_hours"]
+            time_steps = "set_hours"
             cf_dict = {}
             for carrier in dependent_carrier:
                 cf_dict[carrier] = self.data_input.extract_input_data(

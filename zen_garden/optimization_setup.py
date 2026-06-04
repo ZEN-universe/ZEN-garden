@@ -654,7 +654,7 @@ class OptimizationSetup(object):
             new_base_time_steps_horizon = base_time_steps_horizon.squeeze().tolist()
             if not isinstance(new_base_time_steps_horizon, list):
                 new_base_time_steps_horizon = [new_base_time_steps_horizon]
-            self.energy_system.set_base_time_steps = new_base_time_steps_horizon
+            self.energy_system.set_hours_all_years = new_base_time_steps_horizon
             self.energy_system.set_time_steps_yearly = time_steps_yearly_horizon
 
     def solve(self):

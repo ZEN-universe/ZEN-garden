@@ -92,21 +92,21 @@ class Technology(Element):
         self.raw_time_series = {}
         self.raw_time_series["min_load"] = self.data_input.extract_input_data(
             "min_load",
-            index_sets=[set_location, "set_time_steps"],
-            time_steps="set_base_time_steps_yearly",
+            index_sets=[set_location, "set_hours"],
+            time_steps="set_hours",
             unit_category={},
         )
         self.raw_time_series["max_load"] = self.data_input.extract_input_data(
             "max_load",
-            index_sets=[set_location, "set_time_steps"],
-            time_steps="set_base_time_steps_yearly",
+            index_sets=[set_location, "set_hours"],
+            time_steps="set_hours",
             unit_category={},
         )
         self.raw_time_series["opex_specific_variable"] = (
             self.data_input.extract_input_data(
                 "opex_specific_variable",
-                index_sets=[set_location, "set_time_steps"],
-                time_steps="set_base_time_steps_yearly",
+                index_sets=[set_location, "set_hours"],
+                time_steps="set_hours",
                 unit_category={"money": 1, "energy_quantity": -1},
             )
         )

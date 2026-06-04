@@ -95,7 +95,7 @@ class HeaderDataInputs(Subscriptable):
     set_nodes: str = "node"
     set_edges: str = "edge"
     set_location: str = "location"
-    set_time_steps: str = "time"  # IMPORTANT: time must be unique
+    set_hours: str = "time"  # IMPORTANT: time must be unique
     set_time_steps_operation: str = "time_operation"
     set_time_steps_storage_level: str = "time_storage_level"
     set_time_steps_yearly: str = "year"  # IMPORTANT: year must be unique

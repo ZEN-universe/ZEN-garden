@@ -41,36 +41,36 @@ class Carrier(Element):
         self.raw_time_series = dict()
         self.raw_time_series["demand"] = self.data_input.extract_input_data(
             "demand",
-            index_sets=["set_nodes", "set_time_steps"],
-            time_steps="set_base_time_steps_yearly",
+            index_sets=["set_nodes", "set_hours"],
+            time_steps="set_hours",
             unit_category={"energy_quantity": 1, "time": -1},
         )
         self.raw_time_series["availability_import"] = (
             self.data_input.extract_input_data(
                 "availability_import",
-                index_sets=["set_nodes", "set_time_steps"],
-                time_steps="set_base_time_steps_yearly",
+                index_sets=["set_nodes", "set_hours"],
+                time_steps="set_hours",
                 unit_category={"energy_quantity": 1, "time": -1},
             )
         )
         self.raw_time_series["availability_export"] = (
             self.data_input.extract_input_data(
                 "availability_export",
-                index_sets=["set_nodes", "set_time_steps"],
-                time_steps="set_base_time_steps_yearly",
+                index_sets=["set_nodes", "set_hours"],
+                time_steps="set_hours",
                 unit_category={"energy_quantity": 1, "time": -1},
             )
         )
         self.raw_time_series["price_export"] = self.data_input.extract_input_data(
             "price_export",
-            index_sets=["set_nodes", "set_time_steps"],
-            time_steps="set_base_time_steps_yearly",
+            index_sets=["set_nodes", "set_hours"],
+            time_steps="set_hours",
             unit_category={"money": 1, "energy_quantity": -1},
         )
         self.raw_time_series["price_import"] = self.data_input.extract_input_data(
             "price_import",
-            index_sets=["set_nodes", "set_time_steps"],
-            time_steps="set_base_time_steps_yearly",
+            index_sets=["set_nodes", "set_hours"],
+            time_steps="set_hours",
             unit_category={"money": 1, "energy_quantity": -1},
         )
         # non-time series input data

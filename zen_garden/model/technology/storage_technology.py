@@ -132,8 +132,8 @@ class StorageTechnology(Technology):
         self.raw_time_series["flow_storage_inflow"] = (
             self.data_input.extract_input_data(
                 "flow_storage_inflow",
-                index_sets=["set_nodes", "set_time_steps"],
-                time_steps="set_base_time_steps_yearly",
+                index_sets=["set_nodes", "set_hours"],
+                time_steps="set_hours",
                 unit_category={"energy_quantity": 1, "time": -1},
             )
         )

@@ -69,9 +69,9 @@ class DataInput:
         # generic time steps
         yearly_variation = False
         if not time_steps:
-            time_steps = "set_base_time_steps"
+            time_steps = "set_hours_all_years"
         # if time steps are the yearly base time steps
-        elif time_steps == "set_base_time_steps_yearly":
+        elif time_steps == "set_hours":
             yearly_variation = True
             self.extract_yearly_variation(file_name, index_sets)
 
@@ -156,7 +156,7 @@ class DataInput:
                     )
         # copy output data as otherwise overwritten
         df_output_generic = df_output.copy()
-        if time_steps == "set_base_time_steps_yearly":
+        if time_steps == "set_hours":
             self.extract_year_specific_ts(
                 file_name,
                 index_name_list,
@@ -549,20 +549,12 @@ class DataInput:
         :param df_output_generic: original/generic time series data (base case)
         """
         # years of optimization model
-        years = [
-            str(year)
-            for year in range(
-                self.system.reference_year,
-                self.system.reference_year
-                + self.system.optimized_years * self.system.interval_between_years,
-                self.system.interval_between_years,
-            )
-        ]
+        years = self.energy_system.set_time_steps_years
         # files to check
         file_names = os.listdir(self.folder_path)
         for file in file_names:
             for i, year in enumerate(years):
-                filename = file_name + "_" + year
+                filename = file_name + "_" + str(year)
                 if filename in file:
                     # read input data
                     f_name, scenario_factor = self.scenario_dict.get_param_file(
@@ -584,13 +576,9 @@ class DataInput:
                             default_value,
                             time_steps,
                         )
-                    try:
-                        self.optimization_setup.year_specific_ts[i][
-                            (self.element._name, file_name)
-                        ] = (df_output_specific * scenario_factor)
-                    except Exception:
+                    if i not in self.optimization_setup.year_specific_ts:
                         self.optimization_setup.year_specific_ts[i] = {}
-                        self.optimization_setup.year_specific_ts[i][
+                    self.optimization_setup.year_specific_ts[i][
                             (self.element._name, file_name)
                         ] = (df_output_specific * scenario_factor)
 
@@ -605,7 +593,7 @@ class DataInput:
         # remove intra-yearly time steps from index set and add inter-yearly
         # time steps
         index_sets = copy.deepcopy(index_sets)
-        index_sets.remove("set_time_steps")
+        index_sets.remove("set_hours")
         index_sets.append("set_time_steps_yearly")
         # add Yearly_variation to file_name
         file_name += "_yearly_variation"
@@ -1072,7 +1060,8 @@ class DataInput:
         # add rest of indices
         for index in index_sets:
             index_name_list.append(self.index_names[index])
-            if "set_time_steps" in index and time_steps:
+            # TODO check if it works with set_hours
+            if "set_hours" in index and time_steps:
                 index_list.append(getattr(self.energy_system, time_steps))
             elif index == "set_technologies_existing":
                 index_list.append(self.element.set_technologies_existing)
@@ -1113,7 +1102,7 @@ class DataInput:
                 )
                 df_input = df_input.rename(
                     {
-                        self.index_names["set_time_steps"]: self.index_names[
+                        self.index_names["set_hours"]: self.index_names[
                             "set_time_steps_yearly"
                         ]
                     },
@@ -1176,7 +1165,7 @@ class DataInput:
                 "Input data with yearly time steps and therefore the temporal "
                 "header 'year' needs to be extracted with "
                 "index_sets=['set_time_steps_yearly'] instead of "
-                "index_sets=['set_time_steps']"
+                "index_sets=['set_hours']"
             )
             # set index
             index_names_column = df_input.columns.intersection(

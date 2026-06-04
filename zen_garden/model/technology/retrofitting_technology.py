@@ -47,7 +47,7 @@ class RetrofittingTechnology(ConversionTechnology):
         # get flow_coupling factor and capex
         self.retrofit_flow_coupling_factor = self.data_input.extract_input_data(
             "retrofit_flow_coupling_factor",
-            index_sets=["set_nodes", "set_time_steps"],
+            index_sets=["set_nodes", "set_hours"],
             unit_category={},
         )
 
