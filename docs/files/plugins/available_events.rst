@@ -35,7 +35,13 @@ Exemplary use cases for this event include:
 - Defining a new objective function. You can first delete the already defined objective function
   with ``optimization_setup.model.remove_objective()`` and then add a new one. For instance, you can
   think of adding a bias term to the objective function which co-optimizes cost and another metric.
-- Define new variables to be used in new constraints.
-- Define new constraints. E.g. policy targets for certain capacity expansions, generation constraints of
+- Define new variables to be used in new constraints. Refer to the documentation
+  :ref:`here <adding_elements.adding_variables>`
+- Define new constraints (see documentation :ref:`here <adding_elements.adding_constraints>`).
+  E.g. policy targets for certain capacity expansions, generation constraints of
   technologies,...
+
+.. note::
+    At the moment you cannot define new parameters and sets with the ZEN-garden logic, as you would need to read
+    new input data.
 
