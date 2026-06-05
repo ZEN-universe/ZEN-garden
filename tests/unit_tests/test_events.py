@@ -3,10 +3,14 @@
 Unit tests for `EventPublisher` and `Event` semantics.
 """
 
+from unittest.mock import patch
+
 import pytest
 
 from zen_garden.plugin_system.events import Event, EventPublisher
 from zen_garden.plugin_system.loader import register_plugins
+
+_FAKE_PLUGIN_EP = {"fake_plugin": "tests.unit_tests.fake_plugin.plugin"}
 
 
 @pytest.fixture(scope="function", autouse=True)
@@ -30,12 +34,12 @@ class TestEvents:
         """
         spy = []
 
-        @EventPublisher.register(Event.test_event1)
+        @EventPublisher.register(Event._test_event1)
         def any_function():
             spy.append("any_function is executed")
 
         # Act
-        EventPublisher.trigger(Event.test_event1)
+        EventPublisher.trigger(Event._test_event1)
 
         # Assert
         assert "any_function is executed" in spy
@@ -48,12 +52,12 @@ class TestEvents:
         # Arrange
         spy = []
 
-        @EventPublisher.register(Event.test_event1)
+        @EventPublisher.register(Event._test_event1)
         def any_function(any_argument):
             spy.append(f"{any_argument} has been passed")
 
         # Act
-        EventPublisher.trigger(Event.test_event1, "any_value")
+        EventPublisher.trigger(Event._test_event1, "any_value")
 
         # Assert
         assert "any_value has been passed" in spy
@@ -66,12 +70,12 @@ class TestEvents:
         # Arrange
         spy = []
 
-        @EventPublisher.register(Event.test_event1)
+        @EventPublisher.register(Event._test_event1)
         def any_function(any_argument):
             spy.append(f"{any_argument} has been passed")
 
         # Act
-        EventPublisher.trigger(Event.test_event1, any_argument="any_value")
+        EventPublisher.trigger(Event._test_event1, any_argument="any_value")
 
         # Assert
         assert "any_value has been passed" in spy
@@ -84,12 +88,12 @@ class TestEvents:
         # Arrange
         spy = []
 
-        @EventPublisher.register(Event.test_event1)
+        @EventPublisher.register(Event._test_event1)
         def any_function(any_argument):
             spy.append(f"{any_argument} has been passed")
 
         # Act
-        EventPublisher.trigger(Event.test_event2, any_argument="any_value")
+        EventPublisher.trigger(Event._test_event2, any_argument="any_value")
 
         # Assert
         assert spy == []
@@ -101,12 +105,16 @@ class TestEvents:
         """
         # Arrange
         plugins = {"fake_plugin": {}}
-        register_plugins(plugins, source_package="tests.unit_tests")
+        with patch(
+            "zen_garden.plugin_system.loader._discover_entrypoints",
+            return_value=_FAKE_PLUGIN_EP,
+        ):
+            register_plugins(plugins)
         spy = []
 
         # Act
-        EventPublisher.trigger(Event.test_event1, data_to_keep="any_data")
-        EventPublisher.trigger(Event.test_event2, spy=spy)
+        EventPublisher.trigger(Event._test_event1, data_to_keep="any_data")
+        EventPublisher.trigger(Event._test_event2, spy=spy)
 
         # Assert
         assert "any_data" in spy
@@ -120,13 +128,13 @@ class TestEvents:
         # Arrange
         spy = []
 
-        @EventPublisher.register(Event.test_event1)
+        @EventPublisher.register(Event._test_event1)
         def any_function(any_argument):
             spy.append(f"{any_argument} has been passed")
 
         # Act
         EventPublisher.deregister_all()
-        EventPublisher.trigger(Event.test_event1, "any_value")
+        EventPublisher.trigger(Event._test_event1, "any_value")
 
         # Assert
         assert spy == []

@@ -3,7 +3,7 @@ from zen_garden.plugin_system.events import Event, EventPublisher
 config = {}
 
 
-@EventPublisher.register(Event.test_event1)
+@EventPublisher.register(Event._test_event1)
 def define_global_data(**kwargs):
     """
     Testing method.
@@ -15,7 +15,7 @@ def define_global_data(**kwargs):
     stored_data = kwargs["data_to_keep"]
 
 
-@EventPublisher.register(Event.test_event2)
+@EventPublisher.register(Event._test_event2)
 def append_global_data_to_kwargs(**kwargs):
     """
     Testing method.

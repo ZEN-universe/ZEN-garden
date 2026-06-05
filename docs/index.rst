@@ -71,8 +71,7 @@ Documentation
    :caption: Plugins
 
    files/plugins/overview
-   files/plugins/available_plugins
-
+   files/plugins/available_events
 
 
 .. toctree::
@@ -95,7 +94,6 @@ Documentation
    files/developer_guide/testing
    files/developer_guide/adding_param_variable_constraint
    files/developer_guide/constraint_guide
-   files/developer_guide/implementing_plugins
    files/developer_guide/github_actions
    files/developer_guide/tips_and_tricks
 

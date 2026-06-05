@@ -23,6 +23,7 @@ The current structure of classes in which defaults are set is as follows:
     |
     |--Solver
     |--System
+    |--Plugins
     `--Scenario
 
 

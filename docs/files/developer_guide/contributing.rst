@@ -4,10 +4,10 @@
 Contribution Guide
 ########################
 
-Thank you for your interest in contributing to ZEN-garden! 🎉  
+Thank you for your interest in contributing to ZEN-garden! 🎉
 Community contributions are highly appreciated and help improve the project.
 
-Before submitting changes, please read the following guidelines.  
+Before submitting changes, please read the following guidelines.
 There are several ways to contribute:
 
 * :ref:`Reporting bugs or suggesting new features <contributing.issues>`
@@ -22,7 +22,7 @@ Reporting Bugs or Suggesting Features
 =====================================
 
 If you discover a bug, have a feature request, or want to suggest an improvement,
-please create an issue in the 
+please create an issue in the
 `GitHub repository <https://github.com/ZEN-universe/ZEN-garden/issues>`_.
 
 When creating an issue, please follow these guidelines:
@@ -56,7 +56,7 @@ All contributions follow the **fork-and-pull request workflow**.
 6. Submit a **Pull Request (PR)** from your fork to the upstream repository.
 
 .. note::
-  
+
    Contributors **must not create branches directly on the upstream repository**.
    All development should take place in personal forks.
 
@@ -66,7 +66,7 @@ All contributions follow the **fork-and-pull request workflow**.
 Coding Standards
 ----------------
 
-ZEN-garden follows the `PEP 8 <https://peps.python.org/pep-0008/>`_ 
+ZEN-garden follows the `PEP 8 <https://peps.python.org/pep-0008/>`_
 Python style guide with a few project-specific conventions.
 
 **General naming rules:**
@@ -102,7 +102,7 @@ Python style guide with a few project-specific conventions.
 Code Formatting
 ---------------
 
-All Python code must be formatted using *Black* before submitting a pull 
+All Python code must be formatted using *Black* before submitting a pull
 request.
 
 To format the code, run the following command in the repository root:
@@ -135,13 +135,30 @@ Some issues can be fixed automatically:
 
     ruff check . --fix
 
+.. _contributing.pre_commit_hooks:
+
+Pre-commit Hooks
+----------------
+
+`pre-commit <https://pre-commit.com/>`_ is a tool to setup and manage Git
+hooks, that is scripts that are executed around git events such as before
+creating a commit. We can use this tool to let the commands ``ruff check --fix``
+and ``black`` run before every commit to ensure that all files are formatted
+properly. To setup pre-commit properly execute the following commands once:
+
+.. code:: shell
+
+    pip install -e[dev]
+    pre-commit install
+
+Afterwards, whenever you run git commit, *Ruff* and *Black* are executed.
 
 .. _contributing.branch_protections:
 
 Branch Protection Rules
 -----------------------
 
-The **main branch** of ZEN-garden is protected to ensure code quality and 
+The **main branch** of ZEN-garden is protected to ensure code quality and
 stability.
 
 The following rules apply:
@@ -152,7 +169,7 @@ The following rules apply:
 
 2. **Pull requests must be up to date**
 
-   If your branch is outdated, update it by merging or rebasing with 
+   If your branch is outdated, update it by merging or rebasing with
    the latest version of the main branch.
 
 3. **All tests must pass**

@@ -3,17 +3,19 @@
 Unit tests for `register_plugins` ensuring modules are imported and configs passed.
 """
 
+from unittest.mock import patch
+
 import pytest
 
 from zen_garden.plugin_system.events import EventPublisher
 from zen_garden.plugin_system.loader import deregister_plugins, register_plugins
 
+_FAKE_PLUGIN_EP = {"fake_plugin": "tests.unit_tests.fake_plugin.plugin"}
+
 
 @pytest.fixture(scope="function", autouse=True)
 def cleanup(request: pytest.FixtureRequest):
-    """
-    Pytest fixture to clean up registered observers after each test.
-    """
+    """Pytest fixture to clean up registered observers after each test."""
     request.addfinalizer(EventPublisher.deregister_all)
 
 
@@ -24,7 +26,7 @@ class TestPluginsLoader:
     """
 
     def test_import_selected_plugin_import_corresponding_module(self):
-        """Selected plugin is imported from the given package.
+        """Selected plugin is imported from the given entry point.
 
         Ensures `register_plugins` returns the imported plugin module.
         """
@@ -32,7 +34,11 @@ class TestPluginsLoader:
         plugins = {"fake_plugin": {}}
 
         # Act
-        result = register_plugins(plugins, source_package="tests.unit_tests")
+        with patch(
+            "zen_garden.plugin_system.loader._discover_entrypoints",
+            return_value=_FAKE_PLUGIN_EP,
+        ):
+            result = register_plugins(plugins)
         from tests.unit_tests.fake_plugin import plugin
 
         # Assert
@@ -47,7 +53,11 @@ class TestPluginsLoader:
         plugins = {"fake_plugin": {"any_parameter": "any_value"}}
 
         # Act
-        register_plugins(plugins, source_package="tests.unit_tests")
+        with patch(
+            "zen_garden.plugin_system.loader._discover_entrypoints",
+            return_value=_FAKE_PLUGIN_EP,
+        ):
+            register_plugins(plugins)
         from tests.unit_tests.fake_plugin import plugin
 
         # Assert
@@ -60,9 +70,26 @@ class TestPluginsLoader:
         `EventPublisher.deregister_all`.
         """
         plugins = {"fake_plugin": {}}
-        register_plugins(plugins, source_package="tests.unit_tests")
+        with patch(
+            "zen_garden.plugin_system.loader._discover_entrypoints",
+            return_value=_FAKE_PLUGIN_EP,
+        ):
+            register_plugins(plugins)
 
         deregister_plugins()
 
         # Assert
         assert len(EventPublisher.observers()) == 0
+
+    def test_unknown_plugin_raises_module_not_found_error(self):
+        """Requesting an unknown plugin raises ModuleNotFoundError.
+
+        Ensures a clear error is raised when the plugin is not installed.
+        """
+        plugins = {"nonexistent_plugin": {}}
+
+        with patch(
+            "zen_garden.plugin_system.loader._discover_entrypoints", return_value={}
+        ):
+            with pytest.raises(ModuleNotFoundError, match="nonexistent_plugin"):
+                register_plugins(plugins)
