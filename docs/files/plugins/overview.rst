@@ -4,7 +4,7 @@
 Overview
 ############################
 
-The ZEN-garden plugin system lets you extend or modify the behaviour of a model run
+The ZEN-garden plugin system lets you extend or modify the behavior of a model run
 without changing the ZEN-garden source code.
 A plugin is a small, self-contained Python package that you develop and install
 separately.  ZEN-garden detects installed plugins automatically and runs them at
@@ -13,24 +13,22 @@ well-defined points during execution.
 Plugins can either live in their own repositories or in a dedicated  (`ZEN-garden-plugin repository <https://github.com/ZEN-universe/ZEN-garden-plugins>`_)
 
 How it works
-------------
+====================
 
 ZEN-garden defines a set of **events** — specific points in the workflow.
 A plugin registers one or more **functions** that should be called when a particular
 event occurs.  When ZEN-garden reaches that event, it calls all registered functions
 in the order they were registered.
 
-.. _plugins.available_events:
-
 Available events
------------------
+====================
 At the moment the following events are available:
 
-- ``after_model_construction``: After model construction, before model solving.
+- :ref:`after_model_construction <plugins.available_events.after_model_construction>`: Triggered after model construction, but before scaling and solving the model.
 
 
 Plugin discovery
-----------------
+====================
 
 Plugins are discovered through Python's standard
 `entry point <https://packaging.python.org/en/latest/specifications/entry-points/>`_
@@ -45,7 +43,7 @@ If you are actively developing a plugin, you can install it in *editable* mode w
     pip install -e path/to/my_plugin
 
 Activating a plugin
--------------------
+====================
 
 Add the plugin's name to ``config.json`` under the ``"plugins"`` key:
 
