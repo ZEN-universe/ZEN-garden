@@ -139,6 +139,7 @@ def get_component_diff(
         ]
     )
 
+
     component_names_1 = set(
         [
             name

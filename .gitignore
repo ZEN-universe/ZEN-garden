@@ -185,3 +185,6 @@ cython_debug/
 
 # VSCode
 *.code-workspace
+
+#specific files to ignore
+/comparison.py
