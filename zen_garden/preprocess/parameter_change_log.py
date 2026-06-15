@@ -5,13 +5,13 @@ def parameter_change_log():
             "unit": "min_load",
         },
         "capacity_lower_limit": {
-            "default_value": 0, # only 0, 1, or 'inf' are allowed
-            "unit": "capacity_limit"
+            "default_value": 0,  # only 0, 1, or 'inf' are allowed
+            "unit": "capacity_limit",
         },
         "capacity_lower_limit_energy": {
-            "default_value": 0, # only 0, 1, or 'inf' are allowed
-            "unit": "capacity_limit_energy"
-        }
+            "default_value": 0,  # only 0, 1, or 'inf' are allowed
+            "unit": "capacity_limit_energy",
+        },
         #    "new_parameter_name": {
         #       "default_value": 0, # only 0, 1, or 'inf' are allowed
         #       "unit": "existing_parameter_name_with_same_unit"

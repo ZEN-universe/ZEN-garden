@@ -79,7 +79,7 @@ class StorageTechnology(Technology):
             "capacity_lower_limit_energy",
             index_sets=["set_nodes", "set_time_steps_yearly"],
             time_steps="set_time_steps_yearly",
-            unit_category={"energy_quantity": 1}, # Note: No "time": -1 for energy!
+            unit_category={"energy_quantity": 1},  # Note: No "time": -1 for energy!
         )
         self.capacity_existing_energy = self.data_input.extract_input_data(
             "capacity_existing_energy",

@@ -3133,5 +3133,19 @@
                 }
             ]
         }
+    },
+    "test_11a": {
+        "none": {
+            "capacity": [
+                {
+                    "index": ["natural_gas_turbine", "power", "CH", 0],
+                    "value": 50.0
+                },
+                {
+                    "index": ["natural_gas_turbine", "power", "DE", 0],
+                    "value": 50.0
+                }
+            ]
+        }
     }
 }

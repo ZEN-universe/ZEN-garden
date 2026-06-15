@@ -118,7 +118,7 @@ class Technology(Element):
             unit_category={"energy_quantity": 1, "time": -1},
         )
 
-        #NEW: lower capacity limit
+        # lower capacity limit
         self.capacity_lower_limit = self.data_input.extract_input_data(
             "capacity_lower_limit",
             index_sets=[set_location, "set_time_steps_yearly"],
@@ -1316,21 +1316,22 @@ class TechnologyRules(GenericRule):
 
     def constraint_technology_capacity_lower_limit(self):
         """Constraint that installed capacity must be >= the defined lower limit."""
-        
+
         # In TechnologyRules, we access variables and parameters directly via self
         capacity = self.variables["capacity"]
         capacity_lower_limit = self.parameters.capacity_lower_limit
-        
-        # Create a mask so we only build constraints where the user actually provided a number
+
+        # Create a mask so we only build constraints
+        # where the user actually provided a number
         mask = capacity_lower_limit > 0.0
-        
+
         # Apply the mask using xarray's .where() so we don't build empty/NaN constraints
         lhs = capacity.where(mask)
         rhs = capacity_lower_limit.where(mask, 0.0)
-        
+
         # Total Capacity >= Lower Bound
         constraint = lhs >= rhs
-        
+
         # Add the constraint to the model
         self.constraints.add_constraint(
             "constraint_technology_capacity_lower_limit", constraint
