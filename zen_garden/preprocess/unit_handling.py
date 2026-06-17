@@ -1396,8 +1396,8 @@ class Scaling:
             cond = var.labels != -1
             var.solution = var.solution.where(
                 ~cond,  # Where condition is False, keep original data
-                var.solution * self.D_c_inv[var.labels] # Where True, apply math
-            )            
+                var.solution * self.D_c_inv[var.labels],  # Where True, apply math
+            )
 
     def analyze_numerics(self):
         """Analyzes the numerics of the optimization model."""
