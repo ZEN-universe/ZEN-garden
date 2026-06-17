@@ -61,7 +61,7 @@ dev = [
     "coverage",
     "pytest-xdist",
     "pytest-cov",
-    "black==25.12.0",
+    "black==26.5.1",
     "ruff==0.14.13",
     "mypy==1.19.1",
     "pre-commit",
