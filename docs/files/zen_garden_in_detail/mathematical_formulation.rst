@@ -886,6 +886,14 @@ The technology capacity :math:`S_{h,p,y}` is constrained by the capacity limit
 
     S_{h,p,y} \leq s^\mathrm{max}_{h,p,y}.
 
+The technology capacity :math:`S_{h,p,y}` is constrained from below by the capacity lower limit 
+:math:`s^\mathrm{min}_{h,p,y}`:
+
+.. math::
+   :label: capacity_lower_limit
+
+   S_{h,p,y} \geq s^\mathrm{min}_{h,p,y}.
+   
 The capacity addition :math:`\Delta S_{h,p,y}` is constrained by the maximum 
 capacity addition :math:`\Delta s^\mathrm{max}_{h,p,y}`:
 

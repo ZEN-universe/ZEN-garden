@@ -1,0 +1,93 @@
+{
+    "capacity_addition_min": {
+        "default_value": 0.0,
+        "unit": "GW"
+    },
+    "capacity_addition_max": {
+        "default_value": "inf",
+        "unit": "GW"
+    },
+    "capacity_addition_unbounded": {
+        "default_value": 0.0,
+        "unit": "GW"
+    },
+    "capacity_existing": {
+        "default_value": 0.0,
+        "unit": "GW"
+    },
+    "capacity_limit": {
+        "default_value": "inf",
+        "unit": "GW"
+    },
+    "capacity_lower_limit": {
+        "default_value": 50.0,
+        "unit": "GW"
+    },
+    "min_load": {
+        "default_value": 0.0,
+        "unit": "1"
+    },
+    "max_load": {
+        "default_value": 0.93,
+        "unit": "1"
+    },
+    "opex_specific_variable": {
+        "default_value": 2.8418507419734973,
+        "unit": "Euro/MWh"
+    },
+    "opex_specific_fixed": {
+        "default_value": 21.825395098940767,
+        "unit": "Euro/kW"
+    },
+    "carbon_intensity_technology": {
+        "default_value": 0.0,
+        "unit": "kilotons/GWh"
+    },
+    "construction_time": {
+        "default_value": 0.0,
+        "unit": "1"
+    },
+    "capacity_investment_existing": {
+        "default_value": 0.0,
+        "unit": "GW"
+    },
+    "max_diffusion_rate": {
+        "default_value": "inf",
+        "unit": "1"
+    },
+    "lifetime": {
+        "default_value": 40.0,
+        "unit": "1"
+    },
+    "reference_carrier": {
+        "default_value": [
+            "electricity"
+        ]
+    },
+    "capex_specific_conversion": {
+        "default_value": 779.8216786239914,
+        "unit": "Euro/kW"
+    },
+    "input_carrier": {
+        "default_value": [
+            "natural_gas"
+        ]
+    },
+    "output_carrier": {
+        "default_value": [
+            "electricity"
+        ]
+    },
+    "conversion_factor": [
+        {
+            "natural_gas": {
+                "default_value": 1.8803076344161054,
+                "unit": "GW/GW"
+            }
+        }
+    ],
+    "min_full_load_hours_fraction": {
+        "default_value": 0.0,
+        "unit": "1"
+    }
+}

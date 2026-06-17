@@ -716,6 +716,19 @@ def test_10a(folder_path):
     compare_variables_results(data_set_name, res, folder_path)
 
 
+def test_11a(folder_path):
+    # run the test
+    data_set_name = "test_11a"
+    run(
+        config=os.path.join(folder_path, "config.json"),
+        dataset=os.path.join(folder_path, data_set_name),
+        folder_output=os.path.join(folder_path, "outputs"),
+    )
+    # read the results and check again
+    res = Results(os.path.join(folder_path, "outputs", data_set_name))
+    compare_variables_results(data_set_name, res, folder_path)
+
+
 if __name__ == "__main__":
     folder_path = os.path.dirname(__file__)
     test_1j(folder_path)

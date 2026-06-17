@@ -13,6 +13,7 @@ Parameter Name;Symbol;Time Step Type;Doc String;Unit Category
 ``construction_time``;:math:`dy^\mathrm{construction}`;temporal immutable;Parameter which specifies the construction time of a newly built technology;{}
 ``max_diffusion_rate``;:math:`\vartheta_h`;``set_time_steps_yearly``;Parameter which specifies the maximum diffusion rate which is the maximum increase in capacity between investment steps;{}
 ``capacity_limit``;:math:`s^\mathrm{max}_{h,p,y}`;temporal immutable;Parameter which specifies the capacity limit of technologies;"{""energy_quantity"": 1, ""time"": -1}"
+``capacity_lower_limit``;:math:`s^\mathrm{min}_{h,p,y}`;temporal immutable;Parameter which specifies the capacity lower limit of technologies;"{""energy_quantity"": 1, ""time"": -1}"
 ``min_load``;:math:`m^\mathrm{min}_{h,n,t,y}`;``set_time_steps_operation``;Parameter which specifies the minimum load of technology relative to installed capacity;{}
 ``max_load``;:math:`m^\mathrm{max}_{h,n,t,y}`;``set_time_steps_operation``;Parameter which specifies the maximum load of technology relative to installed capacity;{}
 ``carbon_intensity_technology``;:math:`\theta^\mathrm{tech}_{h,n,t,y}`;temporal immutable;Parameter which specifies the carbon intensity of each technology;"{""emissions"": 1, ""energy_quantity"": -1}"
