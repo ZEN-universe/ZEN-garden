@@ -3144,6 +3144,22 @@
                 {
                     "index": ["natural_gas_turbine", "power", "DE", 0],
                     "value": 50.0
+                },
+                {
+                    "index": ["natural_gas_pipeline", "power", "DE-CH", 0],
+                    "value": 60.0
+                },
+                {
+                    "index": ["natural_gas_pipeline", "power", "CH-DE", 0],
+                    "value": 60.0
+                },
+                {
+                    "index": ["natural_gas_storage", "energy", "CH", 0],
+                    "value": 75.0
+                },
+                {
+                    "index": ["natural_gas_storage", "energy", "DE", 0],
+                    "value": 75.0
                 }
             ]
         }

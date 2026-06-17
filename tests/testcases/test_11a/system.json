@@ -4,7 +4,7 @@
         "photovoltaics"
     ],
     "set_storage_technologies": [
-        
+        "natural_gas_storage"
     ],
     "set_transport_technologies": [
         "natural_gas_pipeline"
