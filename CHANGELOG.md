@@ -3,9 +3,10 @@
 This file gets automatically updated in ZEN-garden's continuous integration 
 procedures. Do not edit the file manually.
 
-## [Unversioned Changes] - 2026-06-04 
+## [Unversioned Changes] - 2026-06-17 
 
 ### Maintenance Tasks 🧹
+- upgrade `black` to patch security vulnerability. [[🔀 PR #1276](https://github.com/ZEN-universe/ZEN-garden/pull/1276) @csfunke]
 - Add a test for the comparisons module to `test_4a` [[🔀 PR #1269](https://github.com/ZEN-universe/ZEN-garden/pull/1269) @jacob-mannhardt]
 
 ## [v2.12.1] - 2026-06-03 
