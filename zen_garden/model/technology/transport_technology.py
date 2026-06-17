@@ -64,35 +64,12 @@ class TransportTechnology(Technology):
 
     def get_transport_loss_factor(self):
         """Get transport loss factor."""
-        # check which transport loss factor is used
-        assert not (
-            "transport_loss_factor_linear" in self.data_input.attribute_dict
-            and "transport_loss_factor_exponential" in self.data_input.attribute_dict
-        ), "Only one transport loss factor can be specified."
-        if "transport_loss_factor_linear" in self.data_input.attribute_dict:
-            self.transport_loss_factor = self.data_input.extract_input_data(
-                "transport_loss_factor_linear",
-                index_sets=[],
-                unit_category={"distance": -1},
-            )
-            self.transport_loss_factor = self.transport_loss_factor[0] * self.distance
-        elif "transport_loss_factor_exponential" in self.data_input.attribute_dict:
-            self.transport_loss_factor = self.data_input.extract_input_data(
-                "transport_loss_factor_exponential",
-                index_sets=[],
-                unit_category={"distance": -1},
-            )
-            self.transport_loss_factor = 1 - np.exp(
-                -self.transport_loss_factor[0] * self.distance
-            )
-            self.energy_system.system.set_transport_technologies_loss_exponential.append(
-                self.name
-            )
-        else:
-            raise AttributeError(
-                f"The transport technology {self.name} has neither of the attributes: "
-                f"transport_loss_factor_linear nor transport_loss_factor_exponential."
-            )
+        self.transport_loss_factor = self.data_input.extract_input_data(
+            "transport_loss_factor_linear",
+            index_sets=[],
+            unit_category={"distance": -1},
+        )
+        self.transport_loss_factor = self.transport_loss_factor[0] * self.distance
 
     def get_capex_transport(self):
         """Get capex of transport technology."""
