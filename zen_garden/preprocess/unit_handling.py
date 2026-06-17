@@ -1393,10 +1393,11 @@ class Scaling:
         model = self.model
         for name_var in model.variables:
             var = model.variables[name_var]
-            mask = np.where(var.labels.data != -1)
-            var.solution.data[mask] = var.solution.data[mask] * (
-                self.D_c_inv[var.labels.data[mask]]
-            )
+            cond = var.labels != -1
+            var.solution = var.solution.where(
+                ~cond,  # Where condition is False, keep original data
+                var.solution * self.D_c_inv[var.labels] # Where True, apply math
+            )            
 
     def analyze_numerics(self):
         """Analyzes the numerics of the optimization model."""
