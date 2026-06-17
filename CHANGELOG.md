@@ -3,7 +3,14 @@
 This file gets automatically updated in ZEN-garden's continuous integration 
 procedures. Do not edit the file manually.
 
-## [Unversioned Changes] - 2026-06-17 
+## [v2.13.0] - 2026-06-17 
+
+### New Features ✨
+- add lower capacity limit parameter. [[🔀 PR #1275](https://github.com/ZEN-universe/ZEN-garden/pull/1275) @jojoethz]
+- add test_11a. [[🔀 PR #1275](https://github.com/ZEN-universe/ZEN-garden/pull/1275) @jojoethz]
+
+### Documentation Changes 📝
+- add mathematical description of lower capacity constraint. [[🔀 PR #1275](https://github.com/ZEN-universe/ZEN-garden/pull/1275) @jojoethz]
 
 ### Maintenance Tasks 🧹
 - upgrade `black` to patch security vulnerability. [[🔀 PR #1276](https://github.com/ZEN-universe/ZEN-garden/pull/1276) @csfunke]
