@@ -1,4 +1,4 @@
-.. _t_tsa.t_tsa:
+﻿.. _t_tsa.t_tsa:
 
 ###################################
 Tutorial 5: Time Series Aggregation
@@ -11,14 +11,14 @@ Time steps in ZEN-garden
 ZEN-garden is a temporally resolved investment and operation optimization model. 
 That means that in general we have three different time indices:
 
-1. ``set_base_time_steps``: is the highest resolution in the model. It is not 
-   necessarily used to index any component, but merely as a common "beat" or 
-   "rhythm" to all other time indices. We consider each hour as the base time 
-   index. Thus, each time index can be converted to the base time index, which 
-   is then a sequence of the time steps with the length of the base time index. 
-   This sequence is called ``sequence_time_steps``. The number of occurrences of 
-   each time step is called ``time_steps_duration``.
-2. ``set_time_steps_yearly``: Some components have a yearly resolution. These 
+1. ``set_hours``: is the highest resolution in the model. 
+   We consider each hour as the base time index. 
+   When we use time series aggregation, we aggregate the base time steps 
+   to representative time steps, where each representative time steps represents
+   multiple base time steps. The sequence of the representative time steps 
+   is called ``sequence_time_steps``. The number of occurrences of 
+   each representative time step is called ``time_steps_duration``.
+2. ``set_years``: Some components have a yearly resolution. These 
    include for example the yearly carbon emission limit 
    (``carbon_emissions_limit``) or the yearly costs (``cost_total``). Note that 
    these are in general not associated with any specific element (technology or 
@@ -209,7 +209,7 @@ Additional information
    ``time_steps_operation_duration`` of the respective time step.
 3. What is this strange ``sequence_time_steps`` floating around everywhere in 
    the code? The substitution of the base time steps by the aggregated time 
-   steps yields a sequence of time steps, which is ``len(set_base_time_steps)`` 
+   steps yields a sequence of time steps, which is ``len(set_hours)`` 
    entries long and encapsulates the order in which the aggregated time steps 
    appear in the representation of the base time steps. We use the sequence of 
    time steps to convert one time step into another. For example we can use the 

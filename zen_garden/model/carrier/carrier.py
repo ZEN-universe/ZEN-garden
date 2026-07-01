@@ -1,4 +1,4 @@
-"""Class defining a generic energy carrier.
+﻿"""Class defining a generic energy carrier.
 
 The class takes as inputs the abstract optimization model. The class adds parameters,
 variables and constraints of a generic carrier and returns the abstract optimization
@@ -41,61 +41,52 @@ class Carrier(Element):
         self.raw_time_series = dict()
         self.raw_time_series["demand"] = self.data_input.extract_input_data(
             "demand",
-            index_sets=["set_nodes", "set_time_steps"],
-            time_steps="set_base_time_steps_yearly",
+            index_sets=["set_nodes", "set_hours"],
             unit_category={"energy_quantity": 1, "time": -1},
         )
         self.raw_time_series["availability_import"] = (
             self.data_input.extract_input_data(
                 "availability_import",
-                index_sets=["set_nodes", "set_time_steps"],
-                time_steps="set_base_time_steps_yearly",
+                index_sets=["set_nodes", "set_hours"],
                 unit_category={"energy_quantity": 1, "time": -1},
             )
         )
         self.raw_time_series["availability_export"] = (
             self.data_input.extract_input_data(
                 "availability_export",
-                index_sets=["set_nodes", "set_time_steps"],
-                time_steps="set_base_time_steps_yearly",
+                index_sets=["set_nodes", "set_hours"],
                 unit_category={"energy_quantity": 1, "time": -1},
             )
         )
         self.raw_time_series["price_export"] = self.data_input.extract_input_data(
             "price_export",
-            index_sets=["set_nodes", "set_time_steps"],
-            time_steps="set_base_time_steps_yearly",
+            index_sets=["set_nodes", "set_hours"],
             unit_category={"money": 1, "energy_quantity": -1},
         )
         self.raw_time_series["price_import"] = self.data_input.extract_input_data(
             "price_import",
-            index_sets=["set_nodes", "set_time_steps"],
-            time_steps="set_base_time_steps_yearly",
+            index_sets=["set_nodes", "set_hours"],
             unit_category={"money": 1, "energy_quantity": -1},
         )
         # non-time series input data
         self.availability_import_yearly = self.data_input.extract_input_data(
             "availability_import_yearly",
-            index_sets=["set_nodes", "set_time_steps_yearly"],
-            time_steps="set_time_steps_yearly",
+            index_sets=["set_nodes", "set_years"],
             unit_category={"energy_quantity": 1},
         )
         self.availability_export_yearly = self.data_input.extract_input_data(
             "availability_export_yearly",
-            index_sets=["set_nodes", "set_time_steps_yearly"],
-            time_steps="set_time_steps_yearly",
+            index_sets=["set_nodes", "set_years"],
             unit_category={"energy_quantity": 1},
         )
         self.carbon_intensity_carrier_import = self.data_input.extract_input_data(
             "carbon_intensity_carrier_import",
-            index_sets=["set_nodes", "set_time_steps_yearly"],
-            time_steps="set_time_steps_yearly",
+            index_sets=["set_nodes", "set_years"],
             unit_category={"emissions": 1, "energy_quantity": -1},
         )
         self.carbon_intensity_carrier_export = self.data_input.extract_input_data(
             "carbon_intensity_carrier_export",
-            index_sets=["set_nodes", "set_time_steps_yearly"],
-            time_steps="set_time_steps_yearly",
+            index_sets=["set_nodes", "set_years"],
             unit_category={"emissions": 1, "energy_quantity": -1},
         )
         self.price_shed_demand = self.data_input.extract_input_data(
@@ -157,7 +148,7 @@ class Carrier(Element):
         # availability of carrier
         optimization_setup.parameters.add_parameter(
             name="availability_import_yearly",
-            index_names=["set_carriers", "set_nodes", "set_time_steps_yearly"],
+            index_names=["set_carriers", "set_nodes", "set_years"],
             doc="Parameter which specifies the maximum energy that can be imported "
             "from outside the system boundaries for the entire year",
             calling_class=cls,
@@ -165,7 +156,7 @@ class Carrier(Element):
         # availability of carrier
         optimization_setup.parameters.add_parameter(
             name="availability_export_yearly",
-            index_names=["set_carriers", "set_nodes", "set_time_steps_yearly"],
+            index_names=["set_carriers", "set_nodes", "set_years"],
             doc="Parameter which specifies the maximum energy that can be exported "
             "to outside the system boundaries for the entire year",
             calling_class=cls,
@@ -194,14 +185,14 @@ class Carrier(Element):
         # carbon intensity carrier import
         optimization_setup.parameters.add_parameter(
             name="carbon_intensity_carrier_import",
-            index_names=["set_carriers", "set_nodes", "set_time_steps_yearly"],
+            index_names=["set_carriers", "set_nodes", "set_years"],
             doc="Parameter which specifies the carbon intensity of carrier import",
             calling_class=cls,
         )
         # carbon intensity carrier exmport
         optimization_setup.parameters.add_parameter(
             name="carbon_intensity_carrier_export",
-            index_names=["set_carriers", "set_nodes", "set_time_steps_yearly"],
+            index_names=["set_carriers", "set_nodes", "set_years"],
             doc="Parameter which specifies the carbon intensity of carrier export",
             calling_class=cls,
         )
@@ -255,7 +246,7 @@ class Carrier(Element):
         variables.add_variable(
             model,
             name="cost_carrier_total",
-            index_sets=sets["set_time_steps_yearly"],
+            index_sets=sets["set_years"],
             doc="total carrier cost due to import and export",
             unit_category={"money": 1},
         )
@@ -274,7 +265,7 @@ class Carrier(Element):
         variables.add_variable(
             model,
             name="carbon_emissions_carrier_total",
-            index_sets=sets["set_time_steps_yearly"],
+            index_sets=sets["set_years"],
             doc="total carbon emissions of importing and exporting carrier",
             unit_category={"emissions": 1},
         )
@@ -595,11 +586,11 @@ class CarrierRules(GenericRule):
         carbon_intensity_carrier_import = (
             self.parameters.carbon_intensity_carrier_import.broadcast_like(times)
             * times
-        ).sum("set_time_steps_yearly")
+        ).sum("set_years")
         carbon_intensity_carrier_export = (
             self.parameters.carbon_intensity_carrier_export.broadcast_like(times)
             * times
-        ).sum("set_time_steps_yearly")
+        ).sum("set_years")
         lhs = self.variables["carbon_emissions_carrier"] - (
             self.variables["flow_import"] * carbon_intensity_carrier_import
             - self.variables["flow_export"] * carbon_intensity_carrier_export
