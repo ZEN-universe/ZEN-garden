@@ -903,6 +903,6 @@ class OptimizationSetup(object):
                 return component_data
             except KeyError as err:
                 raise KeyError(
-                    f"the custom set {custom_set} cannot be used as a subindex of"
+                    f"the custom set {custom_set} cannot be used as a subindex of "
                     f"{component_data.index}"
                 ) from err
