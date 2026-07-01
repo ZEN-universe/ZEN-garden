@@ -731,5 +731,5 @@ def test_11a(folder_path):
 
 if __name__ == "__main__":
     folder_path = os.path.dirname(__file__)
-    test_3i(folder_path)
+    test_5a(folder_path)
 

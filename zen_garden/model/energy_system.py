@@ -22,6 +22,13 @@ from .time_steps import TimeStepsDicts
 class EnergySystem:
     """Class defining a standard energy system."""
 
+    TIME_STEP_TYPES = [
+        "set_hours_all_years",
+        "set_hours",
+        "set_years",
+        "set_years_entire_horizon",
+    ]
+
     def __init__(self, optimization_setup):
         """Initialization of the energy_system.
 
@@ -135,7 +142,6 @@ class EnergySystem:
         self.carbon_emissions_annual_limit = self.data_input.extract_input_data(
             "carbon_emissions_annual_limit",
             index_sets=["set_years"],
-            time_steps="set_years",
             unit_category={"emissions": 1},
         )
         _fraction_year = (
@@ -157,7 +163,6 @@ class EnergySystem:
         self.price_carbon_emissions = self.data_input.extract_input_data(
             "price_carbon_emissions",
             index_sets=["set_years"],
-            time_steps="set_years",
             unit_category={"money": 1, "emissions": -1},
         )
         self.price_carbon_emissions_budget_overshoot = (

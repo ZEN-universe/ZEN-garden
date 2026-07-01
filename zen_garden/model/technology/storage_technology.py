@@ -46,13 +46,11 @@ class StorageTechnology(Technology):
         self.efficiency_charge = self.data_input.extract_input_data(
             "efficiency_charge",
             index_sets=["set_nodes", "set_years"],
-            time_steps="set_years",
             unit_category={},
         )
         self.efficiency_discharge = self.data_input.extract_input_data(
             "efficiency_discharge",
             index_sets=["set_nodes", "set_years"],
-            time_steps="set_years",
             unit_category={},
         )
         self.self_discharge = self.data_input.extract_input_data(
@@ -72,7 +70,6 @@ class StorageTechnology(Technology):
         self.capacity_limit_energy = self.data_input.extract_input_data(
             "capacity_limit_energy",
             index_sets=["set_nodes", "set_years"],
-            time_steps="set_years",
             unit_category={"energy_quantity": 1},
         )
         self.capacity_lower_limit_energy = self.data_input.extract_input_data(
@@ -89,7 +86,6 @@ class StorageTechnology(Technology):
         self.capacity_investment_existing_energy = self.data_input.extract_input_data(
             "capacity_investment_existing_energy",
             index_sets=["set_nodes", "set_years"],
-            time_steps="set_years",
             unit_category={"energy_quantity": 1},
         )
         self.energy_to_power_ratio_min = self.data_input.extract_input_data(
@@ -101,25 +97,21 @@ class StorageTechnology(Technology):
         self.capex_specific_storage = self.data_input.extract_input_data(
             "capex_specific_storage",
             index_sets=["set_nodes", "set_years"],
-            time_steps="set_years",
             unit_category={"money": 1, "energy_quantity": -1, "time": -1},
         )
         self.capex_specific_storage_energy = self.data_input.extract_input_data(
             "capex_specific_storage_energy",
             index_sets=["set_nodes", "set_years"],
-            time_steps="set_years",
             unit_category={"money": 1, "energy_quantity": -1},
         )
         self.opex_specific_fixed = self.data_input.extract_input_data(
             "opex_specific_fixed",
             index_sets=["set_nodes", "set_years"],
-            time_steps="set_years",
             unit_category={"money": 1, "energy_quantity": -1, "time": 1},
         )
         self.opex_specific_fixed_energy = self.data_input.extract_input_data(
             "opex_specific_fixed_energy",
             index_sets=["set_nodes", "set_years"],
-            time_steps="set_years",
             unit_category={"money": 1, "energy_quantity": -1},
         )
         self.convert_to_fraction_of_capex()
@@ -133,7 +125,6 @@ class StorageTechnology(Technology):
             self.data_input.extract_input_data(
                 "flow_storage_inflow",
                 index_sets=["set_nodes", "set_hours"],
-                time_steps="set_hours",
                 unit_category={"energy_quantity": 1, "time": -1},
             )
         )

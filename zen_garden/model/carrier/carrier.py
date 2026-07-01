@@ -42,14 +42,12 @@ class Carrier(Element):
         self.raw_time_series["demand"] = self.data_input.extract_input_data(
             "demand",
             index_sets=["set_nodes", "set_hours"],
-            time_steps="set_hours",
             unit_category={"energy_quantity": 1, "time": -1},
         )
         self.raw_time_series["availability_import"] = (
             self.data_input.extract_input_data(
                 "availability_import",
                 index_sets=["set_nodes", "set_hours"],
-                time_steps="set_hours",
                 unit_category={"energy_quantity": 1, "time": -1},
             )
         )
@@ -57,45 +55,38 @@ class Carrier(Element):
             self.data_input.extract_input_data(
                 "availability_export",
                 index_sets=["set_nodes", "set_hours"],
-                time_steps="set_hours",
                 unit_category={"energy_quantity": 1, "time": -1},
             )
         )
         self.raw_time_series["price_export"] = self.data_input.extract_input_data(
             "price_export",
             index_sets=["set_nodes", "set_hours"],
-            time_steps="set_hours",
             unit_category={"money": 1, "energy_quantity": -1},
         )
         self.raw_time_series["price_import"] = self.data_input.extract_input_data(
             "price_import",
             index_sets=["set_nodes", "set_hours"],
-            time_steps="set_hours",
             unit_category={"money": 1, "energy_quantity": -1},
         )
         # non-time series input data
         self.availability_import_yearly = self.data_input.extract_input_data(
             "availability_import_yearly",
             index_sets=["set_nodes", "set_years"],
-            time_steps="set_years",
             unit_category={"energy_quantity": 1},
         )
         self.availability_export_yearly = self.data_input.extract_input_data(
             "availability_export_yearly",
             index_sets=["set_nodes", "set_years"],
-            time_steps="set_years",
             unit_category={"energy_quantity": 1},
         )
         self.carbon_intensity_carrier_import = self.data_input.extract_input_data(
             "carbon_intensity_carrier_import",
             index_sets=["set_nodes", "set_years"],
-            time_steps="set_years",
             unit_category={"emissions": 1, "energy_quantity": -1},
         )
         self.carbon_intensity_carrier_export = self.data_input.extract_input_data(
             "carbon_intensity_carrier_export",
             index_sets=["set_nodes", "set_years"],
-            time_steps="set_years",
             unit_category={"emissions": 1, "energy_quantity": -1},
         )
         self.price_shed_demand = self.data_input.extract_input_data(
