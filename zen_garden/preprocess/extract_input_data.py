@@ -49,7 +49,13 @@ class DataInput:
         # optimization setup
         self.optimization_setup = optimization_setup
 
-    def extract_input_data(self, file_name, index_sets, unit_category, subelement=None):
+    def extract_input_data(
+            self, 
+            file_name, 
+            index_sets, 
+            unit_category, 
+            subelement=None,
+            time_step=None):
         """Reads input data and restructures the dataframe to return
         (multi)indexed dict.
 
@@ -59,10 +65,19 @@ class DataInput:
                 Corresponds to order in pe.Set/pe.Param
             unit_category: dict defining the dimensions of the parameter's unit
             subelement: string specifying dependent element
+            time_step: string specifying the time step of the attribute
 
         Returns:
             dictionary with attribute values
         """
+        if time_step is not None:
+            logging.warning(
+                "Deprecated: " \
+                "The time_step argument is deprecated "
+                "and will be removed in future versions. " \
+                "The value is ignored and is determined " \
+                "automatically from the index_sets."
+            )
         # generic time steps
         yearly_variation = False
         if "set_hours" in index_sets:
