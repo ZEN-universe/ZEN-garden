@@ -30,6 +30,7 @@ Default values are overwritten by any changes specified in the input files
 ``system.json``, ``scenarios.json``, and ``config.json``.
 """
 
+from collections.abc import ItemsView, KeysView, ValuesView
 from typing import Any, Literal, Optional, Union
 
 from pydantic import BaseModel, ConfigDict
@@ -58,13 +59,13 @@ class Subscriptable(BaseModel):
     def __setitem__(self, __name: str, __value: Any) -> None:
         setattr(self, __name, __value)
 
-    def keys(self) -> Any:
+    def keys(self) -> KeysView[str]:
         return self.model_dump().keys()
 
-    def items(self) -> Any:
+    def items(self) -> ItemsView[str, Any]:
         return self.model_dump().items()
 
-    def values(self) -> Any:
+    def values(self) -> ValuesView[Any]:
         return self.model_dump().values()
 
 

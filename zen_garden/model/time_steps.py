@@ -247,6 +247,9 @@ class TimeStepsDicts(object):
         :param year: year of interest
         :return: time_steps_year2operation of the specified element (at specified year)
         """
+        assert (
+            self.time_steps_year2operation is not None
+        ), "The time_steps_year2operation dict is not set."
         if year is None:
             return self.time_steps_year2operation
         else:
@@ -265,6 +268,9 @@ class TimeStepsDicts(object):
         :param year: year of interest
         :return: time_steps_year2storage of the specified element (at specified year)
         """
+        assert (
+            self.time_steps_year2storage is not None
+        ), "The time_steps_year2storage dict is not set."
         if year is None:
             return self.time_steps_year2storage
         else:

@@ -242,7 +242,7 @@ def convert_to_original_units(
     capacity_addition_tech,
     capacity_units,
     capacity_type,
-    unit_handling,
+    unit_handling: "UnitHandling",
     tech,
     tech_folder_op,
     suffix,
@@ -290,7 +290,7 @@ def convert_to_original_units(
     if not np.isclose(unit_multiplier, 1):
         print(
             f"Multiplying capacity addition (unit:{capacity_addition_unit}) "
-            f"by a scale factor of {1/unit_multiplier} to convert to units "
+            f"by a scale factor of {1 / unit_multiplier} to convert to units "
             f"{capacity_existing_unit}"
         )
 
@@ -334,7 +334,7 @@ def add_capacity_additions(
     results: dict,
     element_name: str,
     capacity_type: str,
-    unit_handling,
+    unit_handling: "UnitHandling",
 ):
     """Transfer capacity additions from the results to the dataset for a given
         element and capacity type.
@@ -355,7 +355,6 @@ def add_capacity_additions(
     capacity_units = results["capacity_units"]
 
     for tech in elements:
-
         if tech not in capacity_addition.index.get_level_values(0):
             continue
 

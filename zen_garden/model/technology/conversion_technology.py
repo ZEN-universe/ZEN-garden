@@ -4,7 +4,8 @@ parameters, variables, and constraints of the conversion technologies.
 """
 
 import itertools
-import warnings
+import logging
+from typing import TYPE_CHECKING, override
 
 import linopy as lp
 import numpy as np
@@ -12,10 +13,20 @@ import pandas as pd
 import xarray as xr
 from linopy.expressions import LinearExpression
 
+from zen_garden.model.config import Config
+from zen_garden.model.context import Context
+from zen_garden.model.element import ElementConstructor
+from zen_garden.model.generic_rule import GenericRule
+from zen_garden.model.technology.technology import Technology
+from zen_garden.model.zen_model import ZenModel
 from zen_garden.utils import align_like
 
-from ..element import GenericRule
-from .technology import Technology
+if TYPE_CHECKING:
+    from zen_garden.model.energy_system import EnergySystem
+    from zen_garden.preprocess.unit_handling import UnitHandling
+    from zen_garden.services.element_registry import ElementRegistry
+
+logger = logging.getLogger(__name__)
 
 
 class ConversionTechnology(Technology):
@@ -25,13 +36,23 @@ class ConversionTechnology(Technology):
     label = "set_conversion_technologies"
     location_type = "set_nodes"
 
-    def __init__(self, tech, optimization_setup):
+    def __init__(
+        self,
+        tech,
+        config: Config,
+        context: Context,
+        energy_system: "EnergySystem",
+        element_registry: "ElementRegistry",
+        unit_handling: "UnitHandling",
+    ):
         """Init conversion technology object.
 
         :param tech: name of added technology
         :param optimization_setup: The OptimizationSetup the element is part of
         """
-        super().__init__(tech, optimization_setup)
+        super().__init__(
+            tech, config, context, energy_system, element_registry, unit_handling
+        )
         # store carriers of conversion technology
         self.store_carriers()
 
@@ -51,11 +72,40 @@ class ConversionTechnology(Technology):
         )
         # check if reference carrier in input and output carriers and
         #   set technology to correspondent carrier
-        self.optimization_setup.input_data_checks.check_carrier_configuration(
+        self._check_carrier_configuration(
             input_carrier=self.input_carrier,
             output_carrier=self.output_carrier,
             reference_carrier=self.reference_carrier,
             name=self.name,
+        )
+
+    def _check_carrier_configuration(
+        self, input_carrier, output_carrier, reference_carrier, name
+    ):
+        """Check the chosen input/output/reference carrier combination.
+
+        :param input_carrier: input carrier of conversion technology
+        :param output_carrier: output carrier of conversion technology
+        :param reference_carrier: reference carrier of technology
+        :param name: name of conversion technology
+        """
+        # assert that conversion technology has at least an input/output carrier
+        assert (
+            len(input_carrier + output_carrier) > 0
+        ), f"Conversion technology {name} has neither an input nor an output carrier!"
+        # check if reference carrier in input and output carriers and set
+        # technology to correspondent carrier
+        assert reference_carrier[0] in (input_carrier + output_carrier), (
+            f"reference carrier {reference_carrier} of technology {name} not "
+            f"in input and output carriers {input_carrier + output_carrier}"
+        )
+        set_input_carrier = set(input_carrier)
+        set_output_carrier = set(output_carrier)
+        # assert that input and output carrier of conversion tech are different
+        common_carriers = set_input_carrier & set_output_carrier
+        assert not common_carriers, (
+            f"The conversion technology {name} has the same input and output "
+            f"carrier(s) ({list(common_carriers)})!"
         )
 
     def store_input_data(self):
@@ -134,7 +184,7 @@ class ConversionTechnology(Technology):
         # calculate capex of existing capacity
         self.capex_capacity_existing = self.calculate_capex_of_capacities_existing()
 
-    def calculate_capex_of_single_capacity(self, capacity, index):
+    def calculate_capex_of_single_capacity(self, capacity, index, **kwargs):
         """This method calculates the annualized capex of a single existing capacity.
 
         :param capacity: existing capacity of technology
@@ -152,79 +202,40 @@ class ConversionTechnology(Technology):
             )
         return capex
 
-    ### --- getter/setter classmethods
-    @classmethod
-    def get_capex_all_elements(cls, optimization_setup, index_names=None):
-        """Similar to Element.get_attribute_of_all_elements but only for capex.
-        If select_pwa, extract pwa attributes, otherwise linear.
 
-        :param optimization_setup: The OptimizationSetup the element is part of
-        :param index_names: list of index names
-        :return: dict_of_attributes: returns dict of attribute values
+class ConversionTechnologyConstructor(ElementConstructor):
+    element_class = ConversionTechnology
+
+    @override
+    def has_elements(self) -> bool:
+        """Checks if there are any elements of the class <Carrier>.
+
+        :return: True if there are elements, False otherwise
         """
-        class_elements = optimization_setup.get_all_elements(cls)
-        dict_of_attributes = {}
-        dict_of_units = {}
-        is_pwa_attribute = "capex_is_pwa"
-        attribute_name_linear = "capex_specific_conversion"
+        return True
 
-        for element in class_elements:
-            # extract for pwa
-            if not getattr(element, is_pwa_attribute):
-                dict_of_attributes, _, dict_of_units = (
-                    optimization_setup.append_attribute_of_element_to_dict(
-                        element,
-                        attribute_name_linear,
-                        dict_of_attributes,
-                        dict_of_units=dict_of_units,
-                    )
-                )
-        if not dict_of_attributes:
-            _, index_names = cls.create_custom_set(index_names, optimization_setup)
-            return dict_of_attributes, index_names, dict_of_units
-        dict_of_attributes = pd.concat(
-            dict_of_attributes, keys=dict_of_attributes.keys()
-        )
-        if not index_names:
-            warnings.warn(
-                "Initializing the parameter capex without the specifying the "
-                "index names will be deprecated!",
-                stacklevel=2,
-            )
-            return dict_of_attributes, dict_of_units
-        else:
-            custom_set, index_names = cls.create_custom_set(
-                index_names, optimization_setup
-            )
-            dict_of_attributes = optimization_setup.check_for_subindex(
-                dict_of_attributes, custom_set
-            )
-            return dict_of_attributes, index_names, dict_of_units
-
-    ### --- classmethods to construct sets, parameters, variables, and constraints,
-    #   that correspond to ConversionTechnology --- ###
-    @classmethod
-    def construct_sets(cls, optimization_setup):
+    def construct_sets(self, zen_model: ZenModel, energy_system: "EnergySystem"):
         """Constructs the pe.Sets of the class <ConversionTechnology>.
 
         :param optimization_setup: The OptimizationSetup the element is part of
         """
+        logger.info("Constructing sets for ConversionTechnology")
         # get input carriers
-        input_carriers = optimization_setup.get_attribute_of_all_elements(
-            cls, "input_carrier"
+        input_carriers = self.element_registry.get_attribute_of_all_elements(
+            self.element_class, "input_carrier"
         )
-        output_carriers = optimization_setup.get_attribute_of_all_elements(
-            cls, "output_carrier"
+        output_carriers = self.element_registry.get_attribute_of_all_elements(
+            self.element_class, "output_carrier"
         )
-        reference_carrier = optimization_setup.get_attribute_of_all_elements(
-            cls, "reference_carrier"
+        reference_carrier = self.element_registry.get_attribute_of_all_elements(
+            self.element_class, "reference_carrier"
         )
         dependent_carriers = {}
         for tech in input_carriers:
             dependent_carriers[tech] = input_carriers[tech] + output_carriers[tech]
             dependent_carriers[tech].remove(reference_carrier[tech][0])
         # input carriers of technology
-        optimization_setup.sets.add_set(
+        zen_model.sets.add_set(
             name="set_input_carriers",
             data=input_carriers,
             doc="set of carriers that are an input to a specific conversion "
@@ -232,7 +243,7 @@ class ConversionTechnology(Technology):
             index_set="set_conversion_technologies",
         )
         # output carriers of technology
-        optimization_setup.sets.add_set(
+        zen_model.sets.add_set(
             name="set_output_carriers",
             data=output_carriers,
             doc="set of carriers that are an output to a specific conversion "
@@ -240,7 +251,7 @@ class ConversionTechnology(Technology):
             index_set="set_conversion_technologies",
         )
         # dependent carriers of technology
-        optimization_setup.sets.add_set(
+        zen_model.sets.add_set(
             name="set_dependent_carriers",
             data=dependent_carriers,
             doc="set of carriers that are an output to a specific conversion "
@@ -248,31 +259,33 @@ class ConversionTechnology(Technology):
             index_set="set_conversion_technologies",
         )
 
-        # add sets of the child classes
-        for subclass in cls.__subclasses__():
-            if np.size(optimization_setup.system[subclass.label]):
-                subclass.construct_sets(optimization_setup)
-
-    @classmethod
-    def construct_params(cls, optimization_setup):
+    def construct_params(self, zen_model: ZenModel, energy_system: "EnergySystem"):
         """Constructs the pe.Params of the class <ConversionTechnology>.
 
         :param optimization_setup: The OptimizationSetup the element is part of
         """
+        logger.info("Constructing parameters for ConversionTechnology")
         # slope of linearly modeled capex
-        optimization_setup.parameters.add_parameter(
-            name="capex_specific_conversion",
+        capex_data, capex_units = self.get_capex_all_elements(
+            zen_model,
+            energy_system,
             index_names=[
                 "set_conversion_technologies",
                 "set_capex_linear",
                 "set_nodes",
                 "set_time_steps_yearly",
             ],
+        )
+        zen_model.parameters.add_parameter(
+            name="capex_specific_conversion",
             doc="Parameter specifying the slope of the capex if approximated linearly",
-            calling_class=cls,
+            data=capex_data,
+            dict_of_units=capex_units,
         )
         # slope of linearly modeled conversion efficiencies
-        optimization_setup.parameters.add_parameter(
+        self.add_parameter(
+            zen_model,
+            energy_system,
             name="conversion_factor",
             index_names=[
                 "set_conversion_technologies",
@@ -281,10 +294,11 @@ class ConversionTechnology(Technology):
                 "set_time_steps_operation",
             ],
             doc="Parameter which specifies the conversion factor",
-            calling_class=cls,
         )
         # minimum annual average capacity factor
-        optimization_setup.parameters.add_parameter(
+        self.add_parameter(
+            zen_model,
+            energy_system,
             name="min_full_load_hours_fraction",
             index_names=[
                 "set_conversion_technologies",
@@ -293,22 +307,16 @@ class ConversionTechnology(Technology):
             ],
             doc="Minimum full load hours as a fraction of the total hours "
             "per planning period",
-            calling_class=cls,
         )
 
-        # add params of the child classes
-        for subclass in cls.__subclasses__():
-            if np.size(optimization_setup.system[subclass.label]):
-                subclass.construct_params(optimization_setup)
-
-    @classmethod
-    def construct_vars(cls, optimization_setup):
+    def construct_vars(self, zen_model: ZenModel, energy_system: "EnergySystem"):
         """Constructs the pe.Vars of the class <ConversionTechnology>.
 
         :param optimization_setup: The OptimizationSetup the element is part of
         """
-        model = optimization_setup.model
-        variables = optimization_setup.variables
+        logger.info("Constructing variables for ConversionTechnology")
+        model = zen_model.lp_model
+        variables = zen_model.variables
 
         def flow_conversion_bounds(index_values, index_names):
             """Return bounds of carrier_flow for bigM expression.
@@ -317,14 +325,13 @@ class ConversionTechnology(Technology):
             :param index_names: list of index names
             :return: bounds: bounds of carrier_flow
             """
-            params = optimization_setup.parameters
-            sets = optimization_setup.sets
-            energy_system = optimization_setup.energy_system
+            params = zen_model.parameters
+            sets = zen_model.sets
 
             # init the bounds
             index_arrs = sets.tuple_to_arr(index_values, index_names)
             coords = [
-                optimization_setup.sets.get_coord(data, name)
+                zen_model.sets.get_coord(data, name)
                 for data, name in zip(index_arrs, index_names, strict=False)
             ]
             lower = xr.DataArray(0.0, coords=coords)
@@ -357,7 +364,7 @@ class ConversionTechnology(Technology):
                         )
                         if 0 in conversion_factor_upper:
                             _rounding_tsa = (
-                                optimization_setup.solver.rounding_decimal_points_tsa
+                                self.config.solver.rounding_decimal_points_tsa
                             )
                             raise ValueError(
                                 f"Maximum conversion factor of {tech} for carrier "
@@ -384,17 +391,17 @@ class ConversionTechnology(Technology):
 
         ## Flow variables
         # input flow of carrier into technology
-        index_values, index_names = cls.create_custom_set(
+        index_values, index_names = self.create_custom_set(
             [
                 "set_conversion_technologies",
                 "set_input_carriers",
                 "set_nodes",
                 "set_time_steps_operation",
             ],
-            optimization_setup,
+            zen_model,
+            energy_system,
         )
         variables.add_variable(
-            model,
             name="flow_conversion_input",
             index_sets=(index_values, index_names),
             bounds=flow_conversion_bounds(index_values, index_names),
@@ -402,17 +409,17 @@ class ConversionTechnology(Technology):
             unit_category={"energy_quantity": 1, "time": -1},
         )
         # output flow of carrier into technology
-        index_values, index_names = cls.create_custom_set(
+        index_values, index_names = self.create_custom_set(
             [
                 "set_conversion_technologies",
                 "set_output_carriers",
                 "set_nodes",
                 "set_time_steps_operation",
             ],
-            optimization_setup,
+            zen_model,
+            energy_system,
         )
         variables.add_variable(
-            model,
             name="flow_conversion_output",
             index_sets=(index_values, index_names),
             bounds=flow_conversion_bounds(index_values, index_names),
@@ -422,11 +429,11 @@ class ConversionTechnology(Technology):
         ## pwa Variables - Capex
         # pwa capacity
         variables.add_variable(
-            model,
             name="capacity_approximation",
-            index_sets=cls.create_custom_set(
+            index_sets=self.create_custom_set(
                 ["set_conversion_technologies", "set_nodes", "set_time_steps_yearly"],
-                optimization_setup,
+                zen_model,
+                energy_system,
             ),
             bounds=(0, np.inf),
             doc="pwa variable for size of installed technology on edge i and time t",
@@ -434,59 +441,62 @@ class ConversionTechnology(Technology):
         )
         # pwa capex technology
         variables.add_variable(
-            model,
             name="capex_approximation",
-            index_sets=cls.create_custom_set(
+            index_sets=self.create_custom_set(
                 ["set_conversion_technologies", "set_nodes", "set_time_steps_yearly"],
-                optimization_setup,
+                zen_model,
+                energy_system,
             ),
             bounds=(0, np.inf),
             doc="pwa variable for capex for installing technology on edge i and time t",
             unit_category={"money": 1},
         )
 
-    @classmethod
-    def construct_constraints(cls, optimization_setup):
+    def construct_constraints(self, zen_model: ZenModel, energy_system: "EnergySystem"):
         """Constructs the Constraints of the class <ConversionTechnology>.
 
         :param optimization_setup: optimization setup
         """
-        model = optimization_setup.model
-        constraints = optimization_setup.constraints
+        logger.info("Constructing constraints for ConversionTechnology")
+
+        model = zen_model.lp_model
+        constraints = zen_model.constraints
         # add pwa constraints
-        rules = ConversionTechnologyRules(optimization_setup)
+        rules = ConversionTechnologyRules(self.config, self.context)
         # capacity factor constraint
-        rules.constraint_capacity_factor_conversion()
+        rules.constraint_capacity_factor_conversion(zen_model, energy_system)
         # opex and emissions constraint for conversion technologies
-        rules.constraint_opex_emissions_technology_conversion()
+        rules.constraint_opex_emissions_technology_conversion(zen_model, energy_system)
         # conversion factor
-        rules.constraint_carrier_conversion()
+        rules.constraint_carrier_conversion(zen_model, energy_system)
         # minimum average annual capacity factor
-        rules.constraint_minimum_full_load_hours()
+        rules.constraint_minimum_full_load_hours(zen_model, energy_system)
 
         # capex
-        set_pwa_capex = cls.create_custom_set(
+        set_pwa_capex = self.create_custom_set(
             [
                 "set_conversion_technologies",
                 "set_capex_pwa",
                 "set_nodes",
                 "set_time_steps_yearly",
             ],
-            optimization_setup,
+            zen_model,
+            energy_system,
         )
-        set_linear_capex = cls.create_custom_set(
+        set_linear_capex = self.create_custom_set(
             [
                 "set_conversion_technologies",
                 "set_capex_linear",
                 "set_nodes",
                 "set_time_steps_yearly",
             ],
-            optimization_setup,
+            zen_model,
+            energy_system,
         )
         if len(set_pwa_capex[0]) > 0:
             # if set_pwa_capex contains technologies:
-            pwa_breakpoints, pwa_values = cls.calculate_capex_pwa_breakpoints_values(
-                optimization_setup, set_pwa_capex[0]
+            pwa_breakpoints, pwa_values = self.calculate_capex_pwa_breakpoints_values(
+                set_pwa_capex[0]
             )
             constraints.add_pw_constraint(
                 model,
@@ -500,17 +510,11 @@ class ConversionTechnology(Technology):
             )
         if set_linear_capex[0]:
             # if set_linear_capex contains technologies:
-            rules.constraint_linear_capex()
+            rules.constraint_linear_capex(zen_model, energy_system)
         # Coupling constraints
-        rules.constraint_capacity_capex_coupling()
+        rules.constraint_capacity_capex_coupling(zen_model, energy_system)
 
-        # add constraints of the child classes
-        for subclass in cls.__subclasses__():
-            if np.size(optimization_setup.system[subclass.label]):
-                subclass.construct_constraints(optimization_setup)
-
-    @classmethod
-    def calculate_capex_pwa_breakpoints_values(cls, optimization_setup, set_pwa):
+    def calculate_capex_pwa_breakpoints_values(self, set_pwa):
         """Calculates breakpoints and function values for piecewise affine constraint.
         Args:
             optimization_setup: The OptimizationSetup the element is part of.
@@ -532,25 +536,79 @@ class ConversionTechnology(Technology):
             else:
                 tech = index
             # retrieve pwa variables
-            pwa_parameter = optimization_setup.get_attribute_of_specific_element(
-                cls, tech, "pwa_capex"
+            pwa_parameter = self.element_registry.get_attribute_of_specific_element(
+                self.element_class, tech, "pwa_capex"
             )
             pwa_breakpoints[index] = pwa_parameter["capacity_addition"]
             pwa_values[index] = pwa_parameter["capex"]
         return pwa_breakpoints, pwa_values
 
+    def get_capex_all_elements(
+        self, zen_model: ZenModel, energy_system: "EnergySystem", index_names: list[str]
+    ):
+        """Similar to Element.get_attribute_of_all_elements but only for capex.
+        If select_pwa, extract pwa attributes, otherwise linear.
+
+        :param optimization_setup: The OptimizationSetup the element is part of
+        :param index_names: list of index names
+        :return: dict_of_attributes: returns dict of attribute values
+        """
+        class_elements = self.element_registry.get_all_elements(ConversionTechnology)
+        dict_of_attributes = {}
+        dict_of_units = {}
+        is_pwa_attribute = "capex_is_pwa"
+        attribute_name_linear = "capex_specific_conversion"
+
+        for element in class_elements:
+            # extract for pwa
+            if not getattr(element, is_pwa_attribute):
+                dict_of_attributes, _, dict_of_units = (
+                    self.element_registry.append_attribute_of_element_to_dict(
+                        element,
+                        attribute_name_linear,
+                        dict_of_attributes,
+                        dict_of_units=dict_of_units,
+                    )
+                )
+
+        if not dict_of_attributes:
+            _, index_names = self.create_custom_set(
+                index_names, zen_model, energy_system
+            )
+            return (dict_of_attributes, index_names), dict_of_units
+
+        new_dict_of_attributes = pd.concat(
+            dict_of_attributes, keys=list(dict_of_attributes.keys())
+        )
+
+        if not index_names:
+            raise ValueError(
+                "Initializing the parameter capex without the specifying the "
+                "index names is not possible anymore!",
+            )
+
+        custom_set, index_names = self.create_custom_set(
+            index_names, zen_model, energy_system
+        )
+        new_dict_of_attributes = self._check_for_subindex(
+            new_dict_of_attributes, custom_set
+        )
+        return (new_dict_of_attributes, index_names), dict_of_units
+
 
 class ConversionTechnologyRules(GenericRule):
     """Rules for the ConversionTechnology class."""
 
-    def __init__(self, optimization_setup):
-        """Inits the rules for a given EnergySystem.
+    def __init__(self, config: Config, context: Context):
+        """Inits the rules for a given ".
 
         :param optimization_setup: The OptimizationSetup the element is part of
         """
-        super().__init__(optimization_setup)
+        super().__init__(config, context)
 
-    def constraint_capacity_factor_conversion(self):
+    def constraint_capacity_factor_conversion(
+        self, zen_model: ZenModel, energy_system: "EnergySystem"
+    ):
         """Load is limited by the installed capacity and the maximum load factor.
 
         .. math::
@@ -565,37 +623,43 @@ class ConversionTechnologyRules(GenericRule):
 
 
         """
-        techs = self.sets["set_conversion_technologies"]
+        techs = zen_model.sets["set_conversion_technologies"]
         if len(techs) == 0:
             return
-        nodes = self.sets["set_nodes"]
-        times = self.parameters.max_load.coords["set_time_steps_operation"]
+        nodes = zen_model.sets["set_nodes"]
+        times = zen_model.parameters.max_load.coords["set_time_steps_operation"]
         time_step_year = xr.DataArray(
             [
-                self.energy_system.time_steps.convert_time_step_operation2year(t)
+                energy_system.time_steps.convert_time_step_operation2year(t)
                 for t in times.data
             ],
             coords=[times],
         )
         term_capacity = (
-            self.parameters.max_load.loc[techs, nodes, :]
-            * self.variables["capacity"].loc[techs, "power", nodes, time_step_year]
+            zen_model.parameters.max_load.loc[techs, nodes, :]
+            * zen_model.lp_model.variables["capacity"].loc[
+                techs, "power", nodes, time_step_year
+            ]
         ).rename(
             {
                 "set_technologies": "set_conversion_technologies",
                 "set_location": "set_nodes",
             }
         )
-        term_reference_flow = self.get_flow_expression_conversion(techs, nodes)
+        term_reference_flow = self.get_flow_expression_conversion(
+            techs, nodes, zen_model
+        )
         lhs = term_capacity - term_reference_flow
         rhs = 0
         constraints = lhs >= rhs
 
-        self.constraints.add_constraint(
+        zen_model.constraints.add_constraint(
             "constraint_capacity_factor_conversion", constraints
         )
 
-    def constraint_minimum_full_load_hours(self):
+    def constraint_minimum_full_load_hours(
+        self, zen_model: ZenModel, energy_system: "EnergySystem"
+    ):
         """Sets minimum full load hours for each unit.
 
         This constraint requires that a minimum number of full_load_hours be met
@@ -636,12 +700,12 @@ class ConversionTechnologyRules(GenericRule):
 
         """
         # get dimensions
-        techs = self.sets["set_conversion_technologies"]
+        techs = zen_model.sets["set_conversion_technologies"]
         if len(techs) == 0:
             return
-        nodes = self.sets["set_nodes"]
+        nodes = zen_model.sets["set_nodes"]
         # define mask
-        min_full_load_hours_fraction = self.parameters.min_full_load_hours_fraction
+        min_full_load_hours_fraction = zen_model.parameters.min_full_load_hours_fraction
         mask = xr.DataArray(
             ~np.isclose(min_full_load_hours_fraction, 0),
             dims=min_full_load_hours_fraction.dims,
@@ -650,8 +714,8 @@ class ConversionTechnologyRules(GenericRule):
         # create constraint
         term_capacity = (
             min_full_load_hours_fraction
-            * self.system.unaggregated_time_steps_per_year
-            * self.variables["capacity"]
+            * self.config.system.unaggregated_time_steps_per_year
+            * zen_model.lp_model.variables["capacity"]
             .sel(
                 {
                     "set_technologies": techs,
@@ -667,19 +731,21 @@ class ConversionTechnologyRules(GenericRule):
             )
         )
         term_annual_production = (
-            self.get_flow_expression_conversion(techs, nodes)
-            * self.get_year_time_step_duration_array()
+            self.get_flow_expression_conversion(techs, nodes, zen_model)
+            * self.get_year_time_step_duration_array(zen_model, energy_system)
         ).sum("set_time_steps_operation")
 
         lhs = term_annual_production.where(mask) - term_capacity.where(mask)
         rhs = 0
         constraints = lhs >= rhs
 
-        self.constraints.add_constraint(
+        zen_model.constraints.add_constraint(
             "constraint_minimum_full_load_hours", constraints
         )
 
-    def constraint_opex_emissions_technology_conversion(self):
+    def constraint_opex_emissions_technology_conversion(
+        self, zen_model: ZenModel, energy_system: "EnergySystem"
+    ):
         """Calculate opex and carbon emissions of each technology.
 
         .. math::
@@ -699,14 +765,15 @@ class ConversionTechnologyRules(GenericRule):
 
 
         """
-        techs = self.sets["set_conversion_technologies"]
+        techs = zen_model.sets["set_conversion_technologies"]
         if len(techs) == 0:
             return
-        nodes = self.sets["set_nodes"]
+        nodes = zen_model.sets["set_nodes"]
         term_reference_flow_opex = self.get_flow_expression_conversion(
             techs,
             nodes,
-            factor=self.parameters.opex_specific_variable.rename(
+            zen_model,
+            factor=zen_model.parameters.opex_specific_variable.rename(
                 {
                     "set_technologies": "set_conversion_technologies",
                     "set_location": "set_nodes",
@@ -716,7 +783,8 @@ class ConversionTechnologyRules(GenericRule):
         term_reference_flow_emissions = self.get_flow_expression_conversion(
             techs,
             nodes,
-            factor=self.parameters.carbon_intensity_technology.rename(
+            zen_model,
+            factor=zen_model.parameters.carbon_intensity_technology.rename(
                 {
                     "set_technologies": "set_conversion_technologies",
                     "set_location": "set_nodes",
@@ -724,7 +792,7 @@ class ConversionTechnologyRules(GenericRule):
             ),
         )
         lhs_opex = (
-            1 * self.variables["cost_opex_variable"].loc[techs, nodes, :]
+            1 * zen_model.lp_model.variables["cost_opex_variable"].loc[techs, nodes, :]
         ).rename(
             {
                 "set_technologies": "set_conversion_technologies",
@@ -732,7 +800,10 @@ class ConversionTechnologyRules(GenericRule):
             }
         ) - term_reference_flow_opex
         lhs_emissions = (
-            1 * self.variables["carbon_emissions_technology"].loc[techs, nodes, :]
+            1
+            * zen_model.lp_model.variables["carbon_emissions_technology"].loc[
+                techs, nodes, :
+            ]
         ).rename(
             {
                 "set_technologies": "set_conversion_technologies",
@@ -743,14 +814,16 @@ class ConversionTechnologyRules(GenericRule):
         constraints_opex = lhs_opex == rhs
         constraints_emissions = lhs_emissions == rhs
 
-        self.constraints.add_constraint(
+        zen_model.constraints.add_constraint(
             "constraint_opex_technology_conversion", constraints_opex
         )
-        self.constraints.add_constraint(
+        zen_model.constraints.add_constraint(
             "constraint_carbon_emissions_technology_conversion", constraints_emissions
         )
 
-    def constraint_linear_capex(self):
+    def constraint_linear_capex(
+        self, zen_model: ZenModel, energy_system: "EnergySystem"
+    ):
         """If capacity and capex have a linear relationship.
 
         .. math::
@@ -764,7 +837,7 @@ class ConversionTechnologyRules(GenericRule):
         technology :math:`h` at node :math:`p` in year :math:`y`
 
         """
-        capex_specific_conversion = self.parameters.capex_specific_conversion
+        capex_specific_conversion = zen_model.parameters.capex_specific_conversion
         capex_specific_conversion = capex_specific_conversion.rename(
             {
                 old: new
@@ -780,13 +853,14 @@ class ConversionTechnologyRules(GenericRule):
             }
         )
         capex_specific_conversion = capex_specific_conversion.broadcast_like(
-            self.variables["capacity_approximation"].lower
+            zen_model.lp_model.variables["capacity_approximation"].lower
         )
         mask = ~np.isnan(capex_specific_conversion)
         lhs = lp.merge(
             [
-                1 * self.variables["capex_approximation"],
-                -capex_specific_conversion * self.variables["capacity_approximation"],
+                1 * zen_model.lp_model.variables["capex_approximation"],
+                -capex_specific_conversion
+                * zen_model.lp_model.variables["capacity_approximation"],
             ],
             compat="broadcast_equals",
             join="outer",
@@ -796,9 +870,11 @@ class ConversionTechnologyRules(GenericRule):
         rhs = 0
         constraints = lhs == rhs
 
-        self.constraints.add_constraint("constraint_linear_capex", constraints)
+        zen_model.constraints.add_constraint("constraint_linear_capex", constraints)
 
-    def constraint_capacity_capex_coupling(self):
+    def constraint_capacity_capex_coupling(
+        self, zen_model: ZenModel, energy_system: "EnergySystem"
+    ):
         """Couples capacity variables based on modeling technique.
 
         .. math::
@@ -810,10 +886,10 @@ class ConversionTechnologyRules(GenericRule):
         the technology :math:`h` at node :math:`p` in year :math:`y`
 
         """
-        techs = self.sets["set_conversion_technologies"]
-        nodes = self.sets["set_nodes"]
+        techs = zen_model.sets["set_conversion_technologies"]
+        nodes = zen_model.sets["set_nodes"]
         capacity_addition = (
-            self.variables["capacity_addition"]
+            zen_model.lp_model.variables["capacity_addition"]
             .loc[techs, "power", nodes]
             .rename(
                 {
@@ -823,7 +899,7 @@ class ConversionTechnologyRules(GenericRule):
             )
         )
         cost_capex_overnight = (
-            self.variables["cost_capex_overnight"]
+            zen_model.lp_model.variables["cost_capex_overnight"]
             .loc[techs, "power", nodes]
             .rename(
                 {
@@ -834,18 +910,26 @@ class ConversionTechnologyRules(GenericRule):
         )
 
         ### formulate constraint
-        lhs_capacity = capacity_addition - self.variables["capacity_approximation"]
-        lhs_capex = cost_capex_overnight - self.variables["capex_approximation"]
+        lhs_capacity = (
+            capacity_addition - zen_model.lp_model.variables["capacity_approximation"]
+        )
+        lhs_capex = (
+            cost_capex_overnight - zen_model.lp_model.variables["capex_approximation"]
+        )
         rhs = 0
         constraints_capacity = lhs_capacity == rhs
         constraints_capex = lhs_capex == rhs
         ### return
-        self.constraints.add_constraint(
+        zen_model.constraints.add_constraint(
             "constraint_capacity_coupling", constraints_capacity
         )
-        self.constraints.add_constraint("constraint_capex_coupling", constraints_capex)
+        zen_model.constraints.add_constraint(
+            "constraint_capex_coupling", constraints_capex
+        )
 
-    def constraint_carrier_conversion(self):
+    def constraint_carrier_conversion(
+        self, zen_model: ZenModel, energy_system: "EnergySystem"
+    ):
         """Conversion factor between reference carrier and dependent carrier.
 
         .. math::
@@ -861,27 +945,31 @@ class ConversionTechnologyRules(GenericRule):
 
         """
         # dependent carriers
-        flow_conversion_input_dep = self.variables["flow_conversion_input"].rename(
-            {"set_input_carriers": "set_dependent_carriers"}
-        )
-        flow_conversion_output_dep = self.variables["flow_conversion_output"].rename(
-            {"set_output_carriers": "set_dependent_carriers"}
-        )
+        flow_conversion_input_dep = zen_model.lp_model.variables[
+            "flow_conversion_input"
+        ].rename({"set_input_carriers": "set_dependent_carriers"})
+        flow_conversion_output_dep = zen_model.lp_model.variables[
+            "flow_conversion_output"
+        ].rename({"set_output_carriers": "set_dependent_carriers"})
         dc_in = pd.Series(
             {
-                (t, c): True if c in self.sets["set_dependent_carriers"][t] else False
+                (t, c): (
+                    True if c in zen_model.sets["set_dependent_carriers"][t] else False
+                )
                 for t, c in itertools.product(
-                    self.sets["set_conversion_technologies"],
-                    self.sets["set_input_carriers"].superset,
+                    zen_model.sets["set_conversion_technologies"],
+                    zen_model.sets["set_input_carriers"].superset,
                 )
             }
         )
         dc_out = pd.Series(
             {
-                (t, c): True if c in self.sets["set_dependent_carriers"][t] else False
+                (t, c): (
+                    True if c in zen_model.sets["set_dependent_carriers"][t] else False
+                )
                 for t, c in itertools.product(
-                    self.sets["set_conversion_technologies"],
-                    self.sets["set_output_carriers"].superset,
+                    zen_model.sets["set_conversion_technologies"],
+                    zen_model.sets["set_output_carriers"].superset,
                 )
             }
         )
@@ -902,30 +990,34 @@ class ConversionTechnologyRules(GenericRule):
             cls=LinearExpression,
         ).where(dc)
         conversion_factor = align_like(
-            self.parameters.conversion_factor, term_flow_dependent
+            zen_model.parameters.conversion_factor, term_flow_dependent
         )
         # reference carriers
-        flow_conversion_input = self.variables["flow_conversion_input"].broadcast_like(
-            conversion_factor
-        )
-        flow_conversion_output = self.variables[
+        flow_conversion_input = zen_model.lp_model.variables[
+            "flow_conversion_input"
+        ].broadcast_like(conversion_factor)
+        flow_conversion_output = zen_model.lp_model.variables[
             "flow_conversion_output"
         ].broadcast_like(conversion_factor)
         rc_in = pd.Series(
             {
-                (t, c): True if c in self.sets["set_reference_carriers"][t] else False
+                (t, c): (
+                    True if c in zen_model.sets["set_reference_carriers"][t] else False
+                )
                 for t, c in itertools.product(
-                    self.sets["set_conversion_technologies"],
-                    self.sets["set_input_carriers"].superset,
+                    zen_model.sets["set_conversion_technologies"],
+                    zen_model.sets["set_input_carriers"].superset,
                 )
             }
         )
         rc_out = pd.Series(
             {
-                (t, c): True if c in self.sets["set_reference_carriers"][t] else False
+                (t, c): (
+                    True if c in zen_model.sets["set_reference_carriers"][t] else False
+                )
                 for t, c in itertools.product(
-                    self.sets["set_conversion_technologies"],
-                    self.sets["set_output_carriers"].superset,
+                    zen_model.sets["set_conversion_technologies"],
+                    zen_model.sets["set_output_carriers"].superset,
                 )
             }
         )
@@ -941,4 +1033,6 @@ class ConversionTechnologyRules(GenericRule):
         rhs = 0
         constraints = lhs == rhs
 
-        self.constraints.add_constraint("constraint_carrier_conversion", constraints)
+        zen_model.constraints.add_constraint(
+            "constraint_carrier_conversion", constraints
+        )

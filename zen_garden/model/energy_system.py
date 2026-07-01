@@ -12,59 +12,56 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 
-from zen_garden.model.element import GenericRule
+from zen_garden.model.config import Config
+from zen_garden.model.context import Context
+from zen_garden.model.generic_rule import GenericRule
+from zen_garden.model.time_steps import TimeStepsDicts
+from zen_garden.model.zen_model import ZenModel
 from zen_garden.preprocess.extract_input_data import DataInput
 from zen_garden.preprocess.unit_handling import UnitHandling
 
-from .time_steps import TimeStepsDicts
+logger = logging.getLogger(__name__)
 
 
 class EnergySystem:
     """Class defining a standard energy system."""
 
-    def __init__(self, optimization_setup):
+    def __init__(
+        self,
+        config: Config,
+        context: Context,
+        unit_handling: UnitHandling,
+    ):
         """Initialization of the energy_system.
 
         :param optimization_setup: The OptimizationSetup of the EnergySystem class
+        :param config: The Config of the entire setup
+        :param context: The Context of the entire setup
         """
         # the name
         self.name = "EnergySystem"
         self._name = "EnergySystem"
         # set attributes
-        self.optimization_setup = optimization_setup
-        # quick access
-        self.system = self.optimization_setup.system
+        self.config = config
+        self.context = context
+        self.unit_handling = unit_handling
+
         # empty dict of technologies of carrier
         self.dict_technology_of_carrier = {}
         # The timesteps
         self.time_steps = TimeStepsDicts()
 
         # empty list of indexing sets
-        self.indexing_sets = []
-
-        # set indexing sets
-        for key in self.system.keys():
-            if "set" in key:
-                self.indexing_sets.append(key)
-
-        # set input path
-        folder_label = "energy_system"
-        self.input_path = Path(self.optimization_setup.paths[folder_label]["folder"])
-
-        # create UnitHandling object
-        self.unit_handling = UnitHandling(
-            self.input_path,
-            self.optimization_setup.solver.rounding_decimal_points_units,
-        )
+        self.input_path = Path(self.context.paths["energy_system"]["folder"])
+        self.indexing_sets = [key for key in self.config.system.keys() if "set" in key]
 
         # create DataInput object
         self.data_input = DataInput(
             element=self,
-            system=self.system,
-            analysis=self.optimization_setup.analysis,
-            solver=self.optimization_setup.solver,
             energy_system=self,
             unit_handling=self.unit_handling,
+            config=config,
+            context=context,
         )
         # initialize empty set_carriers list
         self.set_carriers = []
@@ -74,7 +71,7 @@ class EnergySystem:
     def store_input_data(self):
         """Retrieves and stores input data for EnergySystem as attributes."""
         # store scenario dict
-        self.data_input.scenario_dict = self.optimization_setup.scenario_dict
+        self.data_input.scenario_dict = self.context.scenario_dict
         # in class <EnergySystem>, all sets are constructed
         self.set_nodes = self.data_input.extract_locations()
         self.set_nodes_on_edges = self.calculate_edges_from_nodes()
@@ -82,21 +79,21 @@ class EnergySystem:
         self.set_haversine_distances_edges = (
             self.calculate_haversine_distances_from_nodes()
         )
-        self.set_technologies = self.system.set_technologies
+        self.set_technologies = self.config.system.set_technologies
         # base time steps
         self.set_base_time_steps = list(
             range(
                 0,
-                self.system.unaggregated_time_steps_per_year
-                * self.system.optimized_years,
+                self.config.system.unaggregated_time_steps_per_year
+                * self.config.system.optimized_years,
             )
         )
         self.set_base_time_steps_yearly = list(
-            range(0, self.system.unaggregated_time_steps_per_year)
+            range(0, self.config.system.unaggregated_time_steps_per_year)
         )
 
         # yearly time steps
-        self.set_time_steps_yearly = list(range(self.system.optimized_years))
+        self.set_time_steps_yearly = list(range(self.config.system.optimized_years))
         self.set_time_steps_yearly_entire_horizon = copy.deepcopy(
             self.set_time_steps_yearly
         )
@@ -114,10 +111,11 @@ class EnergySystem:
         #   (needed for convert_real_to_generic_time_indices() in extract_input_data.py)
         self.set_time_steps_years = list(
             range(
-                self.system.reference_year,
-                self.system.reference_year
-                + self.system.optimized_years * self.system.interval_between_years,
-                self.system.interval_between_years,
+                self.config.system.reference_year,
+                self.config.system.reference_year
+                + self.config.system.optimized_years
+                * self.config.system.interval_between_years,
+                self.config.system.interval_between_years,
             )
         )
         """ parameters whose time-dependant data should not be interpolated
@@ -127,10 +125,14 @@ class EnergySystem:
             "parameters_interpolation_off"
         )
         # technology-specific
-        self.set_conversion_technologies = self.system.set_conversion_technologies
-        self.set_transport_technologies = self.system.set_transport_technologies
-        self.set_storage_technologies = self.system.set_storage_technologies
-        self.set_retrofitting_technologies = self.system.set_retrofitting_technologies
+        self.set_conversion_technologies = (
+            self.config.system.set_conversion_technologies
+        )
+        self.set_transport_technologies = self.config.system.set_transport_technologies
+        self.set_storage_technologies = self.config.system.set_storage_technologies
+        self.set_retrofitting_technologies = (
+            self.config.system.set_retrofitting_technologies
+        )
         # discount rate
         self.discount_rate = self.data_input.extract_input_data(
             "discount_rate", index_sets=[], unit_category={}
@@ -143,8 +145,8 @@ class EnergySystem:
             unit_category={"emissions": 1},
         )
         _fraction_year = (
-            self.system.unaggregated_time_steps_per_year
-            / self.system.total_hours_per_year
+            self.config.system.unaggregated_time_steps_per_year
+            / self.config.system.total_hours_per_year
         )
         self.carbon_emissions_annual_limit = (
             self.carbon_emissions_annual_limit * _fraction_year
@@ -214,10 +216,17 @@ class EnergySystem:
         :return: dict containing all edges along with their distances
         """
         set_haversine_distances_of_edges = {}
+
         # read coords file
         df_coords_input = self.data_input.extract_locations(extract_coordinates=True)
+        if not isinstance(df_coords_input, pd.DataFrame):
+            raise TypeError(
+                "[EnergySystem] df_coords_input is not of type pd.DataFrame"
+            )
         coords = df_coords_input.set_index("node")
-        self.system.coords = coords.T.to_dict()
+        # TODO: load this outside this function
+        self.config.system.coords = coords.T.to_dict()
+
         # convert coords from decimal degrees to radians
         df_coords_input["lon"] = df_coords_input["lon"] * np.pi / 180
         df_coords_input["lat"] = df_coords_input["lat"] * np.pi / 180
@@ -308,19 +317,21 @@ class EnergySystem:
     ### --- methods to construct sets, parameters, variables, and constraints, that
     # correspond to EnergySystem --- ###
 
-    def construct_sets(self):
+    def construct_sets(self, zen_model: ZenModel):
         """Constructs the pe.Sets of the class <EnergySystem>."""
+        logger.info("Constructing sets for EnergySystem")
+
         # construct pe.Sets of the class <EnergySystem>
         # nodes
-        self.optimization_setup.sets.add_set(
+        zen_model.sets.add_set(
             name="set_nodes", data=self.set_nodes, doc="Set of nodes"
         )
         # edges
-        self.optimization_setup.sets.add_set(
+        zen_model.sets.add_set(
             name="set_edges", data=self.set_edges, doc="Set of edges"
         )
         # nodes on edges
-        self.optimization_setup.sets.add_set(
+        zen_model.sets.add_set(
             name="set_nodes_on_edges",
             data=self.set_nodes_on_edges,
             doc="Set of nodes that constitute an edge. "
@@ -328,269 +339,338 @@ class EnergySystem:
             index_set="set_edges",
         )
         # carriers
-        self.optimization_setup.sets.add_set(
+        zen_model.sets.add_set(
             name="set_carriers", data=self.set_carriers, doc="Set of carriers"
         )
         # technologies
-        self.optimization_setup.sets.add_set(
+        zen_model.sets.add_set(
             name="set_technologies", data=self.set_technologies, doc="set_technologies"
         )
         # all elements
         data = list(
-            set(self.optimization_setup.sets["set_technologies"])
-            | set(self.optimization_setup.sets["set_carriers"])
+            set(zen_model.sets["set_technologies"])
+            | set(zen_model.sets["set_carriers"])
         )
-        self.optimization_setup.sets.add_set(
-            name="set_elements", data=data, doc="Set of elements"
-        )
+        zen_model.sets.add_set(name="set_elements", data=data, doc="Set of elements")
         # set set_elements to indexing_sets
         self.indexing_sets.append("set_elements")
         # time-steps
-        self.optimization_setup.sets.add_set(
+        zen_model.sets.add_set(
             name="set_base_time_steps",
             data=self.set_base_time_steps,
             doc="Set of base time-steps",
         )
         # yearly time steps
-        self.optimization_setup.sets.add_set(
+        zen_model.sets.add_set(
             name="set_time_steps_yearly",
             data=self.set_time_steps_yearly,
             doc="Set of yearly time-steps",
         )
         # yearly time steps of entire optimization horizon
-        self.optimization_setup.sets.add_set(
+        zen_model.sets.add_set(
             name="set_time_steps_yearly_entire_horizon",
             data=self.set_time_steps_yearly_entire_horizon,
             doc="Set of yearly time-steps of entire optimization horizon",
         )
         # operational time steps
-        self.optimization_setup.sets.add_set(
+        zen_model.sets.add_set(
             name="set_time_steps_operation",
             data=self.time_steps.time_steps_operation,
             doc="Set of operational time steps",
         )
         # storage time steps
-        self.optimization_setup.sets.add_set(
+        zen_model.sets.add_set(
             name="set_time_steps_storage",
             data=self.time_steps.time_steps_storage,
             doc="Set of storage level time steps",
         )
 
-    def construct_params(self):
+    def construct_params(self, zen_model: ZenModel):
         """Constructs the pe.Params of the class <EnergySystem>."""
-        cls = self.__class__
-        parameters = self.optimization_setup.parameters
+        logger.info("Constructing parameters for EnergySystem")
+
         # operational time step duration
-        parameters.add_parameter(
+        self._add_parameter(
+            zen_model,
             name="time_steps_operation_duration",
             set_time_steps="set_time_steps_operation",
             doc="Parameter which specifies the duration of each operational time step",
-            calling_class=cls,
         )
         # storage time step duration
-        parameters.add_parameter(
+        self._add_parameter(
+            zen_model,
             name="time_steps_storage_duration",
             set_time_steps="set_time_steps_storage",
             doc="Parameter which specifies the duration of each storage time step",
-            calling_class=cls,
         )
         # discount rate
-        parameters.add_parameter(
+        self._add_parameter(
+            zen_model,
             name="discount_rate",
             doc="Parameter which specifies the discount rate of the energy system",
-            calling_class=cls,
         )
         # carbon emissions limit
-        parameters.add_parameter(
+        self._add_parameter(
+            zen_model,
             name="carbon_emissions_annual_limit",
             set_time_steps="set_time_steps_yearly",
             doc="Parameter which specifies the total limit on carbon emissions",
-            calling_class=cls,
         )
         # carbon emissions budget
-        parameters.add_parameter(
+        self._add_parameter(
+            zen_model,
             name="carbon_emissions_budget",
             doc="Parameter which specifies the total budget of carbon emissions "
             "until the end of the entire time horizon",
-            calling_class=cls,
         )
         # carbon emissions budget
-        parameters.add_parameter(
+        self._add_parameter(
+            zen_model,
             name="carbon_emissions_cumulative_existing",
             doc="Parameter which specifies the total previous carbon emissions",
-            calling_class=cls,
         )
         # carbon price
-        parameters.add_parameter(
+        self._add_parameter(
+            zen_model,
             name="price_carbon_emissions",
             set_time_steps="set_time_steps_yearly",
             doc="Parameter which specifies the yearly carbon price",
-            calling_class=cls,
         )
         # carbon price of budget overshoot
-        parameters.add_parameter(
+        self._add_parameter(
+            zen_model,
             name="price_carbon_emissions_budget_overshoot",
             doc="Parameter which specifies the carbon price for budget overshoot",
-            calling_class=cls,
         )
         # carbon price of annual overshoot
-        parameters.add_parameter(
+        self._add_parameter(
+            zen_model,
             name="price_carbon_emissions_annual_overshoot",
             doc="Parameter which specifies the carbon price for annual overshoot",
-            calling_class=cls,
         )
         # carbon price of overshoot
-        parameters.add_parameter(
+        self._add_parameter(
+            zen_model,
             name="market_share_unbounded",
             doc="Parameter which specifies the unbounded market share",
-            calling_class=cls,
         )
         # knowledge depreciation rate
-        parameters.add_parameter(
+        self._add_parameter(
+            zen_model,
             name="knowledge_depreciation_rate",
             doc="Parameter which specifies the knowledge depreciation rate",
-            calling_class=cls,
         )
         # knowledge spillover rate
-        parameters.add_parameter(
+        self._add_parameter(
+            zen_model,
             name="knowledge_spillover_rate",
             doc="Parameter which specifies the knowledge spillover rate",
-            calling_class=cls,
         )
 
-    def construct_vars(self):
+    def construct_vars(self, zen_model: ZenModel):
         """Constructs the pe.Vars of the class <EnergySystem>."""
-        variables = self.optimization_setup.variables
-        sets = self.optimization_setup.sets
-        model = self.optimization_setup.model
+        logger.info("Constructing variables for EnergySystem")
+
         # carbon emissions
-        variables.add_variable(
-            model,
+        zen_model.variables.add_variable(
             name="carbon_emissions_annual",
-            index_sets=sets["set_time_steps_yearly"],
+            index_sets=zen_model.sets["set_time_steps_yearly"],
             doc="annual carbon emissions of energy system",
             unit_category={"emissions": 1},
         )
         # cumulative carbon emissions
-        variables.add_variable(
-            model,
+        zen_model.variables.add_variable(
             name="carbon_emissions_cumulative",
-            index_sets=sets["set_time_steps_yearly"],
+            index_sets=zen_model.sets["set_time_steps_yearly"],
             doc="cumulative carbon emissions of energy system over time for each year",
             unit_category={"emissions": 1},
         )
         # carbon emission overshoot
-        variables.add_variable(
-            model,
+        zen_model.variables.add_variable(
             name="carbon_emissions_budget_overshoot",
-            index_sets=sets["set_time_steps_yearly"],
+            index_sets=zen_model.sets["set_time_steps_yearly"],
             bounds=(0, np.inf),
             doc="overshoot carbon emissions of energy system "
             "at the end of the time horizon",
             unit_category={"emissions": 1},
         )
         # carbon emission overshoot
-        variables.add_variable(
-            model,
+        zen_model.variables.add_variable(
             name="carbon_emissions_annual_overshoot",
-            index_sets=sets["set_time_steps_yearly"],
+            index_sets=zen_model.sets["set_time_steps_yearly"],
             bounds=(0, np.inf),
             doc="overshoot of the annual carbon emissions limit of energy system",
             unit_category={"emissions": 1},
         )
         # cost of carbon emissions
-        variables.add_variable(
-            model,
+        zen_model.variables.add_variable(
             name="cost_carbon_emissions_total",
-            index_sets=sets["set_time_steps_yearly"],
+            index_sets=zen_model.sets["set_time_steps_yearly"],
             doc="total cost of carbon emissions of energy system",
             unit_category={"money": 1},
         )
         # costs
-        variables.add_variable(
-            model,
+        zen_model.variables.add_variable(
             name="cost_total",
-            index_sets=sets["set_time_steps_yearly"],
+            index_sets=zen_model.sets["set_time_steps_yearly"],
             doc="total cost of energy system",
             unit_category={"money": 1},
         )
         # net_present_cost
-        variables.add_variable(
-            model,
+        zen_model.variables.add_variable(
             name="net_present_cost",
-            index_sets=sets["set_time_steps_yearly"],
+            index_sets=zen_model.sets["set_time_steps_yearly"],
             doc="net_present_cost of energy system",
             unit_category={"money": 1},
         )
 
-    def construct_constraints(self):
+    def construct_constraints(self, zen_model: ZenModel):
         """Constructs the constraints of the class <EnergySystem>."""
-        logging.info("Construct Constraints of EnergySystem")
+        logger.info("Constructing constraints of EnergySystem")
 
         # create the rules
-        self.rules = EnergySystemRules(self.optimization_setup)
+        self.rules = EnergySystemRules(self.config, self.context)
         # cumulative carbon emissions
-        self.rules.constraint_carbon_emissions_cumulative()
+        self.rules.constraint_carbon_emissions_cumulative(zen_model, self)
 
         # annual limit carbon emissions
-        self.rules.constraint_carbon_emissions_annual_limit()
+        self.rules.constraint_carbon_emissions_annual_limit(zen_model, self)
 
         # carbon emission budget limit
-        self.rules.constraint_carbon_emissions_budget()
+        self.rules.constraint_carbon_emissions_budget(zen_model, self)
 
         # net_present_cost
-        self.rules.constraint_net_present_cost()
+        self.rules.constraint_net_present_cost(zen_model, self)
 
         # total carbon emissions
-        self.rules.constraint_carbon_emissions_annual()
+        self.rules.constraint_carbon_emissions_annual(zen_model, self)
 
         # cost of carbon emissions
-        self.rules.constraint_cost_carbon_emissions_total()
+        self.rules.constraint_cost_carbon_emissions_total(zen_model, self)
 
         # costs
-        self.rules.constraint_cost_total()
+        self.rules.constraint_cost_total(zen_model, self)
 
         # disable carbon emissions budget overshoot
-        self.rules.constraint_carbon_emissions_budget_overshoot()
+        self.rules.constraint_carbon_emissions_budget_overshoot(zen_model, self)
 
         # disable annual carbon emissions overshoot
-        self.rules.constraint_carbon_emissions_annual_overshoot()
+        self.rules.constraint_carbon_emissions_annual_overshoot(zen_model, self)
 
-    def construct_objective(self):
+    def construct_objective(self, zen_model: ZenModel):
         """Constructs the pe.Objective of the class <EnergySystem>."""
-        logging.info("Construct pe.Objective")
+        logger.info("Constructing objective for EnergySystem")
 
         # get selected objective rule
-        if self.optimization_setup.analysis.objective == "total_cost":
-            objective = self.rules.objective_total_cost(self.optimization_setup.model)
-        elif self.optimization_setup.analysis.objective == "total_carbon_emissions":
-            objective = self.rules.objective_total_carbon_emissions(
-                self.optimization_setup.model
-            )
+        if self.config.analysis.objective == "total_cost":
+            objective = self.rules.objective_total_cost(zen_model)
+        elif self.config.analysis.objective == "total_carbon_emissions":
+            objective = self.rules.objective_total_carbon_emissions(zen_model)
         else:
-            raise KeyError(
-                f"Objective type {self.optimization_setup.analysis.objective} not known"
-            )
+            raise KeyError(f"Objective type {self.config.analysis.objective} not known")
 
         # get selected objective sense
-        sense = self.optimization_setup.analysis.sense
+        sense = self.config.analysis.sense
         assert sense in ["min", "max"], f"Objective sense {sense} not known"
 
         # construct objective
-        self.optimization_setup.model.add_objective(objective, sense=sense)
+        zen_model.lp_model.add_objective(objective, sense=sense)
+
+    def _add_parameter(
+        self,
+        zen_model: ZenModel,
+        name: str,
+        doc: str,
+        index_names: list[str] | None = None,
+        set_time_steps=None,
+    ):
+        """Adds a parameter to the zen_model.parameters.
+
+        :param zen_model: The ZenModel of the EnergySystem class
+        :param name: The name of the parameter
+        :param index_names: The index names of the parameter
+        """
+
+        component_data, index_list, dict_of_units = self._initialize_component(
+            zen_model, name, index_names, set_time_steps
+        )
+        component_data = self._ensure_pd_series_multi_index(component_data)
+        data = component_data, index_list
+
+        zen_model.parameters.add_parameter(
+            name=name,
+            doc=doc,
+            data=data,
+            dict_of_units=dict_of_units,
+        )
+
+    def _initialize_component(
+        self,
+        zen_model: ZenModel,
+        component_name: str,
+        index_names: list[str] | None,
+        set_time_steps=None,
+    ):
+        """Initialize a modeling component by extracting the stored input data.
+
+        Args:
+            calling_class: class from where the method is called
+            component_name: name of modeling component
+            index_names: names of index sets, only if calling_class is not EnergySystem
+            set_time_steps: time steps, only if calling_class is EnergySystem
+            capacity_types: boolean if extracted for capacities
+            component_data: data to initialize the component
+        """
+        component = getattr(self, component_name)
+        dict_of_units = {}
+        if component_name in self.units:
+            dict_of_units = self.units[component_name]
+
+        if index_names is not None:
+            index_list = index_names
+        elif set_time_steps is not None:
+            index_list = [set_time_steps]
+        else:
+            index_list = []
+
+        if set_time_steps:
+            component_data = component[zen_model.sets[set_time_steps]]
+        elif type(component) is float:
+            component_data = component
+        else:
+            component_data = component.squeeze()
+
+        return component_data, index_list, dict_of_units
+
+    def _ensure_pd_series_multi_index(self, component_data):
+        """Convert pd.Series index to pd.MultiIndex.
+
+        :param component_data: extracted data as pd.Series
+        :return: component_data: extracted data as pd.Series with MultiIndex
+        """
+        if isinstance(component_data, pd.Series) and not isinstance(
+            component_data.index, pd.MultiIndex
+        ):
+            component_data.index = pd.MultiIndex.from_product(
+                [component_data.index.to_list()]
+            )
+        return component_data
 
 
 class EnergySystemRules(GenericRule):
     """This class takes care of the rules for the EnergySystem."""
 
-    def __init__(self, optimization_setup):
+    def __init__(self, config: Config, context: Context):
         """Inits the constraints for a given energy system.
 
-        :param optimization_setup: The OptimizationSetup of the EnergySystem class
+        :param config: The Config of the entire setup
+        :param context: The Context of the entire setup
         """
-        super().__init__(optimization_setup)
+        super().__init__(config, context)
 
-    def constraint_carbon_emissions_cumulative(self):
+    def constraint_carbon_emissions_cumulative(
+        self, zen_model: ZenModel, energy_system: EnergySystem
+    ):
         """Cumulative carbon emissions over time.
 
         .. math::
@@ -605,30 +685,36 @@ class EnergySystemRules(GenericRule):
 
         """
         m = [
-            True if year == self.energy_system.set_time_steps_yearly[0] else False
-            for year in self.energy_system.set_time_steps_yearly
+            True if year == energy_system.set_time_steps_yearly[0] else False
+            for year in energy_system.set_time_steps_yearly
         ]
 
         lhs = (
-            self.variables["carbon_emissions_cumulative"]
-            - self.variables["carbon_emissions_cumulative"].shift(
+            zen_model.lp_model.variables["carbon_emissions_cumulative"]
+            - zen_model.lp_model.variables["carbon_emissions_cumulative"].shift(
                 set_time_steps_yearly=1
             )
-            - self.variables["carbon_emissions_annual"].shift(set_time_steps_yearly=1)
-            * (self.system.interval_between_years - 1)
-            - self.variables["carbon_emissions_annual"]
+            - zen_model.lp_model.variables["carbon_emissions_annual"].shift(
+                set_time_steps_yearly=1
+            )
+            * (self.config.system.interval_between_years - 1)
+            - zen_model.lp_model.variables["carbon_emissions_annual"]
         )
         rhs = (
-            xr.ones_like(self.variables["carbon_emissions_cumulative"].mask)
-            * self.parameters.carbon_emissions_cumulative_existing
+            xr.ones_like(
+                zen_model.lp_model.variables["carbon_emissions_cumulative"].mask
+            )
+            * zen_model.parameters.carbon_emissions_cumulative_existing
         ).where(m, 0)
         constraints = lhs == rhs
 
-        self.constraints.add_constraint(
+        zen_model.constraints.add_constraint(
             "constraint_carbon_emissions_cumulative", constraints
         )
 
-    def constraint_carbon_emissions_annual_limit(self):
+    def constraint_carbon_emissions_annual_limit(
+        self, zen_model: ZenModel, energy_system: EnergySystem
+    ):
         """Time dependent carbon emissions limit from technologies and carriers.
 
         .. math::
@@ -636,17 +722,19 @@ class EnergySystemRules(GenericRule):
 
         """
         lhs = (
-            self.variables["carbon_emissions_annual"]
-            - self.variables["carbon_emissions_annual_overshoot"]
+            zen_model.lp_model.variables["carbon_emissions_annual"]
+            - zen_model.lp_model.variables["carbon_emissions_annual_overshoot"]
         )
-        rhs = self.parameters.carbon_emissions_annual_limit
+        rhs = zen_model.parameters.carbon_emissions_annual_limit
         constraints = lhs <= rhs
 
-        self.constraints.add_constraint(
+        zen_model.constraints.add_constraint(
             "constraint_carbon_emissions_annual_limit", constraints
         )
 
-    def constraint_carbon_emissions_budget(self):
+    def constraint_carbon_emissions_budget(
+        self, zen_model: ZenModel, energy_system: EnergySystem
+    ):
         """Carbon emissions budget of whole time horizon.
         The prediction extends until the end of the horizon, i.e., last optimization
         time step plus the current carbon emissions until the end of the horizon.
@@ -663,26 +751,28 @@ class EnergySystemRules(GenericRule):
 
         """
         m = [
-            year != self.energy_system.set_time_steps_yearly_entire_horizon[-1]
-            for year in self.energy_system.set_time_steps_yearly
+            year != energy_system.set_time_steps_yearly_entire_horizon[-1]
+            for year in energy_system.set_time_steps_yearly
         ]
 
         lhs = (
-            self.variables["carbon_emissions_cumulative"]
-            - self.variables["carbon_emissions_budget_overshoot"]
+            zen_model.lp_model.variables["carbon_emissions_cumulative"]
+            - zen_model.lp_model.variables["carbon_emissions_budget_overshoot"]
             + (
-                self.variables["carbon_emissions_annual"].where(m)
-                * (self.system.interval_between_years - 1)
+                zen_model.lp_model.variables["carbon_emissions_annual"].where(m)
+                * (self.config.system.interval_between_years - 1)
             )
         )
-        rhs = self.parameters.carbon_emissions_budget
+        rhs = zen_model.parameters.carbon_emissions_budget
         constraints = lhs <= rhs
 
-        self.constraints.add_constraint(
+        zen_model.constraints.add_constraint(
             "constraint_carbon_emissions_budget", constraints
         )
 
-    def constraint_net_present_cost(self):
+    def constraint_net_present_cost(
+        self, zen_model: ZenModel, energy_system: EnergySystem
+    ):
         """Discounts the annual capital flows to calculate the net_present_cost.
 
         .. math::
@@ -695,35 +785,39 @@ class EnergySystemRules(GenericRule):
         :math:`dy`: interval between planning periods \n
 
         """
-        factor = pd.Series(index=self.energy_system.set_time_steps_yearly)
-        for year in self.energy_system.set_time_steps_yearly:
-
+        factor = pd.Series(index=energy_system.set_time_steps_yearly)
+        for year in energy_system.set_time_steps_yearly:
             ### auxiliary calculations
-            if year == self.energy_system.set_time_steps_yearly_entire_horizon[-1]:
+            if year == energy_system.set_time_steps_yearly_entire_horizon[-1]:
                 interval_between_years = 1
             else:
-                interval_between_years = self.system.interval_between_years
+                interval_between_years = self.config.system.interval_between_years
             # economic discount
             factor[year] = sum(
                 (
-                    (1 / (1 + self.parameters.discount_rate))
+                    (1 / (1 + zen_model.parameters.discount_rate))
                     ** (
-                        self.system.interval_between_years
-                        * (year - self.energy_system.set_time_steps_yearly[0])
+                        self.config.system.interval_between_years
+                        * (year - energy_system.set_time_steps_yearly[0])
                         + _intermediate_time_step
                     )
                 )
                 for _intermediate_time_step in range(0, interval_between_years)
             )
-        term_discounted_cost_total = self.variables["cost_total"] * factor
+        term_discounted_cost_total = zen_model.lp_model.variables["cost_total"] * factor
 
-        lhs = self.variables["net_present_cost"] - term_discounted_cost_total
+        lhs = (
+            zen_model.lp_model.variables["net_present_cost"]
+            - term_discounted_cost_total
+        )
         rhs = 0
         constraints = lhs == rhs
 
-        self.constraints.add_constraint("constraint_net_present_cost", constraints)
+        zen_model.constraints.add_constraint("constraint_net_present_cost", constraints)
 
-    def constraint_carbon_emissions_budget_overshoot(self):
+    def constraint_carbon_emissions_budget_overshoot(
+        self, zen_model: ZenModel, energy_system: EnergySystem
+    ):
         """Enforces zero budget overshoot if price for budget overshoot is inf.
 
         ensures carbon emissions overshoot of carbon budget is zero when
@@ -738,18 +832,20 @@ class EnergySystemRules(GenericRule):
 
 
         """
-        if self.parameters.price_carbon_emissions_budget_overshoot == np.inf:
-            lhs = self.variables["carbon_emissions_budget_overshoot"]
+        if zen_model.parameters.price_carbon_emissions_budget_overshoot == np.inf:
+            lhs = zen_model.lp_model.variables["carbon_emissions_budget_overshoot"]
             rhs = 0
             constraints = lhs == rhs
         else:
             constraints = None
 
-        self.constraints.add_constraint(
+        zen_model.constraints.add_constraint(
             "constraint_carbon_emissions_budget_overshoot", constraints
         )
 
-    def constraint_carbon_emissions_annual_overshoot(self):
+    def constraint_carbon_emissions_annual_overshoot(
+        self, zen_model: ZenModel, energy_system: EnergySystem
+    ):
         """Enforces zero annual overshoot if price for annual overshoot is inf.
 
         ensures annual carbon emissions overshoot is zero when carbon
@@ -763,20 +859,24 @@ class EnergySystemRules(GenericRule):
         :math:`\\mu^o`: carbon price for annual overshoot
 
         """
-        no_price = self.parameters.price_carbon_emissions_annual_overshoot == np.inf
-        no_limit = (self.parameters.carbon_emissions_annual_limit == np.inf).all()
+        no_price = (
+            zen_model.parameters.price_carbon_emissions_annual_overshoot == np.inf
+        )
+        no_limit = (zen_model.parameters.carbon_emissions_annual_limit == np.inf).all()
         if (no_price or no_limit) and not (no_price and no_limit):
-            lhs = self.variables["carbon_emissions_annual_overshoot"]
+            lhs = zen_model.lp_model.variables["carbon_emissions_annual_overshoot"]
             rhs = 0
             constraints = lhs == rhs
         else:
             constraints = None
 
-        self.constraints.add_constraint(
+        zen_model.constraints.add_constraint(
             "constraint_carbon_emissions_annual_overshoot", constraints
         )
 
-    def constraint_carbon_emissions_annual(self):
+    def constraint_carbon_emissions_annual(
+        self, zen_model: ZenModel, energy_system: EnergySystem
+    ):
         """Add up all carbon emissions from technologies and carriers.
 
         .. math::
@@ -788,18 +888,20 @@ class EnergySystemRules(GenericRule):
 
         """
         lhs = (
-            self.variables["carbon_emissions_annual"]
-            - self.variables["carbon_emissions_technology_total"]
-            - self.variables["carbon_emissions_carrier_total"]
+            zen_model.lp_model.variables["carbon_emissions_annual"]
+            - zen_model.lp_model.variables["carbon_emissions_technology_total"]
+            - zen_model.lp_model.variables["carbon_emissions_carrier_total"]
         )
         rhs = 0
         constraints = lhs == rhs
 
-        self.constraints.add_constraint(
+        zen_model.constraints.add_constraint(
             "constraint_carbon_emissions_annual", constraints
         )
 
-    def constraint_cost_carbon_emissions_total(self):
+    def constraint_cost_carbon_emissions_total(
+        self, zen_model: ZenModel, energy_system: EnergySystem
+    ):
         """Carbon cost associated with the carbon emissions of the system in each year.
 
         .. math::
@@ -813,38 +915,38 @@ class EnergySystemRules(GenericRule):
 
         """
         mask_last_year = [
-            year == self.energy_system.set_time_steps_yearly[-1]
-            for year in self.energy_system.set_time_steps_yearly
+            year == energy_system.set_time_steps_yearly[-1]
+            for year in energy_system.set_time_steps_yearly
         ]
 
         lhs = (
-            self.variables["cost_carbon_emissions_total"]
-            - self.variables["carbon_emissions_annual"]
-            * self.parameters.price_carbon_emissions
+            zen_model.lp_model.variables["cost_carbon_emissions_total"]
+            - zen_model.lp_model.variables["carbon_emissions_annual"]
+            * zen_model.parameters.price_carbon_emissions
         )
         # add cost for overshooting carbon emissions budget
-        if self.parameters.price_carbon_emissions_budget_overshoot != np.inf:
+        if zen_model.parameters.price_carbon_emissions_budget_overshoot != np.inf:
             lhs -= (
-                self.variables["carbon_emissions_budget_overshoot"].where(
+                zen_model.lp_model.variables["carbon_emissions_budget_overshoot"].where(
                     mask_last_year
                 )
-                * self.parameters.price_carbon_emissions_budget_overshoot.item()
+                * zen_model.parameters.price_carbon_emissions_budget_overshoot.item()
             )
         # add cost for overshooting annual carbon emissions limit
-        if self.parameters.price_carbon_emissions_annual_overshoot != np.inf:
+        if zen_model.parameters.price_carbon_emissions_annual_overshoot != np.inf:
             lhs -= (
-                self.variables["carbon_emissions_annual_overshoot"]
-                * self.parameters.price_carbon_emissions_annual_overshoot.item()
+                zen_model.lp_model.variables["carbon_emissions_annual_overshoot"]
+                * zen_model.parameters.price_carbon_emissions_annual_overshoot.item()
             )
 
         rhs = 0
         constraints = lhs == rhs
 
-        self.constraints.add_constraint(
+        zen_model.constraints.add_constraint(
             "constraint_cost_carbon_emissions_total", constraints
         )
 
-    def constraint_cost_total(self):
+    def constraint_cost_total(self, zen_model: ZenModel, energy_system: EnergySystem):
         """Add up all costs from technologies and carriers.
 
         .. math::
@@ -861,21 +963,21 @@ class EnergySystemRules(GenericRule):
 
         """
         lhs = (
-            self.variables["cost_total"]
-            - self.variables["cost_capex_yearly_total"]
-            - self.variables["cost_opex_yearly_total"]
-            - self.variables["cost_carrier_total"]
-            - self.variables["cost_carbon_emissions_total"]
+            zen_model.lp_model.variables["cost_total"]
+            - zen_model.lp_model.variables["cost_capex_yearly_total"]
+            - zen_model.lp_model.variables["cost_opex_yearly_total"]
+            - zen_model.lp_model.variables["cost_carrier_total"]
+            - zen_model.lp_model.variables["cost_carbon_emissions_total"]
         )
         rhs = 0
         constraints = lhs == rhs
 
-        self.constraints.add_constraint("constraint_cost_total", constraints)
+        zen_model.constraints.add_constraint("constraint_cost_total", constraints)
 
     # Objective rules
     # ---------------
 
-    def objective_total_cost(self, model):
+    def objective_total_cost(self, zen_model: ZenModel):
         """Objective function to minimize the total net present cost.
 
         .. math::
@@ -884,9 +986,11 @@ class EnergySystemRules(GenericRule):
         :param model: optimization model
         :return: net present cost objective function
         """
-        return model.variables["net_present_cost"].sum("set_time_steps_yearly")
+        return zen_model.lp_model.variables["net_present_cost"].sum(
+            "set_time_steps_yearly"
+        )
 
-    def objective_total_carbon_emissions(self, model):
+    def objective_total_carbon_emissions(self, zen_model: ZenModel):
         """Objective function to minimize total emissions.
 
         .. math::
@@ -898,9 +1002,9 @@ class EnergySystemRules(GenericRule):
         :param model: optimization model
         :return: total carbon emissions objective function
         """
-        sets = self.sets
+        sets = zen_model.sets
         return (
-            model.variables["carbon_emissions_cumulative"]
+            zen_model.lp_model.variables["carbon_emissions_cumulative"]
             .at[sets["set_time_steps_yearly"][-1]]
             .to_linexpr()
         )

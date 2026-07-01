@@ -5,13 +5,27 @@ variables and constraints of a generic carrier and returns the abstract optimiza
 model.
 """
 
+import logging
+from typing import TYPE_CHECKING, override
+
 import linopy as lp
 import numpy as np
 import xarray as xr
 from linopy.expressions import LinearExpression
 
-from ..component import ZenIndex
-from ..element import Element, GenericRule
+from zen_garden.model.components.zen_index import ZenIndex
+from zen_garden.model.config import Config
+from zen_garden.model.context import Context
+from zen_garden.model.element import Element, ElementConstructor
+from zen_garden.model.generic_rule import GenericRule
+from zen_garden.model.zen_model import ZenModel
+
+if TYPE_CHECKING:
+    from zen_garden.model.energy_system import EnergySystem
+    from zen_garden.preprocess.unit_handling import UnitHandling
+    from zen_garden.services.element_registry import ElementRegistry
+
+logger = logging.getLogger(__name__)
 
 
 class Carrier(Element):
@@ -22,13 +36,28 @@ class Carrier(Element):
     # empty list of elements
     list_of_elements = []
 
-    def __init__(self, carrier: str, optimization_setup):
+    def __init__(
+        self,
+        carrier_name: str,
+        config: Config,
+        context: Context,
+        energy_system: "EnergySystem",
+        element_registry: "ElementRegistry",
+        unit_handling: "UnitHandling",
+    ):
         """Initialization of a generic carrier object.
 
         :param carrier: carrier that is added to the model
         :param optimization_setup: The OptimizationSetup the element is part of
         """
-        super().__init__(carrier, optimization_setup)
+        super().__init__(
+            carrier_name,
+            config,
+            context,
+            energy_system,
+            element_registry,
+            unit_handling,
+        )
 
     def store_input_data(self):
         """Retrieves and stores input data for element as attributes. Each Child class
@@ -112,148 +141,167 @@ class Carrier(Element):
         set_time_steps_operation = self.energy_system.time_steps.encode_time_step(
             base_time_steps=base_time_steps, time_step_type="operation"
         )
+        assert isinstance(set_time_steps_operation, np.ndarray)
         self.set_time_steps_operation = set_time_steps_operation.squeeze().tolist()
 
-    """ --- classmethods to construct sets, parameters, variables, and constraints,
-    that correspond to Carrier --- """
 
-    @classmethod
-    def construct_sets(cls, optimization_setup):
+class CarrierConstructor(ElementConstructor):
+    element_class = Carrier
+
+    @override
+    def has_elements(self) -> bool:
+        """Checks if there are any elements of the class <Carrier>.
+
+        :return: True if there are elements, False otherwise
+        """
+        return True
+
+    def construct_sets(self, zen_model: ZenModel, energy_system: "EnergySystem"):
         """Constructs the pe.Sets of the class <Carrier>.
 
         :param optimization_setup: The OptimizationSetup the element is part of
         """
-        pass
+        logger.info("Constructing sets for Carrier")
 
-    @classmethod
-    def construct_params(cls, optimization_setup):
+    def construct_params(self, zen_model: ZenModel, energy_system: "EnergySystem"):
         """Constructs the pe.Params of the class <Carrier>.
 
         :param optimization_setup: The OptimizationSetup the element is part of
         """
+        logger.info("Constructing parameters for Carrier")
+
         # demand of carrier
-        optimization_setup.parameters.add_parameter(
+        self.add_parameter(
+            zen_model,
+            energy_system,
             name="demand",
             index_names=["set_carriers", "set_nodes", "set_time_steps_operation"],
             doc="Parameter which specifies the carrier demand",
-            calling_class=cls,
         )
         # availability of carrier
-        optimization_setup.parameters.add_parameter(
+        self.add_parameter(
+            zen_model,
+            energy_system,
             name="availability_import",
             index_names=["set_carriers", "set_nodes", "set_time_steps_operation"],
             doc="Parameter which specifies the maximum energy that can be imported "
             "from outside the system boundaries",
-            calling_class=cls,
         )
         # availability of carrier
-        optimization_setup.parameters.add_parameter(
+        self.add_parameter(
+            zen_model,
+            energy_system,
             name="availability_export",
             index_names=["set_carriers", "set_nodes", "set_time_steps_operation"],
             doc="Parameter which specifies the maximum energy that can be exported "
             "to outside the system boundaries",
-            calling_class=cls,
         )
         # availability of carrier
-        optimization_setup.parameters.add_parameter(
+        self.add_parameter(
+            zen_model,
+            energy_system,
             name="availability_import_yearly",
             index_names=["set_carriers", "set_nodes", "set_time_steps_yearly"],
             doc="Parameter which specifies the maximum energy that can be imported "
             "from outside the system boundaries for the entire year",
-            calling_class=cls,
         )
         # availability of carrier
-        optimization_setup.parameters.add_parameter(
+        self.add_parameter(
+            zen_model,
+            energy_system,
             name="availability_export_yearly",
             index_names=["set_carriers", "set_nodes", "set_time_steps_yearly"],
             doc="Parameter which specifies the maximum energy that can be exported "
             "to outside the system boundaries for the entire year",
-            calling_class=cls,
         )
         # import price
-        optimization_setup.parameters.add_parameter(
+        self.add_parameter(
+            zen_model,
+            energy_system,
             name="price_import",
             index_names=["set_carriers", "set_nodes", "set_time_steps_operation"],
             doc="Parameter which specifies the import carrier price",
-            calling_class=cls,
         )
         # export price
-        optimization_setup.parameters.add_parameter(
+        self.add_parameter(
+            zen_model,
+            energy_system,
             name="price_export",
             index_names=["set_carriers", "set_nodes", "set_time_steps_operation"],
             doc="Parameter which specifies the export carrier price",
-            calling_class=cls,
         )
         # demand shedding price
-        optimization_setup.parameters.add_parameter(
+        self.add_parameter(
+            zen_model,
+            energy_system,
             name="price_shed_demand",
             index_names=["set_carriers"],
             doc="Parameter which specifies the price to shed demand",
-            calling_class=cls,
         )
         # carbon intensity carrier import
-        optimization_setup.parameters.add_parameter(
+        self.add_parameter(
+            zen_model,
+            energy_system,
             name="carbon_intensity_carrier_import",
             index_names=["set_carriers", "set_nodes", "set_time_steps_yearly"],
             doc="Parameter which specifies the carbon intensity of carrier import",
-            calling_class=cls,
         )
-        # carbon intensity carrier exmport
-        optimization_setup.parameters.add_parameter(
+        # carbon intensity carrier export
+        self.add_parameter(
+            zen_model,
+            energy_system,
             name="carbon_intensity_carrier_export",
             index_names=["set_carriers", "set_nodes", "set_time_steps_yearly"],
             doc="Parameter which specifies the carbon intensity of carrier export",
-            calling_class=cls,
         )
 
-    @classmethod
-    def construct_vars(cls, optimization_setup):
+    def construct_vars(self, zen_model: ZenModel, energy_system: "EnergySystem"):
         """Constructs the pe.Vars of the class <Carrier>.
 
         :param optimization_setup: The OptimizationSetup the element is part of
         """
-        model = optimization_setup.model
-        variables = optimization_setup.variables
-        sets = optimization_setup.sets
+        logger.info("Constructing variables for Carrier")
+
+        variables = zen_model.variables
+        sets = zen_model.sets
 
         # flow of imported carrier
         variables.add_variable(
-            model,
             name="flow_import",
-            index_sets=cls.create_custom_set(
+            index_sets=self.create_custom_set(
                 ["set_carriers", "set_nodes", "set_time_steps_operation"],
-                optimization_setup,
+                zen_model,
+                energy_system,
             ),
-            bounds=(0, np.inf),
+            bounds=(0.0, np.inf),
             doc="node- and time-dependent carrier import from the grid",
             unit_category={"energy_quantity": 1, "time": -1},
         )
         # flow of exported carrier
         variables.add_variable(
-            model,
             name="flow_export",
-            index_sets=cls.create_custom_set(
+            index_sets=self.create_custom_set(
                 ["set_carriers", "set_nodes", "set_time_steps_operation"],
-                optimization_setup,
+                zen_model,
+                energy_system,
             ),
-            bounds=(0, np.inf),
+            bounds=(0.0, np.inf),
             doc="node- and time-dependent carrier export from the grid",
             unit_category={"energy_quantity": 1, "time": -1},
         )
         # carrier import/export cost
         variables.add_variable(
-            model,
             name="cost_carrier",
-            index_sets=cls.create_custom_set(
+            index_sets=self.create_custom_set(
                 ["set_carriers", "set_nodes", "set_time_steps_operation"],
-                optimization_setup,
+                zen_model,
+                energy_system,
             ),
             doc="node- and time-dependent carrier cost due to import and export",
             unit_category={"money": 1, "time": -1},
         )
         # total carrier import/export cost
         variables.add_variable(
-            model,
             name="cost_carrier_total",
             index_sets=sets["set_time_steps_yearly"],
             doc="total carrier cost due to import and export",
@@ -261,18 +309,17 @@ class Carrier(Element):
         )
         # carbon emissions
         variables.add_variable(
-            model,
             name="carbon_emissions_carrier",
-            index_sets=cls.create_custom_set(
+            index_sets=self.create_custom_set(
                 ["set_carriers", "set_nodes", "set_time_steps_operation"],
-                optimization_setup,
+                zen_model,
+                energy_system,
             ),
             doc="carbon emissions of importing and exporting carrier",
             unit_category={"emissions": 1, "time": -1},
         )
         # carbon emissions carrier
         variables.add_variable(
-            model,
             name="carbon_emissions_carrier_total",
             index_sets=sets["set_time_steps_yearly"],
             doc="total carbon emissions of importing and exporting carrier",
@@ -280,86 +327,89 @@ class Carrier(Element):
         )
         # shed demand
         variables.add_variable(
-            model,
             name="shed_demand",
-            index_sets=cls.create_custom_set(
+            index_sets=self.create_custom_set(
                 ["set_carriers", "set_nodes", "set_time_steps_operation"],
-                optimization_setup,
+                zen_model,
+                energy_system,
             ),
-            bounds=(0, np.inf),
+            bounds=(0.0, np.inf),
             doc="shed demand of carrier",
             unit_category={"energy_quantity": 1, "time": -1},
         )
         # cost of shed demand
         variables.add_variable(
-            model,
             name="cost_shed_demand",
-            index_sets=cls.create_custom_set(
+            index_sets=self.create_custom_set(
                 ["set_carriers", "set_nodes", "set_time_steps_operation"],
-                optimization_setup,
+                zen_model,
+                energy_system,
             ),
-            bounds=(0, np.inf),
+            bounds=(0.0, np.inf),
             doc="shed demand of carrier",
             unit_category={"money": 1, "time": -1},
         )
 
-        # add pe.Sets of the child classes
-        for subclass in cls.__subclasses__():
-            if np.size(optimization_setup.system[subclass.label]):
-                subclass.construct_vars(optimization_setup)
-
-    @classmethod
-    def construct_constraints(cls, optimization_setup):
+    def construct_constraints(self, zen_model: ZenModel, energy_system: "EnergySystem"):
         """Constructs the Constraints of the class <Carrier>.
 
         :param optimization_setup: The OptimizationSetup the element is part of
         """
-        rules = CarrierRules(optimization_setup)
+        logger.info("Constructing constraints for Carrier")
+
+        rules = CarrierRules(self.config, self.context)
 
         # limit import/export flow by availability
-        rules.constraint_availability_import_export()
+        rules.constraint_availability_import_export(zen_model, energy_system)
 
         # limit import/export flow by availability for each year
-        rules.constraint_availability_import_export_yearly()
+        rules.constraint_availability_import_export_yearly(zen_model, energy_system)
 
         # cost for carrier
-        rules.constraint_cost_carrier()
+        rules.constraint_cost_carrier(zen_model, energy_system)
 
         # cost and limit for shed demand
-        rules.constraint_cost_limit_shed_demand()
+        rules.constraint_cost_limit_shed_demand(zen_model, energy_system)
 
         # total cost for carriers
-        rules.constraint_cost_carrier_total()
+        rules.constraint_cost_carrier_total(zen_model, energy_system)
 
         # carbon emissions
-        rules.constraint_carbon_emissions_carrier()
+        rules.constraint_carbon_emissions_carrier(zen_model, energy_system)
 
         # carbon emissions carrier
-        rules.constraint_carbon_emissions_carrier_total()
+        rules.constraint_carbon_emissions_carrier_total(zen_model, energy_system)
 
         # energy balance
-        rules.constraint_nodal_energy_balance()
-
-        # add pe.Sets of the child classes
-        for subclass in cls.__subclasses__():
-            if len(optimization_setup.system[subclass.label]) > 0:
-                subclass.construct_constraints(optimization_setup)
+        index_values, index_names = self.create_custom_set(
+            ["set_carriers", "set_nodes", "set_time_steps_operation"],
+            zen_model,
+            energy_system,
+        )
+        rules.constraint_nodal_energy_balance(
+            zen_model,
+            energy_system,
+            ZenIndex(index_values, index_names),
+            index_names[:1],
+        )
 
 
 class CarrierRules(GenericRule):
     """Rules for the Carrier class."""
 
-    def __init__(self, optimization_setup):
+    def __init__(self, config: Config, context: Context):
         """Inits the rules for a given EnergySystem.
 
         :param optimization_setup: The OptimizationSetup the element is part of
         """
-        super().__init__(optimization_setup)
+        super().__init__(config, context)
 
     # Rule-based constraints
     # ----------------------
 
-    def constraint_cost_carrier_total(self):
+    def constraint_cost_carrier_total(
+        self, zen_model: ZenModel, energy_system: "EnergySystem"
+    ):
         """Total cost of importing and exporting carrier.
 
         .. math::
@@ -375,21 +425,28 @@ class CarrierRules(GenericRule):
 
 
         """
-        times = self.get_year_time_step_duration_array()
+        times = self.get_year_time_step_duration_array(zen_model, energy_system)
         term_summed_cost_carrier = (
             (
-                self.variables["cost_carrier"].broadcast_like(times)
-                + self.variables["cost_shed_demand"].broadcast_like(times)
+                zen_model.lp_model.variables["cost_carrier"].broadcast_like(times)
+                + zen_model.lp_model.variables["cost_shed_demand"].broadcast_like(times)
             )
             * times
         ).sum(["set_carriers", "set_nodes", "set_time_steps_operation"])
-        lhs = self.variables["cost_carrier_total"] - term_summed_cost_carrier
+        lhs = (
+            zen_model.lp_model.variables["cost_carrier_total"]
+            - term_summed_cost_carrier
+        )
         rhs = 0
         constraints = lhs == rhs
 
-        self.constraints.add_constraint("constraint_cost_carrier_total", constraints)
+        zen_model.constraints.add_constraint(
+            "constraint_cost_carrier_total", constraints
+        )
 
-    def constraint_carbon_emissions_carrier_total(self):
+    def constraint_carbon_emissions_carrier_total(
+        self, zen_model: ZenModel, energy_system: "EnergySystem"
+    ):
         """Total carbon emissions of importing and exporting carrier.
 
         .. math::
@@ -402,21 +459,23 @@ class CarrierRules(GenericRule):
 
         """
         term_summed_carbon_emissions_carrier = (
-            self.variables["carbon_emissions_carrier"]
-            * self.get_year_time_step_duration_array()
+            zen_model.lp_model.variables["carbon_emissions_carrier"]
+            * self.get_year_time_step_duration_array(zen_model, energy_system)
         ).sum(["set_carriers", "set_nodes", "set_time_steps_operation"])
         lhs = (
-            self.variables["carbon_emissions_carrier_total"]
+            zen_model.lp_model.variables["carbon_emissions_carrier_total"]
             - term_summed_carbon_emissions_carrier
         )
         rhs = 0
         constraints = lhs == rhs
 
-        self.constraints.add_constraint(
+        zen_model.constraints.add_constraint(
             "constraint_carbon_emissions_carrier_total", constraints
         )
 
-    def constraint_availability_import_export(self):
+    def constraint_availability_import_export(
+        self, zen_model: ZenModel, energy_system: "EnergySystem"
+    ):
         """node- and time-dependent carrier availability to import/export from outside
         the system boundaries.
 
@@ -436,22 +495,24 @@ class CarrierRules(GenericRule):
         at node :math:`n` and time step :math:`t`
 
         """
-        lhs_imp = self.variables["flow_import"]
-        rhs_imp = self.parameters.availability_import
+        lhs_imp = zen_model.lp_model.variables["flow_import"]
+        rhs_imp = zen_model.parameters.availability_import
         constraints_imp = lhs_imp <= rhs_imp
 
-        lhs_exp = self.variables["flow_export"]
-        rhs_exp = self.parameters.availability_export
+        lhs_exp = zen_model.lp_model.variables["flow_export"]
+        rhs_exp = zen_model.parameters.availability_export
         constraints_exp = lhs_exp <= rhs_exp
 
-        self.constraints.add_constraint(
+        zen_model.constraints.add_constraint(
             "constraint_availability_import", constraints_imp
         )
-        self.constraints.add_constraint(
+        zen_model.constraints.add_constraint(
             "constraint_availability_export", constraints_exp
         )
 
-    def constraint_availability_import_export_yearly(self):
+    def constraint_availability_import_export_yearly(
+        self, zen_model: ZenModel, energy_system: "EnergySystem"
+    ):
         """node- and year-dependent carrier availability to import/export from outside
         the system boundaries.
 
@@ -476,35 +537,43 @@ class CarrierRules(GenericRule):
 
         """
         # The constraint is only constrained if the availability is finite
-        mask_imp = self.parameters.availability_import_yearly != np.inf
-        mask_exp = self.parameters.availability_export_yearly != np.inf
+        mask_imp = zen_model.parameters.availability_import_yearly != np.inf
+        mask_exp = zen_model.parameters.availability_export_yearly != np.inf
 
         # import
         lhs_imp = (
-            (self.variables["flow_import"] * self.get_year_time_step_duration_array())
+            (
+                zen_model.lp_model.variables["flow_import"]
+                * self.get_year_time_step_duration_array(zen_model, energy_system)
+            )
             .sum("set_time_steps_operation")
             .where(mask_imp)
         )
-        rhs_imp = self.parameters.availability_import_yearly.where(mask_imp)
+        rhs_imp = zen_model.parameters.availability_import_yearly.where(mask_imp)
         constraints_imp = lhs_imp <= rhs_imp
 
         # export
         lhs_exp = (
-            (self.variables["flow_export"] * self.get_year_time_step_duration_array())
+            (
+                zen_model.lp_model.variables["flow_export"]
+                * self.get_year_time_step_duration_array(zen_model, energy_system)
+            )
             .sum("set_time_steps_operation")
             .where(mask_exp)
         )
-        rhs_exp = self.parameters.availability_export_yearly.where(mask_exp)
+        rhs_exp = zen_model.parameters.availability_export_yearly.where(mask_exp)
         constraints_exp = lhs_exp <= rhs_exp
 
-        self.constraints.add_constraint(
+        zen_model.constraints.add_constraint(
             "constraint_availability_import_yearly", constraints_imp
         )
-        self.constraints.add_constraint(
+        zen_model.constraints.add_constraint(
             "constraint_availability_export_yearly", constraints_exp
         )
 
-    def constraint_cost_carrier(self):
+    def constraint_cost_carrier(
+        self, zen_model: ZenModel, energy_system: "EnergySystem"
+    ):
         """Cost of importing and exporting carrier.
 
         .. math::
@@ -523,16 +592,20 @@ class CarrierRules(GenericRule):
         """
         ### formulate constraint
         lhs = (
-            self.variables["cost_carrier"]
-            - self.parameters.price_import * self.variables["flow_import"]
-            + self.parameters.price_export * self.variables["flow_export"]
+            zen_model.lp_model.variables["cost_carrier"]
+            - zen_model.parameters.price_import
+            * zen_model.lp_model.variables["flow_import"]
+            + zen_model.parameters.price_export
+            * zen_model.lp_model.variables["flow_export"]
         )
         rhs = 0
         constraints = lhs == rhs
 
-        self.constraints.add_constraint("constraint_cost_carrier", constraints)
+        zen_model.constraints.add_constraint("constraint_cost_carrier", constraints)
 
-    def constraint_cost_limit_shed_demand(self):
+    def constraint_cost_limit_shed_demand(
+        self, zen_model: ZenModel, energy_system: "EnergySystem"
+    ):
         """Cost and limit of shedding demand of carrier.
 
         .. math::
@@ -550,28 +623,33 @@ class CarrierRules(GenericRule):
 
         """
         ### mask for finite price, otherwise the shed demand is zero
-        mask = self.parameters.price_shed_demand != np.inf
+        mask = zen_model.parameters.price_shed_demand != np.inf
 
         # cost of shedding demand
         lhs_cost = (
-            self.variables["cost_shed_demand"]
-            - self.parameters.price_shed_demand * self.variables["shed_demand"]
+            zen_model.lp_model.variables["cost_shed_demand"]
+            - zen_model.parameters.price_shed_demand
+            * zen_model.lp_model.variables["shed_demand"]
         ).where(mask)
         rhs_cost = 0
         constraints_cost = lhs_cost == rhs_cost
 
         # limit of shedding demand:
         #   either the demand (price != inf) or zero (price == inf)
-        lhs_shed_demand = self.variables["shed_demand"]
-        rhs_shed_demand = self.parameters.demand.where(mask, 0.0)
+        lhs_shed_demand = zen_model.lp_model.variables["shed_demand"]
+        rhs_shed_demand = zen_model.parameters.demand.where(mask, 0.0)
         constraints_shed_demand = lhs_shed_demand <= rhs_shed_demand
 
-        self.constraints.add_constraint("constraint_cost_shed_demand", constraints_cost)
-        self.constraints.add_constraint(
+        zen_model.constraints.add_constraint(
+            "constraint_cost_shed_demand", constraints_cost
+        )
+        zen_model.constraints.add_constraint(
             "constraint_limit_shed_demand", constraints_shed_demand
         )
 
-    def constraint_carbon_emissions_carrier(self):
+    def constraint_carbon_emissions_carrier(
+        self, zen_model: ZenModel, energy_system: "EnergySystem"
+    ):
         """Carbon emissions of importing and exporting carrier.
 
         .. math::
@@ -589,31 +667,39 @@ class CarrierRules(GenericRule):
 
         """
         # create times xarray with 1 where the operation time step is in the year
-        times = self.get_year_time_step_array()
+        times = self.get_year_time_step_array(zen_model, energy_system)
         # convert the carbon intensity carrier from yearly to operation time steps
         # TODO map and expand
         carbon_intensity_carrier_import = (
-            self.parameters.carbon_intensity_carrier_import.broadcast_like(times)
+            zen_model.parameters.carbon_intensity_carrier_import.broadcast_like(times)
             * times
         ).sum("set_time_steps_yearly")
         carbon_intensity_carrier_export = (
-            self.parameters.carbon_intensity_carrier_export.broadcast_like(times)
+            zen_model.parameters.carbon_intensity_carrier_export.broadcast_like(times)
             * times
         ).sum("set_time_steps_yearly")
-        lhs = self.variables["carbon_emissions_carrier"] - (
-            self.variables["flow_import"] * carbon_intensity_carrier_import
-            - self.variables["flow_export"] * carbon_intensity_carrier_export
+        lhs = zen_model.lp_model.variables["carbon_emissions_carrier"] - (
+            zen_model.lp_model.variables["flow_import"]
+            * carbon_intensity_carrier_import
+            - zen_model.lp_model.variables["flow_export"]
+            * carbon_intensity_carrier_export
         )
 
         rhs = 0
 
         constraints = lhs == rhs
 
-        self.constraints.add_constraint(
+        zen_model.constraints.add_constraint(
             "constraint_carbon_emissions_carrier", constraints
         )
 
-    def constraint_nodal_energy_balance(self):
+    def constraint_nodal_energy_balance(
+        self,
+        zen_model: ZenModel,
+        energy_system: "EnergySystem",
+        index: ZenIndex,
+        first_index_name,
+    ):
         """Nodal energy balance for each time step.
 
         .. math::
@@ -650,13 +736,6 @@ class CarrierRules(GenericRule):
 
 
         """
-        ### index sets
-        index_values, index_names = Carrier.create_custom_set(
-            ["set_carriers", "set_nodes", "set_time_steps_operation"],
-            self.optimization_setup,
-        )
-        index = ZenIndex(index_values, index_names)
-
         ### masks
         # not necessary
 
@@ -666,31 +745,31 @@ class CarrierRules(GenericRule):
 
         ### auxiliary calculations
         # carrier flow transport technologies
-        if self.variables["flow_transport"].size > 0:
+        if zen_model.lp_model.variables["flow_transport"].size > 0:
             # recalculate all the edges
             edges_in = {
-                node: self.energy_system.calculate_connected_edges(node, "in")
-                for node in self.sets["set_nodes"]
+                node: energy_system.calculate_connected_edges(node, "in")
+                for node in zen_model.sets["set_nodes"]
             }
             edges_out = {
-                node: self.energy_system.calculate_connected_edges(node, "out")
-                for node in self.sets["set_nodes"]
+                node: energy_system.calculate_connected_edges(node, "out")
+                for node in zen_model.sets["set_nodes"]
             }
             max_edges = max(
-                [len(edges_in[node]) for node in self.sets["set_nodes"]]
-                + [len(edges_out[node]) for node in self.sets["set_nodes"]]
+                [len(edges_in[node]) for node in zen_model.sets["set_nodes"]]
+                + [len(edges_out[node]) for node in zen_model.sets["set_nodes"]]
             )
 
             # create the variables
             flow_transport_in_vars = xr.DataArray(
                 -1,
                 coords=[
-                    self.parameters.demand.coords["set_carriers"],
-                    self.parameters.demand.coords["set_nodes"],
-                    self.parameters.demand.coords["set_time_steps_operation"],
+                    zen_model.parameters.demand.coords["set_carriers"],
+                    zen_model.parameters.demand.coords["set_nodes"],
+                    zen_model.parameters.demand.coords["set_time_steps_operation"],
                     xr.DataArray(
                         np.arange(
-                            len(self.sets["set_transport_technologies"])
+                            len(zen_model.sets["set_transport_technologies"])
                             * (2 * max_edges + 1)
                         ),
                         dims=["_term"],
@@ -707,20 +786,22 @@ class CarrierRules(GenericRule):
             for carrier, node in index.get_unique([0, 1]):
                 techs = [
                     tech
-                    for tech in self.sets["set_transport_technologies"]
-                    if carrier in self.sets["set_reference_carriers"][tech]
+                    for tech in zen_model.sets["set_transport_technologies"]
+                    if carrier in zen_model.sets["set_reference_carriers"][tech]
                 ]
-                edges_in = self.energy_system.calculate_connected_edges(node, "in")
-                edges_out = self.energy_system.calculate_connected_edges(node, "out")
+                edges_in = energy_system.calculate_connected_edges(node, "in")
+                edges_out = energy_system.calculate_connected_edges(node, "out")
 
                 # get the variables for the in flow
                 in_vars_plus = (
-                    self.variables["flow_transport"].labels.loc[techs, edges_in, :].data
+                    zen_model.lp_model.variables["flow_transport"]
+                    .labels.loc[techs, edges_in, :]
+                    .data
                 )
                 in_vars_plus = in_vars_plus.reshape((-1, in_vars_plus.shape[-1])).T
                 in_coefs_plus = np.ones_like(in_vars_plus)
                 in_vars_minus = (
-                    self.variables["flow_transport_loss"]
+                    zen_model.lp_model.variables["flow_transport_loss"]
                     .labels.loc[techs, edges_in, :]
                     .data
                 )
@@ -737,7 +818,7 @@ class CarrierRules(GenericRule):
 
                 # get the variables for the out flow
                 out_vars_plus = (
-                    self.variables["flow_transport"]
+                    zen_model.lp_model.variables["flow_transport"]
                     .labels.loc[techs, edges_out, :]
                     .data
                 )
@@ -755,7 +836,7 @@ class CarrierRules(GenericRule):
                 xr.Dataset(
                     {"coeffs": flow_transport_in_coeffs, "vars": flow_transport_in_vars}
                 ),
-                self.model,
+                zen_model.lp_model,
             )
             term_flow_transport_out = lp.LinearExpression(
                 xr.Dataset(
@@ -764,87 +845,91 @@ class CarrierRules(GenericRule):
                         "vars": flow_transport_out_vars,
                     }
                 ),
-                self.model,
+                zen_model.lp_model,
             )
         else:
             # if there is no carrier flow we just create empty arrays
             term_flow_transport_in = (
-                self.variables["flow_import"].where(False).to_linexpr()
+                zen_model.lp_model.variables["flow_import"]
+                .where(xr.DataArray(False))
+                .to_linexpr()
             )
             term_flow_transport_out = (
-                self.variables["flow_import"].where(False).to_linexpr()
+                zen_model.lp_model.variables["flow_import"]
+                .where(xr.DataArray(False))
+                .to_linexpr()
             )
 
         # carrier input and output conversion technologies
         term_carrier_conversion_in = []
         term_carrier_conversion_out = []
-        nodes = list(self.sets["set_nodes"])
+        nodes = list(zen_model.sets["set_nodes"])
         for carrier in index.get_unique([0]):
             techs_in = [
                 tech
-                for tech in self.sets["set_conversion_technologies"]
-                if carrier in self.sets["set_input_carriers"][tech]
+                for tech in zen_model.sets["set_conversion_technologies"]
+                if carrier in zen_model.sets["set_input_carriers"][tech]
             ]
             # we need to catch emtpy lookups
             carrier_in = [carrier] if len(techs_in) > 0 else []
             techs_out = [
                 tech
-                for tech in self.sets["set_conversion_technologies"]
-                if carrier in self.sets["set_output_carriers"][tech]
+                for tech in zen_model.sets["set_conversion_technologies"]
+                if carrier in zen_model.sets["set_output_carriers"][tech]
             ]
             # we need to catch emtpy lookups
             carrier_out = [carrier] if len(techs_out) > 0 else []
             term_carrier_conversion_in.append(
-                self.variables["flow_conversion_input"]
+                zen_model.lp_model.variables["flow_conversion_input"]
                 .loc[techs_in, carrier_in, nodes]
-                .sum(self.variables["flow_conversion_input"].dims[:2])
+                .sum(zen_model.lp_model.variables["flow_conversion_input"].dims[:2])
             )
             term_carrier_conversion_out.append(
-                self.variables["flow_conversion_output"]
+                zen_model.lp_model.variables["flow_conversion_output"]
                 .loc[techs_out, carrier_out, nodes]
-                .sum(self.variables["flow_conversion_output"].dims[:2])
+                .sum(zen_model.lp_model.variables["flow_conversion_output"].dims[:2])
             )
         # merge and regroup
         term_carrier_conversion_in = lp.merge(
             term_carrier_conversion_in, dim="group", join="outer", cls=LinearExpression
         )
-        term_carrier_conversion_in = self.optimization_setup.constraints.reorder_group(
+        term_carrier_conversion_in = zen_model.constraints.reorder_group(
             term_carrier_conversion_in,
             None,
             None,
             index.get_unique([0]),
-            index_names[:1],
-            self.model,
+            first_index_name,
+            zen_model.lp_model,
         )
         term_carrier_conversion_out = lp.merge(
             term_carrier_conversion_out, dim="group", join="outer", cls=LinearExpression
         )
-        term_carrier_conversion_out = self.optimization_setup.constraints.reorder_group(
+        term_carrier_conversion_out = zen_model.constraints.reorder_group(
             term_carrier_conversion_out,
             None,
             None,
             index.get_unique([0]),
-            index_names[:1],
-            self.model,
+            first_index_name,
+            zen_model.lp_model,
         )
 
         # carrier flow storage technologies
-        if self.variables["flow_storage_discharge"].size > 0:
+        if zen_model.lp_model.variables["flow_storage_discharge"].size > 0:
             term_flow_storage_discharge = []
             term_flow_storage_charge = []
             for carrier in index.get_unique([0]):
                 storage_techs = [
                     tech
-                    for tech in self.sets["set_storage_technologies"]
-                    if carrier in self.sets["set_reference_carriers"][tech]
+                    for tech in zen_model.sets["set_storage_technologies"]
+                    if carrier in zen_model.sets["set_reference_carriers"][tech]
                 ]
                 term_flow_storage_discharge.append(
-                    self.variables["flow_storage_discharge"]
+                    zen_model.lp_model.variables["flow_storage_discharge"]
                     .loc[storage_techs]
                     .sum("set_storage_technologies")
                 )
                 term_flow_storage_charge.append(
-                    self.variables["flow_storage_charge"]
+                    zen_model.lp_model.variables["flow_storage_charge"]
                     .loc[storage_techs]
                     .sum("set_storage_technologies")
                 )
@@ -855,15 +940,13 @@ class CarrierRules(GenericRule):
                 join="outer",
                 cls=LinearExpression,
             )
-            term_flow_storage_discharge = (
-                self.optimization_setup.constraints.reorder_group(
-                    term_flow_storage_discharge,
-                    None,
-                    None,
-                    index.get_unique([0]),
-                    index_names[:1],
-                    self.model,
-                )
+            term_flow_storage_discharge = zen_model.constraints.reorder_group(
+                term_flow_storage_discharge,
+                None,
+                None,
+                index.get_unique([0]),
+                first_index_name,
+                zen_model.lp_model,
             )
             term_flow_storage_charge = lp.merge(
                 term_flow_storage_charge,
@@ -871,31 +954,35 @@ class CarrierRules(GenericRule):
                 join="outer",
                 cls=LinearExpression,
             )
-            term_flow_storage_charge = (
-                self.optimization_setup.constraints.reorder_group(
-                    term_flow_storage_charge,
-                    None,
-                    None,
-                    index.get_unique([0]),
-                    index_names[:1],
-                    self.model,
-                )
+            term_flow_storage_charge = zen_model.constraints.reorder_group(
+                term_flow_storage_charge,
+                None,
+                None,
+                index.get_unique([0]),
+                first_index_name,
+                zen_model.lp_model,
             )
         else:
             # if there is no carrier flow we just create empty arrays
             term_flow_storage_discharge = (
-                self.variables["flow_import"].where(False).to_linexpr()
+                zen_model.lp_model.variables["flow_import"]
+                .where(xr.DataArray(False))
+                .to_linexpr()
             )
             term_flow_storage_charge = (
-                self.variables["flow_import"].where(False).to_linexpr()
+                zen_model.lp_model.variables["flow_import"]
+                .where(xr.DataArray(False))
+                .to_linexpr()
             )
 
         # carrier import, demand and export
-        term_carrier_import = self.variables["flow_import"].to_linexpr()
-        term_carrier_export = self.variables["flow_export"].to_linexpr()
-        term_carrier_demand = self.parameters.demand
+        term_carrier_import = zen_model.lp_model.variables["flow_import"].to_linexpr()
+        term_carrier_export = zen_model.lp_model.variables["flow_export"].to_linexpr()
+        term_carrier_demand = zen_model.parameters.demand
         # shed demand
-        term_carrier_shed_demand = self.variables["shed_demand"].to_linexpr()
+        term_carrier_shed_demand = zen_model.lp_model.variables[
+            "shed_demand"
+        ].to_linexpr()
 
         ### formulate the constraints
         lhs = lp.merge(
@@ -919,4 +1006,6 @@ class CarrierRules(GenericRule):
         constraints = lhs.sel(aligned_idx) == rhs.sel(aligned_idx)
 
         ### return
-        self.constraints.add_constraint("constraint_nodal_energy_balance", constraints)
+        zen_model.constraints.add_constraint(
+            "constraint_nodal_energy_balance", constraints
+        )

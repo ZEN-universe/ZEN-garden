@@ -11,35 +11,46 @@ import copy
 import logging
 import os
 from collections import defaultdict
+from pathlib import Path
 
-import linopy as lp
-import numpy as np
-import pandas as pd
-
-from zen_garden.model.component import Constraint, IndexSet, Parameter, Variable
-from zen_garden.model.element import Element
+from zen_garden.model import ELEMENT_TYPE_CLASSES
+from zen_garden.model.config import Config
+from zen_garden.model.context import Context
 from zen_garden.model.energy_system import EnergySystem
 from zen_garden.model.technology.technology import Technology
-from zen_garden.preprocess.parameter_change_log import parameter_change_log
+from zen_garden.model.zen_model import ZenModel
+from zen_garden.postprocess.postprocess import Postprocess
+from zen_garden.preprocess.scaling import Scaling
 from zen_garden.preprocess.time_series_aggregation import TimeSeriesAggregation
-from zen_garden.preprocess.unit_handling import Scaling
-from zen_garden.utils import IISConstraintParser, ScenarioDict, StringUtils
+from zen_garden.preprocess.unit_handling import UnitHandling
+from zen_garden.services.element_registry import ElementRegistry
+from zen_garden.services.model_construction_service import ModelConstructionService
+from zen_garden.utils import (
+    IISConstraintParser,
+    InputDataChecks,
+    ScenarioDict,
+    StringUtils,
+    resolve_dataset_paths,
+)
+
+logger = logging.getLogger(__name__)
 
 
 class OptimizationSetup(object):
     """Class defining the optimization model.
 
-    The class takes as inputs the properties of the optimization problem. The 
-    properties are saved in the dictionaries analysis and system which are 
-    passed to the class. After initializing the model, the class adds carriers 
+    The class takes as inputs the properties of the optimization problem. The
+    properties are saved in the dictionaries analysis and system which are
+    passed to the class. After initializing the model, the class adds carriers
     and technologies to the model and returns it. The class also includes a \
     method to solve the optimization problem.
     """
 
     # dict of element classes, this dict is filled in the __init__ of the package
-    dict_element_classes = {}
 
-    def __init__(self, config, scenario_dict: dict, input_data_checks):
+    def __init__(
+        self, raw_config, scenario_dict: dict, input_data_checks: InputDataChecks
+    ):
         """Setup optimization of the energy system.
 
         This function sets up the optimization process for the energy system
@@ -54,60 +65,99 @@ class OptimizationSetup(object):
                 verify the integrity of the input data.
 
         """
-        self.analysis = copy.deepcopy(config.analysis)
-        self.system = copy.deepcopy(config.system)
-        self.solver = copy.deepcopy(config.solver)
+        # Copying is necessary, because the config object is modified,
+        # e.g., in add_elements of ElementRegistry
+        self.analysis = copy.deepcopy(raw_config.analysis)
+        self.system = copy.deepcopy(raw_config.system)
+        self.solver = copy.deepcopy(raw_config.solver)
+        self.config = Config.from_setup(self.analysis, self.system, self.solver)
+
         self.input_data_checks = input_data_checks
         self.input_data_checks.optimization_setup = self
+        self.input_data_checks.config = self.config
         # create a dictionary with the paths to access the model inputs
         # check if input data exists
-        self.create_paths()
+        self.input_data_checks.check_primary_folder_structure()
+
+        self.paths = resolve_dataset_paths(self.config)
+        # self.element_list = self._build_element_list()
+
         # dict to update elements according to scenario
-        self.scenario_dict = ScenarioDict(scenario_dict, self, self.paths)
-        # check if all needed data inputs for the chosen technologies exist
-        # remove non-existent inputs
-        self.input_data_checks.check_existing_technology_data()
+        self.scenario_dict = ScenarioDict(
+            scenario_dict, ELEMENT_TYPE_CLASSES, self.paths, self.config
+        )
+
         # empty dict of elements (will be filled with class_name: instance_list)
         self.dict_elements = defaultdict(list)
         # read the parameter change log
-        self.parameter_change_log = parameter_change_log()
+        self.parameter_change_log = {
+            "min_full_load_hours_fraction": {
+                "default_value": 0,  # only 0, 1, or 'inf' are allowed
+                "unit": "min_load",
+            },
+            "capacity_lower_limit": {
+                "default_value": 0,  # only 0, 1, or 'inf' are allowed
+                "unit": "capacity_limit",
+            },
+            "capacity_lower_limit_energy": {
+                "default_value": 0,  # only 0, 1, or 'inf' are allowed
+                "unit": "capacity_limit_energy",
+            },
+            #    "new_parameter_name": {
+            #       "default_value": 0, # only 0, 1, or 'inf' are allowed
+            #       "unit": "existing_parameter_name_with_same_unit"
+            #   }
+        }
+
         # optimization model
-        self.model = None
-        # the components
-        self.variables = None
-        self.parameters = None
-        self.constraints = None
-        self.sets = None
+        self.zen_model: ZenModel | None = None
+        # self.model = None
+        # # the components
+        # self.variables = None
+        # self.parameters = None
+        # self.constraints = None
+        # self.sets = None
 
         # initiate dictionary for storing extra year data
         self.year_specific_ts = {}
 
-        # sorted list of class names
-        element_classes = self.dict_element_classes.keys()
-        carrier_classes = [
-            element_name
-            for element_name in element_classes
-            if "Carrier" in element_name
-        ]
-        technology_classes = [
-            element_name
-            for element_name in element_classes
-            if "Technology" in element_name
-        ]
-        self.element_list = technology_classes + carrier_classes
-
-        # step of optimization horizon
-        self.step_horizon = 0
+        self.context = Context.from_setup(
+            paths=self.paths,
+            element_classes=ELEMENT_TYPE_CLASSES,
+            scenario_dict=self.scenario_dict,
+            dict_elements=self.dict_elements,
+            parameter_change_log=self.parameter_change_log,
+            year_specific_ts=self.year_specific_ts,
+        )
+        self.input_data_checks.context = self.context
+        # check if all needed data inputs for the chosen technologies exist
+        # remove non-existent inputs
+        self.input_data_checks.check_existing_technology_data()
 
         # Init the energy system
-        self.energy_system = EnergySystem(optimization_setup=self)
+        self.unit_handling = UnitHandling(
+            Path(self.context.paths["energy_system"]["folder"]),
+            self.config.solver.rounding_decimal_points_units,
+        )
+        self.energy_system = EnergySystem(
+            self.config,
+            self.context,
+            self.unit_handling,
+        )
+        self.element_registry = ElementRegistry(
+            self.config,
+            self.context,
+            self.energy_system,
+            self.input_data_checks,
+            self.unit_handling,
+        )
 
         # add Elements to optimization
-        self.add_elements()
+        self.element_registry.add_elements()
 
         # check if all elements from the scenario_dict are in the model
         ScenarioDict.check_if_all_elements_in_model(
-            self.scenario_dict, self.dict_elements
+            self.context.scenario_dict, self.context.dict_elements
         )
 
         # The time series aggregation
@@ -120,460 +170,101 @@ class OptimizationSetup(object):
         self.read_input_csv()
 
         # conduct consistency checks of input units
-        self.energy_system.unit_handling.consistency_checks_input_units(
-            optimization_setup=self
+        self.unit_handling.consistency_checks_input_units(
+            self.config,
+            self.context,
+            self.energy_system,
+            self.element_registry,
         )
 
         # conduct time series aggregation
         self.time_series_aggregation = TimeSeriesAggregation(
-            energy_system=self.energy_system
+            self.energy_system,
+            self.config,
+            self.context,
+            self.element_registry,
         )
-
-    def create_paths(self):
-        """This method creates a dictionary with the paths of the data split
-        by carriers, networks, technologies.
-        """
-        ## General Paths
-        # define path to access dataset related to the current analysis
-        self.path_data = self.analysis.dataset
-        assert os.path.exists(
-            self.path_data
-        ), f"Folder for input data {self.analysis.dataset} does not exist!"
-        self.input_data_checks.check_primary_folder_structure()
-        self.paths = dict()
-        # create a dictionary with the keys based on the folders in path_data
-        for folder_name in next(os.walk(self.path_data))[1]:
-            self.paths[folder_name] = dict()
-            self.paths[folder_name]["folder"] = os.path.join(
-                self.path_data, folder_name
-            )
-        # add element paths and their file paths
-        stack = [self.analysis.subsets]
-        while stack:
-            cur_dict = stack.pop()
-            for set_name, subsets in cur_dict.items():
-                path = self.paths[set_name]["folder"]
-                if isinstance(subsets, dict):
-                    stack.append(subsets)
-                    self.add_folder_paths(set_name, path, list(subsets.keys()))
-                else:
-                    self.add_folder_paths(set_name, path, subsets)
-                    for element in subsets:
-                        if self.system[element]:
-                            self.add_folder_paths(
-                                element, self.paths[element]["folder"]
-                            )
-
-    def add_folder_paths(self, set_name, path, subsets=None):
-        """Add file paths of element to paths dictionary.
-
-        :param set_name: name of set
-        :param path: path to folder
-        :param subsets: list of subsets
-        """
-        if subsets is None:
-            subsets = []
-        for element in next(os.walk(path))[1]:
-            if element not in subsets:
-                self.paths[set_name][element] = dict()
-                self.paths[set_name][element]["folder"] = os.path.join(path, element)
-                sub_path = os.path.join(path, element)
-                for file in next(os.walk(sub_path))[2]:
-                    self.paths[set_name][element][file] = os.path.join(sub_path, file)
-                # add element paths to parent sets
-                parent_sets = self._find_parent_set(self.analysis.subsets, set_name)
-                for parent_set in parent_sets:
-                    self.paths[parent_set][element] = self.paths[set_name][element]
-            else:
-                self.paths[element] = dict()
-                self.paths[element]["folder"] = os.path.join(path, element)
-
-    def _find_parent_set(self, dictionary, subset, path=None):
-        """This method finds the parent sets of a subset.
-
-        :param dictionary: dictionary of subsets
-        :param subset: subset to find parent sets of
-        :param path: path to subset
-        :return: list of parent sets
-        """
-        if path is None:
-            path = []
-        for key, value in dictionary.items():
-            current_path = path + [key]
-            if subset in dictionary[key]:
-                return current_path
-            elif isinstance(value, dict):
-                result = self._find_parent_set(value, subset, current_path)
-                if result:
-                    return result
-        return []
-
-    def add_elements(self):
-        """Set up the parameters, variables and constraints of the carriers."""
-        logging.info("\n--- Add elements to model--- \n")
-        for element_name in self.element_list:
-            element_class = self.dict_element_classes[element_name]
-            element_name = element_class.label
-            element_set = self.system[element_name]
-
-            # before adding the carriers, get set_carriers
-            # check if carrier data exists
-            if element_name == "set_carriers":
-                element_set = self.energy_system.set_carriers
-                self.system.set_carriers = element_set
-                self.input_data_checks.check_existing_carrier_data()
-
-            # check if element_set has a subset and remove subset from element_set
-            if element_name in self.analysis.subsets.keys():
-                if isinstance(self.analysis.subsets[element_name], list):
-                    subset_names = self.analysis.subsets[element_name]
-                elif isinstance(self.analysis.subsets[element_name], dict):
-                    subset_names = self.analysis.subsets[element_name].keys()
-                else:
-                    raise ValueError(
-                        f"Subset {element_name} has to be either a list or a dict"
-                    )
-                element_subset = [
-                    item for subset in subset_names for item in self.system[subset]
-                ]
-            else:
-                stack = [
-                    _dict
-                    for _dict in copy.deepcopy(self.analysis.subsets).values()
-                    if isinstance(_dict, dict)
-                ]
-                while stack:  # check if element_set is a subset of a subset
-                    cur_dict = stack.pop()
-                    element_subset = []
-                    for set_name, subsets in cur_dict.items():
-                        if element_name == set_name:
-                            if isinstance(subsets, list):
-                                element_subset += [
-                                    item
-                                    for subset_name in subsets
-                                    for item in self.system[subset_name]
-                                ]
-                        if isinstance(subsets, dict):
-                            stack.append(subsets)
-            element_set = list(set(element_set) - set(element_subset))
-
-            element_set.sort()
-            # add element class
-            for item in element_set:
-                self.add_element(element_class, item)
 
     def read_input_csv(self):
         """Read the input and conducts the time series aggregation."""
-        logging.info("\n--- Read input data of elements --- \n")
+        logger.info("\n--- Read input data of elements --- \n")
         self.energy_system.store_input_data()
-        for element in self.dict_elements["Element"]:
+        for element in self.context.dict_elements["Element"]:
             element_class = [
-                k
-                for k, v in self.dict_element_classes.items()
-                if v == element.__class__
+                k for k, v in ELEMENT_TYPE_CLASSES.items() if v == element.__class__
             ][0]
-            logging.info(f"Create {element_class} {element.name}")
+            logger.info(f"Create {element_class} {element.name}")
             element.store_input_data()
 
-    def add_element(self, element_class, name):
-        """Add an element to the element_dict with the class labels as key.
-
-        Args:
-            element_class: Class of the element
-            name: Name of the element
-        """
-        # get the instance
-        instance = element_class(name, self)
-        # add to class specific list
-        self.dict_elements[element_class.__name__].append(instance)
-        # Add the instance to all parents as well
-        for cls in element_class.__mro__:
-            if not cls == element_class:
-                self.dict_elements[cls.__name__].append(instance)
-
-    def get_all_elements(self, cls):
-        """Get all elements of the class in the energy system."""
-        return self.dict_elements[cls.__name__]
-
-    def get_all_names_of_elements(self, cls):
-        """Get all names of elements in class.
-
-        :param cls: class of the elements to return
-        :return: names_of_elements: list of elements in this class
-        """
-        _elements_in_class = self.get_all_elements(cls=cls)
-        names_of_elements = []
-        for _element in _elements_in_class:
-            names_of_elements.append(_element.name)
-        return names_of_elements
-
-    def get_element(self, cls, name: str):
-        """Get single element in class by name.
-
-        :param name: name of element
-        :param cls: class of the elements to return
-        :return: element: return element whose name is matched
-        """
-        for element in self.get_all_elements(cls=cls):
-            if element.name == name:
-                return element
-        return None
-
-    def get_element_class(self, name: str):
-        """Get element class by name. If not an element class, return None.
-
-        :param name: name of element class
-        :return: element_class: return element whose name is matched
-        """
-        element_classes = {
-            self.dict_element_classes[class_name].label: self.dict_element_classes[
-                class_name
-            ]
-            for class_name in self.dict_element_classes
-        }
-        if name in element_classes.keys():
-            return element_classes[name]
-        else:
-            return None
-
-    def get_class_set_of_element(self, element_name: str, klass):
-        """Returns the set of all elements in the class of the element.
-
-        :param element_name: name of element
-        :param klass: class of the elements to return
-        :return: class_set: set of all elements in the class of the element
-        """
-        class_name = self.get_element(klass, element_name).__class__.label
-        class_set = self.sets[class_name]
-        return class_set
-
-    def get_attribute_of_all_elements(
-        self,
-        cls,
-        attribute_name: str,
-        capacity_types=False,
-        return_attribute_is_series=False,
-    ):
-        """Get attribute values of all elements in a class.
-
-        Args:
-            cls: class of the elements to return
-            attribute_name (str): name of attribute
-            capacity_types (boolean): if attributes extracted for all capacity types
-            return_attribute_is_series (boolean): if information on attribute type is
-                returned
-            dict_of_attributes (dict): dict of attribute values
-            attribute_is_series: return information on attribute type
-        """
-        class_elements = self.get_all_elements(cls=cls)
-        dict_of_attributes = {}
-        dict_of_units = {}
-        attribute_is_series = False
-        for element in class_elements:
-            if not capacity_types:
-                dict_of_attributes, attribute_is_series_temp, dict_of_units = (
-                    self.append_attribute_of_element_to_dict(
-                        element, attribute_name, dict_of_attributes, dict_of_units
-                    )
-                )
-                if attribute_is_series_temp:
-                    attribute_is_series = attribute_is_series_temp
-            # if extracted for both capacity types
-            else:
-                for capacity_type in self.system.set_capacity_types:
-                    # append energy only for storage technologies
-                    if (
-                        capacity_type == self.system.set_capacity_types[0]
-                        or element.name in self.system.set_storage_technologies
-                    ):
-                        dict_of_attributes, attribute_is_series_temp, dict_of_units = (
-                            self.append_attribute_of_element_to_dict(
-                                element,
-                                attribute_name,
-                                dict_of_attributes,
-                                dict_of_units,
-                                capacity_type,
-                            )
-                        )
-                        if attribute_is_series_temp:
-                            attribute_is_series = attribute_is_series_temp
-        if return_attribute_is_series:
-            return dict_of_attributes, dict_of_units, attribute_is_series
-        else:
-            return dict_of_attributes
-
-    def append_attribute_of_element_to_dict(
-        self,
-        element,
-        attribute_name,
-        dict_of_attributes,
-        dict_of_units,
-        capacity_type=None,
-    ):
-        """Get attribute values of all elements in this class.
-
-        Args:
-            element: element of class
-            attribute_name (str): str name of attribute
-            dict_of_attributes (dict): dict of attribute values
-            capacity_type: capacity type for which attribute extracted. If None,
-                not listed in key
-            dict_of_attributes: returns dict of attribute values
-        """
-        attribute_is_series = False
-        # add Energy for energy capacity type
-        if capacity_type == self.system.set_capacity_types[1]:
-            attribute_name += "_energy"
-        # if element does not have attribute
-        if not hasattr(element, attribute_name):
-            # if attribute is time series that does not exist
-            if (
-                attribute_name in element.raw_time_series
-                and element.raw_time_series[attribute_name] is None
-            ):
-                return dict_of_attributes, None, dict_of_units
-            else:
-                raise AssertionError(
-                    f"Element {element.name} does not have attribute {attribute_name}"
-                )
-        attribute = getattr(element, attribute_name)
-        assert not isinstance(attribute, pd.DataFrame), (
-            "Not yet implemented for pd.DataFrames. Wrong format for"
-            f"element {element.name}"
-        )
-        # add attribute to dict_of_attributes
-        if attribute is None:
-            return dict_of_attributes, False, dict_of_units
-        elif isinstance(attribute, dict):
-            dict_of_attributes.update(
-                {(element.name,) + (key,): val for key, val in attribute.items()}
-            )
-        elif isinstance(attribute, pd.Series):
-            if capacity_type:
-                combined_key = (element.name, capacity_type)
-            else:
-                combined_key = element.name
-            if attribute_name in element.units:
-                if attribute_name in [
-                    "conversion_factor",
-                    "retrofit_flow_coupling_factor",
-                ]:
-                    dict_of_units[combined_key] = element.units[attribute_name]
-                else:
-                    dict_of_units[combined_key] = element.units[attribute_name][
-                        "unit_in_base_units"
-                    ].units
-            else:
-                # needed since these
-                if attribute_name == "capex_capacity_existing":
-                    dict_of_units[combined_key] = element.units["opex_specific_fixed"][
-                        "unit_in_base_units"
-                    ].units
-                elif attribute_name == "capex_capacity_existing_energy":
-                    dict_of_units[combined_key] = element.units[
-                        "opex_specific_fixed_energy"
-                    ]["unit_in_base_units"].units
-                elif attribute_name == "capex_specific_transport":
-                    dict_of_units[combined_key] = element.units["opex_specific_fixed"][
-                        "unit_in_base_units"
-                    ].units
-                elif attribute_name == "capex_per_distance_transport":
-                    base_units = self.energy_system.unit_handling.base_units.items()
-                    length_base_unit = [
-                        key for key, value in base_units if value == "[length]"
-                    ][0]
-                    dict_of_units[combined_key] = element.units["opex_specific_fixed"][
-                        "unit_in_base_units"
-                    ].units / self.energy_system.unit_handling.ureg(length_base_unit)
-            if len(attribute) > 1:
-                dict_of_attributes[combined_key] = attribute
-                attribute_is_series = True
-            else:
-                if attribute.index == 0:
-                    dict_of_attributes[combined_key] = attribute.squeeze()
-                    attribute_is_series = False
-                # since single-directed edges are allowed to exist (e.g. CH-DE exists,
-                # DE-CH doesn't), TransportTechnology attributes shared with other
-                # technologies (such as capacity existing)
-                # mustn't be squeezed even-though the attributes length is smaller than
-                # 1. Otherwise, pd.concat(dict_of_attributes) messes up in
-                # initialize_component(), leading to an error further on in the code.
-                else:
-                    dict_of_attributes[combined_key] = attribute
-                    attribute_is_series = True
-        elif isinstance(attribute, int):
-            if capacity_type:
-                dict_of_attributes[(element.name, capacity_type)] = [attribute]
-            else:
-                dict_of_attributes[element.name] = [attribute]
-        else:
-            if capacity_type:
-                dict_of_attributes[(element.name, capacity_type)] = attribute
-            else:
-                dict_of_attributes[element.name] = attribute
-        return dict_of_attributes, attribute_is_series, dict_of_units
-
-    def get_attribute_of_specific_element(
-        self, cls, element_name: str, attribute_name: str
-    ):
-        """Get attribute of specific element in class.
-
-        :param cls: class of the elements to return
-        :param element_name: str name of element
-        :param attribute_name: str name of attribute
-        :return: attribute_value: value of attribute
-        """
-        # get element
-        element = self.get_element(cls, element_name)
-        # assert that _element exists and has attribute
-        assert element, f"Element {element_name} not in class {cls.__name__}"
-        assert hasattr(
-            element, attribute_name
-        ), f"Element {element_name} does not have attribute {attribute_name}"
-        attribute_value = getattr(element, attribute_name)
-        return attribute_value
-
-    def construct_optimization_problem(self):
+    def construct_optimization_problem(self) -> ZenModel:
         """Constructs the optimization problem."""
         # create empty ConcreteModel
-        if self.solver.solver_dir is not None and not os.path.exists(
-            self.solver.solver_dir
+        if self.config.solver.solver_dir is not None and not os.path.exists(
+            self.config.solver.solver_dir
         ):
-            os.makedirs(self.solver.solver_dir)
-        self.model = lp.Model(solver_dir=self.solver.solver_dir)
-        # we need to reset the components to not carry them over
-        self.sets = IndexSet()
-        self.variables = Variable(self)
-        self.parameters = Parameter(self)
-        self.constraints = Constraint(self.sets, self.model)
-        # define and construct components of self.model
-        Element.construct_model_components(self)
-        # Initiate scaling object
-        self.scaling = Scaling(
-            self.model, self.solver.scaling_algorithm, self.solver.scaling_include_rhs
+            os.makedirs(self.config.solver.solver_dir)
+
+        service = ModelConstructionService(
+            self.config,
+            self.context,
+            self.energy_system,
+            self.element_registry,
+            self.unit_handling,
         )
+        self.zen_model = service.construct_model()
+
+        self.scaling = Scaling(
+            self.zen_model.lp_model,
+            self.config.solver.scaling_algorithm,
+            self.config.solver.scaling_include_rhs,
+        )
+
+        return self.zen_model
+
+        # self.model = lp.Model(solver_dir=self.config.solver.solver_dir)
+        # # we need to reset the components to not carry them over
+        # self.sets = IndexSet()
+        # self.variables = Variable(self, self.config, self.context)
+        # self.parameters = Parameter(self)
+        # self.constraints = Constraint(self.sets, self.model)
+        # zen_model = ZenModel(self.config, self.context, self.energy_system)
+
+        # define and construct components of self.model
+        # Element.construct_model_components(self, zen_model)
+
+        # self.energy_balance.construct_model_components(zen_model)
+        # for element in self.context.element_classes:
+        #     element.construct_model_components(zen_model)
+
+        # Initiate scaling object
+        # self.scaling = Scaling(
+        #     self.model,
+        #     self.config.solver.scaling_algorithm,
+        #     self.config.solver.scaling_include_rhs,
+        # )
 
     def get_optimization_horizon(self):
         """Returns list of optimization horizon steps."""
         # if using rolling horizon
-        if self.system.use_rolling_horizon:
+        if self.config.system.use_rolling_horizon:
             assert (
-                self.system.years_in_rolling_horizon
-                >= self.system.years_in_decision_horizon
+                self.config.system.years_in_rolling_horizon
+                >= self.config.system.years_in_decision_horizon
             ), (
                 "There must be at least the same number of years in the rolling"
                 "horizon as the decision horizon. years_in_rolling_horizon"
-                f"({self.system.years_in_rolling_horizon}) < years_in_decision_horizon "
-                f"({self.system.years_in_decision_horizon})"
+                f"({self.config.system.years_in_rolling_horizon}) "
+                "< years_in_decision_horizon "
+                f"({self.config.system.years_in_decision_horizon})"
             )
-            self.years_in_horizon = self.system.years_in_rolling_horizon
+            self.years_in_horizon = self.config.system.years_in_rolling_horizon
             time_steps_yearly = self.energy_system.set_time_steps_yearly
             # skip years_in_decision_horizon years
             self.optimized_time_steps = [
                 year
                 for year in time_steps_yearly
                 if (
-                    year % self.system.years_in_decision_horizon == 0
+                    year % self.config.system.years_in_decision_horizon == 0
                     or year == time_steps_yearly[-1]
                 )
             ]
@@ -627,8 +318,7 @@ class OptimizationSetup(object):
 
         :param step_horizon: step of the rolling horizon
         """
-        if self.system.use_rolling_horizon:
-            self.step_horizon = step_horizon
+        if self.config.system.use_rolling_horizon:
             time_steps_yearly_horizon = self.steps_horizon[step_horizon]
             base_time_steps_horizon = (
                 self.energy_system.time_steps.decode_yearly_time_steps(
@@ -660,57 +350,65 @@ class OptimizationSetup(object):
 
     def solve(self):
         """Create model instance by assigning parameter values and initializing sets."""
-        solver_name = self.solver.name
+        assert (
+            self.zen_model is not None
+        ), "The optimization model has not been constructed yet."
+
+        solver_name = self.config.solver.name
         # remove options that are None
         solver_options = {
-            key: self.solver.solver_options[key]
-            for key in self.solver.solver_options
-            if self.solver.solver_options[key] is not None
+            key: self.config.solver.solver_options[key]
+            for key in self.config.solver.solver_options
+            if self.config.solver.solver_options[key] is not None
         }
 
-        logging.info(f"\n--- Solve model instance using {solver_name} ---\n")
+        logger.info(f"\n--- Solve model instance using {solver_name} ---\n")
         # disable logger temporarily
         logging.disable(logging.WARNING)
 
         if solver_name == "gurobi":
-            self.model.solve(
+            self.zen_model.lp_model.solve(
                 solver_name=solver_name,
-                io_api=self.solver.io_api,
-                keep_files=self.solver.keep_files,
+                io_api=self.config.solver.io_api,
+                keep_files=self.config.solver.keep_files,
                 sanitize_zeros=True,
                 # remaining kwargs are passed to the solver
                 **solver_options,
             )
         else:
-            self.model.solve(
+            self.zen_model.lp_model.solve(
                 solver_name=solver_name,
-                io_api=self.solver.io_api,
-                keep_files=self.solver.keep_files,
+                io_api=self.config.solver.io_api,
+                keep_files=self.config.solver.keep_files,
                 sanitize_zeros=True,
             )
         # enable logger
         logging.disable(logging.NOTSET)
-        if self.model.termination_condition == "optimal":
+        if self.zen_model.lp_model.termination_condition == "optimal":
             self.optimality = True
-        elif self.model.termination_condition == "suboptimal":
-            logging.warning("The optimization is suboptimal")
+        elif self.zen_model.lp_model.termination_condition == "suboptimal":
+            logger.warning("The optimization is suboptimal")
             self.optimality = True
         else:
             self.optimality = False
 
     def write_IIS(self, scenario=""):
         """Write an ILP file to print the IIS if infeasible and using Gurobi."""
+        assert (
+            self.zen_model is not None
+        ), "The optimization model has not been constructed yet."
+
         if (
-            self.model.termination_condition == "infeasible"
-            and self.solver.name == "gurobi"
+            self.zen_model.lp_model.termination_condition == "infeasible"
+            and self.config.solver.name == "gurobi"
         ):
-            output_folder = StringUtils.get_output_folder(self.analysis)
+            output_folder = StringUtils.get_output_folder(self.config.analysis)
             ilp_file = os.path.join(
                 output_folder,
                 f"infeasible_model_IIS{f'_{scenario}' if scenario else ''}.ilp",
             )
-            logging.info(f"Writing parsed IIS to {ilp_file}")
-            parser = IISConstraintParser(ilp_file, self.model)
+            logger.info(f"Writing parsed IIS to {ilp_file}")
+            parser = IISConstraintParser(ilp_file, self.zen_model.lp_model)
             parser.write_parsed_output()
 
     def add_results_of_optimization_step(self, step_horizon):
@@ -754,25 +452,37 @@ class OptimizationSetup(object):
             None
 
         """
+        assert (
+            self.zen_model is not None
+        ), "The optimization model has not been constructed yet."
         capacity_addition = (
-            self.model.solution["capacity_addition"].to_series().dropna()
+            self.zen_model.lp_model.solution["capacity_addition"].to_series().dropna()
         )
         invest_capacity = (
-            self.model.solution["capacity_investment"].to_series().dropna()
+            self.zen_model.lp_model.solution["capacity_investment"].to_series().dropna()
         )
         cost_capex_overnight = (
-            self.model.solution["cost_capex_overnight"].to_series().dropna()
+            self.zen_model.lp_model.solution["cost_capex_overnight"]
+            .to_series()
+            .dropna()
         )
 
-        if self.solver.round_parameters:
-            rounding_value = 10 ** (-self.solver.rounding_decimal_points_capacity)
+        if self.config.solver.round_parameters:
+            rounding_value = 10 ** (
+                -self.config.solver.rounding_decimal_points_capacity
+            )
         else:
             rounding_value = 0
         capacity_addition[capacity_addition <= rounding_value] = 0
         invest_capacity[invest_capacity <= rounding_value] = 0
         cost_capex_overnight[cost_capex_overnight <= rounding_value] = 0
 
-        for tech in self.get_all_elements(Technology):
+        for tech in self.element_registry.get_all_elements(Technology):
+            if not isinstance(tech, Technology):
+                raise TypeError(
+                    f"Element {tech.name} is not of type Technology, "
+                    f"but of type {type(tech)}"
+                )
             # new capacity
             capacity_addition_tech = capacity_addition.loc[tech.name].unstack()
             capacity_investment = invest_capacity.loc[tech.name].unstack()
@@ -796,113 +506,60 @@ class OptimizationSetup(object):
             None
 
         """
-        interval_between_years = self.energy_system.system.interval_between_years
+        assert (
+            self.zen_model is not None
+        ), "The optimization model has not been constructed yet."
+        interval_between_years = self.config.system.interval_between_years
         last_year = decision_horizon[-1]
         carbon_emissions_cumulative = (
-            self.model.solution["carbon_emissions_cumulative"].loc[last_year].item()
+            self.zen_model.lp_model.solution["carbon_emissions_cumulative"]
+            .loc[last_year]
+            .item()
         )
         carbon_emissions_annual = (
-            self.model.solution["carbon_emissions_annual"].loc[last_year].item()
+            self.zen_model.lp_model.solution["carbon_emissions_annual"]
+            .loc[last_year]
+            .item()
         )
         self.energy_system.carbon_emissions_cumulative_existing = (
             carbon_emissions_cumulative
             + carbon_emissions_annual * (interval_between_years - 1)
         )
 
-    def initialize_component(
+    def write_results(
         self,
-        calling_class,
-        component_name,
-        index_names=None,
-        set_time_steps=None,
-        capacity_types=False,
+        scenarios,
+        subfolder: tuple[Path, Path] | Path,
+        model_name,
+        scenario_name,
+        param_map,
     ):
-        """Initialize a modeling component by extracting the stored input data.
+        """Write results of the optimization to files.
+
+        This function writes the results of the optimization to files in the
+        specified subfolder. It also saves the optimization setup and unit handling
+        objects for future use.
 
         Args:
-            calling_class: class from where the method is called
-            component_name: name of modeling component
-            index_names: names of index sets, only if calling_class is not EnergySystem
-            set_time_steps: time steps, only if calling_class is EnergySystem
-            capacity_types: boolean if extracted for capacities
-            component_data: data to initialize the component
+            subfolder (str): The subfolder where the results will be saved.
+            model_name (str): The name of the optimization model.
+            scenario_name (str): The name of the scenario being optimized.
+            param_map (dict): A dictionary mapping parameter names to their values.
         """
-        # if calling class is EnergySystem
-        if calling_class == EnergySystem:
-            component = getattr(self.energy_system, component_name)
-            dict_of_units = {}
-            if component_name in self.energy_system.units:
-                dict_of_units = self.energy_system.units[component_name]
-            if index_names is not None:
-                index_list = index_names
-            elif set_time_steps is not None:
-                index_list = [set_time_steps]
-            else:
-                index_list = []
-            if set_time_steps:
-                component_data = component[self.sets[set_time_steps]]
-            elif type(component) is float:
-                component_data = component
-            else:
-                component_data = component.squeeze()
-        else:
-            if index_names is None:
-                raise ValueError(f"Index names for {component_name} not specified")
-            custom_set, index_list = calling_class.create_custom_set(index_names, self)
-            component_data, dict_of_units, attribute_is_series = (
-                self.get_attribute_of_all_elements(
-                    calling_class,
-                    component_name,
-                    capacity_types=capacity_types,
-                    return_attribute_is_series=True,
-                )
-            )
-            if np.size(custom_set):
-                if attribute_is_series:
-                    component_data = pd.concat(
-                        component_data, keys=component_data.keys()
-                    )
-                else:
-                    component_data = pd.Series(component_data)
-                component_data = self.check_for_subindex(component_data, custom_set)
-        if isinstance(component_data, pd.Series) and not isinstance(
-            component_data.index, pd.MultiIndex
-        ):
-            component_data.index = pd.MultiIndex.from_product(
-                [component_data.index.to_list()]
-            )
-        return component_data, index_list, dict_of_units
-
-    def check_for_subindex(self, component_data, custom_set):
-        """Check if the custom_set can be a subindex of component_data.
-
-        returns subindexed component_data.
-
-        :param component_data: extracted data as pd.Series
-        :param custom_set: custom set as subindex of component_data
-        :return: component_data: extracted subindexed data as pd.Series
-        """
-        # if custom_set is subindex of component_data, return subset of component_data
-        try:
-            if len(component_data) == len(custom_set) and len(custom_set[0]) == len(
-                component_data.index[0]
-            ):
-                return component_data
-            else:
-                return component_data[custom_set]
-        # else delete trivial index levels (that have a single value) and try again
-        except Exception:
-            _custom_index = pd.Index(custom_set)
-            _reduced_custom_index = _custom_index.copy()
-            for _level, _shape in enumerate(_custom_index.levshape):
-                if _shape == 1:
-                    _reduced_custom_index = _reduced_custom_index.droplevel(_level)
-            try:
-                component_data = component_data[_reduced_custom_index]
-                component_data.index = _custom_index
-                return component_data
-            except KeyError as err:
-                raise KeyError(
-                    f"the custom set {custom_set} cannot be used as a subindex of"
-                    f"{component_data.index}"
-                ) from err
+        assert (
+            self.zen_model is not None
+        ), "The optimization model has not been constructed yet."
+        Postprocess(
+            self.config,
+            self.context,
+            self.unit_handling,
+            self.zen_model,
+            self.energy_system,
+            self.scaling,
+            optimized_time_steps=self.optimized_time_steps,
+            scenarios=scenarios,
+            model_name=model_name,
+            subfolder=subfolder,
+            scenario_name=scenario_name,
+            param_map=param_map,
+        )

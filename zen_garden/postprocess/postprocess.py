@@ -9,6 +9,7 @@ import logging
 import os
 import warnings
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import numpy as np
 import pandas as pd
@@ -19,7 +20,15 @@ from filelock import FileLock
 from pydantic import BaseModel
 from tables import NaturalNameWarning
 
-from ..optimization_setup import OptimizationSetup
+if TYPE_CHECKING:
+    from zen_garden.model.config import Config
+    from zen_garden.model.context import Context
+    from zen_garden.model.energy_system import EnergySystem
+    from zen_garden.model.zen_model import ZenModel
+    from zen_garden.preprocess.scaling import Scaling
+    from zen_garden.preprocess.unit_handling import UnitHandling
+
+logger = logging.getLogger(__name__)
 
 # Warnings
 warnings.filterwarnings("ignore", category=NaturalNameWarning)
@@ -30,12 +39,18 @@ class Postprocess:
 
     def __init__(
         self,
-        optimization_setup: OptimizationSetup,
+        config: "Config",
+        context: "Context",
+        unit_handling: "UnitHandling",
+        zen_model: "ZenModel",
+        energy_system: "EnergySystem",
+        scaling: "Scaling",
+        optimized_time_steps: list[int],
         scenarios,
         model_name,
-        subfolder=None,
-        scenario_name=None,
-        param_map=None,
+        subfolder: tuple[Path, Path] | Path,
+        scenario_name: str | None,
+        param_map,
     ):
         """Postprocessing of the results of the optimization.
 
@@ -45,25 +60,26 @@ class Postprocess:
         :param scenario_name: The name of the current scenario
         :param param_map: A dictionary mapping the parameters to the scenario names
         """
-        logging.info("--- Postprocess results ---")
+        logger.info("--- Postprocess results ---")
         # get the necessary stuff from the model
-        self.optimization_setup = optimization_setup
-        self.model = optimization_setup.model
+        self.config = config
+        self.context = context
+        self.unit_handling = unit_handling
+        self.zen_model = zen_model
+        self.energy_system = energy_system
+
+        self.model = zen_model.lp_model
+
+        self.optimized_time_steps = optimized_time_steps
         self.scenarios = scenarios
-        self.system = optimization_setup.system
-        self.analysis = optimization_setup.analysis
-        self.solver = optimization_setup.solver
-        self.energy_system = optimization_setup.energy_system
-        self.params = optimization_setup.parameters
-        self.vars = optimization_setup.variables
-        self.sets = optimization_setup.sets
-        self.constraints = optimization_setup.constraints
         self.param_map = param_map
-        self.scaling = optimization_setup.scaling
+        self.scaling = scaling
 
         # get name or directory
         self.model_name = model_name
-        self.name_dir = Path(self.analysis.folder_output).joinpath(self.model_name)
+        self.name_dir = Path(self.config.analysis.folder_output).joinpath(
+            self.model_name
+        )
 
         # deal with the subfolder
         self.subfolder = subfolder
@@ -82,9 +98,9 @@ class Postprocess:
         os.makedirs(self.name_dir, exist_ok=True)
 
         # check if we should overwrite output
-        self.overwrite = self.analysis.overwrite_output
+        self.overwrite = self.config.analysis.overwrite_output
         # get the compression param
-        self.output_format = self.analysis.output_format
+        self.output_format = self.config.analysis.output_format
 
         # save everything
         self.save_sets()
@@ -99,7 +115,7 @@ class Postprocess:
         self.save_unit_definitions()
         self.save_sequence_time_steps(scenario=scenario_name)
         self.save_param_map()
-        if self.solver.run_diagnostics:
+        if self.config.solver.run_diagnostics:
             self.save_benchmarking_data()
 
     def write_file(self, name, dictionary, format=None, mode="w"):
@@ -122,7 +138,7 @@ class Postprocess:
         # check whether valid mode
         if mode not in ["a", "w"]:
             ValueError(
-                f"Invalid file write mode {mode} (valid options are 'a' or " "'w')."
+                f"Invalid file write mode {mode} (valid options are 'a' or 'w')."
             )
 
         # set the format
@@ -192,10 +208,10 @@ class Postprocess:
         benchmarking_data = dict()
         # get the benchmarking data
         benchmarking_data["objective_value"] = self.model.objective.value
-        if self.solver.name == "gurobi":
+        if self.config.solver.name == "gurobi":
             benchmarking_data["solving_time"] = self.model.solver_model.Runtime
-            if "Method" in self.solver.solver_options:
-                if self.solver.solver_options["Method"] == 2:
+            if "Method" in self.config.solver.solver_options:
+                if self.config.solver.solver_options["Method"] == 2:
                     benchmarking_data["number_iterations"] = (
                         self.model.solver_model.BarIterCount
                     )
@@ -206,7 +222,7 @@ class Postprocess:
             benchmarking_data["solver_status"] = self.model.solver_model.Status
             benchmarking_data["number_constraints"] = self.model.solver_model.NumConstrs
             benchmarking_data["number_variables"] = self.model.solver_model.NumVars
-        elif self.solver.name == "highs":
+        elif self.config.solver.name == "highs":
             benchmarking_data["solver_status"] = (
                 self.model.solver_model.getModelStatus().name
             )
@@ -219,8 +235,8 @@ class Postprocess:
             )
             benchmarking_data["number_variables"] = self.model.solver_model.getNumCol()
         else:
-            logging.info(
-                f"Saving benchmarking data for solver {self.solver.name} has "
+            logger.info(
+                f"Saving benchmarking data for solver {self.config.solver.name} has "
                 "not been implemented yet"
             )
 
@@ -241,7 +257,7 @@ class Postprocess:
         """
         # dataframe serialization
         data_frames = {}
-        for set in self.sets:
+        for set in self.zen_model.sets:
             if not set.is_indexed():
                 continue
             vals = set.data
@@ -280,7 +296,7 @@ class Postprocess:
             # create dataframe
             df = pd.DataFrame(data=data, columns=["value"], index=indices)
             # update dict
-            doc = self.sets.docs[set.name]
+            doc = self.zen_model.sets.docs[set.name]
             data_frames[index_name[0]] = self._transform_df(df, doc)
 
         self.write_file(self.name_dir.joinpath("set_dict"), data_frames)
@@ -290,22 +306,22 @@ class Postprocess:
         post-processed immediately or loaded and postprocessed at some other
         time.
         """
-        if not self.solver.save_parameters:
-            logging.info("Parameters are not saved")
+        if not self.config.solver.save_parameters:
+            logger.info("Parameters are not saved")
             return
 
         # dataframe serialization
         data_frames = {}
-        for param in self.params.docs.keys():
+        for param in self.zen_model.parameters.docs.keys():
             if (
-                self.solver.selected_saved_parameters
-                and param not in self.solver.selected_saved_parameters
+                self.config.solver.selected_saved_parameters
+                and param not in self.config.solver.selected_saved_parameters
             ):
                 continue
             # get the values
-            vals = getattr(self.params, param)
-            doc = self.params.docs[param]
-            units = self.params.units[param]
+            vals = getattr(self.zen_model.parameters, param)
+            doc = self.zen_model.parameters.docs[param]
+            units = self.zen_model.parameters.units[param]
             index_list = self.get_index_list(doc)
             # data frame
             if isinstance(vals, xr.DataArray):
@@ -333,18 +349,17 @@ class Postprocess:
         # dataframe serialization
         data_frames = {}
         for name, arr in self.model.solution.items():
-
             # skip variables not selected to be saved
             if (
-                self.solver.selected_saved_variables
-                and name not in self.solver.selected_saved_variables
+                self.config.solver.selected_saved_variables
+                and name not in self.config.solver.selected_saved_variables
             ):
                 continue
 
             # extract doc information
-            if name in self.vars.docs:
-                doc = self.vars.docs[name]
-                units = self.vars.units[name]
+            if name in self.zen_model.variables.docs:
+                doc = self.zen_model.variables.docs[name]
+                units = self.zen_model.variables.units[name]
                 index_list = self.get_index_list(doc)
             elif name.startswith("sos2_var"):
                 continue
@@ -371,35 +386,34 @@ class Postprocess:
 
     def save_duals(self):
         """Saves the dual variable values to a h5 file."""
-        if not self.solver.save_duals:
-            logging.info("Duals are not saved")
+        if not self.config.solver.save_duals:
+            logger.info("Duals are not saved")
             return
 
         # dataframe serialization
         data_frames = {}
         for name in self.model.constraints:
-
             arr = self.model.constraints[name].dual
 
             # skip variables not selected to be saved
             if (
-                self.solver.selected_saved_duals
-                and name not in self.solver.selected_saved_duals
+                self.config.solver.selected_saved_duals
+                and name not in self.config.solver.selected_saved_duals
             ):
                 continue
 
             # extract doc information
-            if name in self.constraints.docs:
-                doc = self.constraints.docs[name]
+            if name in self.zen_model.constraints.docs:
+                doc = self.zen_model.constraints.docs[name]
                 index_list = self.get_index_list(doc)
             else:
                 index_list = []
                 doc = None
 
             # rescale
-            if self.solver.use_scaling:
+            if self.config.solver.use_scaling:
                 cons_labels = self.model.constraints[name].labels.data
-                scaling_factor = self.optimization_setup.scaling.D_r_inv[cons_labels]
+                scaling_factor = self.scaling.D_r_inv[cons_labels]
                 arr = arr * scaling_factor
             # create dataframe
             if len(arr.shape) > 0:
@@ -420,22 +434,21 @@ class Postprocess:
 
     def save_reduced_costs(self):
         """Saves the reduced cost values of variables to a h5 file."""
-        if self.solver.name != "gurobi":
-            logging.info("Reduced costs are only supported for gurobi solver")
+        if self.config.solver.name != "gurobi":
+            logger.info("Reduced costs are only supported for gurobi solver")
             return
 
-        if not self.solver.save_reduced_costs:
-            logging.info("Reduced costs are not saved")
+        if not self.config.solver.save_reduced_costs:
+            logger.info("Reduced costs are not saved")
             return
 
         # dataframe serialization
         data_frames = {}
         for name in self.model.variables:
-
             # skip variables not selected to be saved
             if (
-                self.solver.selected_saved_reduced_costs
-                and name not in self.solver.selected_saved_reduced_costs
+                self.config.solver.selected_saved_reduced_costs
+                and name not in self.config.solver.selected_saved_reduced_costs
             ):
                 continue
 
@@ -443,23 +456,23 @@ class Postprocess:
             try:
                 arr = self.model.variables[name].get_solver_attribute("RC")
             except Exception as e:
-                logging.warning(
+                logger.warning(
                     f"Could not retrieve reduced costs for variable {name}: {e}"
                 )
                 continue
 
             # extract doc information
-            if name in self.vars.docs:
-                doc = self.vars.docs[name]
+            if name in self.zen_model.variables.docs:
+                doc = self.zen_model.variables.docs[name]
                 index_list = self.get_index_list(doc)
             else:
                 index_list = []
                 doc = None
 
             # rescale
-            if self.solver.use_scaling:
+            if self.config.solver.use_scaling:
                 var_labels = self.model.variables[name].labels.data
-                scaling_factor = self.optimization_setup.scaling.D_c_inv[var_labels]
+                scaling_factor = self.scaling.D_c_inv[var_labels]
                 arr = arr * scaling_factor
 
             # create dataframe
@@ -483,58 +496,62 @@ class Postprocess:
 
     def save_system(self):
         """Saves the system dict as json."""
-        if self.system.use_rolling_horizon:
+        if self.config.system.use_rolling_horizon:
             fname = self.name_dir.parent.joinpath("system")
         else:
             fname = self.name_dir.joinpath("system")
-        self.write_file(fname, self.system, format="json")
+        self.write_file(fname, self.config.system, format="json")
 
     def save_analysis(self):
         """Saves the analysis dict as json."""
-        if self.system.use_rolling_horizon:
+        if self.config.system.use_rolling_horizon:
             fname = self.name_dir.parent.joinpath("analysis")
         else:
             fname = self.name_dir.joinpath("analysis")
         # remove cwd path part to avoid saving the absolute path
-        if os.path.isabs(self.analysis.dataset):
+        if os.path.isabs(self.config.analysis.dataset):
             cwd = os.getcwd()
-            self.analysis.dataset = os.path.relpath(self.analysis.dataset, cwd)
-            self.analysis.folder_output = os.path.relpath(
-                self.analysis.folder_output, cwd
+            self.config.analysis.dataset = os.path.relpath(
+                self.config.analysis.dataset, cwd
             )
-        self.write_file(fname, self.analysis, format="json")
+            self.config.analysis.folder_output = os.path.relpath(
+                self.config.analysis.folder_output, cwd
+            )
+        self.write_file(fname, self.config.analysis, format="json")
 
     def save_solver(self):
         """Saves the solver dict as json."""
         # This we only need to save once
-        if self.system.use_rolling_horizon:
+        if self.config.system.use_rolling_horizon:
             fname = self.name_dir.parent.joinpath("solver")
         else:
             fname = self.name_dir.joinpath("solver")
 
         # remove cwd path part to avoid saving the absolute path
-        if os.path.isabs(self.solver.solver_dir):
+        if os.path.isabs(self.config.solver.solver_dir):
             cwd = os.getcwd()
-            self.solver.solver_dir = os.path.relpath(self.solver.solver_dir, cwd)
+            self.config.solver.solver_dir = os.path.relpath(
+                self.config.solver.solver_dir, cwd
+            )
         # save
-        self.write_file(fname, self.solver, format="json")
+        self.write_file(fname, self.config.solver, format="json")
 
     def save_scenarios(self):
         """Saves the scenario dict as json."""
         # only save the scenarios at the highest level
-        root_dir = Path(self.analysis.folder_output).joinpath(self.model_name)
+        root_dir = Path(self.config.analysis.folder_output).joinpath(self.model_name)
         fname = root_dir.joinpath("scenarios")
         self.write_file(fname, self.scenarios, format="json")
 
     def save_unit_definitions(self):
         """Saves the user-defined units as txt."""
-        if self.system.use_rolling_horizon:
+        if self.config.system.use_rolling_horizon:
             fname = self.name_dir.parent.joinpath("unit_definitions")
         else:
             fname = self.name_dir.joinpath("unit_definitions")
 
         lines = []
-        ureg = self.energy_system.unit_handling.ureg
+        ureg = self.unit_handling.ureg
         # Only save user-defined units (skip base units like 'meter')
         all_units = ureg._units
         default_units = pint.UnitRegistry()._units
@@ -550,8 +567,8 @@ class Postprocess:
         if self.param_map is not None:
             # This we only need to save once
             if (
-                self.system.use_rolling_horizon
-                and self.system.conduct_scenario_analysis
+                self.config.system.use_rolling_horizon
+                and self.config.system.conduct_scenario_analysis
             ):
                 fname = self.name_dir.parent.parent.joinpath("param_map")
             elif self.subfolder != Path(""):
@@ -570,7 +587,7 @@ class Postprocess:
             self.energy_system.time_steps.get_sequence_time_steps_dict()
         )
         self.dict_sequence_time_steps["optimized_time_steps"] = (
-            self.optimization_setup.optimized_time_steps
+            self.optimized_time_steps
         )
         self.dict_sequence_time_steps["time_steps_operation_duration"] = (
             self.energy_system.time_steps.time_steps_operation_duration
@@ -595,7 +612,7 @@ class Postprocess:
             add_on = ""
 
             # This we only need to save once
-        if self.system.use_rolling_horizon:
+        if self.config.system.use_rolling_horizon:
             fname = self.name_dir.parent.joinpath(
                 f"dict_all_sequence_time_steps{add_on}"
             )
@@ -659,9 +676,9 @@ class Postprocess:
         index_list = string.split(",")
         index_list_final = []
         for index in index_list:
-            if index in self.analysis.header_data_inputs.keys():
+            if index in self.config.analysis.header_data_inputs.keys():
                 index_list_final.append(
-                    self.analysis.header_data_inputs[index]
+                    self.config.analysis.header_data_inputs[index]
                 )  # else:  #     pass  #     # index_list_final.append(index)
         return index_list_final
 
@@ -741,7 +758,7 @@ class Postprocess:
                 return units
             else:
                 raise AssertionError(
-                    "The length of the units does not match the length of the " "index"
+                    "The length of the units does not match the length of the index"
                 )
         else:
             return None
@@ -759,8 +776,7 @@ class Postprocess:
         """
         if mode == "w" and not self.overwrite and os.path.exists(file_name):
             raise FileExistsError(
-                "File already exists. Please set overwrite=True to overwrite "
-                "the file."
+                "File already exists. Please set overwrite=True to overwrite the file."
             )
         with pd.HDFStore(
             file_name, mode=mode, complevel=complevel, complib=complib
@@ -813,10 +829,9 @@ class Postprocess:
                 units, pd.Series
             ), f"Units must be a pandas Series, but is {type(units)}"
             df = input_dict["dataframe"]
-            assert units.index.intersection(df.index).equals(units.index), (
-                f"Units index {units.index} does not match dataframe "
-                f"index {df.index}"
-            )
+            assert units.index.intersection(df.index).equals(
+                units.index
+            ), f"Units index {units.index} does not match dataframe index {df.index}"
             units.name = "units"
             has_units = True
         else:
@@ -827,6 +842,6 @@ class Postprocess:
             or set(input_dict.keys()) == set(expected_keys).union(["units"])
         ):
             raise ValueError(
-                f"Expected keys are {expected_keys}, but got " f"{input_dict.keys()}"
+                f"Expected keys are {expected_keys}, but got {input_dict.keys()}"
             )
         return input_dict, units, docstring, has_units

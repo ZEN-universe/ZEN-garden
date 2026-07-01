@@ -4,13 +4,24 @@ parameters, variables, and constraints of the retrofitting technologies.
 """
 
 import itertools
+import logging
+from typing import TYPE_CHECKING, override
 
+import numpy as np
 import pandas as pd
 
+from zen_garden.model.config import Config
+from zen_garden.model.context import Context
+from zen_garden.model.element import ElementConstructor
+from zen_garden.model.generic_rule import GenericRule
+from zen_garden.model.technology.conversion_technology import ConversionTechnology
+from zen_garden.model.zen_model import ZenModel
 from zen_garden.utils import align_like
 
-from ..element import GenericRule
-from .conversion_technology import ConversionTechnology
+if TYPE_CHECKING:
+    from zen_garden.model.energy_system import EnergySystem
+
+logger = logging.getLogger(__name__)
 
 
 class RetrofittingTechnology(ConversionTechnology):
@@ -19,14 +30,6 @@ class RetrofittingTechnology(ConversionTechnology):
     # set label
     label = "set_retrofitting_technologies"
     location_type = "set_nodes"
-
-    def __init__(self, tech, optimization_setup):
-        """Init conversion technology object.
-
-        :param tech: name of added technology
-        :param optimization_setup: The OptimizationSetup the element is part of
-        """
-        super().__init__(tech, optimization_setup)
 
     def store_carriers(self):
         """Retrieves and stores information on reference, input and output carriers."""
@@ -51,21 +54,31 @@ class RetrofittingTechnology(ConversionTechnology):
             unit_category={},
         )
 
-    ### --- classmethods to construct sets, parameters, variables, and constraints,
-    # that correspond to ConversionTechnology --- ###
-    @classmethod
-    def construct_sets(cls, optimization_setup):
+
+class RetrofittingTechnologyConstructor(ElementConstructor):
+    element_class = RetrofittingTechnology
+
+    @override
+    def has_elements(self) -> bool:
+        """Checks if there are any elements of the class <Carrier>.
+
+        :return: True if there are elements, False otherwise
+        """
+        return np.size(self.config.system["set_retrofitting_technologies"]) > 0
+
+    def construct_sets(self, zen_model: ZenModel, energy_system: "EnergySystem"):
         """Constructs the pe.Sets of the class <RetrofittingTechnology>.
 
         :param optimization_setup: The OptimizationSetup the element is part of
         """
+        logger.info("Constructing sets for RetrofittingTechnology")
         # get base technologies
-        retrofit_base_technology = optimization_setup.get_attribute_of_all_elements(
-            cls, "retrofit_base_technology"
+        retrofit_base_technology = self.element_registry.get_attribute_of_all_elements(
+            self.element_class, "retrofit_base_technology"
         )
 
         # retrofitting base technologies
-        optimization_setup.sets.add_set(
+        zen_model.sets.add_set(
             name="set_retrofitting_base_technologies",
             data=retrofit_base_technology,
             doc="set of base technologies for a specific retrofitting technology. "
@@ -73,14 +86,17 @@ class RetrofittingTechnology(ConversionTechnology):
             index_set="set_retrofitting_technologies",
         )
 
-    @classmethod
-    def construct_params(cls, optimization_setup):
+    def construct_params(self, zen_model: ZenModel, energy_system: "EnergySystem"):
         """Constructs the pe.Params of the class <RetrofittingTechnology>.
 
         :param optimization_setup: The OptimizationSetup the element is part of
         """
+        logger.info("Constructing parameters for RetrofittingTechnology")
+
         # slope of linearly modeled capex
-        optimization_setup.parameters.add_parameter(
+        self.add_parameter(
+            zen_model,
+            energy_system,
             name="retrofit_flow_coupling_factor",
             index_names=[
                 "set_retrofitting_technologies",
@@ -90,33 +106,39 @@ class RetrofittingTechnology(ConversionTechnology):
             capacity_types=False,
             doc="Parameter which specifies the flow coupling between the retrofitting "
             "technologies and its base technology",
-            calling_class=cls,
         )
 
-    @classmethod
-    def construct_constraints(cls, optimization_setup):
+    def construct_vars(self, zen_model: ZenModel, energy_system: "EnergySystem"):
+        """Constructs the pe.Vars of the class <RetrofittingTechnology>."""
+        logger.info("Constructing variables for RetrofittingTechnology")
+
+    def construct_constraints(self, zen_model: ZenModel, energy_system: "EnergySystem"):
         """Constructs the Constraints of the class <RetrofittingTechnology>.
 
         :param optimization_setup: The OptimizationSetup the element is part of
         """
+        logger.info("Constructing constraints for RetrofittingTechnology")
+
         # add pwa constraints
-        rules = RetrofittingTechnologyRules(optimization_setup)
+        rules = RetrofittingTechnologyRules(self.config, self.context)
 
         # flow coupling of retrofitting technology and its base technology
-        rules.constraint_retrofit_flow_coupling()
+        rules.constraint_retrofit_flow_coupling(zen_model, energy_system)
 
 
 class RetrofittingTechnologyRules(GenericRule):
     """Rules for the RetrofittingTechnology class."""
 
-    def __init__(self, optimization_setup):
+    def __init__(self, config: Config, context: Context):
         """Inits the rules for a given EnergySystem.
 
         :param optimization_setup: The OptimizationSetup the element is part of
         """
-        super().__init__(optimization_setup)
+        super().__init__(config, context)
 
-    def constraint_retrofit_flow_coupling(self):
+    def constraint_retrofit_flow_coupling(
+        self, zen_model: ZenModel, energy_system: "EnergySystem"
+    ):
         """Couples reference flow variables based on modeling technique.
 
         .. math::
@@ -127,23 +149,27 @@ class RetrofittingTechnologyRules(GenericRule):
             \\overline{G}_{i,n,t}^\\mathrm{r} = G^\\mathrm{d,approximation}_{i,n,t}
 
         """
-        flow_conversion_input = self.variables["flow_conversion_input"]
-        flow_conversion_output = self.variables["flow_conversion_output"]
+        flow_conversion_input = zen_model.lp_model.variables["flow_conversion_input"]
+        flow_conversion_output = zen_model.lp_model.variables["flow_conversion_output"]
         rc_in = pd.Series(
             {
-                (t, c): True if c in self.sets["set_reference_carriers"][t] else False
+                (t, c): (
+                    True if c in zen_model.sets["set_reference_carriers"][t] else False
+                )
                 for t, c in itertools.product(
-                    self.sets["set_conversion_technologies"],
-                    self.sets["set_input_carriers"].superset,
+                    zen_model.sets["set_conversion_technologies"],
+                    zen_model.sets["set_input_carriers"].superset,
                 )
             }
         )
         rc_out = pd.Series(
             {
-                (t, c): True if c in self.sets["set_reference_carriers"][t] else False
+                (t, c): (
+                    True if c in zen_model.sets["set_reference_carriers"][t] else False
+                )
                 for t, c in itertools.product(
-                    self.sets["set_conversion_technologies"],
-                    self.sets["set_output_carriers"].superset,
+                    zen_model.sets["set_conversion_technologies"],
+                    zen_model.sets["set_output_carriers"].superset,
                 )
             }
         )
@@ -157,26 +183,32 @@ class RetrofittingTechnologyRules(GenericRule):
         retrofit_base_technologies = pd.Series(
             {
                 t: rt
-                for t in self.sets["set_conversion_technologies"]
-                if t in self.sets["set_retrofitting_base_technologies"]
-                for rt in self.sets["set_retrofitting_base_technologies"][t]
+                for t in zen_model.sets["set_conversion_technologies"]
+                if t in zen_model.sets["set_retrofitting_base_technologies"]
+                for rt in zen_model.sets["set_retrofitting_base_technologies"][t]
             },
             name="set_conversion_technologies",
         )
         retrofit_base_technologies.index.name = "set_conversion_technologies"
-        retrofit_flow_coupling = self.parameters.retrofit_flow_coupling_factor.rename(
-            {"set_retrofitting_technologies": "set_conversion_technologies"}
+        retrofit_flow_coupling = (
+            zen_model.parameters.retrofit_flow_coupling_factor.rename(
+                {"set_retrofitting_technologies": "set_conversion_technologies"}
+            )
         )
         term_flow_retrofit = self.map_and_expand(
             term_flow_reference, retrofit_base_technologies
         )
         term_flow_base = term_flow_reference.sel(
-            {"set_conversion_technologies": self.sets["set_retrofitting_technologies"]}
+            {
+                "set_conversion_technologies": zen_model.sets[
+                    "set_retrofitting_technologies"
+                ]
+            }
         )
         lhs = term_flow_base - retrofit_flow_coupling * term_flow_retrofit
         rhs = 0
         constraints = lhs <= rhs
 
-        self.constraints.add_constraint(
+        zen_model.constraints.add_constraint(
             "constraint_retrofit_flow_coupling", constraints
         )

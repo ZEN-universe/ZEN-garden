@@ -5,10 +5,22 @@ import json
 import logging
 import os
 import warnings
+from typing import TYPE_CHECKING
 
 import numpy as np
 import pandas as pd
 from scipy.stats import linregress
+
+from zen_garden.default_config import HeaderDataInputs
+from zen_garden.model.config import Config
+from zen_garden.model.context import Context
+from zen_garden.model.time_steps import TimeStepsDicts
+
+if TYPE_CHECKING:
+    from zen_garden.model.element import Element
+    from zen_garden.model.energy_system import EnergySystem
+    from zen_garden.preprocess.unit_handling import UnitHandling
+    from zen_garden.utils import ScenarioDict
 
 
 class DataInput:
@@ -16,12 +28,11 @@ class DataInput:
 
     def __init__(
         self,
-        element,
-        system,
-        analysis,
-        solver,
-        energy_system,
-        unit_handling,
+        element: "Element | EnergySystem",
+        energy_system: "EnergySystem",
+        unit_handling: "UnitHandling",
+        config: Config,
+        context: Context,
         optimization_setup=None,
     ):
         """Data input object to extract input data.
@@ -34,20 +45,18 @@ class DataInput:
         :param unit_handling: instance of class <UnitHandling> to convert units
         """
         self.element = element
-        self.system = system
-        self.analysis = analysis
-        self.solver = solver
         self.energy_system = energy_system
-        self.scenario_dict = None
+        self.config = config
+        self.context = context
+        self.scenario_dict: "ScenarioDict | None" = None
         self.unit_handling = unit_handling
         # extract folder path
         self.folder_path = self.element.input_path
         # get names of indices
-        self.index_names = self.analysis.header_data_inputs
+        self.index_names = self.config.analysis.header_data_inputs
         # load attributes file
         self.attribute_dict = self.load_attribute_file()
-        # optimization setup
-        self.optimization_setup = optimization_setup
+        # config and context
 
     def extract_input_data(
         self, file_name, index_sets, unit_category, time_steps=None, subelement=None
@@ -78,7 +87,7 @@ class DataInput:
         # if existing capacities and existing capacities not used
         if (
             file_name == "capacity_existing" or file_name == "capacity_existing_energy"
-        ) and not self.system.use_capacities_existing:
+        ) and not self.config.system.use_capacities_existing:
             df_output, *_ = self.create_default_output(
                 index_sets,
                 unit_category,
@@ -105,6 +114,9 @@ class DataInput:
                 subelement=subelement,
             )
         # read input file
+        assert (
+            self.scenario_dict is not None
+        ), "scenario_dict must be provided to extract input data"
         f_name, scenario_factor = self.scenario_dict.get_param_file(
             self.element.name, file_name
         )
@@ -186,9 +198,7 @@ class DataInput:
             df_input, time_steps, file_name, index_name_list
         )
 
-        assert df_input.columns is not None, (
-            f"Input file '{file_name}' has " "no columns"
-        )
+        assert df_input.columns is not None, f"Input file '{file_name}' has no columns"
         # set index by index_name_list
         missing_index = list(
             set(index_name_list)
@@ -225,10 +235,7 @@ class DataInput:
                 )
 
         # check for duplicate indices
-        input_checks = self.energy_system.optimization_setup.input_data_checks
-        df_input = input_checks.check_duplicate_indices(
-            df_input=df_input, file_name=file_name, folder_path=self.folder_path
-        )
+        df_input = self._check_duplicate_indices(df_input, file_name, self.folder_path)
 
         # apply multiplier to input data
         df_input = df_input * default_value["multiplier"]
@@ -260,6 +267,40 @@ class DataInput:
         )
         df_output_copy.loc[common_index] = df_input.loc[common_index]
         return df_output_copy
+
+    def _check_duplicate_indices(self, df_input, file_name, folder_path):
+        """Checks if df_input contains any duplicate indices and either removes
+        them if they are of identical value or raises an error otherwise.
+
+        :param df_input: raw input dataframe
+        :param folder_path: the path of the folder containing the selected file
+        :param file_name: name of selected file
+        :return: df_input without duplicate indices
+        """
+        unique_elements, counts = np.unique(df_input.index, return_counts=True)
+        duplicates = unique_elements[counts > 1]
+
+        if len(duplicates) != 0:
+            for duplicate in duplicates:
+                values = df_input.loc[duplicate]
+                # check if all the duplicates are of the same value
+                if values.nunique() == 1:
+                    logging.warning(
+                        f"The input data file {file_name + '.csv'} at "
+                        f"{folder_path} contains duplicate indices with "
+                        f"identical values: {df_input.loc[duplicates]}."
+                    )
+                else:
+                    raise AssertionError(
+                        f"The input data file {file_name + '.csv'} at "
+                        f"{folder_path} contains duplicate indices with "
+                        f"different values: {df_input.loc[duplicates]}."
+                    )
+            # remove duplicates
+            duplicate_mask = df_input.index.duplicated(keep="first")
+            df_input = df_input[~duplicate_mask]
+
+        return df_input
 
     def read_input_csv(self, input_file_name):
         """Reads input data and returns raw input dataframe.
@@ -464,10 +505,9 @@ class DataInput:
         :param attribute_dict: name of selected attribute
         :return: attribute value, attribute unit
         """
+        assert self.context is not None
         if attribute_name not in attribute_dict:
-            parameter_change_log = (
-                self.energy_system.optimization_setup.parameter_change_log
-            )
+            parameter_change_log = self.context.parameter_change_log
 
             # The attribute is not found because of an update
             if attribute_name in parameter_change_log:
@@ -539,7 +579,7 @@ class DataInput:
     ):
         """Reads and saves the year specific time series data. The year specific
         time series are saved in the dictionary
-        self.optimization_setup.year_specific_ts.
+        self.context.year_specific_ts.
 
         :param file_name: name of selected file
         :param index_name_list: list of name of indices
@@ -552,10 +592,11 @@ class DataInput:
         years = [
             str(year)
             for year in range(
-                self.system.reference_year,
-                self.system.reference_year
-                + self.system.optimized_years * self.system.interval_between_years,
-                self.system.interval_between_years,
+                self.config.system.reference_year,
+                self.config.system.reference_year
+                + self.config.system.optimized_years
+                * self.config.system.interval_between_years,
+                self.config.system.interval_between_years,
             )
         ]
         # files to check
@@ -563,36 +604,49 @@ class DataInput:
         for file in file_names:
             for i, year in enumerate(years):
                 filename = file_name + "_" + year
-                if filename in file:
-                    # read input data
-                    f_name, scenario_factor = self.scenario_dict.get_param_file(
-                        self.element.name, filename
-                    )
-                    df_input = self.read_input_csv(f_name)
-                    if df_input is not None and not df_input.empty:
-                        # get subelement dataframe
-                        if subelement is not None and subelement in df_input.columns:
-                            cols = df_input.columns.intersection(
-                                index_name_list + [subelement]
-                            )
-                            df_input = df_input[cols]
-                        df_output_specific = self.extract_general_input_data(
-                            df_input,
-                            df_output_generic,
-                            file_name,
-                            index_name_list,
-                            default_value,
-                            time_steps,
+                if filename not in file:
+                    continue
+
+                # read input data
+                assert (
+                    self.scenario_dict is not None
+                ), "scenario_dict must be provided to extract year specific time series"
+                f_name, scenario_factor = self.scenario_dict.get_param_file(
+                    self.element.name, filename
+                )
+                df_input = self.read_input_csv(f_name)
+                if df_input is not None and not df_input.empty:
+                    # get subelement dataframe
+                    if subelement is not None and subelement in df_input.columns:
+                        cols = df_input.columns.intersection(
+                            index_name_list + [subelement]
                         )
-                    try:
-                        self.optimization_setup.year_specific_ts[i][
-                            (self.element._name, file_name)
-                        ] = (df_output_specific * scenario_factor)
-                    except Exception:
-                        self.optimization_setup.year_specific_ts[i] = {}
-                        self.optimization_setup.year_specific_ts[i][
-                            (self.element._name, file_name)
-                        ] = (df_output_specific * scenario_factor)
+                        df_input = df_input[cols]
+                    df_output_specific = self.extract_general_input_data(
+                        df_input,
+                        df_output_generic,
+                        file_name,
+                        index_name_list,
+                        default_value,
+                        time_steps,
+                    )
+                assert (
+                    self.context is not None
+                ), "context must be provided to extract year specific time series"
+                if i not in self.context.year_specific_ts:
+                    self.context.year_specific_ts[i] = {}
+                self.context.year_specific_ts[i][(self.element._name, file_name)] = (
+                    df_output_specific * scenario_factor
+                )
+                # try:
+                #     self.context.year_specific_ts[i][
+                #         (self.element._name, file_name)
+                #     ] = df_output_specific * scenario_factor
+                # except Exception:
+                #     self.context.year_specific_ts[i] = {}
+                #     self.context.year_specific_ts[i][
+                #         (self.element._name, file_name)
+                #     ] = df_output_specific * scenario_factor
 
     def extract_yearly_variation(self, file_name, index_sets):
         """Reads the yearly variation of a time dependent quantity.
@@ -610,6 +664,9 @@ class DataInput:
         # add Yearly_variation to file_name
         file_name += "_yearly_variation"
         # read input data
+        assert (
+            self.scenario_dict is not None
+        ), "scenario_dict must be provided to extract yearly variation"
         f_name, scenario_factor = self.scenario_dict.get_param_file(
             self.element.name, file_name
         )
@@ -650,7 +707,7 @@ class DataInput:
             nodes + coordinates
         """
         if extract_nodes:
-            set_nodes_config = self.system.set_nodes
+            set_nodes_config = self.config.system.set_nodes
             df_nodes_w_coords = self.read_input_csv("set_nodes")
             if extract_coordinates:
                 if len(set_nodes_config) != 0:
@@ -662,7 +719,7 @@ class DataInput:
                 set_nodes_input = df_nodes_w_coords["node"].to_list()
                 # if no nodes specified in system, use all nodes
                 if len(set_nodes_config) == 0 and not len(set_nodes_input) == 0:
-                    self.system.set_nodes = set_nodes_input
+                    self.config.system.set_nodes = set_nodes_input
                     set_nodes_config = set_nodes_input
                 else:
                     missing_nodes = list(
@@ -680,17 +737,16 @@ class DataInput:
                 # one node is given
                 assert (
                     len(set_nodes_config) > 1
-                    or len(self.system.set_transport_technologies) == 0
+                    or len(self.config.system.set_transport_technologies) == 0
                 ), (
                     f"Only one node is given in the system file. "
                     f"Transport technologies are not allowed in this case. "
-                    f"You selected {self.system.set_transport_technologies}"
+                    f"You selected {self.config.system.set_transport_technologies}"
                 )
                 return set_nodes_config
         else:
             set_edges_input = self.read_input_csv("set_edges")
-            input_checks = self.energy_system.optimization_setup.input_data_checks
-            input_checks.check_single_directed_edges(set_edges_input=set_edges_input)
+            self._check_single_directed_edges(set_edges_input)
             if set_edges_input is not None:
                 set_edges = set_edges_input[
                     (set_edges_input["node_from"].isin(self.energy_system.set_nodes))
@@ -701,6 +757,28 @@ class DataInput:
             else:
                 raise FileNotFoundError(
                     f"Input file set_edges.csv is missing from {self.folder_path}"
+                )
+
+    def _check_single_directed_edges(self, set_edges_input):
+        """Checks if single-directed edges exist in the dataset (e.g. CH-DE exists,
+        DE-CH doesn't) and raises a warning.
+
+        Args:
+            set_edges_input: DataFrame containing set of edges defined in
+                set_edges.csv
+        """
+        for edge in set_edges_input.values:
+            reversed_edge = edge[2] + "-" + edge[1]
+            if (
+                reversed_edge
+                not in [edge_string[0] for edge_string in set_edges_input.values]
+                and edge[1] in self.system.set_nodes
+                and edge[2] in self.system.set_nodes
+            ):
+                warnings.warn(
+                    f"The edge {edge[0]} is single-directed, i.e., the edge "
+                    f"{reversed_edge} doesn't exist!",
+                    stacklevel=2,
                 )
 
     def extract_carriers(self, carrier_type):
@@ -714,11 +792,7 @@ class DataInput:
             "output_carrier",
             "reference_carrier",
             "retrofit_reference_carrier",
-        ], (
-            "carrier type must be either input_carrier, output_carrier, "
-            ""
-            "retrofit_reference_carrier, or reference_carrier"
-        )
+        ], f"invalid carrier_type {carrier_type} for {self.element.name}. "
         carrier_list = self.extract_attribute(carrier_type, unit_category=None)
         assert carrier_type != "reference_carrier" or len(carrier_list) == 1, (
             f"Reference_carrier must be a single carrier, but {carrier_list} "
@@ -757,20 +831,23 @@ class DataInput:
         """
         # TODO merge changes in extract input data and optimization setup
         set_technologies_existing = np.array([0])
-        if self.system.use_capacities_existing:
+        if self.config.system.use_capacities_existing:
             if storage_energy:
                 _energy_string = "_energy"
             else:
                 _energy_string = ""
 
             # here we ignore the factor
+            assert (
+                self.scenario_dict is not None
+            ), "scenario_dict must be provided to extract existing technologies"
             f_name, _ = self.scenario_dict.get_param_file(
                 self.element.name, f"capacity_existing{_energy_string}"
             )
             df_input = self.read_input_csv(f_name)
             if df_input is None:
                 return [0]
-            if self.element.name in self.system.set_transport_technologies:
+            if self.element.name in self.config.system.set_transport_technologies:
                 location = "edge"
             else:
                 location = "node"
@@ -795,8 +872,9 @@ class DataInput:
         multiidx = pd.MultiIndex.from_product(index_list, names=index_name_list)
         df_output = pd.Series(index=multiidx, data=0, dtype=int)
         # if no existing capacities
-        if not self.system.use_capacities_existing:
+        if not self.config.system.use_capacities_existing:
             return df_output
+        assert self.scenario_dict is not None
         f_name, scenario_factor = self.scenario_dict.get_param_file(
             self.element.name, file_name
         )
@@ -812,7 +890,7 @@ class DataInput:
                 time_steps=None,
             )
             # get reference year
-            reference_year = self.system.reference_year
+            reference_year = self.config.system.reference_year
             # calculate remaining lifetime
             df_output[df_output > 0] = (
                 -reference_year + df_output[df_output > 0] + self.element.lifetime[0]
@@ -852,9 +930,8 @@ class DataInput:
             breakpoints = df_input_nonlinear[breakpoint_variable].to_list()
 
             pwa_dict[breakpoint_variable] = breakpoints
-            pwa_dict["pwa_variables"] = (
-                []
-            )  # select only those variables that are modeled as pwa
+            # select only those variables that are modeled as pwa
+            pwa_dict["pwa_variables"] = []
             pwa_dict["bounds"] = {}  # save bounds of variables
             linear_dict = {}
             # min and max total capacity of technology
@@ -885,9 +962,9 @@ class DataInput:
                     # check if to a reasonable degree linear
                     if (
                         relative_intercept
-                        <= self.solver.linear_regression_check["eps_intercept"]
+                        <= self.config.solver.linear_regression_check["eps_intercept"]
                         and linear_regress_object.rvalue
-                        >= self.solver.linear_regression_check["epsRvalue"]
+                        >= self.config.solver.linear_regression_check["epsRvalue"]
                     ):
                         # model as linear function
                         slope_lin_reg = linear_regress_object.slope
@@ -1055,7 +1132,9 @@ class DataInput:
             )
         return df_output, default_value, index_name_list
 
-    def construct_index_list(self, index_sets, time_steps):
+    def construct_index_list(
+        self, index_sets, time_steps
+    ) -> tuple[list[TimeStepsDicts], list[HeaderDataInputs]]:
         """Constructs index list from index sets and returns list of indices and
         list of index names.
 
@@ -1076,8 +1155,8 @@ class DataInput:
                 index_list.append(getattr(self.energy_system, time_steps))
             elif index == "set_technologies_existing":
                 index_list.append(self.element.set_technologies_existing)
-            elif index in self.system:
-                index_list.append(self.system[index])
+            elif index in self.config.system:
+                index_list.append(self.config.system[index])
             elif hasattr(self.energy_system, index):
                 index_list.append(getattr(self.energy_system, index))
             else:
@@ -1157,7 +1236,7 @@ class DataInput:
             temporal_header = self.index_names["set_time_steps_yearly"]
             if (
                 max(df_input.loc[:, temporal_header])
-                < self.analysis.earliest_year_of_data
+                < self.config.analysis.earliest_year_of_data
             ):
                 warnings.warn(
                     f"Generic time indices (used in {file_name}) will not be "

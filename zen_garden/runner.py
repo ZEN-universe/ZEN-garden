@@ -14,7 +14,6 @@ import zen_garden.default_config as default_config
 from zen_garden.plugin_system.loader import register_plugins
 
 from .optimization_setup import OptimizationSetup
-from .postprocess.postprocess import Postprocess
 from .utils import InputDataChecks, ScenarioUtils, StringUtils, setup_logger
 
 # we setup the logger here
@@ -107,7 +106,7 @@ def run(config="./config.json", dataset=None, job_index=None, folder_output=None
         )
     config.analysis.zen_garden_version = version
     ### SYSTEM CONFIGURATION
-    input_data_checks = InputDataChecks(config=config, optimization_setup=None)
+    input_data_checks = InputDataChecks(config=config)
     input_data_checks.check_dataset()
     input_data_checks.read_system_file(config)
     input_data_checks.check_technology_selections()
@@ -121,6 +120,7 @@ def run(config="./config.json", dataset=None, job_index=None, folder_output=None
     # clean sub-scenarios if necessary
     ScenarioUtils.clean_scenario_folder(config, out_folder)
     ### ITERATE THROUGH SCENARIOS
+    optimization_setup = None
     for scenario, scenario_dict in zip(scenarios, elements, strict=False):
         # FORMULATE THE OPTIMIZATION PROBLEM
         # add the scenario_dict and read input data
@@ -171,8 +171,7 @@ def run(config="./config.json", dataset=None, job_index=None, folder_output=None
                 step=step,
             )
             # write results
-            Postprocess(
-                optimization_setup,
+            optimization_setup.write_results(
                 scenarios=config.scenarios,
                 subfolder=subfolder,
                 model_name=model_name,

@@ -8,74 +8,93 @@ import itertools
 import logging
 import os
 import time
+from abc import ABC, abstractmethod
 from pathlib import Path
+from typing import TYPE_CHECKING
 
-import linopy as lp
+import numpy as np
 import pandas as pd
 import psutil
-import xarray as xr
-from linopy.expressions import LinearExpression
 
+from zen_garden.model.components.index_set import IndexSet
+from zen_garden.model.components.zen_set import ZenSet
+from zen_garden.model.config import Config
+from zen_garden.model.context import Context
+from zen_garden.model.zen_model import ZenModel
 from zen_garden.preprocess.extract_input_data import DataInput
+
+if TYPE_CHECKING:
+    from zen_garden.model.energy_system import EnergySystem
+    from zen_garden.preprocess.unit_handling import UnitHandling
+    from zen_garden.services.element_registry import ElementRegistry
 
 
 class Element:
     """Class defining a standard Element."""
 
     # set label
-    label = "set_elements"
+    label: str = "set_elements"
 
-    def __init__(self, element: str, optimization_setup):
+    def __init__(
+        self,
+        element_name: str,
+        config: Config,
+        context: Context,
+        energy_system: "EnergySystem",
+        element_registry: "ElementRegistry",
+        unit_handling: "UnitHandling",
+    ):
         """Initialization of an element.
 
         :param element: element that is added to the model
         :param optimization_setup: The OptimizationSetup the element is part of
         """
         # set attributes
-        self.name = element
-        self._name = element
+        self.name = element_name
+        self._name = element_name
         # optimization setup
-        self.optimization_setup = optimization_setup
+        self.config = config
+        self.context = context
         # energy system
-        self.energy_system = optimization_setup.energy_system
+        self.energy_system = energy_system
+        self.element_registry = element_registry
+        self.unit_handling = unit_handling
         # set if aggregated
         self.aggregated = False
         # get input path
-        self.get_input_path()
+        self.input_path = self._get_input_path()
         # create DataInput object
         self.data_input = DataInput(
             element=self,
-            system=self.optimization_setup.system,
-            analysis=self.optimization_setup.analysis,
-            solver=self.optimization_setup.solver,
             energy_system=self.energy_system,
-            unit_handling=self.energy_system.unit_handling,
-            optimization_setup=self.optimization_setup,
+            unit_handling=self.unit_handling,
+            config=self.config,
+            context=self.context,
         )
         # dict to save the parameter units element-wise and to save them in the results
         self.units = {}
 
-    def get_input_path(self):
+    def _get_input_path(self):
         """Get input path where input data is stored input_path."""
         # get technology type
         class_label = self.label
         # get path dictionary
-        paths = self.optimization_setup.paths
+        paths = self.context.paths
         # check if class is a subset
         if class_label not in paths.keys():
-            subsets = self.optimization_setup.analysis.subsets
+            subsets = self.config.analysis.subsets
             # iterate through subsets and check if class belongs to any of the subsets
             for set_name, subsets_list in subsets.items():
                 if class_label in subsets_list:
                     class_label = set_name
                     break
         # get input path for current class_label
-        self.input_path = Path(paths[class_label][self.name]["folder"])
+        return Path(paths[class_label][self.name]["folder"])
 
     def store_scenario_dict(self):
         """Stores scenario dict in each data input object."""
         # store scenario dict
-        self.data_input.scenario_dict = self.optimization_setup.scenario_dict
+        self.data_input.scenario_dict = self.context.scenario_dict
 
     ### --- classmethods to construct sets, parameters, variables, and constraints,
     #  corresponding to Element --- ###
@@ -87,8 +106,11 @@ class Element:
 
         :param optimization_setup: The OptimizationSetup the element is part of
         """
+        raise NotImplementedError("TO BE REMOVED")
+
         logging.info("\n--- Construct model components ---\n")
         pid = os.getpid()
+
         # construct Sets
         t_start = time.perf_counter()
         cls.construct_sets(optimization_setup)
@@ -97,6 +119,7 @@ class Element:
             logging.info(f"Time to construct Sets: {t1 - t_start:0.1f} seconds")
             mem_usage = psutil.Process(pid).memory_info().rss / 1024**2
             logging.info(f"Memory usage: {mem_usage:0.1f} MB")
+
         # construct Params
         t0 = time.perf_counter()
         cls.construct_params(optimization_setup)
@@ -105,6 +128,7 @@ class Element:
             logging.info(f"Time to construct Params: {t1 - t0:0.1f} seconds")
             mem_usage = psutil.Process(pid).memory_info().rss / 1024**2
             logging.info(f"Memory usage: {mem_usage:0.1f} MB")
+
         # construct Vars
         t0 = time.perf_counter()
         cls.construct_vars(optimization_setup)
@@ -113,6 +137,7 @@ class Element:
             logging.info(f"Time to construct Vars: {t1 - t0:0.1f} seconds")
             mem_usage = psutil.Process(pid).memory_info().rss / 1024**2
             logging.info(f"Memory usage: {mem_usage:0.1f} MB")
+
         # construct Constraints
         t0 = time.perf_counter()
         cls.construct_constraints(optimization_setup)
@@ -121,6 +146,7 @@ class Element:
             logging.info(f"Time to construct Constraints: {t1 - t0:0.1f} seconds")
             mem_usage = psutil.Process(pid).memory_info().rss / 1024**2
             logging.info(f"Memory usage: {mem_usage:0.1f} MB")
+
         # construct Objective
         optimization_setup.energy_system.construct_objective()
         if optimization_setup.solver.run_diagnostics:
@@ -129,61 +155,60 @@ class Element:
                 f"{time.perf_counter() - t_start:0.1f} seconds"
             )
 
-    @classmethod
-    def construct_sets(cls, optimization_setup):
+
+class ElementConstructor(ABC):
+    element_class: type[Element] = Element
+
+    def __init__(
+        self, config: Config, context: Context, element_registry: "ElementRegistry"
+    ):
+        self.config = config
+        self.context = context
+        self.element_registry = element_registry
+
+    @abstractmethod
+    def has_elements(self) -> bool:
+        """Checks if the element has any elements to construct.
+
+        :return: True if the element has elements, False otherwise
+        """
+        pass
+
+    @abstractmethod
+    def construct_sets(self, zen_model: ZenModel, energy_system: "EnergySystem"):
         """Constructs the Sets of the class <Element>.
 
         :param optimization_setup: The OptimizationSetup the element is part of
         """
-        logging.info("Construct Sets")
-        # construct Sets of energy system
-        optimization_setup.energy_system.construct_sets()
-        # construct Sets of the child classes
-        for subclass in cls.__subclasses__():
-            subclass.construct_sets(optimization_setup)
+        pass
 
-    @classmethod
-    def construct_params(cls, optimization_setup):
+    @abstractmethod
+    def construct_params(self, zen_model: ZenModel, energy_system: "EnergySystem"):
         """Constructs the Params of the class <Element>.
 
         :param optimization_setup: The OptimizationSetup the element is part of
         """
-        logging.info("Construct Params")
-        # construct Params of energy system
-        optimization_setup.energy_system.construct_params()
-        # construct Params of the child classes
-        for subclass in cls.__subclasses__():
-            subclass.construct_params(optimization_setup)
+        pass
 
-    @classmethod
-    def construct_vars(cls, optimization_setup):
+    @abstractmethod
+    def construct_vars(self, zen_model: ZenModel, energy_system: "EnergySystem"):
         """Constructs the Vars of the class <Element>.
 
         :param optimization_setup: The OptimizationSetup the element is part of
         """
-        logging.info("Construct Vars")
-        # construct Vars of energy system
-        optimization_setup.energy_system.construct_vars()
-        # construct Vars of the child classes
-        for subclass in cls.__subclasses__():
-            subclass.construct_vars(optimization_setup)
+        pass
 
-    @classmethod
-    def construct_constraints(cls, optimization_setup):
+    @abstractmethod
+    def construct_constraints(self, zen_model: ZenModel, energy_system: "EnergySystem"):
         """Constructs the Constraints of the class <Element>.
 
         :param optimization_setup: The OptimizationSetup the element is part of
         """
-        logging.info("Construct Constraints")
-        # construct Constraints of energy system
-        optimization_setup.energy_system.construct_constraints()
-        # construct Constraints of the child classes
-        for subclass in cls.__subclasses__():
-            logging.info(f"Construct Constraints of {subclass.__name__}")
-            subclass.construct_constraints(optimization_setup)
+        pass
 
-    @classmethod
-    def create_custom_set(cls, list_index, optimization_setup):
+    def create_custom_set(
+        self, list_index: list[str], zen_model: ZenModel, energy_system: "EnergySystem"
+    ):
         """Creates custom set for model component.
 
         :param list_index: list of names of indices
@@ -191,8 +216,7 @@ class Element:
         :return: list_index: list of names of indices
         """
         list_index = list(list_index)  # make a copy of the list to avoid side effects
-        sets = optimization_setup.sets
-        indexing_sets = optimization_setup.energy_system.indexing_sets
+        sets = zen_model.sets
 
         # Case 1: all index sets are already defined in model and no set is indexed
         if all(
@@ -200,14 +224,14 @@ class Element:
         ):
             list_sets = [sets[index] for index in list_index if index in sets]
             # return indices as cartesian product of sets
-            custom_set = (
+            custom_set: list[tuple[ZenSet, ...]] | list[ZenSet] = (
                 list(itertools.product(*list_sets))
                 if len(list_sets) > 1
                 else list(list_sets[0])
             )
             return custom_set, list_index
 
-        if list_index[0] not in indexing_sets:
+        if list_index[0] not in energy_system.indexing_sets:
             raise NotImplementedError(
                 f"Index <{list_index[0]}> is not in the indexing sets."
             )
@@ -221,7 +245,7 @@ class Element:
             for index in list_index[1:]:
                 # if the set already exist in model
                 if index in sets:
-                    append = cls.handle_existing_set(index, element, sets, list_sets)
+                    append = self.handle_existing_set(index, element, sets, list_sets)
                     if not append:
                         raise NotImplementedError(
                             f"Index <{index}> is not known in sets."
@@ -230,29 +254,23 @@ class Element:
 
                 # if index is set_location
                 if index == "set_location":
-                    cls.handle_set_location_index(element, sets, list_sets)
+                    self.handle_set_location_index(element, sets, list_sets)
                     continue
 
                 # if set is built for pwa capex:
                 if "set_capex" in index:
-                    append_element = cls.append_set_capex_index(
-                        element, optimization_setup, index
-                    )
+                    append_element = self.append_set_capex_index(element, sets, index)
                     continue
 
                 # if set is used to determine if on-off behavior is modeled
                 # exclude technologies which have no min_load
                 if "on_off" in index:
-                    append_element = cls.append_on_off_modeled(
-                        element, optimization_setup, index
-                    )
+                    append_element = self.append_on_off_modeled(element, index)
                     continue
 
                 # split in capacity types of power and energy
                 if index == "set_capacity_types":
-                    cls.handle_set_capacity_types_index(
-                        element, sets, optimization_setup, list_sets
-                    )
+                    self.handle_set_capacity_types_index(element, sets, list_sets)
                     continue
 
                 raise NotImplementedError(f"Index <{index}> not known")
@@ -265,8 +283,9 @@ class Element:
                     custom_set.extend([element])
         return custom_set, list_index
 
-    @staticmethod
-    def handle_existing_set(index, element, sets, list_sets):
+    def handle_existing_set(
+        self, index: str, element: ZenSet, sets: IndexSet, list_sets: list[ZenSet]
+    ):
         """Handles existing sets in the model.
         Returns True if handled, False if unknown.
 
@@ -283,8 +302,7 @@ class Element:
             return True
         return False
 
-    @classmethod
-    def append_set_capex_index(cls, element, optimization_setup, index):
+    def append_set_capex_index(self, element: str, sets: IndexSet, index: str) -> bool:
         """Checks if the capex of a technology needs to be modeled as pwa or linear.
 
         :param element: technology in model
@@ -292,20 +310,18 @@ class Element:
         :param index: index to check
         :return model_capex: Bool indicating if capex must be modeled as pwa or linear
         """
-        if element in optimization_setup.sets["set_conversion_technologies"]:
-            capex_is_pwa = optimization_setup.get_attribute_of_specific_element(
-                cls, element, "capex_is_pwa"
-            )
-            if "linear" in index and capex_is_pwa:
-                return False
-            if "pwa" in index and not capex_is_pwa:
-                return False
-        else:
+        if element not in sets["set_conversion_technologies"]:
             return False
-        return True
 
-    @classmethod
-    def append_on_off_modeled(cls, element, optimization_setup, index):
+        capex_is_pwa = self.element_registry.get_attribute_of_specific_element(
+            self.element_class, element, "capex_is_pwa"
+        )
+        return not (
+            ("linear" in index and capex_is_pwa)
+            or ("pwa" in index and not capex_is_pwa)
+        )
+
+    def append_on_off_modeled(self, element: str, index: str) -> bool:
         """Checks if the on-off-behavior (min-load) of a technology needs to be modeled.
 
         :param element: technology in model
@@ -313,19 +329,12 @@ class Element:
         :param index: index to check
         :return model_on_off: Bool indicating if on-off-behavior needs to be modeled
         """
-        model_on_off = cls.check_on_off_modeled(element, optimization_setup)
-        if "set_no_on_off" in index:
-            # if modeled as on off, do not append to set_no_on_off
-            if model_on_off:
-                return False
-        else:
-            # if not modeled as on off, do not append to set_on_off
-            if not model_on_off:
-                return False
-        return True
+        model_on_off = self.check_on_off_modeled(element)
+        return not (("set_no_on_off" in index and model_on_off) or (not model_on_off))
 
-    @staticmethod
-    def handle_set_location_index(element, sets, list_sets):
+    def handle_set_location_index(
+        self, element: str, sets: IndexSet, list_sets: list[ZenSet]
+    ):
         """Handles the set_location index for the custom set.
 
         :param element: element to handle
@@ -341,8 +350,9 @@ class Element:
         elif element in sets["set_transport_technologies"]:
             list_sets.append(sets["set_edges"])
 
-    @staticmethod
-    def handle_set_capacity_types_index(element, sets, optimization_setup, list_sets):
+    def handle_set_capacity_types_index(
+        self, element: str, sets: IndexSet, list_sets: list[str]
+    ):
         """Handles the set_capacity_types index for the custom set.
 
         :param element: element to handle
@@ -350,14 +360,12 @@ class Element:
         :param optimization_setup: The OptimizationSetup the element is part of
         :param list_sets: list of sets to append
         """
-        system = optimization_setup.system
         if element in sets["set_storage_technologies"]:
-            list_sets.append(system.set_capacity_types)
+            list_sets.append(self.config.system.set_capacity_types)
         else:
-            list_sets.append([system.set_capacity_types[0]])
+            list_sets.append([self.config.system.set_capacity_types[0]])
 
-    @classmethod
-    def check_on_off_modeled(cls, tech, optimization_setup):
+    def check_on_off_modeled(self, tech: str):
         """Classmethod checks if on-off-behavior of a technology needs to be modeled.
 
         If the technology has a minimum load of 0 for all nodes and time steps, and all
@@ -371,199 +379,131 @@ class Element:
         # check if any min load
         unique_min_load = list(
             set(
-                optimization_setup.get_attribute_of_specific_element(
-                    cls, tech, "min_load"
+                self.element_registry.get_attribute_of_specific_element(
+                    self.element_class, tech, "min_load"
                 ).values
             )
         )
-        # if only one unique min_load which is zero
-        if len(unique_min_load) == 1 and unique_min_load[0] == 0:
-            model_on_off = False
-        # otherwise modeled as on-off
-        else:
-            model_on_off = True
-        # return
-        return model_on_off
+        # disable if only one unique min_load which is zero
+        return not (len(unique_min_load) == 1 and unique_min_load[0] == 0)
 
+    def add_parameter(
+        self,
+        zen_model: ZenModel,
+        energy_system: "EnergySystem",
+        name: str,
+        doc: str,
+        index_names: list[str],
+        capacity_types: bool = False,
+    ):
+        """Adds a parameter to the optimization model for components without data.
 
-class GenericRule(object):
-    """This class implements a generic rule for the model, which can be used to init the
-    other rules of the technologies and carriers.
-    """
-
-    def __init__(self, optimization_setup):
-        """Constructor for generic rule.
-
-        :param optimization_setup: The optimization setup to use for the setup
+        :param zen_model: The ZenModel the element is part of
+        :param name: name of parameter
+        :param doc: docstring of parameter
         """
-        self.optimization_setup = optimization_setup
-        self.system = self.optimization_setup.system
-        self.analysis = self.optimization_setup.analysis
-        self.sets = self.optimization_setup.sets
-        self.model = self.optimization_setup.model
-        self.parameters = self.optimization_setup.parameters
-        self.variables = self.model.variables
-        self.constraints = self.optimization_setup.constraints
-        self.energy_system = self.optimization_setup.energy_system
-        self.time_steps = self.energy_system.time_steps
-
-    # helper methods for constraint rules
-    def get_year_time_step_array(self, storage=False):
-        """Returns array with year and time steps of each year.
-
-        :param storage: boolean indicating if object is a storage object
-        """
-        # create times xarray with 1 where the operation time step is in the year
-        if storage:
-            meth = self.time_steps.get_time_steps_year2storage
-            time_step_name = "set_time_steps_storage"
-        else:
-            meth = self.time_steps.get_time_steps_year2operation
-            time_step_name = "set_time_steps_operation"
-        times = [(y, t) for y in self.sets["set_time_steps_yearly"] for t in meth(y)]
-        times = pd.MultiIndex.from_tuples(times)
-        times.names = ["set_time_steps_yearly", time_step_name]
-        times = pd.Series(index=times, data=1)
-        times = times.to_xarray()
-        times = times.fillna(0.0)
-        return times
-
-    def get_year_time_step_duration_array(self):
-        """Returns array with year and duration of time steps of each year."""
-        times = self.get_year_time_step_array()
-        times = times * self.parameters.time_steps_operation_duration
-        return times
-
-    def get_previous_storage_time_step_array(self):
-        """Returns array with storage time steps and previous storage time steps."""
-        times_prev = []
-        mask = []
-        for ts in self.sets["set_time_steps_storage"]:
-            ts_end = self.energy_system.time_steps.get_time_steps_storage_startend(ts)
-            if ts_end is not None:
-                if self.system.storage_periodicity:
-                    times_prev.append(ts_end)
-                    mask.append(True)
-                else:
-                    times_prev.append(ts)
-                    mask.append(False)
-            else:
-                ts_prev = self.energy_system.time_steps.get_previous_storage_time_step(
-                    ts
-                )
-                times_prev.append(ts_prev)
-                mask.append(True)
-        mask = xr.DataArray(
-            mask,
-            dims="set_time_steps_storage",
-            coords={"set_time_steps_storage": self.sets["set_time_steps_storage"]},
+        component_data, index_list, dict_of_units = self._initialize_component(
+            zen_model, energy_system, name, index_names, capacity_types
         )
-        return times_prev, mask
+        component_data = self._ensure_pd_series_multi_index(component_data)
+        data = component_data, index_list
 
-    def get_power2energy_time_step_array(self):
-        """Returns array with power2energy time steps."""
-        times = {
-            st: self.energy_system.time_steps.convert_time_step_energy2power(st)
-            for st in self.sets["set_time_steps_storage"]
-        }
-        times = pd.Series(times, name="set_time_steps_operation")
-        times.index.name = "set_time_steps_storage"
-        return times
-
-    def get_storage2year_time_step_array(self):
-        """Returns array with storage2year time steps."""
-        times = {
-            st: y
-            for y in self.sets["set_time_steps_yearly"]
-            for st in self.energy_system.time_steps.get_time_steps_year2storage(y)
-        }
-        times = pd.Series(times, name="set_time_steps_yearly")
-        times.index.name = "set_time_steps_storage"
-        return times
-
-    def map_and_expand(self, array, mapping):
-        """Maps and expands array.
-
-        :param array: xarray to map and expand
-        :param mapping: pd.Series with mapping values
-        """
-        assert isinstance(mapping, pd.Series) or isinstance(
-            mapping.index, pd.Index
-        ), "Mapping must be a pd.Series or with a single-level pd.Index"
-        # get mapping values
-        array = array.sel({mapping.name: mapping.values})
-        # rename
-        array = array.rename({mapping.name: mapping.index.name})
-        # assign coordinates
-        array = array.assign_coords({mapping.index.name: mapping.index})
-        return array
-
-    def align_and_mask(self, expr, mask):
-        """Aligns and masks expr.
-
-        :param expr: expression to align and mask
-        :param mask: mask to apply
-        """
-        if isinstance(expr, xr.DataArray):
-            aligner = expr
-        elif isinstance(expr, lp.Variable):
-            aligner = expr.lower
-        else:
-            aligner = expr.const
-        mask = xr.align(mask, aligner, join="right")[0]
-        expr = expr.where(mask)
-        return expr
-
-    def get_flow_expression_conversion(self, techs, nodes, factor=None, rename=False):
-        """Return the flow expression for conversion technologies."""
-        reference_flows = []
-        for t in techs:
-            rc = self.sets["set_reference_carriers"][t][0]
-            if factor is not None:
-                mult = factor.loc[t, nodes]
-            else:
-                mult = 1
-            # TODO can we avoid the indexing here?
-            if rc in self.sets["set_input_carriers"][t]:
-                reference_flows.append(
-                    mult * self.variables["flow_conversion_input"].loc[t, rc, nodes, :]
-                )
-            else:
-                reference_flows.append(
-                    mult * self.variables["flow_conversion_output"].loc[t, rc, nodes, :]
-                )
-        if rename:
-            term_reference_flow = lp.merge(
-                reference_flows,
-                dim="set_technologies",
-                join="outer",
-                coords="minimal",
-                compat="override",
-                cls=LinearExpression,
-            ).rename({"set_nodes": "set_location"})
-        else:
-            term_reference_flow = lp.merge(
-                reference_flows,
-                dim="set_conversion_technologies",
-                join="outer",
-                coords="minimal",
-                compat="override",
-                cls=LinearExpression,
-            )
-        return term_reference_flow
-
-    def get_flow_expression_storage(self, rename=True):
-        """Return the flow expression for storage technologies."""
-        term = (
-            self.variables["flow_storage_charge"]
-            + self.variables["flow_storage_discharge"]
+        zen_model.parameters.add_parameter(
+            name=name,
+            doc=doc,
+            data=data,
+            dict_of_units=dict_of_units,
         )
-        if rename:
-            return term.rename(
-                {
-                    "set_storage_technologies": "set_technologies",
-                    "set_nodes": "set_location",
-                }
+
+    def _initialize_component(
+        self,
+        zen_model: ZenModel,
+        energy_system: "EnergySystem",
+        component_name: str,
+        index_names: list[str],
+        capacity_types: bool = False,
+    ):
+        """Initialize a modeling component by extracting the stored input data.
+
+        Args:
+            calling_class: class from where the method is called
+            component_name: name of modeling component
+            index_names: names of index sets, only if calling_class is not EnergySystem
+            set_time_steps: time steps, only if calling_class is EnergySystem
+            capacity_types: boolean if extracted for capacities
+            component_data: data to initialize the component
+        """
+
+        if index_names is None:
+            raise ValueError(f"Index names for {component_name} not specified")
+        custom_set, index_list = self.create_custom_set(
+            index_names, zen_model, energy_system
+        )
+        component_data, dict_of_units, attribute_is_series = (
+            self.element_registry.get_attribute_of_all_elements(
+                self.element_class,
+                component_name,
+                capacity_types=capacity_types,
+                return_attribute_is_series=True,
             )
-        else:
-            return term
+        )
+        if np.size(custom_set):
+            if attribute_is_series:
+                component_data = pd.concat(component_data, keys=component_data.keys())
+            else:
+                component_data = pd.Series(component_data)
+            component_data = self._check_for_subindex(component_data, custom_set)
+
+        return component_data, index_list, dict_of_units
+
+    def _check_for_subindex(self, component_data, custom_set):
+        """Check if the custom_set can be a subindex of component_data.
+
+        returns subindexed component_data.
+
+        :param component_data: extracted data as pd.Series
+        :param custom_set: custom set as subindex of component_data
+        :return: component_data: extracted subindexed data as pd.Series
+        """
+        # if custom_set is subindex of component_data, return subset of component_data
+        try:
+            if len(component_data) == len(custom_set) and len(custom_set[0]) == len(
+                component_data.index[0]
+            ):
+                return component_data
+            else:
+                return component_data[custom_set]
+        # else delete trivial index levels (that have a single value) and try again
+        except Exception:
+            _custom_index = pd.Index(custom_set)
+            _reduced_custom_index = _custom_index.copy()
+            assert isinstance(_custom_index, pd.MultiIndex), (
+                f"Custom set {custom_set} is not a MultiIndex. "
+                f"Please check the index sets of the component."
+            )
+            for _level, _shape in enumerate(_custom_index.levshape):
+                if _shape == 1:
+                    _reduced_custom_index = _reduced_custom_index.droplevel(_level)
+            try:
+                component_data = component_data[_reduced_custom_index]
+                component_data.index = _custom_index
+                return component_data
+            except KeyError as err:
+                raise KeyError(
+                    f"the custom set {custom_set} cannot be used as a subindex of"
+                    f"{component_data.index}"
+                ) from err
+
+    def _ensure_pd_series_multi_index(self, component_data):
+        """Convert pd.Series index to pd.MultiIndex.
+
+        :param component_data: extracted data as pd.Series
+        :return: component_data: extracted data as pd.Series with MultiIndex
+        """
+        if isinstance(component_data, pd.Series) and not isinstance(
+            component_data.index, pd.MultiIndex
+        ):
+            component_data.index = pd.MultiIndex.from_product(
+                [component_data.index.to_list()]
+            )
+        return component_data

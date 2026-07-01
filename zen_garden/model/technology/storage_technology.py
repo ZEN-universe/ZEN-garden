@@ -3,14 +3,27 @@ technologies. The class takes the abstract optimization model as an input, and r
 the parameters, variables and constraints that hold for the storage technologies.
 """
 
+import logging
+from typing import TYPE_CHECKING, override
+
 import numpy as np
 import xarray as xr
 
+from zen_garden.model.components.index_set import IndexSet
+from zen_garden.model.config import Config
+from zen_garden.model.context import Context
+from zen_garden.model.element import ElementConstructor
+from zen_garden.model.generic_rule import GenericRule
+from zen_garden.model.technology.technology import Technology
+from zen_garden.model.zen_model import ZenModel
 from zen_garden.utils import linexpr_from_tuple_np
 
-from ..component import IndexSet
-from ..element import Element, GenericRule
-from .technology import Technology
+if TYPE_CHECKING:
+    from zen_garden.model.energy_system import EnergySystem
+    from zen_garden.preprocess.unit_handling import UnitHandling
+    from zen_garden.services.element_registry import ElementRegistry
+
+logger = logging.getLogger(__name__)
 
 
 class StorageTechnology(Technology):
@@ -20,13 +33,23 @@ class StorageTechnology(Technology):
     label = "set_storage_technologies"
     location_type = "set_nodes"
 
-    def __init__(self, tech, optimization_setup):
+    def __init__(
+        self,
+        tech,
+        config: Config,
+        context: Context,
+        energy_system: "EnergySystem",
+        element_registry: "ElementRegistry",
+        unit_handling: "UnitHandling",
+    ):
         """Init storage technology object.
 
         :param tech: name of added technology
         :param optimization_setup: The OptimizationSetup the element is part of
         """
-        super().__init__(tech, optimization_setup)
+        super().__init__(
+            tech, config, context, energy_system, element_registry, unit_handling
+        )
         # store carriers of storage technology
         self.store_carriers()
 
@@ -154,7 +177,9 @@ class StorageTechnology(Technology):
             self.capex_specific_storage_energy * fraction_year
         )
 
-    def calculate_capex_of_single_capacity(self, capacity, index, storage_energy=False):
+    def calculate_capex_of_single_capacity(
+        self, capacity, index, storage_energy=False, **kwargs
+    ):
         """This method calculates the annualized capex of a single existing capacity.
 
         :param capacity: capacity of storage technology
@@ -170,37 +195,50 @@ class StorageTechnology(Technology):
             absolute_capex = self.capex_specific_storage[index[0]].iloc[0] * capacity
         return absolute_capex
 
-    ### --- classmethods to construct sets, parameters, variables, and constraints,
-    # that correspond to StorageTechnology --- ###
-    @classmethod
-    def construct_sets(cls, optimization_setup):
+
+class StorageTechnologyConstructor(ElementConstructor):
+    element_class = StorageTechnology
+
+    @override
+    def has_elements(self) -> bool:
+        """Checks if there are any elements of the class <Carrier>.
+
+        :return: True if there are elements, False otherwise
+        """
+        return True
+
+    def construct_sets(self, zen_model: ZenModel, energy_system: "EnergySystem"):
         """Constructs the pe.Sets of the class <StorageTechnology>.
 
         :param optimization_setup: The OptimizationSetup the element is part of
         """
-        pass
+        logger.info("Constructing sets for StorageTechnology")
 
-    @classmethod
-    def construct_params(cls, optimization_setup):
+    def construct_params(self, zen_model: ZenModel, energy_system: "EnergySystem"):
         """Constructs the pe.Params of the class <StorageTechnology>.
 
         :param optimization_setup: The OptimizationSetup the element is part of
         """
+        logger.info("Constructing parameters for StorageTechnology")
         # energy to power ratio
-        optimization_setup.parameters.add_parameter(
+        self.add_parameter(
+            zen_model,
+            energy_system,
             name="energy_to_power_ratio_min",
             index_names=["set_storage_technologies"],
             doc="power to energy ratio for storage technologies - lower bound",
-            calling_class=cls,
         )
-        optimization_setup.parameters.add_parameter(
+        self.add_parameter(
+            zen_model,
+            energy_system,
             name="energy_to_power_ratio_max",
             index_names=["set_storage_technologies"],
             doc="power to energy ratio for storage technologies - upper bound",
-            calling_class=cls,
         )
         # efficiency charge
-        optimization_setup.parameters.add_parameter(
+        self.add_parameter(
+            zen_model,
+            energy_system,
             name="efficiency_charge",
             index_names=[
                 "set_storage_technologies",
@@ -208,10 +246,11 @@ class StorageTechnology(Technology):
                 "set_time_steps_yearly",
             ],
             doc="efficiency during charging for storage technologies",
-            calling_class=cls,
         )
         # efficiency discharge
-        optimization_setup.parameters.add_parameter(
+        self.add_parameter(
+            zen_model,
+            energy_system,
             name="efficiency_discharge",
             index_names=[
                 "set_storage_technologies",
@@ -219,10 +258,11 @@ class StorageTechnology(Technology):
                 "set_time_steps_yearly",
             ],
             doc="efficiency during discharging for storage technologies",
-            calling_class=cls,
         )
         #  flow_storage_inflow
-        optimization_setup.parameters.add_parameter(
+        self.add_parameter(
+            zen_model,
+            energy_system,
             name="flow_storage_inflow",
             index_names=[
                 "set_storage_technologies",
@@ -230,17 +270,19 @@ class StorageTechnology(Technology):
                 "set_time_steps_operation",
             ],
             doc="energy inflow in storage technologies",
-            calling_class=cls,
         )
         # self discharge
-        optimization_setup.parameters.add_parameter(
+        self.add_parameter(
+            zen_model,
+            energy_system,
             name="self_discharge",
             index_names=["set_storage_technologies", "set_nodes"],
             doc="self discharge of storage technologies",
-            calling_class=cls,
         )
         # capex specific
-        optimization_setup.parameters.add_parameter(
+        self.add_parameter(
+            zen_model,
+            energy_system,
             name="capex_specific_storage",
             index_names=[
                 "set_storage_technologies",
@@ -250,18 +292,18 @@ class StorageTechnology(Technology):
             ],
             capacity_types=True,
             doc="specific capex of storage technologies",
-            calling_class=cls,
         )
 
-    @classmethod
-    def construct_vars(cls, optimization_setup):
+    def construct_vars(self, zen_model: ZenModel, energy_system: "EnergySystem"):
         """Constructs the pe.Vars of the class <StorageTechnology>.
 
         :param optimization_setup: The OptimizationSetup the element is part of
         """
-        model = optimization_setup.model
-        variables = optimization_setup.variables
-        sets = optimization_setup.sets
+        logger.info("Constructing variables for StorageTechnology")
+
+        model = zen_model.lp_model
+        variables = zen_model.variables
+        sets = zen_model.sets
 
         def flow_storage_bounds(index_values, index_list):
             """Return bounds of carrier_flow for bigM expression.
@@ -274,7 +316,7 @@ class StorageTechnology(Technology):
             tech_arr, node_arr, time_arr = sets.tuple_to_arr(index_values, index_list)
             # convert operationTimeStep to time_step_year:
             #   operationTimeStep -> base_time_step -> time_step_year
-            ts = optimization_setup.energy_system.time_steps
+            ts = energy_system.time_steps
             time_step_year = xr.DataArray(
                 [ts.convert_time_step_operation2year(time) for time in time_arr.data]
             )
@@ -291,13 +333,13 @@ class StorageTechnology(Technology):
             return np.stack([lower, upper], axis=-1)
 
         # flow of carrier on node into storage
-        index_values, index_names = cls.create_custom_set(
+        index_values, index_names = self.create_custom_set(
             ["set_storage_technologies", "set_nodes", "set_time_steps_operation"],
-            optimization_setup,
+            zen_model,
+            energy_system,
         )
         bounds = flow_storage_bounds(index_values, index_names)
         variables.add_variable(
-            model,
             name="flow_storage_charge",
             index_sets=(index_values, index_names),
             bounds=bounds,
@@ -306,7 +348,6 @@ class StorageTechnology(Technology):
         )
         # flow of carrier on node out of storage
         variables.add_variable(
-            model,
             name="flow_storage_discharge",
             index_sets=(index_values, index_names),
             bounds=bounds,
@@ -315,11 +356,11 @@ class StorageTechnology(Technology):
         )
         # storage level
         variables.add_variable(
-            model,
             name="storage_level",
-            index_sets=cls.create_custom_set(
+            index_sets=self.create_custom_set(
                 ["set_storage_technologies", "set_nodes", "set_time_steps_storage"],
-                optimization_setup,
+                zen_model,
+                energy_system,
             ),
             bounds=(0, np.inf),
             doc="storage level of storage technology ón node in each storage time step",
@@ -327,7 +368,6 @@ class StorageTechnology(Technology):
         )
         # energy spillage
         variables.add_variable(
-            model,
             name="flow_storage_spillage",
             index_sets=(index_values, index_names),
             bounds=(0, np.inf),
@@ -336,9 +376,8 @@ class StorageTechnology(Technology):
             unit_category={"energy_quantity": 1, "time": -1},
         )
         # charge discharge binary
-        if optimization_setup.system.storage_charge_discharge_binary:
+        if self.config.system.storage_charge_discharge_binary:
             variables.add_variable(
-                model,
                 name="charge_storage_binary",
                 index_sets=(index_values, index_names),
                 binary=True,
@@ -346,50 +385,65 @@ class StorageTechnology(Technology):
                 unit_category=None,
             )
 
-    @classmethod
-    def construct_constraints(cls, optimization_setup):
+    def construct_constraints(self, zen_model: ZenModel, energy_system: "EnergySystem"):
         """Constructs the Constraints of the class <StorageTechnology>.
 
         :param optimization_setup: The OptimizationSetup the element is part of
         """
-        rules = StorageTechnologyRules(optimization_setup)
+        logger.info("Constructing constraints for StorageTechnology")
+
+        rules = StorageTechnologyRules(self.config, self.context)
         # limit flow by capacity and max load
-        rules.constraint_capacity_factor_storage()
+        rules.constraint_capacity_factor_storage(zen_model, energy_system)
 
         # opex and emissions constraint for storage technologies
-        rules.constraint_opex_emissions_technology_storage()
+        rules.constraint_opex_emissions_technology_storage(zen_model, energy_system)
 
         # Limit storage level
-        rules.constraint_storage_level_max()
+        rules.constraint_storage_level_max(zen_model, energy_system)
 
         # couple storage levels
-        rules.constraint_couple_storage_level()
+        rules.constraint_couple_storage_level(zen_model, energy_system)
 
         # spillage limit
-        rules.constraint_flow_storage_spillage()
+        rules.constraint_flow_storage_spillage(zen_model, energy_system)
 
         # limit energy to power ratios of capacity additions
-        rules.constraint_capacity_energy_to_power_ratio()
+        rules.constraint_capacity_energy_to_power_ratio(zen_model, energy_system)
 
         # Linear Capex
-        rules.constraint_storage_technology_capex()
+        index_values, index_names = self.create_custom_set(
+            [
+                "set_storage_technologies",
+                "set_capacity_types",
+                "set_nodes",
+                "set_time_steps_yearly",
+            ],
+            zen_model,
+            energy_system,
+        )
+        rules.constraint_storage_technology_capex(
+            zen_model, energy_system, index_values, index_names
+        )
 
         # avoid simultaneous charge and discharge
-        if optimization_setup.system.storage_charge_discharge_binary:
-            rules.constraint_charge_discharge_binary()
+        if self.config.system.storage_charge_discharge_binary:
+            rules.constraint_charge_discharge_binary(zen_model, energy_system)
 
 
 class StorageTechnologyRules(GenericRule):
     """Rules for the StorageTechnology class."""
 
-    def __init__(self, optimization_setup):
-        """Inits the rules for a given EnergySystem.
+    def __init__(self, config: Config, context: Context):
+        """Inits the rules for a given ".
 
         :param optimization_setup: The OptimizationSetup the element is part of
         """
-        super().__init__(optimization_setup)
+        super().__init__(config, context)
 
-    def constraint_charge_discharge_binary(self):
+    def constraint_charge_discharge_binary(
+        self, zen_model: ZenModel, energy_system: "EnergySystem"
+    ):
         """Avoid simultaneous charge and discharge of storage technologies.
 
         Ensure that the storage technology cannot charge and discharge simultaneously
@@ -414,13 +468,13 @@ class StorageTechnologyRules(GenericRule):
         storage technology :math:`k` is in charging mode (1) or discharging mode (0) at
         location :math:`n` at time step :math:`t` in year :math:`y` \n
         """
-        techs = self.sets["set_storage_technologies"]
-        nodes = self.sets["set_nodes"]
+        techs = zen_model.sets["set_storage_technologies"]
+        nodes = zen_model.sets["set_nodes"]
         if len(techs) == 0:
             return
         # capacity limit as upper bound
-        times = self.get_storage2year_time_step_array()
-        capacity_limit = self.parameters.capacity_limit
+        times = self.get_storage2year_time_step_array(zen_model, energy_system)
+        capacity_limit = zen_model.parameters.capacity_limit
         capacity_limit = self.map_and_expand(capacity_limit, times)
         capacity_limit = capacity_limit.rename(
             {
@@ -440,27 +494,29 @@ class StorageTechnologyRules(GenericRule):
         )
 
         lhs = (
-            self.variables["flow_storage_charge"]
-            - self.variables["charge_storage_binary"] * capacity_limit
+            zen_model.lp_model.variables["flow_storage_charge"]
+            - zen_model.lp_model.variables["charge_storage_binary"] * capacity_limit
         )
         rhs = 0
         constraint_charge = lhs <= rhs
 
         lhs = (
-            self.variables["flow_storage_discharge"]
-            + self.variables["charge_storage_binary"] * capacity_limit
+            zen_model.lp_model.variables["flow_storage_discharge"]
+            + zen_model.lp_model.variables["charge_storage_binary"] * capacity_limit
         )
         rhs = capacity_limit
         constraint_discharge = lhs <= rhs
 
-        self.constraints.add_constraint(
+        zen_model.constraints.add_constraint(
             "constraint_charge_storage_binary", constraint_charge
         )
-        self.constraints.add_constraint(
+        zen_model.constraints.add_constraint(
             "constraint_discharge_storage_binary", constraint_discharge
         )
 
-    def constraint_capacity_factor_storage(self):
+    def constraint_capacity_factor_storage(
+        self, zen_model: ZenModel, energy_system: "EnergySystem"
+    ):
         """Limits load of storage technologies by capacity and maximum load factor.
 
         .. math::
@@ -478,19 +534,21 @@ class StorageTechnologyRules(GenericRule):
 
 
         """
-        techs = self.sets["set_storage_technologies"]
+        techs = zen_model.sets["set_storage_technologies"]
         if len(techs) == 0:
             return
-        nodes = self.sets["set_nodes"]
-        times = self.variables.coords["set_time_steps_operation"]
-        ts = self.optimization_setup.energy_system.time_steps
+        nodes = zen_model.sets["set_nodes"]
+        times = zen_model.lp_model.variables.coords["set_time_steps_operation"]
+        ts = energy_system.time_steps
         time_step_year = xr.DataArray(
             [ts.convert_time_step_operation2year(t) for t in times.data],
             coords=[times],
         )
         term_capacity = (
-            self.parameters.max_load.loc[techs, nodes, :]
-            * self.variables["capacity"].loc[techs, "power", nodes, time_step_year]
+            zen_model.parameters.max_load.loc[techs, nodes, :]
+            * zen_model.lp_model.variables["capacity"].loc[
+                techs, "power", nodes, time_step_year
+            ]
         ).rename(
             {
                 "set_technologies": "set_storage_technologies",
@@ -499,15 +557,17 @@ class StorageTechnologyRules(GenericRule):
         )
 
         # TODO integrate level storage here as well
-        lhs = term_capacity - self.get_flow_expression_storage(rename=False)
+        lhs = term_capacity - self.get_flow_expression_storage(zen_model, rename=False)
         rhs = 0
         constraints = lhs >= rhs
         ### return
-        self.constraints.add_constraint(
+        zen_model.constraints.add_constraint(
             "constraint_capacity_factor_storage", constraints
         )
 
-    def constraint_opex_emissions_technology_storage(self):
+    def constraint_opex_emissions_technology_storage(
+        self, zen_model: ZenModel, energy_system: "EnergySystem"
+    ):
         """Calculate opex of each technology.
 
         .. math::
@@ -530,20 +590,21 @@ class StorageTechnologyRules(GenericRule):
         on node :math:`n`
 
         """
-        techs = self.sets["set_storage_technologies"]
+        techs = zen_model.sets["set_storage_technologies"]
         if len(techs) == 0:
             return
-        nodes = self.sets["set_nodes"]
-        lhs_opex = self.variables["cost_opex_variable"].sel(
+        nodes = zen_model.sets["set_nodes"]
+        lhs_opex = zen_model.lp_model.variables["cost_opex_variable"].sel(
             {"set_technologies": techs, "set_location": nodes}
         ) - (
-            self.parameters.opex_specific_variable * self.get_flow_expression_storage()
+            zen_model.parameters.opex_specific_variable
+            * self.get_flow_expression_storage(zen_model)
         )
-        lhs_emissions = self.variables["carbon_emissions_technology"].sel(
+        lhs_emissions = zen_model.lp_model.variables["carbon_emissions_technology"].sel(
             {"set_technologies": techs, "set_location": nodes}
         ) - (
-            self.parameters.carbon_intensity_technology
-            * self.get_flow_expression_storage()
+            zen_model.parameters.carbon_intensity_technology
+            * self.get_flow_expression_storage(zen_model)
         )
         lhs_opex = lhs_opex.rename(
             {
@@ -561,14 +622,16 @@ class StorageTechnologyRules(GenericRule):
         constraints_opex = lhs_opex == rhs
         constraints_emissions = lhs_emissions == rhs
 
-        self.constraints.add_constraint(
+        zen_model.constraints.add_constraint(
             "constraint_opex_technology_storage", constraints_opex
         )
-        self.constraints.add_constraint(
+        zen_model.constraints.add_constraint(
             "constraint_carbon_emissions_technology_storage", constraints_emissions
         )
 
-    def constraint_storage_level_max(self):
+    def constraint_storage_level_max(
+        self, zen_model: ZenModel, energy_system: "EnergySystem"
+    ):
         """Limit maximum storage level to capacity.
 
         .. math::
@@ -580,13 +643,13 @@ class StorageTechnologyRules(GenericRule):
         on node :math:`n` in year :math:`y`
 
         """
-        techs = self.sets["set_storage_technologies"]
-        nodes = self.sets["set_nodes"]
+        techs = zen_model.sets["set_storage_technologies"]
+        nodes = zen_model.sets["set_nodes"]
         if len(techs) == 0:
             return
         # mask for energy capacity and storage time steps
-        times = self.get_storage2year_time_step_array()
-        capacity = self.map_and_expand(self.variables["capacity"], times)
+        times = self.get_storage2year_time_step_array(zen_model, energy_system)
+        capacity = self.map_and_expand(zen_model.lp_model.variables["capacity"], times)
         capacity = capacity.rename(
             {
                 "set_technologies": "set_storage_technologies",
@@ -594,17 +657,22 @@ class StorageTechnologyRules(GenericRule):
             }
         )
         capacity = capacity.sel({"set_nodes": nodes, "set_storage_technologies": techs})
-        storage_level = self.variables["storage_level"]
+        storage_level = zen_model.lp_model.variables["storage_level"]
         mask_capacity_type = (
-            self.variables["capacity"].coords["set_capacity_types"] == "energy"
+            zen_model.lp_model.variables["capacity"].coords["set_capacity_types"]
+            == "energy"
         )
         lhs = (storage_level - capacity).where(mask_capacity_type, 0.0)
         rhs = 0
         constraints = lhs <= rhs
 
-        self.constraints.add_constraint("constraint_storage_level_max", constraints)
+        zen_model.constraints.add_constraint(
+            "constraint_storage_level_max", constraints
+        )
 
-    def constraint_capacity_energy_to_power_ratio(self):
+    def constraint_capacity_energy_to_power_ratio(
+        self, zen_model: ZenModel, energy_system: "EnergySystem"
+    ):
         """Limit capacity power to energy ratio.
 
         .. math::
@@ -621,15 +689,15 @@ class StorageTechnologyRules(GenericRule):
         :math:`\\rho_k^{max}`: maximum power-to-energy ratio of storage :math:`k`
 
         """
-        techs = self.sets["set_storage_technologies"]
+        techs = zen_model.sets["set_storage_technologies"]
         if len(techs) == 0:
             return None
-        e2p_min = self.parameters.energy_to_power_ratio_min
-        e2p_max = self.parameters.energy_to_power_ratio_max
+        e2p_min = zen_model.parameters.energy_to_power_ratio_min
+        e2p_max = zen_model.parameters.energy_to_power_ratio_max
         mask_min = e2p_min != np.inf
         mask_max = e2p_max != np.inf
 
-        capacity_addition = self.variables["capacity_addition"].rename(
+        capacity_addition = zen_model.lp_model.variables["capacity_addition"].rename(
             {"set_technologies": "set_storage_technologies"}
         )
         capacity_addition_power = capacity_addition.sel(
@@ -648,14 +716,16 @@ class StorageTechnologyRules(GenericRule):
         )
         constraints_max = lhs <= rhs
 
-        self.constraints.add_constraint(
+        zen_model.constraints.add_constraint(
             "constraint_capacity_energy_to_power_ratio_min", constraints_min
         )
-        self.constraints.add_constraint(
+        zen_model.constraints.add_constraint(
             "constraint_capacity_energy_to_power_ratio_max", constraints_max
         )
 
-    def constraint_couple_storage_level(self):
+    def constraint_couple_storage_level(
+        self, zen_model: ZenModel, energy_system: "EnergySystem"
+    ):
         """Couple subsequent storage levels (time coupling constraints).
 
         .. math::
@@ -681,13 +751,13 @@ class StorageTechnologyRules(GenericRule):
         year :math:`y`
 
         """
-        techs = self.sets["set_storage_technologies"]
+        techs = zen_model.sets["set_storage_technologies"]
         if len(techs) == 0:
             return
-        self_discharge = self.parameters.self_discharge
-        flow_storage_inflow = self.parameters.flow_storage_inflow
-        flow_storage_spillage = self.variables.flow_storage_spillage
-        time_steps_storage_duration = self.parameters.time_steps_storage_duration
+        self_discharge = zen_model.parameters.self_discharge
+        flow_storage_inflow = zen_model.parameters.flow_storage_inflow
+        flow_storage_spillage = zen_model.lp_model.variables.flow_storage_spillage
+        time_steps_storage_duration = zen_model.parameters.time_steps_storage_duration
         # reformulate self discharge multiplier as partial geometric series
         multiplier_w_discharge = (
             1 - (1 - self_discharge) ** time_steps_storage_duration
@@ -697,33 +767,40 @@ class StorageTechnologyRules(GenericRule):
             self_discharge != 0, 0.0
         ) + multiplier_wo_discharge.where(self_discharge == 0, 0.0)
         # time coupling to previous time step
-        times_coupling, mask_coupling = self.get_previous_storage_time_step_array()
+        times_coupling, mask_coupling = self.get_previous_storage_time_step_array(
+            zen_model, energy_system
+        )
         self_discharge_previous = (1 - self_discharge) ** time_steps_storage_duration
         self_discharge_previous["set_time_steps_storage"] = times_coupling
-        term_delta_storage_level = self.variables[
+        term_delta_storage_level = zen_model.lp_model.variables[
             "storage_level"
-        ] - self_discharge_previous * self.variables["storage_level"].sel(
+        ] - self_discharge_previous * zen_model.lp_model.variables["storage_level"].sel(
             {"set_time_steps_storage": times_coupling}
         )
         # charge and discharge flow
-        times_year_time_step = self.get_year_time_step_array()
+        times_year_time_step = self.get_year_time_step_array(zen_model, energy_system)
         efficiency_charge = (
-            self.parameters.efficiency_charge.broadcast_like(times_year_time_step)
+            zen_model.parameters.efficiency_charge.broadcast_like(times_year_time_step)
             .where(times_year_time_step, 0.0)
             .sum("set_time_steps_yearly")
         )
         efficiency_discharge = (
-            self.parameters.efficiency_discharge.broadcast_like(times_year_time_step)
+            zen_model.parameters.efficiency_discharge.broadcast_like(
+                times_year_time_step
+            )
             .where(times_year_time_step, 0.0)
             .sum("set_time_steps_yearly")
         )
         term_flow_charge_discharge = (
-            self.variables["flow_storage_charge"] * efficiency_charge
-            - self.variables["flow_storage_discharge"] / efficiency_discharge
+            zen_model.lp_model.variables["flow_storage_charge"] * efficiency_charge
+            - zen_model.lp_model.variables["flow_storage_discharge"].to_linexpr()
+            / efficiency_discharge
             + flow_storage_inflow
             - flow_storage_spillage
         )
-        times_power2energy = self.get_power2energy_time_step_array()
+        times_power2energy = self.get_power2energy_time_step_array(
+            zen_model, energy_system
+        )
         term_flow_charge_discharge = self.map_and_expand(
             term_flow_charge_discharge, times_power2energy
         )
@@ -735,9 +812,13 @@ class StorageTechnologyRules(GenericRule):
         rhs = 0
         constraints = lhs == rhs
 
-        self.constraints.add_constraint("constraint_couple_storage_level", constraints)
+        zen_model.constraints.add_constraint(
+            "constraint_couple_storage_level", constraints
+        )
 
-    def constraint_flow_storage_spillage(self):
+    def constraint_flow_storage_spillage(
+        self, zen_model: ZenModel, energy_system: "EnergySystem"
+    ):
         """Ensure that flow_energy_spillage is not greater than the flow_storage_inflow.
 
         .. math::
@@ -745,20 +826,28 @@ class StorageTechnologyRules(GenericRule):
         Todo:
 
         """
-        techs = self.sets["set_storage_technologies"]
+        techs = zen_model.sets["set_storage_technologies"]
         if len(techs) == 0:
             return
 
-        flow_storage_inflow = self.parameters.flow_storage_inflow
-        flow_storage_spillage = self.variables.flow_storage_spillage
+        flow_storage_inflow = zen_model.parameters.flow_storage_inflow
+        flow_storage_spillage = zen_model.lp_model.variables.flow_storage_spillage
 
         lhs = flow_storage_spillage - flow_storage_inflow
         rhs = 0
         constraints = lhs <= rhs
 
-        self.constraints.add_constraint("constraint_flow_storage_spillage", constraints)
+        zen_model.constraints.add_constraint(
+            "constraint_flow_storage_spillage", constraints
+        )
 
-    def constraint_storage_technology_capex(self):
+    def constraint_storage_technology_capex(
+        self,
+        zen_model: ZenModel,
+        energy_system: "EnergySystem",
+        index_values,
+        index_names,
+    ):
         """Definition of the capital expenditures for the storage technology.
 
         .. math::
@@ -771,17 +860,6 @@ class StorageTechnologyRules(GenericRule):
 
 
         """
-        # TODO clean up
-        ### index sets
-        index_values, index_names = Element.create_custom_set(
-            [
-                "set_storage_technologies",
-                "set_capacity_types",
-                "set_nodes",
-                "set_time_steps_yearly",
-            ],
-            self.optimization_setup,
-        )
         # check if we need to continue
         if len(index_values) == 0:
             return []
@@ -798,10 +876,10 @@ class StorageTechnologyRules(GenericRule):
             index_values, index_names, unique=True
         )
         coords = [
-            self.variables.coords["set_storage_technologies"],
-            self.variables.coords["set_capacity_types"],
-            self.variables.coords["set_nodes"],
-            self.variables.coords["set_time_steps_yearly"],
+            zen_model.lp_model.variables.coords["set_storage_technologies"],
+            zen_model.lp_model.variables.coords["set_capacity_types"],
+            zen_model.lp_model.variables.coords["set_nodes"],
+            zen_model.lp_model.variables.coords["set_time_steps_yearly"],
         ]
 
         ### formulate constraint
@@ -809,25 +887,25 @@ class StorageTechnologyRules(GenericRule):
             [
                 (
                     1.0,
-                    self.variables["cost_capex_overnight"].loc[
+                    zen_model.lp_model.variables["cost_capex_overnight"].loc[
                         techs, capacity_types, nodes, times
                     ],
                 ),
                 (
-                    -self.parameters.capex_specific_storage.loc[
+                    -zen_model.parameters.capex_specific_storage.loc[
                         techs, capacity_types, nodes, times
                     ],
-                    self.variables["capacity_addition"].loc[
+                    zen_model.lp_model.variables["capacity_addition"].loc[
                         techs, capacity_types, nodes, times
                     ],
                 ),
             ],
             coords,
-            self.model,
+            zen_model.lp_model,
         )
         rhs = 0
         constraints = lhs == rhs
 
-        self.constraints.add_constraint(
+        zen_model.constraints.add_constraint(
             "constraint_storage_technology_capex", constraints
         )
