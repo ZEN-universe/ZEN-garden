@@ -1,4 +1,4 @@
-.. _t_tsa.t_tsa:
+﻿.. _t_tsa.t_tsa:
 
 ###################################
 Tutorial 5: Time Series Aggregation
@@ -18,7 +18,7 @@ That means that in general we have three different time indices:
    multiple base time steps. The sequence of the representative time steps 
    is called ``sequence_time_steps``. The number of occurrences of 
    each representative time step is called ``time_steps_duration``.
-2. ``set_time_steps_yearly``: Some components have a yearly resolution. These 
+2. ``set_years``: Some components have a yearly resolution. These 
    include for example the yearly carbon emission limit 
    (``carbon_emissions_limit``) or the yearly costs (``cost_total``). Note that 
    these are in general not associated with any specific element (technology or 

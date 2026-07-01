@@ -1,4 +1,4 @@
-"""Functions to extract the input data from the provided input files."""
+﻿"""Functions to extract the input data from the provided input files."""
 
 import copy
 import json
@@ -579,8 +579,8 @@ class DataInput:
                     if i not in self.optimization_setup.year_specific_ts:
                         self.optimization_setup.year_specific_ts[i] = {}
                     self.optimization_setup.year_specific_ts[i][
-                            (self.element._name, file_name)
-                        ] = (df_output_specific * scenario_factor)
+                        (self.element._name, file_name)
+                    ] = (df_output_specific * scenario_factor)
 
     def extract_yearly_variation(self, file_name, index_sets):
         """Reads the yearly variation of a time dependent quantity.
@@ -594,7 +594,7 @@ class DataInput:
         # time steps
         index_sets = copy.deepcopy(index_sets)
         index_sets.remove("set_hours")
-        index_sets.append("set_time_steps_yearly")
+        index_sets.append("set_years")
         # add Yearly_variation to file_name
         file_name += "_yearly_variation"
         # read input data
@@ -623,7 +623,7 @@ class DataInput:
                 file_name,
                 index_name_list,
                 default_value,
-                time_steps="set_time_steps_yearly",
+                time_steps="set_years",
             )
             # apply the scenario_factor
             df_output = df_output * scenario_factor
@@ -815,8 +815,8 @@ class DataInput:
         :return: pwa_dict: dictionary with pwa parameters
         """
         attribute_name = "capex_specific_conversion"
-        index_sets = ["set_nodes", "set_time_steps_yearly"]
-        time_steps = "set_time_steps_yearly"
+        index_sets = ["set_nodes", "set_years"]
+        time_steps = "set_years"
         unit_category = {"money": 1, "energy_quantity": -1, "time": 1}
         # import all input data
         df_input_nonlinear, has_unit_nonlinear = self.read_pwa_capex_files()
@@ -1085,11 +1085,8 @@ class DataInput:
         :return: df_input: input dataframe with generic time indices
         """
         # check if input data is time-dependent and has yearly time steps
-        idx_name_year = self.index_names["set_time_steps_yearly"]
-        if (
-            time_steps == "set_time_steps_yearly"
-            or time_steps == "set_time_steps_yearly_entire_horizon"
-        ):
+        idx_name_year = self.index_names["set_years"]
+        if time_steps == "set_years" or time_steps == "set_years_entire_horizon":
             # check if temporal header of input data is still given as 'time'
             # instead of 'year'
             if "time" in df_input.axes[1]:
@@ -1101,11 +1098,7 @@ class DataInput:
                     stacklevel=2,
                 )
                 df_input = df_input.rename(
-                    {
-                        self.index_names["set_hours"]: self.index_names[
-                            "set_time_steps_yearly"
-                        ]
-                    },
+                    {self.index_names["set_hours"]: self.index_names["set_years"]},
                     axis=1,
                 )
             # does not contain annual index
@@ -1143,7 +1136,7 @@ class DataInput:
                 df_input = df_input[list(requested_index_values)].stack()
                 df_input = df_input.reset_index()
             # check if input data is still given with generic time indices
-            temporal_header = self.index_names["set_time_steps_yearly"]
+            temporal_header = self.index_names["set_years"]
             if (
                 max(df_input.loc[:, temporal_header])
                 < self.analysis.earliest_year_of_data
@@ -1158,13 +1151,13 @@ class DataInput:
                 )
                 return df_input
             # assert that correct temporal index_set to get corresponding
-            # index_name is given (i.e. set_time_steps_yearly for input data
+            # index_name is given (i.e. set_years for input data
             # with yearly time steps)(otherwise extract_general_input_data()
             # will find a missing_index)
             assert temporal_header in index_name_list, (
                 "Input data with yearly time steps and therefore the temporal "
                 "header 'year' needs to be extracted with "
-                "index_sets=['set_time_steps_yearly'] instead of "
+                "index_sets=['set_years'] instead of "
                 "index_sets=['set_hours']"
             )
             # set index

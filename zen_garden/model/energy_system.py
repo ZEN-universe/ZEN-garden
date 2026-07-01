@@ -1,4 +1,4 @@
-"""Class defining a standard EnergySystem.
+﻿"""Class defining a standard EnergySystem.
 Contains methods to construct the energy system from the given input data and that
 defines the variables, parameters and constraints which apply to the Energy System.
 The class takes the abstract optimization model as an input.
@@ -91,17 +91,13 @@ class EnergySystem:
                 * self.system.optimized_years,
             )
         )
-        self.set_hours = list(
-            range(0, self.system.unaggregated_time_steps_per_year)
-        )
+        self.set_hours = list(range(0, self.system.unaggregated_time_steps_per_year))
 
         # yearly time steps
-        self.set_time_steps_yearly = list(range(self.system.optimized_years))
-        self.set_time_steps_yearly_entire_horizon = copy.deepcopy(
-            self.set_time_steps_yearly
-        )
+        self.set_years = list(range(self.system.optimized_years))
+        self.set_years_entire_horizon = copy.deepcopy(self.set_years)
         time_steps_yearly_duration = self.time_steps.calculate_time_step_duration(
-            self.set_time_steps_yearly, self.set_hours_all_years
+            self.set_years, self.set_hours_all_years
         )
         self.sequence_time_steps_yearly = np.concatenate(
             [
@@ -138,8 +134,8 @@ class EnergySystem:
         # carbon emissions limit
         self.carbon_emissions_annual_limit = self.data_input.extract_input_data(
             "carbon_emissions_annual_limit",
-            index_sets=["set_time_steps_yearly"],
-            time_steps="set_time_steps_yearly",
+            index_sets=["set_years"],
+            time_steps="set_years",
             unit_category={"emissions": 1},
         )
         _fraction_year = (
@@ -160,8 +156,8 @@ class EnergySystem:
         # price carbon emissions
         self.price_carbon_emissions = self.data_input.extract_input_data(
             "price_carbon_emissions",
-            index_sets=["set_time_steps_yearly"],
-            time_steps="set_time_steps_yearly",
+            index_sets=["set_years"],
+            time_steps="set_years",
             unit_category={"money": 1, "emissions": -1},
         )
         self.price_carbon_emissions_budget_overshoot = (
@@ -353,14 +349,14 @@ class EnergySystem:
         )
         # yearly time steps
         self.optimization_setup.sets.add_set(
-            name="set_time_steps_yearly",
-            data=self.set_time_steps_yearly,
+            name="set_years",
+            data=self.set_years,
             doc="Set of yearly time-steps",
         )
         # yearly time steps of entire optimization horizon
         self.optimization_setup.sets.add_set(
-            name="set_time_steps_yearly_entire_horizon",
-            data=self.set_time_steps_yearly_entire_horizon,
+            name="set_years_entire_horizon",
+            data=self.set_years_entire_horizon,
             doc="Set of yearly time-steps of entire optimization horizon",
         )
         # operational time steps
@@ -403,7 +399,7 @@ class EnergySystem:
         # carbon emissions limit
         parameters.add_parameter(
             name="carbon_emissions_annual_limit",
-            set_time_steps="set_time_steps_yearly",
+            set_time_steps="set_years",
             doc="Parameter which specifies the total limit on carbon emissions",
             calling_class=cls,
         )
@@ -423,7 +419,7 @@ class EnergySystem:
         # carbon price
         parameters.add_parameter(
             name="price_carbon_emissions",
-            set_time_steps="set_time_steps_yearly",
+            set_time_steps="set_years",
             doc="Parameter which specifies the yearly carbon price",
             calling_class=cls,
         )
@@ -467,7 +463,7 @@ class EnergySystem:
         variables.add_variable(
             model,
             name="carbon_emissions_annual",
-            index_sets=sets["set_time_steps_yearly"],
+            index_sets=sets["set_years"],
             doc="annual carbon emissions of energy system",
             unit_category={"emissions": 1},
         )
@@ -475,7 +471,7 @@ class EnergySystem:
         variables.add_variable(
             model,
             name="carbon_emissions_cumulative",
-            index_sets=sets["set_time_steps_yearly"],
+            index_sets=sets["set_years"],
             doc="cumulative carbon emissions of energy system over time for each year",
             unit_category={"emissions": 1},
         )
@@ -483,7 +479,7 @@ class EnergySystem:
         variables.add_variable(
             model,
             name="carbon_emissions_budget_overshoot",
-            index_sets=sets["set_time_steps_yearly"],
+            index_sets=sets["set_years"],
             bounds=(0, np.inf),
             doc="overshoot carbon emissions of energy system "
             "at the end of the time horizon",
@@ -493,7 +489,7 @@ class EnergySystem:
         variables.add_variable(
             model,
             name="carbon_emissions_annual_overshoot",
-            index_sets=sets["set_time_steps_yearly"],
+            index_sets=sets["set_years"],
             bounds=(0, np.inf),
             doc="overshoot of the annual carbon emissions limit of energy system",
             unit_category={"emissions": 1},
@@ -502,7 +498,7 @@ class EnergySystem:
         variables.add_variable(
             model,
             name="cost_carbon_emissions_total",
-            index_sets=sets["set_time_steps_yearly"],
+            index_sets=sets["set_years"],
             doc="total cost of carbon emissions of energy system",
             unit_category={"money": 1},
         )
@@ -510,7 +506,7 @@ class EnergySystem:
         variables.add_variable(
             model,
             name="cost_total",
-            index_sets=sets["set_time_steps_yearly"],
+            index_sets=sets["set_years"],
             doc="total cost of energy system",
             unit_category={"money": 1},
         )
@@ -518,7 +514,7 @@ class EnergySystem:
         variables.add_variable(
             model,
             name="net_present_cost",
-            index_sets=sets["set_time_steps_yearly"],
+            index_sets=sets["set_years"],
             doc="net_present_cost of energy system",
             unit_category={"money": 1},
         )
@@ -605,16 +601,14 @@ class EnergySystemRules(GenericRule):
 
         """
         m = [
-            True if year == self.energy_system.set_time_steps_yearly[0] else False
-            for year in self.energy_system.set_time_steps_yearly
+            True if year == self.energy_system.set_years[0] else False
+            for year in self.energy_system.set_years
         ]
 
         lhs = (
             self.variables["carbon_emissions_cumulative"]
-            - self.variables["carbon_emissions_cumulative"].shift(
-                set_time_steps_yearly=1
-            )
-            - self.variables["carbon_emissions_annual"].shift(set_time_steps_yearly=1)
+            - self.variables["carbon_emissions_cumulative"].shift(set_years=1)
+            - self.variables["carbon_emissions_annual"].shift(set_years=1)
             * (self.system.interval_between_years - 1)
             - self.variables["carbon_emissions_annual"]
         )
@@ -663,8 +657,8 @@ class EnergySystemRules(GenericRule):
 
         """
         m = [
-            year != self.energy_system.set_time_steps_yearly_entire_horizon[-1]
-            for year in self.energy_system.set_time_steps_yearly
+            year != self.energy_system.set_years_entire_horizon[-1]
+            for year in self.energy_system.set_years
         ]
 
         lhs = (
@@ -695,11 +689,11 @@ class EnergySystemRules(GenericRule):
         :math:`dy`: interval between planning periods \n
 
         """
-        factor = pd.Series(index=self.energy_system.set_time_steps_yearly)
-        for year in self.energy_system.set_time_steps_yearly:
+        factor = pd.Series(index=self.energy_system.set_years)
+        for year in self.energy_system.set_years:
 
             ### auxiliary calculations
-            if year == self.energy_system.set_time_steps_yearly_entire_horizon[-1]:
+            if year == self.energy_system.set_years_entire_horizon[-1]:
                 interval_between_years = 1
             else:
                 interval_between_years = self.system.interval_between_years
@@ -709,7 +703,7 @@ class EnergySystemRules(GenericRule):
                     (1 / (1 + self.parameters.discount_rate))
                     ** (
                         self.system.interval_between_years
-                        * (year - self.energy_system.set_time_steps_yearly[0])
+                        * (year - self.energy_system.set_years[0])
                         + _intermediate_time_step
                     )
                 )
@@ -813,8 +807,8 @@ class EnergySystemRules(GenericRule):
 
         """
         mask_last_year = [
-            year == self.energy_system.set_time_steps_yearly[-1]
-            for year in self.energy_system.set_time_steps_yearly
+            year == self.energy_system.set_years[-1]
+            for year in self.energy_system.set_years
         ]
 
         lhs = (
@@ -884,7 +878,7 @@ class EnergySystemRules(GenericRule):
         :param model: optimization model
         :return: net present cost objective function
         """
-        return model.variables["net_present_cost"].sum("set_time_steps_yearly")
+        return model.variables["net_present_cost"].sum("set_years")
 
     def objective_total_carbon_emissions(self, model):
         """Objective function to minimize total emissions.
@@ -901,6 +895,6 @@ class EnergySystemRules(GenericRule):
         sets = self.sets
         return (
             model.variables["carbon_emissions_cumulative"]
-            .at[sets["set_time_steps_yearly"][-1]]
+            .at[sets["set_years"][-1]]
             .to_linexpr()
         )

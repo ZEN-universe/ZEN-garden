@@ -1,4 +1,4 @@
-"""Set default configurations in ZEN_garden.
+﻿"""Set default configurations in ZEN_garden.
 
 This module defines default values for all configurations in ZEN_garden. The
 class :class:`Config` serves as a container grouping all model configurations.
@@ -98,8 +98,8 @@ class HeaderDataInputs(Subscriptable):
     set_hours: str = "time"  # IMPORTANT: time must be unique
     set_time_steps_operation: str = "time_operation"
     set_time_steps_storage_level: str = "time_storage_level"
-    set_time_steps_yearly: str = "year"  # IMPORTANT: year must be unique
-    set_time_steps_yearly_entire_horizon: str = "year_entire_horizon"
+    set_years: str = "year"  # IMPORTANT: year must be unique
+    set_years_entire_horizon: str = "year_entire_horizon"
     set_carriers: str = "carrier"
     set_input_carriers: str = "carrier"
     set_output_carriers: str = "carrier"

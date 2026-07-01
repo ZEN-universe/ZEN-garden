@@ -1,4 +1,4 @@
-"""Class defining the optimization model.
+﻿"""Class defining the optimization model.
 
 The class takes as inputs the properties of the optimization problem. The
 properties are saved in the dictionaries analysis and system which are passed
@@ -270,7 +270,8 @@ class OptimizationSetup(object):
             element_class = [
                 k
                 for k, v in self.dict_element_classes.items()
-                if v == element.__class__][0]
+                if v == element.__class__
+            ][0]
             logging.info(f"Create {element_class} {element.name}")
             element.store_input_data()
 
@@ -566,7 +567,7 @@ class OptimizationSetup(object):
                 f"({self.system.years_in_decision_horizon})"
             )
             self.years_in_horizon = self.system.years_in_rolling_horizon
-            time_steps_yearly = self.energy_system.set_time_steps_yearly
+            time_steps_yearly = self.energy_system.set_years
             # skip years_in_decision_horizon years
             self.optimized_time_steps = [
                 year
@@ -587,9 +588,9 @@ class OptimizationSetup(object):
             }
         # if no rolling horizon
         else:
-            self.years_in_horizon = len(self.energy_system.set_time_steps_yearly)
+            self.years_in_horizon = len(self.energy_system.set_years)
             self.optimized_time_steps = [0]
-            self.steps_horizon = {0: self.energy_system.set_time_steps_yearly}
+            self.steps_horizon = {0: self.energy_system.set_years}
         return list(self.steps_horizon.keys())
 
     def get_decision_horizon(self, step_horizon):
@@ -655,7 +656,7 @@ class OptimizationSetup(object):
             if not isinstance(new_base_time_steps_horizon, list):
                 new_base_time_steps_horizon = [new_base_time_steps_horizon]
             self.energy_system.set_hours_all_years = new_base_time_steps_horizon
-            self.energy_system.set_time_steps_yearly = time_steps_yearly_horizon
+            self.energy_system.set_years = time_steps_yearly_horizon
 
     def solve(self):
         """Create model instance by assigning parameter values and initializing sets."""

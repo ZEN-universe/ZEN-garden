@@ -1,4 +1,4 @@
-"""Class defining the parameters, variables and constraints that hold for all storage
+﻿"""Class defining the parameters, variables and constraints that hold for all storage
 technologies. The class takes the abstract optimization model as an input, and returns
 the parameters, variables and constraints that hold for the storage technologies.
 """
@@ -45,14 +45,14 @@ class StorageTechnology(Technology):
         # set attributes for parameters of child class <StorageTechnology>
         self.efficiency_charge = self.data_input.extract_input_data(
             "efficiency_charge",
-            index_sets=["set_nodes", "set_time_steps_yearly"],
-            time_steps="set_time_steps_yearly",
+            index_sets=["set_nodes", "set_years"],
+            time_steps="set_years",
             unit_category={},
         )
         self.efficiency_discharge = self.data_input.extract_input_data(
             "efficiency_discharge",
-            index_sets=["set_nodes", "set_time_steps_yearly"],
-            time_steps="set_time_steps_yearly",
+            index_sets=["set_nodes", "set_years"],
+            time_steps="set_years",
             unit_category={},
         )
         self.self_discharge = self.data_input.extract_input_data(
@@ -71,8 +71,8 @@ class StorageTechnology(Technology):
         )
         self.capacity_limit_energy = self.data_input.extract_input_data(
             "capacity_limit_energy",
-            index_sets=["set_nodes", "set_time_steps_yearly"],
-            time_steps="set_time_steps_yearly",
+            index_sets=["set_nodes", "set_years"],
+            time_steps="set_years",
             unit_category={"energy_quantity": 1},
         )
         self.capacity_lower_limit_energy = self.data_input.extract_input_data(
@@ -88,8 +88,8 @@ class StorageTechnology(Technology):
         )
         self.capacity_investment_existing_energy = self.data_input.extract_input_data(
             "capacity_investment_existing_energy",
-            index_sets=["set_nodes", "set_time_steps_yearly"],
-            time_steps="set_time_steps_yearly",
+            index_sets=["set_nodes", "set_years"],
+            time_steps="set_years",
             unit_category={"energy_quantity": 1},
         )
         self.energy_to_power_ratio_min = self.data_input.extract_input_data(
@@ -100,26 +100,26 @@ class StorageTechnology(Technology):
         )
         self.capex_specific_storage = self.data_input.extract_input_data(
             "capex_specific_storage",
-            index_sets=["set_nodes", "set_time_steps_yearly"],
-            time_steps="set_time_steps_yearly",
+            index_sets=["set_nodes", "set_years"],
+            time_steps="set_years",
             unit_category={"money": 1, "energy_quantity": -1, "time": -1},
         )
         self.capex_specific_storage_energy = self.data_input.extract_input_data(
             "capex_specific_storage_energy",
-            index_sets=["set_nodes", "set_time_steps_yearly"],
-            time_steps="set_time_steps_yearly",
+            index_sets=["set_nodes", "set_years"],
+            time_steps="set_years",
             unit_category={"money": 1, "energy_quantity": -1},
         )
         self.opex_specific_fixed = self.data_input.extract_input_data(
             "opex_specific_fixed",
-            index_sets=["set_nodes", "set_time_steps_yearly"],
-            time_steps="set_time_steps_yearly",
+            index_sets=["set_nodes", "set_years"],
+            time_steps="set_years",
             unit_category={"money": 1, "energy_quantity": -1, "time": 1},
         )
         self.opex_specific_fixed_energy = self.data_input.extract_input_data(
             "opex_specific_fixed_energy",
-            index_sets=["set_nodes", "set_time_steps_yearly"],
-            time_steps="set_time_steps_yearly",
+            index_sets=["set_nodes", "set_years"],
+            time_steps="set_years",
             unit_category={"money": 1, "energy_quantity": -1},
         )
         self.convert_to_fraction_of_capex()
@@ -205,7 +205,7 @@ class StorageTechnology(Technology):
             index_names=[
                 "set_storage_technologies",
                 "set_nodes",
-                "set_time_steps_yearly",
+                "set_years",
             ],
             doc="efficiency during charging for storage technologies",
             calling_class=cls,
@@ -216,7 +216,7 @@ class StorageTechnology(Technology):
             index_names=[
                 "set_storage_technologies",
                 "set_nodes",
-                "set_time_steps_yearly",
+                "set_years",
             ],
             doc="efficiency during discharging for storage technologies",
             calling_class=cls,
@@ -246,7 +246,7 @@ class StorageTechnology(Technology):
                 "set_storage_technologies",
                 "set_capacity_types",
                 "set_nodes",
-                "set_time_steps_yearly",
+                "set_years",
             ],
             capacity_types=True,
             doc="specific capex of storage technologies",
@@ -710,12 +710,12 @@ class StorageTechnologyRules(GenericRule):
         efficiency_charge = (
             self.parameters.efficiency_charge.broadcast_like(times_year_time_step)
             .where(times_year_time_step, 0.0)
-            .sum("set_time_steps_yearly")
+            .sum("set_years")
         )
         efficiency_discharge = (
             self.parameters.efficiency_discharge.broadcast_like(times_year_time_step)
             .where(times_year_time_step, 0.0)
-            .sum("set_time_steps_yearly")
+            .sum("set_years")
         )
         term_flow_charge_discharge = (
             self.variables["flow_storage_charge"] * efficiency_charge
@@ -778,7 +778,7 @@ class StorageTechnologyRules(GenericRule):
                 "set_storage_technologies",
                 "set_capacity_types",
                 "set_nodes",
-                "set_time_steps_yearly",
+                "set_years",
             ],
             self.optimization_setup,
         )
@@ -801,7 +801,7 @@ class StorageTechnologyRules(GenericRule):
             self.variables.coords["set_storage_technologies"],
             self.variables.coords["set_capacity_types"],
             self.variables.coords["set_nodes"],
-            self.variables.coords["set_time_steps_yearly"],
+            self.variables.coords["set_years"],
         ]
 
         ### formulate constraint

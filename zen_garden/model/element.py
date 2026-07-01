@@ -1,4 +1,4 @@
-"""Class defining a standard Element.
+﻿"""Class defining a standard Element.
 Contains methods to add parameters, variables and constraints to the
 optimization problem. Parent class of the Carrier and Technology classes.
 The class takes the concrete optimization model as an input.
@@ -420,9 +420,9 @@ class GenericRule(object):
         else:
             meth = self.time_steps.get_time_steps_year2operation
             time_step_name = "set_time_steps_operation"
-        times = [(y, t) for y in self.sets["set_time_steps_yearly"] for t in meth(y)]
+        times = [(y, t) for y in self.sets["set_years"] for t in meth(y)]
         times = pd.MultiIndex.from_tuples(times)
-        times.names = ["set_time_steps_yearly", time_step_name]
+        times.names = ["set_years", time_step_name]
         times = pd.Series(index=times, data=1)
         times = times.to_xarray()
         times = times.fillna(0.0)
@@ -474,10 +474,10 @@ class GenericRule(object):
         """Returns array with storage2year time steps."""
         times = {
             st: y
-            for y in self.sets["set_time_steps_yearly"]
+            for y in self.sets["set_years"]
             for st in self.energy_system.time_steps.get_time_steps_year2storage(y)
         }
-        times = pd.Series(times, name="set_time_steps_yearly")
+        times = pd.Series(times, name="set_years")
         times.index.name = "set_time_steps_storage"
         return times
 

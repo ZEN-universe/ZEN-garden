@@ -1,4 +1,4 @@
-.. _linopy.linopy:
+﻿.. _linopy.linopy:
 
 #############################
 Writing constraints in Linopy
@@ -210,14 +210,14 @@ and sum over all time steps of the year.
 
     times:
 
-    <xarray.DataArray (set_time_steps_yearly: 1, set_time_steps_operation: 2)> Size: 16B
+    <xarray.DataArray (set_years: 1, set_time_steps_operation: 2)> Size: 16B
     array([[1., 1.]])
     Coordinates:
-      * set_time_steps_yearly     (set_time_steps_yearly) int64 8B 0
+      * set_years     (set_years) int64 8B 0
       * set_time_steps_operation  (set_time_steps_operation) int32 8B 0 1
 
 The resulting ``term_expanded_cost_carrier`` has the shape 
-``(set_time_steps_yearly: 1, set_time_steps_operation: 2, set_carriers: 2, set_nodes: 2)``.
+``(set_years: 1, set_time_steps_operation: 2, set_carriers: 2, set_nodes: 2)``.
 
 
 Summing over dimensions
@@ -231,7 +231,7 @@ nodes, and the carriers:
     term_summed_cost_carrier = term_expanded_cost_carrier.sum(["set_carriers", "set_nodes", "set_time_steps_operation"])
 
 The resulting ``term_summed_cost_carrier`` has the shape 
-``(set_time_steps_yearly: 1)``. Broadcasting and summing over dimensions is a 
+``(set_years: 1)``. Broadcasting and summing over dimensions is a 
 powerful tool to manipulate the dimensionality of variables and parameters. In 
 many situations it can substitute ``for-loops``.
 
@@ -276,14 +276,14 @@ in the previous example, we want to restructure ``capacity`` to fit the
         set_technologies: 3, 
         set_capacity_types: 2, 
         set_location: 4, 
-        set_time_steps_yearly: 1) - 32 masked entries
+        set_years: 1) - 32 masked entries
 
     times
 
     set_time_steps_storage
     0    0
     1    0
-    Name: set_time_steps_yearly, dtype: int64
+    Name: set_years, dtype: int64
 
     Output
 

@@ -1,4 +1,4 @@
-"""Class defining the parameters, variables, and constraints of the conversion
+﻿"""Class defining the parameters, variables, and constraints of the conversion
 technologies. The class takes the abstract optimization model as an input and adds
 parameters, variables, and constraints of the conversion technologies.
 """
@@ -69,14 +69,14 @@ class ConversionTechnology(Technology):
         self.get_conversion_factor()
         self.opex_specific_fixed = self.data_input.extract_input_data(
             "opex_specific_fixed",
-            index_sets=["set_nodes", "set_time_steps_yearly"],
-            time_steps="set_time_steps_yearly",
+            index_sets=["set_nodes", "set_years"],
+            time_steps="set_years",
             unit_category={"money": 1, "energy_quantity": -1, "time": 1},
         )
         self.min_full_load_hours_fraction = self.data_input.extract_input_data(
             "min_full_load_hours_fraction",
-            index_sets=["set_nodes", "set_time_steps_yearly"],
-            time_steps="set_time_steps_yearly",
+            index_sets=["set_nodes", "set_years"],
+            time_steps="set_years",
             unit_category={},
         )
 
@@ -266,7 +266,7 @@ class ConversionTechnology(Technology):
                 "set_conversion_technologies",
                 "set_capex_linear",
                 "set_nodes",
-                "set_time_steps_yearly",
+                "set_years",
             ],
             doc="Parameter specifying the slope of the capex if approximated linearly",
             calling_class=cls,
@@ -289,7 +289,7 @@ class ConversionTechnology(Technology):
             index_names=[
                 "set_conversion_technologies",
                 "set_nodes",
-                "set_time_steps_yearly",
+                "set_years",
             ],
             doc="Minimum full load hours as a fraction of the total hours "
             "per planning period",
@@ -425,7 +425,7 @@ class ConversionTechnology(Technology):
             model,
             name="capacity_approximation",
             index_sets=cls.create_custom_set(
-                ["set_conversion_technologies", "set_nodes", "set_time_steps_yearly"],
+                ["set_conversion_technologies", "set_nodes", "set_years"],
                 optimization_setup,
             ),
             bounds=(0, np.inf),
@@ -437,7 +437,7 @@ class ConversionTechnology(Technology):
             model,
             name="capex_approximation",
             index_sets=cls.create_custom_set(
-                ["set_conversion_technologies", "set_nodes", "set_time_steps_yearly"],
+                ["set_conversion_technologies", "set_nodes", "set_years"],
                 optimization_setup,
             ),
             bounds=(0, np.inf),
@@ -470,7 +470,7 @@ class ConversionTechnology(Technology):
                 "set_conversion_technologies",
                 "set_capex_pwa",
                 "set_nodes",
-                "set_time_steps_yearly",
+                "set_years",
             ],
             optimization_setup,
         )
@@ -479,7 +479,7 @@ class ConversionTechnology(Technology):
                 "set_conversion_technologies",
                 "set_capex_linear",
                 "set_nodes",
-                "set_time_steps_yearly",
+                "set_years",
             ],
             optimization_setup,
         )
@@ -773,7 +773,7 @@ class ConversionTechnologyRules(GenericRule):
                     [
                         "set_conversion_technologies",
                         "set_nodes",
-                        "set_time_steps_yearly",
+                        "set_years",
                     ],
                     strict=False,
                 )

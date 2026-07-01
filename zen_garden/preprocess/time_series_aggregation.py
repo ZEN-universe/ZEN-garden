@@ -1,4 +1,4 @@
-"""Functions to apply time series aggregation to time series."""
+﻿"""Functions to apply time series aggregation to time series."""
 
 import copy
 import logging
@@ -72,9 +72,7 @@ class TimeSeriesAggregation(object):
                     for time_step in time_step_duration
                 ]
             )
-            self.set_time_attributes(
-                set_hours, time_step_duration, sequence_time_steps
-            )
+            self.set_time_attributes(set_hours, time_step_duration, sequence_time_steps)
             # set aggregated time series
             self.set_aggregated_ts_all_elements()
         # set aggregated time steps to time step object
@@ -377,7 +375,7 @@ class TimeSeriesAggregation(object):
                 year specific TSA sequence
         """
         header_set_time_steps = self.analysis.header_data_inputs.set_hours
-        # only run specific TSA if TSA is activated and 
+        # only run specific TSA if TSA is activated and
         # set_hours_unaggregated > aggregated_time_steps
         if (
             self.number_typical_periods < np.size(self.set_hours_unaggregated)
@@ -560,11 +558,9 @@ class TimeSeriesAggregation(object):
                 element.data_input, ts_name + "_yearly_variation"
             )
             header_set_time_steps = self.analysis.header_data_inputs.set_hours
-            header_set_time_steps_yearly = (
-                self.analysis.header_data_inputs.set_time_steps_yearly
-            )
+            header_set_years = self.analysis.header_data_inputs.set_years
             ts_df = ts.unstack(header_set_time_steps)
-            yearly_variation = yearly_variation.unstack(header_set_time_steps_yearly)
+            yearly_variation = yearly_variation.unstack(header_set_years)
             # if only one unique value
             if len(np.unique(yearly_variation)) == 1:
                 ts = ts_df.stack() * np.unique(yearly_variation)[0]
@@ -582,7 +578,7 @@ class TimeSeriesAggregation(object):
                 )
                 ts = ts_df.stack()
             else:
-                for year in self.energy_system.set_time_steps_yearly:
+                for year in self.energy_system.set_years:
                     if not all(yearly_variation[year] == 1):
                         base_time_steps = (
                             self.energy_system.time_steps.decode_time_step(
@@ -670,7 +666,7 @@ class TimeSeriesAggregation(object):
     def repeat_sequence_time_steps_for_all_years(self):
         """This method repeats the operational time series for all years."""
         logging.info("Repeat the time series sequences for all years")
-        optimized_years = len(self.energy_system.set_time_steps_yearly)
+        optimized_years = len(self.energy_system.set_years)
         # concatenate the order of time steps and link with investment and yearly
         # time steps
         old_sequence_time_steps = self.time_steps.sequence_time_steps_operation
@@ -795,18 +791,14 @@ class TimeSeriesAggregation(object):
         set_hours = [0]
         time_steps_duration = {0: unaggregated_time_steps}
         sequence_time_steps = np.hstack(set_hours * unaggregated_time_steps)
-        self.set_time_attributes(
-            set_hours, time_steps_duration, sequence_time_steps
-        )
+        self.set_time_attributes(set_hours, time_steps_duration, sequence_time_steps)
         # create empty typical_period df
         self.typical_periods = pd.DataFrame(index=set_hours)
         # set aggregated time series
         self.set_aggregated_ts_all_elements()
         self.conducted_tsa = True
 
-    def set_time_attributes(
-        self, set_hours, time_steps_duration, sequence_time_steps
-    ):
+    def set_time_attributes(self, set_hours, time_steps_duration, sequence_time_steps):
         """This method sets the operational time attributes of an element.
 
         :param set_hours: set_hours of operation
