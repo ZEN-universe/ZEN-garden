@@ -116,8 +116,7 @@ class Technology(Element):
         # lower capacity limit
         self.capacity_lower_limit = self.data_input.extract_input_data(
             "capacity_lower_limit",
-            index_sets=[set_location, "set_time_steps_yearly"],
-            time_steps="set_time_steps_yearly",
+            index_sets=[set_location, "set_years"],
             unit_category={"energy_quantity": 1, "time": -1},
         )
 
@@ -659,7 +658,7 @@ class Technology(Element):
                 "set_technologies",
                 "set_capacity_types",
                 "set_location",
-                "set_time_steps_yearly",
+                "set_years",
             ],
             capacity_types=True,
             doc="Parameter which specifies the lower capacity limit of technologies",
