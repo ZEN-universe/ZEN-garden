@@ -68,7 +68,7 @@
   },
   "conversion_factor": {
       "natural_gas": {
-        "default_value": 1.1,
+        "default_value": 2,
         "unit": "GWh/GWh"
       }
   },

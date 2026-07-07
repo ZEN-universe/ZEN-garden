@@ -183,6 +183,23 @@ def test_1c(folder_path):
     res = Results(os.path.join(folder_path, "outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
 
+def test_1d(folder_path):
+    # run the test
+    data_set_name = "test_1d"
+    run(
+        config=os.path.join(folder_path, "config.json"),
+        dataset=os.path.join(folder_path, data_set_name),
+        folder_output=os.path.join(folder_path, "outputs"),
+    )
+
+    # read the results and check again
+    res = Results(os.path.join(folder_path, "outputs", data_set_name))
+    compare_variables_results(data_set_name, res, folder_path)
+    # read the results and check again
+    res = Results(os.path.join(folder_path, "outputs", data_set_name))
+    compare_variables_results(data_set_name, res, folder_path)
+
+
 def test_1e(folder_path):
     # run the test
     data_set_name = "test_1e"
@@ -209,9 +226,6 @@ def test_1f(folder_path):
         folder_output=os.path.join(folder_path, "outputs"),
     )
 
-    # read the results and check again
-    res = Results(os.path.join(folder_path, "outputs", data_set_name))
-    compare_variables_results(data_set_name, res, folder_path)
     # read the results and check again
     res = Results(os.path.join(folder_path, "outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
@@ -248,20 +262,6 @@ def test_1h(folder_path):
 def test_1i(folder_path):
     # run the test
     data_set_name = "test_1i"
-    run(
-        config=os.path.join(folder_path, "config.json"),
-        dataset=os.path.join(folder_path, data_set_name),
-        folder_output=os.path.join(folder_path, "outputs"),
-    )
-
-    # read the results and check again
-    res = Results(os.path.join(folder_path, "outputs", data_set_name))
-    compare_variables_results(data_set_name, res, folder_path)
-
-
-def test_1j(folder_path):
-    # run the test
-    data_set_name = "test_1j"
     data_set_name_op = data_set_name + "_none__operation"
     run(
         config=os.path.join(folder_path, "config_duals.json"),

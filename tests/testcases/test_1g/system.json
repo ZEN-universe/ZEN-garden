@@ -2,22 +2,19 @@
     "set_conversion_technologies": [
         "natural_gas_boiler"
     ],
-    "set_storage_technologies": [
-    ],
     "set_transport_technologies": [
         "natural_gas_pipeline"
     ],
     "set_nodes": [
-        "CH",
-        "DE"
+        "DE",
+        "CH"
     ],
-    "reference_year": 2025,
-    "unaggregated_time_steps_per_year": 2,
-    "aggregated_time_steps_per_year": 2,
+    "reference_year": 2022,
+    "unaggregated_time_steps_per_year": 1,
+    "aggregated_time_steps_per_year": 1,
     "conduct_time_series_aggregation": false,
-    "optimized_years": 1,
+    "optimized_years": 2,
     "interval_between_years": 1,
     "use_rolling_horizon": false,
-    "years_in_rolling_horizon": 1,
-    "allow_investment": false
+    "years_in_rolling_horizon": 1
 }

@@ -49,7 +49,7 @@
     "unit": "GW"
   },
   "opex_specific_fixed": {
-    "default_value": 2.0,
+    "default_value": 87.6,
     "unit": "Euro/kW"
   },
   "max_diffusion_rate": {
@@ -58,22 +58,34 @@
   },
   "input_carrier": {
     "default_value": [
-      "natural_gas"
+      "natural_gas",
+      "oxygen"
     ]
   },
   "output_carrier": {
     "default_value": [
-      "heat"
+      "heat",
+      "carbon"
     ]
   },
-  "conversion_factor": {
+  "conversion_factor":
+    {
+      "oxygen": {
+        "default_value": 0.8,
+        "unit": "GWh/GWh"
+      },
       "natural_gas": {
         "default_value": 1.1,
         "unit": "GWh/GWh"
+      },
+      "carbon": {
+        "default_value": 0.1,
+        "unit": "kilotons/GWh"
       }
-  },
+    }
+  ,
   "capex_specific_conversion": {
-    "default_value": 100,
+    "default_value": 876.0,
     "unit": "Euro/kW"
   },
   "capacity_addition_unbounded": {

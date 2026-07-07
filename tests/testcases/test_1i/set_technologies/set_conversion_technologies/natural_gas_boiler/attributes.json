@@ -28,7 +28,7 @@
     "unit": "1"
   },
   "opex_specific_variable": {
-    "default_value": 2.0,
+    "default_value": 0.0,
     "unit": "kiloEuro/GWh"
   },
   "reference_carrier": {
@@ -49,7 +49,7 @@
     "unit": "GW"
   },
   "opex_specific_fixed": {
-    "default_value": 0.0,
+    "default_value": 2.0,
     "unit": "Euro/kW"
   },
   "max_diffusion_rate": {
@@ -73,15 +73,11 @@
       }
   },
   "capex_specific_conversion": {
-    "default_value": 200,
+    "default_value": 100,
     "unit": "Euro/kW"
   },
   "capacity_addition_unbounded": {
     "default_value": 0.0,
     "unit": "GW"
-  },
-  "min_full_load_hours_fraction": {
-    "default_value": 0,
-    "unit": "1"
   }
 }

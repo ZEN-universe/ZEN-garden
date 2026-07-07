@@ -27,6 +27,10 @@
     "default_value": 25.0,
     "unit": "1"
   },
+  "depreciation_time": {
+  "default_value": 1.0,
+  "unit": "1"
+  },
   "opex_specific_variable": {
     "default_value": 0.0,
     "unit": "kiloEuro/GWh"
@@ -68,7 +72,7 @@
   },
   "conversion_factor": {
       "natural_gas": {
-        "default_value": 2,
+        "default_value": 1.1,
         "unit": "GWh/GWh"
       }
   },

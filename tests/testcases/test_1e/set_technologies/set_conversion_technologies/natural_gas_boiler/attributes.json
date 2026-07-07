@@ -58,32 +58,20 @@
   },
   "input_carrier": {
     "default_value": [
-      "natural_gas",
-      "oxygen"
+      "natural_gas"
     ]
   },
   "output_carrier": {
     "default_value": [
-      "heat",
-      "carbon"
+      "heat"
     ]
   },
-  "conversion_factor":
-    {
-      "oxygen": {
-        "default_value": 0.8,
-        "unit": "GWh/GWh"
-      },
+  "conversion_factor": {
       "natural_gas": {
         "default_value": 1.1,
         "unit": "GWh/GWh"
-      },
-      "carbon": {
-        "default_value": 0.1,
-        "unit": "kilotons/GWh"
       }
-    }
-  ,
+  },
   "capex_specific_conversion": {
     "default_value": 876.0,
     "unit": "Euro/kW"

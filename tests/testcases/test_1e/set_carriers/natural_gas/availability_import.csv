@@ -1,3 +1,4 @@
 node,time,availability_import
-CH,0,0
-CH,1,4
+CH,0,10
+CH,1,11
+DE,1,100

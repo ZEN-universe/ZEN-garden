@@ -301,54 +301,6 @@
     },
     "test_1d": {
         "none": {
-            "flow_transport_loss": [
-                {
-                    "index": ["natural_gas_pipeline_exp", "DE-CH", 0],
-                    "value": 0.05001
-                },
-                {
-                    "index": ["natural_gas_pipeline_exp_2", "DE-FR", 0],
-                    "value": 0.0
-                },
-                {
-                    "index": ["natural_gas_pipeline_lin", "DE-AT", 0],
-                    "value": 0.05003
-                }
-            ],
-            "capacity": [
-                {
-                    "index": ["natural_gas_boiler", "power", "CH", 0],
-                    "value": 100.0
-                },
-                {
-                    "index": ["natural_gas_boiler", "power", "DE", 0],
-                    "value": 100.0
-                },
-                {
-                    "index": ["natural_gas_boiler", "power", "AT", 0],
-                    "value": 100.0
-                },
-                {
-                    "index": ["natural_gas_boiler", "power", "FR", 0],
-                    "value": 100.0
-                },
-                {
-                    "index": ["natural_gas_pipeline_exp", "power", "DE-CH", 0],
-                    "value": 100.05001
-                },
-                {
-                    "index": ["natural_gas_pipeline_exp_2", "power", "DE-FR", 0],
-                    "value": 10.0
-                },
-                {
-                    "index": ["natural_gas_pipeline_lin", "power", "DE-AT", 0],
-                    "value": 100.05003
-                }
-            ]
-        }
-    },
-    "test_1e": {
-        "none": {
             "flow_import": [
                 {
                     "index": ["natural_gas", "CH", 0],
@@ -425,7 +377,7 @@
             ]
         }
     },
-    "test_1f": {
+    "test_1e": {
         "none": {
             "flow_import": [
                 {
@@ -511,7 +463,7 @@
             ]
         }
     },
-    "test_1g": {
+    "test_1f": {
         "none": {
             "flow_import": [
                 {
@@ -585,7 +537,7 @@
             ]
         }
     },
-    "test_1h": {
+    "test_1g": {
         "none": {
             "capacity": [
                 {
@@ -735,7 +687,7 @@
             ]
         }
     },
-    "test_1i": {
+    "test_1h": {
         "none": {
             "flow_conversion_output": [
                 {
@@ -895,7 +847,7 @@
             ]
         }
     },
-    "test_1j_capacity": {
+    "test_1i_capacity": {
         "none": {
             "capacity": [
                 {
@@ -947,7 +899,7 @@
             ]
         }
     },
-    "test_1j_operation": {
+    "test_1i_operation": {
         "none": {
             "constraint_nodal_energy_balance": [
                 {
