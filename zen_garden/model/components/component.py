@@ -40,7 +40,7 @@ class Component:
         original_doc = copy.copy(doc)
         for string in prohibited_strings:
             if string in doc:
-                logging.warning(
+                logger.warning(
                     f"Docstring '{original_doc}' contains prohibited "
                     f"string '{string}'. Occurrences are dropped."
                 )

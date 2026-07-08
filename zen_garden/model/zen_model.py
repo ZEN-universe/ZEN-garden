@@ -7,34 +7,36 @@ from zen_garden.model.components.index_set import IndexSet
 from zen_garden.model.components.parameter import Parameter
 from zen_garden.model.components.variable import Variable
 from zen_garden.model.config import Config
-from zen_garden.model.context import Context
 
 if TYPE_CHECKING:
-    from zen_garden.model.energy_system import EnergySystem
+    from zen_garden.elements.energy_system import EnergySystem
     from zen_garden.preprocess.unit_handling import UnitHandling
+    from zen_garden.services.element_registry import ElementRegistry
 
 
 class ZenModel:
-    lp_model: LinopyModel
-    sets: IndexSet
-    variables: Variable
-    parameters: Parameter
-    constraints: Constraint
-
     def __init__(
         self,
         config: Config,
-        context: Context,
         energy_system: "EnergySystem",
         unit_handling: "UnitHandling",
+        element_registry: "ElementRegistry",
     ) -> None:
         self.config = config
-        self.context = context
         self.energy_system = energy_system
         self.unit_handling = unit_handling
+        self.element_registry = element_registry
+
+        self.indexing_sets = [key for key in self.config.system.keys() if "set" in key]
 
         self.lp_model = LinopyModel(solver_dir=self.config.solver.solver_dir)
         self.sets = IndexSet()
-        self.variables = Variable(self)
-        self.parameters = Parameter(self)
-        self.constraints = Constraint(self)
+        self.variables = Variable(
+            self.unit_handling,
+            self.sets,
+            self.lp_model,
+            self.config,
+            self.element_registry,
+        )
+        self.parameters = Parameter(self.sets)
+        self.constraints = Constraint(self.lp_model)

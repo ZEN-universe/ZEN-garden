@@ -7,6 +7,8 @@ import xarray as xr
 from zen_garden.model.components.component import Component
 from zen_garden.model.components.zen_set import ZenSet
 
+logger = logging.getLogger(__name__)
+
 
 class IndexSet(Component):
     """Class to prepare parameter data for pyomo parameter prerequisites."""
@@ -32,7 +34,7 @@ class IndexSet(Component):
         :param index_set: The name of the index set if the set it self is indexed
         """
         if name in self.sets:
-            logging.warning(f"{name} already added. Will be overwritten!")
+            logger.warning(f"{name} already added. Will be overwritten!")
 
         # added data and docs
         self.sets[name] = ZenSet(data=data, name=name, doc=doc, index_set=index_set)

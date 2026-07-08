@@ -5,11 +5,9 @@ import pandas as pd
 import xarray as xr
 from linopy.expressions import LinearExpression
 
-from zen_garden.model.config import Config
-from zen_garden.model.context import Context
-
 if TYPE_CHECKING:
-    from zen_garden.model.energy_system import EnergySystem
+    from zen_garden.elements.energy_system import EnergySystem
+    from zen_garden.model.config import Config
     from zen_garden.model.zen_model import ZenModel
 
 
@@ -18,31 +16,37 @@ class GenericRule(object):
     other rules of the technologies and carriers.
     """
 
-    def __init__(self, config: Config, context: Context):
+    def __init__(
+        self,
+        config: "Config",
+        zen_model: "ZenModel",
+        energy_system: "EnergySystem",
+    ):
         """Constructor for generic rule.
 
         :param optimization_setup: The optimization setup to use for the setup
         """
         self.config = config
-        self.context = context
+        self.zen_model = zen_model
+        self.energy_system = energy_system
 
     # helper methods for constraint rules
-    def get_year_time_step_array(
-        self, zen_model: "ZenModel", energy_system: "EnergySystem", storage=False
-    ):
+    def get_year_time_step_array(self, storage=False):
         """Returns array with year and time steps of each year.
 
         :param storage: boolean indicating if object is a storage object
         """
         # create times xarray with 1 where the operation time step is in the year
         if storage:
-            meth = energy_system.time_steps.get_time_steps_year2storage
+            meth = self.energy_system.time_steps.get_time_steps_year2storage
             time_step_name = "set_time_steps_storage"
         else:
-            meth = energy_system.time_steps.get_time_steps_year2operation
+            meth = self.energy_system.time_steps.get_time_steps_year2operation
             time_step_name = "set_time_steps_operation"
         times = [
-            (y, t) for y in zen_model.sets["set_time_steps_yearly"] for t in meth(y)
+            (y, t)
+            for y in self.zen_model.sets["set_time_steps_yearly"]
+            for t in meth(y)
         ]
         times = pd.MultiIndex.from_tuples(times)
         times.names = ["set_time_steps_yearly", time_step_name]
@@ -51,26 +55,22 @@ class GenericRule(object):
         times = times.fillna(0.0)
         return times
 
-    def get_year_time_step_duration_array(
-        self, zen_model: "ZenModel", energy_system: "EnergySystem"
-    ):
+    def get_year_time_step_duration_array(self):
         """Returns array with year and duration of time steps of each year."""
-        times = self.get_year_time_step_array(zen_model, energy_system)
+        times = self.get_year_time_step_array()
         time_steps_operation_duration = cast(
-            xr.DataArray | None, zen_model.parameters.time_steps_operation_duration
+            xr.DataArray | None, self.zen_model.parameters.time_steps_operation_duration
         )
         assert time_steps_operation_duration is not None
         times = times * time_steps_operation_duration
         return times
 
-    def get_previous_storage_time_step_array(
-        self, zen_model: "ZenModel", energy_system: "EnergySystem"
-    ):
+    def get_previous_storage_time_step_array(self):
         """Returns array with storage time steps and previous storage time steps."""
         times_prev = []
         mask = []
-        for ts in zen_model.sets["set_time_steps_storage"]:
-            ts_end = energy_system.time_steps.get_time_steps_storage_startend(ts)
+        for ts in self.zen_model.sets["set_time_steps_storage"]:
+            ts_end = self.energy_system.time_steps.get_time_steps_storage_startend(ts)
             if ts_end is not None:
                 if self.config.system.storage_periodicity:
                     times_prev.append(ts_end)
@@ -79,36 +79,36 @@ class GenericRule(object):
                     times_prev.append(ts)
                     mask.append(False)
             else:
-                ts_prev = energy_system.time_steps.get_previous_storage_time_step(ts)
+                ts_prev = self.energy_system.time_steps.get_previous_storage_time_step(
+                    ts
+                )
                 times_prev.append(ts_prev)
                 mask.append(True)
         mask = xr.DataArray(
             mask,
             dims="set_time_steps_storage",
-            coords={"set_time_steps_storage": zen_model.sets["set_time_steps_storage"]},
+            coords={
+                "set_time_steps_storage": self.zen_model.sets["set_time_steps_storage"]
+            },
         )
         return times_prev, mask
 
-    def get_power2energy_time_step_array(
-        self, zen_model: "ZenModel", energy_system: "EnergySystem"
-    ):
+    def get_power2energy_time_step_array(self):
         """Returns array with power2energy time steps."""
         times = {
-            st: energy_system.time_steps.convert_time_step_energy2power(st)
-            for st in zen_model.sets["set_time_steps_storage"]
+            st: self.energy_system.time_steps.convert_time_step_energy2power(st)
+            for st in self.zen_model.sets["set_time_steps_storage"]
         }
         times = pd.Series(times, name="set_time_steps_operation")
         times.index.name = "set_time_steps_storage"
         return times
 
-    def get_storage2year_time_step_array(
-        self, zen_model: "ZenModel", energy_system: "EnergySystem"
-    ):
+    def get_storage2year_time_step_array(self):
         """Returns array with storage2year time steps."""
         times = {
             st: y
-            for y in zen_model.sets["set_time_steps_yearly"]
-            for st in energy_system.time_steps.get_time_steps_year2storage(y)
+            for y in self.zen_model.sets["set_time_steps_yearly"]
+            for st in self.energy_system.time_steps.get_time_steps_year2storage(y)
         }
         times = pd.Series(times, name="set_time_steps_yearly")
         times.index.name = "set_time_steps_storage"
@@ -147,29 +147,27 @@ class GenericRule(object):
         expr = expr.where(mask)
         return expr
 
-    def get_flow_expression_conversion(
-        self, techs, nodes, zen_model: "ZenModel", factor=None, rename=False
-    ):
+    def get_flow_expression_conversion(self, techs, nodes, factor=None, rename=False):
         """Return the flow expression for conversion technologies."""
         reference_flows = []
         for t in techs:
-            rc = zen_model.sets["set_reference_carriers"][t][0]
+            rc = self.zen_model.sets["set_reference_carriers"][t][0]
             if factor is not None:
                 mult = factor.loc[t, nodes]
             else:
                 mult = 1
             # TODO can we avoid the indexing here?
-            if rc in zen_model.sets["set_input_carriers"][t]:
+            if rc in self.zen_model.sets["set_input_carriers"][t]:
                 reference_flows.append(
                     mult
-                    * zen_model.lp_model.variables["flow_conversion_input"].loc[
+                    * self.zen_model.lp_model.variables["flow_conversion_input"].loc[
                         t, rc, nodes, :
                     ]
                 )
             else:
                 reference_flows.append(
                     mult
-                    * zen_model.lp_model.variables["flow_conversion_output"].loc[
+                    * self.zen_model.lp_model.variables["flow_conversion_output"].loc[
                         t, rc, nodes, :
                     ]
                 )
@@ -193,11 +191,11 @@ class GenericRule(object):
             )
         return term_reference_flow
 
-    def get_flow_expression_storage(self, zen_model: "ZenModel", rename=True):
+    def get_flow_expression_storage(self, rename=True):
         """Return the flow expression for storage technologies."""
         term = (
-            zen_model.lp_model.variables["flow_storage_charge"]
-            + zen_model.lp_model.variables["flow_storage_discharge"]
+            self.zen_model.lp_model.variables["flow_storage_charge"]
+            + self.zen_model.lp_model.variables["flow_storage_discharge"]
         )
         if rename:
             return term.rename(

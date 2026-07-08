@@ -10,27 +10,25 @@ solve the optimization problem.
 import copy
 import logging
 import os
-from collections import defaultdict
 from pathlib import Path
 
-from zen_garden.model import ELEMENT_TYPE_CLASSES
+from zen_garden.elements import ELEMENT_TYPE_CLASSES
+from zen_garden.elements.energy_system import EnergySystem
+from zen_garden.elements.technology import Technology
 from zen_garden.model.config import Config
-from zen_garden.model.context import Context
-from zen_garden.model.energy_system import EnergySystem
-from zen_garden.model.technology.technology import Technology
 from zen_garden.model.zen_model import ZenModel
 from zen_garden.postprocess.postprocess import Postprocess
 from zen_garden.preprocess.scaling import Scaling
 from zen_garden.preprocess.time_series_aggregation import TimeSeriesAggregation
 from zen_garden.preprocess.unit_handling import UnitHandling
+from zen_garden.services.dataset_path_resolver import DatasetPathResolver
 from zen_garden.services.element_registry import ElementRegistry
 from zen_garden.services.model_construction_service import ModelConstructionService
+from zen_garden.services.scenario_dict import ScenarioDict
 from zen_garden.utils import (
     IISConstraintParser,
     InputDataChecks,
-    ScenarioDict,
     StringUtils,
-    resolve_dataset_paths,
 )
 
 logger = logging.getLogger(__name__)
@@ -49,7 +47,7 @@ class OptimizationSetup(object):
     # dict of element classes, this dict is filled in the __init__ of the package
 
     def __init__(
-        self, raw_config, scenario_dict: dict, input_data_checks: InputDataChecks
+        self, raw_config, init_scenario_dict: dict, input_data_checks: InputDataChecks
     ):
         """Setup optimization of the energy system.
 
@@ -67,121 +65,75 @@ class OptimizationSetup(object):
         """
         # Copying is necessary, because the config object is modified,
         # e.g., in add_elements of ElementRegistry
-        self.analysis = copy.deepcopy(raw_config.analysis)
-        self.system = copy.deepcopy(raw_config.system)
-        self.solver = copy.deepcopy(raw_config.solver)
-        self.config = Config.from_setup(self.analysis, self.system, self.solver)
+        self.config = Config.from_setup(
+            copy.deepcopy(raw_config.analysis),
+            copy.deepcopy(raw_config.system),
+            copy.deepcopy(raw_config.solver),
+        )
 
         self.input_data_checks = input_data_checks
         self.input_data_checks.optimization_setup = self
         self.input_data_checks.config = self.config
-        # create a dictionary with the paths to access the model inputs
         # check if input data exists
         self.input_data_checks.check_primary_folder_structure()
 
-        self.paths = resolve_dataset_paths(self.config)
-        # self.element_list = self._build_element_list()
+        self.dataset_path_resolver = DatasetPathResolver(self.config)
+        self.input_data_checks.dataset_path_resolver = self.dataset_path_resolver
 
         # dict to update elements according to scenario
         self.scenario_dict = ScenarioDict(
-            scenario_dict, ELEMENT_TYPE_CLASSES, self.paths, self.config
+            init_scenario_dict,
+            self.dataset_path_resolver,
+            self.config,
+            ELEMENT_TYPE_CLASSES,
         )
 
-        # empty dict of elements (will be filled with class_name: instance_list)
-        self.dict_elements = defaultdict(list)
-        # read the parameter change log
-        self.parameter_change_log = {
-            "min_full_load_hours_fraction": {
-                "default_value": 0,  # only 0, 1, or 'inf' are allowed
-                "unit": "min_load",
-            },
-            "capacity_lower_limit": {
-                "default_value": 0,  # only 0, 1, or 'inf' are allowed
-                "unit": "capacity_limit",
-            },
-            "capacity_lower_limit_energy": {
-                "default_value": 0,  # only 0, 1, or 'inf' are allowed
-                "unit": "capacity_limit_energy",
-            },
-            #    "new_parameter_name": {
-            #       "default_value": 0, # only 0, 1, or 'inf' are allowed
-            #       "unit": "existing_parameter_name_with_same_unit"
-            #   }
-        }
-
-        # optimization model
+        # optimization model§
         self.zen_model: ZenModel | None = None
-        # self.model = None
-        # # the components
-        # self.variables = None
-        # self.parameters = None
-        # self.constraints = None
-        # self.sets = None
 
         # initiate dictionary for storing extra year data
         self.year_specific_ts = {}
 
-        self.context = Context.from_setup(
-            paths=self.paths,
-            element_classes=ELEMENT_TYPE_CLASSES,
-            scenario_dict=self.scenario_dict,
-            dict_elements=self.dict_elements,
-            parameter_change_log=self.parameter_change_log,
-            year_specific_ts=self.year_specific_ts,
-        )
-        self.input_data_checks.context = self.context
         # check if all needed data inputs for the chosen technologies exist
         # remove non-existent inputs
         self.input_data_checks.check_existing_technology_data()
 
         # Init the energy system
         self.unit_handling = UnitHandling(
-            Path(self.context.paths["energy_system"]["folder"]),
+            Path(self.dataset_path_resolver.folder_of_set("energy_system")),
             self.config.solver.rounding_decimal_points_units,
         )
         self.energy_system = EnergySystem(
             self.config,
-            self.context,
             self.unit_handling,
+            self.dataset_path_resolver,
+            self.scenario_dict,
+            self.input_data_checks,
         )
         self.element_registry = ElementRegistry(
             self.config,
-            self.context,
             self.energy_system,
             self.input_data_checks,
             self.unit_handling,
+            self.dataset_path_resolver,
+            self.scenario_dict,
         )
-
-        # add Elements to optimization
-        self.element_registry.add_elements()
 
         # check if all elements from the scenario_dict are in the model
-        ScenarioDict.check_if_all_elements_in_model(
-            self.context.scenario_dict, self.context.dict_elements
-        )
-
-        # The time series aggregation
-        self.time_series_aggregation = None
-
-        # set base scenario
-        self.set_base_configuration()
+        self.scenario_dict.check_if_all_elements_in_model(self.element_registry)
 
         # read input data into elements
         self.read_input_csv()
 
         # conduct consistency checks of input units
         self.unit_handling.consistency_checks_input_units(
-            self.config,
-            self.context,
-            self.energy_system,
-            self.element_registry,
+            self.config, self.energy_system, self.element_registry
         )
 
         # conduct time series aggregation
         self.time_series_aggregation = TimeSeriesAggregation(
             self.energy_system,
             self.config,
-            self.context,
             self.element_registry,
         )
 
@@ -189,7 +141,7 @@ class OptimizationSetup(object):
         """Read the input and conducts the time series aggregation."""
         logger.info("\n--- Read input data of elements --- \n")
         self.energy_system.store_input_data()
-        for element in self.context.dict_elements["Element"]:
+        for element in self.element_registry.all_elements():
             element_class = [
                 k for k, v in ELEMENT_TYPE_CLASSES.items() if v == element.__class__
             ][0]
@@ -206,7 +158,6 @@ class OptimizationSetup(object):
 
         service = ModelConstructionService(
             self.config,
-            self.context,
             self.energy_system,
             self.element_registry,
             self.unit_handling,
@@ -220,28 +171,6 @@ class OptimizationSetup(object):
         )
 
         return self.zen_model
-
-        # self.model = lp.Model(solver_dir=self.config.solver.solver_dir)
-        # # we need to reset the components to not carry them over
-        # self.sets = IndexSet()
-        # self.variables = Variable(self, self.config, self.context)
-        # self.parameters = Parameter(self)
-        # self.constraints = Constraint(self.sets, self.model)
-        # zen_model = ZenModel(self.config, self.context, self.energy_system)
-
-        # define and construct components of self.model
-        # Element.construct_model_components(self, zen_model)
-
-        # self.energy_balance.construct_model_components(zen_model)
-        # for element in self.context.element_classes:
-        #     element.construct_model_components(zen_model)
-
-        # Initiate scaling object
-        # self.scaling = Scaling(
-        #     self.model,
-        #     self.config.solver.scaling_algorithm,
-        #     self.config.solver.scaling_include_rhs,
-        # )
 
     def get_optimization_horizon(self):
         """Returns list of optimization horizon steps."""
@@ -301,17 +230,6 @@ class OptimizationSetup(object):
             ]
             decision_horizon = list(range(step_horizon, next_optimization_step))
         return decision_horizon
-
-    def set_base_configuration(self, scenario="", elements=None):
-        """Set base configuration.
-
-        :param scenario: name of base scenario
-        :param elements: elements in base configuration
-        """
-        if elements is None:
-            elements = {}
-        self.base_scenario = scenario
-        self.base_configuration = elements
 
     def overwrite_time_indices(self, step_horizon):
         """Select subset of time indices, matching the step horizon.
@@ -477,7 +395,7 @@ class OptimizationSetup(object):
         invest_capacity[invest_capacity <= rounding_value] = 0
         cost_capex_overnight[cost_capex_overnight <= rounding_value] = 0
 
-        for tech in self.element_registry.get_all_elements(Technology):
+        for tech in self.element_registry.all_elements_of_type(Technology):
             if not isinstance(tech, Technology):
                 raise TypeError(
                     f"Element {tech.name} is not of type Technology, "
@@ -551,7 +469,6 @@ class OptimizationSetup(object):
         ), "The optimization model has not been constructed yet."
         Postprocess(
             self.config,
-            self.context,
             self.unit_handling,
             self.zen_model,
             self.energy_system,

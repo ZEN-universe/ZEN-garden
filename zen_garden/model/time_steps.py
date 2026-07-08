@@ -5,6 +5,8 @@ import logging
 import numpy as np
 import pandas as pd
 
+logger = logging.getLogger(__name__)
+
 
 class TimeStepsDicts(object):
     """Helper class to deal with time steps of the optimization setup.
@@ -144,7 +146,7 @@ class TimeStepsDicts(object):
             time_step: int(duration_input_time_steps) for time_step in input_time_steps
         }
         if not duration_input_time_steps.is_integer():
-            logging.warning(
+            logger.warning(
                 f"The duration of each time step {duration_input_time_steps} of input "
                 f"time steps {input_time_steps} does not evaluate to an integer. \n"
                 f"The duration of the last time step is set to compensate for "

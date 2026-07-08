@@ -21,9 +21,8 @@ from pydantic import BaseModel
 from tables import NaturalNameWarning
 
 if TYPE_CHECKING:
+    from zen_garden.elements.energy_system import EnergySystem
     from zen_garden.model.config import Config
-    from zen_garden.model.context import Context
-    from zen_garden.model.energy_system import EnergySystem
     from zen_garden.model.zen_model import ZenModel
     from zen_garden.preprocess.scaling import Scaling
     from zen_garden.preprocess.unit_handling import UnitHandling
@@ -40,7 +39,6 @@ class Postprocess:
     def __init__(
         self,
         config: "Config",
-        context: "Context",
         unit_handling: "UnitHandling",
         zen_model: "ZenModel",
         energy_system: "EnergySystem",
@@ -60,10 +58,9 @@ class Postprocess:
         :param scenario_name: The name of the current scenario
         :param param_map: A dictionary mapping the parameters to the scenario names
         """
-        logger.info("--- Postprocess results ---")
+        logger.info("\n--- Postprocess results ---\n")
         # get the necessary stuff from the model
         self.config = config
-        self.context = context
         self.unit_handling = unit_handling
         self.zen_model = zen_model
         self.energy_system = energy_system

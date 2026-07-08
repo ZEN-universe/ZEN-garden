@@ -19,6 +19,8 @@ from zen_garden.utils import slice_df_by_index
 
 from .cache import ConditionalCache
 
+logger = logging.getLogger(__name__)
+
 
 class ComponentType(Enum):
     parameter: str = "parameter"
@@ -907,7 +909,7 @@ def get_df_from_path(
                 try:
                     pd_read = pd.read_hdf(path, component_name, columns=["units"])
                 except IndexError:
-                    logging.warning(
+                    logger.warning(
                         "Cannot retrieve units. Make sure you have updated the "
                         "environment to the latest version."
                     )

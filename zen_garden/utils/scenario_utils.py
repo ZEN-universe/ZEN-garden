@@ -5,7 +5,9 @@ import os
 import shutil
 from collections import defaultdict
 
-from zen_garden.utils.scenario_dict import ScenarioDict
+from zen_garden.services.scenario_dict import ScenarioDict
+
+logger = logging.getLogger(__name__)
 
 
 class ScenarioUtils:
@@ -61,14 +63,14 @@ class ScenarioUtils:
                             os.path.isdir(sub_folder_path)
                             and sub_folder not in sub_folders
                         ):
-                            logging.info(f"Removing sub-scenario {sub_folder}")
+                            logger.info(f"Removing sub-scenario {sub_folder}")
                             shutil.rmtree(sub_folder_path, ignore_errors=True)
                         # the time steps dict
                         if (
                             sub_folder.startswith("dict_all_sequence_time_steps")
                             and sub_folder not in sub_folders
                         ):
-                            logging.info(f"Removing time steps dict {sub_folder}")
+                            logger.info(f"Removing time steps dict {sub_folder}")
                             os.remove(sub_folder_path)
 
     @staticmethod
@@ -121,12 +123,12 @@ class ScenarioUtils:
                     job_index = [job_index]
                 else:
                     job_index = list(job_index)
-                logging.info(f"Running scenarios with job indices: {job_index}")
+                logger.info(f"Running scenarios with job indices: {job_index}")
                 # reduce the scenario and element to a single one
                 scenarios = [list(config.scenarios.keys())[jx] for jx in job_index]
                 elements = [list(config.scenarios.values())[jx] for jx in job_index]
             else:
-                logging.info("Running all scenarios sequentially")
+                logger.info("Running all scenarios sequentially")
                 scenarios = config.scenarios.keys()
                 elements = config.scenarios.values()
         # Nothing to do with the scenarios

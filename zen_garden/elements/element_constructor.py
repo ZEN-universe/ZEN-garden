@@ -1,170 +1,35 @@
-"""Class defining a standard Element.
-Contains methods to add parameters, variables and constraints to the
-optimization problem. Parent class of the Carrier and Technology classes.
-The class takes the concrete optimization model as an input.
-"""
-
 import itertools
-import logging
-import os
-import time
 from abc import ABC, abstractmethod
-from pathlib import Path
 from typing import TYPE_CHECKING
 
 import numpy as np
 import pandas as pd
-import psutil
 
-from zen_garden.model.components.index_set import IndexSet
-from zen_garden.model.components.zen_set import ZenSet
-from zen_garden.model.config import Config
-from zen_garden.model.context import Context
-from zen_garden.model.zen_model import ZenModel
-from zen_garden.preprocess.extract_input_data import DataInput
+from zen_garden.elements.element import Element
 
 if TYPE_CHECKING:
-    from zen_garden.model.energy_system import EnergySystem
-    from zen_garden.preprocess.unit_handling import UnitHandling
+    from zen_garden.elements.energy_system import EnergySystem
+    from zen_garden.model.components.index_set import IndexSet
+    from zen_garden.model.components.zen_set import ZenSet
+    from zen_garden.model.config import Config
+    from zen_garden.model.zen_model import ZenModel
     from zen_garden.services.element_registry import ElementRegistry
-
-
-class Element:
-    """Class defining a standard Element."""
-
-    # set label
-    label: str = "set_elements"
-
-    def __init__(
-        self,
-        element_name: str,
-        config: Config,
-        context: Context,
-        energy_system: "EnergySystem",
-        element_registry: "ElementRegistry",
-        unit_handling: "UnitHandling",
-    ):
-        """Initialization of an element.
-
-        :param element: element that is added to the model
-        :param optimization_setup: The OptimizationSetup the element is part of
-        """
-        # set attributes
-        self.name = element_name
-        self._name = element_name
-        # optimization setup
-        self.config = config
-        self.context = context
-        # energy system
-        self.energy_system = energy_system
-        self.element_registry = element_registry
-        self.unit_handling = unit_handling
-        # set if aggregated
-        self.aggregated = False
-        # get input path
-        self.input_path = self._get_input_path()
-        # create DataInput object
-        self.data_input = DataInput(
-            element=self,
-            energy_system=self.energy_system,
-            unit_handling=self.unit_handling,
-            config=self.config,
-            context=self.context,
-        )
-        # dict to save the parameter units element-wise and to save them in the results
-        self.units = {}
-
-    def _get_input_path(self):
-        """Get input path where input data is stored input_path."""
-        # get technology type
-        class_label = self.label
-        # get path dictionary
-        paths = self.context.paths
-        # check if class is a subset
-        if class_label not in paths.keys():
-            subsets = self.config.analysis.subsets
-            # iterate through subsets and check if class belongs to any of the subsets
-            for set_name, subsets_list in subsets.items():
-                if class_label in subsets_list:
-                    class_label = set_name
-                    break
-        # get input path for current class_label
-        return Path(paths[class_label][self.name]["folder"])
-
-    def store_scenario_dict(self):
-        """Stores scenario dict in each data input object."""
-        # store scenario dict
-        self.data_input.scenario_dict = self.context.scenario_dict
-
-    ### --- classmethods to construct sets, parameters, variables, and constraints,
-    #  corresponding to Element --- ###
-    # Here, after defining EnergySystem-specific components,
-    #   the components of the other classes are constructed
-    @classmethod
-    def construct_model_components(cls, optimization_setup):
-        """Constructs the model components of the class <Element>.
-
-        :param optimization_setup: The OptimizationSetup the element is part of
-        """
-        raise NotImplementedError("TO BE REMOVED")
-
-        logging.info("\n--- Construct model components ---\n")
-        pid = os.getpid()
-
-        # construct Sets
-        t_start = time.perf_counter()
-        cls.construct_sets(optimization_setup)
-        t1 = time.perf_counter()
-        if optimization_setup.solver.run_diagnostics:
-            logging.info(f"Time to construct Sets: {t1 - t_start:0.1f} seconds")
-            mem_usage = psutil.Process(pid).memory_info().rss / 1024**2
-            logging.info(f"Memory usage: {mem_usage:0.1f} MB")
-
-        # construct Params
-        t0 = time.perf_counter()
-        cls.construct_params(optimization_setup)
-        t1 = time.perf_counter()
-        if optimization_setup.solver.run_diagnostics:
-            logging.info(f"Time to construct Params: {t1 - t0:0.1f} seconds")
-            mem_usage = psutil.Process(pid).memory_info().rss / 1024**2
-            logging.info(f"Memory usage: {mem_usage:0.1f} MB")
-
-        # construct Vars
-        t0 = time.perf_counter()
-        cls.construct_vars(optimization_setup)
-        t1 = time.perf_counter()
-        if optimization_setup.solver.run_diagnostics:
-            logging.info(f"Time to construct Vars: {t1 - t0:0.1f} seconds")
-            mem_usage = psutil.Process(pid).memory_info().rss / 1024**2
-            logging.info(f"Memory usage: {mem_usage:0.1f} MB")
-
-        # construct Constraints
-        t0 = time.perf_counter()
-        cls.construct_constraints(optimization_setup)
-        t1 = time.perf_counter()
-        if optimization_setup.solver.run_diagnostics:
-            logging.info(f"Time to construct Constraints: {t1 - t0:0.1f} seconds")
-            mem_usage = psutil.Process(pid).memory_info().rss / 1024**2
-            logging.info(f"Memory usage: {mem_usage:0.1f} MB")
-
-        # construct Objective
-        optimization_setup.energy_system.construct_objective()
-        if optimization_setup.solver.run_diagnostics:
-            logging.info(
-                f"Total time to construct model components: "
-                f"{time.perf_counter() - t_start:0.1f} seconds"
-            )
 
 
 class ElementConstructor(ABC):
     element_class: type[Element] = Element
 
     def __init__(
-        self, config: Config, context: Context, element_registry: "ElementRegistry"
+        self,
+        config: "Config",
+        element_registry: "ElementRegistry",
+        zen_model: "ZenModel",
+        energy_system: "EnergySystem",
     ):
         self.config = config
-        self.context = context
         self.element_registry = element_registry
+        self.zen_model = zen_model
+        self.energy_system = energy_system
 
     @abstractmethod
     def has_elements(self) -> bool:
@@ -175,7 +40,7 @@ class ElementConstructor(ABC):
         pass
 
     @abstractmethod
-    def construct_sets(self, zen_model: ZenModel, energy_system: "EnergySystem"):
+    def construct_sets(self):
         """Constructs the Sets of the class <Element>.
 
         :param optimization_setup: The OptimizationSetup the element is part of
@@ -183,7 +48,7 @@ class ElementConstructor(ABC):
         pass
 
     @abstractmethod
-    def construct_params(self, zen_model: ZenModel, energy_system: "EnergySystem"):
+    def construct_params(self):
         """Constructs the Params of the class <Element>.
 
         :param optimization_setup: The OptimizationSetup the element is part of
@@ -191,7 +56,7 @@ class ElementConstructor(ABC):
         pass
 
     @abstractmethod
-    def construct_vars(self, zen_model: ZenModel, energy_system: "EnergySystem"):
+    def construct_vars(self):
         """Constructs the Vars of the class <Element>.
 
         :param optimization_setup: The OptimizationSetup the element is part of
@@ -199,16 +64,14 @@ class ElementConstructor(ABC):
         pass
 
     @abstractmethod
-    def construct_constraints(self, zen_model: ZenModel, energy_system: "EnergySystem"):
+    def construct_constraints(self):
         """Constructs the Constraints of the class <Element>.
 
         :param optimization_setup: The OptimizationSetup the element is part of
         """
         pass
 
-    def create_custom_set(
-        self, list_index: list[str], zen_model: ZenModel, energy_system: "EnergySystem"
-    ):
+    def create_custom_set(self, list_index: list[str]):
         """Creates custom set for model component.
 
         :param list_index: list of names of indices
@@ -216,7 +79,7 @@ class ElementConstructor(ABC):
         :return: list_index: list of names of indices
         """
         list_index = list(list_index)  # make a copy of the list to avoid side effects
-        sets = zen_model.sets
+        sets = self.zen_model.sets
 
         # Case 1: all index sets are already defined in model and no set is indexed
         if all(
@@ -231,7 +94,7 @@ class ElementConstructor(ABC):
             )
             return custom_set, list_index
 
-        if list_index[0] not in energy_system.indexing_sets:
+        if list_index[0] not in self.zen_model.indexing_sets:
             raise NotImplementedError(
                 f"Index <{list_index[0]}> is not in the indexing sets."
             )
@@ -284,7 +147,7 @@ class ElementConstructor(ABC):
         return custom_set, list_index
 
     def handle_existing_set(
-        self, index: str, element: ZenSet, sets: IndexSet, list_sets: list[ZenSet]
+        self, index: str, element: "ZenSet", sets: "IndexSet", list_sets: "list[ZenSet]"
     ):
         """Handles existing sets in the model.
         Returns True if handled, False if unknown.
@@ -302,7 +165,9 @@ class ElementConstructor(ABC):
             return True
         return False
 
-    def append_set_capex_index(self, element: str, sets: IndexSet, index: str) -> bool:
+    def append_set_capex_index(
+        self, element: str, sets: "IndexSet", index: str
+    ) -> bool:
         """Checks if the capex of a technology needs to be modeled as pwa or linear.
 
         :param element: technology in model
@@ -333,7 +198,7 @@ class ElementConstructor(ABC):
         return not (("set_no_on_off" in index and model_on_off) or (not model_on_off))
 
     def handle_set_location_index(
-        self, element: str, sets: IndexSet, list_sets: list[ZenSet]
+        self, element: str, sets: "IndexSet", list_sets: "list[ZenSet]"
     ):
         """Handles the set_location index for the custom set.
 
@@ -351,7 +216,7 @@ class ElementConstructor(ABC):
             list_sets.append(sets["set_edges"])
 
     def handle_set_capacity_types_index(
-        self, element: str, sets: IndexSet, list_sets: list[str]
+        self, element: str, sets: "IndexSet", list_sets: list[str]
     ):
         """Handles the set_capacity_types index for the custom set.
 
@@ -389,8 +254,6 @@ class ElementConstructor(ABC):
 
     def add_parameter(
         self,
-        zen_model: ZenModel,
-        energy_system: "EnergySystem",
         name: str,
         doc: str,
         index_names: list[str],
@@ -398,17 +261,16 @@ class ElementConstructor(ABC):
     ):
         """Adds a parameter to the optimization model for components without data.
 
-        :param zen_model: The ZenModel the element is part of
         :param name: name of parameter
         :param doc: docstring of parameter
         """
         component_data, index_list, dict_of_units = self._initialize_component(
-            zen_model, energy_system, name, index_names, capacity_types
+            name, index_names, capacity_types
         )
         component_data = self._ensure_pd_series_multi_index(component_data)
         data = component_data, index_list
 
-        zen_model.parameters.add_parameter(
+        self.zen_model.parameters.add_parameter(
             name=name,
             doc=doc,
             data=data,
@@ -417,8 +279,6 @@ class ElementConstructor(ABC):
 
     def _initialize_component(
         self,
-        zen_model: ZenModel,
-        energy_system: "EnergySystem",
         component_name: str,
         index_names: list[str],
         capacity_types: bool = False,
@@ -436,15 +296,12 @@ class ElementConstructor(ABC):
 
         if index_names is None:
             raise ValueError(f"Index names for {component_name} not specified")
-        custom_set, index_list = self.create_custom_set(
-            index_names, zen_model, energy_system
-        )
+        custom_set, index_list = self.create_custom_set(index_names)
         component_data, dict_of_units, attribute_is_series = (
-            self.element_registry.get_attribute_of_all_elements(
+            self.element_registry.get_attribute_of_all_elements_with_units(
                 self.element_class,
                 component_name,
                 capacity_types=capacity_types,
-                return_attribute_is_series=True,
             )
         )
         if np.size(custom_set):

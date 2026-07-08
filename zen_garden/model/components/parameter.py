@@ -6,10 +6,11 @@ import pandas as pd
 import xarray as xr
 
 from zen_garden.model.components.component import Component
+from zen_garden.model.components.index_set import IndexSet
 from zen_garden.model.components.zen_set import ZenSet
 
 if TYPE_CHECKING:
-    from zen_garden.model.zen_model import ZenModel
+    pass
 
 
 class DictParameter(object):
@@ -35,9 +36,9 @@ class DictParameter(object):
 
 
 class Parameter(Component):
-    def __init__(self, zen_model: "ZenModel"):
+    def __init__(self, sets: IndexSet):
         """Initialization of the parameter object."""
-        self.zen_model = zen_model
+        self.sets = sets
         super().__init__()
         self.min_parameter_value = {"name": None, "value": None}
         self.max_parameter_value = {"name": None, "value": None}
@@ -225,7 +226,7 @@ class Parameter(Component):
             data = data.assign_coords(coords_dict)
 
             # now we need to align the coords TODO try to speed up
-            data, _ = xr.align(data, self.zen_model.sets.coords_dataset, join="right")
+            data, _ = xr.align(data, self.sets.coords_dataset, join="right")
 
         # sometimes we get empty parameters
         if isinstance(data, dict) and len(data) == 0:

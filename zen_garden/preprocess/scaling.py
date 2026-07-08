@@ -6,6 +6,8 @@ import scipy as sp
 
 from zen_garden.utils import get_label_position
 
+logger = logging.getLogger(__name__)
+
 
 # ToDo get rid of A matrix dependency -> for big models slowest part;
 # can we use the data structure of linopy directly to determine column and
@@ -85,14 +87,14 @@ class Scaling:
 
     def run_scaling(self):
         """Runs the scaling algorithm. Function called in runner.py."""
-        logging.info("\n--- Start Scaling ---\n")
+        logger.info("\n--- Start Scaling ---\n")
         t0 = time.perf_counter()
         self.initiate_A_matrix()
         self.iter_scaling()
         self.overwrite_problem()
         t1 = time.perf_counter()
         self.scaling_time = t1 - t0  # for benchmarking
-        logging.info(f"\nTime to Scale Problem: {t1 - t0:0.1f} seconds\n")
+        logger.info(f"\nTime to Scale Problem: {t1 - t0:0.1f} seconds\n")
 
     def replace_data(self, name):
         """Replaces the data (coefficients) of the lhs and rhs of the constraint
@@ -366,9 +368,9 @@ class Scaling:
         else:
             # Prints
             if no_scaling:
-                logging.info("\n--- Analyze Numerics ---\n")
+                logger.info("\n--- Analyze Numerics ---\n")
             else:
-                logging.info(f"\n--- Numerics at iteration {i} ---\n")
+                logger.info(f"\n--- Numerics at iteration {i} ---\n")
             print("Max value of A matrix: " + cons_str_max)
             print("Min value of A matrix: " + cons_str_min)
             print("Max value of RHS: " + cons_rhs_max)

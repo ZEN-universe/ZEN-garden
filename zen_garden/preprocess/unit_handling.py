@@ -14,13 +14,12 @@ import scipy as sp
 from pint import UnitRegistry
 from pint.util import column_echelon_form
 
-from zen_garden.model.carrier.carrier import Carrier
+from zen_garden.elements.carrier import Carrier
+from zen_garden.elements.technology import Technology
 from zen_garden.model.config import Config
-from zen_garden.model.context import Context
-from zen_garden.model.technology.technology import Technology
 
 if TYPE_CHECKING:
-    from zen_garden.model.energy_system import EnergySystem
+    from zen_garden.elements.energy_system import EnergySystem
     from zen_garden.services.element_registry import ElementRegistry
 
 logger = logging.getLogger(__name__)
@@ -206,7 +205,7 @@ class UnitHandling:
             )
         return list_base_units
 
-    def calculate_combined_unit(self, input_unit, return_combination=False):
+    def calculate_combined_unit(self, input_unit):
         """Represents the input unit as a combination of base units.
 
         This method constructs a combined unit by converting an input unit into
@@ -287,10 +286,7 @@ class UnitHandling:
                         input_unit=input_unit,
                     )
                 )
-        if return_combination:
-            return combined_unit, base_combination
-        else:
-            return combined_unit
+        return combined_unit, base_combination
 
     def _get_combined_unit_of_different_matrix(
         self, dim_matrix_reduced, dim_vector, input_unit
@@ -432,7 +428,7 @@ class UnitHandling:
             if input_unit == "1":
                 return 1
             if not combined_unit:
-                combined_unit = self.calculate_combined_unit(input_unit)
+                combined_unit, _ = self.calculate_combined_unit(input_unit)
             assert combined_unit.to_base_units().unitless, (
                 f"The unit conversion of unit {input_unit} did not "
                 "resolve to a dimensionless conversion factor. "
@@ -480,9 +476,7 @@ class UnitHandling:
         combined_unit = None
         attribute_unit_in_base_units = self.ureg("")
         if input_unit != "1" and not pd.isna(input_unit):
-            combined_unit, base_combination = self.calculate_combined_unit(
-                input_unit, return_combination=True
-            )
+            combined_unit, base_combination = self.calculate_combined_unit(input_unit)
             for unit, power in zip(
                 base_combination.index, base_combination, strict=False
             ):
@@ -499,7 +493,6 @@ class UnitHandling:
     def consistency_checks_input_units(
         self,
         config: Config,
-        context: Context,
         energy_system: "EnergySystem",
         element_registry: "ElementRegistry",
     ):
@@ -515,8 +508,6 @@ class UnitHandling:
         Args:
             config (Config): The configuration object containing settings for
                 the optimization, including unit consistency checks.
-            context (Context): The context object containing information about
-                the energy system, including elements and their attributes.
             energy_system (EnergySystem): The energy system object containing
                 information about the overall system, including carriers and
                 technologies.
@@ -527,7 +518,7 @@ class UnitHandling:
         """
         if not config.solver.check_unit_consistency:
             return
-        elements = context.dict_elements["Element"]
+        elements = element_registry.all_elements()
         items = elements + [energy_system]
         conversion_factor_units = {}
         retrofit_flow_coupling_factors = {}
@@ -541,10 +532,11 @@ class UnitHandling:
                 reference_carrier = element_registry.get_element(
                     Carrier, item.reference_carrier[0]
                 )
+                assert reference_carrier is not None
                 unit_dict.update(reference_carrier.units)
             # add units of conversion factors/flow coupling factors to carrier
             # units to perform consistency checks (works only since carriers
-            # are located at end of context.dict_elements)
+            # are located at end of ELEMENT_TYPE_CLASSES)
             if isinstance(item, Carrier):
                 for tech_name, cf_dict in conversion_factor_units.items():
                     for dependent_carrier, unit_pair in cf_dict.items():
@@ -673,7 +665,7 @@ class UnitHandling:
                 unit_dict,
             )
         logger.info("Parameter unit consistency is fulfilled!")
-        self.save_carrier_energy_quantities(context)
+        self.save_carrier_energy_quantities(element_registry)
 
     def _check_for_power_power(
         self, energy_quantity_units, energy_quantity_units_check
@@ -1207,7 +1199,7 @@ class UnitHandling:
             unit = unit ** unit_category["energy_quantity"]
         return {attribute_name: unit}
 
-    def save_carrier_energy_quantities(self, context: Context):
+    def save_carrier_energy_quantities(self, element_registry: "ElementRegistry"):
         """Saves energy quantity units of carriers after consistency checks.
 
         This method stores the energy quantities of the carriers after they
@@ -1216,14 +1208,14 @@ class UnitHandling:
         use in calculations.
 
         Args:
-            context (Context): The optimization setup
-                containing system parameters.
+            element_registry (ElementRegistry): The registry containing all elements in
+                the system, used to retrieve carrier elements.
 
         Returns:
             dict:
                 A dictionary containing the carrier units.
         """
-        for carrier in context.dict_elements["Carrier"]:
+        for carrier in element_registry.all_elements_of_type(Carrier):
             self.carrier_energy_quantities[carrier.name] = (
                 self._remove_non_energy_units(
                     carrier.units["demand"], attribute_name=None
@@ -1244,9 +1236,7 @@ class UnitHandling:
         # TODO combine overlap with get_unit_multiplier
         # if input unit is already in base units --> the input unit is base unit
         if input_unit in self.base_units:
-            _, base_unit_combination = self.calculate_combined_unit(
-                input_unit, return_combination=True
-            )
+            _, base_unit_combination = self.calculate_combined_unit(input_unit)
         # if input unit is nan --> dimensionless old definition
         elif type(input_unit) is not str and np.isnan(input_unit):
             base_unit_combination = pd.Series(index=self.dim_matrix.columns, data=0)
@@ -1256,9 +1246,7 @@ class UnitHandling:
             # if input unit is 1 --> dimensionless new definition
             if input_unit == "1":
                 return 1
-            _, base_unit_combination = self.calculate_combined_unit(
-                input_unit, return_combination=True
-            )
+            _, base_unit_combination = self.calculate_combined_unit(input_unit)
         if (base_unit_combination != 0).any():
             self.dict_attribute_values[attribute] = {
                 "base_combination": base_unit_combination,

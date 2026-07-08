@@ -5,24 +5,43 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 
+from zen_garden.elements.technology import Technology
 from zen_garden.model.components.component import Component
 from zen_garden.model.components.zen_set import ZenSet
 
 if TYPE_CHECKING:
-    from zen_garden.model.zen_model import ZenModel
+    from linopy import Model as LinopyModel
+
+    from zen_garden.model.components.index_set import IndexSet
+    from zen_garden.model.config import Config
+    from zen_garden.optimization_setup import UnitHandling
+    from zen_garden.services.element_registry import ElementRegistry
 
 logger = logging.getLogger(__name__)
 
 
 class Variable(Component):
-    def __init__(self, zen_model: "ZenModel"):
+    def __init__(
+        self,
+        unit_handling: "UnitHandling",
+        sets: "IndexSet",
+        lp_model: "LinopyModel",
+        config: "Config",
+        element_registry: "ElementRegistry",
+    ):
         """Initialization of a variable.
 
         :param optimization_setup: OptimizationSetup object
         """
-        self.zen_model = zen_model
-        self.units = {}
         super().__init__()
+
+        self.unit_handling = unit_handling
+        self.sets = sets
+        self.lp_model = lp_model
+        self.config = config
+        self.element_registry = element_registry
+
+        self.units = {}
 
     def add_variable(
         self,
@@ -63,13 +82,13 @@ class Variable(Component):
             return
 
         index_values, index_list = self.get_index_names_data(index_sets)
-        mask_index, lower, upper = self.zen_model.sets.indices_to_mask(
-            index_values, index_list, bounds, self.zen_model.lp_model
+        mask_index, lower, upper = self.sets.indices_to_mask(
+            index_values, index_list, bounds, self.lp_model
         )
         if mask is not None:
             mask = mask.reindex_like(mask_index, fill_value=cast(Any, False))
             mask_index = mask_index & mask
-        self.zen_model.lp_model.add_variables(
+        self.lp_model.add_variables(
             lower=lower,
             upper=upper,
             integer=integer,
@@ -108,7 +127,7 @@ class Variable(Component):
         :return: series of variable units
         """
         # if not check_unit_consistency
-        if not self.zen_model.config.solver.check_unit_consistency:
+        if not self.config.solver.check_unit_consistency:
             return None
         # binary variables
         if not unit_category:
@@ -117,7 +136,7 @@ class Variable(Component):
             index = pd.MultiIndex.from_tuples(var_index_values, names=index_list)
         else:
             index = pd.Index(var_index_values)
-        unit = self.zen_model.unit_handling.ureg("dimensionless")
+        unit = self.unit_handling.ureg("dimensionless")
         distinct_dims = {
             "money": "[currency]",
             "distance": "[length]",
@@ -129,12 +148,10 @@ class Variable(Component):
                 continue
             dim_unit = [
                 key
-                for key, value in (self.zen_model.unit_handling.base_units.items())
+                for key, value in (self.unit_handling.base_units.items())
                 if value == dim_name
             ][0]
-            unit = (
-                unit * self.zen_model.unit_handling.ureg(dim_unit) ** unit_category[dim]
-            )
+            unit = unit * self.unit_handling.ureg(dim_unit) ** unit_category[dim]
         var_units = pd.Series(index=index, dtype=str)
 
         if "energy_quantity" not in unit_category:
@@ -153,7 +170,7 @@ class Variable(Component):
                 for level in var_units.index.names
                 if level and "carrier" in str(level)
             ][0]
-            energy_quantities = self.zen_model.unit_handling.carrier_energy_quantities
+            energy_quantities = self.unit_handling.carrier_energy_quantities
             for (
                 carrier,
                 energy_quantity,
@@ -169,11 +186,9 @@ class Variable(Component):
                 for level in var_units.index.names
                 if level and "technologies" in str(level)
             ][0]
-            for technology in self.zen_model.context.dict_elements["Technology"]:
+            for technology in self.element_registry.all_elements_of_type(Technology):
                 reference_carrier = technology.reference_carrier[0]
-                energy_quantities = (
-                    self.zen_model.unit_handling.carrier_energy_quantities
-                )
+                energy_quantities = self.unit_handling.carrier_energy_quantities
                 energy_quantity = [
                     energy_quantity
                     for carrier, energy_quantity in energy_quantities.items()
@@ -190,7 +205,7 @@ class Variable(Component):
                     var_units.index.get_level_values("set_capacity_types") == "energy"
                 )
                 var_units[energy_idx] = var_units[energy_idx].apply(
-                    lambda u: str(self.zen_model.unit_handling.ureg(u + "*hour").units)
+                    lambda u: str(self.unit_handling.ureg(u + "*hour").units)
                 )
 
         return var_units[mask.to_series()]

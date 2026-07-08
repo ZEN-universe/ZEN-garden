@@ -10,6 +10,8 @@ from tqdm import tqdm
 from zen_garden.postprocess.results import Results
 from zen_garden.postprocess.results.solution_loader import ComponentType
 
+logger = logging.getLogger(__name__)
+
 
 def compare_model_values(
     results: list[Results],
@@ -32,7 +34,7 @@ def compare_model_values(
     if isinstance(component_type, str):
         component_type = ComponentType(component_type)
 
-    logging.info(
+    logger.info(
         "Comparing the model parameters of "
         f"{results[0].solution_loader.name, results[1].solution_loader.name} "
         f"and scenarios {scenarios[0], scenarios[1]}"
@@ -53,7 +55,7 @@ def compare_model_values(
         )
 
         if not comparison_df.empty:
-            logging.info(f"Parameter {component_name} has different values")
+            logger.info(f"Parameter {component_name} has different values")
             diff_dict[component_name] = comparison_df
     pbar.close()
     return diff_dict
@@ -79,7 +81,7 @@ def compare_configs(
     for i in range(2):
         if scenarios[i] not in results[i].solution_loader.scenarios:
             random_scenario = next(iter(results[i].solution_loader.scenarios.keys()))
-            logging.info(
+            logger.info(
                 f"{scenarios[i]} not in {results[i].solution_loader.name}, "
                 f"choosing {random_scenario}."
             )
@@ -154,12 +156,12 @@ def get_component_diff(
     common_component = component_names_0.intersection(component_names_1)
 
     if only_in_0:
-        logging.info(
+        logger.info(
             f"Components {only_in_1} are missing from "
             f"{results_1.solution_loader.name}"
         )
     elif only_in_1:
-        logging.info(
+        logger.info(
             f"Components {only_in_1} are missing from "
             f"{results_0.solution_loader.name}"
         )
@@ -220,7 +222,7 @@ def check_and_fill_scenario_list(
     try:
         common_scenario = get_common_scenario(*results)
     except AssertionError:
-        logging.info(
+        logger.info(
             "No common scenario found. Selecting random scenario for each " "result."
         )
         scenarios = [
@@ -323,7 +325,7 @@ def _get_comparison_df(val_0, val_1, result_names, component_name, rtol):
         elif not val_0.index.equals(val_1.index):
             mismatched_index = True
     else:
-        logging.info(
+        logger.info(
             f"Component {component_name} changed shape from "
             f"{val_0.shape} ({result_names[0]}) to {val_1.shape} "
             f"({result_names[1]})"
@@ -333,7 +335,7 @@ def _get_comparison_df(val_0, val_1, result_names, component_name, rtol):
             mismatched_index = True
 
     if mismatched_index:
-        logging.info(
+        logger.info(
             f"Component {component_name} does not have matching " f"index or columns"
         )
         missing_index = (
@@ -362,7 +364,7 @@ def _get_comparison_df(val_0, val_1, result_names, component_name, rtol):
         elif isinstance(val_1, pd.DataFrame) and (val_1.nunique(axis=1) == 1).all():
             val_1 = val_1.iloc[:, 0]
         else:
-            logging.info(f"Component {component_name} has different values")
+            logger.info(f"Component {component_name} has different values")
             comparison_df = pd.concat([val_0, val_1], keys=result_names, axis=1)
             comparison_df = comparison_df.sort_index(axis=1, level=1)
             return comparison_df

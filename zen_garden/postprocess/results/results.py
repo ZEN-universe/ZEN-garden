@@ -23,6 +23,8 @@ from zen_garden.postprocess.results.solution_loader import (
 )
 from zen_garden.utils import reformat_slicing_index
 
+logger = logging.getLogger(__name__)
+
 NestedTuple = tuple[list[str]] | tuple[str]
 NestedDict = dict[str, str | list[str]]
 
@@ -85,7 +87,7 @@ class Results:
             scenario_name = scenario_names[0]
             scenario = self.solution_loader.scenarios[scenario_name]
             if component_name not in scenario.components:
-                logging.warning(
+                logger.warning(
                     f"Component {component_name} not found. If you expected "
                     "this component to be present, the solution is probably "
                     "empty and therefore skipped."
@@ -112,7 +114,7 @@ class Results:
                     scenario, component, data_type=data_type, index=idx
                 )
             if len(ans) == 0:
-                logging.warning(
+                logger.warning(
                     f"Component {component_name} not found. If you expected "
                     "this component to be present, the solution is probably "
                     "empty and therefore skipped."
@@ -341,7 +343,7 @@ class Results:
                 index=idx,
             )
         if len(scenarios_dict) == 0:
-            logging.warning(
+            logger.warning(
                 f"Component {component_name} not found. If you expected "
                 "this component to be present, the solution is probably empty "
                 "and therefore skipped."
@@ -476,7 +478,7 @@ class Results:
             scenarios_dict[scenario_name] = current_total
 
         if len(scenarios_dict) == 0:
-            logging.warning(
+            logger.warning(
                 f"Component {component_name} not found. If you expected this "
                 "component to be present, the solution is probably empty and "
                 "therefore skipped."
@@ -594,7 +596,7 @@ class Results:
             DataFrame: Duals of the component
         """
         if not self.get_solver(scenario_name=scenario_name).save_duals:
-            logging.warning("Duals are not calculated. Skip.")
+            logger.warning("Duals are not calculated. Skip.")
             return None
 
         duals = self.get_full_ts(
@@ -648,7 +650,7 @@ class Results:
                     f"{self.get_analysis(scenario_name=scenario_name).objective}"
                 )
             if component_name not in self.get_component_names("variable"):
-                logging.warning(
+                logger.warning(
                     f"Component {component_name} not found in "
                     f"{self.get_analysis(scenario_name=scenario_name)}"
                 )
@@ -817,7 +819,7 @@ class Results:
                 component = scenario.get_component(component_name)
                 break
         if component is None:
-            logging.warning(
+            logger.warning(
                 f"Component {component_name} not found and the documentation "
                 "cannot be returned."
             )
@@ -841,7 +843,7 @@ class Results:
             scenario_name = next(iter(self.solution_loader.scenarios.keys()))
         scenario = self.solution_loader.scenarios[scenario_name]
         if component_name not in scenario.components:
-            logging.warning(
+            logger.warning(
                 f"Component {component_name} not found and the index names "
                 "cannot be returned."
             )
@@ -1099,4 +1101,4 @@ if __name__ == "__main__":
     ):
         r = Results(out_folder)
     else:
-        logging.critical("No results folder found!")
+        logger.critical("No results folder found!")

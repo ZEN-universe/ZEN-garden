@@ -1,7 +1,6 @@
 from dataclasses import dataclass
 
 from zen_garden.default_config import Analysis, Solver, System
-from zen_garden.model.utils import freeze
 
 
 @dataclass(frozen=True, slots=True)
@@ -33,6 +32,4 @@ class Config:
             Config: A new instance of the Config class.
         """
 
-        return cls(
-            analysis=freeze(analysis), system=freeze(system), solver=freeze(solver)
-        )
+        return cls(analysis=analysis, system=system, solver=solver)

@@ -5,6 +5,8 @@ from pathlib import Path
 
 from zen_garden.utils.scenario_utils import ScenarioUtils
 
+logger = logging.getLogger(__name__)
+
 
 class StringUtils:
     """This class handles strings for logging and filenames to tidy up scripts."""
@@ -24,7 +26,7 @@ class StringUtils:
         """
         scenario_string = ScenarioUtils.scenario_string(scenario)
         if len(steps_horizon) == 1:
-            logging.info(
+            logger.info(
                 f"\n--- Conduct optimization for perfect foresight "
                 f"{scenario_string}--- \n"
             )
@@ -32,7 +34,7 @@ class StringUtils:
             corresponding_year = (
                 system.reference_year + step * system.interval_between_years
             )
-            logging.info(
+            logger.info(
                 "\n--- Conduct optimization for rolling horizon step for "
                 f"{corresponding_year} ({steps_horizon.index(step) + 1} of "
                 f"{len(steps_horizon)}) {scenario_string}--- \n"
@@ -114,9 +116,9 @@ class StringUtils:
             except FileExistsError:
                 pass
         else:
-            logging.warning(f"The output folder '{out_folder}' already exists")
+            logger.warning(f"The output folder '{out_folder}' already exists")
             if analysis.overwrite_output:
-                logging.warning("Existing files will be overwritten!")
+                logger.warning("Existing files will be overwritten!")
                 if not system.conduct_scenario_analysis:
                     # TODO fix for scenario analysis, shared folder for all
                     # scenarios, so not robust for parallel process

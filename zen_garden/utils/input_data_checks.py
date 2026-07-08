@@ -1,5 +1,6 @@
 import importlib.util
 import json
+import logging
 import os
 import warnings
 from typing import TYPE_CHECKING
@@ -7,10 +8,42 @@ from typing import TYPE_CHECKING
 import numpy as np
 
 from zen_garden.default_config import Subscriptable
+from zen_garden.services.dataset_path_resolver import DatasetPathResolver
 
 if TYPE_CHECKING:
     from zen_garden.model.config import Config
-    from zen_garden.model.context import Context
+
+logger = logging.getLogger(__name__)
+
+PROHIBITED_DATASET_CHARACTERS = [
+    " ",
+    ".",
+    ":",
+    ",",
+    ";",
+    "!",
+    "?",
+    "(",
+    ")",
+    "[",
+    "]",
+    "{",
+    "}",
+    "<",
+    ">",
+    "&",
+    "|",
+    "*",
+    "^",
+    "%",
+    "$",
+    "#",
+    "@",
+    "`",
+    "~",
+    "\\",
+    "/",
+]
 
 
 class InputDataChecks:
@@ -18,38 +51,9 @@ class InputDataChecks:
     element definitions, etc.) is defined correctly.
     """
 
-    PROHIBITED_DATASET_CHARACTERS = [
-        " ",
-        ".",
-        ":",
-        ",",
-        ";",
-        "!",
-        "?",
-        "(",
-        ")",
-        "[",
-        "]",
-        "{",
-        "}",
-        "<",
-        ">",
-        "&",
-        "|",
-        "*",
-        "^",
-        "%",
-        "$",
-        "#",
-        "@",
-        "`",
-        "~",
-        "\\",
-        "/",
-    ]
     config: "Config | None" = None
-    context: "Context | None" = None
     optimization_setup: object | None = None
+    dataset_path_resolver: "DatasetPathResolver | None" = None
 
     def __init__(self, config):
         """Initialize the class.
@@ -165,21 +169,28 @@ class InputDataChecks:
         file exist.
         """
         assert (
-            self.config is not None and self.context is not None
-        ), "Config and context must be set before calling this method"
+            self.config is not None and self.dataset_path_resolver is not None
+        ), "Config and dataset path resolver must be set before calling this method"
         # TODO works for two levels of subsets, but not for more
         self.config.system.set_technologies = []
         for set_name, subsets in self.config.analysis.subsets[
             "set_technologies"
         ].items():
             for technology in self.config.system[set_name]:
-                if technology not in self.context.paths[set_name].keys():
+                if technology not in self.dataset_path_resolver.elements_of_set(
+                    set_name
+                ):
                     # raise error if technology is not in input data
                     raise FileNotFoundError(
                         f"Technology {technology} selected in config does not "
                         "exist in input data"
                     )
-                elif "attributes.json" not in self.context.paths[set_name][technology]:
+                elif (
+                    "attributes.json"
+                    not in self.dataset_path_resolver.paths_of_element(
+                        set_name, technology
+                    )
+                ):
                     raise FileNotFoundError(
                         "The file attributes.json does not exist for the "
                         f"technology {technology}"
@@ -191,14 +202,19 @@ class InputDataChecks:
             ), f"Subsets of {set_name} must be a list, dict not implemented"
             for subset in subsets:
                 for technology in self.config.system[subset]:
-                    if technology not in self.context.paths[subset].keys():
+                    if technology not in self.dataset_path_resolver.elements_of_set(
+                        subset
+                    ):
                         # raise error if technology is not in input data
                         raise FileNotFoundError(
                             f"Technology {technology} selected in config does "
                             "not exist in input data"
                         )
                     elif (
-                        "attributes.json" not in self.context.paths[subset][technology]
+                        "attributes.json"
+                        not in self.dataset_path_resolver.paths_of_element(
+                            subset, technology
+                        )
                     ):
                         raise FileNotFoundError(
                             "The file attributes.json does not exist for the "
@@ -208,6 +224,27 @@ class InputDataChecks:
                     self.config.system.set_technologies.extend(
                         self.config.system[subset]
                     )
+
+    def check_existing_carrier_data(self, carriers: list[str]):
+        """Checks the existing carrier data and only regards those carriers for
+        which folders exist.
+        """
+        assert self.dataset_path_resolver is not None
+        # check if carriers exist
+        for carrier in carriers:
+            if carrier not in self.dataset_path_resolver.elements_of_set(
+                "set_carriers"
+            ):
+                # raise error if carrier is not in input data
+                raise FileNotFoundError(
+                    f"Carrier {carrier} selected in config does not exist ininput data"
+                )
+            elif "attributes.json" not in self.dataset_path_resolver.paths_of_element(
+                "set_carriers", carrier
+            ):
+                raise FileNotFoundError(
+                    f"The file attributes.json does not exist for the carrier {carrier}"
+                )
 
     def check_dataset(self):
         """Ensures that the dataset chosen in the config does exist and contains a
@@ -223,12 +260,12 @@ class InputDataChecks:
             f"{self.analysis.dataset} as it is specified in the config"
         )
         # check if any character in the dataset name is prohibited
-        for char in self.PROHIBITED_DATASET_CHARACTERS:
+        for char in PROHIBITED_DATASET_CHARACTERS:
             if char in dataset:
                 raise ValueError(
                     f"Character {char} is not allowed in the dataset name "
                     f"{dataset}\nProhibited characters: "
-                    f"{self.PROHIBITED_DATASET_CHARACTERS}"
+                    f"{PROHIBITED_DATASET_CHARACTERS}"
                 )
         # check if chosen dataset contains a system.py file
         if not os.path.exists(
@@ -238,6 +275,28 @@ class InputDataChecks:
                 f"Neither system.json nor system.py not found in dataset: "
                 f"{self.analysis.dataset}"
             )
+
+    def check_single_directed_edges(self, set_edges_input):
+        """Checks if single-directed edges exist in the dataset (e.g. CH-DE exists,
+        DE-CH doesn't) and raises a warning.
+
+        Args:
+            set_edges_input: DataFrame containing set of edges defined in
+                set_edges.csv
+        """
+        for edge in set_edges_input.values:
+            reversed_edge = edge[2] + "-" + edge[1]
+            if (
+                reversed_edge
+                not in [edge_string[0] for edge_string in set_edges_input.values]
+                and edge[1] in self.system.set_nodes
+                and edge[2] in self.system.set_nodes
+            ):
+                warnings.warn(
+                    f"The edge {edge[0]} is single-directed, i.e., the edge "
+                    f"{reversed_edge} doesn't exist!",
+                    stacklevel=2,
+                )
 
     def read_system_file(self, config):
         """Reads the system file and returns the system dictionary.
@@ -283,3 +342,66 @@ class InputDataChecks:
                 self.check_no_extra_config_fields(
                     subconfig, config_name=config_name + "/" + name
                 )
+
+    def check_carrier_configuration(
+        self, input_carrier, output_carrier, reference_carrier, name
+    ):
+        """Check the chosen input/output/reference carrier combination.
+
+        :param input_carrier: input carrier of conversion technology
+        :param output_carrier: output carrier of conversion technology
+        :param reference_carrier: reference carrier of technology
+        :param name: name of conversion technology
+        """
+        # assert that conversion technology has at least an input/output carrier
+        assert (
+            len(input_carrier + output_carrier) > 0
+        ), f"Conversion technology {name} has neither an input nor an output carrier!"
+        # check if reference carrier in input and output carriers and set
+        # technology to correspondent carrier
+        assert reference_carrier[0] in (input_carrier + output_carrier), (
+            f"reference carrier {reference_carrier} of technology {name} not "
+            f"in input and output carriers {input_carrier + output_carrier}"
+        )
+        set_input_carrier = set(input_carrier)
+        set_output_carrier = set(output_carrier)
+        # assert that input and output carrier of conversion tech are different
+        common_carriers = set_input_carrier & set_output_carrier
+        assert not common_carriers, (
+            f"The conversion technology {name} has the same input and output "
+            f"carrier(s) ({list(common_carriers)})!"
+        )
+
+    def check_duplicate_indices(self, df_input, file_name, folder_path):
+        """Checks if df_input contains any duplicate indices and either removes
+        them if they are of identical value or raises an error otherwise.
+
+        :param df_input: raw input dataframe
+        :param folder_path: the path of the folder containing the selected file
+        :param file_name: name of selected file
+        :return: df_input without duplicate indices
+        """
+        unique_elements, counts = np.unique(df_input.index, return_counts=True)
+        duplicates = unique_elements[counts > 1]
+
+        if len(duplicates) != 0:
+            for duplicate in duplicates:
+                values = df_input.loc[duplicate]
+                # check if all the duplicates are of the same value
+                if values.nunique() == 1:
+                    logger.warning(
+                        f"The input data file {file_name + '.csv'} at "
+                        f"{folder_path} contains duplicate indices with "
+                        f"identical values: {df_input.loc[duplicates]}."
+                    )
+                else:
+                    raise AssertionError(
+                        f"The input data file {file_name + '.csv'} at "
+                        f"{folder_path} contains duplicate indices with "
+                        f"different values: {df_input.loc[duplicates]}."
+                    )
+            # remove duplicates
+            duplicate_mask = df_input.index.duplicated(keep="first")
+            df_input = df_input[~duplicate_mask]
+
+        return df_input

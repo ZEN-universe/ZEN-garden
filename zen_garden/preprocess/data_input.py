@@ -5,6 +5,7 @@ import json
 import logging
 import os
 import warnings
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 import numpy as np
@@ -12,15 +13,36 @@ import pandas as pd
 from scipy.stats import linregress
 
 from zen_garden.default_config import HeaderDataInputs
-from zen_garden.model.config import Config
-from zen_garden.model.context import Context
-from zen_garden.model.time_steps import TimeStepsDicts
 
 if TYPE_CHECKING:
-    from zen_garden.model.element import Element
-    from zen_garden.model.energy_system import EnergySystem
+    from zen_garden.elements.element import Element
+    from zen_garden.elements.energy_system import EnergySystem
+    from zen_garden.model.config import Config
+    from zen_garden.model.time_steps import TimeStepsDicts
     from zen_garden.preprocess.unit_handling import UnitHandling
-    from zen_garden.utils import ScenarioDict
+    from zen_garden.services.scenario_dict import ScenarioDict
+    from zen_garden.utils.input_data_checks import InputDataChecks
+
+logger = logging.getLogger(__name__)
+
+PARAMETER_CHANGE_LOG = {
+    "min_full_load_hours_fraction": {
+        "default_value": 0,  # only 0, 1, or 'inf' are allowed
+        "unit": "min_load",
+    },
+    "capacity_lower_limit": {
+        "default_value": 0,  # only 0, 1, or 'inf' are allowed
+        "unit": "capacity_limit",
+    },
+    "capacity_lower_limit_energy": {
+        "default_value": 0,  # only 0, 1, or 'inf' are allowed
+        "unit": "capacity_limit_energy",
+    },
+    #    "new_parameter_name": {
+    #       "default_value": 0, # only 0, 1, or 'inf' are allowed
+    #       "unit": "existing_parameter_name_with_same_unit"
+    #   }
+}
 
 
 class DataInput:
@@ -31,9 +53,10 @@ class DataInput:
         element: "Element | EnergySystem",
         energy_system: "EnergySystem",
         unit_handling: "UnitHandling",
-        config: Config,
-        context: Context,
-        optimization_setup=None,
+        config: "Config",
+        scenario_dict: "ScenarioDict",
+        input_data_checks: "InputDataChecks",
+        folder_path: Path,
     ):
         """Data input object to extract input data.
 
@@ -46,17 +69,16 @@ class DataInput:
         """
         self.element = element
         self.energy_system = energy_system
-        self.config = config
-        self.context = context
-        self.scenario_dict: "ScenarioDict | None" = None
         self.unit_handling = unit_handling
+        self.config = config
+        self.scenario_dict = scenario_dict
+        self.input_data_checks = input_data_checks
         # extract folder path
-        self.folder_path = self.element.input_path
+        self.folder_path = folder_path
         # get names of indices
         self.index_names = self.config.analysis.header_data_inputs
         # load attributes file
         self.attribute_dict = self.load_attribute_file()
-        # config and context
 
     def extract_input_data(
         self, file_name, index_sets, unit_category, time_steps=None, subelement=None
@@ -114,15 +136,12 @@ class DataInput:
                 subelement=subelement,
             )
         # read input file
-        assert (
-            self.scenario_dict is not None
-        ), "scenario_dict must be provided to extract input data"
         f_name, scenario_factor = self.scenario_dict.get_param_file(
             self.element.name, file_name
         )
         df_input = self.read_input_csv(f_name)
         if f_name != file_name and yearly_variation and df_input is None:
-            logging.info(
+            logger.info(
                 f"{f_name} for current scenario is missing from "
                 f"{self.folder_path}. {file_name} is used as input file"
             )
@@ -153,7 +172,7 @@ class DataInput:
             if part_file_name is not None:
                 df_input_part = self.read_input_csv(part_file_name)
                 if df_input_part is None:
-                    logging.info(
+                    logger.info(
                         f"{part_file_name} for current scenario is missing "
                         f"from {self.folder_path}. The base case is used as input file"
                     )
@@ -235,7 +254,9 @@ class DataInput:
                 )
 
         # check for duplicate indices
-        df_input = self._check_duplicate_indices(df_input, file_name, self.folder_path)
+        df_input = self.input_data_checks.check_duplicate_indices(
+            df_input, file_name, self.folder_path
+        )
 
         # apply multiplier to input data
         df_input = df_input * default_value["multiplier"]
@@ -267,40 +288,6 @@ class DataInput:
         )
         df_output_copy.loc[common_index] = df_input.loc[common_index]
         return df_output_copy
-
-    def _check_duplicate_indices(self, df_input, file_name, folder_path):
-        """Checks if df_input contains any duplicate indices and either removes
-        them if they are of identical value or raises an error otherwise.
-
-        :param df_input: raw input dataframe
-        :param folder_path: the path of the folder containing the selected file
-        :param file_name: name of selected file
-        :return: df_input without duplicate indices
-        """
-        unique_elements, counts = np.unique(df_input.index, return_counts=True)
-        duplicates = unique_elements[counts > 1]
-
-        if len(duplicates) != 0:
-            for duplicate in duplicates:
-                values = df_input.loc[duplicate]
-                # check if all the duplicates are of the same value
-                if values.nunique() == 1:
-                    logging.warning(
-                        f"The input data file {file_name + '.csv'} at "
-                        f"{folder_path} contains duplicate indices with "
-                        f"identical values: {df_input.loc[duplicates]}."
-                    )
-                else:
-                    raise AssertionError(
-                        f"The input data file {file_name + '.csv'} at "
-                        f"{folder_path} contains duplicate indices with "
-                        f"different values: {df_input.loc[duplicates]}."
-                    )
-            # remove duplicates
-            duplicate_mask = df_input.index.duplicated(keep="first")
-            df_input = df_input[~duplicate_mask]
-
-        return df_input
 
     def read_input_csv(self, input_file_name):
         """Reads input data and returns raw input dataframe.
@@ -403,13 +390,11 @@ class DataInput:
         :return: attribute_dict: attribute dict
         :return: factor: factor for attribute
         """
-        if self.scenario_dict is not None:
-            filename, factor = self.scenario_dict.get_default(
-                self.element.name, attribute_name
-            )
-        else:
-            filename = "attributes"
-            factor = 1
+        filename, factor = self.scenario_dict.get_default(
+            self.element.name, attribute_name
+        )
+        factor = 1
+
         if filename != "attributes":
             attribute_dict = self.load_attribute_file(filename)
         else:
@@ -487,7 +472,7 @@ class DataInput:
                 return attribute
             except ValueError:
                 if factor != 1:
-                    logging.warning(
+                    logger.warning(
                         f"WARNING: Attribute {attribute_name} of "
                         f"{self.element.name} is not a number "
                         f"but has custom factor {factor}, factor will be "
@@ -505,15 +490,12 @@ class DataInput:
         :param attribute_dict: name of selected attribute
         :return: attribute value, attribute unit
         """
-        assert self.context is not None
         if attribute_name not in attribute_dict:
-            parameter_change_log = self.context.parameter_change_log
-
             # The attribute is not found because of an update
-            if attribute_name in parameter_change_log:
+            if attribute_name in PARAMETER_CHANGE_LOG:
                 # CASE 1: There is a new attribute
-                if isinstance(parameter_change_log[attribute_name], dict):
-                    missing_attribute = parameter_change_log[attribute_name]
+                if isinstance(PARAMETER_CHANGE_LOG[attribute_name], dict):
+                    missing_attribute = PARAMETER_CHANGE_LOG[attribute_name]
 
                     if missing_attribute["default_value"] not in [0, 1, "inf"]:
                         raise AttributeError(
@@ -538,7 +520,7 @@ class DataInput:
 
                 # CASE 2: The attribute has a new name
                 else:
-                    old_name = parameter_change_log[attribute_name]
+                    old_name = PARAMETER_CHANGE_LOG[attribute_name]
                     attribute_dict[attribute_name] = attribute_dict.pop(old_name)
 
                     warnings.warn(
@@ -579,7 +561,7 @@ class DataInput:
     ):
         """Reads and saves the year specific time series data. The year specific
         time series are saved in the dictionary
-        self.context.year_specific_ts.
+        self.energy_system.year_specific_ts.
 
         :param file_name: name of selected file
         :param index_name_list: list of name of indices
@@ -608,9 +590,6 @@ class DataInput:
                     continue
 
                 # read input data
-                assert (
-                    self.scenario_dict is not None
-                ), "scenario_dict must be provided to extract year specific time series"
                 f_name, scenario_factor = self.scenario_dict.get_param_file(
                     self.element.name, filename
                 )
@@ -630,21 +609,18 @@ class DataInput:
                         default_value,
                         time_steps,
                     )
-                assert (
-                    self.context is not None
-                ), "context must be provided to extract year specific time series"
-                if i not in self.context.year_specific_ts:
-                    self.context.year_specific_ts[i] = {}
-                self.context.year_specific_ts[i][(self.element._name, file_name)] = (
-                    df_output_specific * scenario_factor
-                )
+                if i not in self.energy_system.year_specific_ts:
+                    self.energy_system.year_specific_ts[i] = {}
+                self.energy_system.year_specific_ts[i][
+                    (self.element._name, file_name)
+                ] = (df_output_specific * scenario_factor)
                 # try:
-                #     self.context.year_specific_ts[i][
+                #     self.energy_system.year_specific_ts[i][
                 #         (self.element._name, file_name)
                 #     ] = df_output_specific * scenario_factor
                 # except Exception:
-                #     self.context.year_specific_ts[i] = {}
-                #     self.context.year_specific_ts[i][
+                #     self.energy_system.year_specific_ts[i] = {}
+                #     self.energy_system.year_specific_ts[i][
                 #         (self.element._name, file_name)
                 #     ] = df_output_specific * scenario_factor
 
@@ -664,15 +640,12 @@ class DataInput:
         # add Yearly_variation to file_name
         file_name += "_yearly_variation"
         # read input data
-        assert (
-            self.scenario_dict is not None
-        ), "scenario_dict must be provided to extract yearly variation"
         f_name, scenario_factor = self.scenario_dict.get_param_file(
             self.element.name, file_name
         )
         df_input = self.read_input_csv(f_name)
         if f_name != file_name and df_input is None:
-            logging.info(
+            logger.info(
                 f"{f_name} is missing from {self.folder_path}. {file_name} is "
                 "used as input file"
             )
@@ -746,7 +719,7 @@ class DataInput:
                 return set_nodes_config
         else:
             set_edges_input = self.read_input_csv("set_edges")
-            self._check_single_directed_edges(set_edges_input)
+            self.input_data_checks.check_single_directed_edges(set_edges_input)
             if set_edges_input is not None:
                 set_edges = set_edges_input[
                     (set_edges_input["node_from"].isin(self.energy_system.set_nodes))
@@ -757,28 +730,6 @@ class DataInput:
             else:
                 raise FileNotFoundError(
                     f"Input file set_edges.csv is missing from {self.folder_path}"
-                )
-
-    def _check_single_directed_edges(self, set_edges_input):
-        """Checks if single-directed edges exist in the dataset (e.g. CH-DE exists,
-        DE-CH doesn't) and raises a warning.
-
-        Args:
-            set_edges_input: DataFrame containing set of edges defined in
-                set_edges.csv
-        """
-        for edge in set_edges_input.values:
-            reversed_edge = edge[2] + "-" + edge[1]
-            if (
-                reversed_edge
-                not in [edge_string[0] for edge_string in set_edges_input.values]
-                and edge[1] in self.system.set_nodes
-                and edge[2] in self.system.set_nodes
-            ):
-                warnings.warn(
-                    f"The edge {edge[0]} is single-directed, i.e., the edge "
-                    f"{reversed_edge} doesn't exist!",
-                    stacklevel=2,
                 )
 
     def extract_carriers(self, carrier_type):
@@ -838,9 +789,6 @@ class DataInput:
                 _energy_string = ""
 
             # here we ignore the factor
-            assert (
-                self.scenario_dict is not None
-            ), "scenario_dict must be provided to extract existing technologies"
             f_name, _ = self.scenario_dict.get_param_file(
                 self.element.name, f"capacity_existing{_energy_string}"
             )
@@ -874,7 +822,6 @@ class DataInput:
         # if no existing capacities
         if not self.config.system.use_capacities_existing:
             return df_output
-        assert self.scenario_dict is not None
         f_name, scenario_factor = self.scenario_dict.get_param_file(
             self.element.name, file_name
         )
@@ -1134,7 +1081,7 @@ class DataInput:
 
     def construct_index_list(
         self, index_sets, time_steps
-    ) -> tuple[list[TimeStepsDicts], list[HeaderDataInputs]]:
+    ) -> "tuple[list[TimeStepsDicts], list[HeaderDataInputs]]":
         """Constructs index list from index sets and returns list of indices and
         list of index names.
 
@@ -1315,7 +1262,7 @@ class DataInput:
                                 .reorder_levels(df_input.index.names)
                             )
             else:
-                logging.info(
+                logger.info(
                     f"Parameter {file_name} data won't be interpolated to "
                     "cover years without given values"
                 )

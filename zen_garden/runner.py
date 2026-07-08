@@ -19,6 +19,8 @@ from .utils import InputDataChecks, ScenarioUtils, StringUtils, setup_logger
 # we setup the logger here
 setup_logger()
 
+logger = logging.getLogger(__name__)
+
 
 def run(config="./config.json", dataset=None, job_index=None, folder_output=None):
     """Run ZEN-garden.
@@ -52,7 +54,7 @@ def run(config="./config.json", dataset=None, job_index=None, folder_output=None
     """
     # print the version
     version = importlib.metadata.version("zen-garden")
-    logging.info(f"Running ZEN-garden version: {version}")
+    logger.info(f"Running ZEN-garden version: {version}")
 
     # prevent double printing
     logging.propagate = False
@@ -83,14 +85,14 @@ def run(config="./config.json", dataset=None, job_index=None, folder_output=None
 
     # overwrite the path if necessary
     if dataset is not None:
-        # logging.info(f"Overwriting dataset to: {dataset_path}")
+        # logger.info(f"Overwriting dataset to: {dataset_path}")
         config.analysis.dataset = dataset
     if folder_output is not None:
         if not Path(folder_output).is_absolute():
             folder_output = os.path.abspath(Path(config_path) / folder_output)
         config.analysis.folder_output = folder_output
         config.solver.solver_dir = folder_output
-    logging.info(f"Optimizing for dataset {config.analysis.dataset}")
+    logger.info(f"Optimizing for dataset {config.analysis.dataset}")
     # make all paths absolute to the config file path
     if not Path(config.analysis.dataset).is_absolute():
         config.analysis.dataset = os.path.abspath(
@@ -125,7 +127,9 @@ def run(config="./config.json", dataset=None, job_index=None, folder_output=None
         # FORMULATE THE OPTIMIZATION PROBLEM
         # add the scenario_dict and read input data
         optimization_setup = OptimizationSetup(
-            config, scenario_dict=scenario_dict, input_data_checks=input_data_checks
+            config,
+            init_scenario_dict=scenario_dict,
+            input_data_checks=input_data_checks,
         )
         # get rolling horizon years
         steps_horizon = optimization_setup.get_optimization_horizon()
@@ -138,11 +142,11 @@ def run(config="./config.json", dataset=None, job_index=None, folder_output=None
             optimization_setup.overwrite_time_indices(step)
             # create optimization problem
             optimization_setup.construct_optimization_problem()
-            if optimization_setup.solver.use_scaling:
+            if optimization_setup.config.solver.use_scaling:
                 optimization_setup.scaling.run_scaling()
             elif (
-                optimization_setup.solver.analyze_numerics
-                or optimization_setup.solver.run_diagnostics
+                optimization_setup.config.solver.analyze_numerics
+                or optimization_setup.config.solver.run_diagnostics
             ):
                 optimization_setup.scaling.analyze_numerics()
             # SOLVE THE OPTIMIZATION PROBLEM
@@ -151,15 +155,17 @@ def run(config="./config.json", dataset=None, job_index=None, folder_output=None
             if not optimization_setup.optimality:
                 # write IIS
                 optimization_setup.write_IIS(scenario)
-                logging.warning(
-                    f"Optimization: {optimization_setup.model.termination_condition}"
+                assert optimization_setup.zen_model is not None
+                logger.warning(
+                    f"Optimization: "
+                    f"{optimization_setup.zen_model.lp_model.termination_condition}"
                 )
                 break
-            if optimization_setup.solver.use_scaling:
+            if optimization_setup.config.solver.use_scaling:
                 optimization_setup.scaling.re_scale()
             # save new capacity additions and cumulative carbon emissions
             # for next time step
-            if optimization_setup.system.use_rolling_horizon:
+            if optimization_setup.config.system.use_rolling_horizon:
                 optimization_setup.add_results_of_optimization_step(step)
             # EVALUATE RESULTS
             # create scenario name, subfolder and param_map for postprocessing
@@ -178,5 +184,14 @@ def run(config="./config.json", dataset=None, job_index=None, folder_output=None
                 scenario_name=scenario_name,
                 param_map=param_map,
             )
-    logging.info("--- Optimization finished ---")
+    logger.info("\n--- Optimization finished ---")
     return optimization_setup
+
+
+if __name__ == "__main__":
+    run(
+        config="docs/dataset_examples/config.json",
+        dataset="1_base_case",
+        folder_output=None,
+        job_index=None,
+    )

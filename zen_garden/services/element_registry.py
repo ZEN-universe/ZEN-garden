@@ -1,37 +1,48 @@
 import copy
 import logging
-from typing import TYPE_CHECKING, Any
+from collections import defaultdict
+from typing import TYPE_CHECKING, Any, TypeVar, cast
 
 import pandas as pd
 
-from zen_garden.model import ELEMENT_TYPE_CLASSES, Context
-from zen_garden.model.config import Config
-from zen_garden.model.element import Element
-from zen_garden.model.energy_system import EnergySystem
-from zen_garden.utils.input_data_checks import InputDataChecks
+from zen_garden.elements import ELEMENT_TYPE_CLASSES
+from zen_garden.elements.element import Element
 
 if TYPE_CHECKING:
+    from zen_garden.elements.energy_system import EnergySystem
+    from zen_garden.model.config import Config
     from zen_garden.preprocess.unit_handling import UnitHandling
+    from zen_garden.services.dataset_path_resolver import DatasetPathResolver
+    from zen_garden.services.scenario_dict import ScenarioDict
+    from zen_garden.utils.input_data_checks import InputDataChecks
 
 logger = logging.getLogger(__name__)
 
+T = TypeVar("T", bound=Element)
+
 
 class ElementRegistry:
+    dict_elements: defaultdict[str, list[Element]] = defaultdict(list)
+
     def __init__(
         self,
-        config: Config,
-        context: Context,
-        energy_system: EnergySystem,
-        input_data_checks: InputDataChecks,
+        config: "Config",
+        energy_system: "EnergySystem",
+        input_data_checks: "InputDataChecks",
         unit_handling: "UnitHandling",
+        dataset_path_resolver: "DatasetPathResolver",
+        scenario_dict: "ScenarioDict",
     ):
         self.config = config
-        self.context = context
         self.energy_system = energy_system
         self.input_data_checks = input_data_checks
         self.unit_handling = unit_handling
+        self.dataset_path_resolver = dataset_path_resolver
+        self.scenario_dict = scenario_dict
 
-    def add_elements(self):
+        self._register_elements()
+
+    def _register_elements(self):
         """Set up the parameters, variables and constraints of the carriers."""
         logger.info("\n--- Add elements to model--- \n")
         for element_id in ELEMENT_TYPE_CLASSES.keys():
@@ -45,7 +56,7 @@ class ElementRegistry:
                 # TODO: Eliminate this hidden dependency on ConversionTechnology,
                 # which modifies set_carriers in EnergySystem
                 element_set: list[str] = self.energy_system.set_carriers
-                self._check_existing_carrier_data(element_set)
+                self.input_data_checks.check_existing_carrier_data(element_set)
 
             # check if element_set has a subset and remove subset from element_set
             element_subset: list[str] = []
@@ -86,25 +97,9 @@ class ElementRegistry:
             # add element class
             element_names = list(set(element_set) - set(element_subset))
             for element_name in sorted(element_names):
-                self._add_element(element_class, element_name)
+                self._register_element(element_class, element_name)
 
-    def _check_existing_carrier_data(self, carriers: list[str]):
-        """Checks the existing carrier data and only regards those carriers for
-        which folders exist.
-        """
-        # check if carriers exist
-        for carrier in carriers:
-            if carrier not in self.context.paths["set_carriers"].keys():
-                # raise error if carrier is not in input data
-                raise FileNotFoundError(
-                    f"Carrier {carrier} selected in config does not exist ininput data"
-                )
-            elif "attributes.json" not in self.context.paths["set_carriers"][carrier]:
-                raise FileNotFoundError(
-                    f"The file attributes.json does not exist for the carrier {carrier}"
-                )
-
-    def _add_element(self, element_class: type[Element], element_name: str):
+    def _register_element(self, element_class: type[Element], element_name: str):
         """Add an element to the element_dict with the class labels as key.
 
         Args:
@@ -114,37 +109,34 @@ class ElementRegistry:
         instance = element_class(
             element_name,
             self.config,
-            self.context,
             self.energy_system,
             self,
             self.unit_handling,
+            self.dataset_path_resolver,
+            self.scenario_dict,
+            self.input_data_checks,
         )
         # Add instance to all classes that element_class inherits from, including itself
         # MRO (Method Resolution Order) gives the order in which base classes
         # are searched when looking for a method.
         for class_name in element_class.__mro__:
-            self.context.dict_elements[class_name.__name__].append(instance)
+            self.dict_elements[class_name.__name__].append(instance)
 
-    def get_all_elements(self, class_name: type[Element]) -> list[Element]:
+    def all_elements_of_type(self, class_name: type[T]) -> list[T]:
         """Get all elements of the class in the energy system."""
-        return self.context.dict_elements[class_name.__name__]
+        return cast(list[T], self.dict_elements[class_name.__name__])
 
-    def get_elements(self) -> list[Element]:
+    def all_elements(self) -> list[Element]:
         """Get all elements in the energy system."""
-        return self.get_all_elements(Element)
+        return self.all_elements_of_type(Element)
 
-    def get_all_names_of_elements(self, class_name):
+    def all_names_of_elements(self, class_name):
         """Get all names of elements in class.
 
         :param cls: class of the elements to return
         :return: names_of_elements: list of elements in this class
         """
-        # _elements_in_class = self.get_all_elements(class_name)
-        # names_of_elements = []
-        # for _element in _elements_in_class:
-        #     names_of_elements.append(_element.name)
-        # return names_of_elements
-        return [_element.name for _element in self.get_all_elements(class_name)]
+        return [_element.name for _element in self.all_elements_of_type(class_name)]
 
     def get_element(
         self, class_name: type[Element], element_name: str
@@ -155,7 +147,7 @@ class ElementRegistry:
         :param cls: class of the elements to return
         :return: element: return element whose name is matched
         """
-        for element in self.get_all_elements(class_name):
+        for element in self.all_elements_of_type(class_name):
             if element.name == element_name:
                 return element
         return None
@@ -166,40 +158,30 @@ class ElementRegistry:
         :param name: name of element class
         :return: element_class: return element whose name is matched
         """
-
-        # element_classes = {
-        #     DICT_ELEMENT_CLASSES[class_name].label: DICT_ELEMENT_CLASSES[class_name]
-        #     for class_name in DICT_ELEMENT_CLASSES
-        # }
-        # if name in element_classes.keys():
-        #     return element_classes[name]
-        # else:
-        #     return None
-        #
         for class_name in ELEMENT_TYPE_CLASSES:
             if ELEMENT_TYPE_CLASSES[class_name].label == name:
                 return ELEMENT_TYPE_CLASSES[class_name]
         return None
 
-    def get_attribute_of_all_elements(
+    def get_attribute_of_all_elements_with_units(
         self,
         cls,
         attribute_name: str,
         capacity_types=False,
-        return_attribute_is_series=False,
     ):
-        """Get attribute values of all elements in a class.
+        """Get attribute values and units of all elements in a class.
 
         Args:
             cls: class of the elements to return
             attribute_name (str): name of attribute
             capacity_types (boolean): if attributes extracted for all capacity types
-            return_attribute_is_series (boolean): if information on attribute type is
-                returned
+
+        Returns:
             dict_of_attributes (dict): dict of attribute values
+            dict_of_units (dict): dict of attribute units
             attribute_is_series: return information on attribute type
         """
-        class_elements = self.get_all_elements(cls)
+        class_elements = self.all_elements_of_type(cls)
         dict_of_attributes = {}
         dict_of_units = {}
         attribute_is_series = False
@@ -231,10 +213,21 @@ class ElementRegistry:
                         )
                         if attribute_is_series_temp:
                             attribute_is_series = attribute_is_series_temp
-        if return_attribute_is_series:
-            return dict_of_attributes, dict_of_units, attribute_is_series
-        else:
-            return dict_of_attributes
+        return dict_of_attributes, dict_of_units, attribute_is_series
+
+    def get_attribute_of_all_elements(
+        self, cls, attribute_name: str, capacity_types=False
+    ):
+        """Get attribute values of all elements in a class.
+
+        Args:
+            cls: class of the elements to return
+            attribute_name (str): name of attribute
+            capacity_types (boolean): if attributes extracted for all capacity types
+        """
+        return self.get_attribute_of_all_elements_with_units(
+            cls, attribute_name, capacity_types
+        )[0]
 
     def append_attribute_of_element_to_dict(
         self,

@@ -5,23 +5,22 @@ from itertools import combinations
 import linopy as lp
 import numpy as np
 import xarray as xr
-from fsspec.utils import TYPE_CHECKING
+from linopy import Model as LinopyModel
 
 from zen_garden.model.components.component import Component
 from zen_garden.model.components.index_set import IndexSet
 
-if TYPE_CHECKING:
-    from zen_garden.model.zen_model import ZenModel
+logger = logging.getLogger(__name__)
 
 
 class Constraint(Component):
-    def __init__(self, zen_model: "ZenModel"):
+    def __init__(self, lp_model: "LinopyModel"):
         """Initialization of a constraint.
 
         :param index_sets: A reference to the index sets of the model
         :param model: A reference to the linopy model
         """
-        self.zen_model = zen_model
+        self.lp_model = lp_model
         super().__init__()
 
     def add_constraint(self, name, constraint, doc=""):
@@ -31,44 +30,44 @@ class Constraint(Component):
         :param constraint: a linopy constraint or a dictionary of constraints or None
         :param doc: docstring of variable
         """
-        if name not in self.docs.keys():
-            if constraint is None or constraint == []:
-                return
-            elif isinstance(constraint, dict):
-                for key, cons in constraint.items():
-                    if cons is None or cons == []:
-                        return
-                    assert isinstance(cons, lp.constraints.Constraint) or isinstance(
-                        cons, lp.constraints.AnonymousConstraint
-                    ), (
-                        f"Constraint {key} has wrong format. "
-                        f"Must be a linopy constraint but is {type(cons).__name__}"
-                    )
-                    if isinstance(key, tuple):
-                        _key = "-".join([str(k) for k in key])
-                    else:
-                        _key = str(key)
-                    _name = f"{name}--{key}"
-                    self.add_single_constraint(_name, cons)
-                    self.docs[name] = self.compile_doc_string(
-                        doc, index_list=list(cons.indexes), name=_name
-                    )
-            elif isinstance(constraint, lp.constraints.Constraint) or isinstance(
-                constraint, lp.constraints.AnonymousConstraint
-            ):
-                self.add_single_constraint(name, constraint)
-                self.docs[name] = self.compile_doc_string(
-                    doc, index_list=list(constraint.indexes), name=name
-                )
-            else:
-                raise TypeError(
-                    f"Constraint {name} has wrong format. Must be either a linopy "
-                    f"constraint or a dictionary of constraints but "
-                    f"is {type(constraint).__name__}"
-                )
+        if name in self.docs.keys():
+            logger.warning(f"{name} already added. Can only be added once")
+            return
 
+        if constraint is None or constraint == []:
+            return
+        elif isinstance(constraint, dict):
+            for key, cons in constraint.items():
+                if cons is None or cons == []:
+                    return
+                assert isinstance(cons, lp.constraints.Constraint) or isinstance(
+                    cons, lp.constraints.AnonymousConstraint
+                ), (
+                    f"Constraint {key} has wrong format. "
+                    f"Must be a linopy constraint but is {type(cons).__name__}"
+                )
+                if isinstance(key, tuple):
+                    _key = "-".join([str(k) for k in key])
+                else:
+                    _key = str(key)
+                _name = f"{name}--{key}"
+                self.add_single_constraint(_name, cons)
+                self.docs[name] = self.compile_doc_string(
+                    doc, index_list=list(cons.indexes), name=_name
+                )
+        elif isinstance(constraint, lp.constraints.Constraint) or isinstance(
+            constraint, lp.constraints.AnonymousConstraint
+        ):
+            self.add_single_constraint(name, constraint)
+            self.docs[name] = self.compile_doc_string(
+                doc, index_list=list(constraint.indexes), name=name
+            )
         else:
-            logging.warning(f"{name} already added. Can only be added once")
+            raise TypeError(
+                f"Constraint {name} has wrong format. Must be either a linopy "
+                f"constraint or a dictionary of constraints but "
+                f"is {type(constraint).__name__}"
+            )
 
     def add_single_constraint(self, name, constraint):
         """Adds a single constraint to the model.
@@ -100,9 +99,7 @@ class Constraint(Component):
         if isinstance(mask, np.bool_):
             mask = bool(mask)
         else:
-            self.zen_model.lp_model.add_constraints(
-                lhs, sign, rhs, name=name, mask=mask
-            )
+            self.lp_model.add_constraints(lhs, sign, rhs, name=name, mask=mask)
 
     def add_pw_constraint(
         self,

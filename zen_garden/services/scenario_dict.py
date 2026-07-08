@@ -5,6 +5,8 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from zen_garden.model.config import Config
+    from zen_garden.services.dataset_path_resolver import DatasetPathResolver
+    from zen_garden.services.element_registry import ElementRegistry
 
 
 class ScenarioDict(dict):
@@ -22,7 +24,11 @@ class ScenarioDict(dict):
     _setting_elements = ["system", "analysis", "solver"]
 
     def __init__(
-        self, init_dict: dict, element_classes: dict, paths: dict, config: "Config"
+        self,
+        init_dict: dict,
+        dataset_path_resolver: "DatasetPathResolver",
+        config: "Config",
+        element_type_classes: dict[str, type],
     ):
         """Initializes the dictionary from a normal dictionary.
 
@@ -30,15 +36,12 @@ class ScenarioDict(dict):
         :param optimization_setup: The optimization setup corresponding to the scenario
         :param paths: The paths to the elements
         """
-        self.element_classes = reversed(list(element_classes.values()))
-
         # set the attributes and expand the dict
-        self.init_dict = init_dict
-        self.paths = paths
+        self.dataset_path_resolver = dataset_path_resolver
         self.config = config
-        expanded_dict = self.expand_subsets(init_dict)
-        self.validate_dict(expanded_dict)
-        self.dict = expanded_dict
+        self.element_type_classes = element_type_classes
+
+        self.dict = self.expand_subsets(init_dict)
 
         # super init TODO adds both system and "system"  (same for analysis)
         # to the dict - necessary?
@@ -244,31 +247,36 @@ class ScenarioDict(dict):
         :return: A new dict which can be used for the scenario analysis
         """
         new_dict = init_dict.copy()
-        for element_class in self.element_classes:
+        for element_class in reversed(list(self.element_type_classes.values())):
             current_set = element_class.label
-            if current_set in new_dict:
-                for param, param_dict in new_dict[current_set].items():
-                    # dict for expansion
-                    base_dict = param_dict
+            if current_set not in new_dict:
+                continue
 
-                    # get the exlusion list
-                    if "exclude" in base_dict:
-                        exclude_list = base_dict["exclude"]
-                        del base_dict["exclude"]
-                    else:
-                        exclude_list = []
+            for param, param_dict in new_dict[current_set].items():
+                # dict for expansion
+                base_dict = param_dict
 
-                    # expand the sets
-                    for element in self.paths[current_set].keys():
-                        if element != "folder" and element not in exclude_list:
-                            # create dicts if necessary
-                            if element not in new_dict:
-                                new_dict[element] = {}
-                            # we only set the param dict if it is not already set
-                            if param not in new_dict[element]:
-                                new_dict[element][param] = base_dict.copy()
-                # delete the old set
-                del new_dict[current_set]
+                # get the exlusion list
+                if "exclude" in base_dict:
+                    exclude_list = base_dict["exclude"]
+                    del base_dict["exclude"]
+                else:
+                    exclude_list = []
+
+                # expand the sets
+                elements = self.dataset_path_resolver.elements_of_set(current_set)
+                for element in elements:
+                    if element != "folder" and element not in exclude_list:
+                        # create dicts if necessary
+                        if element not in new_dict:
+                            new_dict[element] = {}
+                        # we only set the param dict if it is not already set
+                        if param not in new_dict[element]:
+                            new_dict[element][param] = base_dict.copy()
+            # delete the old set
+            del new_dict[current_set]
+
+        self.validate_dict(new_dict)
 
         return new_dict
 
@@ -291,8 +299,7 @@ class ScenarioDict(dict):
                         f"contains invalid entries: {diff}!"
                     )
 
-    @staticmethod
-    def check_if_all_elements_in_model(scenario_dict, element_dict):
+    def check_if_all_elements_in_model(self, element_registry: "ElementRegistry"):
         """Checks if all elements in scenario_dict are present in the element_dict.
 
         This is used to ensure that all elements in the scenario are defined in
@@ -307,8 +314,8 @@ class ScenarioDict(dict):
             + list(ScenarioDict._param_dict_keys)
             + ["EnergySystem"]
         )
-        relevant_elements = set(scenario_dict.keys()) - set(ignored_elements)
-        existing_elements = [e.name for e in element_dict["Element"]]
+        relevant_elements = set(self.keys()) - set(ignored_elements)
+        existing_elements = [e.name for e in element_registry.all_elements()]
         for element in relevant_elements:
             if element not in existing_elements:
                 raise KeyError(
