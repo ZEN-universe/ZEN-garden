@@ -9,7 +9,7 @@ import logging
 import os
 import warnings
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal, TypeAlias
 
 import numpy as np
 import pandas as pd
@@ -23,9 +23,12 @@ from tables import NaturalNameWarning
 if TYPE_CHECKING:
     from zen_garden.elements.energy_system import EnergySystem
     from zen_garden.model.config import Config
+    from zen_garden.model.time_steps import TimeStepsDicts
     from zen_garden.model.zen_model import ZenModel
     from zen_garden.preprocess.scaling import Scaling
     from zen_garden.preprocess.unit_handling import UnitHandling
+
+HDFCompLib: TypeAlias = Literal["zlib", "lzo", "bzip2", "blosc"]
 
 logger = logging.getLogger(__name__)
 
@@ -43,6 +46,7 @@ class Postprocess:
         zen_model: "ZenModel",
         energy_system: "EnergySystem",
         scaling: "Scaling",
+        time_steps: "TimeStepsDicts",
         optimized_time_steps: list[int],
         scenarios,
         model_name,
@@ -71,6 +75,7 @@ class Postprocess:
         self.scenarios = scenarios
         self.param_map = param_map
         self.scaling = scaling
+        self.time_steps = time_steps
 
         # get name or directory
         self.model_name = model_name
@@ -581,19 +586,19 @@ class Postprocess:
         """
         # extract and save sequence time steps, we transform the arrays to lists
         self.dict_sequence_time_steps = self.flatten_dict(
-            self.energy_system.time_steps.get_sequence_time_steps_dict()
+            self.time_steps.get_sequence_time_steps_dict()
         )
         self.dict_sequence_time_steps["optimized_time_steps"] = (
             self.optimized_time_steps
         )
         self.dict_sequence_time_steps["time_steps_operation_duration"] = (
-            self.energy_system.time_steps.time_steps_operation_duration
+            self.time_steps.time_steps_operation_duration
         )
         self.dict_sequence_time_steps["time_steps_storage_duration"] = (
-            self.energy_system.time_steps.time_steps_storage_duration
+            self.time_steps.time_steps_storage_duration
         )
         self.dict_sequence_time_steps["time_steps_storage_level_startend_year"] = (
-            self.energy_system.time_steps.time_steps_storage_level_startend_year
+            self.time_steps.time_steps_storage_level_startend_year
         )
         self.dict_sequence_time_steps["time_steps_year2operation"] = (
             self.get_time_steps_year2operation()
@@ -665,43 +670,33 @@ class Postprocess:
         :param doc: docstring
         :return: index list
         """
-        split_doc = doc.split(";")
-        for string in split_doc:
-            if "dims" in string:
-                break
-        string = string.replace("dims:", "")
-        index_list = string.split(",")
-        index_list_final = []
-        for index in index_list:
-            if index in self.config.analysis.header_data_inputs.keys():
-                index_list_final.append(
-                    self.config.analysis.header_data_inputs[index]
-                )  # else:  #     pass  #     # index_list_final.append(index)
-        return index_list_final
+        index_list = next((s for s in doc.split(";") if "dims" in s), None)
+        assert index_list is not None, f"Could not find index list in docstring: {doc}"
+        return [
+            self.config.analysis.header_data_inputs[index]
+            for index in index_list.replace("dims:", "").split(",")
+            if index in self.config.analysis.header_data_inputs.keys()
+        ]
 
     def get_time_steps_year2operation(self):
         """Returns a HDF5-Serializable version of the
         dict_time_steps_year2operation dictionary.
         """
-        ans = {}
-        for (
-            year,
-            time_steps,
-        ) in self.energy_system.time_steps.time_steps_year2operation.items():
-            ans[str(year)] = time_steps
-        return ans
+        assert self.time_steps.time_steps_year2operation is not None
+        return {
+            str(year): time_steps
+            for year, time_steps in self.time_steps.time_steps_year2operation.items()
+        }
 
     def get_time_steps_year2storage(self):
         """Returns a HDF5-Serializable version of the
         dict_time_steps_year2storage dictionary.
         """
-        ans = {}
-        for (
-            year,
-            time_steps,
-        ) in self.energy_system.time_steps.time_steps_year2storage.items():
-            ans[str(year)] = time_steps
-        return ans
+        assert self.time_steps.time_steps_year2storage is not None
+        return {
+            str(year): time_steps
+            for year, time_steps in self.time_steps.time_steps_year2storage.items()
+        }
 
     def _transform_df(self, df, doc, units=None):
         """We transform the dataframe to a json string and load it into the
@@ -761,7 +756,12 @@ class Postprocess:
             return None
 
     def _write_h5_file(
-        self, file_name, dictionary, mode="w", complevel=4, complib="blosc"
+        self,
+        file_name,
+        dictionary,
+        mode: Literal["a", "w", "r", "r+"] = "w",
+        complevel=4,
+        complib: HDFCompLib | None = "blosc",
     ):
         """Writes the dictionary to a hdf5 file.
 

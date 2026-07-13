@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 
     from zen_garden.model.components.index_set import IndexSet
     from zen_garden.model.config import Config
-    from zen_garden.optimization_setup import UnitHandling
+    from zen_garden.preprocess.unit_handling import UnitHandling
     from zen_garden.services.element_registry import ElementRegistry
 
 logger = logging.getLogger(__name__)
@@ -31,7 +31,11 @@ class Variable(Component):
     ):
         """Initialization of a variable.
 
-        :param optimization_setup: OptimizationSetup object
+        :param unit_handling: UnitHandling object
+        :param sets: IndexSet object
+        :param lp_model: LinopyModel object
+        :param config: Config object
+        :param element_registry: ElementRegistry object
         """
         super().__init__()
 
@@ -113,11 +117,11 @@ class Variable(Component):
             domain = "Reals"
 
         self.docs[name] = self.compile_doc_string(doc, index_list, name, domain)
-        self.units[name] = self.get_var_units(
+        self.units[name] = self._get_var_units(
             unit_category, index_values, index_list, mask_index
         )
 
-    def get_var_units(self, unit_category, var_index_values, index_list, mask):
+    def _get_var_units(self, unit_category, var_index_values, index_list, mask):
         """Creates series of units with identical multi-index as variable has.
 
         :param unit_category: dict defining the dimensionality of the variable's unit

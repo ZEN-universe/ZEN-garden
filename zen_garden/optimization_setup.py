@@ -12,10 +12,12 @@ import logging
 import os
 from pathlib import Path
 
+from zen_garden.default_config import Config as DefaultConfig
 from zen_garden.elements import ELEMENT_TYPE_CLASSES
 from zen_garden.elements.energy_system import EnergySystem
 from zen_garden.elements.technology import Technology
 from zen_garden.model.config import Config
+from zen_garden.model.time_steps import TimeStepsDicts
 from zen_garden.model.zen_model import ZenModel
 from zen_garden.postprocess.postprocess import Postprocess
 from zen_garden.preprocess.scaling import Scaling
@@ -25,6 +27,7 @@ from zen_garden.services.dataset_path_resolver import DatasetPathResolver
 from zen_garden.services.element_registry import ElementRegistry
 from zen_garden.services.model_construction_service import ModelConstructionService
 from zen_garden.services.scenario_dict import ScenarioDict
+from zen_garden.types import YearSpecificTs
 from zen_garden.utils import (
     IISConstraintParser,
     InputDataChecks,
@@ -47,7 +50,10 @@ class OptimizationSetup(object):
     # dict of element classes, this dict is filled in the __init__ of the package
 
     def __init__(
-        self, raw_config, init_scenario_dict: dict, input_data_checks: InputDataChecks
+        self,
+        raw_config: DefaultConfig,
+        init_scenario_dict: dict,
+        input_data_checks: InputDataChecks,
     ):
         """Setup optimization of the energy system.
 
@@ -72,7 +78,6 @@ class OptimizationSetup(object):
         )
 
         self.input_data_checks = input_data_checks
-        self.input_data_checks.optimization_setup = self
         self.input_data_checks.config = self.config
         # check if input data exists
         self.input_data_checks.check_primary_folder_structure()
@@ -92,7 +97,10 @@ class OptimizationSetup(object):
         self.zen_model: ZenModel | None = None
 
         # initiate dictionary for storing extra year data
-        self.year_specific_ts = {}
+        self.year_specific_ts = YearSpecificTs()
+
+        # initiate dictionary for storing time steps
+        self.time_steps = TimeStepsDicts()
 
         # check if all needed data inputs for the chosen technologies exist
         # remove non-existent inputs
@@ -109,6 +117,8 @@ class OptimizationSetup(object):
             self.dataset_path_resolver,
             self.scenario_dict,
             self.input_data_checks,
+            self.time_steps,
+            self.year_specific_ts,
         )
         self.element_registry = ElementRegistry(
             self.config,
@@ -117,6 +127,8 @@ class OptimizationSetup(object):
             self.unit_handling,
             self.dataset_path_resolver,
             self.scenario_dict,
+            self.time_steps,
+            self.year_specific_ts,
         )
 
         # check if all elements from the scenario_dict are in the model
@@ -135,6 +147,8 @@ class OptimizationSetup(object):
             self.energy_system,
             self.config,
             self.element_registry,
+            self.time_steps,
+            self.year_specific_ts,
         )
 
     def read_input_csv(self):
@@ -161,6 +175,7 @@ class OptimizationSetup(object):
             self.energy_system,
             self.element_registry,
             self.unit_handling,
+            self.time_steps,
         )
         self.zen_model = service.construct_model()
 
@@ -238,17 +253,15 @@ class OptimizationSetup(object):
         """
         if self.config.system.use_rolling_horizon:
             time_steps_yearly_horizon = self.steps_horizon[step_horizon]
-            base_time_steps_horizon = (
-                self.energy_system.time_steps.decode_yearly_time_steps(
-                    time_steps_yearly_horizon
-                )
+            base_time_steps_horizon = self.time_steps.decode_yearly_time_steps(
+                time_steps_yearly_horizon
             )
             # overwrite aggregated time steps - operation
-            set_time_steps_operation = self.energy_system.time_steps.encode_time_step(
+            set_time_steps_operation = self.time_steps.encode_time_step(
                 base_time_steps=base_time_steps_horizon, time_step_type="operation"
             )
             # overwrite aggregated time steps - storage
-            set_time_steps_storage = self.energy_system.time_steps.encode_time_step(
+            set_time_steps_storage = self.time_steps.encode_time_step(
                 base_time_steps=base_time_steps_horizon, time_step_type="storage"
             )
             # copy invest time steps
@@ -257,14 +270,26 @@ class OptimizationSetup(object):
             if isinstance(time_steps_operation, int):
                 time_steps_operation = [time_steps_operation]
                 time_steps_storage = [time_steps_storage]
-            self.energy_system.time_steps.time_steps_operation = time_steps_operation
-            self.energy_system.time_steps.time_steps_storage = time_steps_storage
+            self.time_steps.time_steps_operation = time_steps_operation
+            self.time_steps.time_steps_storage = time_steps_storage
             # overwrite base time steps and yearly base time steps
             new_base_time_steps_horizon = base_time_steps_horizon.squeeze().tolist()
             if not isinstance(new_base_time_steps_horizon, list):
                 new_base_time_steps_horizon = [new_base_time_steps_horizon]
             self.energy_system.set_base_time_steps = new_base_time_steps_horizon
             self.energy_system.set_time_steps_yearly = time_steps_yearly_horizon
+
+    def prepare_scaling(self):
+        """Prepare scaling of the optimization problem."""
+        if self.config.solver.use_scaling:
+            self.scaling.run_scaling()
+        elif self.config.solver.analyze_numerics or self.config.solver.run_diagnostics:
+            self.scaling.analyze_numerics()
+
+    def re_scale(self):
+        """Re-scale the optimization problem after solving."""
+        if self.config.solver.use_scaling:
+            self.scaling.re_scale()
 
     def solve(self):
         """Create model instance by assigning parameter values and initializing sets."""
@@ -347,6 +372,9 @@ class OptimizationSetup(object):
             None
 
         """
+        if not self.config.system.use_rolling_horizon:
+            return
+
         decision_horizon = self.get_decision_horizon(step_horizon)
         # add newly capacity_addition of first year to existing capacity
         self.add_new_capacity_addition(decision_horizon)
@@ -473,6 +501,7 @@ class OptimizationSetup(object):
             self.zen_model,
             self.energy_system,
             self.scaling,
+            self.time_steps,
             optimized_time_steps=self.optimized_time_steps,
             scenarios=scenarios,
             model_name=model_name,

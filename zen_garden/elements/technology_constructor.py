@@ -26,11 +26,8 @@ class TechnologyConstructor(ElementConstructor):
 
     ### --- classmethods to construct sets, parameters, variables, and constraints,
     # that correspond to Technology --- ###
+    @override
     def construct_sets(self):
-        """Constructs the pe.Sets of the class <Technology>.
-
-        :param optimization_setup: The OptimizationSetup
-        """
         logger.info("Constructing sets for Technology")
 
         # conversion technologies
@@ -76,16 +73,9 @@ class TechnologyConstructor(ElementConstructor):
             "Indexed by set_technologies",
             index_set="set_technologies",
         )
-        # # add pe.Sets of the child classes
-        # for subclass in cls.__subclasses__():
-        #     subclass.construct_sets(optimization_setup)
 
+    @override
     def construct_params(self):
-        """Constructs the pe.Params of the class <Technology>.
-
-        :param optimization_setup: The OptimizationSetup
-        """
-        # construct pe.Param of the class <Technology>
         logger.info("Constructing parameters for Technology")
 
         # existing capacity
@@ -273,11 +263,8 @@ class TechnologyConstructor(ElementConstructor):
             "the beginning of the optimization",
         )
 
+    @override
     def construct_vars(self):
-        """Constructs the pe.Vars of the class <Technology>.
-
-        :param optimization_setup: The OptimizationSetup
-        """
         logger.info("Constructing variables for Technology")
 
         variables = self.zen_model.variables
@@ -527,9 +514,8 @@ class TechnologyConstructor(ElementConstructor):
             techs_on_off, index_list, (0, 0)
         )[0]
         times = self.zen_model.sets["set_time_steps_operation"]
-        ts = self.energy_system.time_steps
         time_step_year = xr.DataArray(
-            [ts.convert_time_step_operation2year(t) for t in times.data],
+            [self.time_steps.convert_time_step_operation2year(t) for t in times.data],
             coords=[times],
             dims=["set_time_steps_operation"],
         )
@@ -564,11 +550,8 @@ class TechnologyConstructor(ElementConstructor):
             unit_category={"energy_quantity": 1, "time": -1},
         )
 
+    @override
     def construct_constraints(self):
-        """Constructs the Constraints of the class <Technology>.
-
-        :param optimization_setup: The OptimizationSetup
-        """
         logger.info("Constructing constraints for Technology")
         model = self.zen_model.lp_model
 
@@ -577,6 +560,7 @@ class TechnologyConstructor(ElementConstructor):
             self.config,
             self.zen_model,
             self.energy_system,
+            self.time_steps,
             self.element_registry,
         )
         #  technology capacity_limit
@@ -634,10 +618,7 @@ class TechnologyConstructor(ElementConstructor):
             model.variables.remove("capacity_on_off_helper_var")
 
     def _technology_installation_mask(self) -> xr.DataArray:
-        """Check if the binary variable is necessary.
-
-        :param optimization_setup: optimization setup object
-        """
+        """Check if the binary variable is necessary."""
         params = self.zen_model.parameters
         model = self.zen_model.lp_model
         sets = self.zen_model.sets
@@ -698,7 +679,6 @@ class TechnologyConstructor(ElementConstructor):
     def get_existing_quantity(self, type_existing_quantity: str):
         """Get existing capacities of all technologies.
 
-        :param optimization_setup: The OptimizationSetup the element is part of
         :param type_existing_quantity: capacity or cost_capex_overnight
         :return: The existing capacities
         """
@@ -737,7 +717,6 @@ class TechnologyConstructor(ElementConstructor):
         returns existing quantity of 'tech', that is still available at invest
         time step 'time'. Either capacity or capex.
 
-        :param optimization_setup: The OptimizationSetup the element is part of
         :param tech: name of technology
         :param capacity_type: type of capacity
         :param loc: location (node or edge) of existing capacity
@@ -772,7 +751,6 @@ class TechnologyConstructor(ElementConstructor):
     def get_if_capacity_still_existing(self, tech, year, loc, id_capacity_existing):
         """Returns boolean if capacity still exists at yearly time step 'year'.
 
-        :param optimization_setup: The optimization setup to add everything
         :param tech: name of technology
         :param year: yearly time step
         :param loc: location

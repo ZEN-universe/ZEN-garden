@@ -7,11 +7,13 @@ from typing import TYPE_CHECKING, Callable
 import psutil
 
 from zen_garden.elements import ELEMENT_CONSTRUCTORS
+from zen_garden.elements.energy_system_constructor import EnergySystemConstructor
 from zen_garden.model.zen_model import ZenModel
 
 if TYPE_CHECKING:
     from zen_garden.elements.energy_system import EnergySystem
     from zen_garden.model.config import Config
+    from zen_garden.model.time_steps import TimeStepsDicts
     from zen_garden.preprocess.unit_handling import UnitHandling
     from zen_garden.services.element_registry import ElementRegistry
 
@@ -45,16 +47,21 @@ class ModelConstructionService:
         energy_system: "EnergySystem",
         element_registry: "ElementRegistry",
         unit_handling: "UnitHandling",
+        time_steps: "TimeStepsDicts",
     ):
         self.config = config
         self.energy_system = energy_system
         self.element_registry = element_registry
         self.unit_handling = unit_handling
+        self.time_steps = time_steps
 
     def construct_model(self) -> ZenModel:
         """Logic to construct a model based on the provided name and parameters."""
         self.zen_model = ZenModel(
             self.config, self.energy_system, self.unit_handling, self.element_registry
+        )
+        self.energy_system_constructor = EnergySystemConstructor(
+            self.config, self.energy_system, self.time_steps, self.zen_model
         )
         self.element_constructors = [
             ElementConstructor(
@@ -62,6 +69,7 @@ class ModelConstructionService:
                 self.element_registry,
                 self.zen_model,
                 self.energy_system,
+                self.time_steps,
             )
             for ElementConstructor in ELEMENT_CONSTRUCTORS
         ]
@@ -76,55 +84,35 @@ class ModelConstructionService:
 
     @measure_run_time
     def _construct_sets(self):
-        logger.info("Constructing sets...")
-        self.energy_system.construct_sets(self.zen_model)
+        self.energy_system_constructor.construct_sets()
         for element_constructor in self.element_constructors:
             if not element_constructor.has_elements():
                 continue
-            logger.debug(
-                "Constructing sets using: %s", element_constructor.__class__.__name__
-            )
             element_constructor.construct_sets()
 
     @measure_run_time
     def _construct_params(self):
-        logger.info("Constructing parameters...")
-        self.energy_system.construct_params(self.zen_model)
+        self.energy_system_constructor.construct_params()
         for element_constructor in self.element_constructors:
             if not element_constructor.has_elements():
                 continue
-            logger.debug(
-                "Constructing parameters using: %s",
-                element_constructor.__class__.__name__,
-            )
             element_constructor.construct_params()
 
     @measure_run_time
     def _construct_vars(self):
-        logger.info("Constructing variables...")
-        self.energy_system.construct_vars(self.zen_model)
+        self.energy_system_constructor.construct_vars()
         for element_constructor in self.element_constructors:
             if not element_constructor.has_elements():
                 continue
-            logger.debug(
-                "Constructing variables using: %s",
-                element_constructor.__class__.__name__,
-            )
             element_constructor.construct_vars()
 
     @measure_run_time
     def _construct_constraints(self):
-        logger.info("Constructing constraints...")
-        self.energy_system.construct_constraints(self.zen_model)
+        self.energy_system_constructor.construct_constraints()
         for element_constructor in self.element_constructors:
             if not element_constructor.has_elements():
                 continue
-            logger.debug(
-                "Constructing constraints using: %s",
-                element_constructor.__class__.__name__,
-            )
             element_constructor.construct_constraints()
 
     def _construct_objective(self):
-        logger.info("Constructing objective...")
-        self.energy_system.construct_objective(self.zen_model)
+        self.energy_system_constructor.construct_objective()

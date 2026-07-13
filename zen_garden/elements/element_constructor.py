@@ -12,6 +12,7 @@ if TYPE_CHECKING:
     from zen_garden.model.components.index_set import IndexSet
     from zen_garden.model.components.zen_set import ZenSet
     from zen_garden.model.config import Config
+    from zen_garden.model.time_steps import TimeStepsDicts
     from zen_garden.model.zen_model import ZenModel
     from zen_garden.services.element_registry import ElementRegistry
 
@@ -25,11 +26,13 @@ class ElementConstructor(ABC):
         element_registry: "ElementRegistry",
         zen_model: "ZenModel",
         energy_system: "EnergySystem",
+        time_steps: "TimeStepsDicts",
     ):
         self.config = config
         self.element_registry = element_registry
         self.zen_model = zen_model
         self.energy_system = energy_system
+        self.time_steps = time_steps
 
     @abstractmethod
     def has_elements(self) -> bool:
@@ -41,41 +44,28 @@ class ElementConstructor(ABC):
 
     @abstractmethod
     def construct_sets(self):
-        """Constructs the Sets of the class <Element>.
-
-        :param optimization_setup: The OptimizationSetup the element is part of
-        """
+        """Constructs the Sets of this class."""
         pass
 
     @abstractmethod
     def construct_params(self):
-        """Constructs the Params of the class <Element>.
-
-        :param optimization_setup: The OptimizationSetup the element is part of
-        """
+        """Constructs the Params of this class."""
         pass
 
     @abstractmethod
     def construct_vars(self):
-        """Constructs the Vars of the class <Element>.
-
-        :param optimization_setup: The OptimizationSetup the element is part of
-        """
+        """Constructs the Vars of this class."""
         pass
 
     @abstractmethod
     def construct_constraints(self):
-        """Constructs the Constraints of the class <Element>.
-
-        :param optimization_setup: The OptimizationSetup the element is part of
-        """
+        """Constructs the Constraints of this class."""
         pass
 
     def create_custom_set(self, list_index: list[str]):
         """Creates custom set for model component.
 
         :param list_index: list of names of indices
-        :param optimization_setup: The OptimizationSetup the element is part of
         :return: list_index: list of names of indices
         """
         list_index = list(list_index)  # make a copy of the list to avoid side effects
@@ -171,7 +161,6 @@ class ElementConstructor(ABC):
         """Checks if the capex of a technology needs to be modeled as pwa or linear.
 
         :param element: technology in model
-        :param optimization_setup: The OptimizationSetup the element is part of
         :param index: index to check
         :return model_capex: Bool indicating if capex must be modeled as pwa or linear
         """
@@ -190,7 +179,6 @@ class ElementConstructor(ABC):
         """Checks if the on-off-behavior (min-load) of a technology needs to be modeled.
 
         :param element: technology in model
-        :param optimization_setup: The OptimizationSetup the element is part of
         :param index: index to check
         :return model_on_off: Bool indicating if on-off-behavior needs to be modeled
         """
@@ -222,7 +210,6 @@ class ElementConstructor(ABC):
 
         :param element: element to handle
         :param sets: sets of the optimization setup
-        :param optimization_setup: The OptimizationSetup the element is part of
         :param list_sets: list of sets to append
         """
         if element in sets["set_storage_technologies"]:
@@ -238,7 +225,6 @@ class ElementConstructor(ABC):
         modeled as pwa), then on-off-behavior is not necessary to model.
 
         :param tech: technology in model
-        :param optimization_setup: The OptimizationSetup the element is part of
         :return model_on_off: Bool indicating if on-off-behaviour needs to be modeled
         """
         # check if any min load

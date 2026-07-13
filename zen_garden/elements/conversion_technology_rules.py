@@ -37,10 +37,7 @@ class ConversionTechnologyRules(GenericRule):
         nodes = self.zen_model.sets["set_nodes"]
         times = self.zen_model.parameters.max_load.coords["set_time_steps_operation"]
         time_step_year = xr.DataArray(
-            [
-                self.energy_system.time_steps.convert_time_step_operation2year(t)
-                for t in times.data
-            ],
+            [self.time_steps.convert_time_step_operation2year(t) for t in times.data],
             coords=[times],
         )
         term_capacity = (

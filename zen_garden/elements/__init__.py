@@ -7,6 +7,7 @@ from zen_garden.elements.conversion_technology_constructor import (
 from zen_garden.elements.element import Element
 from zen_garden.elements.element_constructor import ElementConstructor
 from zen_garden.elements.energy_system import EnergySystem
+from zen_garden.elements.energy_system_constructor import EnergySystemConstructor
 from zen_garden.elements.retrofitting_technology import RetrofittingTechnology
 from zen_garden.elements.retrofitting_technology_constructor import (
     RetrofittingTechnologyConstructor,
@@ -52,6 +53,7 @@ __all__ = [
     "Element",
     "ElementConstructor",
     "EnergySystem",
+    "EnergySystemConstructor",
     "RetrofittingTechnology",
     "RetrofittingTechnologyConstructor",
     "StorageTechnology",

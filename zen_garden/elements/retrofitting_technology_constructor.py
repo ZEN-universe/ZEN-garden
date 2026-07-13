@@ -1,5 +1,5 @@
 import logging
-from typing import TYPE_CHECKING, override
+from typing import override
 
 import numpy as np
 
@@ -8,9 +8,6 @@ from zen_garden.elements.retrofitting_technology import RetrofittingTechnology
 from zen_garden.elements.retrofitting_technology_rules import (
     RetrofittingTechnologyRules,
 )
-
-if TYPE_CHECKING:
-    pass
 
 logger = logging.getLogger(__name__)
 
@@ -26,11 +23,8 @@ class RetrofittingTechnologyConstructor(ElementConstructor):
         """
         return np.size(self.config.system["set_retrofitting_technologies"]) > 0
 
+    @override
     def construct_sets(self):
-        """Constructs the pe.Sets of the class <RetrofittingTechnology>.
-
-        :param optimization_setup: The OptimizationSetup the element is part of
-        """
         logger.info("Constructing sets for RetrofittingTechnology")
         # get base technologies
         retrofit_base_technology = self.element_registry.get_attribute_of_all_elements(
@@ -46,11 +40,8 @@ class RetrofittingTechnologyConstructor(ElementConstructor):
             index_set="set_retrofitting_technologies",
         )
 
+    @override
     def construct_params(self):
-        """Constructs the pe.Params of the class <RetrofittingTechnology>.
-
-        :param optimization_setup: The OptimizationSetup the element is part of
-        """
         logger.info("Constructing parameters for RetrofittingTechnology")
 
         # slope of linearly modeled capex
@@ -66,20 +57,17 @@ class RetrofittingTechnologyConstructor(ElementConstructor):
             "technologies and its base technology",
         )
 
+    @override
     def construct_vars(self):
-        """Constructs the pe.Vars of the class <RetrofittingTechnology>."""
         logger.info("Constructing variables for RetrofittingTechnology")
 
+    @override
     def construct_constraints(self):
-        """Constructs the Constraints of the class <RetrofittingTechnology>.
-
-        :param optimization_setup: The OptimizationSetup the element is part of
-        """
         logger.info("Constructing constraints for RetrofittingTechnology")
 
         # add pwa constraints
         rules = RetrofittingTechnologyRules(
-            self.config, self.zen_model, self.energy_system
+            self.config, self.zen_model, self.energy_system, self.time_steps
         )
 
         # flow coupling of retrofitting technology and its base technology

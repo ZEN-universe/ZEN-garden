@@ -33,8 +33,9 @@ class ScenarioDict(dict):
         """Initializes the dictionary from a normal dictionary.
 
         :param init_dict: The dictionary to initialize from
-        :param optimization_setup: The optimization setup corresponding to the scenario
-        :param paths: The paths to the elements
+        :param dataset_path_resolver: The dataset path resolver
+        :param config: The config object
+        :param element_type_classes: The element type classes
         """
         # set the attributes and expand the dict
         self.dataset_path_resolver = dataset_path_resolver
@@ -58,34 +59,36 @@ class ScenarioDict(dict):
             "solver": self.config.solver,
         }
         for key, value in config_parts.items():
-            if key in self.dict:
-                for sub_key, sub_value in self.dict[key].items():
-                    assert sub_key in value.keys(), (
-                        f"Trying to update {key} with key {sub_key} and value "
-                        f"{sub_value}, but the {key} does not have this key!"
-                    )
-                    if type(value[sub_key]) is type(sub_value):
-                        value[sub_key] = sub_value
-                    elif isinstance(
-                        sub_value, dict
-                    ):  # ToDO check and generalize -> here only for SolverOptions
-                        try:
-                            for sub_sub_key, sub_sub_value in sub_value.items():
-                                value[sub_key][sub_sub_key] = sub_sub_value
-                        except Exception as err:
-                            raise ValueError(
-                                f"Trying to update {key} with key {sub_key} and value "
-                                f"{sub_value} of type {type(sub_value)}, "
-                                f"but the {key} has already a value of type "
-                                f"{type(value[sub_key])}"
-                            ) from err
-                    else:
+            if key not in self.dict:
+                continue
+
+            for sub_key, sub_value in self.dict[key].items():
+                assert sub_key in value.keys(), (
+                    f"Trying to update {key} with key {sub_key} and value "
+                    f"{sub_value}, but the {key} does not have this key!"
+                )
+                if type(value[sub_key]) is type(sub_value):
+                    value[sub_key] = sub_value
+                elif isinstance(
+                    sub_value, dict
+                ):  # ToDO check and generalize -> here only for SolverOptions
+                    try:
+                        for sub_sub_key, sub_sub_value in sub_value.items():
+                            value[sub_key][sub_sub_key] = sub_sub_value
+                    except Exception as err:
                         raise ValueError(
                             f"Trying to update {key} with key {sub_key} and value "
                             f"{sub_value} of type {type(sub_value)}, "
                             f"but the {key} has already a value of type "
                             f"{type(value[sub_key])}"
-                        )
+                        ) from err
+                else:
+                    raise ValueError(
+                        f"Trying to update {key} with key {sub_key} and value "
+                        f"{sub_value} of type {type(sub_value)}, "
+                        f"but the {key} has already a value of type "
+                        f"{type(value[sub_key])}"
+                    )
 
     @staticmethod
     def expand_lists(scenarios: dict):

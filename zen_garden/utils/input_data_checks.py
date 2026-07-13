@@ -52,7 +52,6 @@ class InputDataChecks:
     """
 
     config: "Config | None" = None
-    optimization_setup: object | None = None
     dataset_path_resolver: "DatasetPathResolver | None" = None
 
     def __init__(self, config):
@@ -61,7 +60,6 @@ class InputDataChecks:
         Args:
             config: config object used to extract the analysis, system and solver
                 dictionaries
-            optimization_setup: OptimizationSetup instance
         """
         self.system = config.system
         self.analysis = config.analysis

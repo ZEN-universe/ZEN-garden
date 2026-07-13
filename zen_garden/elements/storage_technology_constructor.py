@@ -22,18 +22,12 @@ class StorageTechnologyConstructor(ElementConstructor):
         """
         return True
 
+    @override
     def construct_sets(self):
-        """Constructs the pe.Sets of the class <StorageTechnology>.
-
-        :param optimization_setup: The OptimizationSetup the element is part of
-        """
         logger.info("Constructing sets for StorageTechnology")
 
+    @override
     def construct_params(self):
-        """Constructs the pe.Params of the class <StorageTechnology>.
-
-        :param optimization_setup: The OptimizationSetup the element is part of
-        """
         logger.info("Constructing parameters for StorageTechnology")
         # energy to power ratio
         self.add_parameter(
@@ -95,11 +89,8 @@ class StorageTechnologyConstructor(ElementConstructor):
             doc="specific capex of storage technologies",
         )
 
+    @override
     def construct_vars(self):
-        """Constructs the pe.Vars of the class <StorageTechnology>.
-
-        :param optimization_setup: The OptimizationSetup the element is part of
-        """
         logger.info("Constructing variables for StorageTechnology")
 
         model = self.zen_model.lp_model
@@ -117,9 +108,11 @@ class StorageTechnologyConstructor(ElementConstructor):
             tech_arr, node_arr, time_arr = sets.tuple_to_arr(index_values, index_list)
             # convert operationTimeStep to time_step_year:
             #   operationTimeStep -> base_time_step -> time_step_year
-            ts = self.energy_system.time_steps
             time_step_year = xr.DataArray(
-                [ts.convert_time_step_operation2year(time) for time in time_arr.data]
+                [
+                    self.time_steps.convert_time_step_operation2year(time)
+                    for time in time_arr.data
+                ]
             )
             lower = (
                 model.variables["capacity"]
@@ -183,13 +176,11 @@ class StorageTechnologyConstructor(ElementConstructor):
             )
 
     def construct_constraints(self):
-        """Constructs the Constraints of the class <StorageTechnology>.
-
-        :param optimization_setup: The OptimizationSetup the element is part of
-        """
         logger.info("Constructing constraints for StorageTechnology")
 
-        rules = StorageTechnologyRules(self.config, self.zen_model, self.energy_system)
+        rules = StorageTechnologyRules(
+            self.config, self.zen_model, self.energy_system, self.time_steps
+        )
         # limit flow by capacity and max load
         rules.constraint_capacity_factor_storage()
 

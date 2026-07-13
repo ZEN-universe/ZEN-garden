@@ -185,7 +185,7 @@ class TransportTechnology(Technology):
             self.capex_per_distance_transport[index[0]].iloc[0]
         ):
             return 0
-        elif self.energy_system.config.system.double_capex_transport and capacity != 0:
+        elif self.config.system.double_capex_transport and capacity != 0:
             return (
                 self.capex_specific_transport[index[0]].iloc[0] * capacity
                 + self.capex_per_distance_transport[index[0]].iloc[0]

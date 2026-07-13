@@ -1,5 +1,4 @@
 import copy
-from typing import TYPE_CHECKING
 
 import numpy as np
 import pandas as pd
@@ -8,9 +7,6 @@ import xarray as xr
 from zen_garden.model.components.component import Component
 from zen_garden.model.components.index_set import IndexSet
 from zen_garden.model.components.zen_set import ZenSet
-
-if TYPE_CHECKING:
-    pass
 
 
 class DictParameter(object):

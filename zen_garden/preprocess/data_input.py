@@ -21,6 +21,7 @@ if TYPE_CHECKING:
     from zen_garden.model.time_steps import TimeStepsDicts
     from zen_garden.preprocess.unit_handling import UnitHandling
     from zen_garden.services.scenario_dict import ScenarioDict
+    from zen_garden.types import YearSpecificTs
     from zen_garden.utils.input_data_checks import InputDataChecks
 
 logger = logging.getLogger(__name__)
@@ -56,6 +57,7 @@ class DataInput:
         config: "Config",
         scenario_dict: "ScenarioDict",
         input_data_checks: "InputDataChecks",
+        year_specific_ts: "YearSpecificTs",
         folder_path: Path,
     ):
         """Data input object to extract input data.
@@ -73,6 +75,7 @@ class DataInput:
         self.config = config
         self.scenario_dict = scenario_dict
         self.input_data_checks = input_data_checks
+        self.year_specific_ts = year_specific_ts
         # extract folder path
         self.folder_path = folder_path
         # get names of indices
@@ -81,7 +84,12 @@ class DataInput:
         self.attribute_dict = self.load_attribute_file()
 
     def extract_input_data(
-        self, file_name, index_sets, unit_category, time_steps=None, subelement=None
+        self,
+        file_name,
+        index_sets,
+        unit_category,
+        time_steps: str | None = None,
+        subelement=None,
     ):
         """Reads input data and restructures the dataframe to return
         (multi)indexed dict.
@@ -157,7 +165,7 @@ class DataInput:
                 cols = df_input.columns.intersection(index_name_list + [subelement])
                 df_input = df_input[cols]
             # fill output dataframe
-            df_output = self.extract_general_input_data(
+            df_output = self._extract_general_input_data(
                 df_input,
                 df_output,
                 file_name,
@@ -177,7 +185,7 @@ class DataInput:
                         f"from {self.folder_path}. The base case is used as input file"
                     )
                 else:
-                    df_output = self.extract_general_input_data(
+                    df_output = self._extract_general_input_data(
                         df_input_part,
                         df_output,
                         file_name,
@@ -188,7 +196,7 @@ class DataInput:
         # copy output data as otherwise overwritten
         df_output_generic = df_output.copy()
         if time_steps == "set_base_time_steps_yearly":
-            self.extract_year_specific_ts(
+            self._extract_year_specific_ts(
                 file_name,
                 index_name_list,
                 time_steps,
@@ -199,8 +207,14 @@ class DataInput:
         # finally apply the scenario_factor and return df_output
         return df_output_generic * scenario_factor
 
-    def extract_general_input_data(
-        self, df_input, df_output, file_name, index_name_list, default_value, time_steps
+    def _extract_general_input_data(
+        self,
+        df_input,
+        df_output,
+        file_name,
+        index_name_list,
+        default_value,
+        time_steps: str | None,
     ):
         """Fills df_output with data from df_input.
 
@@ -213,7 +227,7 @@ class DataInput:
         :return: df_output: filled output dataframe
         """
         df_output_copy = copy.deepcopy(df_output)
-        df_input = self.convert_real_to_generic_time_indices(
+        df_input = self._convert_real_to_generic_time_indices(
             df_input, time_steps, file_name, index_name_list
         )
 
@@ -550,18 +564,17 @@ class DataInput:
             attribute_unit = None
         return attribute_value, attribute_unit
 
-    def extract_year_specific_ts(
+    def _extract_year_specific_ts(
         self,
         file_name,
         index_name_list,
-        time_steps,
+        time_steps: str,
         subelement,
         default_value,
         df_output_generic,
     ):
         """Reads and saves the year specific time series data. The year specific
-        time series are saved in the dictionary
-        self.energy_system.year_specific_ts.
+        time series are saved in the dictionary self.year_specific_ts.
 
         :param file_name: name of selected file
         :param index_name_list: list of name of indices
@@ -601,7 +614,7 @@ class DataInput:
                             index_name_list + [subelement]
                         )
                         df_input = df_input[cols]
-                    df_output_specific = self.extract_general_input_data(
+                    df_output_specific = self._extract_general_input_data(
                         df_input,
                         df_output_generic,
                         file_name,
@@ -609,19 +622,19 @@ class DataInput:
                         default_value,
                         time_steps,
                     )
-                if i not in self.energy_system.year_specific_ts:
-                    self.energy_system.year_specific_ts[i] = {}
-                self.energy_system.year_specific_ts[i][
-                    (self.element._name, file_name)
-                ] = (df_output_specific * scenario_factor)
+                if i not in self.year_specific_ts:
+                    self.year_specific_ts[i] = {}
+                self.year_specific_ts[i][(self.element.name, file_name)] = (
+                    df_output_specific * scenario_factor
+                )
                 # try:
-                #     self.energy_system.year_specific_ts[i][
-                #         (self.element._name, file_name)
+                #     self.year_specific_ts[i][
+                #         (self.element.name, file_name)
                 #     ] = df_output_specific * scenario_factor
                 # except Exception:
-                #     self.energy_system.year_specific_ts[i] = {}
-                #     self.energy_system.year_specific_ts[i][
-                #         (self.element._name, file_name)
+                #     self.year_specific_ts[i] = {}
+                #     self.year_specific_ts[i][
+                #         (self.element.name, file_name)
                 #     ] = df_output_specific * scenario_factor
 
     def extract_yearly_variation(self, file_name, index_sets):
@@ -659,7 +672,7 @@ class DataInput:
             )
             # set yearly variation attribute to df_output
             name_yearly_variation = file_name
-            df_output = self.extract_general_input_data(
+            df_output = self._extract_general_input_data(
                 df_input,
                 df_output,
                 file_name,
@@ -828,7 +841,7 @@ class DataInput:
         if f"{f_name}.csv" in os.listdir(self.folder_path):
             df_input = self.read_input_csv(f_name)
             # fill output dataframe
-            df_output = self.extract_general_input_data(
+            df_output = self._extract_general_input_data(
                 df_input,
                 df_output,
                 "year_construction",
@@ -1026,7 +1039,7 @@ class DataInput:
         index_sets,
         unit_category,
         file_name=None,
-        time_steps=None,
+        time_steps: str | None = None,
         manual_default_value=None,
         subelement=None,
     ):
@@ -1080,7 +1093,7 @@ class DataInput:
         return df_output, default_value, index_name_list
 
     def construct_index_list(
-        self, index_sets, time_steps
+        self, index_sets, time_steps: str | None
     ) -> "tuple[list[TimeStepsDicts], list[HeaderDataInputs]]":
         """Constructs index list from index sets and returns list of indices and
         list of index names.
@@ -1110,8 +1123,8 @@ class DataInput:
                 raise AttributeError(f"Index '{index}' cannot be found.")
         return index_list, index_name_list
 
-    def convert_real_to_generic_time_indices(
-        self, df_input, time_steps, file_name, index_name_list
+    def _convert_real_to_generic_time_indices(
+        self, df_input, time_steps: str | None, file_name, index_name_list
     ):
         """Convert yearly time indices to generic time indices.
 
@@ -1196,7 +1209,7 @@ class DataInput:
                 return df_input
             # assert that correct temporal index_set to get corresponding
             # index_name is given (i.e. set_time_steps_yearly for input data
-            # with yearly time steps)(otherwise extract_general_input_data()
+            # with yearly time steps)(otherwise _extract_general_input_data()
             # will find a missing_index)
             assert temporal_header in index_name_list, (
                 "Input data with yearly time steps and therefore the temporal "

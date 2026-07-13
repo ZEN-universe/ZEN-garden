@@ -98,7 +98,7 @@ class Carrier(Element):
 
         :param base_time_steps: base time steps of the energy system
         """
-        set_time_steps_operation = self.energy_system.time_steps.encode_time_step(
+        set_time_steps_operation = self.time_steps.encode_time_step(
             base_time_steps=base_time_steps, time_step_type="operation"
         )
         assert isinstance(set_time_steps_operation, np.ndarray)

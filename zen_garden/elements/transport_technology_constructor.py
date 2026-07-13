@@ -22,18 +22,12 @@ class TransportTechnologyConstructor(ElementConstructor):
         """
         return True
 
+    @override
     def construct_sets(self):
-        """Constructs the pe.Sets of the class <TransportTechnology>.
-
-        :param optimization_setup: The OptimizationSetup the element is part of
-        """
         logger.info("Constructing sets for TransportTechnology")
 
+    @override
     def construct_params(self):
-        """Constructs the pe.Params of the class <TransportTechnology>.
-
-        :param optimization_setup: The OptimizationSetup the element is part of
-        """
         logger.info("Constructing parameters for TransportTechnology")
 
         # distance between nodes
@@ -69,11 +63,8 @@ class TransportTechnologyConstructor(ElementConstructor):
             doc="linear carrier losses due to transport with transport technologies",
         )
 
+    @override
     def construct_vars(self):
-        """Constructs the pe.Vars of the class <TransportTechnology>.
-
-        :param optimization_setup: The OptimizationSetup the element is part of
-        """
         logger.info("Constructing variables for TransportTechnology")
 
         model = self.zen_model.lp_model
@@ -91,9 +82,11 @@ class TransportTechnologyConstructor(ElementConstructor):
             tech_arr, edge_arr, time_arr = sets.tuple_to_arr(index_values, index_list)
             # convert operationTimeStep to time_step_year:
             #   operationTimeStep -> base_time_step -> time_step_year
-            ts = self.energy_system.time_steps
             time_step_year = xr.DataArray(
-                [ts.convert_time_step_operation2year(time) for time in time_arr.data]
+                [
+                    self.time_steps.convert_time_step_operation2year(time)
+                    for time in time_arr.data
+                ]
             )
 
             lower = (
@@ -130,15 +123,12 @@ class TransportTechnologyConstructor(ElementConstructor):
             unit_category={"energy_quantity": 1, "time": -1},
         )
 
+    @override
     def construct_constraints(self):
-        """Constructs the Constraints of the class <TransportTechnology>.
-
-        :param optimization_setup: The OptimizationSetup the element is part of
-        """
         logger.info("Constructing constraints for TransportTechnology")
 
         rules = TransportTechnologyRules(
-            self.config, self.zen_model, self.energy_system
+            self.config, self.zen_model, self.energy_system, self.time_steps
         )
 
         # limit flow by capacity and max load

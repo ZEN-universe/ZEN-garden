@@ -13,11 +13,12 @@ from zen_garden.elements.generic_rule import GenericRule
 from zen_garden.elements.technology import Technology
 from zen_garden.model.components.zen_index import ZenIndex
 from zen_garden.model.components.zen_set import ZenSet
-from zen_garden.model.config import Config
-from zen_garden.model.zen_model import ZenModel
 
 if TYPE_CHECKING:
     from zen_garden.elements.energy_system import EnergySystem
+    from zen_garden.model.config import Config
+    from zen_garden.model.time_steps import TimeStepsDicts
+    from zen_garden.model.zen_model import ZenModel
     from zen_garden.services.element_registry import ElementRegistry
 
 logger = logging.getLogger(__name__)
@@ -28,17 +29,21 @@ class TechnologyRules(GenericRule):
 
     def __init__(
         self,
-        config: Config,
+        config: "Config",
         zen_model: "ZenModel",
         energy_system: "EnergySystem",
+        time_steps: "TimeStepsDicts",
         element_registry: "ElementRegistry",
     ):
         """Inits the rules.
 
-        :param optimization_setup: OptimizationSetup of the element
+        :param config: Config object
+        :param zen_model: ZenModel object
+        :param energy_system: EnergySystem object
+        :param element_registry: ElementRegistry object
         """
         self.element_registry = element_registry
-        super().__init__(config, zen_model, energy_system)
+        super().__init__(config, zen_model, energy_system, time_steps)
 
     def constraint_cost_capex_yearly_total(self):
         """Sums over all technologies to calculate total capex.
@@ -258,12 +263,7 @@ class TechnologyRules(GenericRule):
                 (
                     t,
                     y,
-                    Technology.get_investment_time_step(
-                        self.zen_model.parameters.dict_parameters,
-                        self.config.system,
-                        t,
-                        y,
-                    ),
+                    self._get_investment_time_step(t, y),
                 ): 1
                 for t, y in itertools.product(
                     self.zen_model.sets["set_technologies"],
@@ -351,6 +351,27 @@ class TechnologyRules(GenericRule):
         self.zen_model.constraints.add_constraint(
             "constraint_technology_construction_time_outside", constraints_outside
         )
+
+    def _get_investment_time_step(self, tech, year):
+        """Returns investment time step of technology, considering construction time.
+
+        returns investment time step of technology, i.e., the time step in which the
+        technology is invested considering the construction time.
+
+        :param params: parameters of the model
+        :param tech: name of technology
+        :param year: yearly time step
+        :return: investment time step
+        """
+        # get params and system
+        construction_time = self.zen_model.parameters.dict_parameters.construction_time[
+            tech
+        ]
+        # conservative estimate of construction time (ceil)
+        del_construction_time = int(
+            np.ceil(construction_time / self.config.system.interval_between_years)
+        )
+        return year - del_construction_time
 
     def constraint_technology_lifetime(self):
         """Calculates remaining capacity of technologies based on the lifetime.
@@ -795,7 +816,7 @@ class TechnologyRules(GenericRule):
         """
         times_dict: dict[str, pd.Series] = {
             y: self.zen_model.parameters.time_steps_operation_duration.loc[
-                self.energy_system.time_steps.get_time_steps_year2operation(y)
+                self.time_steps.get_time_steps_year2operation(y)
             ].to_series()
             for y in self.zen_model.sets["set_time_steps_yearly"]
         }
@@ -885,9 +906,8 @@ class TechnologyRules(GenericRule):
         transport_techs = self.zen_model.sets["set_transport_technologies"]
         nodes = self.zen_model.sets["set_nodes"]
         times = self.zen_model.sets["set_time_steps_operation"]
-        ts = self.energy_system.time_steps
         time_step_year = xr.DataArray(
-            [ts.convert_time_step_operation2year(t) for t in times.data],
+            [self.time_steps.convert_time_step_operation2year(t) for t in times.data],
             coords=[times],
             dims=["set_time_steps_operation"],
         )
@@ -991,15 +1011,9 @@ class TechnologyRules(GenericRule):
             "constraint_technology_on_off_capacity_helper_upper_bound", constraints_3b
         )
 
-    def get_lifetime_range(
-        self,
-        tech,
-        year,
-        use_depreciation_time=False,
-    ):
+    def get_lifetime_range(self, tech, year, use_depreciation_time=False):
         """Get active year range of technology: either lifetime or depreciation time.
 
-        :param optimization_setup: OptimizationSetup the technology is part of
         :param tech: name of the technology
         :param year: yearly time step
         :param use_depreciation_time: boolean indicating whether to use depreciation
@@ -1017,19 +1031,13 @@ class TechnologyRules(GenericRule):
         )
         return range(first_lifetime_year, year + 1)
 
-    def get_first_lifetime_time_step(
-        self,
-        tech,
-        year,
-        use_depreciation_time=False,
-    ):
+    def get_first_lifetime_time_step(self, tech, year, use_depreciation_time=False):
         """Get first time step of active capacity of technology.
 
         Returns the first time step within the lifetime or depreciation time of the
         technology, i.e., the earliest past time step whose installed capacity is
         still active at the given time step.
 
-        :param optimization_setup: OptimizationSetup the technology is part of
         :param tech: name of the technology
         :param year: current yearly time step
         :param use_depreciation_time: boolean indicating whether to use depreciation

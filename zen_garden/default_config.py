@@ -224,7 +224,7 @@ class Analysis(Subscriptable):
     overwrite_output: bool = True
     output_format: str = "h5"
     earliest_year_of_data: int = 1900
-    zen_garden_version: str = None
+    zen_garden_version: str | None = None
 
 
 class Config(Subscriptable):

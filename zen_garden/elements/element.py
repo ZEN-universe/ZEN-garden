@@ -15,10 +15,12 @@ from zen_garden.preprocess.data_input import DataInput
 if TYPE_CHECKING:
     from zen_garden.elements.energy_system import EnergySystem
     from zen_garden.model.config import Config
+    from zen_garden.model.time_steps import TimeStepsDicts
     from zen_garden.preprocess.unit_handling import UnitHandling
     from zen_garden.services.dataset_path_resolver import DatasetPathResolver
     from zen_garden.services.element_registry import ElementRegistry
     from zen_garden.services.scenario_dict import ScenarioDict
+    from zen_garden.types import YearSpecificTs
     from zen_garden.utils.input_data_checks import InputDataChecks
 
 
@@ -39,15 +41,22 @@ class Element:
         dataset_path_resolver: "DatasetPathResolver",
         scenario_dict: "ScenarioDict",
         input_data_checks: "InputDataChecks",
+        time_steps: "TimeStepsDicts",
+        year_specific_ts: "YearSpecificTs",
     ):
         """Initialization of an element.
 
-        :param element: element that is added to the model
-        :param optimization_setup: The OptimizationSetup the element is part of
+        :param element_name: Name of the element
+        :param config: Config object
+        :param energy_system: EnergySystem object
+        :param element_registry: ElementRegistry object
+        :param unit_handling: UnitHandling object
+        :param dataset_path_resolver: DatasetPathResolver object
+        :param scenario_dict: ScenarioDict object
+        :param input_data_checks: InputDataChecks object
         """
         # set attributes
         self.name = element_name
-        self._name = element_name
         # optimization setup
         self.config = config
         # energy system
@@ -56,6 +65,7 @@ class Element:
         self.unit_handling = unit_handling
         self.dataset_path_resolver = dataset_path_resolver
         self.input_data_checks = input_data_checks
+        self.time_steps = time_steps
         # set if aggregated
         self.aggregated = False
         # create DataInput object
@@ -66,6 +76,7 @@ class Element:
             config=self.config,
             scenario_dict=scenario_dict,
             input_data_checks=self.input_data_checks,
+            year_specific_ts=year_specific_ts,
             folder_path=self._get_input_path(),
         )
         # dict to save the parameter units element-wise and to save them in the results

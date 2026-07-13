@@ -7,7 +7,7 @@ import os
 import sys
 import warnings
 import zipfile
-from importlib.metadata import metadata
+from importlib.metadata import metadata, version
 
 import linopy as lp
 import numpy as np
@@ -15,6 +15,8 @@ import pandas as pd
 import requests
 import xarray as xr
 from ordered_set import OrderedSet
+
+logger = logging.getLogger(__name__)
 
 
 def setup_logger(level=logging.INFO):
@@ -29,6 +31,8 @@ def setup_logger(level=logging.INFO):
         datefmt="%Y-%m-%d %H:%M:%S",
     )
     logging.captureWarnings(True)
+
+    logger.info(f"Running ZEN-garden version: {version('zen-garden')}")
 
 
 def get_inheritors(klass):

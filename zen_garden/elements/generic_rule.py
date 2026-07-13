@@ -8,6 +8,7 @@ from linopy.expressions import LinearExpression
 if TYPE_CHECKING:
     from zen_garden.elements.energy_system import EnergySystem
     from zen_garden.model.config import Config
+    from zen_garden.model.time_steps import TimeStepsDicts
     from zen_garden.model.zen_model import ZenModel
 
 
@@ -21,14 +22,18 @@ class GenericRule(object):
         config: "Config",
         zen_model: "ZenModel",
         energy_system: "EnergySystem",
+        time_steps: "TimeStepsDicts",
     ):
         """Constructor for generic rule.
 
-        :param optimization_setup: The optimization setup to use for the setup
+        :param config: Config object
+        :param zen_model: ZenModel object
+        :param energy_system: EnergySystem object
         """
         self.config = config
         self.zen_model = zen_model
         self.energy_system = energy_system
+        self.time_steps = time_steps
 
     # helper methods for constraint rules
     def get_year_time_step_array(self, storage=False):
@@ -38,10 +43,10 @@ class GenericRule(object):
         """
         # create times xarray with 1 where the operation time step is in the year
         if storage:
-            meth = self.energy_system.time_steps.get_time_steps_year2storage
+            meth = self.time_steps.get_time_steps_year2storage
             time_step_name = "set_time_steps_storage"
         else:
-            meth = self.energy_system.time_steps.get_time_steps_year2operation
+            meth = self.time_steps.get_time_steps_year2operation
             time_step_name = "set_time_steps_operation"
         times = [
             (y, t)
@@ -70,7 +75,7 @@ class GenericRule(object):
         times_prev = []
         mask = []
         for ts in self.zen_model.sets["set_time_steps_storage"]:
-            ts_end = self.energy_system.time_steps.get_time_steps_storage_startend(ts)
+            ts_end = self.time_steps.get_time_steps_storage_startend(ts)
             if ts_end is not None:
                 if self.config.system.storage_periodicity:
                     times_prev.append(ts_end)
@@ -79,9 +84,7 @@ class GenericRule(object):
                     times_prev.append(ts)
                     mask.append(False)
             else:
-                ts_prev = self.energy_system.time_steps.get_previous_storage_time_step(
-                    ts
-                )
+                ts_prev = self.time_steps.get_previous_storage_time_step(ts)
                 times_prev.append(ts_prev)
                 mask.append(True)
         mask = xr.DataArray(
@@ -96,7 +99,7 @@ class GenericRule(object):
     def get_power2energy_time_step_array(self):
         """Returns array with power2energy time steps."""
         times = {
-            st: self.energy_system.time_steps.convert_time_step_energy2power(st)
+            st: self.time_steps.convert_time_step_energy2power(st)
             for st in self.zen_model.sets["set_time_steps_storage"]
         }
         times = pd.Series(times, name="set_time_steps_operation")
@@ -108,7 +111,7 @@ class GenericRule(object):
         times = {
             st: y
             for y in self.zen_model.sets["set_time_steps_yearly"]
-            for st in self.energy_system.time_steps.get_time_steps_year2storage(y)
+            for st in self.time_steps.get_time_steps_year2storage(y)
         }
         times = pd.Series(times, name="set_time_steps_yearly")
         times.index.name = "set_time_steps_storage"

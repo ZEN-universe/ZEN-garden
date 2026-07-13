@@ -272,23 +272,3 @@ class Technology(Element):
                     "capacity_investment_existing" + energy_string,
                     capacity_investment_existing.stack(),
                 )
-
-    @classmethod
-    def get_investment_time_step(cls, params, system, tech, year):
-        """Returns investment time step of technology, considering construction time.
-
-        returns investment time step of technology, i.e., the time step in which the
-        technology is invested considering the construction time.
-
-        :param optimization_setup: The optimization setup to add everything
-        :param tech: name of technology
-        :param year: yearly time step
-        :return: investment time step
-        """
-        # get params and system
-        construction_time = params.construction_time[tech]
-        # conservative estimate of construction time (ceil)
-        del_construction_time = int(
-            np.ceil(construction_time / system.interval_between_years)
-        )
-        return year - del_construction_time

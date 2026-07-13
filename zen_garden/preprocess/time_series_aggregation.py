@@ -9,11 +9,13 @@ import pandas as pd
 import tsam.timeseriesaggregation as tsam
 
 from zen_garden.elements.element import Element
-from zen_garden.elements.energy_system import EnergySystem
-from zen_garden.model.config import Config
 
 if TYPE_CHECKING:
+    from zen_garden.elements.energy_system import EnergySystem
+    from zen_garden.model.config import Config
+    from zen_garden.model.time_steps import TimeStepsDicts
     from zen_garden.services.element_registry import ElementRegistry
+    from zen_garden.types import YearSpecificTs
 
 logger = logging.getLogger(__name__)
 
@@ -23,9 +25,11 @@ class TimeSeriesAggregation(object):
 
     def __init__(
         self,
-        energy_system: EnergySystem,
-        config: Config,
+        energy_system: "EnergySystem",
+        config: "Config",
         element_registry: "ElementRegistry",
+        time_steps: "TimeStepsDicts",
+        year_specific_ts: "YearSpecificTs",
     ):
         """Initializes the time series aggregation. The data is aggregated
         for a single year and then concatenated.
@@ -36,12 +40,11 @@ class TimeSeriesAggregation(object):
         # initiate dictionary for saving year specific TSA results
         self.year_specific_tsa = {}
         self.energy_system = energy_system
-        self.time_steps = self.energy_system.time_steps
+        self.time_steps = time_steps
         self.config = config
         self.element_registry = element_registry
+        self.year_specific_ts = year_specific_ts
 
-        self.system = config.system
-        self.analysis = config.analysis
         self.header_set_time_steps = (
             self.config.analysis.header_data_inputs.set_time_steps
         )
@@ -77,10 +80,8 @@ class TimeSeriesAggregation(object):
         else:
             self.typical_periods = pd.DataFrame()
             set_time_steps = self.set_base_time_steps
-            time_step_duration = (
-                self.energy_system.time_steps.calculate_time_step_duration(
-                    set_time_steps, self.set_base_time_steps
-                )
+            time_step_duration = self.time_steps.calculate_time_step_duration(
+                set_time_steps, self.set_base_time_steps
             )
             sequence_time_steps = np.concatenate(
                 [
@@ -395,7 +396,7 @@ class TimeSeriesAggregation(object):
             self.number_typical_periods < np.size(self.set_base_time_steps)
             and self.config.system.conduct_time_series_aggregation
         ):
-            for year in self.energy_system.year_specific_ts:
+            for year in self.year_specific_ts:
                 # create empty dictionary for saving year specific TSA results
                 self.year_specific_tsa[year] = {}
                 # make copy of raw time series
@@ -405,12 +406,8 @@ class TimeSeriesAggregation(object):
                 ).unique()
                 for element, ts in elements_time_series:
                     unstacked = year_raw_ts.unstack(header_set_time_steps)
-                    if (element, ts) in self.energy_system.year_specific_ts[
-                        year
-                    ].keys():
-                        index = self.energy_system.year_specific_ts[year][
-                            (element, ts)
-                        ].index
+                    if (element, ts) in self.year_specific_ts[year].keys():
+                        index = self.year_specific_ts[year][(element, ts)].index
                         if index.size > unstacked[element, ts].size:
                             index = pd.MultiIndex.from_tuples(
                                 [(element, ts, node, time) for node, time in index],
@@ -418,11 +415,11 @@ class TimeSeriesAggregation(object):
                             )
                             unstacked = unstacked.reindex(unstacked.index.union(index))
                             unstacked[element, ts].update(
-                                self.energy_system.year_specific_ts[year][(element, ts)]
+                                self.year_specific_ts[year][(element, ts)]
                             )
-                        unstacked[element, ts] = self.energy_system.year_specific_ts[
-                            year
-                        ][(element, ts)]
+                        unstacked[element, ts] = self.year_specific_ts[year][
+                            (element, ts)
+                        ]
                     else:
                         ts_adjusted = self.multiply_yearly_variation(
                             self.element_registry.get_element(Element, element),
@@ -445,9 +442,7 @@ class TimeSeriesAggregation(object):
                     # aggregate to single time step
                     self.single_ts_tsa()
                 # overwrite time_step_sequence here
-                base_time_steps = self.energy_system.time_steps.decode_time_step(
-                    year, "yearly"
-                )
+                base_time_steps = self.time_steps.decode_time_step(year, "yearly")
                 new_sequence_time_steps[base_time_steps.squeeze()] = (
                     self.sequence_time_steps
                 )
@@ -579,10 +574,10 @@ class TimeSeriesAggregation(object):
             if len(np.unique(yearly_variation)) == 1:
                 ts = ts_df.stack() * np.unique(yearly_variation)[0]
             elif year_specific is not None:
-                base_time_steps = self.energy_system.time_steps.decode_time_step(
+                base_time_steps = self.time_steps.decode_time_step(
                     year_specific, "yearly"
                 )
-                element_time_steps = self.energy_system.time_steps.encode_time_step(
+                element_time_steps = self.time_steps.encode_time_step(
                     base_time_steps, time_step_type="operation"
                 )
                 ts_df.loc[:, element_time_steps] = (
@@ -594,15 +589,11 @@ class TimeSeriesAggregation(object):
             else:
                 for year in self.energy_system.set_time_steps_yearly:
                     if not all(yearly_variation[year] == 1):
-                        base_time_steps = (
-                            self.energy_system.time_steps.decode_time_step(
-                                year, "yearly"
-                            )
+                        base_time_steps = self.time_steps.decode_time_step(
+                            year, "yearly"
                         )
-                        element_time_steps = (
-                            self.energy_system.time_steps.encode_time_step(
-                                base_time_steps, time_step_type="operation"
-                            )
+                        element_time_steps = self.time_steps.encode_time_step(
+                            base_time_steps, time_step_type="operation"
                         )
                         ts_df.loc[:, element_time_steps] = (
                             ts_df[element_time_steps]
@@ -627,10 +618,8 @@ class TimeSeriesAggregation(object):
         if self.conducted_tsa:
             for year in self.year_specific_tsa.keys():
                 if (element.name, ts) in self.year_specific_tsa[year].keys():
-                    base_time_steps = self.energy_system.time_steps.decode_time_step(
-                        year, "yearly"
-                    )
-                    element_time_steps = self.energy_system.time_steps.encode_time_step(
+                    base_time_steps = self.time_steps.decode_time_step(year, "yearly")
+                    element_time_steps = self.time_steps.encode_time_step(
                         base_time_steps, time_step_type="operation"
                     )
                     year_ts = self.year_specific_tsa[year][element.name, ts]
@@ -646,18 +635,14 @@ class TimeSeriesAggregation(object):
                             ].values
         # insert year specific TS if not aggregated
         else:
-            for year in self.energy_system.year_specific_ts.keys():
-                if (element.name, ts) in self.energy_system.year_specific_ts[
-                    year
-                ].keys():
-                    base_time_steps = self.energy_system.time_steps.decode_time_step(
-                        year, "yearly"
-                    )
-                    element_time_steps = self.energy_system.time_steps.encode_time_step(
+            for year in self.year_specific_ts.keys():
+                if (element.name, ts) in self.year_specific_ts[year].keys():
+                    base_time_steps = self.time_steps.decode_time_step(year, "yearly")
+                    element_time_steps = self.time_steps.encode_time_step(
                         base_time_steps, time_step_type="operation"
                     )
                     year_ts = (
-                        self.energy_system.year_specific_ts[year][(element.name, ts)]
+                        self.year_specific_ts[year][(element.name, ts)]
                         .unstack(header_set_time_steps)
                         .T
                     )

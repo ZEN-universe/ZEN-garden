@@ -16,24 +16,18 @@ class CarrierConstructor(ElementConstructor):
 
     @override
     def has_elements(self) -> bool:
-        """Checks if there are any elements of the class <Carrier>.
+        """Checks if there are any elements of the class `Carrier`.
 
         :return: True if there are elements, False otherwise
         """
         return True
 
+    @override
     def construct_sets(self):
-        """Constructs the pe.Sets of the class <Carrier>.
-
-        :param optimization_setup: The OptimizationSetup the element is part of
-        """
         logger.info("Constructing sets for Carrier")
 
+    @override
     def construct_params(self):
-        """Constructs the pe.Params of the class <Carrier>.
-
-        :param optimization_setup: The OptimizationSetup the element is part of
-        """
         logger.info("Constructing parameters for Carrier")
 
         # demand of carrier
@@ -101,11 +95,8 @@ class CarrierConstructor(ElementConstructor):
             doc="Parameter which specifies the carbon intensity of carrier export",
         )
 
+    @override
     def construct_vars(self):
-        """Constructs the pe.Vars of the class <Carrier>.
-
-        :param optimization_setup: The OptimizationSetup the element is part of
-        """
         logger.info("Constructing variables for Carrier")
 
         variables = self.zen_model.variables
@@ -184,14 +175,13 @@ class CarrierConstructor(ElementConstructor):
             unit_category={"money": 1, "time": -1},
         )
 
+    @override
     def construct_constraints(self):
-        """Constructs the Constraints of the class <Carrier>.
-
-        :param optimization_setup: The OptimizationSetup the element is part of
-        """
         logger.info("Constructing constraints for Carrier")
 
-        rules = CarrierRules(self.config, self.zen_model, self.energy_system)
+        rules = CarrierRules(
+            self.config, self.zen_model, self.energy_system, self.time_steps
+        )
 
         # limit import/export flow by availability
         rules.constraint_availability_import_export()

@@ -11,9 +11,11 @@ from zen_garden.elements.element import Element
 if TYPE_CHECKING:
     from zen_garden.elements.energy_system import EnergySystem
     from zen_garden.model.config import Config
+    from zen_garden.model.time_steps import TimeStepsDicts
     from zen_garden.preprocess.unit_handling import UnitHandling
     from zen_garden.services.dataset_path_resolver import DatasetPathResolver
     from zen_garden.services.scenario_dict import ScenarioDict
+    from zen_garden.types import YearSpecificTs
     from zen_garden.utils.input_data_checks import InputDataChecks
 
 logger = logging.getLogger(__name__)
@@ -32,6 +34,8 @@ class ElementRegistry:
         unit_handling: "UnitHandling",
         dataset_path_resolver: "DatasetPathResolver",
         scenario_dict: "ScenarioDict",
+        time_steps: "TimeStepsDicts",
+        year_specific_ts: "YearSpecificTs",
     ):
         self.config = config
         self.energy_system = energy_system
@@ -39,6 +43,8 @@ class ElementRegistry:
         self.unit_handling = unit_handling
         self.dataset_path_resolver = dataset_path_resolver
         self.scenario_dict = scenario_dict
+        self.time_steps = time_steps
+        self.year_specific_ts = year_specific_ts
 
         self._register_elements()
 
@@ -115,6 +121,8 @@ class ElementRegistry:
             self.dataset_path_resolver,
             self.scenario_dict,
             self.input_data_checks,
+            self.time_steps,
+            self.year_specific_ts,
         )
         # Add instance to all classes that element_class inherits from, including itself
         # MRO (Method Resolution Order) gives the order in which base classes

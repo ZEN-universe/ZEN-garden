@@ -23,11 +23,8 @@ class ConversionTechnologyConstructor(ElementConstructor):
         """
         return True
 
+    @override
     def construct_sets(self):
-        """Constructs the pe.Sets of the class <ConversionTechnology>.
-
-        :param optimization_setup: The OptimizationSetup the element is part of
-        """
         logger.info("Constructing sets for ConversionTechnology")
         # get input carriers
         input_carriers = self.element_registry.get_attribute_of_all_elements(
@@ -68,11 +65,8 @@ class ConversionTechnologyConstructor(ElementConstructor):
             index_set="set_conversion_technologies",
         )
 
+    @override
     def construct_params(self):
-        """Constructs the pe.Params of the class <ConversionTechnology>.
-
-        :param optimization_setup: The OptimizationSetup the element is part of
-        """
         logger.info("Constructing parameters for ConversionTechnology")
         # slope of linearly modeled capex
         capex_data, capex_units = self.get_capex_all_elements(
@@ -112,11 +106,8 @@ class ConversionTechnologyConstructor(ElementConstructor):
             "per planning period",
         )
 
+    @override
     def construct_vars(self):
-        """Constructs the pe.Vars of the class <ConversionTechnology>.
-
-        :param optimization_setup: The OptimizationSetup the element is part of
-        """
         logger.info("Constructing variables for ConversionTechnology")
         model = self.zen_model.lp_model
         variables = self.zen_model.variables
@@ -148,9 +139,7 @@ class ConversionTechnologyConstructor(ElementConstructor):
             for tech in technology_set:
                 for carrier in carrier_set[tech]:
                     time_step_year = [
-                        self.energy_system.time_steps.convert_time_step_operation2year(
-                            t
-                        )
+                        self.time_steps.convert_time_step_operation2year(t)
                         for t in timestep_set
                     ]
                     if carrier == sets["set_reference_carriers"][tech][0]:
@@ -249,18 +238,15 @@ class ConversionTechnologyConstructor(ElementConstructor):
             unit_category={"money": 1},
         )
 
+    @override
     def construct_constraints(self):
-        """Constructs the Constraints of the class <ConversionTechnology>.
-
-        :param optimization_setup: optimization setup
-        """
         logger.info("Constructing constraints for ConversionTechnology")
 
         model = self.zen_model.lp_model
         constraints = self.zen_model.constraints
         # add pwa constraints
         rules = ConversionTechnologyRules(
-            self.config, self.zen_model, self.energy_system
+            self.config, self.zen_model, self.energy_system, self.time_steps
         )
         # capacity factor constraint
         rules.constraint_capacity_factor_conversion()
@@ -312,7 +298,6 @@ class ConversionTechnologyConstructor(ElementConstructor):
     def calculate_capex_pwa_breakpoints_values(self, set_pwa):
         """Calculates breakpoints and function values for piecewise affine constraint.
         Args:
-            optimization_setup: The OptimizationSetup the element is part of.
             set_pwa: Set of variable indices in capex approximation for
             which pwa is performed.
         Returns:
@@ -342,7 +327,6 @@ class ConversionTechnologyConstructor(ElementConstructor):
         """Similar to Element.get_attribute_of_all_elements but only for capex.
         If select_pwa, extract pwa attributes, otherwise linear.
 
-        :param optimization_setup: The OptimizationSetup the element is part of
         :param index_names: list of index names
         :return: dict_of_attributes: returns dict of attribute values
         """
