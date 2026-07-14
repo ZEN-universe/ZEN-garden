@@ -72,45 +72,39 @@ class Technology(Element):
         # maximum diffusion rate
         self.max_diffusion_rate = self.data_input.extract_input_data(
             "max_diffusion_rate",
-            index_sets=["set_time_steps_yearly"],
-            time_steps="set_time_steps_yearly",
+            index_sets=["set_years"],
             unit_category={},
         )
 
         # add all raw time series to dict
         self.raw_time_series["min_load"] = self.data_input.extract_input_data(
             "min_load",
-            index_sets=[set_location, "set_time_steps"],
-            time_steps="set_base_time_steps_yearly",
+            index_sets=[set_location, "set_hours"],
             unit_category={},
         )
         self.raw_time_series["max_load"] = self.data_input.extract_input_data(
             "max_load",
-            index_sets=[set_location, "set_time_steps"],
-            time_steps="set_base_time_steps_yearly",
+            index_sets=[set_location, "set_hours"],
             unit_category={},
         )
         self.raw_time_series["opex_specific_variable"] = (
             self.data_input.extract_input_data(
                 "opex_specific_variable",
-                index_sets=[set_location, "set_time_steps"],
-                time_steps="set_base_time_steps_yearly",
+                index_sets=[set_location, "set_hours"],
                 unit_category={"money": 1, "energy_quantity": -1},
             )
         )
         # non-time series input data
         self.capacity_limit = self.data_input.extract_input_data(
             "capacity_limit",
-            index_sets=[set_location, "set_time_steps_yearly"],
-            time_steps="set_time_steps_yearly",
+            index_sets=[set_location, "set_years"],
             unit_category={"energy_quantity": 1, "time": -1},
         )
 
         # lower capacity limit
         self.capacity_lower_limit = self.data_input.extract_input_data(
             "capacity_lower_limit",
-            index_sets=[set_location, "set_time_steps_yearly"],
-            time_steps="set_time_steps_yearly",
+            index_sets=[set_location, "set_years"],
             unit_category={"energy_quantity": 1, "time": -1},
         )
 
@@ -130,8 +124,7 @@ class Technology(Element):
         )
         self.capacity_investment_existing = self.data_input.extract_input_data(
             "capacity_investment_existing",
-            index_sets=[set_location, "set_time_steps_yearly"],
-            time_steps="set_time_steps_yearly",
+            index_sets=[set_location, "set_years"],
             unit_category={"energy_quantity": 1, "time": -1},
         )
         self.lifetime_existing = self.data_input.extract_lifetime_existing(

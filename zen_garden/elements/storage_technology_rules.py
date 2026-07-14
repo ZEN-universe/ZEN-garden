@@ -349,14 +349,14 @@ class StorageTechnologyRules(GenericRule):
                 times_year_time_step
             )
             .where(times_year_time_step, 0.0)
-            .sum("set_time_steps_yearly")
+            .sum("set_years")
         )
         efficiency_discharge = (
             self.zen_model.parameters.efficiency_discharge.broadcast_like(
                 times_year_time_step
             )
             .where(times_year_time_step, 0.0)
-            .sum("set_time_steps_yearly")
+            .sum("set_years")
         )
         term_flow_charge_discharge = (
             self.zen_model.lp_model.variables["flow_storage_charge"] * efficiency_charge
@@ -436,7 +436,7 @@ class StorageTechnologyRules(GenericRule):
             self.zen_model.lp_model.variables.coords["set_storage_technologies"],
             self.zen_model.lp_model.variables.coords["set_capacity_types"],
             self.zen_model.lp_model.variables.coords["set_nodes"],
-            self.zen_model.lp_model.variables.coords["set_time_steps_yearly"],
+            self.zen_model.lp_model.variables.coords["set_years"],
         ]
 
         ### formulate constraint

@@ -42,7 +42,7 @@ class TransportTechnologyConstructor(ElementConstructor):
             index_names=[
                 "set_transport_technologies",
                 "set_edges",
-                "set_time_steps_yearly",
+                "set_years",
             ],
             doc="capex per unit for transport technologies",
         )
@@ -52,7 +52,7 @@ class TransportTechnologyConstructor(ElementConstructor):
             index_names=[
                 "set_transport_technologies",
                 "set_edges",
-                "set_time_steps_yearly",
+                "set_years",
             ],
             doc="capex per distance for transport technologies",
         )
@@ -142,6 +142,6 @@ class TransportTechnologyConstructor(ElementConstructor):
 
         # capex of transport technologies
         index_values, index_list = self.create_custom_set(
-            ["set_transport_technologies", "set_edges", "set_time_steps_yearly"]
+            ["set_transport_technologies", "set_edges", "set_years"]
         )
         rules.constraint_transport_technology_capex(index_values, index_list)

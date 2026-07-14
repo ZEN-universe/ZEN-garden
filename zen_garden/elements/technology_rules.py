@@ -267,24 +267,22 @@ class TechnologyRules(GenericRule):
                 ): 1
                 for t, y in itertools.product(
                     self.zen_model.sets["set_technologies"],
-                    self.zen_model.sets["set_time_steps_yearly"],
+                    self.zen_model.sets["set_years"],
                 )
             }
         )
         investment_time.index.names = [
             "set_technologies",
-            "set_time_steps_yearly",
+            "set_years",
             "set_time_steps_construction",
         ]
 
         # select masks
         mask_current_time_steps = investment_time.index.get_level_values(
             "set_time_steps_construction"
-        ).isin(self.zen_model.sets["set_time_steps_yearly"])
+        ).isin(self.zen_model.sets["set_years"])
         mask_existing_time_steps = (
-            investment_time.isin(
-                self.zen_model.sets["set_time_steps_yearly_entire_horizon"]
-            )
+            investment_time.isin(self.zen_model.sets["set_years_entire_horizon"])
             & ~mask_current_time_steps
         )
         # broadcast capacity investment and capacity investment existing
@@ -305,12 +303,10 @@ class TechnologyRules(GenericRule):
         )
         # gets the time steps where no investment can be made without the
         #   addition exceeding the horizon
-        investment_time_outside = (1 - investment_time_current).min(
-            "set_time_steps_yearly"
-        )
+        investment_time_outside = (1 - investment_time_current).min("set_years")
 
         capacity_investment = capacity_investment.rename(
-            {"set_time_steps_yearly": "set_time_steps_construction"}
+            {"set_years": "set_time_steps_construction"}
         )
         capacity_investment_addition = capacity_investment.broadcast_like(
             investment_time_current
@@ -319,7 +315,7 @@ class TechnologyRules(GenericRule):
             self.zen_model.parameters.capacity_investment_existing
         )
         capacity_investment_existing = capacity_investment_existing.rename(
-            {"set_time_steps_yearly_entire_horizon": "set_time_steps_construction"}
+            {"set_years_entire_horizon": "set_time_steps_construction"}
         ).broadcast_like(investment_time_existing)
 
         ### formulate constraint
@@ -399,14 +395,14 @@ class TechnologyRules(GenericRule):
                 (t, y, py)
                 for t, y in itertools.product(
                     self.zen_model.sets["set_technologies"],
-                    self.zen_model.sets["set_time_steps_yearly"],
+                    self.zen_model.sets["set_years"],
                 )
                 for py in list(self.get_lifetime_range(t, y))
             ],
             names=[
                 "set_technologies",
-                "set_time_steps_yearly",
-                "set_time_steps_yearly_prev",
+                "set_years",
+                "set_years_prev",
             ],
         )
         lt_range = pd.Series(index=lt_range, data=-1)
@@ -417,9 +413,9 @@ class TechnologyRules(GenericRule):
         )
         capacity_addition = self.zen_model.lp_model.variables[
             "capacity_addition"
-        ].rename({"set_time_steps_yearly": "set_time_steps_yearly_prev"})
+        ].rename({"set_years": "set_years_prev"})
         capacity_addition = capacity_addition.broadcast_like(lt_range)
-        expr = (lt_range * capacity_addition).sum("set_time_steps_yearly_prev")
+        expr = (lt_range * capacity_addition).sum("set_years_prev")
         lhs = lp.merge(
             [1 * self.zen_model.lp_model.variables["capacity"], expr],
             compat="broadcast_equals",
@@ -525,12 +521,12 @@ class TechnologyRules(GenericRule):
             [
                 (y, py)
                 for y, py in itertools.product(
-                    self.zen_model.sets["set_time_steps_yearly"],
-                    self.zen_model.sets["set_time_steps_yearly"],
+                    self.zen_model.sets["set_years"],
+                    self.zen_model.sets["set_years"],
                 )
                 if py < y
             ],
-            names=["set_time_steps_yearly", "set_time_steps_yearly_prev"],
+            names=["set_years", "set_years_prev"],
         )
         # only formulate term_knowledge if there are previous years
         term_knowledge_no_spillover = capacity_addition.where(
@@ -545,18 +541,18 @@ class TechnologyRules(GenericRule):
                 for y, py in years
             }
             kdr = pd.Series(kdr)
-            kdr.index.names = ["set_time_steps_yearly", "set_time_steps_yearly_prev"]
+            kdr.index.names = ["set_years", "set_years_prev"]
             kdr = kdr.to_xarray().fillna(0)
 
             years = pd.Series(index=years, data=1)
             years = years.to_xarray().fillna(0)
             # expand and sum capacity addition over all nodes for spillover
             capacity_addition_years = capacity_addition.rename(
-                {"set_time_steps_yearly": "set_time_steps_yearly_prev"}
+                {"set_years": "set_years_prev"}
             ).broadcast_like(years)
             kdr = kdr.broadcast_like(capacity_addition_years.lower)
             term_knowledge_no_spillover = tdr * (capacity_addition_years * kdr).sum(
-                "set_time_steps_yearly_prev"
+                "set_years_prev"
             )
             # if spillover rate is not inf, calculate term knowledge with spillover
             if spillover_rate != np.inf:
@@ -583,9 +579,7 @@ class TechnologyRules(GenericRule):
                 sr = sr.where(mask_technology_type, 0).where(mask_location, 0)
                 # annual knowledge addition
                 term_knowledge = capacity_addition_years + sr * term_spillover
-                term_knowledge = tdr * (term_knowledge * kdr).sum(
-                    "set_time_steps_yearly_prev"
-                )
+                term_knowledge = tdr * (term_knowledge * kdr).sum("set_years_prev")
         # unbounded market share --> only for same technology class
         capacity_previous = self.zen_model.lp_model.variables["capacity_previous"]
         market_share_unbounded = {
@@ -621,9 +615,7 @@ class TechnologyRules(GenericRule):
         )
         # existing capacities
         delta_years = interval_between_years * (
-            capacity_addition.coords["set_time_steps_yearly"]
-            - 1
-            - self.energy_system.set_time_steps_yearly[0]
+            capacity_addition.coords["set_years"] - 1 - self.energy_system.set_years[0]
         )
         lifetime_existing = self.zen_model.parameters.lifetime_existing
         lifetime = self.zen_model.parameters.lifetime
@@ -752,9 +744,7 @@ class TechnologyRules(GenericRule):
         lt_range = pd.MultiIndex.from_tuples(
             [
                 (t, y, py)
-                for t, y in index.get_unique(
-                    ["set_technologies", "set_time_steps_yearly"]
-                )
+                for t, y in index.get_unique(["set_technologies", "set_years"])
                 for py in list(
                     self.get_lifetime_range(t, y, use_depreciation_time=True)
                 )
@@ -764,8 +754,8 @@ class TechnologyRules(GenericRule):
         lt_range = pd.Series(index=lt_range, data=-1)
         lt_range.index.names = [
             "set_technologies",
-            "set_time_steps_yearly",
-            "set_time_steps_yearly_prev",
+            "set_years",
+            "set_years_prev",
         ]
         lt_range = (
             lt_range.to_xarray()
@@ -775,9 +765,9 @@ class TechnologyRules(GenericRule):
 
         cost_capex_overnight = self.zen_model.lp_model.variables[
             "cost_capex_overnight"
-        ].rename({"set_time_steps_yearly": "set_time_steps_yearly_prev"})
+        ].rename({"set_years": "set_years_prev"})
         cost_capex_overnight = cost_capex_overnight.broadcast_like(lt_range)
-        expr = (lt_range * a * cost_capex_overnight).sum("set_time_steps_yearly_prev")
+        expr = (lt_range * a * cost_capex_overnight).sum("set_years_prev")
         lhs = lp.merge(
             [1 * self.zen_model.lp_model.variables["cost_capex_yearly"], expr],
             compat="broadcast_equals",
@@ -818,10 +808,10 @@ class TechnologyRules(GenericRule):
             y: self.zen_model.parameters.time_steps_operation_duration.loc[
                 self.time_steps.get_time_steps_year2operation(y)
             ].to_series()
-            for y in self.zen_model.sets["set_time_steps_yearly"]
+            for y in self.zen_model.sets["set_years"]
         }
         times = pd.concat(times_dict, keys=times_dict.keys())
-        times.index.names = ["set_time_steps_yearly", "set_time_steps_operation"]
+        times.index.names = ["set_years", "set_time_steps_operation"]
         times = times.to_xarray().broadcast_like(
             self.zen_model.lp_model.variables["cost_opex_variable"].mask
         )
@@ -916,7 +906,7 @@ class TechnologyRules(GenericRule):
         # params and variables
         min_load = self.zen_model.parameters.min_load
         capacity = self.zen_model.lp_model.variables["capacity"].sel(
-            {"set_capacity_types": "power", "set_time_steps_yearly": time_step_year}
+            {"set_capacity_types": "power", "set_years": time_step_year}
         )
         big_M = capacity.upper
         binary = self.zen_model.lp_model.variables["tech_on_var"]
@@ -1027,7 +1017,7 @@ class TechnologyRules(GenericRule):
         )
         first_lifetime_year = max(
             first_lifetime_year,
-            cast(int, self.zen_model.sets["set_time_steps_yearly"][0]),
+            cast(int, self.zen_model.sets["set_years"][0]),
         )
         return range(first_lifetime_year, year + 1)
 

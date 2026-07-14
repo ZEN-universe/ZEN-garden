@@ -1,4 +1,4 @@
-"""Functions to extract the input data from the provided input files."""
+﻿"""Functions to extract the input data from the provided input files."""
 
 import copy
 import json
@@ -12,13 +12,12 @@ import numpy as np
 import pandas as pd
 from scipy.stats import linregress
 
-from zen_garden.default_config import HeaderDataInputs
+from zen_garden.elements.energy_system import TIME_STEP_TYPES
 
 if TYPE_CHECKING:
     from zen_garden.elements.element import Element
     from zen_garden.elements.energy_system import EnergySystem
     from zen_garden.model.config import Config
-    from zen_garden.model.time_steps import TimeStepsDicts
     from zen_garden.preprocess.unit_handling import UnitHandling
     from zen_garden.services.scenario_dict import ScenarioDict
     from zen_garden.types import YearSpecificTs
@@ -88,8 +87,8 @@ class DataInput:
         file_name,
         index_sets,
         unit_category,
-        time_steps: str | None = None,
         subelement=None,
+        time_steps: str | None = None,
     ):
         """Reads input data and restructures the dataframe to return
         (multi)indexed dict.
@@ -99,18 +98,23 @@ class DataInput:
             index_sets: index sets of attribute. Creates (multi)index.
                 Corresponds to order in pe.Set/pe.Param
             unit_category: dict defining the dimensions of the parameter's unit
-            time_steps: string specifying time_steps
             subelement: string specifying dependent element
+            time_step: string specifying the time step of the attribute
 
         Returns:
             dictionary with attribute values
         """
+        if time_steps is not None:
+            logging.warning(
+                "Deprecated: "
+                "The time_step argument is deprecated "
+                "and will be removed in future versions. "
+                "The value is ignored and is determined "
+                "automatically from the index_sets."
+            )
         # generic time steps
         yearly_variation = False
-        if not time_steps:
-            time_steps = "set_base_time_steps"
-        # if time steps are the yearly base time steps
-        elif time_steps == "set_base_time_steps_yearly":
+        if "set_hours" in index_sets:
             yearly_variation = True
             self.extract_yearly_variation(file_name, index_sets)
 
@@ -122,7 +126,6 @@ class DataInput:
                 index_sets,
                 unit_category,
                 file_name=file_name,
-                time_steps=time_steps,
                 manual_default_value=0,
             )
             return df_output
@@ -132,7 +135,6 @@ class DataInput:
                 index_sets,
                 unit_category,
                 file_name=file_name,
-                time_steps=time_steps,
                 manual_default_value=self.energy_system.set_haversine_distances_edges,
             )
         else:
@@ -140,7 +142,6 @@ class DataInput:
                 index_sets,
                 unit_category,
                 file_name=file_name,
-                time_steps=time_steps,
                 subelement=subelement,
             )
         # read input file
@@ -171,7 +172,7 @@ class DataInput:
                 file_name,
                 index_name_list,
                 default_value,
-                time_steps,
+                index_sets,
             )
             # overwrite parts of the output file with scenario specific data
             part_file_name = self.scenario_dict.get_param_part_file(
@@ -191,15 +192,15 @@ class DataInput:
                         file_name,
                         index_name_list,
                         default_value,
-                        time_steps,
+                        index_sets,
                     )
         # copy output data as otherwise overwritten
         df_output_generic = df_output.copy()
-        if time_steps == "set_base_time_steps_yearly":
+        if "set_hours" in index_sets:
             self._extract_year_specific_ts(
                 file_name,
                 index_name_list,
-                time_steps,
+                index_sets,
                 subelement,
                 default_value,
                 df_output_generic=df_output,
@@ -214,7 +215,7 @@ class DataInput:
         file_name,
         index_name_list,
         default_value,
-        time_steps: str | None,
+        index_sets: list[str],
     ):
         """Fills df_output with data from df_input.
 
@@ -223,12 +224,12 @@ class DataInput:
         :param file_name: name of selected file
         :param index_name_list: list of name of indices
         :param default_value: default for dataframe
-        :param time_steps: specific time_steps of element
+        :param index_sets: index sets of attribute
         :return: df_output: filled output dataframe
         """
         df_output_copy = copy.deepcopy(df_output)
         df_input = self._convert_real_to_generic_time_indices(
-            df_input, time_steps, file_name, index_name_list
+            df_input, index_sets, file_name, index_name_list
         )
 
         assert df_input.columns is not None, f"Input file '{file_name}' has no columns"
@@ -568,7 +569,7 @@ class DataInput:
         self,
         file_name,
         index_name_list,
-        time_steps: str,
+        index_sets: list[str],
         subelement,
         default_value,
         df_output_generic,
@@ -579,26 +580,17 @@ class DataInput:
         :param file_name: name of selected file
         :param index_name_list: list of name of indices
         :param default_value: default for dataframe
-        :param time_steps: specific time_steps of element
+        :param index_sets: index sets of attribute
         :param subelement: string specifying dependent element
         :param df_output_generic: original/generic time series data (base case)
         """
         # years of optimization model
-        years = [
-            str(year)
-            for year in range(
-                self.config.system.reference_year,
-                self.config.system.reference_year
-                + self.config.system.optimized_years
-                * self.config.system.interval_between_years,
-                self.config.system.interval_between_years,
-            )
-        ]
+        years = self.energy_system.set_time_steps_years
         # files to check
         file_names = os.listdir(self.folder_path)
         for file in file_names:
             for i, year in enumerate(years):
-                filename = file_name + "_" + year
+                filename = file_name + "_" + str(year)
                 if filename not in file:
                     continue
 
@@ -620,22 +612,13 @@ class DataInput:
                         file_name,
                         index_name_list,
                         default_value,
-                        time_steps,
+                        index_sets,
                     )
                 if i not in self.year_specific_ts:
                     self.year_specific_ts[i] = {}
                 self.year_specific_ts[i][(self.element.name, file_name)] = (
                     df_output_specific * scenario_factor
                 )
-                # try:
-                #     self.year_specific_ts[i][
-                #         (self.element.name, file_name)
-                #     ] = df_output_specific * scenario_factor
-                # except Exception:
-                #     self.year_specific_ts[i] = {}
-                #     self.year_specific_ts[i][
-                #         (self.element.name, file_name)
-                #     ] = df_output_specific * scenario_factor
 
     def extract_yearly_variation(self, file_name, index_sets):
         """Reads the yearly variation of a time dependent quantity.
@@ -648,8 +631,8 @@ class DataInput:
         # remove intra-yearly time steps from index set and add inter-yearly
         # time steps
         index_sets = copy.deepcopy(index_sets)
-        index_sets.remove("set_time_steps")
-        index_sets.append("set_time_steps_yearly")
+        index_sets.remove("set_hours")
+        index_sets.append("set_years")
         # add Yearly_variation to file_name
         file_name += "_yearly_variation"
         # read input data
@@ -678,7 +661,7 @@ class DataInput:
                 file_name,
                 index_name_list,
                 default_value,
-                time_steps="set_time_steps_yearly",
+                index_sets,
             )
             # apply the scenario_factor
             df_output = df_output * scenario_factor
@@ -829,7 +812,7 @@ class DataInput:
         Returns:
             df_output: return existing capacity and existing lifetime
         """
-        index_list, index_name_list = self.construct_index_list(index_sets, None)
+        index_list, index_name_list = self.construct_index_list(index_sets)
         multiidx = pd.MultiIndex.from_product(index_list, names=index_name_list)
         df_output = pd.Series(index=multiidx, data=0, dtype=int)
         # if no existing capacities
@@ -847,7 +830,7 @@ class DataInput:
                 "year_construction",
                 index_name_list,
                 default_value=0,
-                time_steps=None,
+                index_sets=index_sets,
             )
             # get reference year
             reference_year = self.config.system.reference_year
@@ -865,8 +848,7 @@ class DataInput:
         :return: pwa_dict: dictionary with pwa parameters
         """
         attribute_name = "capex_specific_conversion"
-        index_sets = ["set_nodes", "set_time_steps_yearly"]
-        time_steps = "set_time_steps_yearly"
+        index_sets = ["set_nodes", "set_years"]
         unit_category = {"money": 1, "energy_quantity": -1, "time": 1}
         # import all input data
         df_input_nonlinear, has_unit_nonlinear = self.read_pwa_capex_files()
@@ -931,7 +913,6 @@ class DataInput:
                         linear_dict[value_variable] = self.create_default_output(
                             index_sets=index_sets,
                             unit_category=unit_category,
-                            time_steps=time_steps,
                             manual_default_value=slope_lin_reg,
                         )[0]
                     else:
@@ -995,7 +976,6 @@ class DataInput:
             linear_dict["capex"] = self.extract_input_data(
                 attribute_name,
                 index_sets=index_sets,
-                time_steps=time_steps,
                 unit_category=unit_category,
             )
             return linear_dict, is_pwa
@@ -1039,7 +1019,6 @@ class DataInput:
         index_sets,
         unit_category,
         file_name=None,
-        time_steps: str | None = None,
         manual_default_value=None,
         subelement=None,
     ):
@@ -1050,13 +1029,12 @@ class DataInput:
                 Corresponds to order in pe.Set/pe.Param
             unit_category: dict defining the dimensions of the parameter's unit
             file_name: name of selected file.
-            time_steps: specific time_steps of subelement
             manual_default_value: if given, use manual_default_value instead
                 of searching for default value in attributes.json
             subelement: dependent element for which data is extracted
         """
         # select index
-        index_list, index_name_list = self.construct_index_list(index_sets, time_steps)
+        index_list, index_name_list = self.construct_index_list(index_sets)
         # create pd.MultiIndex and select data
         if index_sets:
             index_multi_index = pd.MultiIndex.from_product(
@@ -1092,9 +1070,7 @@ class DataInput:
             )
         return df_output, default_value, index_name_list
 
-    def construct_index_list(
-        self, index_sets, time_steps: str | None
-    ) -> "tuple[list[TimeStepsDicts], list[HeaderDataInputs]]":
+    def construct_index_list(self, index_sets):
         """Constructs index list from index sets and returns list of indices and
         list of index names.
 
@@ -1111,8 +1087,8 @@ class DataInput:
         # add rest of indices
         for index in index_sets:
             index_name_list.append(self.index_names[index])
-            if "set_time_steps" in index and time_steps:
-                index_list.append(getattr(self.energy_system, time_steps))
+            if index in TIME_STEP_TYPES:
+                index_list.append(getattr(self.energy_system, index))
             elif index == "set_technologies_existing":
                 index_list.append(self.element.set_technologies_existing)
             elif index in self.config.system:
@@ -1124,22 +1100,23 @@ class DataInput:
         return index_list, index_name_list
 
     def _convert_real_to_generic_time_indices(
-        self, df_input, time_steps: str | None, file_name, index_name_list
+        self, df_input, index_sets, file_name, index_name_list
     ):
         """Convert yearly time indices to generic time indices.
 
         :param df_input: raw input dataframe
-        :param time_steps: specific time_steps of element
+        :param index_sets: index sets of attribute
         :param file_name: name of selected file
         :param index_name_list: list of name of indices
         :return: df_input: input dataframe with generic time indices
         """
+        yearly_ts = next(
+            (s for s in index_sets if s in {"set_years", "set_years_entire_horizon"}),
+            None,
+        )
         # check if input data is time-dependent and has yearly time steps
-        idx_name_year = self.index_names["set_time_steps_yearly"]
-        if (
-            time_steps == "set_time_steps_yearly"
-            or time_steps == "set_time_steps_yearly_entire_horizon"
-        ):
+        idx_name_year = self.index_names["set_years"]
+        if yearly_ts is not None:
             # check if temporal header of input data is still given as 'time'
             # instead of 'year'
             if "time" in df_input.axes[1]:
@@ -1151,11 +1128,7 @@ class DataInput:
                     stacklevel=2,
                 )
                 df_input = df_input.rename(
-                    {
-                        self.index_names["set_time_steps"]: self.index_names[
-                            "set_time_steps_yearly"
-                        ]
-                    },
+                    {self.index_names["set_hours"]: self.index_names["set_years"]},
                     axis=1,
                 )
             # does not contain annual index
@@ -1170,7 +1143,7 @@ class DataInput:
                         col: int(col) for col in df_input.columns if col.isnumeric()
                     }
                 )
-                requested_index_values = set(getattr(self.energy_system, time_steps))
+                requested_index_values = set(getattr(self.energy_system, yearly_ts))
                 requested_index_values_years = set(
                     self.energy_system.set_time_steps_years
                 )
@@ -1193,7 +1166,7 @@ class DataInput:
                 df_input = df_input[list(requested_index_values)].stack()
                 df_input = df_input.reset_index()
             # check if input data is still given with generic time indices
-            temporal_header = self.index_names["set_time_steps_yearly"]
+            temporal_header = self.index_names["set_years"]
             if (
                 max(df_input.loc[:, temporal_header])
                 < self.config.analysis.earliest_year_of_data
@@ -1208,14 +1181,14 @@ class DataInput:
                 )
                 return df_input
             # assert that correct temporal index_set to get corresponding
-            # index_name is given (i.e. set_time_steps_yearly for input data
+            # index_name is given (i.e. set_years for input data
             # with yearly time steps)(otherwise _extract_general_input_data()
             # will find a missing_index)
             assert temporal_header in index_name_list, (
                 "Input data with yearly time steps and therefore the temporal "
                 "header 'year' needs to be extracted with "
-                "index_sets=['set_time_steps_yearly'] instead of "
-                "index_sets=['set_time_steps']"
+                "index_sets=['set_years'] instead of "
+                "index_sets=['set_hours']"
             )
             # set index
             index_names_column = df_input.columns.intersection(
@@ -1289,7 +1262,7 @@ class DataInput:
                 year: step
                 for year, step in zip(
                     self.energy_system.set_time_steps_years,
-                    getattr(self.energy_system, time_steps),
+                    getattr(self.energy_system, yearly_ts),
                     strict=False,
                 )
             }

@@ -25,6 +25,13 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
+TIME_STEP_TYPES = [
+    "set_hours_all_years",
+    "set_hours",
+    "set_years",
+    "set_years_entire_horizon",
+]
+
 
 class EnergySystem:
     """Class defining a standard energy system."""
@@ -81,24 +88,22 @@ class EnergySystem:
         )
         self.set_technologies = self.config.system.set_technologies
         # base time steps
-        self.set_base_time_steps = list(
+        self.set_hours_all_years = list(
             range(
                 0,
                 self.config.system.unaggregated_time_steps_per_year
                 * self.config.system.optimized_years,
             )
         )
-        self.set_base_time_steps_yearly = list(
+        self.set_hours = list(
             range(0, self.config.system.unaggregated_time_steps_per_year)
         )
 
         # yearly time steps
-        self.set_time_steps_yearly = list(range(self.config.system.optimized_years))
-        self.set_time_steps_yearly_entire_horizon = copy.deepcopy(
-            self.set_time_steps_yearly
-        )
+        self.set_years = list(range(self.config.system.optimized_years))
+        self.set_years_entire_horizon = copy.deepcopy(self.set_years)
         time_steps_yearly_duration = self.time_steps.calculate_time_step_duration(
-            self.set_time_steps_yearly, self.set_base_time_steps
+            self.set_years, self.set_hours_all_years
         )
         self.sequence_time_steps_yearly = np.concatenate(
             [
@@ -139,8 +144,7 @@ class EnergySystem:
         # carbon emissions limit
         self.carbon_emissions_annual_limit = self.data_input.extract_input_data(
             "carbon_emissions_annual_limit",
-            index_sets=["set_time_steps_yearly"],
-            time_steps="set_time_steps_yearly",
+            index_sets=["set_years"],
             unit_category={"emissions": 1},
         )
         _fraction_year = (
@@ -161,8 +165,7 @@ class EnergySystem:
         # price carbon emissions
         self.price_carbon_emissions = self.data_input.extract_input_data(
             "price_carbon_emissions",
-            index_sets=["set_time_steps_yearly"],
-            time_steps="set_time_steps_yearly",
+            index_sets=["set_years"],
             unit_category={"money": 1, "emissions": -1},
         )
         self.price_carbon_emissions_budget_overshoot = (

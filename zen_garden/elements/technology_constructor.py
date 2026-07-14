@@ -97,7 +97,7 @@ class TechnologyConstructor(ElementConstructor):
                 "set_technologies",
                 "set_capacity_types",
                 "set_location",
-                "set_time_steps_yearly_entire_horizon",
+                "set_years_entire_horizon",
             ],
             capacity_types=True,
             doc="Parameter specifying the size of the previously invested capacities",
@@ -165,7 +165,7 @@ class TechnologyConstructor(ElementConstructor):
                 "set_technologies",
                 "set_capacity_types",
                 "set_location",
-                "set_time_steps_yearly",
+                "set_years",
             ],
             capacity_types=True,
             doc="Parameter which specifies the fixed annual specific opex",
@@ -193,7 +193,7 @@ class TechnologyConstructor(ElementConstructor):
         # maximum diffusion rate, i.e., increase in capacity
         self.add_parameter(
             name="max_diffusion_rate",
-            index_names=["set_technologies", "set_time_steps_yearly"],
+            index_names=["set_technologies", "set_years"],
             doc="Parameter which specifies the maximum diffusion rate which is the "
             "maximum increase in capacity between investment steps",
         )
@@ -204,7 +204,7 @@ class TechnologyConstructor(ElementConstructor):
                 "set_technologies",
                 "set_capacity_types",
                 "set_location",
-                "set_time_steps_yearly",
+                "set_years",
             ],
             capacity_types=True,
             doc="Parameter which specifies the capacity limit of technologies",
@@ -216,7 +216,7 @@ class TechnologyConstructor(ElementConstructor):
                 "set_technologies",
                 "set_capacity_types",
                 "set_location",
-                "set_time_steps_yearly",
+                "set_years",
             ],
             capacity_types=True,
             doc="Parameter which specifies the lower capacity limit of technologies",
@@ -313,8 +313,7 @@ class TechnologyConstructor(ElementConstructor):
                         ]
 
                 capacity_addition_max = (
-                    len(sets["set_time_steps_yearly"])
-                    * capacity_addition_max[tech, capacity_type]
+                    len(sets["set_years"]) * capacity_addition_max[tech, capacity_type]
                 )
                 max_capacity_limit = capacity_limit[tech, capacity_type, loc, time]
                 bound_capacity = min(
@@ -337,7 +336,7 @@ class TechnologyConstructor(ElementConstructor):
                     "set_technologies",
                     "set_capacity_types",
                     "set_location",
-                    "set_time_steps_yearly",
+                    "set_years",
                 ],
             ),
             bounds=capacity_bounds,
@@ -352,7 +351,7 @@ class TechnologyConstructor(ElementConstructor):
                     "set_technologies",
                     "set_capacity_types",
                     "set_location",
-                    "set_time_steps_yearly",
+                    "set_years",
                 ],
             ),
             bounds=(0, np.inf),
@@ -367,7 +366,7 @@ class TechnologyConstructor(ElementConstructor):
                     "set_technologies",
                     "set_capacity_types",
                     "set_location",
-                    "set_time_steps_yearly",
+                    "set_years",
                 ],
             ),
             bounds=(0, np.inf),
@@ -383,7 +382,7 @@ class TechnologyConstructor(ElementConstructor):
                     "set_technologies",
                     "set_capacity_types",
                     "set_location",
-                    "set_time_steps_yearly",
+                    "set_years",
                 ],
             ),
             bounds=(0, np.inf),
@@ -398,7 +397,7 @@ class TechnologyConstructor(ElementConstructor):
                     "set_technologies",
                     "set_capacity_types",
                     "set_location",
-                    "set_time_steps_yearly",
+                    "set_years",
                 ],
             ),
             bounds=(0, np.inf),
@@ -413,7 +412,7 @@ class TechnologyConstructor(ElementConstructor):
                     "set_technologies",
                     "set_capacity_types",
                     "set_location",
-                    "set_time_steps_yearly",
+                    "set_years",
                 ],
             ),
             bounds=(0, np.inf),
@@ -423,7 +422,7 @@ class TechnologyConstructor(ElementConstructor):
         # total capex
         variables.add_variable(
             name="cost_capex_yearly_total",
-            index_sets=sets["set_time_steps_yearly"],
+            index_sets=sets["set_years"],
             bounds=(0, np.inf),
             doc="total capex for installing all technologies in all locations "
             "at all times",
@@ -442,7 +441,7 @@ class TechnologyConstructor(ElementConstructor):
         # total opex
         variables.add_variable(
             name="cost_opex_yearly_total",
-            index_sets=sets["set_time_steps_yearly"],
+            index_sets=sets["set_years"],
             bounds=(0, np.inf),
             doc="total opex all technologies and locations in year y",
             unit_category={"money": 1},
@@ -451,7 +450,7 @@ class TechnologyConstructor(ElementConstructor):
         variables.add_variable(
             name="cost_opex_yearly",
             index_sets=self.create_custom_set(
-                ["set_technologies", "set_location", "set_time_steps_yearly"],
+                ["set_technologies", "set_location", "set_years"],
             ),
             bounds=(0, np.inf),
             doc="yearly opex for operating technology at location l and year y",
@@ -469,7 +468,7 @@ class TechnologyConstructor(ElementConstructor):
         # total carbon emissions technology
         variables.add_variable(
             name="carbon_emissions_technology_total",
-            index_sets=sets["set_time_steps_yearly"],
+            index_sets=sets["set_years"],
             doc="total carbon emissions for operating technology",
             unit_category={"emissions": 1},
         )
@@ -490,7 +489,7 @@ class TechnologyConstructor(ElementConstructor):
                         "set_technologies",
                         "set_capacity_types",
                         "set_location",
-                        "set_time_steps_yearly",
+                        "set_years",
                     ],
                 ),
                 binary=True,
@@ -521,7 +520,7 @@ class TechnologyConstructor(ElementConstructor):
         )
         mask_nonzero_cap_limit = (
             self.zen_model.parameters.capacity_limit.sel(
-                {"set_capacity_types": "power", "set_time_steps_yearly": time_step_year}
+                {"set_capacity_types": "power", "set_years": time_step_year}
             )
             != 0
         )
@@ -590,7 +589,7 @@ class TechnologyConstructor(ElementConstructor):
                 "set_technologies",
                 "set_capacity_types",
                 "set_location",
-                "set_time_steps_yearly",
+                "set_years",
             ],
         )
         rules.constraint_cost_capex_yearly(ZenIndex(index_values, index_names))
@@ -626,7 +625,7 @@ class TechnologyConstructor(ElementConstructor):
         mask = xr.DataArray(
             False,
             coords=[
-                model.variables.coords["set_time_steps_yearly"],
+                model.variables.coords["set_years"],
                 model.variables.coords["set_technologies"],
                 model.variables.coords["set_capacity_types"],
                 model.variables.coords["set_location"],
@@ -661,7 +660,7 @@ class TechnologyConstructor(ElementConstructor):
                 "set_technologies",
                 "set_capacity_types",
                 "set_location",
-                "set_time_steps_yearly",
+                "set_years",
             ],
         )
         index = ZenIndex(index_values, index_names)
@@ -687,7 +686,7 @@ class TechnologyConstructor(ElementConstructor):
                 "set_technologies",
                 "set_capacity_types",
                 "set_location",
-                "set_time_steps_yearly",
+                "set_years",
             ]
         )
         # get all the capacities
@@ -764,7 +763,7 @@ class TechnologyConstructor(ElementConstructor):
         lifetime = params.lifetime[tech]
         delta_lifetime = lifetime_existing - lifetime
         # reference year of current optimization horizon
-        current_year_horizon = self.energy_system.set_time_steps_yearly[0]
+        current_year_horizon = self.energy_system.set_years[0]
         if delta_lifetime >= 0:
             cutoff_year = (
                 year - current_year_horizon

@@ -1,4 +1,4 @@
-.. _adding_elements.structure:
+﻿.. _adding_elements.structure:
 
 ###################################################
 Adding Sets, Parameters, Variables, and Constraints
@@ -72,8 +72,8 @@ For example, if you want to add a parameter for the yearly import availability o
 .. code-block:: python
 
     self.availability_import_yearly = self.data_input.extract_input_data(
-        "availability_import_yearly", index_sets=["set_nodes", "set_time_steps_yearly"],
-        time_steps="set_time_steps_yearly", unit_category={"energy_quantity": 1})
+        "availability_import_yearly", index_sets=["set_nodes", "set_years"],
+        time_steps="set_years", unit_category={"energy_quantity": 1})
 
 .. note::
 
@@ -83,7 +83,7 @@ For example, if you want to add a parameter for the yearly import availability o
 
 First, the name of the parameter is defined, in this case ``availability_import_yearly``.
 Then, the ``index_sets``, i.e., the sets that the parameter is indexed by, are defined.
-In this case, the parameter is indexed by ``set_nodes`` and ``set_time_steps_yearly``
+In this case, the parameter is indexed by ``set_nodes`` and ``set_years``
 (which are the years of the optimization problem).
 If a time step type is specified, the ``time_steps`` parameter is set
 to the set of time steps that the parameter is defined for.
@@ -114,7 +114,7 @@ The ``add_parameter`` method is called in the following way:
 
     optimization_setup.parameters.add_parameter(
         name="availability_import_yearly",
-        index_names=["set_carriers", "set_nodes", "set_time_steps_yearly"],
+        index_names=["set_carriers", "set_nodes", "set_years"],
         doc='Parameter which specifies the maximum energy that can be imported from outside the system boundaries for the entire year',
         calling_class=cls)
 
@@ -186,7 +186,7 @@ The ``add_variable`` method is called in the following way:
 First, the ``model`` parameter is passed, which is the linopy model that the variable will be added to.
 Then, the ``name`` of the variable is defined, in this case ``flow_import``.
 The ``index_sets`` parameter is set to a custom set that is created with the ``create_custom_set`` method.
-In case that a single set is used, it can be passed directly: ``index_sets=sets["set_time_steps_yearly"]``.
+In case that a single set is used, it can be passed directly: ``index_sets=sets["set_years"]``.
 The ``bounds`` parameter is set to ``(0, np.inf)``, which means that the variable can take any non-negative value.
 If you do not specify the bounds, the variable will be unbounded.
 The ``unit_category`` parameter is a dictionary that defines the unit of the variable.

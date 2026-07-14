@@ -77,20 +77,20 @@ class EnergySystemConstructor:
         self.zen_model.indexing_sets.append("set_elements")
         # time-steps
         self.zen_model.sets.add_set(
-            name="set_base_time_steps",
-            data=self.energy_system.set_base_time_steps,
+            name="set_hours_all_years",
+            data=self.energy_system.set_hours_all_years,
             doc="Set of base time-steps",
         )
         # yearly time steps
         self.zen_model.sets.add_set(
-            name="set_time_steps_yearly",
-            data=self.energy_system.set_time_steps_yearly,
+            name="set_years",
+            data=self.energy_system.set_years,
             doc="Set of yearly time-steps",
         )
         # yearly time steps of entire optimization horizon
         self.zen_model.sets.add_set(
-            name="set_time_steps_yearly_entire_horizon",
-            data=self.energy_system.set_time_steps_yearly_entire_horizon,
+            name="set_years_entire_horizon",
+            data=self.energy_system.set_years_entire_horizon,
             doc="Set of yearly time-steps of entire optimization horizon",
         )
         # operational time steps
@@ -130,7 +130,7 @@ class EnergySystemConstructor:
         # carbon emissions limit
         self._add_parameter(
             name="carbon_emissions_annual_limit",
-            set_time_steps="set_time_steps_yearly",
+            set_time_steps="set_years",
             doc="Parameter which specifies the total limit on carbon emissions",
         )
         # carbon emissions budget
@@ -147,7 +147,7 @@ class EnergySystemConstructor:
         # carbon price
         self._add_parameter(
             name="price_carbon_emissions",
-            set_time_steps="set_time_steps_yearly",
+            set_time_steps="set_years",
             doc="Parameter which specifies the yearly carbon price",
         )
         # carbon price of budget overshoot
@@ -183,21 +183,21 @@ class EnergySystemConstructor:
         # carbon emissions
         self.zen_model.variables.add_variable(
             name="carbon_emissions_annual",
-            index_sets=self.zen_model.sets["set_time_steps_yearly"],
+            index_sets=self.zen_model.sets["set_years"],
             doc="annual carbon emissions of energy system",
             unit_category={"emissions": 1},
         )
         # cumulative carbon emissions
         self.zen_model.variables.add_variable(
             name="carbon_emissions_cumulative",
-            index_sets=self.zen_model.sets["set_time_steps_yearly"],
+            index_sets=self.zen_model.sets["set_years"],
             doc="cumulative carbon emissions of energy system over time for each year",
             unit_category={"emissions": 1},
         )
         # carbon emission overshoot
         self.zen_model.variables.add_variable(
             name="carbon_emissions_budget_overshoot",
-            index_sets=self.zen_model.sets["set_time_steps_yearly"],
+            index_sets=self.zen_model.sets["set_years"],
             bounds=(0, np.inf),
             doc="overshoot carbon emissions of energy system "
             "at the end of the time horizon",
@@ -206,7 +206,7 @@ class EnergySystemConstructor:
         # carbon emission overshoot
         self.zen_model.variables.add_variable(
             name="carbon_emissions_annual_overshoot",
-            index_sets=self.zen_model.sets["set_time_steps_yearly"],
+            index_sets=self.zen_model.sets["set_years"],
             bounds=(0, np.inf),
             doc="overshoot of the annual carbon emissions limit of energy system",
             unit_category={"emissions": 1},
@@ -214,21 +214,21 @@ class EnergySystemConstructor:
         # cost of carbon emissions
         self.zen_model.variables.add_variable(
             name="cost_carbon_emissions_total",
-            index_sets=self.zen_model.sets["set_time_steps_yearly"],
+            index_sets=self.zen_model.sets["set_years"],
             doc="total cost of carbon emissions of energy system",
             unit_category={"money": 1},
         )
         # costs
         self.zen_model.variables.add_variable(
             name="cost_total",
-            index_sets=self.zen_model.sets["set_time_steps_yearly"],
+            index_sets=self.zen_model.sets["set_years"],
             doc="total cost of energy system",
             unit_category={"money": 1},
         )
         # net_present_cost
         self.zen_model.variables.add_variable(
             name="net_present_cost",
-            index_sets=self.zen_model.sets["set_time_steps_yearly"],
+            index_sets=self.zen_model.sets["set_years"],
             doc="net_present_cost of energy system",
             unit_category={"money": 1},
         )

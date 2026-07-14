@@ -27,17 +27,17 @@ class EnergySystemRules(GenericRule):
 
         """
         m = [
-            True if year == self.energy_system.set_time_steps_yearly[0] else False
-            for year in self.energy_system.set_time_steps_yearly
+            True if year == self.energy_system.set_years[0] else False
+            for year in self.energy_system.set_years
         ]
 
         lhs = (
             self.zen_model.lp_model.variables["carbon_emissions_cumulative"]
             - self.zen_model.lp_model.variables["carbon_emissions_cumulative"].shift(
-                set_time_steps_yearly=1
+                set_years=1
             )
             - self.zen_model.lp_model.variables["carbon_emissions_annual"].shift(
-                set_time_steps_yearly=1
+                set_years=1
             )
             * (self.config.system.interval_between_years - 1)
             - self.zen_model.lp_model.variables["carbon_emissions_annual"]
@@ -89,8 +89,8 @@ class EnergySystemRules(GenericRule):
 
         """
         m = [
-            year != self.energy_system.set_time_steps_yearly_entire_horizon[-1]
-            for year in self.energy_system.set_time_steps_yearly
+            year != self.energy_system.set_years_entire_horizon[-1]
+            for year in self.energy_system.set_years
         ]
 
         lhs = (
@@ -121,10 +121,10 @@ class EnergySystemRules(GenericRule):
         :math:`dy`: interval between planning periods \n
 
         """
-        factor = pd.Series(index=self.energy_system.set_time_steps_yearly)
-        for year in self.energy_system.set_time_steps_yearly:
+        factor = pd.Series(index=self.energy_system.set_years)
+        for year in self.energy_system.set_years:
             ### auxiliary calculations
-            if year == self.energy_system.set_time_steps_yearly_entire_horizon[-1]:
+            if year == self.energy_system.set_years_entire_horizon[-1]:
                 interval_between_years = 1
             else:
                 interval_between_years = self.config.system.interval_between_years
@@ -134,7 +134,7 @@ class EnergySystemRules(GenericRule):
                     (1 / (1 + self.zen_model.parameters.discount_rate))
                     ** (
                         self.config.system.interval_between_years
-                        * (year - self.energy_system.set_time_steps_yearly[0])
+                        * (year - self.energy_system.set_years[0])
                         + _intermediate_time_step
                     )
                 )
@@ -249,8 +249,8 @@ class EnergySystemRules(GenericRule):
 
         """
         mask_last_year = [
-            year == self.energy_system.set_time_steps_yearly[-1]
-            for year in self.energy_system.set_time_steps_yearly
+            year == self.energy_system.set_years[-1]
+            for year in self.energy_system.set_years
         ]
 
         lhs = (
@@ -326,9 +326,7 @@ class EnergySystemRules(GenericRule):
         :param model: optimization model
         :return: net present cost objective function
         """
-        return self.zen_model.lp_model.variables["net_present_cost"].sum(
-            "set_time_steps_yearly"
-        )
+        return self.zen_model.lp_model.variables["net_present_cost"].sum("set_years")
 
     def objective_total_carbon_emissions(self):
         """Objective function to minimize total emissions.
@@ -344,6 +342,6 @@ class EnergySystemRules(GenericRule):
         """
         return (
             self.zen_model.lp_model.variables["carbon_emissions_cumulative"]
-            .at[self.zen_model.sets["set_time_steps_yearly"][-1]]
+            .at[self.zen_model.sets["set_years"][-1]]
             .to_linexpr()
         )

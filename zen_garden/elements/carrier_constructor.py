@@ -53,14 +53,14 @@ class CarrierConstructor(ElementConstructor):
         # availability of carrier
         self.add_parameter(
             name="availability_import_yearly",
-            index_names=["set_carriers", "set_nodes", "set_time_steps_yearly"],
+            index_names=["set_carriers", "set_nodes", "set_years"],
             doc="Parameter which specifies the maximum energy that can be imported "
             "from outside the system boundaries for the entire year",
         )
         # availability of carrier
         self.add_parameter(
             name="availability_export_yearly",
-            index_names=["set_carriers", "set_nodes", "set_time_steps_yearly"],
+            index_names=["set_carriers", "set_nodes", "set_years"],
             doc="Parameter which specifies the maximum energy that can be exported "
             "to outside the system boundaries for the entire year",
         )
@@ -85,13 +85,13 @@ class CarrierConstructor(ElementConstructor):
         # carbon intensity carrier import
         self.add_parameter(
             name="carbon_intensity_carrier_import",
-            index_names=["set_carriers", "set_nodes", "set_time_steps_yearly"],
+            index_names=["set_carriers", "set_nodes", "set_years"],
             doc="Parameter which specifies the carbon intensity of carrier import",
         )
         # carbon intensity carrier export
         self.add_parameter(
             name="carbon_intensity_carrier_export",
-            index_names=["set_carriers", "set_nodes", "set_time_steps_yearly"],
+            index_names=["set_carriers", "set_nodes", "set_years"],
             doc="Parameter which specifies the carbon intensity of carrier export",
         )
 
@@ -134,7 +134,7 @@ class CarrierConstructor(ElementConstructor):
         # total carrier import/export cost
         variables.add_variable(
             name="cost_carrier_total",
-            index_sets=sets["set_time_steps_yearly"],
+            index_sets=sets["set_years"],
             doc="total carrier cost due to import and export",
             unit_category={"money": 1},
         )
@@ -150,7 +150,7 @@ class CarrierConstructor(ElementConstructor):
         # carbon emissions carrier
         variables.add_variable(
             name="carbon_emissions_carrier_total",
-            index_sets=sets["set_time_steps_yearly"],
+            index_sets=sets["set_years"],
             doc="total carbon emissions of importing and exporting carrier",
             unit_category={"emissions": 1},
         )

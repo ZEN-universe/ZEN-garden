@@ -74,7 +74,7 @@ class ConversionTechnologyConstructor(ElementConstructor):
                 "set_conversion_technologies",
                 "set_capex_linear",
                 "set_nodes",
-                "set_time_steps_yearly",
+                "set_years",
             ],
         )
         self.zen_model.parameters.add_parameter(
@@ -100,7 +100,7 @@ class ConversionTechnologyConstructor(ElementConstructor):
             index_names=[
                 "set_conversion_technologies",
                 "set_nodes",
-                "set_time_steps_yearly",
+                "set_years",
             ],
             doc="Minimum full load hours as a fraction of the total hours "
             "per planning period",
@@ -221,7 +221,7 @@ class ConversionTechnologyConstructor(ElementConstructor):
         variables.add_variable(
             name="capacity_approximation",
             index_sets=self.create_custom_set(
-                ["set_conversion_technologies", "set_nodes", "set_time_steps_yearly"],
+                ["set_conversion_technologies", "set_nodes", "set_years"],
             ),
             bounds=(0, np.inf),
             doc="pwa variable for size of installed technology on edge i and time t",
@@ -231,7 +231,7 @@ class ConversionTechnologyConstructor(ElementConstructor):
         variables.add_variable(
             name="capex_approximation",
             index_sets=self.create_custom_set(
-                ["set_conversion_technologies", "set_nodes", "set_time_steps_yearly"],
+                ["set_conversion_technologies", "set_nodes", "set_years"],
             ),
             bounds=(0, np.inf),
             doc="pwa variable for capex for installing technology on edge i and time t",
@@ -263,7 +263,7 @@ class ConversionTechnologyConstructor(ElementConstructor):
                 "set_conversion_technologies",
                 "set_capex_pwa",
                 "set_nodes",
-                "set_time_steps_yearly",
+                "set_years",
             ],
         )
         set_linear_capex = self.create_custom_set(
@@ -271,7 +271,7 @@ class ConversionTechnologyConstructor(ElementConstructor):
                 "set_conversion_technologies",
                 "set_capex_linear",
                 "set_nodes",
-                "set_time_steps_yearly",
+                "set_years",
             ],
         )
         if len(set_pwa_capex[0]) > 0:

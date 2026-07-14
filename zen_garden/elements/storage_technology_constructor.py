@@ -46,7 +46,7 @@ class StorageTechnologyConstructor(ElementConstructor):
             index_names=[
                 "set_storage_technologies",
                 "set_nodes",
-                "set_time_steps_yearly",
+                "set_years",
             ],
             doc="efficiency during charging for storage technologies",
         )
@@ -56,7 +56,7 @@ class StorageTechnologyConstructor(ElementConstructor):
             index_names=[
                 "set_storage_technologies",
                 "set_nodes",
-                "set_time_steps_yearly",
+                "set_years",
             ],
             doc="efficiency during discharging for storage technologies",
         )
@@ -83,7 +83,7 @@ class StorageTechnologyConstructor(ElementConstructor):
                 "set_storage_technologies",
                 "set_capacity_types",
                 "set_nodes",
-                "set_time_steps_yearly",
+                "set_years",
             ],
             capacity_types=True,
             doc="specific capex of storage technologies",
@@ -205,7 +205,7 @@ class StorageTechnologyConstructor(ElementConstructor):
                 "set_storage_technologies",
                 "set_capacity_types",
                 "set_nodes",
-                "set_time_steps_yearly",
+                "set_years",
             ],
         )
         rules.constraint_storage_technology_capex(index_values, index_names)

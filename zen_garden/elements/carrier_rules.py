@@ -278,13 +278,13 @@ class CarrierRules(GenericRule):
                 times
             )
             * times
-        ).sum("set_time_steps_yearly")
+        ).sum("set_years")
         carbon_intensity_carrier_export = (
             self.zen_model.parameters.carbon_intensity_carrier_export.broadcast_like(
                 times
             )
             * times
-        ).sum("set_time_steps_yearly")
+        ).sum("set_years")
         lhs = self.zen_model.lp_model.variables["carbon_emissions_carrier"] - (
             self.zen_model.lp_model.variables["flow_import"]
             * carbon_intensity_carrier_import

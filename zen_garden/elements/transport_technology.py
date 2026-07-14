@@ -93,14 +93,12 @@ class TransportTechnology(Technology):
             # both capex terms must be specified
             self.capex_specific_transport = self.data_input.extract_input_data(
                 "capex_specific_transport",
-                index_sets=["set_edges", "set_time_steps_yearly"],
-                time_steps="set_time_steps_yearly",
+                index_sets=["set_edges", "set_years"],
                 unit_category={"money": 1, "energy_quantity": -1, "time": 1},
             )
             self.capex_per_distance_transport = self.data_input.extract_input_data(
                 "capex_per_distance_transport",
-                index_sets=["set_edges", "set_time_steps_yearly"],
-                time_steps="set_time_steps_yearly",
+                index_sets=["set_edges", "set_years"],
                 unit_category={"money": 1, "distance": -1},
             )
         else:
@@ -108,8 +106,7 @@ class TransportTechnology(Technology):
             if "capex_per_distance_transport" in self.data_input.attribute_dict:
                 self.capex_per_distance_transport = self.data_input.extract_input_data(
                     "capex_per_distance_transport",
-                    index_sets=["set_edges", "set_time_steps_yearly"],
-                    time_steps="set_time_steps_yearly",
+                    index_sets=["set_edges", "set_years"],
                     unit_category={
                         "money": 1,
                         "distance": -1,
@@ -123,8 +120,7 @@ class TransportTechnology(Technology):
             elif "capex_specific_transport" in self.data_input.attribute_dict:
                 self.capex_specific_transport = self.data_input.extract_input_data(
                     "capex_specific_transport",
-                    index_sets=["set_edges", "set_time_steps_yearly"],
-                    time_steps="set_time_steps_yearly",
+                    index_sets=["set_edges", "set_years"],
                     unit_category={"money": 1, "energy_quantity": -1, "time": 1},
                 )
             else:
@@ -137,7 +133,7 @@ class TransportTechnology(Technology):
         if "opex_specific_fixed_per_distance" in self.data_input.attribute_dict:
             self.opex_specific_fixed_per_distance = self.data_input.extract_input_data(
                 "opex_specific_fixed_per_distance",
-                index_sets=["set_edges", "set_time_steps_yearly"],
+                index_sets=["set_edges", "set_years"],
                 unit_category={
                     "money": 1,
                     "distance": -1,
@@ -151,8 +147,7 @@ class TransportTechnology(Technology):
         elif "opex_specific_fixed" in self.data_input.attribute_dict:
             self.opex_specific_fixed = self.data_input.extract_input_data(
                 "opex_specific_fixed",
-                index_sets=["set_edges", "set_time_steps_yearly"],
-                time_steps="set_time_steps_yearly",
+                index_sets=["set_edges", "set_years"],
                 unit_category={"money": 1, "energy_quantity": -1, "time": 1},
             )
         else:

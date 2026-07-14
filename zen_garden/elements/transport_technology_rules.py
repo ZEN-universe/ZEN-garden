@@ -198,9 +198,7 @@ class TransportTechnologyRules(GenericRule):
                 "set_transport_technologies"
             ],
             self.zen_model.parameters.capex_per_distance_transport.coords["set_edges"],
-            self.zen_model.parameters.capex_per_distance_transport.coords[
-                "set_time_steps_yearly"
-            ],
+            self.zen_model.parameters.capex_per_distance_transport.coords["set_years"],
         ]
 
         ### masks

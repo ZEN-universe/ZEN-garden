@@ -246,7 +246,7 @@ class ConversionTechnologyRules(GenericRule):
                     [
                         "set_conversion_technologies",
                         "set_nodes",
-                        "set_time_steps_yearly",
+                        "set_years",
                     ],
                     strict=False,
                 )
