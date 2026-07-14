@@ -60,12 +60,15 @@ class UnitHandling:
         """
         self.folder_path = folder_path
         self.rounding_decimal_points_units = rounding_decimal_points_units
-        self.get_base_units()
+        self.ureg = UnitRegistry()
+
         # dict of element attribute values
         self.dict_attribute_values = {}
         self.carrier_energy_quantities = {}
 
-    def get_base_units(self):
+        self._get_base_units()
+
+    def _get_base_units(self):
         """Extracts and initializes the base units of the energy system.
 
         This method loads unit definitions, processes them to extract base
@@ -82,7 +85,6 @@ class UnitHandling:
                 that can't be resolved.
         """
         _list_base_unit = self.extract_base_units()
-        self.ureg = UnitRegistry()
 
         # disable pint logger
         logging.getLogger("pint").setLevel(logging.CRITICAL)

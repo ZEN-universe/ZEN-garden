@@ -24,8 +24,6 @@ T = TypeVar("T", bound=Element)
 
 
 class ElementRegistry:
-    dict_elements: defaultdict[str, list[Element]] = defaultdict(list)
-
     def __init__(
         self,
         config: "Config",
@@ -45,6 +43,8 @@ class ElementRegistry:
         self.scenario_dict = scenario_dict
         self.time_steps = time_steps
         self.year_specific_ts = year_specific_ts
+
+        self.dict_elements: defaultdict[str, list[Element]] = defaultdict(list)
 
         self._register_elements()
 
