@@ -6,7 +6,7 @@ from collections import defaultdict
 import numpy as np
 import pytest
 
-from zen_garden import Results, run, compare_configs, compare_model_values
+from zen_garden import Results, compare_configs, compare_model_values, run
 from zen_garden.wrapper.operation_scenarios import operation_scenarios
 
 # fixtures
@@ -131,6 +131,7 @@ def check_get_total_get_full_ts(
     if get_doc:
         results.get_doc(test_variables[0])
 
+
 def check_comparison_functions(results: list[Results], scenarios: list[str]):
     """
     Tests the functionality of the Results comparison functions.
@@ -139,9 +140,12 @@ def check_comparison_functions(results: list[Results], scenarios: list[str]):
         results: List of Results instances
         scenarios: List of scenario names
     """
-    cc = compare_configs(results, scenarios)
-    cp = compare_model_values(results, component_type="parameter", scenarios=scenarios)
-    cv = compare_model_values(results, component_type="variable", scenarios=scenarios,compare_total=False)
+    _cc = compare_configs(results, scenarios)
+    _cp = compare_model_values(results, component_type="parameter", scenarios=scenarios)
+    _cv = compare_model_values(
+        results, component_type="variable", scenarios=scenarios, compare_total=False
+    )
+
 
 # All the tests
 ###############
@@ -732,4 +736,3 @@ def test_11a(folder_path):
 if __name__ == "__main__":
     folder_path = os.path.dirname(__file__)
     test_7b(folder_path)
-

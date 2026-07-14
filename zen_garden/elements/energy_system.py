@@ -25,13 +25,6 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-TIME_STEP_TYPES = [
-    "set_hours_all_years",
-    "set_hours",
-    "set_years",
-    "set_years_entire_horizon",
-]
-
 
 class EnergySystem:
     """Class defining a standard energy system."""

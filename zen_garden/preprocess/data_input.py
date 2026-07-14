@@ -12,8 +12,6 @@ import numpy as np
 import pandas as pd
 from scipy.stats import linregress
 
-from zen_garden.elements.energy_system import TIME_STEP_TYPES
-
 if TYPE_CHECKING:
     from zen_garden.elements.element import Element
     from zen_garden.elements.energy_system import EnergySystem
@@ -24,6 +22,13 @@ if TYPE_CHECKING:
     from zen_garden.utils.input_data_checks import InputDataChecks
 
 logger = logging.getLogger(__name__)
+
+TIME_STEP_TYPES = [
+    "set_hours_all_years",
+    "set_hours",
+    "set_years",
+    "set_years_entire_horizon",
+]
 
 PARAMETER_CHANGE_LOG = {
     "min_full_load_hours_fraction": {
