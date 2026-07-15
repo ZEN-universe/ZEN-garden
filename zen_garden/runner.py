@@ -93,6 +93,8 @@ def run(
     dataset=None,
     job_index=None,
     folder_output: str | None = None,
+    no_solve: bool = False,
+    log_level: str | int = logging.INFO,
 ):
     """Run ZEN-garden.
 
@@ -114,6 +116,12 @@ def run(
         job_index (list[int] | None): Indices of jobs (scenarios) to run.
             For example, ``job_index=[1]`` runs only the first scenario.
             Defaults to ``None`` (run all jobs).
+        no_solve (bool): If ``True``, the optimization problem will be
+            constructed but not solved. Defaults to ``False``.
+        log_level (str | int): Logging level. Can be specified as a string
+            (e.g. ``"INFO"``, ``"DEBUG"``, etc.) or as an integer
+            (e.g. ``logging.INFO``, ``logging.DEBUG``, etc.).
+            Defaults to ``logging.INFO``.
 
     Returns:
         OptimizationSetup: The fully set up and solved optimization problem.
@@ -123,7 +131,7 @@ def run(
         >>> download_example_dataset("1_base_case")
         >>> run("1_base_case")
     """
-    setup_logger()
+    setup_logger(log_level)
 
     config_path = config
     config = import_config(config_path)
@@ -157,8 +165,15 @@ def run(
             optimization_setup.construct_optimization_problem()
             optimization_setup.prepare_scaling()
 
+            if no_solve:
+                logger.info(
+                    "Optimization problem constructed but not solved "
+                    "(no_solve=True). Continue with next iteration."
+                )
+                continue
+
             # SOLVE THE OPTIMIZATION PROBLEM
-            optimization_setup.solve()
+            optimization_setup.solve(scenario)
 
             # break if infeasible
             if not optimization_setup.optimality:

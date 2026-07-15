@@ -125,7 +125,7 @@ class DataInput:
 
         # if existing capacities and existing capacities not used
         if (
-            file_name == "capacity_existing" or file_name == "capacity_existing_energy"
+            file_name in ["capacity_existing", "capacity_existing_energy"]
         ) and not self.config.system.use_capacities_existing:
             df_output, *_ = self.create_default_output(
                 index_sets,
@@ -413,7 +413,6 @@ class DataInput:
         filename, factor = self.scenario_dict.get_default(
             self.element.name, attribute_name
         )
-        factor = 1
 
         if filename != "attributes":
             attribute_dict = self.load_attribute_file(filename)

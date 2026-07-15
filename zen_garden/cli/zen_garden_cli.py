@@ -38,6 +38,13 @@ def build_parser() -> argparse.ArgumentParser:
             Name of the environment variable containing the job index.
             Defaults to ``SLURM_ARRAY_TASK_ID``.
 
+        --no_solve (bool, optional):
+            If set, the optimization problem will be constructed but not solved.
+            Useful for debugging or inspecting the model setup.
+
+        --log-level (str, optional):
+            Logging level for console output. Defaults to ``logging.INFO``.
+
     Returns:
         argparse.ArgumentParser: An argument parser configured for the
         ZEN-Garden command-line interface.
@@ -90,11 +97,24 @@ def build_parser() -> argparse.ArgumentParser:
         default="SLURM_ARRAY_TASK_ID",
         help="Environment variable for job index.",
     )
+    parser.add_argument(
+        "--no_solve",
+        action="store_true",
+        help="If set, the optimization problem will be constructed but not solved. "
+        "Useful for debugging or inspecting the model setup.",
+    )
+    parser.add_argument(
+        "--log-level",
+        type=str,
+        required=False,
+        default="INFO",
+        help="Logging level for console output.",
+    )
 
     return parser
 
 
-def resolve_job_index(job_index: str, job_index_var: str) -> list[int]:
+def resolve_job_index(job_index: str, job_index_var: str) -> list[int] | None:
     """Resolves the job index when running ZEN-garden from the command line.
 
     If the job index is directly specified using the ``job_index`` command-line
@@ -156,6 +176,13 @@ def create_zen_garden_cli():
             Name of the environment variable containing the job index.
             Defaults to ``SLURM_ARRAY_TASK_ID``.
 
+        --no_solve (bool, optional):
+            If set, the optimization problem will be constructed but not solved.
+            Useful for debugging or inspecting the model setup.
+
+        --log-level (str, optional):
+            Logging level for console output. Defaults to ``logging.INFO``.
+
     Returns:
         None
 
@@ -178,4 +205,6 @@ def create_zen_garden_cli():
         dataset=args.dataset,
         folder_output=args.folder_output,
         job_index=job_index,
+        no_solve=args.no_solve,
+        log_level=args.log_level,
     )

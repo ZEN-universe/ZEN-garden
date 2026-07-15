@@ -371,28 +371,35 @@ class Scaling:
                 logger.info("\n--- Analyze Numerics ---\n")
             else:
                 logger.info(f"\n--- Numerics at iteration {i} ---\n")
-            print("Max value of A matrix: " + cons_str_max)
-            print("Min value of A matrix: " + cons_str_min)
-            print("Max value of RHS: " + cons_rhs_max)
-            print("Min value of RHS: " + cons_rhs_min)
-            print("Numerical Range:")
-            print(
-                "LHS : {}".format(
-                    [format(A_abs[index_min], ".1e"), format(A_abs[index_max], ".1e")]
-                )
-            )
-            print(
-                "RHS : {}".format(
+            logger.info(
+                "\n".join(
                     [
-                        format(np.abs(self.rhs[rhs_min_index]), ".1e"),
-                        format(np.abs(self.rhs[rhs_max_index]), ".1e"),
+                        f"Max value of A matrix: {cons_str_max}",
+                        f"Min value of A matrix: {cons_str_min}",
+                        f"Max value of RHS: {cons_rhs_max}",
+                        f"Min value of RHS: {cons_rhs_min}",
+                        "Numerical Range:",
+                        f"    LHS : {
+                            [
+                                format(A_abs[index_min], '.1e'),
+                                format(A_abs[index_max], '.1e'),
+                            ]
+                        }",
+                        f"    RHS : {
+                            [
+                                format(np.abs(self.rhs[rhs_min_index]), '.1e'),
+                                format(np.abs(self.rhs[rhs_max_index]), '.1e'),
+                            ]
+                        }",
                     ]
                 )
             )
             if i > 0:
-                print("Numerical Range Improvement:")
-                print("LHS : {}".format(range_lhs - self.last_lhs_range))
-                print("RHS : {}".format(range_rhs - self.last_rhs_range))
+                logger.info(
+                    "Numerical Range Improvement:\n"
+                    f"    LHS : {range_lhs - self.last_lhs_range}\n"
+                    f"    RHS : {range_rhs - self.last_rhs_range}"
+                )
             self.last_lhs_range = range_lhs
             self.last_rhs_range = range_rhs
             return range_lhs, range_rhs

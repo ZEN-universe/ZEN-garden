@@ -19,7 +19,7 @@ from ordered_set import OrderedSet
 logger = logging.getLogger(__name__)
 
 
-def setup_logger(level=logging.INFO):
+def setup_logger(level: int | str = logging.INFO):
     """Set up logger.
 
     :param level: logging level
@@ -174,7 +174,7 @@ def download_example_dataset(dataset):
         )
 
     # print output
-    print(f"Example dataset {dataset} downloaded to {local_example_path}")
+    logger.info(f"Example dataset {dataset} downloaded to {local_example_path}")
 
     # return
     return local_example_path, os.path.join(local_dataset_path, "config.json")

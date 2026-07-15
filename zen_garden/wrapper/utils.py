@@ -1,4 +1,5 @@
 import json
+import logging
 import os
 import shutil
 from pathlib import Path
@@ -8,6 +9,8 @@ import pandas as pd
 
 from zen_garden.postprocess.results.results import Results
 from zen_garden.preprocess.unit_handling import UnitHandling
+
+logger = logging.getLogger(__name__)
 
 
 def ensure_dir_exists(path: Path):
@@ -288,7 +291,7 @@ def convert_to_original_units(
 
     # Print output if necessary
     if not np.isclose(unit_multiplier, 1):
-        print(
+        logger.info(
             f"Multiplying capacity addition (unit:{capacity_addition_unit}) "
             f"by a scale factor of {1 / unit_multiplier} to convert to units "
             f"{capacity_existing_unit}"
@@ -348,7 +351,7 @@ def add_capacity_additions(
         unit_handling (UnitHandling): The unit handling object for unit
             conversions.
     """
-    print(f"Transferring capacity for {element_name}")
+    logger.info(f"Transferring capacity for {element_name}")
     location, location_name = get_element_location(element_name, results)
     elements = results["technologies"][element_name]
     capacity_addition = results["capacity_addition"]

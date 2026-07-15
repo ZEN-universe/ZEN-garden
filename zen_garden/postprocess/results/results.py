@@ -146,7 +146,7 @@ class Results:
         Returns:
             Full timeseries
         """
-        assert component.timestep_type is not None, "Component has no " "timestep type."
+        assert component.timestep_type is not None, "Component has no timestep type."
 
         if index is None:
             index = tuple()
@@ -889,14 +889,14 @@ class Results:
         if hasattr(system, "coords"):
             coords = pd.DataFrame(system.coords).T
             if coords.empty:
-                print(
+                logger.warning(
                     f"Coordinates of nodes are not saved for version "
                     f"{self.get_analysis().zen_garden_version}."
                 )
                 return None
             return pd.DataFrame(system.coords).T
         else:
-            print(
+            logger.warning(
                 f"Coordinates of nodes are not saved for version "
                 f"{self.get_analysis().zen_garden_version}."
             )
@@ -1028,7 +1028,6 @@ class Results:
         ans: dict[str, pd.DataFrame] = {}
 
         for component, factor in components.items():
-
             if component == "flow_transport_in":
                 full_ts = self.get_full_ts(
                     "flow_transport", scenario_name=scenario_name, year=year

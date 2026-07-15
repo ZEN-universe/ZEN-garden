@@ -291,7 +291,7 @@ class OptimizationSetup(object):
         if self.config.solver.use_scaling:
             self.scaling.re_scale()
 
-    def solve(self):
+    def solve(self, scenario="base"):
         """Create model instance by assigning parameter values and initializing sets."""
         assert (
             self.zen_model is not None

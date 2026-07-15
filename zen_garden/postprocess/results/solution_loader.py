@@ -147,7 +147,7 @@ class Scenario:
     def _read_analysis(self) -> Analysis:
         analysis_path = os.path.join(self.path, "analysis.json")
         if not os.path.exists(analysis_path):
-            print(f"analysis.json does not exist for scenario {self.name}")
+            logger.warning(f"analysis.json does not exist for scenario {self.name}")
             self._exists = False
             return Analysis()
 
@@ -157,7 +157,7 @@ class Scenario:
     def _read_system(self) -> System:
         system_path = os.path.join(self.path, "system.json")
         if not os.path.exists(system_path):
-            print(f"system.json does not exist for scenario {self.name}")
+            logger.warning(f"system.json does not exist for scenario {self.name}")
             return System()
 
         with open(system_path, "r") as f:
@@ -166,7 +166,7 @@ class Scenario:
     def _read_solver(self) -> Solver:
         solver_path = os.path.join(self.path, "solver.json")
         if not os.path.exists(solver_path):
-            print(f"solver.json does not exist for scenario {self.name}")
+            logger.warning(f"solver.json does not exist for scenario {self.name}")
             return Solver()
 
         with open(solver_path, "r") as f:
@@ -181,7 +181,6 @@ class Scenario:
             return {}
 
     def _read_ureg(self) -> pint.UnitRegistry:
-
         # suppress pint output about redefining units
         logging.getLogger("pint").setLevel(logging.ERROR)
         # load ureg
@@ -215,7 +214,7 @@ class Scenario:
 
     def convert_year2ts(self, year: int) -> int:
         """Converts the year to the corresponding time step."""
-        assert isinstance(year, int), f"Year must be an integer, not " f"{type(year)}."
+        assert isinstance(year, int), f"Year must be an integer, not {type(year)}."
         ry = self.system.reference_year
         del_y = self.system.interval_between_years
         all_years = [ry + i * del_y for i in range(self.system.optimized_years)]
@@ -226,7 +225,7 @@ class Scenario:
         ):
             warnings.warn(
                 f"Selecting the yearly time steps ({year}) instead of the "
-                f"actual year ({ry + del_y*year}) is deprecated. Please use "
+                f"actual year ({ry + del_y * year}) is deprecated. Please use "
                 "the actual year.",
                 DeprecationWarning,
                 stacklevel=2,
@@ -853,7 +852,7 @@ def get_doc(h5_file: h5py.File, component_name: str, version: str) -> str:
         doc = h5_file[component_name].attrs["docstring"].decode()
     if ";" in doc and ":" in doc:
         doc = "\n".join(
-            [f'{v.split(":")[0]}: {v.split(":")[1]}' for v in doc.split(";")]
+            [f"{v.split(':')[0]}: {v.split(':')[1]}" for v in doc.split(";")]
         )
     return doc
 
