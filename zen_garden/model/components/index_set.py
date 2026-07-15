@@ -1,3 +1,5 @@
+"""Class to prepare parameter data for pyomo parameter prerequisites."""
+
 import logging
 import uuid
 

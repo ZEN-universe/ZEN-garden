@@ -1,3 +1,5 @@
+"""Constructor for the StorageTechnology elements."""
+
 import logging
 from typing import override
 
@@ -16,7 +18,8 @@ class StorageTechnologyConstructor(ElementConstructor):
 
     @override
     def has_elements(self) -> bool:
-        """Checks if there are any elements of the class <Carrier>.
+        """Checks if there are any elements of the class
+        :class:`zen_garden.elements.storage_technology.StorageTechnology`.
 
         :return: True if there are elements, False otherwise
         """

@@ -1,3 +1,5 @@
+"""Abstract class for rules in the model."""
+
 from typing import TYPE_CHECKING, cast
 
 import linopy as lp

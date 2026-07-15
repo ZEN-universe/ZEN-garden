@@ -1,7 +1,4 @@
-"""Class defining the parameters, variables, and constraints of the conversion
-technologies. The class takes the abstract optimization model as an input and adds
-parameters, variables, and constraints of the conversion technologies.
-"""
+"""Class defining conversion technologies."""
 
 import logging
 from typing import cast, override

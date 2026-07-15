@@ -1,8 +1,4 @@
-"""Class defining a standard Element.
-Contains methods to add parameters, variables and constraints to the
-optimization problem. Parent class of the Carrier and Technology classes.
-The class takes the concrete optimization model as an input.
-"""
+"""Abstract class defining a standard Element."""
 
 from abc import abstractmethod
 from pathlib import Path

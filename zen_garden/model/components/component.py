@@ -1,3 +1,5 @@
+"""Abstract base class for ZEN-model's components."""
+
 import copy
 import itertools
 import logging

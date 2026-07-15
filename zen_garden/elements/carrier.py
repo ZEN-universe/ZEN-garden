@@ -1,9 +1,4 @@
-"""Class defining a generic energy carrier.
-
-The class takes as inputs the abstract optimization model. The class adds parameters,
-variables and constraints of a generic carrier and returns the abstract optimization
-model.
-"""
+"""Class defining a generic energy carrier."""
 
 import logging
 

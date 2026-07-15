@@ -4,7 +4,7 @@
 Adding Sets, Parameters, Variables, and Constraints
 ###################################################
 
-An optimization problem is defined by a set of elements, specifically sets, parameters, variables, and constraints.
+An optimization problem consists of sets, parameters, variables, and constraints.
 Variables are the values that are optimized, i.e., decided by the optimizer.
 Parameters are the fixed input values that are used in the optimization process, such as demands or specific costs.
 Constraints are the rules that the solution must adhere to,
@@ -28,12 +28,13 @@ you would add it to the ``Carrier`` class.
 Adding Sets
 -----------
 
-Sets can be added in the ``construct_sets`` method of the element classes,
-i.e., ``EnergySystem``, ``Carrier``, or ``Technology``
-(including all subtechnology classes, such as ``ConversionTechnology``).
-The new set is added to the ``optimization_setup.sets`` through the method ``optimization_setup.sets.add_set``.
+Sets can be added in the ``construct_sets`` method of the element consturctor class,
+e.g., :py:class:`EnergySystemConstructor <zen_garden.elements.energy_system_constructor.EnergySystemConstructor>`,
+:py:class:`CarrierConstructor <zen_garden.elements.carrier_constructor.CarrierConstructor>`,
+or :py:class:`TechnologyConstructor <zen_garden.elements.technology_constructor.TechnologyConstructor>`.
+The new set is added to ``self.zen_model.sets`` through the method ``self.zen_model.sets.add_set()``.
 
-The ``add_set`` method takes the following parameters:
+The :py:meth:`add_set <zen_garden.model.components.index_set.IndexSet.add_set>` method takes the following parameters:
 
 - ``name``: The name of the set, which should be unique.
 - ``data``: The data for the set, which can be a list or a dictionary.
@@ -44,14 +45,16 @@ Two examples for adding a set is shown below (from the ``Technology`` class):
 
 .. code-block:: python
 
-    optimization_setup.sets.add_set(
+    self.zen_model.sets.add_set(
         name="set_conversion_technologies",
         data=energy_system.set_conversion_technologies,
         doc="Set of conversion technologies")
 
-    optimization_setup.sets.add_set(
+    self.zen_model.sets.add_set(
         name="set_reference_carriers",
-        data=optimization_setup.get_attribute_of_all_elements(cls, "reference_carrier"),
+        data=self.element_registry.get_attribute_of_all_elements(
+            self.element_class, "reference_carrier"
+        ),
         doc="set of all reference carriers correspondent to a technology. Indexed by set_technologies",
         index_set="set_technologies")
 
@@ -64,16 +67,20 @@ will have a corresponding entry in the ``set_reference_carriers`` set.
 Adding Parameters
 -----------------
 
-Parameters can be added in the ``construct_params`` method of the element classes.
-But first, the data has to be imported in the ``store_input_data`` method of the element and the energy system classes
-with the ``extract_input_data`` method of the ``DataInput`` class.
+Parameters can be added in the ``construct_params`` method of the element constructor class.
+But first, the data has to be imported in the ``store_input_data`` method of the corresponding element classes
+or the energy system class with the ``extract_input_data`` method of the
+:py:class:``DataInput <zen_garden.preprocess.data_input.DataInput>`` class.
 For example, if you want to add a parameter for the yearly import availability of a carrier, the code looks like this:
 
 .. code-block:: python
 
     self.availability_import_yearly = self.data_input.extract_input_data(
-        "availability_import_yearly", index_sets=["set_nodes", "set_years"],
-        time_steps="set_years", unit_category={"energy_quantity": 1})
+        "availability_import_yearly",
+        index_sets=["set_nodes", "set_years"],
+        time_steps="set_years",
+        unit_category={"energy_quantity": 1}
+    )
 
 .. note::
 
@@ -92,7 +99,7 @@ Finally, the ``unit_category`` parameter is set to the unit category of the para
 which is used for unit conversion and validation.
 The ``unit_category`` is a dictionary with the categories of the unit and their power (+1 or -1).
 For example ``{"energy_quantity": 1}`` means that the parameter is in energy quantity units (e.g., MWh, m^3, kg, etc.).
-As discussed in :ref:``t_units.t_units``,
+As discussed in :ref:`t_units.t_units`,
 the concrete unit of the energy quantity is determined through the input data and is not predefined in the code.
 What is predefined is how the unit dimensionalities build the parameter unit.
 A parameter with emissions per distance and energy, for example,
@@ -100,11 +107,10 @@ would have a ``unit_category`` of ``{"emissions": 1, "distance": -1, "energy_qua
 
 .. note::
 
-    The ``store_input_data`` method is called for every object of the class, so for each technology or carrier.
-    The ``construct_params`` method is a classmethod for the Element classes (technologies and carriers),
-    so it is called only once for the entire class.
-    In the case of the ``EnergySystem`` class,
-    both the ``store_input_data`` and the ``construct_params`` methods are called once for the entire energy system.
+    Each element class has a corresponding ``<Classname>Constructor`` class that is responsible
+    for constructing the sets, parameters, variables, and constraints of the element.
+    The method `store_input_data` is part of the element class,
+    while the method `construct_params` is in the constructor class.
 
 After the input data is read, it can be added in the ``construct_params`` method
 through the method ``optimization_setup.parameters.add_parameter``.
@@ -112,11 +118,11 @@ The ``add_parameter`` method is called in the following way:
 
 .. code-block:: python
 
-    optimization_setup.parameters.add_parameter(
+    self.add_parameter(
         name="availability_import_yearly",
         index_names=["set_carriers", "set_nodes", "set_years"],
         doc='Parameter which specifies the maximum energy that can be imported from outside the system boundaries for the entire year',
-        calling_class=cls)
+    )
 
 The name must be the same as the name defined in the ``store_input_data`` method.
 Note that the ``index_names`` now include ``set_carriers``, as the parameter is defined for all carriers.
@@ -130,7 +136,7 @@ Logging new and changed parameters
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 If you add a new parameter or change the name of an existing one, please document that in
-``preprocess\parameter_change_log.py``.
+:py:data:`PARAMETER_CHANGE_LOG <zen_garden.preprocess.data_input.PARAMETER_CHANGE_LOG>`.
 The reason to add the name is that the new or changed parameters will be searched for in the input data,
 but are not available in the datasets of others. To avoid breaking changes, the new or changed parameters
 are documented in the log file and then equivalent parameters are found without breaking the code.
@@ -170,18 +176,18 @@ In every major release, the log file is cleared, so users must update their inpu
 Adding Variables
 ----------------
 
-Variables can be added in the ``construct_variables`` method of the element classes.
+Variables can be added in the ``construct_variables`` method of the element constructor classes.
 The ``add_variable`` method is called in the following way:
 
 .. code-block:: python
 
-    optimization_setup.variables.add_variable(
-        model,
+    self.zen_model.variables.add_variable(
         name="flow_import",
         index_sets=cls.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_operation"], optimization_setup),
         bounds=(0,np.inf),
         doc="node- and time-dependent carrier import from the grid",
-        unit_category={"energy_quantity": 1, "time": -1})
+        unit_category={"energy_quantity": 1, "time": -1},
+    )
 
 First, the ``model`` parameter is passed, which is the linopy model that the variable will be added to.
 Then, the ``name`` of the variable is defined, in this case ``flow_import``.
@@ -207,7 +213,7 @@ Thereby, we can infer the unit of the variable from the unit categories of the p
 Adding Constraints
 ------------------
 
-Constraints can be added in the ``construct_constraints`` method of the element classes.
+Constraints can be added in the ``construct_constraints`` method of the element constructor classes.
 Each class has a corresponding ``<Classname>Rules`` class that contains the rules for the constraints.
 A rule is called with the corresponding rule name, e.g., ``rules.constraint_availability_import_export()``.
 
@@ -217,6 +223,6 @@ Please follow the constraint guide in :ref:`linopy.linopy`.
 
     You can add multiple constraints in the same rule,
     for example ``constraint_availability_import`` and ``constraint_availability_export`` in
-    ``rules.constraint_availability_import_export()``.
+    :py:meth:`CarrierRules.constraint_availability_import_export <zen_garden.elements.carrier_rules.CarrierRules.constraint_availability_import_export>`.
     The rule of thumb is to add all constraints that are related to the same topic in the same rule
-    to reuse the code and avoid duplication. If the constraints are too different, it is better to create a new rule.
+    to reuse the code and avoid duplication. If the constraints are too different, it is better to create a new constraint method.

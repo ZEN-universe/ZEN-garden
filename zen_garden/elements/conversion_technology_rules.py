@@ -1,3 +1,5 @@
+"""Rules for the ConversionTechnology class."""
+
 import itertools
 import logging
 

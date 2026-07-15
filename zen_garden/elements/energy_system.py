@@ -1,8 +1,4 @@
-"""Class defining a standard EnergySystem.
-Contains methods to construct the energy system from the given input data and that
-defines the variables, parameters and constraints which apply to the Energy System.
-The class takes the abstract optimization model as an input.
-"""
+"""Class defining a standard EnergySystem."""
 
 import copy
 import logging

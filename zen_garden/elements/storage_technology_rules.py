@@ -1,3 +1,5 @@
+"""Rules for the StorageTechnology class."""
+
 import logging
 
 import numpy as np

@@ -1,3 +1,5 @@
+"""Module for the Variable class, which represents a variable in a model."""
+
 import logging
 from typing import TYPE_CHECKING, Any, Callable, cast
 

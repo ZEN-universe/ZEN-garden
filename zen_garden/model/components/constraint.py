@@ -1,3 +1,5 @@
+"""Class defining constraints for the optimization model."""
+
 import logging
 import uuid
 from itertools import combinations

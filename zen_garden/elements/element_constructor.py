@@ -1,3 +1,9 @@
+"""Abstract constructor for elements.
+
+All subclasses of ElementConstructor must implement the abstract methods to construct
+the sets, parameters, variables, and constraints for their respective elements.
+"""
+
 import itertools
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING

@@ -1,3 +1,5 @@
+"""Rules for the TransportTechnology class."""
+
 import logging
 from typing import cast
 

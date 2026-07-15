@@ -1,7 +1,4 @@
-"""Defines the parameters, variables and constraints that hold for all technologies.
-The class takes the abstract optimization model as an input, and returns the parameters,
-variables and constraints that hold for all technologies.
-"""
+"""Class defining technologies."""
 
 import logging
 from typing import cast

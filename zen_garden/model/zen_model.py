@@ -1,3 +1,6 @@
+"""ZEN-model to combine sets, paramters, variables and constraints
+from all elements into a single model."""
+
 from typing import TYPE_CHECKING
 
 from linopy import Model as LinopyModel

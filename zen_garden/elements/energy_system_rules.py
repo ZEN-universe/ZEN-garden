@@ -1,3 +1,5 @@
+"""Rules for the EnergySystem."""
+
 import logging
 
 import numpy as np

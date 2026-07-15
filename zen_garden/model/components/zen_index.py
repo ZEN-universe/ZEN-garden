@@ -1,3 +1,5 @@
+"""A multiindex class that can be easily used with xarray."""
+
 import numpy as np
 import pandas as pd
 import xarray as xr

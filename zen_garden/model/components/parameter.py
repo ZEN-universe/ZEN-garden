@@ -1,3 +1,5 @@
+"""Class to define parameters for the optimization model."""
+
 import copy
 
 import numpy as np

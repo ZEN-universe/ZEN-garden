@@ -1,7 +1,4 @@
-"""Class defining the parameters, variables, and constraints of the retrofitting
-technologies. The class takes the abstract optimization model as an input and adds
-parameters, variables, and constraints of the retrofitting technologies.
-"""
+"""Class defining retrofitting technologies."""
 
 import logging
 

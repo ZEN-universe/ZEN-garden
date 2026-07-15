@@ -47,6 +47,29 @@ Class Structure
    :zoom:
 
    ---
+   title: Element Constructors
+   ---
+   classDiagram
+       class ElementConstructor
+       class CarrierConstructor
+       class TechnologyConstructor
+       class ConversionTechnologyConstructor
+       class StorageTechnologyConstructor
+       class RetrofittingTechnologyConstructor
+       class TransportTechnologyConstructor
+
+       ElementConstructor <|-- CarrierConstructor
+       ElementConstructor <|-- TechnologyConstructor
+       ElementConstructor <|-- ConversionTechnologyConstructor
+       ElementConstructor <|-- StorageTechnologyConstructor
+       ElementConstructor <|-- TransportTechnologyConstructor
+       ElementConstructor <|-- RetrofittingTechnologyConstructor
+
+
+.. mermaid::
+   :zoom:
+
+   ---
    title: Rules
    ---
    classDiagram
@@ -72,10 +95,10 @@ Class Structure
    title: Default Config
    ---
    classDiagram
-   
+
        class Subscriptable
        class Config
-       class System 
+       class System
        class Solver
        class Analysis
        class Subsets
@@ -84,8 +107,8 @@ Class Structure
 
        Subscriptable <|-- Config
        Config *-- Analysis
-       Config *-- Solver 
-       Config *-- System 
+       Config *-- Solver
+       Config *-- System
        Subscriptable <|-- Analysis
        Subscriptable <|-- TimeSeriesAggregation
        Subscriptable <|-- Solver
@@ -106,8 +129,8 @@ Class Structure
        class ZenSet
        class IndexSet
        class DictParameter
-       class Parameter 
-       class Variable 
+       class Parameter
+       class Variable
        class Constraint
 
        Component <|-- IndexSet
@@ -116,7 +139,7 @@ Class Structure
        Component <|-- Constraint
 
 
-.. 
+..
    :zoom:
 
 
@@ -134,5 +157,10 @@ Class Structure
        class TimeSeriesAggregation
        class TimeSteps
        class EnergySystem
-       class UnitHandling 
+       class UnitHandling
        class Scaling
+       class ZenModel
+       class DatasetPathResolver
+       class ModelConstructionService
+       class ElementRegistry
+       class YearSpecificTs

@@ -1,3 +1,5 @@
+"""Rules for the RetrofittingTechnology class."""
+
 import itertools
 import logging
 

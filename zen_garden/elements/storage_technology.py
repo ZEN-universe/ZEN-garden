@@ -1,7 +1,4 @@
-"""Class defining the parameters, variables and constraints that hold for all storage
-technologies. The class takes the abstract optimization model as an input, and returns
-the parameters, variables and constraints that hold for the storage technologies.
-"""
+"""Class defining storage technologies."""
 
 import logging
 from typing import override

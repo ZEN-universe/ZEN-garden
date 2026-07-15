@@ -1,3 +1,5 @@
+"""Rules for the Technology class."""
+
 import itertools
 import logging
 from typing import TYPE_CHECKING, cast

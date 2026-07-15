@@ -29,6 +29,7 @@ TIME_STEP_TYPES = [
     "set_years",
     "set_years_entire_horizon",
 ]
+"""List of valid time step types."""
 
 PARAMETER_CHANGE_LOG = {
     "min_full_load_hours_fraction": {
@@ -43,11 +44,23 @@ PARAMETER_CHANGE_LOG = {
         "default_value": 0,  # only 0, 1, or 'inf' are allowed
         "unit": "capacity_limit_energy",
     },
-    #    "new_parameter_name": {
-    #       "default_value": 0, # only 0, 1, or 'inf' are allowed
-    #       "unit": "existing_parameter_name_with_same_unit"
-    #   }
 }
+"""Dictionary to log changes in parameter values.
+
+The keys are the new parameter names. The values are dictionaries with the default value
+and the unit of the new parameter. The unit is taken from an existing parameter
+with the same unit.
+
+Example
+-------
+
+.. code-block:: python
+
+    "new_parameter_name": {
+        "default_value": 0, # only 0, 1, or 'inf' are allowed
+        "unit": "existing_parameter_name_with_same_unit"
+    }
+"""
 
 
 class DataInput:
