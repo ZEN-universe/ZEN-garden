@@ -1,7 +1,8 @@
 """Class defining storage technologies."""
 
 import logging
-from typing import override
+
+from typing_extensions import override
 
 from zen_garden.elements.technology import Technology
 

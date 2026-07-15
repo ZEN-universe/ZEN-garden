@@ -1,11 +1,11 @@
 """Constructor for the ConversionTechnology elements."""
 
 import logging
-from typing import override
 
 import numpy as np
 import pandas as pd
 import xarray as xr
+from typing_extensions import override
 
 from zen_garden.elements.conversion_technology import ConversionTechnology
 from zen_garden.elements.conversion_technology_rules import ConversionTechnologyRules

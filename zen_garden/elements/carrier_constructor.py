@@ -1,9 +1,9 @@
 """Constructor for the Carrier elements."""
 
 import logging
-from typing import override
 
 import numpy as np
+from typing_extensions import override
 
 from zen_garden.elements.carrier import Carrier
 from zen_garden.elements.carrier_rules import CarrierRules

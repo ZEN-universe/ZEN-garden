@@ -65,6 +65,7 @@ dev = [
     "ruff==0.14.13",
     "mypy==1.19.1",
     "pre-commit",
+    "typing_extensions",
 ]
 
 vis = [

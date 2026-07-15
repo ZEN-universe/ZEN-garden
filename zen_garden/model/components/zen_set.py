@@ -1,8 +1,9 @@
 """A set class that is similar to pyomo.Set."""
 
-from typing import List, Sequence, overload, override
+from typing import List, Sequence, overload
 
 from ordered_set import OrderedSet
+from typing_extensions import override
 
 
 class ZenSet(OrderedSet):

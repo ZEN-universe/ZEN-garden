@@ -1,10 +1,10 @@
 """Constructor for the TransportTechnology elements."""
 
 import logging
-from typing import override
 
 import numpy as np
 import xarray as xr
+from typing_extensions import override
 
 from zen_garden.elements.element_constructor import ElementConstructor
 from zen_garden.elements.transport_technology import TransportTechnology

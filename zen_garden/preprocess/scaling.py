@@ -379,18 +379,18 @@ class Scaling:
                         f"Max value of RHS: {cons_rhs_max}",
                         f"Min value of RHS: {cons_rhs_min}",
                         "Numerical Range:",
-                        f"    LHS : {
+                        "    LHS : {}".format(
                             [
-                                format(A_abs[index_min], '.1e'),
-                                format(A_abs[index_max], '.1e'),
+                                format(A_abs[index_min], ".1e"),
+                                format(A_abs[index_max], ".1e"),
                             ]
-                        }",
-                        f"    RHS : {
+                        ),
+                        "    RHS : {}".format(
                             [
-                                format(np.abs(self.rhs[rhs_min_index]), '.1e'),
-                                format(np.abs(self.rhs[rhs_max_index]), '.1e'),
+                                format(np.abs(self.rhs[rhs_min_index]), ".1e"),
+                                format(np.abs(self.rhs[rhs_max_index]), ".1e"),
                             ]
-                        }",
+                        ),
                     ]
                 )
             )

@@ -1,9 +1,9 @@
 """Class defining the transport technologies."""
 
 import logging
-from typing import override
 
 import numpy as np
+from typing_extensions import override
 
 from zen_garden.elements.technology import Technology
 

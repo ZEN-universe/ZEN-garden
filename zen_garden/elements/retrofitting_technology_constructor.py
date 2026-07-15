@@ -1,9 +1,9 @@
 """Constructor for the RetrofittingTechnology elements."""
 
 import logging
-from typing import override
 
 import numpy as np
+from typing_extensions import override
 
 from zen_garden.elements.element_constructor import ElementConstructor
 from zen_garden.elements.retrofitting_technology import RetrofittingTechnology
