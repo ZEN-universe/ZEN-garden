@@ -157,8 +157,6 @@ information on the available technology types see :ref:`input_structure.technolo
 
 * flexible definition of multiple in- and output carriers
 * minimum ("binary") and maximum load behavior
-* option to model the capital expenditures via a piecewise-affine approximation 
-  of non-linear cost-curves ("binary")
 * retrofitting, e.g., with carbon capture units (:ref:`input_structure.conversion_technologies`)
 * fuel substitution or fuel replacement (:ref:`input_structure.conversion_technologies`)
 

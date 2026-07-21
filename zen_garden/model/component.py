@@ -507,15 +507,8 @@ class Parameter(Component):
         :param capacity_types: boolean if extracted for capacities
         """
         dict_of_units = {}
-        # TODO make more flexible
-        if name == "capex_specific_conversion":
-            component_data, index_list, dict_of_units = (
-                calling_class.get_capex_all_elements(
-                    optimization_setup=self.optimization_setup, index_names=index_names
-                )
-            )
-            data = component_data, index_list
-        elif data is None:
+
+        if data is None:
             component_data, index_list, dict_of_units = (
                 self.optimization_setup.initialize_component(
                     calling_class, name, index_names, set_time_steps, capacity_types
@@ -618,8 +611,6 @@ class Parameter(Component):
                 return str(dict_of_units["unit_in_base_units"].units)
             else:
                 unit_series = pd.Series(index=data.index, dtype=str)
-                if name == "capex_specific_conversion":
-                    index_list = [index_list[0]] + index_list[2:]
                 unit_series = unit_series.rename_axis(index=index_list)
                 unit_series = unit_series.sort_index()
                 if "unit_in_base_units" in dict_of_units:
@@ -931,115 +922,6 @@ class Constraint(Component):
         else:
             self.model.add_constraints(lhs, sign, rhs, name=name, mask=mask)
 
-    def add_pw_constraint(
-        self,
-        model,
-        name,
-        index_values,
-        yvar,
-        xvar,
-        break_points,
-        f_vals,
-        cons_type="EQ",
-    ):
-        """Adding piece-wise linear constraints to the model.
-
-        Adds a piece-wise linear constraint of the type f(x) = y for each index in the
-        index_values, where f is defined by the breakpoints and
-        f_vals (x_1, y_1), ..., (x_n, y_n).
-
-        Note that these method will create helper variables in form of a S0S2, sources:
-
-        * https://support.gurobi.com/hc/en-us/articles/360013421331-How-do-I-model-piecewise-linear-functions-
-        * https://medium.com/bcggamma/hands-on-modeling-non-linearity-in-linear-optimization-problems-f9da34c23c9a
-
-        :param model: The model to add the constraints to
-        :param name: The name of the constraint
-        :param index_values: A list of index values that will be used to build the
-            constraints
-        :param yvar: The name of the yvar, a variable compatible with the index
-            values used for y
-        :param xvar: The name of the xvar, a variable compatible with the index
-            values used for x
-        :param break_points: A mapping index -> list that provides the breakpoints
-            for each index
-        :param f_vals: A mapping index -> list that provides the function values
-            for each index
-        :param cons_type: Type of the constraint (currently only EQ supported)
-        """
-        if cons_type != "EQ":
-            raise NotImplementedError("Currently only EQ constraints are supported")
-
-        # get the variables
-        xvar = model.variables[xvar]
-        yvar = model.variables[yvar]
-
-        # cycle through all indices
-        for num, index_val in enumerate(index_values):
-            # extract everyting
-            x = xvar.at[index_val]
-            y = yvar.at[index_val]
-            br = break_points[index_val]
-            fv = f_vals[index_val]
-            if len(br) != len(fv):
-                raise ValueError(
-                    "Number of break points should be equal to number of function "
-                    "values for each index value."
-                )
-
-            # create sos vars, assure same coords
-            sos2_vars = self._get_nonnegative_sos2_vars(model, len(br))
-            br = xr.DataArray(br, coords=sos2_vars.coords)
-            fv = xr.DataArray(fv, coords=sos2_vars.coords)
-
-            # add the constraints, give it a valid name
-            model.add_constraints(
-                x.to_linexpr() - (br * sos2_vars).sum() == 0, name=f"{name}_br_{num}"
-            )
-            model.add_constraints(
-                y.to_linexpr() - (fv * sos2_vars).sum() == 0, name=f"{name}_fv_{num}"
-            )
-
-    def _get_nonnegative_sos2_vars(self, model, n):
-        """Creates a list of continues nonnegative variables in an SOS2.
-
-        :param model: The model to add the variables
-        :param n: The number of variables to create
-        :return: A list of variables that are SOS2 constrained
-        """
-        # vars and binaries, we need to take care of all the annoying dimension names
-        dim_name = f"sos2_dim_{uuid.uuid1()}"
-        sos2_var = model.add_variables(
-            lower=np.zeros(n),
-            binary=False,
-            name=f"sos2_var_{uuid.uuid1()}",
-            coords=(xr.DataArray(np.arange(n), dims=dim_name),),
-        )
-        sos2_var_bin = model.add_variables(
-            binary=True,
-            name=f"sos2_var_bin_{uuid.uuid1()}",
-            coords=(xr.DataArray(np.arange(n), dims=dim_name),),
-        )
-
-        # add the constraints
-        model.add_constraints(sos2_var.sum() == 1.0)
-        model.add_constraints(sos2_var - sos2_var_bin <= 0.0)
-        model.add_constraints(sos2_var_bin.sum() <= 2.0)
-        combi_index = xr.DataArray(
-            [c for c in combinations(np.arange(n), 2) if c[0] + 1 != c[1]],
-            dims=[dim_name, "combi_dim"],
-        )
-        model.add_constraints(
-            sos2_var_bin.sel({dim_name: combi_index[:, 0]}).rename(
-                {dim_name: f"{dim_name}_1"}
-            )
-            + sos2_var_bin.sel({dim_name: combi_index[:, 1]}).rename(
-                {dim_name: f"{dim_name}_1"}
-            )
-            <= 1.0
-        )
-
-        return sos2_var
 
     def reorder_group(
         self, lhs, sign, rhs, index_values, index_names, model, drop=None

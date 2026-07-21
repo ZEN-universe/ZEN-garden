@@ -590,35 +590,7 @@ class UnitHandling:
                         "definition dimensionless. However, its unit was "
                         f"defined as {unit_specs['unit_in_base_units']}."
                     )
-                # check if nonlinear capex file exists for conversion technology
-                # since the units defined there overwrite the attributes file
-                # units
-                elif attribute_name == "capex_specific_conversion" and hasattr(
-                    item, "units_nonlinear_capex_files"
-                ):
-                    for key, value in item.units_nonlinear_capex_files.items():
-                        if "capex" in value:
-                            capex_specific_unit = value["capex"].values[0]
-                            unit_specs["unit_in_base_units"] = (
-                                self.convert_unit_into_base_units(capex_specific_unit)
-                            )
-                            energy_quantity_units.update(
-                                self._remove_non_energy_units(
-                                    unit_specs, "capex_" + key
-                                )
-                            )
-                        capacity_unit = value["capacity"].values[0]
-                        unit_specs["unit_category"] = [
-                            value["unit_category"]
-                            for key, value in unit_dict.items()
-                            if key == "capacity_limit"
-                        ][0]
-                        unit_specs["unit_in_base_units"] = (
-                            self.convert_unit_into_base_units(capacity_unit)
-                        )
-                        energy_quantity_units.update(
-                            self._remove_non_energy_units(unit_specs, "capacity_" + key)
-                        )
+
                 # units of input/output/reference carrier not of interest for
                 # consistency
                 elif attribute_name not in [

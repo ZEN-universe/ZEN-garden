@@ -66,14 +66,13 @@ def download_example_dataset(dataset):
 
     Args:
         dataset (str): Name of the dataset to be downloaded. The following
-            options are currently available: "1_base_case",
-            "2_multi_year_optimization", "3_reduced_import_availability",
-            "4_PWA_nonlinear_capex", "5_multiple_time_steps_per_year",
-            "6_reduced_import_availability_yearly", "7_time_series_aggregation",
-            "8_yearly_variation", "9_myopic_foresight", "10_brown_field",
-            "11_multi_scenario", "12_multiple_in_output_carriers_conversion",
-            "13_yearly_interpolation", "14_retrofitting_and_fuel_substitution",
-            "15_unit_consistency_expected_error"
+            options are currently available: "1_base_case", "2_multi_year_optimization",
+            "3_reduced_import_availability", "4_multiple_time_steps_per_year",
+            "5_reduced_import_availability_yearly", "6_time_series_aggregation",
+            "7_yearly_variation", "8_myopic_foresight", "9_brown_field",
+            "10_multi_scenario", "11_multiple_in_output_carriers_conversion",
+            "12_yearly_interpolation", "13_retrofitting_and_fuel_substitution",
+             "14_unit_consistency_expected_error"
 
     Returns:
         tuple:

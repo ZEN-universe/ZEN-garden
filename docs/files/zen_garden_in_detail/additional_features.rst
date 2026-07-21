@@ -21,8 +21,7 @@ can be used to enhance the user experience:
 Additional mixed-integer constraints
 ------------------------------------
 
-Besides, PWA representation of the CAPEX (see :ref:`input_structure.pwa`), ZEN-garden allows the 
-use of three additional mixed-integer linear constraints:
+ZEN-garden allows the use of mixed-integer linear constraints:
 
 
 .. _additional_features.min_load:
@@ -60,17 +59,6 @@ length of an edge. In particular, if the user only specifies
 per unit of transported good. This is the most commonly used case, but it does 
 not account for the fact that there might be an initial investment purely from 
 the installation before adding the cost for the size of the capacity.
-
-
-.. _additional_features.pwa_conversion_technologies:
-
-**Piecewise affine linearization of the CAPEX of conversion technologies**
-
-The user can specify a ``nonlinear_capex.csv`` file to approximate the CAPEX 
-values of a conversion technology by a set of linear functions. :ref:`input_structure.pwa` 
-provides detailed description on how to use the piecewise affine representation.
-Moreover, :ref:`math_formulation.pwa_constraints` outlines the mathematical constraints that 
-are added.
 
 
 .. _additional_features.year_specific_input_data:

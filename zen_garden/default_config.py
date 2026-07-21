@@ -177,10 +177,6 @@ class Solver(Subscriptable):
     selected_saved_reduced_costs: list = (
         []
     )  # if empty, all reduced costs are saved (if save_reduced_costs is True)
-    linear_regression_check: dict[str, float] = {
-        "eps_intercept": 0.1,
-        "epsRvalue": 1 - (1e-5),
-    }
     round_parameters: bool = False
     rounding_decimal_points_units: int = 6
     rounding_decimal_points_capacity: int = 4

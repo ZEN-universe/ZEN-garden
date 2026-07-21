@@ -336,20 +336,6 @@ def test_2b(folder_path):
     compare_variables_results(data_set_name, res, folder_path)
 
 
-def test_2c(folder_path):
-    # run the test
-    data_set_name = "test_2c"
-    run(
-        config=os.path.join(folder_path, "config.json"),
-        dataset=os.path.join(folder_path, data_set_name),
-        folder_output=os.path.join(folder_path, "outputs"),
-    )
-
-    # read the results and check again
-    res = Results(os.path.join(folder_path, "outputs", data_set_name))
-    compare_variables_results(data_set_name, res, folder_path)
-
-
 def test_3a(folder_path):
     # run the test
     data_set_name = "test_3a"

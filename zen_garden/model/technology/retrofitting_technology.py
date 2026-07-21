@@ -101,7 +101,7 @@ class RetrofittingTechnology(ConversionTechnology):
 
         :param optimization_setup: The OptimizationSetup the element is part of
         """
-        # add pwa constraints
+        # add constraints
         rules = RetrofittingTechnologyRules(optimization_setup)
 
         # flow coupling of retrofitting technology and its base technology
