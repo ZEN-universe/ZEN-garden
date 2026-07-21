@@ -7,7 +7,6 @@ import copy
 import itertools
 import logging
 import uuid
-from itertools import combinations
 
 import linopy as lp
 import numpy as np
@@ -921,7 +920,6 @@ class Constraint(Component):
             mask = bool(mask)
         else:
             self.model.add_constraints(lhs, sign, rhs, name=name, mask=mask)
-
 
     def reorder_group(
         self, lhs, sign, rhs, index_values, index_names, model, drop=None

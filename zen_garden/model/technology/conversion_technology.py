@@ -4,7 +4,6 @@ parameters, variables, and constraints of the conversion technologies.
 """
 
 import itertools
-import warnings
 
 import linopy as lp
 import numpy as np
@@ -363,8 +362,6 @@ class ConversionTechnology(Technology):
 
         :param optimization_setup: optimization setup
         """
-        model = optimization_setup.model
-        constraints = optimization_setup.constraints
         # add pwa constraints
         rules = ConversionTechnologyRules(optimization_setup)
         # capacity factor constraint
@@ -625,12 +622,12 @@ class ConversionTechnologyRules(GenericRule):
                 )
             }
         )
-        capacity_addition = (
-            self.variables["capacity_addition"].loc[techs, "power", nodes]
-        )
-        cost_capex_overnight = (
-            self.variables["cost_capex_overnight"].loc[techs, "power", nodes]
-        )
+        capacity_addition = self.variables["capacity_addition"].loc[
+            techs, "power", nodes
+        ]
+        cost_capex_overnight = self.variables["cost_capex_overnight"].loc[
+            techs, "power", nodes
+        ]
 
         capex_specific_conversion = capex_specific_conversion.broadcast_like(
             capacity_addition.lower

@@ -809,7 +809,6 @@ class DataInput:
         # apply scenario factor
         return df_output * scenario_factor
 
-
     def create_default_output(
         self,
         index_sets,
