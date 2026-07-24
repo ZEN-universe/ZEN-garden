@@ -15,7 +15,6 @@ from zen_garden.elements.element import Element
 
 if TYPE_CHECKING:
     from zen_garden.elements.energy_system import EnergySystem
-    from zen_garden.model.components.index_set import IndexSet
     from zen_garden.model.components.zen_set import ZenSet
     from zen_garden.model.config import Config
     from zen_garden.model.time_steps import TimeStepsDicts
@@ -75,13 +74,18 @@ class ElementConstructor(ABC):
         :return: list_index: list of names of indices
         """
         list_index = list(list_index)  # make a copy of the list to avoid side effects
-        sets = self.zen_model.sets
 
         # Case 1: all index sets are already defined in model and no set is indexed
         if all(
-            index in sets.sets and not sets.is_indexed(index) for index in list_index
+            index in self.zen_model.sets.sets
+            and not self.zen_model.sets.is_indexed(index)
+            for index in list_index
         ):
-            list_sets = [sets[index] for index in list_index if index in sets]
+            list_sets = [
+                self.zen_model.sets[index]
+                for index in list_index
+                if index in self.zen_model.sets
+            ]
             # return indices as cartesian product of sets
             custom_set: list[tuple[ZenSet, ...]] | list[ZenSet] = (
                 list(itertools.product(*list_sets))
@@ -97,14 +101,14 @@ class ElementConstructor(ABC):
 
         # Case 2: first index is indexed, build custom set based on first index
         custom_set = []
-        for element in sets[list_index[0]]:
+        for element in self.zen_model.sets[list_index[0]]:
             append_element = True
             list_sets = []
 
             for index in list_index[1:]:
                 # if the set already exist in model
-                if index in sets:
-                    append = self.handle_existing_set(index, element, sets, list_sets)
+                if index in self.zen_model.sets:
+                    append = self._handle_existing_set(index, element, list_sets)
                     if not append:
                         raise NotImplementedError(
                             f"Index <{index}> is not known in sets."
@@ -113,23 +117,23 @@ class ElementConstructor(ABC):
 
                 # if index is set_location
                 if index == "set_location":
-                    self.handle_set_location_index(element, sets, list_sets)
+                    self._handle_set_location_index(element, list_sets)
                     continue
 
                 # if set is built for pwa capex:
                 if "set_capex" in index:
-                    append_element = self.append_set_capex_index(element, sets, index)
+                    append_element = self._append_set_capex_index(element, index)
                     continue
 
                 # if set is used to determine if on-off behavior is modeled
                 # exclude technologies which have no min_load
                 if "on_off" in index:
-                    append_element = self.append_on_off_modeled(element, index)
+                    append_element = self._append_on_off_modeled(element, index)
                     continue
 
                 # split in capacity types of power and energy
                 if index == "set_capacity_types":
-                    self.handle_set_capacity_types_index(element, sets, list_sets)
+                    self._handle_set_capacity_types_index(element, list_sets)
                     continue
 
                 raise NotImplementedError(f"Index <{index}> not known")
@@ -142,8 +146,8 @@ class ElementConstructor(ABC):
                     custom_set.extend([element])
         return custom_set, list_index
 
-    def handle_existing_set(
-        self, index: str, element: "ZenSet", sets: "IndexSet", list_sets: "list[ZenSet]"
+    def _handle_existing_set(
+        self, index: str, element: "ZenSet", list_sets: "list[ZenSet]"
     ):
         """Handles existing sets in the model.
         Returns True if handled, False if unknown.
@@ -153,24 +157,22 @@ class ElementConstructor(ABC):
         :param sets: sets of the optimization setup
         :param list_sets: list of sets to append
         """
-        if not sets.is_indexed(index):
-            list_sets.append(sets[index])
+        if not self.zen_model.sets.is_indexed(index):
+            list_sets.append(self.zen_model.sets[index])
             return True
-        elif sets.get_index_name(index) in sets.sets:
-            list_sets.append(sets[index][element])
+        elif self.zen_model.sets.get_index_name(index) in self.zen_model.sets.sets:
+            list_sets.append(self.zen_model.sets[index][element])
             return True
         return False
 
-    def append_set_capex_index(
-        self, element: str, sets: "IndexSet", index: str
-    ) -> bool:
+    def _append_set_capex_index(self, element: str, index: str) -> bool:
         """Checks if the capex of a technology needs to be modeled as pwa or linear.
 
         :param element: technology in model
         :param index: index to check
         :return model_capex: Bool indicating if capex must be modeled as pwa or linear
         """
-        if element not in sets["set_conversion_technologies"]:
+        if element not in self.zen_model.sets["set_conversion_technologies"]:
             return False
 
         capex_is_pwa = self.element_registry.get_attribute_of_specific_element(
@@ -181,7 +183,7 @@ class ElementConstructor(ABC):
             or ("pwa" in index and not capex_is_pwa)
         )
 
-    def append_on_off_modeled(self, element: str, index: str) -> bool:
+    def _append_on_off_modeled(self, element: str, index: str) -> bool:
         """Checks if the on-off-behavior (min-load) of a technology needs to be modeled.
 
         :param element: technology in model
@@ -191,9 +193,7 @@ class ElementConstructor(ABC):
         model_on_off = self.check_on_off_modeled(element)
         return not (("set_no_on_off" in index and model_on_off) or (not model_on_off))
 
-    def handle_set_location_index(
-        self, element: str, sets: "IndexSet", list_sets: "list[ZenSet]"
-    ):
+    def _handle_set_location_index(self, element: str, list_sets: "list[ZenSet]"):
         """Handles the set_location index for the custom set.
 
         :param element: element to handle
@@ -201,24 +201,22 @@ class ElementConstructor(ABC):
         :param list_sets: list of sets to append
         """
         if (
-            element in sets["set_conversion_technologies"]
-            or element in sets["set_storage_technologies"]
-            or element in sets["set_retrofitting_technologies"]
+            element in self.zen_model.sets["set_conversion_technologies"]
+            or element in self.zen_model.sets["set_storage_technologies"]
+            or element in self.zen_model.sets["set_retrofitting_technologies"]
         ):
-            list_sets.append(sets["set_nodes"])
-        elif element in sets["set_transport_technologies"]:
-            list_sets.append(sets["set_edges"])
+            list_sets.append(self.zen_model.sets["set_nodes"])
+        elif element in self.zen_model.sets["set_transport_technologies"]:
+            list_sets.append(self.zen_model.sets["set_edges"])
 
-    def handle_set_capacity_types_index(
-        self, element: str, sets: "IndexSet", list_sets: list[str]
-    ):
+    def _handle_set_capacity_types_index(self, element: str, list_sets: list[str]):
         """Handles the set_capacity_types index for the custom set.
 
         :param element: element to handle
         :param sets: sets of the optimization setup
         :param list_sets: list of sets to append
         """
-        if element in sets["set_storage_technologies"]:
+        if element in self.zen_model.sets["set_storage_technologies"]:
             list_sets.append(self.config.system.set_capacity_types)
         else:
             list_sets.append([self.config.system.set_capacity_types[0]])

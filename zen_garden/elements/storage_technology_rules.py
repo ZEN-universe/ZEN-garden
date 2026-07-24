@@ -66,17 +66,15 @@ class StorageTechnologyRules(GenericRule):
         )
 
         lhs = (
-            self.zen_model.lp_model.variables["flow_storage_charge"]
-            - self.zen_model.lp_model.variables["charge_storage_binary"]
-            * capacity_limit
+            self.zen_model.variables["flow_storage_charge"]
+            - self.zen_model.variables["charge_storage_binary"] * capacity_limit
         )
         rhs = 0
         constraint_charge = lhs <= rhs
 
         lhs = (
-            self.zen_model.lp_model.variables["flow_storage_discharge"]
-            + self.zen_model.lp_model.variables["charge_storage_binary"]
-            * capacity_limit
+            self.zen_model.variables["flow_storage_discharge"]
+            + self.zen_model.variables["charge_storage_binary"] * capacity_limit
         )
         rhs = capacity_limit
         constraint_discharge = lhs <= rhs
@@ -117,7 +115,7 @@ class StorageTechnologyRules(GenericRule):
         )
         term_capacity = (
             self.zen_model.parameters.max_load.loc[techs, nodes, :]
-            * self.zen_model.lp_model.variables["capacity"].loc[
+            * self.zen_model.variables["capacity"].loc[
                 techs, "power", nodes, time_step_year
             ]
         ).rename(
@@ -161,15 +159,15 @@ class StorageTechnologyRules(GenericRule):
         if len(techs) == 0:
             return
         nodes = self.zen_model.sets["set_nodes"]
-        lhs_opex = self.zen_model.lp_model.variables["cost_opex_variable"].sel(
+        lhs_opex = self.zen_model.variables["cost_opex_variable"].sel(
             {"set_technologies": techs, "set_location": nodes}
         ) - (
             self.zen_model.parameters.opex_specific_variable
             * self.get_flow_expression_storage()
         )
-        lhs_emissions = self.zen_model.lp_model.variables[
-            "carbon_emissions_technology"
-        ].sel({"set_technologies": techs, "set_location": nodes}) - (
+        lhs_emissions = self.zen_model.variables["carbon_emissions_technology"].sel(
+            {"set_technologies": techs, "set_location": nodes}
+        ) - (
             self.zen_model.parameters.carbon_intensity_technology
             * self.get_flow_expression_storage()
         )
@@ -214,9 +212,7 @@ class StorageTechnologyRules(GenericRule):
             return
         # mask for energy capacity and storage time steps
         times = self.get_storage2year_time_step_array()
-        capacity = self.map_and_expand(
-            self.zen_model.lp_model.variables["capacity"], times
-        )
+        capacity = self.map_and_expand(self.zen_model.variables["capacity"], times)
         capacity = capacity.rename(
             {
                 "set_technologies": "set_storage_technologies",
@@ -224,9 +220,9 @@ class StorageTechnologyRules(GenericRule):
             }
         )
         capacity = capacity.sel({"set_nodes": nodes, "set_storage_technologies": techs})
-        storage_level = self.zen_model.lp_model.variables["storage_level"]
+        storage_level = self.zen_model.variables["storage_level"]
         mask_capacity_type = (
-            self.zen_model.lp_model.variables["capacity"].coords["set_capacity_types"]
+            self.zen_model.variables["capacity"].coords["set_capacity_types"]
             == "energy"
         )
         lhs = (storage_level - capacity).where(mask_capacity_type, 0.0)
@@ -260,9 +256,9 @@ class StorageTechnologyRules(GenericRule):
         mask_min = e2p_min != np.inf
         mask_max = e2p_max != np.inf
 
-        capacity_addition = self.zen_model.lp_model.variables[
-            "capacity_addition"
-        ].rename({"set_technologies": "set_storage_technologies"})
+        capacity_addition = self.zen_model.variables["capacity_addition"].rename(
+            {"set_technologies": "set_storage_technologies"}
+        )
         capacity_addition_power = capacity_addition.sel(
             {"set_storage_technologies": techs, "set_capacity_types": "power"}
         )
@@ -333,11 +329,9 @@ class StorageTechnologyRules(GenericRule):
         times_coupling, mask_coupling = self.get_previous_storage_time_step_array()
         self_discharge_previous = (1 - self_discharge) ** time_steps_storage_duration
         self_discharge_previous["set_time_steps_storage"] = times_coupling
-        term_delta_storage_level = self.zen_model.lp_model.variables[
+        term_delta_storage_level = self.zen_model.variables[
             "storage_level"
-        ] - self_discharge_previous * self.zen_model.lp_model.variables[
-            "storage_level"
-        ].sel(
+        ] - self_discharge_previous * self.zen_model.variables["storage_level"].sel(
             {"set_time_steps_storage": times_coupling}
         )
         # charge and discharge flow
@@ -357,8 +351,8 @@ class StorageTechnologyRules(GenericRule):
             .sum("set_years")
         )
         term_flow_charge_discharge = (
-            self.zen_model.lp_model.variables["flow_storage_charge"] * efficiency_charge
-            - self.zen_model.lp_model.variables["flow_storage_discharge"].to_linexpr()
+            self.zen_model.variables["flow_storage_charge"] * efficiency_charge
+            - self.zen_model.variables["flow_storage_discharge"].to_linexpr()
             / efficiency_discharge
             + flow_storage_inflow
             - flow_storage_spillage
@@ -438,7 +432,7 @@ class StorageTechnologyRules(GenericRule):
             [
                 (
                     1.0,
-                    self.zen_model.lp_model.variables["cost_capex_overnight"].loc[
+                    self.zen_model.variables["cost_capex_overnight"].loc[
                         techs, capacity_types, nodes, times
                     ],
                 ),
@@ -446,7 +440,7 @@ class StorageTechnologyRules(GenericRule):
                     -self.zen_model.parameters.capex_specific_storage.loc[
                         techs, capacity_types, nodes, times
                     ],
-                    self.zen_model.lp_model.variables["capacity_addition"].loc[
+                    self.zen_model.variables["capacity_addition"].loc[
                         techs, capacity_types, nodes, times
                     ],
                 ),

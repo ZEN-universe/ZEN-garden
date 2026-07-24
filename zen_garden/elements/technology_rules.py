@@ -58,9 +58,9 @@ class TechnologyRules(GenericRule):
         in year :math:`y`
 
         """
-        lhs = self.zen_model.lp_model.variables[
+        lhs = self.zen_model.variables[
             "cost_capex_yearly_total"
-        ] - self.zen_model.lp_model.variables["cost_capex_yearly"].sum(
+        ] - self.zen_model.variables["cost_capex_yearly"].sum(
             ["set_technologies", "set_capacity_types", "set_location"]
         )
         rhs = 0
@@ -78,9 +78,9 @@ class TechnologyRules(GenericRule):
         location :math:`p` in year :math:`y`
 
         """
-        lhs = self.zen_model.lp_model.variables[
+        lhs = self.zen_model.variables[
             "cost_opex_yearly_total"
-        ] - self.zen_model.lp_model.variables["cost_opex_yearly"].sum(
+        ] - self.zen_model.variables["cost_opex_yearly"].sum(
             ["set_technologies", "set_location"]
         )
         rhs = 0
@@ -116,7 +116,7 @@ class TechnologyRules(GenericRule):
         m = self.zen_model.parameters.capacity_limit != np.inf
 
         lhs_not_reached = (
-            self.zen_model.lp_model.variables["capacity"]
+            self.zen_model.variables["capacity"]
             .where(m)
             .where(capacity_limit_not_reached)
         )
@@ -125,13 +125,13 @@ class TechnologyRules(GenericRule):
         )
         constraints_not_reached = lhs_not_reached <= rhs_not_reached
         lhs_reached = (
-            self.zen_model.lp_model.variables["capacity_addition"]
+            self.zen_model.variables["capacity_addition"]
             .where(m)
             .where(~capacity_limit_not_reached)
         )
         rhs_reached = 0
         if not self.config.system.allow_investment:
-            lhs_reached = self.zen_model.lp_model.variables["capacity_addition"]
+            lhs_reached = self.zen_model.variables["capacity_addition"]
         constraints_reached = lhs_reached == rhs_reached
 
         self.zen_model.add_constraint(
@@ -145,7 +145,7 @@ class TechnologyRules(GenericRule):
         """Constraint that installed capacity must be >= the defined lower limit."""
 
         # In TechnologyRules, we access variables and parameters directly via self
-        capacity = self.zen_model.lp_model.variables["capacity"]
+        capacity = self.zen_model.variables["capacity"]
         capacity_lower_limit = self.zen_model.parameters.capacity_lower_limit
 
         # Create a mask so we only build constraints
@@ -186,9 +186,8 @@ class TechnologyRules(GenericRule):
             return None
 
         lhs = mask * (
-            capacity_addition_min
-            * self.zen_model.lp_model.variables["technology_installation"]
-            - self.zen_model.lp_model.variables["capacity_addition"]
+            capacity_addition_min * self.zen_model.variables["technology_installation"]
+            - self.zen_model.variables["capacity_addition"]
         )
         rhs = 0
         constraints = lhs <= rhs
@@ -223,9 +222,8 @@ class TechnologyRules(GenericRule):
         if not mask.any():
             return None
         lhs = mask * (
-            capacity_addition_max
-            * self.zen_model.lp_model.variables["technology_installation"]
-            - self.zen_model.lp_model.variables["capacity_addition"]
+            capacity_addition_max * self.zen_model.variables["technology_installation"]
+            - self.zen_model.variables["capacity_addition"]
         )
         rhs = 0
         constraints = lhs >= rhs
@@ -284,7 +282,7 @@ class TechnologyRules(GenericRule):
             & ~mask_current_time_steps
         )
         # broadcast capacity investment and capacity investment existing
-        capacity_investment = self.zen_model.lp_model.variables["capacity_investment"]
+        capacity_investment = self.zen_model.variables["capacity_investment"]
         investment_time_current = (
             investment_time[mask_current_time_steps]
             .dropna()
@@ -319,7 +317,7 @@ class TechnologyRules(GenericRule):
         ### formulate constraint
         lhs = lp.merge(
             [
-                1 * self.zen_model.lp_model.variables["capacity_addition"],
+                1 * self.zen_model.variables["capacity_addition"],
                 -(investment_time_current * capacity_investment_addition).sum(
                     "set_time_steps_construction"
                 ),
@@ -406,25 +404,25 @@ class TechnologyRules(GenericRule):
         lt_range = pd.Series(index=lt_range, data=-1)
         lt_range = (
             lt_range.to_xarray()
-            .broadcast_like(self.zen_model.lp_model.variables["capacity"].lower)
+            .broadcast_like(self.zen_model.variables["capacity"].lower)
             .fillna(0)
         )
-        capacity_addition = self.zen_model.lp_model.variables[
-            "capacity_addition"
-        ].rename({"set_years": "set_years_prev"})
+        capacity_addition = self.zen_model.variables["capacity_addition"].rename(
+            {"set_years": "set_years_prev"}
+        )
         capacity_addition = capacity_addition.broadcast_like(lt_range)
         expr = (lt_range * capacity_addition).sum("set_years_prev")
         lhs = lp.merge(
-            [1 * self.zen_model.lp_model.variables["capacity"], expr],
+            [1 * self.zen_model.variables["capacity"], expr],
             compat="broadcast_equals",
             join="outer",
             cls=LinearExpression,
         )
         lhs_previous = lp.merge(
             [
-                1 * self.zen_model.lp_model.variables["capacity_previous"],
+                1 * self.zen_model.variables["capacity_previous"],
                 expr,
-                1 * self.zen_model.lp_model.variables["capacity_addition"],
+                1 * self.zen_model.variables["capacity_addition"],
             ],
             compat="broadcast_equals",
             join="outer",
@@ -472,7 +470,7 @@ class TechnologyRules(GenericRule):
 
         """
         # load variables and parameters
-        capacity_addition = self.zen_model.lp_model.variables["capacity_addition"]
+        capacity_addition = self.zen_model.variables["capacity_addition"]
         capacity_existing = self.zen_model.parameters.capacity_existing
         knowledge_depreciation_rate = (
             self.zen_model.parameters.knowledge_depreciation_rate
@@ -577,7 +575,7 @@ class TechnologyRules(GenericRule):
                 term_knowledge = capacity_addition_years + sr * term_spillover
                 term_knowledge = tdr * (term_knowledge * kdr).sum("set_years_prev")
         # unbounded market share --> only for same technology class
-        capacity_previous = self.zen_model.lp_model.variables["capacity_previous"]
+        capacity_previous = self.zen_model.variables["capacity_previous"]
         market_share_unbounded = {
             (t, ot): (
                 self.zen_model.parameters.market_share_unbounded
@@ -755,17 +753,17 @@ class TechnologyRules(GenericRule):
         ]
         lt_range = (
             lt_range.to_xarray()
-            .broadcast_like(self.zen_model.lp_model.variables["capacity"].lower)
+            .broadcast_like(self.zen_model.variables["capacity"].lower)
             .fillna(0)
         )
 
-        cost_capex_overnight = self.zen_model.lp_model.variables[
-            "cost_capex_overnight"
-        ].rename({"set_years": "set_years_prev"})
+        cost_capex_overnight = self.zen_model.variables["cost_capex_overnight"].rename(
+            {"set_years": "set_years_prev"}
+        )
         cost_capex_overnight = cost_capex_overnight.broadcast_like(lt_range)
         expr = (lt_range * a * cost_capex_overnight).sum("set_years_prev")
         lhs = lp.merge(
-            [1 * self.zen_model.lp_model.variables["cost_capex_yearly"], expr],
+            [1 * self.zen_model.variables["cost_capex_yearly"], expr],
             compat="broadcast_equals",
             join="outer",
             cls=LinearExpression,
@@ -807,17 +805,17 @@ class TechnologyRules(GenericRule):
         times = pd.concat(times_dict, keys=times_dict.keys())
         times.index.names = ["set_years", "set_time_steps_operation"]
         times = times.to_xarray().broadcast_like(
-            self.zen_model.lp_model.variables["cost_opex_variable"].mask
+            self.zen_model.variables["cost_opex_variable"].mask
         )
         term_opex_variable = (
-            self.zen_model.lp_model.variables["cost_opex_variable"] * times
+            self.zen_model.variables["cost_opex_variable"] * times
         ).sum("set_time_steps_operation")
         term_opex_fixed = (
             self.zen_model.parameters.opex_specific_fixed
-            * self.zen_model.lp_model.variables["capacity"]
+            * self.zen_model.variables["capacity"]
         ).sum("set_capacity_types")
         lhs = (
-            self.zen_model.lp_model.variables["cost_opex_yearly"]
+            self.zen_model.variables["cost_opex_yearly"]
             - term_opex_variable
             - term_opex_fixed
         )
@@ -842,11 +840,11 @@ class TechnologyRules(GenericRule):
 
         """
         term_summed_carbon_emissions_technology = (
-            self.zen_model.lp_model.variables["carbon_emissions_technology"]
+            self.zen_model.variables["carbon_emissions_technology"]
             * self.get_year_time_step_duration_array()
         ).sum(["set_technologies", "set_location", "set_time_steps_operation"])
         lhs = (
-            self.zen_model.lp_model.variables["carbon_emissions_technology_total"]
+            self.zen_model.variables["carbon_emissions_technology_total"]
             - term_summed_carbon_emissions_technology
         )
         rhs = 0
@@ -897,14 +895,12 @@ class TechnologyRules(GenericRule):
             return None
         # params and variables
         min_load = self.zen_model.parameters.min_load
-        capacity = self.zen_model.lp_model.variables["capacity"].sel(
+        capacity = self.zen_model.variables["capacity"].sel(
             {"set_capacity_types": "power", "set_years": time_step_year}
         )
         big_M = capacity.upper
-        binary = self.zen_model.lp_model.variables["tech_on_var"]
-        capacity_on_off_helper = self.zen_model.lp_model.variables[
-            "capacity_on_off_helper_var"
-        ]
+        binary = self.zen_model.variables["tech_on_var"]
+        capacity_on_off_helper = self.zen_model.variables["capacity_on_off_helper_var"]
         # mask for on_off variables
         mask_on_off = binary.mask
         # assert that no big-M is inf
@@ -929,7 +925,7 @@ class TechnologyRules(GenericRule):
             list_flow_reference.append(self.get_flow_expression_storage(rename=True))
         if len(transport_techs) > 0:
             list_flow_reference.append(
-                self.zen_model.lp_model.variables["flow_transport"]
+                self.zen_model.variables["flow_transport"]
                 .rename(
                     {
                         "set_transport_technologies": "set_technologies",

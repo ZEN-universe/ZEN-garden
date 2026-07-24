@@ -161,14 +161,14 @@ class GenericRule(object):
             if rc in self.zen_model.sets["set_input_carriers"][t]:
                 reference_flows.append(
                     mult
-                    * self.zen_model.lp_model.variables["flow_conversion_input"].loc[
+                    * self.zen_model.variables["flow_conversion_input"].loc[
                         t, rc, nodes, :
                     ]
                 )
             else:
                 reference_flows.append(
                     mult
-                    * self.zen_model.lp_model.variables["flow_conversion_output"].loc[
+                    * self.zen_model.variables["flow_conversion_output"].loc[
                         t, rc, nodes, :
                     ]
                 )
@@ -195,8 +195,8 @@ class GenericRule(object):
     def get_flow_expression_storage(self, rename=True):
         """Return the flow expression for storage technologies."""
         term = (
-            self.zen_model.lp_model.variables["flow_storage_charge"]
-            + self.zen_model.lp_model.variables["flow_storage_discharge"]
+            self.zen_model.variables["flow_storage_charge"]
+            + self.zen_model.variables["flow_storage_discharge"]
         )
         if rename:
             return term.rename(

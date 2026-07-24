@@ -120,11 +120,8 @@ class ConversionTechnologyConstructor(ElementConstructor):
             :param index_names: list of index names
             :return: bounds: bounds of carrier_flow
             """
-            params = self.zen_model.parameters
-            sets = self.zen_model.sets
-
             # init the bounds
-            index_arrs = sets.tuple_to_arr(index_values, index_names)
+            index_arrs = self.zen_model.sets.tuple_to_arr(index_values, index_names)
             coords = [
                 self.zen_model.sets.get_coord(data, name)
                 for data, name in zip(index_arrs, index_names, strict=False)
@@ -134,7 +131,7 @@ class ConversionTechnologyConstructor(ElementConstructor):
 
             # get the sets
             technology_set, carrier_set, node_set, timestep_set = [
-                sets[name] for name in index_names
+                self.zen_model.sets[name] for name in index_names
             ]
 
             for tech in technology_set:
@@ -143,17 +140,24 @@ class ConversionTechnologyConstructor(ElementConstructor):
                         self.time_steps.convert_time_step_operation2year(t)
                         for t in timestep_set
                     ]
-                    if carrier == sets["set_reference_carriers"][tech][0]:
+                    if (
+                        carrier
+                        == self.zen_model.sets["set_reference_carriers"][tech][0]
+                    ):
                         conversion_factor_lower = 1
                         conversion_factor_upper = 1
                     else:
                         conversion_factor_lower = (
-                            params.conversion_factor.loc[tech, carrier, node_set]
+                            self.zen_model.parameters.conversion_factor.loc[
+                                tech, carrier, node_set
+                            ]
                             .min()
                             .data
                         )
                         conversion_factor_upper = (
-                            params.conversion_factor.loc[tech, carrier, node_set]
+                            self.zen_model.parameters.conversion_factor.loc[
+                                tech, carrier, node_set
+                            ]
                             .max()
                             .data
                         )
@@ -169,13 +173,13 @@ class ConversionTechnologyConstructor(ElementConstructor):
                             )
 
                     lower.loc[tech, carrier, ...] = (
-                        self.zen_model.lp_model.variables["capacity"]
+                        self.zen_model.variables["capacity"]
                         .lower.loc[tech, "power", node_set, time_step_year]
                         .data
                         * conversion_factor_lower
                     )
                     upper.loc[tech, carrier, ...] = (
-                        self.zen_model.lp_model.variables["capacity"]
+                        self.zen_model.variables["capacity"]
                         .upper.loc[tech, "power", node_set, time_step_year]
                         .data
                         * conversion_factor_upper
@@ -243,8 +247,6 @@ class ConversionTechnologyConstructor(ElementConstructor):
     def construct_constraints(self):
         logger.info("Constructing constraints for ConversionTechnology")
 
-        model = self.zen_model.lp_model
-        constraints = self.zen_model.constraints
         # add pwa constraints
         rules = ConversionTechnologyRules(
             self.config, self.zen_model, self.energy_system, self.time_steps
@@ -280,8 +282,7 @@ class ConversionTechnologyConstructor(ElementConstructor):
             pwa_breakpoints, pwa_values = self.calculate_capex_pwa_breakpoints_values(
                 set_pwa_capex[0]
             )
-            constraints.add_pw_constraint(
-                model,
+            self.zen_model.constraints.add_pw_constraint(
                 index_values=set_pwa_capex[0],
                 yvar="capex_approximation",
                 xvar="capacity_approximation",

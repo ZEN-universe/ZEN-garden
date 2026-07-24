@@ -215,3 +215,11 @@ class Variable(Component):
                 )
 
         return var_units[mask.to_series()]
+
+    def __getitem__(self, key):
+        """Get variable values by name.
+
+        :param key: name of variable
+        :return: variable values
+        """
+        return self.lp_model.variables[key]

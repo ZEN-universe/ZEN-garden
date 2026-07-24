@@ -91,12 +91,12 @@ class TransportTechnologyConstructor(ElementConstructor):
             )
 
             lower = (
-                self.zen_model.lp_model.variables["capacity"]
+                self.zen_model.variables["capacity"]
                 .lower.loc[tech_arr, "power", edge_arr, time_step_year]
                 .data
             )
             upper = (
-                self.zen_model.lp_model.variables["capacity"]
+                self.zen_model.variables["capacity"]
                 .upper.loc[tech_arr, "power", edge_arr, time_step_year]
                 .data
             )

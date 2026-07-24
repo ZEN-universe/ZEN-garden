@@ -25,12 +25,8 @@ class RetrofittingTechnologyRules(GenericRule):
             \\overline{G}_{i,n,t}^\\mathrm{r} = G^\\mathrm{d,approximation}_{i,n,t}
 
         """
-        flow_conversion_input = self.zen_model.lp_model.variables[
-            "flow_conversion_input"
-        ]
-        flow_conversion_output = self.zen_model.lp_model.variables[
-            "flow_conversion_output"
-        ]
+        flow_conversion_input = self.zen_model.variables["flow_conversion_input"]
+        flow_conversion_output = self.zen_model.variables["flow_conversion_output"]
         rc_in = pd.Series(
             {
                 (t, c): (

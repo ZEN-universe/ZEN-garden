@@ -69,10 +69,10 @@ Our constraints are always set up in the same way:
         :math:``q_{a,b}``: Indexed parameter for :math:`a` and :math:`b`.
         """
         term_product_xp = (
-            self.zen_model.lp_model.variables["x"]
+            self.zen_model.variables["x"]
             * self.zen_model.parameters.p
         )
-        lhs = term_product_xp + self.zen_model.lp_model.variables["y"]
+        lhs = term_product_xp + self.zen_model.variables["y"]
         rhs = self.zen_model.parameters.p
         constraints = lhs <= rhs
         self.zen_model.add_constraint(
@@ -127,7 +127,7 @@ We can now write the constraint as follows:
 
 .. code-block::
 
-    lhs = self.zen_model.lp_model.variables["shed_demand"]
+    lhs = self.zen_model.variables["shed_demand"]
     rhs = self.zen_model.parameters.demand
     constraints = lhs <= rhs
     self.zen_model.add_constraint(
@@ -146,7 +146,7 @@ actually want to add another condition, which is that ``shed_demand = 0`` if the
 .. code-block::
 
     mask = self.zen_model.parameters.price_shed_demand != np.inf
-    lhs = self.zen_model.lp_model.variables["shed_demand"]
+    lhs = self.zen_model.variables["shed_demand"]
     rhs = self.zen_model.parameters.demand.where(mask,0.0)
     constraints = lhs <= rhs
     self.zen_model.add_constraint("constraint_shed_demand",constraints)
@@ -162,7 +162,7 @@ the constraint for those ``carriers`` that have a ``price_shed_demand != 0``:
 
     mask_0 = self.zen_model.parameters.price_shed_demand != 0
     mask_inf = self.zen_model.parameters.price_shed_demand != np.inf
-    lhs = self.zen_model.lp_model.variables["shed_demand"].where(mask_0)
+    lhs = self.zen_model.variables["shed_demand"].where(mask_0)
     rhs = self.zen_model.parameters.demand.where(mas_inf,0.0)
     constraints = lhs <= rhs
     self.zen_model.add_constraint("constraint_shed_demand",constraints)
@@ -202,7 +202,7 @@ and sum over all time steps of the year.
 .. code-block::
 
     times = self.get_year_time_step_duration_array()
-    term_expanded_cost_carrier = self.zen_model.lp_model.variables["cost_carrier"].broadcast_like(times)
+    term_expanded_cost_carrier = self.zen_model.variables["cost_carrier"].broadcast_like(times)
 
     variables["cost_carrier"]:
 
@@ -259,7 +259,7 @@ two variables, we must rename the dimensions of ``capacity`` (see
 
 .. code-block::
 
-    capacity = self.zen_model.lp_model.variables["capacity"].rename({"set_technologies": "set_storage_technologies", "set_location": "set_nodes"})
+    capacity = self.zen_model.variables["capacity"].rename({"set_technologies": "set_storage_technologies", "set_location": "set_nodes"})
     capacity = capacity.sel({"set_nodes": self.sets["set_nodes"], "set_storage_technologies": self.sets["set_storage_technologies"]})
 
 The ``.sel({<dimension>: <values>})`` is a fast method to select the values of a
@@ -277,7 +277,7 @@ in the previous example, we want to restructure ``capacity`` to fit the
 .. code-block::
 
     times = self.get_storage2year_time_step_array()
-    capacity = self.map_and_expand(self.zen_model.lp_model.variables["capacity"], times)
+    capacity = self.map_and_expand(self.zen_model.variables["capacity"], times)
 
     variables["capacity"]
 

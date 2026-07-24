@@ -35,7 +35,7 @@ class TransportTechnologyRules(GenericRule):
         if len(techs) == 0:
             return
         edges = self.zen_model.sets["set_edges"]
-        times = self.zen_model.lp_model.variables["flow_transport"].coords[
+        times = self.zen_model.variables["flow_transport"].coords[
             "set_time_steps_operation"
         ]
         time_step_year = xr.DataArray(
@@ -44,7 +44,7 @@ class TransportTechnologyRules(GenericRule):
         )
         term_capacity = (
             self.zen_model.parameters.max_load.loc[techs, edges, :]
-            * self.zen_model.lp_model.variables["capacity"].loc[
+            * self.zen_model.variables["capacity"].loc[
                 techs, "power", edges, time_step_year
             ]
         ).rename(
@@ -56,7 +56,7 @@ class TransportTechnologyRules(GenericRule):
 
         lhs = (
             term_capacity
-            - self.zen_model.lp_model.variables["flow_transport"].loc[techs, edges, :]
+            - self.zen_model.variables["flow_transport"].loc[techs, edges, :]
         )
         rhs = 0
         constraints = lhs >= rhs
@@ -83,11 +83,11 @@ class TransportTechnologyRules(GenericRule):
         if len(techs) == 0:
             return
         edges = self.zen_model.sets["set_edges"]
-        lhs_opex = self.zen_model.lp_model.variables["cost_opex_variable"].loc[
+        lhs_opex = self.zen_model.variables["cost_opex_variable"].loc[
             techs, edges, :
         ] - (
             self.zen_model.parameters.opex_specific_variable
-            * self.zen_model.lp_model.variables["flow_transport"].rename(
+            * self.zen_model.variables["flow_transport"].rename(
                 {
                     "set_transport_technologies": "set_technologies",
                     "set_edges": "set_location",
@@ -96,11 +96,11 @@ class TransportTechnologyRules(GenericRule):
         ).sel(
             {"set_technologies": techs, "set_location": edges}
         )
-        lhs_emissions = self.zen_model.lp_model.variables[
-            "carbon_emissions_technology"
-        ].loc[techs, edges, :] - (
+        lhs_emissions = self.zen_model.variables["carbon_emissions_technology"].loc[
+            techs, edges, :
+        ] - (
             self.zen_model.parameters.carbon_intensity_technology
-            * self.zen_model.lp_model.variables["flow_transport"].rename(
+            * self.zen_model.variables["flow_transport"].rename(
                 {
                     "set_transport_technologies": "set_technologies",
                     "set_edges": "set_location",
@@ -151,8 +151,8 @@ class TransportTechnologyRules(GenericRule):
         """
         if len(self.zen_model.sets["set_transport_technologies"]) == 0:
             return
-        flow_transport = self.zen_model.lp_model.variables["flow_transport"]
-        flow_transport_loss = self.zen_model.lp_model.variables["flow_transport_loss"]
+        flow_transport = self.zen_model.variables["flow_transport"]
+        flow_transport_loss = self.zen_model.variables["flow_transport_loss"]
         # This mask checks the distance between nodes
         distance_isfinite = cast(
             xr.DataArray, ~np.isinf(self.zen_model.parameters.distance)
@@ -215,15 +215,15 @@ class TransportTechnologyRules(GenericRule):
         ### auxiliary calculations TODO improve
         term_distance_inf = (
             mask
-            * self.zen_model.lp_model.variables["capacity_addition"].loc[
+            * self.zen_model.variables["capacity_addition"].loc[
                 coords[0], "power", coords[1], coords[2]
             ]
         )
         term_distance_not_inf = (1 - mask) * (
-            self.zen_model.lp_model.variables["cost_capex_overnight"].loc[
+            self.zen_model.variables["cost_capex_overnight"].loc[
                 coords[0], "power", coords[1], coords[2]
             ]
-            - self.zen_model.lp_model.variables["capacity_addition"].loc[
+            - self.zen_model.variables["capacity_addition"].loc[
                 coords[0], "power", coords[1], coords[2]
             ]
             * self.zen_model.parameters.capex_specific_transport.loc[
@@ -240,7 +240,7 @@ class TransportTechnologyRules(GenericRule):
         ):
             term_distance_not_inf -= (
                 (1 - mask)
-                * self.zen_model.lp_model.variables["technology_installation"].loc[
+                * self.zen_model.variables["technology_installation"].loc[
                     coords[0], "power", coords[1], coords[2]
                 ]
                 * (

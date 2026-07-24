@@ -41,17 +41,12 @@ class CarrierRules(GenericRule):
         times = self.get_year_time_step_duration_array()
         term_summed_cost_carrier = (
             (
-                self.zen_model.lp_model.variables["cost_carrier"].broadcast_like(times)
-                + self.zen_model.lp_model.variables["cost_shed_demand"].broadcast_like(
-                    times
-                )
+                self.zen_model.variables["cost_carrier"].broadcast_like(times)
+                + self.zen_model.variables["cost_shed_demand"].broadcast_like(times)
             )
             * times
         ).sum(["set_carriers", "set_nodes", "set_time_steps_operation"])
-        lhs = (
-            self.zen_model.lp_model.variables["cost_carrier_total"]
-            - term_summed_cost_carrier
-        )
+        lhs = self.zen_model.variables["cost_carrier_total"] - term_summed_cost_carrier
         rhs = 0
         constraints = lhs == rhs
 
@@ -70,11 +65,11 @@ class CarrierRules(GenericRule):
 
         """
         term_summed_carbon_emissions_carrier = (
-            self.zen_model.lp_model.variables["carbon_emissions_carrier"]
+            self.zen_model.variables["carbon_emissions_carrier"]
             * self.get_year_time_step_duration_array()
         ).sum(["set_carriers", "set_nodes", "set_time_steps_operation"])
         lhs = (
-            self.zen_model.lp_model.variables["carbon_emissions_carrier_total"]
+            self.zen_model.variables["carbon_emissions_carrier_total"]
             - term_summed_carbon_emissions_carrier
         )
         rhs = 0
@@ -104,11 +99,11 @@ class CarrierRules(GenericRule):
         at node :math:`n` and time step :math:`t`
 
         """
-        lhs_imp = self.zen_model.lp_model.variables["flow_import"]
+        lhs_imp = self.zen_model.variables["flow_import"]
         rhs_imp = self.zen_model.parameters.availability_import
         constraints_imp = lhs_imp <= rhs_imp
 
-        lhs_exp = self.zen_model.lp_model.variables["flow_export"]
+        lhs_exp = self.zen_model.variables["flow_export"]
         rhs_exp = self.zen_model.parameters.availability_export
         constraints_exp = lhs_exp <= rhs_exp
 
@@ -146,7 +141,7 @@ class CarrierRules(GenericRule):
         # import
         lhs_imp = (
             (
-                self.zen_model.lp_model.variables["flow_import"]
+                self.zen_model.variables["flow_import"]
                 * self.get_year_time_step_duration_array()
             )
             .sum("set_time_steps_operation")
@@ -158,7 +153,7 @@ class CarrierRules(GenericRule):
         # export
         lhs_exp = (
             (
-                self.zen_model.lp_model.variables["flow_export"]
+                self.zen_model.variables["flow_export"]
                 * self.get_year_time_step_duration_array()
             )
             .sum("set_time_steps_operation")
@@ -193,11 +188,11 @@ class CarrierRules(GenericRule):
         """
         ### formulate constraint
         lhs = (
-            self.zen_model.lp_model.variables["cost_carrier"]
+            self.zen_model.variables["cost_carrier"]
             - self.zen_model.parameters.price_import
-            * self.zen_model.lp_model.variables["flow_import"]
+            * self.zen_model.variables["flow_import"]
             + self.zen_model.parameters.price_export
-            * self.zen_model.lp_model.variables["flow_export"]
+            * self.zen_model.variables["flow_export"]
         )
         rhs = 0
         constraints = lhs == rhs
@@ -226,16 +221,16 @@ class CarrierRules(GenericRule):
 
         # cost of shedding demand
         lhs_cost = (
-            self.zen_model.lp_model.variables["cost_shed_demand"]
+            self.zen_model.variables["cost_shed_demand"]
             - self.zen_model.parameters.price_shed_demand
-            * self.zen_model.lp_model.variables["shed_demand"]
+            * self.zen_model.variables["shed_demand"]
         ).where(mask)
         rhs_cost = 0
         constraints_cost = lhs_cost == rhs_cost
 
         # limit of shedding demand:
         #   either the demand (price != inf) or zero (price == inf)
-        lhs_shed_demand = self.zen_model.lp_model.variables["shed_demand"]
+        lhs_shed_demand = self.zen_model.variables["shed_demand"]
         rhs_shed_demand = self.zen_model.parameters.demand.where(mask, 0.0)
         constraints_shed_demand = lhs_shed_demand <= rhs_shed_demand
 
@@ -277,11 +272,9 @@ class CarrierRules(GenericRule):
             )
             * times
         ).sum("set_years")
-        lhs = self.zen_model.lp_model.variables["carbon_emissions_carrier"] - (
-            self.zen_model.lp_model.variables["flow_import"]
-            * carbon_intensity_carrier_import
-            - self.zen_model.lp_model.variables["flow_export"]
-            * carbon_intensity_carrier_export
+        lhs = self.zen_model.variables["carbon_emissions_carrier"] - (
+            self.zen_model.variables["flow_import"] * carbon_intensity_carrier_import
+            - self.zen_model.variables["flow_export"] * carbon_intensity_carrier_export
         )
 
         rhs = 0
@@ -338,7 +331,7 @@ class CarrierRules(GenericRule):
 
         ### auxiliary calculations
         # carrier flow transport technologies
-        if self.zen_model.lp_model.variables["flow_transport"].size > 0:
+        if self.zen_model.variables["flow_transport"].size > 0:
             # recalculate all the edges
             edges_in = {
                 node: self.energy_system.calculate_connected_edges(node, "in")
@@ -387,14 +380,14 @@ class CarrierRules(GenericRule):
 
                 # get the variables for the in flow
                 in_vars_plus = (
-                    self.zen_model.lp_model.variables["flow_transport"]
+                    self.zen_model.variables["flow_transport"]
                     .labels.loc[techs, edges_in, :]
                     .data
                 )
                 in_vars_plus = in_vars_plus.reshape((-1, in_vars_plus.shape[-1])).T
                 in_coefs_plus = np.ones_like(in_vars_plus)
                 in_vars_minus = (
-                    self.zen_model.lp_model.variables["flow_transport_loss"]
+                    self.zen_model.variables["flow_transport_loss"]
                     .labels.loc[techs, edges_in, :]
                     .data
                 )
@@ -411,7 +404,7 @@ class CarrierRules(GenericRule):
 
                 # get the variables for the out flow
                 out_vars_plus = (
-                    self.zen_model.lp_model.variables["flow_transport"]
+                    self.zen_model.variables["flow_transport"]
                     .labels.loc[techs, edges_out, :]
                     .data
                 )
@@ -443,12 +436,12 @@ class CarrierRules(GenericRule):
         else:
             # if there is no carrier flow we just create empty arrays
             term_flow_transport_in = (
-                self.zen_model.lp_model.variables["flow_import"]
+                self.zen_model.variables["flow_import"]
                 .where(xr.DataArray(False))
                 .to_linexpr()
             )
             term_flow_transport_out = (
-                self.zen_model.lp_model.variables["flow_import"]
+                self.zen_model.variables["flow_import"]
                 .where(xr.DataArray(False))
                 .to_linexpr()
             )
@@ -473,18 +466,14 @@ class CarrierRules(GenericRule):
             # we need to catch emtpy lookups
             carrier_out = [carrier] if len(techs_out) > 0 else []
             term_carrier_conversion_in.append(
-                self.zen_model.lp_model.variables["flow_conversion_input"]
+                self.zen_model.variables["flow_conversion_input"]
                 .loc[techs_in, carrier_in, nodes]
-                .sum(
-                    self.zen_model.lp_model.variables["flow_conversion_input"].dims[:2]
-                )
+                .sum(self.zen_model.variables["flow_conversion_input"].dims[:2])
             )
             term_carrier_conversion_out.append(
-                self.zen_model.lp_model.variables["flow_conversion_output"]
+                self.zen_model.variables["flow_conversion_output"]
                 .loc[techs_out, carrier_out, nodes]
-                .sum(
-                    self.zen_model.lp_model.variables["flow_conversion_output"].dims[:2]
-                )
+                .sum(self.zen_model.variables["flow_conversion_output"].dims[:2])
             )
         # merge and regroup
         term_carrier_conversion_in = lp.merge(
@@ -511,7 +500,7 @@ class CarrierRules(GenericRule):
         )
 
         # carrier flow storage technologies
-        if self.zen_model.lp_model.variables["flow_storage_discharge"].size > 0:
+        if self.zen_model.variables["flow_storage_discharge"].size > 0:
             term_flow_storage_discharge = []
             term_flow_storage_charge = []
             for carrier in index.get_unique([0]):
@@ -521,12 +510,12 @@ class CarrierRules(GenericRule):
                     if carrier in self.zen_model.sets["set_reference_carriers"][tech]
                 ]
                 term_flow_storage_discharge.append(
-                    self.zen_model.lp_model.variables["flow_storage_discharge"]
+                    self.zen_model.variables["flow_storage_discharge"]
                     .loc[storage_techs]
                     .sum("set_storage_technologies")
                 )
                 term_flow_storage_charge.append(
-                    self.zen_model.lp_model.variables["flow_storage_charge"]
+                    self.zen_model.variables["flow_storage_charge"]
                     .loc[storage_techs]
                     .sum("set_storage_technologies")
                 )
@@ -562,28 +551,22 @@ class CarrierRules(GenericRule):
         else:
             # if there is no carrier flow we just create empty arrays
             term_flow_storage_discharge = (
-                self.zen_model.lp_model.variables["flow_import"]
+                self.zen_model.variables["flow_import"]
                 .where(xr.DataArray(False))
                 .to_linexpr()
             )
             term_flow_storage_charge = (
-                self.zen_model.lp_model.variables["flow_import"]
+                self.zen_model.variables["flow_import"]
                 .where(xr.DataArray(False))
                 .to_linexpr()
             )
 
         # carrier import, demand and export
-        term_carrier_import = self.zen_model.lp_model.variables[
-            "flow_import"
-        ].to_linexpr()
-        term_carrier_export = self.zen_model.lp_model.variables[
-            "flow_export"
-        ].to_linexpr()
+        term_carrier_import = self.zen_model.variables["flow_import"].to_linexpr()
+        term_carrier_export = self.zen_model.variables["flow_export"].to_linexpr()
         term_carrier_demand = self.zen_model.parameters.demand
         # shed demand
-        term_carrier_shed_demand = self.zen_model.lp_model.variables[
-            "shed_demand"
-        ].to_linexpr()
+        term_carrier_shed_demand = self.zen_model.variables["shed_demand"].to_linexpr()
 
         ### formulate the constraints
         lhs = lp.merge(

@@ -555,7 +555,6 @@ class TechnologyConstructor(ElementConstructor):
     @override
     def construct_constraints(self):
         logger.info("Constructing constraints for Technology")
-        model = self.zen_model.lp_model
 
         # construct pe.Constraints of the class <Technology>
         rules = TechnologyRules(
@@ -610,38 +609,36 @@ class TechnologyConstructor(ElementConstructor):
         rules.constraint_carbon_emissions_technology_total()
 
         # min load constraints
-        n_cons = len(model.constraints.items())
+        n_cons = len(self.zen_model.lp_model.constraints.items())
         techs_on_off = self.create_custom_set(["set_technologies", "set_on_off"])[0]
         rules.constraint_technology_on_off(techs_on_off)
 
         # if nothing was added we can remove the tech vars again
-        if len(model.constraints.items()) == n_cons:
-            model.variables.remove("tech_on_var")
-            model.variables.remove("capacity_on_off_helper_var")
+        if len(self.zen_model.lp_model.constraints.items()) == n_cons:
+            self.zen_model.lp_model.variables.remove("tech_on_var")
+            self.zen_model.lp_model.variables.remove("capacity_on_off_helper_var")
 
     def _technology_installation_mask(self) -> xr.DataArray:
         """Check if the binary variable is necessary."""
-        params = self.zen_model.parameters
-        model = self.zen_model.lp_model
-        sets = self.zen_model.sets
-
         mask = xr.DataArray(
             False,
             coords=[
-                model.variables.coords["set_years"],
-                model.variables.coords["set_technologies"],
-                model.variables.coords["set_capacity_types"],
-                model.variables.coords["set_location"],
+                self.zen_model.lp_model.variables.coords["set_years"],
+                self.zen_model.lp_model.variables.coords["set_technologies"],
+                self.zen_model.lp_model.variables.coords["set_capacity_types"],
+                self.zen_model.lp_model.variables.coords["set_location"],
             ],
         )
 
         # used in transport technology
-        techs = list(sets["set_transport_technologies"])
+        techs = list(self.zen_model.sets["set_transport_technologies"])
         if len(techs) > 0:
-            edges = list(sets["set_edges"])
+            edges = list(self.zen_model.sets["set_edges"])
             sub_mask = (
-                params.distance.loc[techs, edges]
-                * params.capex_per_distance_transport.loc[techs, edges]
+                self.zen_model.parameters.distance.loc[techs, edges]
+                * self.zen_model.parameters.capex_per_distance_transport.loc[
+                    techs, edges
+                ]
                 != 0
             )
             sub_mask = sub_mask.rename(
@@ -654,7 +651,8 @@ class TechnologyConstructor(ElementConstructor):
 
         # used in constraint_technology_min_capacity_addition
         mask = mask | (
-            params.capacity_addition_min.notnull() & (params.capacity_addition_min != 0)
+            self.zen_model.parameters.capacity_addition_min.notnull()
+            & (self.zen_model.parameters.capacity_addition_min != 0)
         )
 
         # used in constraint_technology_max_capacity_addition
@@ -668,9 +666,9 @@ class TechnologyConstructor(ElementConstructor):
         )
         index = ZenIndex(index_values, index_names)
         sub_mask = (
-            params.capacity_addition_max.notnull()
-            & (params.capacity_addition_max != np.inf)
-            & (params.capacity_addition_max != 0)
+            self.zen_model.parameters.capacity_addition_max.notnull()
+            & (self.zen_model.parameters.capacity_addition_max != np.inf)
+            & (self.zen_model.parameters.capacity_addition_max != 0)
         )
         for tech, capacity_type in index.get_unique([0, 1]):
             locs = index.get_values(locs=[tech, capacity_type], levels=2, unique=True)
@@ -727,7 +725,6 @@ class TechnologyConstructor(ElementConstructor):
         :return: existing_quantity: existing capacity or capex of existing capacity
         """
         params = self.zen_model.parameters.dict_parameters
-        sets = self.zen_model.sets
         existing_quantity = 0
         if type_existing_quantity == "capacity":
             existing_variable = params.capacity_existing
@@ -736,7 +733,9 @@ class TechnologyConstructor(ElementConstructor):
         else:
             raise KeyError(f"Wrong type of existing quantity {type_existing_quantity}")
 
-        for id_capacity_existing in sets["set_technologies_existing"][tech]:
+        for id_capacity_existing in self.zen_model.sets["set_technologies_existing"][
+            tech
+        ]:
             is_existing = self.get_if_capacity_still_existing(
                 tech,
                 year,

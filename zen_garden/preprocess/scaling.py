@@ -1,10 +1,14 @@
 import logging
 import time
+from typing import TYPE_CHECKING
 
 import numpy as np
 import scipy as sp
 
 from zen_garden.utils import get_label_position
+
+if TYPE_CHECKING:
+    from linopy import Model as LinopyModel
 
 logger = logging.getLogger(__name__)
 
@@ -19,7 +23,7 @@ class Scaling:
     solution.
     """
 
-    def __init__(self, model, algorithm=None, include_rhs=True):
+    def __init__(self, lp_model: "LinopyModel", algorithm=None, include_rhs=True):
         """Initializes scaling instance.
 
         Args:
@@ -36,7 +40,7 @@ class Scaling:
                 "Please provide a list of scaling algorithms, not a single string."
             )
             algorithm = [algorithm]
-        self.model = model
+        self.lp_model = lp_model
         self.algorithm = algorithm
         self.include_rhs = include_rhs
         # For Numerical Range Improvement
@@ -47,13 +51,13 @@ class Scaling:
 
     def initiate_A_matrix(self):
         """Constructs the A matrix and the right hand side of the constraints."""
-        self.A_matrix = self.model.constraints.to_matrix(filter_missings=False)
+        self.A_matrix = self.lp_model.constraints.to_matrix(filter_missings=False)
         self.A_matrix_copy = self.A_matrix.copy()  # necessary for printing of numerics
         self.D_r_inv = np.ones(self.A_matrix.get_shape()[0])
         self.D_c_inv = np.ones(self.A_matrix.get_shape()[1])
         self.rhs = []
-        for name in self.model.constraints:
-            constraint = self.model.constraints[name]
+        for name in self.lp_model.constraints:
+            constraint = self.lp_model.constraints[name]
             labels = constraint.labels.data
             mask = np.atleast_1d(labels != -2).nonzero()
             try:
@@ -69,9 +73,8 @@ class Scaling:
 
     def re_scale(self):
         """Rescales the solution of the optimization model."""
-        model = self.model
-        for name_var in model.variables:
-            var = model.variables[name_var]
+        for name_var in self.lp_model.variables:
+            var = self.lp_model.variables[name_var]
             cond = var.labels != -1
             var.solution = var.solution.where(
                 ~cond,  # Where condition is False, keep original data
@@ -104,7 +107,7 @@ class Scaling:
             name: name of the constraint for which the data is replaced with
                 the scaled data
         """
-        constraint = self.model.constraints[name]
+        constraint = self.lp_model.constraints[name]
         # Get data
         lhs = constraint.coeffs.data
         mask_skip_constraints = constraint.labels.data
@@ -133,7 +136,7 @@ class Scaling:
         are scaled. If the bounds are not scaled, the problem might get
         infeasible.
         """
-        vars = self.model.variables
+        vars = self.lp_model.variables
         for var in vars:
             mask = np.where(vars[var].labels.data != -1)
             scaling_factors = self.D_c_inv[vars[var].labels.data[mask]]
@@ -153,7 +156,7 @@ class Scaling:
             name: name of the constraint for which the scaling factors are
                 adjusted
         """
-        constraint = self.model.constraints[name]
+        constraint = self.lp_model.constraints[name]
         # rows -> unnecessary to adjust scaling factor of rows with binary and
         # integer variables as skipped anyways
         # cols
@@ -166,7 +169,7 @@ class Scaling:
         variables. These columns are skipped in the scaling process since
         scaling is solely valid for continuous variables.
         """
-        vars = self.model.variables
+        vars = self.lp_model.variables
         for var in vars:
             if vars[var].attrs["binary"] or vars[var].attrs["integer"]:
                 mask = np.where(vars[var].labels.data != -1)
@@ -183,26 +186,26 @@ class Scaling:
         self.D_c_inv = np.nan_to_num(self.D_c_inv, nan=1)
         self.D_r_inv = np.nan_to_num(self.D_r_inv, nan=1)
         # pre-check rows -> otherwise inconsistency in scaling
-        for name_con in self.model.constraints:
-            if self.model.constraints[name_con].coeffs.dtype == int:
+        for name_con in self.lp_model.constraints:
+            if self.lp_model.constraints[name_con].coeffs.dtype == int:
                 self.adjust_scaling_factors_of_skipped_rows(name_con)
         self.print_numerics_of_last_iteration()
         # Include adjust upper/lower bounds of variables that are scaled
         self.adjust_upper_lower_bounds_variables()
         # overwrite constraints
-        for name_con in self.model.constraints:
+        for name_con in self.lp_model.constraints:
             # overwrite data
             # check if only integers are allowed in scaling: if yes skip
             # and overwrite scaling vector
-            if self.model.constraints[name_con].coeffs.dtype == int:
+            if self.lp_model.constraints[name_con].coeffs.dtype == int:
                 continue
             else:
                 self.replace_data(name_con)
         # overwrite objective
-        vars = self.model.objective.vars.data
+        vars = self.lp_model.objective.vars.data
         scale_factors = self.D_c_inv[vars]
-        self.model.objective.coeffs.data = (
-            self.model.objective.coeffs.data * scale_factors
+        self.lp_model.objective.coeffs.data = (
+            self.lp_model.objective.coeffs.data * scale_factors
         )
 
     def get_min(self, A_matrix):
@@ -295,17 +298,17 @@ class Scaling:
         :return: string for log-outputs
         """
         if is_rhs:
-            cons_str = get_label_position(self.model.constraints, label)
+            cons_str = get_label_position(self.lp_model.constraints, label)
             cons_str = (
                 f"{cons_str[0]}[{','.join([str(k) for k in cons_str[1].values()])}]"
             )
             return f"{self.rhs[label]} in {cons_str}"
         else:
-            cons_str = get_label_position(self.model.constraints, label)
+            cons_str = get_label_position(self.lp_model.constraints, label)
             cons_str = (
                 f"{cons_str[0]}[{','.join([str(k) for k in cons_str[1].values()])}]"
             )
-            var_str = get_label_position(self.model.variables, var)
+            var_str = get_label_position(self.lp_model.variables, var)
             var_str = f"{var_str[0]}[{','.join([str(k) for k in var_str[1].values()])}]"
             return f"{A_matrix[index]} {var_str} in {cons_str}"
 

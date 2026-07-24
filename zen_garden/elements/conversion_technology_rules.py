@@ -44,7 +44,7 @@ class ConversionTechnologyRules(GenericRule):
         )
         term_capacity = (
             self.zen_model.parameters.max_load.loc[techs, nodes, :]
-            * self.zen_model.lp_model.variables["capacity"].loc[
+            * self.zen_model.variables["capacity"].loc[
                 techs, "power", nodes, time_step_year
             ]
         ).rename(
@@ -120,7 +120,7 @@ class ConversionTechnologyRules(GenericRule):
         term_capacity = (
             min_full_load_hours_fraction
             * self.config.system.unaggregated_time_steps_per_year
-            * self.zen_model.lp_model.variables["capacity"]
+            * self.zen_model.variables["capacity"]
             .sel(
                 {
                     "set_technologies": techs,
@@ -191,10 +191,7 @@ class ConversionTechnologyRules(GenericRule):
             ),
         )
         lhs_opex = (
-            1
-            * self.zen_model.lp_model.variables["cost_opex_variable"].loc[
-                techs, nodes, :
-            ]
+            1 * self.zen_model.variables["cost_opex_variable"].loc[techs, nodes, :]
         ).rename(
             {
                 "set_technologies": "set_conversion_technologies",
@@ -203,7 +200,7 @@ class ConversionTechnologyRules(GenericRule):
         ) - term_reference_flow_opex
         lhs_emissions = (
             1
-            * self.zen_model.lp_model.variables["carbon_emissions_technology"].loc[
+            * self.zen_model.variables["carbon_emissions_technology"].loc[
                 techs, nodes, :
             ]
         ).rename(
@@ -253,14 +250,14 @@ class ConversionTechnologyRules(GenericRule):
             }
         )
         capex_specific_conversion = capex_specific_conversion.broadcast_like(
-            self.zen_model.lp_model.variables["capacity_approximation"].lower
+            self.zen_model.variables["capacity_approximation"].lower
         )
         mask = ~np.isnan(capex_specific_conversion)
         lhs = lp.merge(
             [
-                1 * self.zen_model.lp_model.variables["capex_approximation"],
+                1 * self.zen_model.variables["capex_approximation"],
                 -capex_specific_conversion
-                * self.zen_model.lp_model.variables["capacity_approximation"],
+                * self.zen_model.variables["capacity_approximation"],
             ],
             compat="broadcast_equals",
             join="outer",
@@ -287,7 +284,7 @@ class ConversionTechnologyRules(GenericRule):
         techs = self.zen_model.sets["set_conversion_technologies"]
         nodes = self.zen_model.sets["set_nodes"]
         capacity_addition = (
-            self.zen_model.lp_model.variables["capacity_addition"]
+            self.zen_model.variables["capacity_addition"]
             .loc[techs, "power", nodes]
             .rename(
                 {
@@ -297,7 +294,7 @@ class ConversionTechnologyRules(GenericRule):
             )
         )
         cost_capex_overnight = (
-            self.zen_model.lp_model.variables["cost_capex_overnight"]
+            self.zen_model.variables["cost_capex_overnight"]
             .loc[techs, "power", nodes]
             .rename(
                 {
@@ -309,12 +306,10 @@ class ConversionTechnologyRules(GenericRule):
 
         ### formulate constraint
         lhs_capacity = (
-            capacity_addition
-            - self.zen_model.lp_model.variables["capacity_approximation"]
+            capacity_addition - self.zen_model.variables["capacity_approximation"]
         )
         lhs_capex = (
-            cost_capex_overnight
-            - self.zen_model.lp_model.variables["capex_approximation"]
+            cost_capex_overnight - self.zen_model.variables["capex_approximation"]
         )
         rhs = 0
         constraints_capacity = lhs_capacity == rhs
@@ -341,10 +336,10 @@ class ConversionTechnologyRules(GenericRule):
 
         """
         # dependent carriers
-        flow_conversion_input_dep = self.zen_model.lp_model.variables[
+        flow_conversion_input_dep = self.zen_model.variables[
             "flow_conversion_input"
         ].rename({"set_input_carriers": "set_dependent_carriers"})
-        flow_conversion_output_dep = self.zen_model.lp_model.variables[
+        flow_conversion_output_dep = self.zen_model.variables[
             "flow_conversion_output"
         ].rename({"set_output_carriers": "set_dependent_carriers"})
         dc_in = pd.Series(
@@ -393,10 +388,10 @@ class ConversionTechnologyRules(GenericRule):
             self.zen_model.parameters.conversion_factor, term_flow_dependent
         )
         # reference carriers
-        flow_conversion_input = self.zen_model.lp_model.variables[
+        flow_conversion_input = self.zen_model.variables[
             "flow_conversion_input"
         ].broadcast_like(conversion_factor)
-        flow_conversion_output = self.zen_model.lp_model.variables[
+        flow_conversion_output = self.zen_model.variables[
             "flow_conversion_output"
         ].broadcast_like(conversion_factor)
         rc_in = pd.Series(

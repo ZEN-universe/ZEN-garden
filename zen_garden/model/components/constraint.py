@@ -105,7 +105,6 @@ class Constraint(Component):
 
     def add_pw_constraint(
         self,
-        model,
         name,
         index_values,
         yvar,
@@ -143,8 +142,8 @@ class Constraint(Component):
             raise NotImplementedError("Currently only EQ constraints are supported")
 
         # get the variables
-        xvar = model.variables[xvar]
-        yvar = model.variables[yvar]
+        xvar = self.lp_model.variables[xvar]
+        yvar = self.lp_model.variables[yvar]
 
         # cycle through all indices
         for num, index_val in enumerate(index_values):
@@ -160,19 +159,19 @@ class Constraint(Component):
                 )
 
             # create sos vars, assure same coords
-            sos2_vars = self._get_nonnegative_sos2_vars(model, len(br))
+            sos2_vars = self._get_nonnegative_sos2_vars(len(br))
             br = xr.DataArray(br, coords=sos2_vars.coords)
             fv = xr.DataArray(fv, coords=sos2_vars.coords)
 
             # add the constraints, give it a valid name
-            model.add_constraints(
+            self.lp_model.add_constraints(
                 x.to_linexpr() - (br * sos2_vars).sum() == 0, name=f"{name}_br_{num}"
             )
-            model.add_constraints(
+            self.lp_model.add_constraints(
                 y.to_linexpr() - (fv * sos2_vars).sum() == 0, name=f"{name}_fv_{num}"
             )
 
-    def _get_nonnegative_sos2_vars(self, model, n):
+    def _get_nonnegative_sos2_vars(self, n):
         """Creates a list of continues nonnegative variables in an SOS2.
 
         :param model: The model to add the variables
@@ -181,27 +180,27 @@ class Constraint(Component):
         """
         # vars and binaries, we need to take care of all the annoying dimension names
         dim_name = f"sos2_dim_{uuid.uuid1()}"
-        sos2_var = model.add_variables(
+        sos2_var = self.lp_model.add_variables(
             lower=np.zeros(n),
             binary=False,
             name=f"sos2_var_{uuid.uuid1()}",
             coords=(xr.DataArray(np.arange(n), dims=dim_name),),
         )
-        sos2_var_bin = model.add_variables(
+        sos2_var_bin = self.lp_model.add_variables(
             binary=True,
             name=f"sos2_var_bin_{uuid.uuid1()}",
             coords=(xr.DataArray(np.arange(n), dims=dim_name),),
         )
 
         # add the constraints
-        model.add_constraints(sos2_var.sum() == 1.0)
-        model.add_constraints(sos2_var - sos2_var_bin <= 0.0)
-        model.add_constraints(sos2_var_bin.sum() <= 2.0)
+        self.lp_model.add_constraints(sos2_var.sum() == 1.0)
+        self.lp_model.add_constraints(sos2_var - sos2_var_bin <= 0.0)
+        self.lp_model.add_constraints(sos2_var_bin.sum() <= 2.0)
         combi_index = xr.DataArray(
             [c for c in combinations(np.arange(n), 2) if c[0] + 1 != c[1]],
             dims=[dim_name, "combi_dim"],
         )
-        model.add_constraints(
+        self.lp_model.add_constraints(
             sos2_var_bin.sel({dim_name: combi_index[:, 0]}).rename(
                 {dim_name: f"{dim_name}_1"}
             )

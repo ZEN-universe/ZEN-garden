@@ -1,8 +1,12 @@
 import logging
 import re
+from typing import TYPE_CHECKING
 
 import numpy as np
 import xarray as xr
+
+if TYPE_CHECKING:
+    from linopy import Model as LinopyModel
 
 
 class IISConstraintParser(object):
@@ -16,7 +20,7 @@ class IISConstraintParser(object):
     SIGNS = {EQUAL, GREATER_EQUAL, LESS_EQUAL}
     SIGNS_pretty = {EQUAL: "=", GREATER_EQUAL: "≥", LESS_EQUAL: "≤"}
 
-    def __init__(self, iis_file, model):
+    def __init__(self, iis_file, lp_model: "LinopyModel"):
         """Initializes the IIS constraint parser.
 
         :param iis_file: The file containing the IIS
@@ -25,7 +29,7 @@ class IISConstraintParser(object):
         # disable logger temporarily
         logging.disable(logging.WARNING)
         self.iis_file = iis_file
-        self.model = model
+        self.lp_model = lp_model
         # write gurobi IIS to file
         self.write_gurobi_iis()
         # get the labels
@@ -46,7 +50,7 @@ class IISConstraintParser(object):
         seen_variables = []
         with open(outfile, "w") as f:
             f.write("Constraints:\n")
-            constraints = self.model.constraints
+            constraints = self.lp_model.constraints
             for label in self.constraint_labels:
                 name, coord = self.get_label_position(constraints, label)
                 constraint = constraints[name]
@@ -58,7 +62,7 @@ class IISConstraintParser(object):
                     cons_str = f"\n{name}:\n{cons_str}"
                 f.write(cons_str)
             f.write("\n\nVariables:\n")
-            variables = self.model.variables
+            variables = self.lp_model.variables
             for label in self.var_labels:
                 pos = variables.get_label_position(label)
                 if pos is not None:
@@ -74,7 +78,7 @@ class IISConstraintParser(object):
     def write_gurobi_iis(self):
         """Writes IIS to file."""
         # get the gurobi model
-        gurobi_model = self.model.solver_model
+        gurobi_model = self.lp_model.solver_model
         # write the IIS
         gurobi_model.computeIIS()
         gurobi_model.write(self.iis_file)
@@ -115,7 +119,7 @@ class IISConstraintParser(object):
         sign = sign.sel(coord)[0].item()
         rhs = rhs.sel(coord)[0].item()
 
-        expr = self.print_single_expression(coeffs, vars, self.model)
+        expr = self.print_single_expression(coeffs, vars, self.lp_model)
         # sign = self.SIGNS_pretty[sign]
 
         return f"{expr} {sign} {rhs:.12g}"

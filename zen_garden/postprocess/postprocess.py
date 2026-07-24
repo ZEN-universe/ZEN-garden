@@ -69,7 +69,7 @@ class Postprocess:
         self.zen_model = zen_model
         self.energy_system = energy_system
 
-        self.model = zen_model.lp_model
+        self.lp_model = zen_model.lp_model
 
         self.optimized_time_steps = optimized_time_steps
         self.scenarios = scenarios
@@ -209,33 +209,37 @@ class Postprocess:
         # initialize dictionary
         benchmarking_data = dict()
         # get the benchmarking data
-        benchmarking_data["objective_value"] = self.model.objective.value
+        benchmarking_data["objective_value"] = self.lp_model.objective.value
         if self.config.solver.name == "gurobi":
-            benchmarking_data["solving_time"] = self.model.solver_model.Runtime
+            benchmarking_data["solving_time"] = self.lp_model.solver_model.Runtime
             if "Method" in self.config.solver.solver_options:
                 if self.config.solver.solver_options["Method"] == 2:
                     benchmarking_data["number_iterations"] = (
-                        self.model.solver_model.BarIterCount
+                        self.lp_model.solver_model.BarIterCount
                     )
                 else:
                     benchmarking_data["number_iterations"] = (
-                        self.model.solver_model.IterCount
+                        self.lp_model.solver_model.IterCount
                     )
-            benchmarking_data["solver_status"] = self.model.solver_model.Status
-            benchmarking_data["number_constraints"] = self.model.solver_model.NumConstrs
-            benchmarking_data["number_variables"] = self.model.solver_model.NumVars
+            benchmarking_data["solver_status"] = self.lp_model.solver_model.Status
+            benchmarking_data["number_constraints"] = (
+                self.lp_model.solver_model.NumConstrs
+            )
+            benchmarking_data["number_variables"] = self.lp_model.solver_model.NumVars
         elif self.config.solver.name == "highs":
             benchmarking_data["solver_status"] = (
-                self.model.solver_model.getModelStatus().name
+                self.lp_model.solver_model.getModelStatus().name
             )
-            benchmarking_data["solving_time"] = self.model.solver_model.getRunTime()
+            benchmarking_data["solving_time"] = self.lp_model.solver_model.getRunTime()
             benchmarking_data["number_iterations"] = (
-                self.model.solver_model.getInfo().simplex_iteration_count
+                self.lp_model.solver_model.getInfo().simplex_iteration_count
             )
             benchmarking_data["number_constraints"] = (
-                self.model.solver_model.getNumRow()
+                self.lp_model.solver_model.getNumRow()
             )
-            benchmarking_data["number_variables"] = self.model.solver_model.getNumCol()
+            benchmarking_data["number_variables"] = (
+                self.lp_model.solver_model.getNumCol()
+            )
         else:
             logger.info(
                 f"Saving benchmarking data for solver {self.config.solver.name} has "
@@ -350,7 +354,7 @@ class Postprocess:
         """
         # dataframe serialization
         data_frames = {}
-        for name, arr in self.model.solution.items():
+        for name, arr in self.lp_model.solution.items():
             # skip variables not selected to be saved
             if (
                 self.config.solver.selected_saved_variables
@@ -394,8 +398,8 @@ class Postprocess:
 
         # dataframe serialization
         data_frames = {}
-        for name in self.model.constraints:
-            arr = self.model.constraints[name].dual
+        for name in self.lp_model.constraints:
+            arr = self.lp_model.constraints[name].dual
 
             # skip variables not selected to be saved
             if (
@@ -414,7 +418,7 @@ class Postprocess:
 
             # rescale
             if self.config.solver.use_scaling:
-                cons_labels = self.model.constraints[name].labels.data
+                cons_labels = self.lp_model.constraints[name].labels.data
                 scaling_factor = self.scaling.D_r_inv[cons_labels]
                 arr = arr * scaling_factor
             # create dataframe
@@ -446,7 +450,7 @@ class Postprocess:
 
         # dataframe serialization
         data_frames = {}
-        for name in self.model.variables:
+        for name in self.lp_model.variables:
             # skip variables not selected to be saved
             if (
                 self.config.solver.selected_saved_reduced_costs
@@ -456,7 +460,7 @@ class Postprocess:
 
             # get reduced costs from solver
             try:
-                arr = self.model.variables[name].get_solver_attribute("RC")
+                arr = self.lp_model.variables[name].get_solver_attribute("RC")
             except Exception as e:
                 logger.warning(
                     f"Could not retrieve reduced costs for variable {name}: {e}"
@@ -473,7 +477,7 @@ class Postprocess:
 
             # rescale
             if self.config.solver.use_scaling:
-                var_labels = self.model.variables[name].labels.data
+                var_labels = self.lp_model.variables[name].labels.data
                 scaling_factor = self.scaling.D_c_inv[var_labels]
                 arr = arr * scaling_factor
 

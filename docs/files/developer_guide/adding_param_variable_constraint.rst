@@ -206,7 +206,7 @@ Thereby, we can infer the unit of the variable from the unit categories of the p
 
 .. note::
 
-    The variables are available in the constraint rules through the ``self.variables[<variable_name>]`` attribute.
+    The variables are available in the constraint rules through the ``self.zen_model.variables[<variable_name>]`` attribute.
 
 .. _adding_elements.adding_constraints:
 
