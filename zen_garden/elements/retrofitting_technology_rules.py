@@ -93,6 +93,4 @@ class RetrofittingTechnologyRules(GenericRule):
         rhs = 0
         constraints = lhs <= rhs
 
-        self.zen_model.constraints.add_constraint(
-            "constraint_retrofit_flow_coupling", constraints
-        )
+        self.zen_model.add_constraint("constraint_retrofit_flow_coupling", constraints)

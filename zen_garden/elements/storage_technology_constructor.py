@@ -96,10 +96,6 @@ class StorageTechnologyConstructor(ElementConstructor):
     def construct_vars(self):
         logger.info("Constructing variables for StorageTechnology")
 
-        model = self.zen_model.lp_model
-        variables = self.zen_model.variables
-        sets = self.zen_model.sets
-
         def flow_storage_bounds(index_values, index_list):
             """Return bounds of carrier_flow for bigM expression.
 
@@ -108,7 +104,9 @@ class StorageTechnologyConstructor(ElementConstructor):
             :return bounds: bounds of carrier_flow
             """
             # get the arrays
-            tech_arr, node_arr, time_arr = sets.tuple_to_arr(index_values, index_list)
+            tech_arr, node_arr, time_arr = self.zen_model.sets.tuple_to_arr(
+                index_values, index_list
+            )
             # convert operationTimeStep to time_step_year:
             #   operationTimeStep -> base_time_step -> time_step_year
             time_step_year = xr.DataArray(
@@ -118,12 +116,12 @@ class StorageTechnologyConstructor(ElementConstructor):
                 ]
             )
             lower = (
-                model.variables["capacity"]
+                self.zen_model.lp_model.variables["capacity"]
                 .lower.loc[tech_arr, "power", node_arr, time_step_year]
                 .data
             )
             upper = (
-                model.variables["capacity"]
+                self.zen_model.lp_model.variables["capacity"]
                 .upper.loc[tech_arr, "power", node_arr, time_step_year]
                 .data
             )
@@ -134,7 +132,7 @@ class StorageTechnologyConstructor(ElementConstructor):
             ["set_storage_technologies", "set_nodes", "set_time_steps_operation"],
         )
         bounds = flow_storage_bounds(index_values, index_names)
-        variables.add_variable(
+        self.zen_model.add_variable(
             name="flow_storage_charge",
             index_sets=(index_values, index_names),
             bounds=bounds,
@@ -142,7 +140,7 @@ class StorageTechnologyConstructor(ElementConstructor):
             unit_category={"energy_quantity": 1, "time": -1},
         )
         # flow of carrier on node out of storage
-        variables.add_variable(
+        self.zen_model.add_variable(
             name="flow_storage_discharge",
             index_sets=(index_values, index_names),
             bounds=bounds,
@@ -150,7 +148,7 @@ class StorageTechnologyConstructor(ElementConstructor):
             unit_category={"energy_quantity": 1, "time": -1},
         )
         # storage level
-        variables.add_variable(
+        self.zen_model.add_variable(
             name="storage_level",
             index_sets=self.create_custom_set(
                 ["set_storage_technologies", "set_nodes", "set_time_steps_storage"],
@@ -160,7 +158,7 @@ class StorageTechnologyConstructor(ElementConstructor):
             unit_category={"energy_quantity": 1},
         )
         # energy spillage
-        variables.add_variable(
+        self.zen_model.add_variable(
             name="flow_storage_spillage",
             index_sets=(index_values, index_names),
             bounds=(0, np.inf),
@@ -170,7 +168,7 @@ class StorageTechnologyConstructor(ElementConstructor):
         )
         # charge discharge binary
         if self.config.system.storage_charge_discharge_binary:
-            variables.add_variable(
+            self.zen_model.add_variable(
                 name="charge_storage_binary",
                 index_sets=(index_values, index_names),
                 binary=True,

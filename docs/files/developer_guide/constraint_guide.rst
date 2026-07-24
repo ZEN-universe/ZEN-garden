@@ -75,12 +75,12 @@ Our constraints are always set up in the same way:
         lhs = term_product_xp + self.zen_model.lp_model.variables["y"]
         rhs = self.zen_model.parameters.p
         constraints = lhs <= rhs
-        self.zen_model.constraints.add_constraint(
+        self.zen_model.add_constraint(
             "constraint_example_constraint_upper", constraints
         )
         rhs = self.zen_model.parameters.q
         constraints = lhs >= rhs
-        self.zen_model.constraints.add_constraint(
+        self.zen_model.add_constraint(
             "constraint_example_constraint_lower", constraints
         )
 
@@ -130,7 +130,7 @@ We can now write the constraint as follows:
     lhs = self.zen_model.lp_model.variables["shed_demand"]
     rhs = self.zen_model.parameters.demand
     constraints = lhs <= rhs
-    self.zen_model.constraints.add_constraint(
+    self.zen_model.add_constraint(
         "constraint_shed_demand",constraints
     )
 
@@ -149,7 +149,7 @@ actually want to add another condition, which is that ``shed_demand = 0`` if the
     lhs = self.zen_model.lp_model.variables["shed_demand"]
     rhs = self.zen_model.parameters.demand.where(mask,0.0)
     constraints = lhs <= rhs
-    self.zen_model.constraints.add_constraint("constraint_shed_demand",constraints)
+    self.zen_model.add_constraint("constraint_shed_demand",constraints)
 
 This will overwrite the rhs and thereby set the ``shed_demand`` to 0 if the
 ``price_shed_demand`` is ``np.inf``.
@@ -165,7 +165,7 @@ the constraint for those ``carriers`` that have a ``price_shed_demand != 0``:
     lhs = self.zen_model.lp_model.variables["shed_demand"].where(mask_0)
     rhs = self.zen_model.parameters.demand.where(mas_inf,0.0)
     constraints = lhs <= rhs
-    self.zen_model.constraints.add_constraint("constraint_shed_demand",constraints)
+    self.zen_model.add_constraint("constraint_shed_demand",constraints)
 
 Masks are boolean arrays and therefore substitute ``if-statements``.
 

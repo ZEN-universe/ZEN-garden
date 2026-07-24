@@ -40,15 +40,15 @@ class EnergySystemConstructor:
 
         # construct pe.Sets of the class <EnergySystem>
         # nodes
-        self.zen_model.sets.add_set(
+        self.zen_model.add_set(
             name="set_nodes", data=self.energy_system.set_nodes, doc="Set of nodes"
         )
         # edges
-        self.zen_model.sets.add_set(
+        self.zen_model.add_set(
             name="set_edges", data=self.energy_system.set_edges, doc="Set of edges"
         )
         # nodes on edges
-        self.zen_model.sets.add_set(
+        self.zen_model.add_set(
             name="set_nodes_on_edges",
             data=self.energy_system.set_nodes_on_edges,
             doc="Set of nodes that constitute an edge. "
@@ -56,13 +56,13 @@ class EnergySystemConstructor:
             index_set="set_edges",
         )
         # carriers
-        self.zen_model.sets.add_set(
+        self.zen_model.add_set(
             name="set_carriers",
             data=self.energy_system.set_carriers,
             doc="Set of carriers",
         )
         # technologies
-        self.zen_model.sets.add_set(
+        self.zen_model.add_set(
             name="set_technologies",
             data=self.energy_system.set_technologies,
             doc="set_technologies",
@@ -72,37 +72,35 @@ class EnergySystemConstructor:
             set(self.zen_model.sets["set_technologies"])
             | set(self.zen_model.sets["set_carriers"])
         )
-        self.zen_model.sets.add_set(
-            name="set_elements", data=data, doc="Set of elements"
-        )
+        self.zen_model.add_set(name="set_elements", data=data, doc="Set of elements")
         # set set_elements to indexing_sets
         self.zen_model.indexing_sets.append("set_elements")
         # time-steps
-        self.zen_model.sets.add_set(
+        self.zen_model.add_set(
             name="set_hours_all_years",
             data=self.energy_system.set_hours_all_years,
             doc="Set of base time-steps",
         )
         # yearly time steps
-        self.zen_model.sets.add_set(
+        self.zen_model.add_set(
             name="set_years",
             data=self.energy_system.set_years,
             doc="Set of yearly time-steps",
         )
         # yearly time steps of entire optimization horizon
-        self.zen_model.sets.add_set(
+        self.zen_model.add_set(
             name="set_years_entire_horizon",
             data=self.energy_system.set_years_entire_horizon,
             doc="Set of yearly time-steps of entire optimization horizon",
         )
         # operational time steps
-        self.zen_model.sets.add_set(
+        self.zen_model.add_set(
             name="set_time_steps_operation",
             data=self.energy_system.time_steps.time_steps_operation,
             doc="Set of operational time steps",
         )
         # storage time steps
-        self.zen_model.sets.add_set(
+        self.zen_model.add_set(
             name="set_time_steps_storage",
             data=self.energy_system.time_steps.time_steps_storage,
             doc="Set of storage level time steps",
@@ -183,21 +181,21 @@ class EnergySystemConstructor:
         logger.info("Constructing variables for EnergySystem")
 
         # carbon emissions
-        self.zen_model.variables.add_variable(
+        self.zen_model.add_variable(
             name="carbon_emissions_annual",
             index_sets=self.zen_model.sets["set_years"],
             doc="annual carbon emissions of energy system",
             unit_category={"emissions": 1},
         )
         # cumulative carbon emissions
-        self.zen_model.variables.add_variable(
+        self.zen_model.add_variable(
             name="carbon_emissions_cumulative",
             index_sets=self.zen_model.sets["set_years"],
             doc="cumulative carbon emissions of energy system over time for each year",
             unit_category={"emissions": 1},
         )
         # carbon emission overshoot
-        self.zen_model.variables.add_variable(
+        self.zen_model.add_variable(
             name="carbon_emissions_budget_overshoot",
             index_sets=self.zen_model.sets["set_years"],
             bounds=(0, np.inf),
@@ -206,7 +204,7 @@ class EnergySystemConstructor:
             unit_category={"emissions": 1},
         )
         # carbon emission overshoot
-        self.zen_model.variables.add_variable(
+        self.zen_model.add_variable(
             name="carbon_emissions_annual_overshoot",
             index_sets=self.zen_model.sets["set_years"],
             bounds=(0, np.inf),
@@ -214,21 +212,21 @@ class EnergySystemConstructor:
             unit_category={"emissions": 1},
         )
         # cost of carbon emissions
-        self.zen_model.variables.add_variable(
+        self.zen_model.add_variable(
             name="cost_carbon_emissions_total",
             index_sets=self.zen_model.sets["set_years"],
             doc="total cost of carbon emissions of energy system",
             unit_category={"money": 1},
         )
         # costs
-        self.zen_model.variables.add_variable(
+        self.zen_model.add_variable(
             name="cost_total",
             index_sets=self.zen_model.sets["set_years"],
             doc="total cost of energy system",
             unit_category={"money": 1},
         )
         # net_present_cost
-        self.zen_model.variables.add_variable(
+        self.zen_model.add_variable(
             name="net_present_cost",
             index_sets=self.zen_model.sets["set_years"],
             doc="net_present_cost of energy system",
@@ -305,7 +303,7 @@ class EnergySystemConstructor:
         component_data = self._ensure_pd_series_multi_index(component_data)
         data = component_data, index_list
 
-        self.zen_model.parameters.add_parameter(
+        self.zen_model.add_parameter(
             name=name,
             doc=doc,
             data=data,

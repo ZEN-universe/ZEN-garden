@@ -70,10 +70,6 @@ class TransportTechnologyConstructor(ElementConstructor):
     def construct_vars(self):
         logger.info("Constructing variables for TransportTechnology")
 
-        model = self.zen_model.lp_model
-        variables = self.zen_model.variables
-        sets = self.zen_model.sets
-
         def flow_transport_bounds(index_values, index_list):
             """Return bounds of carrier_flow for bigM expression.
 
@@ -82,7 +78,9 @@ class TransportTechnologyConstructor(ElementConstructor):
             :return bounds: bounds of carrier_flow
             """
             # get the arrays
-            tech_arr, edge_arr, time_arr = sets.tuple_to_arr(index_values, index_list)
+            tech_arr, edge_arr, time_arr = self.zen_model.sets.tuple_to_arr(
+                index_values, index_list
+            )
             # convert operationTimeStep to time_step_year:
             #   operationTimeStep -> base_time_step -> time_step_year
             time_step_year = xr.DataArray(
@@ -93,12 +91,12 @@ class TransportTechnologyConstructor(ElementConstructor):
             )
 
             lower = (
-                model.variables["capacity"]
+                self.zen_model.lp_model.variables["capacity"]
                 .lower.loc[tech_arr, "power", edge_arr, time_step_year]
                 .data
             )
             upper = (
-                model.variables["capacity"]
+                self.zen_model.lp_model.variables["capacity"]
                 .upper.loc[tech_arr, "power", edge_arr, time_step_year]
                 .data
             )
@@ -109,7 +107,7 @@ class TransportTechnologyConstructor(ElementConstructor):
             ["set_transport_technologies", "set_edges", "set_time_steps_operation"]
         )
         bounds = flow_transport_bounds(index_values, index_names)
-        variables.add_variable(
+        self.zen_model.add_variable(
             name="flow_transport",
             index_sets=(index_values, index_names),
             bounds=bounds,
@@ -117,7 +115,7 @@ class TransportTechnologyConstructor(ElementConstructor):
             unit_category={"energy_quantity": 1, "time": -1},
         )
         # loss of carrier on edge
-        variables.add_variable(
+        self.zen_model.add_variable(
             name="flow_transport_loss",
             index_sets=(index_values, index_names),
             bounds=(0, np.inf),

@@ -262,7 +262,7 @@ class ElementConstructor(ABC):
         component_data = self._ensure_pd_series_multi_index(component_data)
         data = component_data, index_list
 
-        self.zen_model.parameters.add_parameter(
+        self.zen_model.add_parameter(
             name=name,
             doc=doc,
             data=data,

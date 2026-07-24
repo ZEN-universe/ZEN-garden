@@ -52,7 +52,7 @@ class EnergySystemRules(GenericRule):
         ).where(m, 0)
         constraints = lhs == rhs
 
-        self.zen_model.constraints.add_constraint(
+        self.zen_model.add_constraint(
             "constraint_carbon_emissions_cumulative", constraints
         )
 
@@ -70,7 +70,7 @@ class EnergySystemRules(GenericRule):
         rhs = self.zen_model.parameters.carbon_emissions_annual_limit
         constraints = lhs <= rhs
 
-        self.zen_model.constraints.add_constraint(
+        self.zen_model.add_constraint(
             "constraint_carbon_emissions_annual_limit", constraints
         )
 
@@ -106,9 +106,7 @@ class EnergySystemRules(GenericRule):
         rhs = self.zen_model.parameters.carbon_emissions_budget
         constraints = lhs <= rhs
 
-        self.zen_model.constraints.add_constraint(
-            "constraint_carbon_emissions_budget", constraints
-        )
+        self.zen_model.add_constraint("constraint_carbon_emissions_budget", constraints)
 
     def constraint_net_present_cost(self):
         """Discounts the annual capital flows to calculate the net_present_cost.
@@ -153,9 +151,7 @@ class EnergySystemRules(GenericRule):
         rhs = 0
         constraints = lhs == rhs
 
-        self.zen_model.constraints.add_constraint(
-            "constraint_net_present_cost", constraints
-        )
+        self.zen_model.add_constraint("constraint_net_present_cost", constraints)
 
     def constraint_carbon_emissions_budget_overshoot(self):
         """Enforces zero budget overshoot if price for budget overshoot is inf.
@@ -179,7 +175,7 @@ class EnergySystemRules(GenericRule):
         else:
             constraints = None
 
-        self.zen_model.constraints.add_constraint(
+        self.zen_model.add_constraint(
             "constraint_carbon_emissions_budget_overshoot", constraints
         )
 
@@ -210,7 +206,7 @@ class EnergySystemRules(GenericRule):
         else:
             constraints = None
 
-        self.zen_model.constraints.add_constraint(
+        self.zen_model.add_constraint(
             "constraint_carbon_emissions_annual_overshoot", constraints
         )
 
@@ -233,9 +229,7 @@ class EnergySystemRules(GenericRule):
         rhs = 0
         constraints = lhs == rhs
 
-        self.zen_model.constraints.add_constraint(
-            "constraint_carbon_emissions_annual", constraints
-        )
+        self.zen_model.add_constraint("constraint_carbon_emissions_annual", constraints)
 
     def constraint_cost_carbon_emissions_total(self):
         """Carbon cost associated with the carbon emissions of the system in each year.
@@ -284,7 +278,7 @@ class EnergySystemRules(GenericRule):
         rhs = 0
         constraints = lhs == rhs
 
-        self.zen_model.constraints.add_constraint(
+        self.zen_model.add_constraint(
             "constraint_cost_carbon_emissions_total", constraints
         )
 
@@ -314,7 +308,7 @@ class EnergySystemRules(GenericRule):
         rhs = 0
         constraints = lhs == rhs
 
-        self.zen_model.constraints.add_constraint("constraint_cost_total", constraints)
+        self.zen_model.add_constraint("constraint_cost_total", constraints)
 
     # Objective rules
     # ---------------

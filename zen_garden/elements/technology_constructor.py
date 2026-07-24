@@ -34,31 +34,31 @@ class TechnologyConstructor(ElementConstructor):
         logger.info("Constructing sets for Technology")
 
         # conversion technologies
-        self.zen_model.sets.add_set(
+        self.zen_model.add_set(
             name="set_conversion_technologies",
             data=self.energy_system.set_conversion_technologies,
             doc="Set of conversion technologies",
         )
         # retrofitting technologies
-        self.zen_model.sets.add_set(
+        self.zen_model.add_set(
             name="set_retrofitting_technologies",
             data=self.energy_system.set_retrofitting_technologies,
             doc="Set of retrofitting technologies",
         )
         # transport technologies
-        self.zen_model.sets.add_set(
+        self.zen_model.add_set(
             name="set_transport_technologies",
             data=self.energy_system.set_transport_technologies,
             doc="Set of transport technologies",
         )
         # storage technologies
-        self.zen_model.sets.add_set(
+        self.zen_model.add_set(
             name="set_storage_technologies",
             data=self.energy_system.set_storage_technologies,
             doc="Set of storage technologies",
         )
         # existing installed technologies
-        self.zen_model.sets.add_set(
+        self.zen_model.add_set(
             name="set_technologies_existing",
             data=self.element_registry.get_attribute_of_all_elements(
                 self.element_class, "set_technologies_existing"
@@ -67,7 +67,7 @@ class TechnologyConstructor(ElementConstructor):
             index_set="set_technologies",
         )
         # reference carriers
-        self.zen_model.sets.add_set(
+        self.zen_model.add_set(
             name="set_reference_carriers",
             data=self.element_registry.get_attribute_of_all_elements(
                 self.element_class, "reference_carrier"
@@ -253,13 +253,13 @@ class TechnologyConstructor(ElementConstructor):
             doc="Parameter which specifies the carbon intensity of each technology",
         )
         # calculate additional existing parameters
-        self.zen_model.parameters.add_parameter(
+        self.zen_model.add_parameter(
             name="existing_capacities",
             data=self.get_existing_quantity("capacity"),
             doc="Parameter which specifies the total available capacity of existing "
             "technologies at the beginning of the optimization",
         )
-        self.zen_model.parameters.add_parameter(
+        self.zen_model.add_parameter(
             name="existing_capex",
             data=self.get_existing_quantity("cost_capex_overnight"),
             doc="Parameter which specifies the total capex of existing technologies at "
@@ -269,9 +269,6 @@ class TechnologyConstructor(ElementConstructor):
     @override
     def construct_vars(self):
         logger.info("Constructing variables for Technology")
-
-        variables = self.zen_model.variables
-        sets = self.zen_model.sets
 
         # TODO: This could be vectorized
         def capacity_bounds(tech, capacity_type, loc, time):
@@ -291,7 +288,9 @@ class TechnologyConstructor(ElementConstructor):
                 capacity_addition_max = params.capacity_addition_max
                 capacity_limit = params.capacity_limit
                 capacities_existing = 0
-                for id_technology_existing in sets["set_technologies_existing"][tech]:
+                for id_technology_existing in self.zen_model.sets[
+                    "set_technologies_existing"
+                ][tech]:
                     if (
                         params.lifetime_existing[tech, loc, id_technology_existing]
                         > params.lifetime[tech]
@@ -316,7 +315,8 @@ class TechnologyConstructor(ElementConstructor):
                         ]
 
                 capacity_addition_max = (
-                    len(sets["set_years"]) * capacity_addition_max[tech, capacity_type]
+                    len(self.zen_model.sets["set_years"])
+                    * capacity_addition_max[tech, capacity_type]
                 )
                 max_capacity_limit = capacity_limit[tech, capacity_type, loc, time]
                 bound_capacity = min(
@@ -332,7 +332,7 @@ class TechnologyConstructor(ElementConstructor):
         techs_on_off = self.create_custom_set(["set_technologies", "set_on_off"])[0]
         # construct pe.Vars of the class <Technology>
         # capacity technology
-        variables.add_variable(
+        self.zen_model.add_variable(
             name="capacity",
             index_sets=self.create_custom_set(
                 [
@@ -347,7 +347,7 @@ class TechnologyConstructor(ElementConstructor):
             unit_category={"energy_quantity": 1, "time": -1},
         )
         # capacity technology before current year
-        variables.add_variable(
+        self.zen_model.add_variable(
             name="capacity_previous",
             index_sets=self.create_custom_set(
                 [
@@ -362,7 +362,7 @@ class TechnologyConstructor(ElementConstructor):
             unit_category={"energy_quantity": 1, "time": -1},
         )
         # built_capacity technology
-        variables.add_variable(
+        self.zen_model.add_variable(
             name="capacity_addition",
             index_sets=self.create_custom_set(
                 [
@@ -378,7 +378,7 @@ class TechnologyConstructor(ElementConstructor):
             unit_category={"energy_quantity": 1, "time": -1},
         )
         # invested_capacity technology
-        variables.add_variable(
+        self.zen_model.add_variable(
             name="capacity_investment",
             index_sets=self.create_custom_set(
                 [
@@ -393,7 +393,7 @@ class TechnologyConstructor(ElementConstructor):
             unit_category={"energy_quantity": 1, "time": -1},
         )
         # capex of building capacity overnight
-        variables.add_variable(
+        self.zen_model.add_variable(
             name="cost_capex_overnight",
             index_sets=self.create_custom_set(
                 [
@@ -408,7 +408,7 @@ class TechnologyConstructor(ElementConstructor):
             unit_category={"money": 1},
         )
         # annual capex of having capacity
-        variables.add_variable(
+        self.zen_model.add_variable(
             name="cost_capex_yearly",
             index_sets=self.create_custom_set(
                 [
@@ -423,16 +423,16 @@ class TechnologyConstructor(ElementConstructor):
             unit_category={"money": 1},
         )
         # total capex
-        variables.add_variable(
+        self.zen_model.add_variable(
             name="cost_capex_yearly_total",
-            index_sets=sets["set_years"],
+            index_sets=self.zen_model.sets["set_years"],
             bounds=(0, np.inf),
             doc="total capex for installing all technologies in all locations "
             "at all times",
             unit_category={"money": 1},
         )
         # opex
-        variables.add_variable(
+        self.zen_model.add_variable(
             name="cost_opex_variable",
             index_sets=self.create_custom_set(
                 ["set_technologies", "set_location", "set_time_steps_operation"],
@@ -442,15 +442,15 @@ class TechnologyConstructor(ElementConstructor):
             unit_category={"money": 1, "time": -1},
         )
         # total opex
-        variables.add_variable(
+        self.zen_model.add_variable(
             name="cost_opex_yearly_total",
-            index_sets=sets["set_years"],
+            index_sets=self.zen_model.sets["set_years"],
             bounds=(0, np.inf),
             doc="total opex all technologies and locations in year y",
             unit_category={"money": 1},
         )
         # yearly opex
-        variables.add_variable(
+        self.zen_model.add_variable(
             name="cost_opex_yearly",
             index_sets=self.create_custom_set(
                 ["set_technologies", "set_location", "set_years"],
@@ -460,7 +460,7 @@ class TechnologyConstructor(ElementConstructor):
             unit_category={"money": 1},
         )
         # carbon emissions
-        variables.add_variable(
+        self.zen_model.add_variable(
             name="carbon_emissions_technology",
             index_sets=self.create_custom_set(
                 ["set_technologies", "set_location", "set_time_steps_operation"],
@@ -469,9 +469,9 @@ class TechnologyConstructor(ElementConstructor):
             unit_category={"emissions": 1, "time": -1},
         )
         # total carbon emissions technology
-        variables.add_variable(
+        self.zen_model.add_variable(
             name="carbon_emissions_technology_total",
-            index_sets=sets["set_years"],
+            index_sets=self.zen_model.sets["set_years"],
             doc="total carbon emissions for operating technology",
             unit_category={"emissions": 1},
         )
@@ -485,7 +485,7 @@ class TechnologyConstructor(ElementConstructor):
         # the dual values of the constraints.
         mask = self._technology_installation_mask()
         if mask.any():
-            variables.add_variable(
+            self.zen_model.add_variable(
                 name="technology_installation",
                 index_sets=self.create_custom_set(
                     [
@@ -530,7 +530,7 @@ class TechnologyConstructor(ElementConstructor):
         mask_on_off = mask_on_off & mask_nonzero_cap_limit.drop_vars(
             "set_capacity_types"
         )
-        variables.add_variable(
+        self.zen_model.add_variable(
             name="tech_on_var",
             index_sets=self.create_custom_set(
                 ["set_technologies", "set_location", "set_time_steps_operation"],
@@ -541,7 +541,7 @@ class TechnologyConstructor(ElementConstructor):
             binary=True,
             unit_category=None,
         )
-        variables.add_variable(
+        self.zen_model.add_variable(
             name="capacity_on_off_helper_var",
             index_sets=self.create_custom_set(
                 ["set_technologies", "set_location", "set_time_steps_operation"],

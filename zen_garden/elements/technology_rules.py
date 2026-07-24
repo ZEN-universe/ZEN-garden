@@ -66,9 +66,7 @@ class TechnologyRules(GenericRule):
         rhs = 0
         constraints = lhs == rhs
 
-        self.zen_model.constraints.add_constraint(
-            "constraint_cost_capex_yearly_total", constraints
-        )
+        self.zen_model.add_constraint("constraint_cost_capex_yearly_total", constraints)
 
     def constraint_cost_opex_yearly_total(self):
         """Sums over all technologies to calculate total opex.
@@ -88,9 +86,7 @@ class TechnologyRules(GenericRule):
         rhs = 0
         constraints = lhs == rhs
 
-        self.zen_model.constraints.add_constraint(
-            "constraint_cost_opex_yearly_total", constraints
-        )
+        self.zen_model.add_constraint("constraint_cost_opex_yearly_total", constraints)
 
     def constraint_technology_capacity_limit(self):
         """Limited capacity_limit of technology.
@@ -138,10 +134,10 @@ class TechnologyRules(GenericRule):
             lhs_reached = self.zen_model.lp_model.variables["capacity_addition"]
         constraints_reached = lhs_reached == rhs_reached
 
-        self.zen_model.constraints.add_constraint(
+        self.zen_model.add_constraint(
             "constraint_technology_capacity_limit_not_reached", constraints_not_reached
         )
-        self.zen_model.constraints.add_constraint(
+        self.zen_model.add_constraint(
             "constraint_technology_capacity_limit_reached", constraints_reached
         )
 
@@ -164,7 +160,7 @@ class TechnologyRules(GenericRule):
         constraint = lhs >= rhs
 
         # Add the constraint to the model
-        self.zen_model.constraints.add_constraint(
+        self.zen_model.add_constraint(
             "constraint_technology_capacity_lower_limit", constraint
         )
 
@@ -198,7 +194,7 @@ class TechnologyRules(GenericRule):
         constraints = lhs <= rhs
 
         ### return
-        self.zen_model.constraints.add_constraint(
+        self.zen_model.add_constraint(
             "constraint_technology_min_capacity_addition", constraints
         )
 
@@ -234,7 +230,7 @@ class TechnologyRules(GenericRule):
         rhs = 0
         constraints = lhs >= rhs
 
-        self.zen_model.constraints.add_constraint(
+        self.zen_model.add_constraint(
             "constraint_technology_max_capacity_addition", constraints
         )
 
@@ -343,10 +339,10 @@ class TechnologyRules(GenericRule):
         rhs_outside = 0
         constraints_outside = lhs_outside == rhs_outside
 
-        self.zen_model.constraints.add_constraint(
+        self.zen_model.add_constraint(
             "constraint_technology_construction_time", constraints
         )
-        self.zen_model.constraints.add_constraint(
+        self.zen_model.add_constraint(
             "constraint_technology_construction_time_outside", constraints_outside
         )
 
@@ -441,10 +437,8 @@ class TechnologyRules(GenericRule):
         constraints_previous = lhs_previous == rhs
 
         ### return
-        self.zen_model.constraints.add_constraint(
-            "constraint_technology_lifetime", constraints
-        )
-        self.zen_model.constraints.add_constraint(
+        self.zen_model.add_constraint("constraint_technology_lifetime", constraints)
+        self.zen_model.add_constraint(
             "constraint_technology_lifetime_previous", constraints_previous
         )
 
@@ -657,7 +651,7 @@ class TechnologyRules(GenericRule):
         rhs_sn = self.align_and_mask(rhs_sn, mask_inf_tdr_sum)
         # combine constraint
         constraints_sn = lhs_sn <= rhs_sn
-        self.zen_model.constraints.add_constraint(
+        self.zen_model.add_constraint(
             "constraint_technology_diffusion_limit_total", constraints_sn
         )
         # build constraints for all nodes ("an") if spillover rate is not inf
@@ -689,7 +683,7 @@ class TechnologyRules(GenericRule):
             rhs_an = self.align_and_mask(rhs_an, mask_inf_tdr)
             # combine constraint
             constraints_an = lhs_an <= rhs_an
-            self.zen_model.constraints.add_constraint(
+            self.zen_model.add_constraint(
                 "constraint_technology_diffusion_limit", constraints_an
             )
 
@@ -780,9 +774,7 @@ class TechnologyRules(GenericRule):
         constraints = lhs == rhs
 
         ### return
-        self.zen_model.constraints.add_constraint(
-            "constraint_cost_capex_yearly", constraints
-        )
+        self.zen_model.add_constraint("constraint_cost_capex_yearly", constraints)
 
     def constraint_cost_opex_yearly(self):
         """Yearly opex for a technology at a location in each year.
@@ -833,9 +825,7 @@ class TechnologyRules(GenericRule):
         constraints = lhs == rhs
 
         ### return
-        self.zen_model.constraints.add_constraint(
-            "constraint_cost_opex_yearly", constraints
-        )
+        self.zen_model.add_constraint("constraint_cost_opex_yearly", constraints)
 
     def constraint_carbon_emissions_technology_total(self):
         """Calculate total carbon emissions of each technology.
@@ -862,7 +852,7 @@ class TechnologyRules(GenericRule):
         rhs = 0
         constraints = lhs == rhs
 
-        self.zen_model.constraints.add_constraint(
+        self.zen_model.add_constraint(
             "constraint_carbon_emissions_technology_total", constraints
         )
 
@@ -963,7 +953,7 @@ class TechnologyRules(GenericRule):
         )
         rhs_1a = 0
         constraints_1a = lhs_1a <= rhs_1a
-        self.zen_model.constraints.add_constraint(
+        self.zen_model.add_constraint(
             "constraint_technology_on_off_operation_lower_bound", constraints_1a
         )
         # 1a, upper bound
@@ -972,7 +962,7 @@ class TechnologyRules(GenericRule):
         )
         rhs_1b = 0
         constraints_1b = lhs_1b <= rhs_1b
-        self.zen_model.constraints.add_constraint(
+        self.zen_model.add_constraint(
             "constraint_technology_on_off_operation_upper_bound", constraints_1b
         )
         # constraint 2, limit capacity helper
@@ -982,7 +972,7 @@ class TechnologyRules(GenericRule):
         )
         rhs_2 = 0
         constraints_2 = lhs_2 <= rhs_2
-        self.zen_model.constraints.add_constraint(
+        self.zen_model.add_constraint(
             "constraint_technology_on_off_capacity_helper", constraints_2
         )
         # constraint 3, capacity helper bounds
@@ -992,14 +982,14 @@ class TechnologyRules(GenericRule):
         )
         rhs_3a = big_M
         constraints_3a = lhs_3a <= rhs_3a
-        self.zen_model.constraints.add_constraint(
+        self.zen_model.add_constraint(
             "constraint_technology_on_off_capacity_helper_lower_bound", constraints_3a
         )
         # 3b, upper bound
         lhs_3b = self.align_and_mask(capacity_on_off_helper - capacity, mask_on_off)
         rhs_3b = 0
         constraints_3b = lhs_3b <= rhs_3b
-        self.zen_model.constraints.add_constraint(
+        self.zen_model.add_constraint(
             "constraint_technology_on_off_capacity_helper_upper_bound", constraints_3b
         )
 

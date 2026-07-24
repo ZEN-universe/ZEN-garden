@@ -55,9 +55,7 @@ class CarrierRules(GenericRule):
         rhs = 0
         constraints = lhs == rhs
 
-        self.zen_model.constraints.add_constraint(
-            "constraint_cost_carrier_total", constraints
-        )
+        self.zen_model.add_constraint("constraint_cost_carrier_total", constraints)
 
     def constraint_carbon_emissions_carrier_total(self):
         """Total carbon emissions of importing and exporting carrier.
@@ -82,7 +80,7 @@ class CarrierRules(GenericRule):
         rhs = 0
         constraints = lhs == rhs
 
-        self.zen_model.constraints.add_constraint(
+        self.zen_model.add_constraint(
             "constraint_carbon_emissions_carrier_total", constraints
         )
 
@@ -114,12 +112,8 @@ class CarrierRules(GenericRule):
         rhs_exp = self.zen_model.parameters.availability_export
         constraints_exp = lhs_exp <= rhs_exp
 
-        self.zen_model.constraints.add_constraint(
-            "constraint_availability_import", constraints_imp
-        )
-        self.zen_model.constraints.add_constraint(
-            "constraint_availability_export", constraints_exp
-        )
+        self.zen_model.add_constraint("constraint_availability_import", constraints_imp)
+        self.zen_model.add_constraint("constraint_availability_export", constraints_exp)
 
     def constraint_availability_import_export_yearly(self):
         """node- and year-dependent carrier availability to import/export from outside
@@ -173,10 +167,10 @@ class CarrierRules(GenericRule):
         rhs_exp = self.zen_model.parameters.availability_export_yearly.where(mask_exp)
         constraints_exp = lhs_exp <= rhs_exp
 
-        self.zen_model.constraints.add_constraint(
+        self.zen_model.add_constraint(
             "constraint_availability_import_yearly", constraints_imp
         )
-        self.zen_model.constraints.add_constraint(
+        self.zen_model.add_constraint(
             "constraint_availability_export_yearly", constraints_exp
         )
 
@@ -208,9 +202,7 @@ class CarrierRules(GenericRule):
         rhs = 0
         constraints = lhs == rhs
 
-        self.zen_model.constraints.add_constraint(
-            "constraint_cost_carrier", constraints
-        )
+        self.zen_model.add_constraint("constraint_cost_carrier", constraints)
 
     def constraint_cost_limit_shed_demand(self):
         """Cost and limit of shedding demand of carrier.
@@ -247,10 +239,8 @@ class CarrierRules(GenericRule):
         rhs_shed_demand = self.zen_model.parameters.demand.where(mask, 0.0)
         constraints_shed_demand = lhs_shed_demand <= rhs_shed_demand
 
-        self.zen_model.constraints.add_constraint(
-            "constraint_cost_shed_demand", constraints_cost
-        )
-        self.zen_model.constraints.add_constraint(
+        self.zen_model.add_constraint("constraint_cost_shed_demand", constraints_cost)
+        self.zen_model.add_constraint(
             "constraint_limit_shed_demand", constraints_shed_demand
         )
 
@@ -298,7 +288,7 @@ class CarrierRules(GenericRule):
 
         constraints = lhs == rhs
 
-        self.zen_model.constraints.add_constraint(
+        self.zen_model.add_constraint(
             "constraint_carbon_emissions_carrier", constraints
         )
 
@@ -617,6 +607,4 @@ class CarrierRules(GenericRule):
         constraints = lhs.sel(aligned_idx) == rhs.sel(aligned_idx)
 
         ### return
-        self.zen_model.constraints.add_constraint(
-            "constraint_nodal_energy_balance", constraints
-        )
+        self.zen_model.add_constraint("constraint_nodal_energy_balance", constraints)

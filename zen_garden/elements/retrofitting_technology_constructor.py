@@ -35,7 +35,7 @@ class RetrofittingTechnologyConstructor(ElementConstructor):
         )
 
         # retrofitting base technologies
-        self.zen_model.sets.add_set(
+        self.zen_model.add_set(
             name="set_retrofitting_base_technologies",
             data=retrofit_base_technology,
             doc="set of base technologies for a specific retrofitting technology. "

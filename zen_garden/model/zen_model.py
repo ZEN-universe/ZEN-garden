@@ -43,3 +43,27 @@ class ZenModel:
         )
         self.parameters = Parameter(self.sets)
         self.constraints = Constraint(self.lp_model)
+
+    def add_set(self, *args, **kwargs):
+        """Add sets to the model.
+        See :meth:`zen_garden.model.components.index_set.IndexSet.add_set`.
+        """
+        self.sets.add_set(*args, **kwargs)
+
+    def add_variable(self, *args, **kwargs):
+        """Add variables to the model.
+        See :meth:`zen_garden.model.components.variable.Variable.add_variable`.
+        """
+        self.variables.add_variable(*args, **kwargs)
+
+    def add_parameter(self, *args, **kwargs):
+        """Add parameters to the model.
+        See :meth:`zen_garden.model.components.parameter.Parameter.add_parameter`.
+        """
+        self.parameters.add_parameter(*args, **kwargs)
+
+    def add_constraint(self, *args, **kwargs):
+        """Add constraints to the model.
+        See :meth:`zen_garden.model.components.constraint.Constraint.add_constraint`.
+        """
+        self.constraints.add_constraint(*args, **kwargs)

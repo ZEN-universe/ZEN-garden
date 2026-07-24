@@ -58,7 +58,7 @@ class ConversionTechnologyRules(GenericRule):
         rhs = 0
         constraints = lhs >= rhs
 
-        self.zen_model.constraints.add_constraint(
+        self.zen_model.add_constraint(
             "constraint_capacity_factor_conversion", constraints
         )
 
@@ -144,9 +144,7 @@ class ConversionTechnologyRules(GenericRule):
         rhs = 0
         constraints = lhs >= rhs
 
-        self.zen_model.constraints.add_constraint(
-            "constraint_minimum_full_load_hours", constraints
-        )
+        self.zen_model.add_constraint("constraint_minimum_full_load_hours", constraints)
 
     def constraint_opex_emissions_technology_conversion(self):
         """Calculate opex and carbon emissions of each technology.
@@ -218,10 +216,10 @@ class ConversionTechnologyRules(GenericRule):
         constraints_opex = lhs_opex == rhs
         constraints_emissions = lhs_emissions == rhs
 
-        self.zen_model.constraints.add_constraint(
+        self.zen_model.add_constraint(
             "constraint_opex_technology_conversion", constraints_opex
         )
-        self.zen_model.constraints.add_constraint(
+        self.zen_model.add_constraint(
             "constraint_carbon_emissions_technology_conversion", constraints_emissions
         )
 
@@ -272,9 +270,7 @@ class ConversionTechnologyRules(GenericRule):
         rhs = 0
         constraints = lhs == rhs
 
-        self.zen_model.constraints.add_constraint(
-            "constraint_linear_capex", constraints
-        )
+        self.zen_model.add_constraint("constraint_linear_capex", constraints)
 
     def constraint_capacity_capex_coupling(self):
         """Couples capacity variables based on modeling technique.
@@ -324,12 +320,10 @@ class ConversionTechnologyRules(GenericRule):
         constraints_capacity = lhs_capacity == rhs
         constraints_capex = lhs_capex == rhs
         ### return
-        self.zen_model.constraints.add_constraint(
+        self.zen_model.add_constraint(
             "constraint_capacity_coupling", constraints_capacity
         )
-        self.zen_model.constraints.add_constraint(
-            "constraint_capex_coupling", constraints_capex
-        )
+        self.zen_model.add_constraint("constraint_capex_coupling", constraints_capex)
 
     def constraint_carrier_conversion(self):
         """Conversion factor between reference carrier and dependent carrier.
@@ -443,6 +437,4 @@ class ConversionTechnologyRules(GenericRule):
         rhs = 0
         constraints = lhs == rhs
 
-        self.zen_model.constraints.add_constraint(
-            "constraint_carrier_conversion", constraints
-        )
+        self.zen_model.add_constraint("constraint_carrier_conversion", constraints)

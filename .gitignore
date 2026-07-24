@@ -2,6 +2,7 @@
 ##############
 /.idea
 /.vscode
+/.zed
 /data/*/
 /data/*
 /docs/files/api/generated/*

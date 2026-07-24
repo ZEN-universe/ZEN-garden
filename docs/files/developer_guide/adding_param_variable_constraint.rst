@@ -32,7 +32,7 @@ Sets can be added in the ``construct_sets`` method of the element consturctor cl
 e.g., :py:class:`EnergySystemConstructor <zen_garden.elements.energy_system_constructor.EnergySystemConstructor>`,
 :py:class:`CarrierConstructor <zen_garden.elements.carrier_constructor.CarrierConstructor>`,
 or :py:class:`TechnologyConstructor <zen_garden.elements.technology_constructor.TechnologyConstructor>`.
-The new set is added to ``self.zen_model.sets`` through the method ``self.zen_model.sets.add_set()``.
+The new set is added to ``self.zen_model.sets`` through the method ``self.zen_model.add_set()``.
 
 The :py:meth:`add_set <zen_garden.model.components.index_set.IndexSet.add_set>` method takes the following parameters:
 
@@ -45,12 +45,12 @@ Two examples for adding a set is shown below (from the ``Technology`` class):
 
 .. code-block:: python
 
-    self.zen_model.sets.add_set(
+    self.zen_model.add_set(
         name="set_conversion_technologies",
         data=energy_system.set_conversion_technologies,
         doc="Set of conversion technologies")
 
-    self.zen_model.sets.add_set(
+    self.zen_model.add_set(
         name="set_reference_carriers",
         data=self.element_registry.get_attribute_of_all_elements(
             self.element_class, "reference_carrier"
@@ -181,7 +181,7 @@ The ``add_variable`` method is called in the following way:
 
 .. code-block:: python
 
-    self.zen_model.variables.add_variable(
+    self.zen_model.add_variable(
         name="flow_import",
         index_sets=cls.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_operation"], optimization_setup),
         bounds=(0,np.inf),

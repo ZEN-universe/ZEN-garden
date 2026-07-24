@@ -81,10 +81,10 @@ class StorageTechnologyRules(GenericRule):
         rhs = capacity_limit
         constraint_discharge = lhs <= rhs
 
-        self.zen_model.constraints.add_constraint(
+        self.zen_model.add_constraint(
             "constraint_charge_storage_binary", constraint_charge
         )
-        self.zen_model.constraints.add_constraint(
+        self.zen_model.add_constraint(
             "constraint_discharge_storage_binary", constraint_discharge
         )
 
@@ -132,9 +132,7 @@ class StorageTechnologyRules(GenericRule):
         rhs = 0
         constraints = lhs >= rhs
         ### return
-        self.zen_model.constraints.add_constraint(
-            "constraint_capacity_factor_storage", constraints
-        )
+        self.zen_model.add_constraint("constraint_capacity_factor_storage", constraints)
 
     def constraint_opex_emissions_technology_storage(self):
         """Calculate opex of each technology.
@@ -191,10 +189,10 @@ class StorageTechnologyRules(GenericRule):
         constraints_opex = lhs_opex == rhs
         constraints_emissions = lhs_emissions == rhs
 
-        self.zen_model.constraints.add_constraint(
+        self.zen_model.add_constraint(
             "constraint_opex_technology_storage", constraints_opex
         )
-        self.zen_model.constraints.add_constraint(
+        self.zen_model.add_constraint(
             "constraint_carbon_emissions_technology_storage", constraints_emissions
         )
 
@@ -235,9 +233,7 @@ class StorageTechnologyRules(GenericRule):
         rhs = 0
         constraints = lhs <= rhs
 
-        self.zen_model.constraints.add_constraint(
-            "constraint_storage_level_max", constraints
-        )
+        self.zen_model.add_constraint("constraint_storage_level_max", constraints)
 
     def constraint_capacity_energy_to_power_ratio(self):
         """Limit capacity power to energy ratio.
@@ -283,10 +279,10 @@ class StorageTechnologyRules(GenericRule):
         )
         constraints_max = lhs <= rhs
 
-        self.zen_model.constraints.add_constraint(
+        self.zen_model.add_constraint(
             "constraint_capacity_energy_to_power_ratio_min", constraints_min
         )
-        self.zen_model.constraints.add_constraint(
+        self.zen_model.add_constraint(
             "constraint_capacity_energy_to_power_ratio_max", constraints_max
         )
 
@@ -379,9 +375,7 @@ class StorageTechnologyRules(GenericRule):
         rhs = 0
         constraints = lhs == rhs
 
-        self.zen_model.constraints.add_constraint(
-            "constraint_couple_storage_level", constraints
-        )
+        self.zen_model.add_constraint("constraint_couple_storage_level", constraints)
 
     def constraint_flow_storage_spillage(self):
         """Ensure that flow_energy_spillage is not greater than the flow_storage_inflow.
@@ -402,9 +396,7 @@ class StorageTechnologyRules(GenericRule):
         rhs = 0
         constraints = lhs <= rhs
 
-        self.zen_model.constraints.add_constraint(
-            "constraint_flow_storage_spillage", constraints
-        )
+        self.zen_model.add_constraint("constraint_flow_storage_spillage", constraints)
 
     def constraint_storage_technology_capex(self, index_values, index_names):
         """Definition of the capital expenditures for the storage technology.
@@ -465,6 +457,6 @@ class StorageTechnologyRules(GenericRule):
         rhs = 0
         constraints = lhs == rhs
 
-        self.zen_model.constraints.add_constraint(
+        self.zen_model.add_constraint(
             "constraint_storage_technology_capex", constraints
         )

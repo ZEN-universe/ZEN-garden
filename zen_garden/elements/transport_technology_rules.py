@@ -61,7 +61,7 @@ class TransportTechnologyRules(GenericRule):
         rhs = 0
         constraints = lhs >= rhs
         ### return
-        self.zen_model.constraints.add_constraint(
+        self.zen_model.add_constraint(
             "constraint_capacity_factor_transport", constraints
         )
 
@@ -125,10 +125,10 @@ class TransportTechnologyRules(GenericRule):
         constraints_opex = lhs_opex == rhs
         constraints_emissions = lhs_emissions == rhs
         ### return
-        self.zen_model.constraints.add_constraint(
+        self.zen_model.add_constraint(
             "constraint_opex_technology_transport", constraints_opex
         )
-        self.zen_model.constraints.add_constraint(
+        self.zen_model.add_constraint(
             "constraint_carbon_emissions_technology_transport", constraints_emissions
         )
 
@@ -165,7 +165,7 @@ class TransportTechnologyRules(GenericRule):
         rhs = 0
         constraints = lhs == rhs
 
-        self.zen_model.constraints.add_constraint(
+        self.zen_model.add_constraint(
             "constraint_transport_technology_losses_flow", constraints
         )
 
@@ -256,6 +256,6 @@ class TransportTechnologyRules(GenericRule):
         lhs = lhs.where(global_mask)
         rhs = 0
         constraints = lhs == rhs
-        self.zen_model.constraints.add_constraint(
+        self.zen_model.add_constraint(
             "constraint_transport_technology_capex", constraints
         )

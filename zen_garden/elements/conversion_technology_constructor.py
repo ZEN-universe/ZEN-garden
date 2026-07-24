@@ -44,7 +44,7 @@ class ConversionTechnologyConstructor(ElementConstructor):
             dependent_carriers[tech] = input_carriers[tech] + output_carriers[tech]
             dependent_carriers[tech].remove(reference_carrier[tech][0])
         # input carriers of technology
-        self.zen_model.sets.add_set(
+        self.zen_model.add_set(
             name="set_input_carriers",
             data=input_carriers,
             doc="set of carriers that are an input to a specific conversion "
@@ -52,7 +52,7 @@ class ConversionTechnologyConstructor(ElementConstructor):
             index_set="set_conversion_technologies",
         )
         # output carriers of technology
-        self.zen_model.sets.add_set(
+        self.zen_model.add_set(
             name="set_output_carriers",
             data=output_carriers,
             doc="set of carriers that are an output to a specific conversion "
@@ -60,7 +60,7 @@ class ConversionTechnologyConstructor(ElementConstructor):
             index_set="set_conversion_technologies",
         )
         # dependent carriers of technology
-        self.zen_model.sets.add_set(
+        self.zen_model.add_set(
             name="set_dependent_carriers",
             data=dependent_carriers,
             doc="set of carriers that are an output to a specific conversion "
@@ -80,7 +80,7 @@ class ConversionTechnologyConstructor(ElementConstructor):
                 "set_years",
             ],
         )
-        self.zen_model.parameters.add_parameter(
+        self.zen_model.add_parameter(
             name="capex_specific_conversion",
             doc="Parameter specifying the slope of the capex if approximated linearly",
             data=capex_data,
@@ -112,8 +112,6 @@ class ConversionTechnologyConstructor(ElementConstructor):
     @override
     def construct_vars(self):
         logger.info("Constructing variables for ConversionTechnology")
-        model = self.zen_model.lp_model
-        variables = self.zen_model.variables
 
         def flow_conversion_bounds(index_values, index_names):
             """Return bounds of carrier_flow for bigM expression.
@@ -171,13 +169,13 @@ class ConversionTechnologyConstructor(ElementConstructor):
                             )
 
                     lower.loc[tech, carrier, ...] = (
-                        model.variables["capacity"]
+                        self.zen_model.lp_model.variables["capacity"]
                         .lower.loc[tech, "power", node_set, time_step_year]
                         .data
                         * conversion_factor_lower
                     )
                     upper.loc[tech, carrier, ...] = (
-                        model.variables["capacity"]
+                        self.zen_model.lp_model.variables["capacity"]
                         .upper.loc[tech, "power", node_set, time_step_year]
                         .data
                         * conversion_factor_upper
@@ -196,7 +194,7 @@ class ConversionTechnologyConstructor(ElementConstructor):
                 "set_time_steps_operation",
             ],
         )
-        variables.add_variable(
+        self.zen_model.add_variable(
             name="flow_conversion_input",
             index_sets=(index_values, index_names),
             bounds=flow_conversion_bounds(index_values, index_names),
@@ -212,7 +210,7 @@ class ConversionTechnologyConstructor(ElementConstructor):
                 "set_time_steps_operation",
             ],
         )
-        variables.add_variable(
+        self.zen_model.add_variable(
             name="flow_conversion_output",
             index_sets=(index_values, index_names),
             bounds=flow_conversion_bounds(index_values, index_names),
@@ -221,7 +219,7 @@ class ConversionTechnologyConstructor(ElementConstructor):
         )
         ## pwa Variables - Capex
         # pwa capacity
-        variables.add_variable(
+        self.zen_model.add_variable(
             name="capacity_approximation",
             index_sets=self.create_custom_set(
                 ["set_conversion_technologies", "set_nodes", "set_years"],
@@ -231,7 +229,7 @@ class ConversionTechnologyConstructor(ElementConstructor):
             unit_category={"energy_quantity": 1, "time": -1},
         )
         # pwa capex technology
-        variables.add_variable(
+        self.zen_model.add_variable(
             name="capex_approximation",
             index_sets=self.create_custom_set(
                 ["set_conversion_technologies", "set_nodes", "set_years"],

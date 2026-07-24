@@ -102,11 +102,8 @@ class CarrierConstructor(ElementConstructor):
     def construct_vars(self):
         logger.info("Constructing variables for Carrier")
 
-        variables = self.zen_model.variables
-        sets = self.zen_model.sets
-
         # flow of imported carrier
-        variables.add_variable(
+        self.zen_model.add_variable(
             name="flow_import",
             index_sets=self.create_custom_set(
                 ["set_carriers", "set_nodes", "set_time_steps_operation"],
@@ -116,7 +113,7 @@ class CarrierConstructor(ElementConstructor):
             unit_category={"energy_quantity": 1, "time": -1},
         )
         # flow of exported carrier
-        variables.add_variable(
+        self.zen_model.add_variable(
             name="flow_export",
             index_sets=self.create_custom_set(
                 ["set_carriers", "set_nodes", "set_time_steps_operation"],
@@ -126,7 +123,7 @@ class CarrierConstructor(ElementConstructor):
             unit_category={"energy_quantity": 1, "time": -1},
         )
         # carrier import/export cost
-        variables.add_variable(
+        self.zen_model.add_variable(
             name="cost_carrier",
             index_sets=self.create_custom_set(
                 ["set_carriers", "set_nodes", "set_time_steps_operation"],
@@ -135,14 +132,14 @@ class CarrierConstructor(ElementConstructor):
             unit_category={"money": 1, "time": -1},
         )
         # total carrier import/export cost
-        variables.add_variable(
+        self.zen_model.add_variable(
             name="cost_carrier_total",
-            index_sets=sets["set_years"],
+            index_sets=self.zen_model.sets["set_years"],
             doc="total carrier cost due to import and export",
             unit_category={"money": 1},
         )
         # carbon emissions
-        variables.add_variable(
+        self.zen_model.add_variable(
             name="carbon_emissions_carrier",
             index_sets=self.create_custom_set(
                 ["set_carriers", "set_nodes", "set_time_steps_operation"],
@@ -151,14 +148,14 @@ class CarrierConstructor(ElementConstructor):
             unit_category={"emissions": 1, "time": -1},
         )
         # carbon emissions carrier
-        variables.add_variable(
+        self.zen_model.add_variable(
             name="carbon_emissions_carrier_total",
-            index_sets=sets["set_years"],
+            index_sets=self.zen_model.sets["set_years"],
             doc="total carbon emissions of importing and exporting carrier",
             unit_category={"emissions": 1},
         )
         # shed demand
-        variables.add_variable(
+        self.zen_model.add_variable(
             name="shed_demand",
             index_sets=self.create_custom_set(
                 ["set_carriers", "set_nodes", "set_time_steps_operation"],
@@ -168,7 +165,7 @@ class CarrierConstructor(ElementConstructor):
             unit_category={"energy_quantity": 1, "time": -1},
         )
         # cost of shed demand
-        variables.add_variable(
+        self.zen_model.add_variable(
             name="cost_shed_demand",
             index_sets=self.create_custom_set(
                 ["set_carriers", "set_nodes", "set_time_steps_operation"],
