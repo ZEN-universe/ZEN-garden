@@ -7,7 +7,6 @@ from typing import TYPE_CHECKING, Callable
 import psutil
 
 from zen_garden.elements import ELEMENT_CONSTRUCTORS
-from zen_garden.elements.energy_system_constructor import EnergySystemConstructor
 from zen_garden.model.zen_model import ZenModel
 
 if TYPE_CHECKING:
@@ -60,9 +59,6 @@ class ModelConstructionService:
         self.zen_model = ZenModel(
             self.config, self.energy_system, self.unit_handling, self.element_registry
         )
-        self.energy_system_constructor = EnergySystemConstructor(
-            self.config, self.energy_system, self.time_steps, self.zen_model
-        )
         self.element_constructors = [
             ElementConstructor(
                 self.config,
@@ -84,7 +80,6 @@ class ModelConstructionService:
 
     @measure_run_time
     def _construct_sets(self):
-        self.energy_system_constructor.construct_sets()
         for element_constructor in self.element_constructors:
             if not element_constructor.has_elements():
                 continue
@@ -92,7 +87,6 @@ class ModelConstructionService:
 
     @measure_run_time
     def _construct_params(self):
-        self.energy_system_constructor.construct_params()
         for element_constructor in self.element_constructors:
             if not element_constructor.has_elements():
                 continue
@@ -100,7 +94,6 @@ class ModelConstructionService:
 
     @measure_run_time
     def _construct_vars(self):
-        self.energy_system_constructor.construct_vars()
         for element_constructor in self.element_constructors:
             if not element_constructor.has_elements():
                 continue
@@ -108,11 +101,13 @@ class ModelConstructionService:
 
     @measure_run_time
     def _construct_constraints(self):
-        self.energy_system_constructor.construct_constraints()
         for element_constructor in self.element_constructors:
             if not element_constructor.has_elements():
                 continue
             element_constructor.construct_constraints()
 
     def _construct_objective(self):
-        self.energy_system_constructor.construct_objective()
+        for element_constructor in self.element_constructors:
+            if not element_constructor.has_elements():
+                continue
+            element_constructor.construct_objective()

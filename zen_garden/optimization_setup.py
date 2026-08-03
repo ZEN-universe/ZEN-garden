@@ -25,6 +25,7 @@ from zen_garden.preprocess.time_series_aggregation import TimeSeriesAggregation
 from zen_garden.preprocess.unit_handling import UnitHandling
 from zen_garden.services.dataset_path_resolver import DatasetPathResolver
 from zen_garden.services.element_registry import ElementRegistry
+from zen_garden.services.input_repository import InputRepository
 from zen_garden.services.model_construction_service import ModelConstructionService
 from zen_garden.services.scenario_dict import ScenarioDict
 from zen_garden.types import YearSpecificTs
@@ -107,10 +108,14 @@ class OptimizationSetup(object):
         self.input_data_checks.check_existing_technology_data()
 
         # Init the energy system
+        energy_system_folder_path = Path(
+            self.dataset_path_resolver.folder_of_set("energy_system")
+        )
         self.unit_handling = UnitHandling(
-            Path(self.dataset_path_resolver.folder_of_set("energy_system")),
+            energy_system_folder_path,
             self.config.solver.rounding_decimal_points_units,
         )
+        self.input_repository = InputRepository(energy_system_folder_path)
         self.energy_system = EnergySystem(
             self.config,
             self.unit_handling,
@@ -119,6 +124,7 @@ class OptimizationSetup(object):
             self.input_data_checks,
             self.time_steps,
             self.year_specific_ts,
+            self.input_repository,
         )
         self.element_registry = ElementRegistry(
             self.config,
@@ -149,6 +155,7 @@ class OptimizationSetup(object):
             self.element_registry,
             self.time_steps,
             self.year_specific_ts,
+            self.input_repository,
         )
 
     def store_input_data(self):

@@ -15,6 +15,7 @@ if TYPE_CHECKING:
     from zen_garden.model.config import Config
     from zen_garden.model.time_steps import TimeStepsDicts
     from zen_garden.services.element_registry import ElementRegistry
+    from zen_garden.services.input_repository import InputRepository
     from zen_garden.types import YearSpecificTs
 
 logger = logging.getLogger(__name__)
@@ -30,6 +31,7 @@ class TimeSeriesAggregation(object):
         element_registry: "ElementRegistry",
         time_steps: "TimeStepsDicts",
         year_specific_ts: "YearSpecificTs",
+        input_repository: "InputRepository",
     ):
         """Initializes the time series aggregation. The data is aggregated
         for a single year and then concatenated.
@@ -44,6 +46,7 @@ class TimeSeriesAggregation(object):
         self.config = config
         self.element_registry = element_registry
         self.year_specific_ts = year_specific_ts
+        self.input_repository = input_repository
 
         self.header_set_time_steps = self.config.analysis.header_data_inputs.set_hours
         # if set_hours as input (because already aggregated), use this as
@@ -240,7 +243,7 @@ class TimeSeriesAggregation(object):
         """
         self.excluded_ts = []
         if self.config.system.exclude_parameters_from_TSA:
-            excluded_parameters = self.energy_system.data_input.read_input_csv(
+            excluded_parameters = self.input_repository.read_csv(
                 "exclude_parameter_from_TSA"
             )
             # exclude file exists

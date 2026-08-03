@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING
 import pandas as pd
 
 from zen_garden.preprocess.data_input import DataInput
+from zen_garden.services.input_repository import InputRepository
 
 if TYPE_CHECKING:
     from zen_garden.elements.energy_system import EnergySystem
@@ -65,6 +66,8 @@ class Element:
         # set if aggregated
         self.aggregated = False
         # create DataInput object
+        folder_path = self._get_input_path()
+        self.input_repository = InputRepository(folder_path)
         self.data_input = DataInput(
             element=self,
             energy_system=self.energy_system,
@@ -73,7 +76,8 @@ class Element:
             scenario_dict=scenario_dict,
             input_data_checks=self.input_data_checks,
             year_specific_ts=year_specific_ts,
-            folder_path=self._get_input_path(),
+            folder_path=folder_path,
+            input_repository=self.input_repository,
         )
         # dict to save the parameter units element-wise and to save them in the results
         self.units = {}

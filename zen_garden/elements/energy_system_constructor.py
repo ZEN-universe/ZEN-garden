@@ -5,7 +5,9 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 import pandas as pd
+from typing_extensions import override
 
+from zen_garden.elements import ElementConstructor
 from zen_garden.elements.energy_system import EnergySystem
 from zen_garden.elements.energy_system_rules import EnergySystemRules
 from zen_garden.model.config import Config
@@ -13,27 +15,32 @@ from zen_garden.model.zen_model import ZenModel
 
 if TYPE_CHECKING:
     from zen_garden.model.time_steps import TimeStepsDicts
+    from zen_garden.services.element_registry import ElementRegistry
 
 logger = logging.getLogger(__name__)
 
 
-class EnergySystemConstructor:
+class EnergySystemConstructor(ElementConstructor):
     def __init__(
         self,
         config: Config,
+        element_registry: "ElementRegistry",
+        zen_model: "ZenModel",
         energy_system: "EnergySystem",
         time_steps: "TimeStepsDicts",
-        zen_model: "ZenModel",
     ):
-        self.config = config
-        self.energy_system = energy_system
-        self.time_steps = time_steps
-        self.zen_model = zen_model
+        super().__init__(config, element_registry, zen_model, energy_system, time_steps)
 
         self.rules = EnergySystemRules(
             self.config, self.zen_model, self.energy_system, self.time_steps
         )
 
+    @override
+    def has_elements(self) -> bool:
+        """Check if the energy system has elements."""
+        return True
+
+    @override
     def construct_sets(self):
         """Constructs the pe.Sets of the class <EnergySystem>."""
         logger.info("Constructing sets for EnergySystem")
@@ -41,11 +48,15 @@ class EnergySystemConstructor:
         # construct pe.Sets of the class <EnergySystem>
         # nodes
         self.zen_model.add_set(
-            name="set_nodes", data=self.energy_system.set_nodes, doc="Set of nodes"
+            name="set_nodes",
+            data=self.energy_system.set_nodes,
+            doc="Set of nodes",
         )
         # edges
         self.zen_model.add_set(
-            name="set_edges", data=self.energy_system.set_edges, doc="Set of edges"
+            name="set_edges",
+            data=self.energy_system.set_edges,
+            doc="Set of edges",
         )
         # nodes on edges
         self.zen_model.add_set(
@@ -106,76 +117,78 @@ class EnergySystemConstructor:
             doc="Set of storage level time steps",
         )
 
+    @override
     def construct_params(self):
         """Constructs the pe.Params of the class <EnergySystem>."""
         logger.info("Constructing parameters for EnergySystem")
 
         # operational time step duration
-        self._add_parameter(
+        self.add_parameter(
             name="time_steps_operation_duration",
             set_time_steps="set_time_steps_operation",
             doc="Parameter which specifies the duration of each operational time step",
         )
         # storage time step duration
-        self._add_parameter(
+        self.add_parameter(
             name="time_steps_storage_duration",
             set_time_steps="set_time_steps_storage",
             doc="Parameter which specifies the duration of each storage time step",
         )
         # discount rate
-        self._add_parameter(
+        self.add_parameter(
             name="discount_rate",
             doc="Parameter which specifies the discount rate of the energy system",
         )
         # carbon emissions limit
-        self._add_parameter(
+        self.add_parameter(
             name="carbon_emissions_annual_limit",
             set_time_steps="set_years",
             doc="Parameter which specifies the total limit on carbon emissions",
         )
         # carbon emissions budget
-        self._add_parameter(
+        self.add_parameter(
             name="carbon_emissions_budget",
             doc="Parameter which specifies the total budget of carbon emissions "
             "until the end of the entire time horizon",
         )
         # carbon emissions budget
-        self._add_parameter(
+        self.add_parameter(
             name="carbon_emissions_cumulative_existing",
             doc="Parameter which specifies the total previous carbon emissions",
         )
         # carbon price
-        self._add_parameter(
+        self.add_parameter(
             name="price_carbon_emissions",
             set_time_steps="set_years",
             doc="Parameter which specifies the yearly carbon price",
         )
         # carbon price of budget overshoot
-        self._add_parameter(
+        self.add_parameter(
             name="price_carbon_emissions_budget_overshoot",
             doc="Parameter which specifies the carbon price for budget overshoot",
         )
         # carbon price of annual overshoot
-        self._add_parameter(
+        self.add_parameter(
             name="price_carbon_emissions_annual_overshoot",
             doc="Parameter which specifies the carbon price for annual overshoot",
         )
         # carbon price of overshoot
-        self._add_parameter(
+        self.add_parameter(
             name="market_share_unbounded",
             doc="Parameter which specifies the unbounded market share",
         )
         # knowledge depreciation rate
-        self._add_parameter(
+        self.add_parameter(
             name="knowledge_depreciation_rate",
             doc="Parameter which specifies the knowledge depreciation rate",
         )
         # knowledge spillover rate
-        self._add_parameter(
+        self.add_parameter(
             name="knowledge_spillover_rate",
             doc="Parameter which specifies the knowledge spillover rate",
         )
 
+    @override
     def construct_vars(self):
         """Constructs the pe.Vars of the class <EnergySystem>."""
         logger.info("Constructing variables for EnergySystem")
@@ -233,6 +246,7 @@ class EnergySystemConstructor:
             unit_category={"money": 1},
         )
 
+    @override
     def construct_constraints(self):
         """Constructs the constraints of the class <EnergySystem>."""
         logger.info("Constructing constraints for EnergySystem")
@@ -264,6 +278,7 @@ class EnergySystemConstructor:
         # disable annual carbon emissions overshoot
         self.rules.constraint_carbon_emissions_annual_overshoot()
 
+    @override
     def construct_objective(self):
         """Constructs the pe.Objective of the class <EnergySystem>."""
         logger.info("Constructing objective for EnergySystem")
@@ -283,38 +298,13 @@ class EnergySystemConstructor:
         # construct objective
         self.zen_model.lp_model.add_objective(objective, sense=sense)
 
-    def _add_parameter(
-        self,
-        name: str,
-        doc: str,
-        index_names: list[str] | None = None,
-        set_time_steps=None,
-    ):
-        """Adds a parameter to the zen_model.parameters.
-
-        :param zen_model: The ZenModel of the EnergySystem class
-        :param name: The name of the parameter
-        :param index_names: The index names of the parameter
-        """
-
-        component_data, index_list, dict_of_units = self._initialize_component(
-            name, index_names, set_time_steps
-        )
-        component_data = self._ensure_pd_series_multi_index(component_data)
-        data = component_data, index_list
-
-        self.zen_model.add_parameter(
-            name=name,
-            doc=doc,
-            data=data,
-            dict_of_units=dict_of_units,
-        )
-
+    @override
     def _initialize_component(
         self,
         component_name: str,
         index_names: list[str] | None,
-        set_time_steps=None,
+        capacity_types: bool = False,
+        set_time_steps: str | None = None,
     ):
         """Initialize a modeling component by extracting the stored input data.
 

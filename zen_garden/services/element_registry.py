@@ -172,10 +172,7 @@ class ElementRegistry:
         return None
 
     def get_attribute_of_all_elements_with_units(
-        self,
-        cls,
-        attribute_name: str,
-        capacity_types=False,
+        self, cls, attribute_name: str, capacity_types=False
     ):
         """Get attribute values and units of all elements in a class.
 

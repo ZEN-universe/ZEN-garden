@@ -2,20 +2,20 @@
 
 import copy
 import logging
-from pathlib import Path
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING
 
 import numpy as np
-import pandas as pd
 
 from zen_garden.model.config import Config
 from zen_garden.model.time_steps import TimeStepsDicts
 from zen_garden.preprocess.data_input import DataInput
+from zen_garden.services.network_topology import NetworkTopology
 from zen_garden.types import YearSpecificTs
 
 if TYPE_CHECKING:
     from zen_garden.preprocess.unit_handling import UnitHandling
     from zen_garden.services.dataset_path_resolver import DatasetPathResolver
+    from zen_garden.services.input_repository import InputRepository
     from zen_garden.services.scenario_dict import ScenarioDict
     from zen_garden.utils.input_data_checks import InputDataChecks
 
@@ -36,6 +36,7 @@ class EnergySystem:
         input_data_checks: "InputDataChecks",
         time_steps: "TimeStepsDicts",
         year_specific_ts: "YearSpecificTs",
+        input_repository: "InputRepository",
     ):
         """Initialization of the energy_system.
 
@@ -43,23 +44,30 @@ class EnergySystem:
         """
         # set attributes
         self.config = config
-        self.unit_handling = unit_handling
 
         # empty dict of technologies of carrier
         self.dict_technology_of_carrier = {}
         # The timesteps
         self.time_steps = time_steps
+        self.input_repository = input_repository
 
         # create DataInput object
         self.data_input = DataInput(
             element=self,
             energy_system=self,
-            unit_handling=self.unit_handling,
+            unit_handling=unit_handling,
             config=config,
             scenario_dict=scenario_dict,
             input_data_checks=input_data_checks,
             year_specific_ts=year_specific_ts,
-            folder_path=Path(dataset_path_resolver.folder_of_set("energy_system")),
+            folder_path=input_repository.folder_path,
+            input_repository=input_repository,
+        )
+        self.network_topology = NetworkTopology(
+            config=self.config,
+            input_repository=input_repository,
+            input_data_checks=input_data_checks,
+            unit_handling=unit_handling,
         )
         # initialize empty set_carriers list
         self.set_carriers = []
@@ -69,12 +77,6 @@ class EnergySystem:
     def store_input_data(self):
         """Retrieves and stores input data for EnergySystem as attributes."""
         # in class <EnergySystem>, all sets are constructed
-        self.set_nodes = self.data_input.extract_locations()
-        self.set_nodes_on_edges = self.calculate_edges_from_nodes()
-        self.set_edges = list(self.set_nodes_on_edges.keys())
-        self.set_haversine_distances_edges = (
-            self.calculate_haversine_distances_from_nodes()
-        )
         self.set_technologies = self.config.system.set_technologies
         # base time steps
         self.set_hours_all_years = list(
@@ -114,7 +116,7 @@ class EnergySystem:
         )
         # parameters whose time-dependant data should not be interpolated
         # (for years without data) in DataInput._convert_real_to_generic_time_indices()
-        self.parameters_interpolation_off = self.data_input.read_input_json(
+        self.parameters_interpolation_off = self.input_repository.read_json(
             "parameters_interpolation_off"
         )
         # technology-specific
@@ -183,74 +185,6 @@ class EnergySystem:
             "knowledge_spillover_rate", index_sets=[], unit_category={}
         )
 
-    def calculate_edges_from_nodes(self):
-        """Calculates set_nodes_on_edges from set_nodes.
-
-        :return: set_nodes_on_edges: dict with edges and corresponding nodes
-        """
-        set_nodes_on_edges = {}
-        # read edge file
-        set_edges_input = self.data_input.extract_locations(extract_nodes=False)
-        assert isinstance(set_edges_input, pd.DataFrame)
-        for edge in set_edges_input.index:
-            set_nodes_on_edges[edge] = (
-                set_edges_input.loc[edge, "node_from"],
-                set_edges_input.loc[edge, "node_to"],
-            )
-        return set_nodes_on_edges
-
-    def calculate_haversine_distances_from_nodes(self):
-        """Computes the distance (in km) between two nodes.
-
-        The Haversine function is used to compute the distance in kilometers based on
-         their lon lat coordinates.
-
-        :return: dict containing all edges along with their distances
-        """
-        set_haversine_distances_of_edges = {}
-
-        # read coords file
-        df_coords_input = self.data_input.extract_locations(extract_coordinates=True)
-        if not isinstance(df_coords_input, pd.DataFrame):
-            raise TypeError(
-                "[EnergySystem] df_coords_input is not of type pd.DataFrame"
-            )
-        coords = df_coords_input.set_index("node")
-        # TODO: load this outside this function
-        self.config.system.coords = cast(
-            dict[str, dict[str, float]], coords.T.to_dict()
-        )
-
-        # convert coords from decimal degrees to radians
-        df_coords_input["lon"] = df_coords_input["lon"] * np.pi / 180
-        df_coords_input["lat"] = df_coords_input["lat"] * np.pi / 180
-        # Radius of the Earth in kilometers
-        radius = 6371.0
-        for edge, nodes in self.set_nodes_on_edges.items():
-            node_1, node_2 = nodes
-            coords1 = df_coords_input[df_coords_input["node"] == node_1]
-            coords2 = df_coords_input[df_coords_input["node"] == node_2]
-            # Haversine formula
-            dlon = coords2["lon"].squeeze() - coords1["lon"].squeeze()
-            dlat = coords2["lat"].squeeze() - coords1["lat"].squeeze()
-            a = (
-                np.sin(dlat / 2) ** 2
-                + np.cos(coords1["lat"].squeeze())
-                * np.cos(coords2["lat"].squeeze())
-                * np.sin(dlon / 2) ** 2
-            )
-            c = 2 * np.arctan2(np.sqrt(a), np.sqrt(1 - a))
-            distance = radius * c
-            set_haversine_distances_of_edges[edge] = distance
-        multiplier = self.unit_handling.get_unit_multiplier(
-            "km", attribute_name="distance"
-        )
-        set_haversine_distances_of_edges = {
-            key: value * multiplier
-            for key, value in set_haversine_distances_of_edges.items()
-        }
-        return set_haversine_distances_of_edges
-
     def set_technology_of_carrier(self, technology, list_technology_of_carrier):
         """Appends technology to carrier in dict_technology_of_carrier.
 
@@ -264,46 +198,30 @@ class EnergySystem:
             elif technology not in self.dict_technology_of_carrier[carrier]:
                 self.dict_technology_of_carrier[carrier].append(technology)
 
-    def calculate_connected_edges(self, node, direction: str):
-        """Calculates connected edges going in or going out.
+    def calculate_connected_edges(self, *args):
+        """Calculates connected edges using the network topology.
 
-        :param node: current node, connected by edges
-        :param direction: direction of edges, either in or out. In: node = endnode,
-            out: node = startnode
-        :return: _set_connected_edges: list of connected edges
+        See
+        :meth:`zen_garden.services.network_topology.NetworkTopology.calculate_connected_edges`
         """
-        if direction == "in":
-            # second entry is node into which the flow goes
-            _set_connected_edges = [
-                edge
-                for edge in self.set_nodes_on_edges
-                if self.set_nodes_on_edges[edge][1] == node
-            ]
-        elif direction == "out":
-            # first entry is node out of which the flow starts
-            _set_connected_edges = [
-                edge
-                for edge in self.set_nodes_on_edges
-                if self.set_nodes_on_edges[edge][0] == node
-            ]
-        else:
-            raise KeyError(f"invalid direction '{direction}'")
-        return _set_connected_edges
+        return self.network_topology.calculate_connected_edges(*args)
 
-    def calculate_reversed_edge(self, edge):
-        """Calculates the reversed edge corresponding to an edge.
+    @property
+    def set_nodes(self):
+        """Returns the set of nodes from the network topology."""
+        return self.network_topology.set_nodes
 
-        :param edge: input edge
-        :return: _reversed_edge: edge corresponding to the reversed direction of edge
-        """
-        _node_out, _node_in = self.set_nodes_on_edges[edge]
-        for _reversed_edge in self.set_nodes_on_edges:
-            if (
-                _node_out == self.set_nodes_on_edges[_reversed_edge][1]
-                and _node_in == self.set_nodes_on_edges[_reversed_edge][0]
-            ):
-                return _reversed_edge
-        raise KeyError(
-            f"Edge {edge} has no reversed edge. "
-            f"However, at least one transport technology is bidirectional"
-        )
+    @property
+    def set_edges(self):
+        """Returns the set of edges from the network topology."""
+        return self.network_topology.set_edges
+
+    @property
+    def set_nodes_on_edges(self):
+        """Returns the set of nodes on edges from the network topology."""
+        return self.network_topology.set_nodes_on_edges
+
+    @property
+    def set_haversine_distances_edges(self):
+        """Returns the set of haversine distances on edges from the network topology."""
+        return self.network_topology.set_haversine_distances_edges

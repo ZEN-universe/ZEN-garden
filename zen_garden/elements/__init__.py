@@ -37,6 +37,7 @@ ELEMENT_TYPE_CLASSES: dict[str, type[Element]] = {
 }
 
 ELEMENT_CONSTRUCTORS: list[type[ElementConstructor]] = [
+    EnergySystemConstructor,
     CarrierConstructor,
     TechnologyConstructor,
     ConversionTechnologyConstructor,

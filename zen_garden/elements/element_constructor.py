@@ -67,6 +67,11 @@ class ElementConstructor(ABC):
         """Constructs the Constraints of this class."""
         pass
 
+    def construct_objective(self):  # noqa: B027
+        """Constructs the Objective of this class."""
+        # do nothing by default, only overriden by EnergySystemConstructor
+        pass
+
     def create_custom_set(self, list_index: list[str]):
         """Creates custom set for model component.
 
@@ -246,42 +251,44 @@ class ElementConstructor(ABC):
         self,
         name: str,
         doc: str,
-        index_names: list[str],
+        index_names: list[str] | None = None,
         capacity_types: bool = False,
+        set_time_steps: str | None = None,
     ):
         """Adds a parameter to the optimization model for components without data.
 
         :param name: name of parameter
         :param doc: docstring of parameter
+        :param index_names: list of names of index sets
+        :param capacity_types: boolean if extracted for capacities
         """
         component_data, index_list, dict_of_units = self._initialize_component(
-            name, index_names, capacity_types
+            name, index_names, capacity_types, set_time_steps
         )
         component_data = self._ensure_pd_series_multi_index(component_data)
         data = component_data, index_list
 
-        self.zen_model.add_parameter(
-            name=name,
-            doc=doc,
-            data=data,
-            dict_of_units=dict_of_units,
-        )
+        self.zen_model.add_parameter(name, doc, data, dict_of_units)
 
     def _initialize_component(
         self,
         component_name: str,
-        index_names: list[str],
+        index_names: list[str] | None,
         capacity_types: bool = False,
+        set_time_steps: str | None = None,
     ):
         """Initialize a modeling component by extracting the stored input data.
 
         Args:
-            calling_class: class from where the method is called
-            component_name: name of modeling component
-            index_names: names of index sets, only if calling_class is not EnergySystem
-            set_time_steps: time steps, only if calling_class is EnergySystem
+            component_name: name of the modeling component
+            index_names: names of index sets
             capacity_types: boolean if extracted for capacities
-            component_data: data to initialize the component
+            set_time_steps: name of the set of time steps to extract data for
+
+        Returns:
+            component_data: extracted data as pd.Series
+            index_list: list of names of index sets
+            dict_of_units: dictionary of units for the component
         """
 
         if index_names is None:
