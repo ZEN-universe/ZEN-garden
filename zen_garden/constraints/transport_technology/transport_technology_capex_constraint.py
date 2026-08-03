@@ -1,0 +1,101 @@
+import numpy as np
+import xarray as xr
+
+from zen_garden.constraints.generic_constraint import GenericConstraint
+from zen_garden.model.components.index_set import IndexSet
+
+
+class TransportTechnologyCapexConstraint(GenericConstraint):
+    def build(self, index_values=None, index_list=None):
+        """Definition of the capital expenditures for the transport technology.
+
+        .. math::
+            \\text{if transport distance set to inf: } \\Delta S_{j,e,y} = 0
+        .. math::
+            \\text{else: } CAPEX_{j,e,y} = \\Delta S_{j,e,y}
+            \\alpha_{j,y}^{\\mathrm{const}} +
+            \\Delta S_{j,e,y} h_{j,e} \\alpha^\\mathrm{dist}_{j,e,y}
+
+        :math:`\\Delta S_{j,e,y}`: Capacity addition of transport technology :math:`j`
+        on edge :math:`e` in year :math:`y` \n
+        :math:`CAPEX_{j,e,y}`: Capital expenditures of transport technology :math:`j`
+        on edge :math:`e` in year :math:`y` \n
+        :math:`\\alpha_{j,y}^{\\mathrm{const}}`: Specific constant capital expenditures
+        of transport technology :math:`j` in year :math:`y`
+        :math:`\\alpha^\\mathrm{dist}_{j,e,y}`: Specific capital expenditures per
+        distance of transport technology :math:`j` on edge :math:`e` in year :math:`y`
+        :math:`h_{j,e}`: Transport distance for transport technology :math:`j` on
+        edge :math:`e`
+
+        """
+        assert index_values is not None, "index_values must be provided"
+        assert index_list is not None, "index_list must be provided"
+
+        # check if we even need to continue
+        if len(index_values) == 0:
+            return []
+        # get the coords
+        coords = [
+            self.zen_model.parameters.capex_per_distance_transport.coords[
+                "set_transport_technologies"
+            ],
+            self.zen_model.parameters.capex_per_distance_transport.coords["set_edges"],
+            self.zen_model.parameters.capex_per_distance_transport.coords["set_years"],
+        ]
+
+        ### masks
+        # This mask checks the distance between nodes for the condition
+        mask = np.isinf(self.zen_model.parameters.distance).astype(float)
+
+        # This mask ensure we only get constraints where we want them
+        index_arrs = IndexSet.tuple_to_arr(index_values, index_list)
+        global_mask = xr.DataArray(False, coords=coords)
+        global_mask.loc[index_arrs] = True
+
+        ### auxiliary calculations TODO improve
+        term_distance_inf = (
+            mask
+            * self.zen_model.variables["capacity_addition"].loc[
+                coords[0], "power", coords[1], coords[2]
+            ]
+        )
+        term_distance_not_inf = (1 - mask) * (
+            self.zen_model.variables["cost_capex_overnight"].loc[
+                coords[0], "power", coords[1], coords[2]
+            ]
+            - self.zen_model.variables["capacity_addition"].loc[
+                coords[0], "power", coords[1], coords[2]
+            ]
+            * self.zen_model.parameters.capex_specific_transport.loc[
+                coords[0], coords[1]
+            ]
+        )
+        # Additional check to avoid binary variables when their coefficient is 0
+        if np.any(
+            self.zen_model.parameters.distance.loc[coords[0], coords[1]]
+            * self.zen_model.parameters.capex_per_distance_transport.loc[
+                coords[0], coords[1]
+            ]
+            != 0
+        ):
+            term_distance_not_inf -= (
+                (1 - mask)
+                * self.zen_model.variables["technology_installation"].loc[
+                    coords[0], "power", coords[1], coords[2]
+                ]
+                * (
+                    self.zen_model.parameters.distance.loc[coords[0], coords[1]]
+                    * self.zen_model.parameters.capex_per_distance_transport.loc[
+                        coords[0], coords[1]
+                    ]
+                )
+            )
+
+        ### formulate constraint
+        lhs = term_distance_inf + term_distance_not_inf
+        lhs = lhs.where(global_mask)
+        rhs = 0
+        constraints = lhs == rhs
+        self.zen_model.add_constraint(
+            "constraint_transport_technology_capex", constraints
+        )

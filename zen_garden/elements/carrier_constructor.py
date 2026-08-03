@@ -5,8 +5,11 @@ import logging
 import numpy as np
 from typing_extensions import override
 
+from zen_garden.constraints.carrier import (
+    CARRIER_CONSTRAINTS,
+    NodalEnergyBalanceConstraint,
+)
 from zen_garden.elements.carrier import Carrier
-from zen_garden.elements.carrier_rules import CarrierRules
 from zen_garden.elements.element_constructor import ElementConstructor
 from zen_garden.model.components.zen_index import ZenIndex
 
@@ -179,36 +182,20 @@ class CarrierConstructor(ElementConstructor):
     def construct_constraints(self):
         logger.info("Constructing constraints for Carrier")
 
-        rules = CarrierRules(
-            self.config, self.zen_model, self.energy_system, self.time_steps
+        for ConstraintClass in CARRIER_CONSTRAINTS:
+            constraint = ConstraintClass(
+                self.config, self.zen_model, self.energy_system, self.time_steps
+            )
+            constraint.build()
+
+        # Custom constraint for nodal energy balance of carrier
+        nodal_energy_balance_constraint = NodalEnergyBalanceConstraint(
+            self.zen_model, self.energy_system
         )
-
-        # limit import/export flow by availability
-        rules.constraint_availability_import_export()
-
-        # limit import/export flow by availability for each year
-        rules.constraint_availability_import_export_yearly()
-
-        # cost for carrier
-        rules.constraint_cost_carrier()
-
-        # cost and limit for shed demand
-        rules.constraint_cost_limit_shed_demand()
-
-        # total cost for carriers
-        rules.constraint_cost_carrier_total()
-
-        # carbon emissions
-        rules.constraint_carbon_emissions_carrier()
-
-        # carbon emissions carrier
-        rules.constraint_carbon_emissions_carrier_total()
-
-        # energy balance
         index_values, index_names = self.create_custom_set(
             ["set_carriers", "set_nodes", "set_time_steps_operation"]
         )
-        rules.constraint_nodal_energy_balance(
+        nodal_energy_balance_constraint.build(
             ZenIndex(index_values, index_names),
             index_names[:1],
         )

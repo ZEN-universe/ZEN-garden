@@ -2,8 +2,6 @@
 
 import logging
 
-import numpy as np
-
 from zen_garden.elements.element import Element
 
 logger = logging.getLogger(__name__)
@@ -78,14 +76,3 @@ class Carrier(Element):
             index_sets=[],
             unit_category={"money": 1, "energy_quantity": -1},
         )
-
-    def overwrite_time_steps(self, base_time_steps):
-        """Overwrites set_time_steps_operation.
-
-        :param base_time_steps: base time steps of the energy system
-        """
-        set_time_steps_operation = self.time_steps.encode_time_step(
-            base_time_steps=base_time_steps, time_step_type="operation"
-        )
-        assert isinstance(set_time_steps_operation, np.ndarray)
-        self.set_time_steps_operation = set_time_steps_operation.squeeze().tolist()

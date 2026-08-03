@@ -6,9 +6,13 @@ import numpy as np
 import xarray as xr
 from typing_extensions import override
 
+from zen_garden.constraints.storage_technology import (
+    STORAGE_TECHNOLOGY_CONSTRAINTS,
+    ChargeDischargeBinaryConstraint,
+    StorageTechnologyCapexConstraint,
+)
 from zen_garden.elements.element_constructor import ElementConstructor
 from zen_garden.elements.storage_technology import StorageTechnology
-from zen_garden.elements.storage_technology_rules import StorageTechnologyRules
 
 logger = logging.getLogger(__name__)
 
@@ -179,26 +183,10 @@ class StorageTechnologyConstructor(ElementConstructor):
     def construct_constraints(self):
         logger.info("Constructing constraints for StorageTechnology")
 
-        rules = StorageTechnologyRules(
-            self.config, self.zen_model, self.energy_system, self.time_steps
-        )
-        # limit flow by capacity and max load
-        rules.constraint_capacity_factor_storage()
-
-        # opex and emissions constraint for storage technologies
-        rules.constraint_opex_emissions_technology_storage()
-
-        # Limit storage level
-        rules.constraint_storage_level_max()
-
-        # couple storage levels
-        rules.constraint_couple_storage_level()
-
-        # spillage limit
-        rules.constraint_flow_storage_spillage()
-
-        # limit energy to power ratios of capacity additions
-        rules.constraint_capacity_energy_to_power_ratio()
+        for StorageTechnologyConstraint in STORAGE_TECHNOLOGY_CONSTRAINTS:
+            StorageTechnologyConstraint(
+                self.config, self.zen_model, self.energy_system, self.time_steps
+            ).build()
 
         # Linear Capex
         index_values, index_names = self.create_custom_set(
@@ -209,8 +197,12 @@ class StorageTechnologyConstructor(ElementConstructor):
                 "set_years",
             ],
         )
-        rules.constraint_storage_technology_capex(index_values, index_names)
+        StorageTechnologyCapexConstraint(
+            self.config, self.zen_model, self.energy_system, self.time_steps
+        ).build(index_values, index_names)
 
         # avoid simultaneous charge and discharge
         if self.config.system.storage_charge_discharge_binary:
-            rules.constraint_charge_discharge_binary()
+            ChargeDischargeBinaryConstraint(
+                self.config, self.zen_model, self.energy_system, self.time_steps
+            ).build()

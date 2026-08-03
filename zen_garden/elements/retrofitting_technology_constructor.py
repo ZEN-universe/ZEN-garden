@@ -5,11 +5,11 @@ import logging
 import numpy as np
 from typing_extensions import override
 
+from zen_garden.constraints.retrofitting_technology import (
+    RETROFITTING_TECHNOLOGY_CONSTRAINTS,
+)
 from zen_garden.elements.element_constructor import ElementConstructor
 from zen_garden.elements.retrofitting_technology import RetrofittingTechnology
-from zen_garden.elements.retrofitting_technology_rules import (
-    RetrofittingTechnologyRules,
-)
 
 logger = logging.getLogger(__name__)
 
@@ -68,10 +68,14 @@ class RetrofittingTechnologyConstructor(ElementConstructor):
     def construct_constraints(self):
         logger.info("Constructing constraints for RetrofittingTechnology")
 
-        # add pwa constraints
-        rules = RetrofittingTechnologyRules(
-            self.config, self.zen_model, self.energy_system, self.time_steps
-        )
+        # # add pwa constraints
+        # rules = RetrofittingTechnologyRules(
+        #     self.config, self.zen_model, self.energy_system, self.time_steps
+        # )
 
-        # flow coupling of retrofitting technology and its base technology
-        rules.constraint_retrofit_flow_coupling()
+        # # flow coupling of retrofitting technology and its base technology
+        # rules.constraint_retrofit_flow_coupling()
+        for RetrofittingTechnologyConstraint in RETROFITTING_TECHNOLOGY_CONSTRAINTS:
+            RetrofittingTechnologyConstraint(
+                self.config, self.zen_model, self.energy_system, self.time_steps
+            ).build()

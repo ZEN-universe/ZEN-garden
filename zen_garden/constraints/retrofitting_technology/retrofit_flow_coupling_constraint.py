@@ -5,16 +5,14 @@ import logging
 
 import pandas as pd
 
-from zen_garden.elements.generic_rule import GenericRule
+from zen_garden.constraints.generic_constraint import GenericConstraint
 from zen_garden.utils import align_like
 
 logger = logging.getLogger(__name__)
 
 
-class RetrofittingTechnologyRules(GenericRule):
-    """Rules for the RetrofittingTechnology class."""
-
-    def constraint_retrofit_flow_coupling(self):
+class RetrofitFlowCouplingConstraint(GenericConstraint):
+    def build(self):
         """Couples reference flow variables based on modeling technique.
 
         .. math::

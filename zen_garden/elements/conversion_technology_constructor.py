@@ -7,8 +7,12 @@ import pandas as pd
 import xarray as xr
 from typing_extensions import override
 
+from zen_garden.constraints.conversion_technology import (
+    CONVERSION_TECHNOLOGY_CONSTRAINTS,
+    CapacityCapexCouplingConstraint,
+    LinearCapexConstraint,
+)
 from zen_garden.elements.conversion_technology import ConversionTechnology
-from zen_garden.elements.conversion_technology_rules import ConversionTechnologyRules
 from zen_garden.elements.element_constructor import ElementConstructor
 
 logger = logging.getLogger(__name__)
@@ -247,18 +251,11 @@ class ConversionTechnologyConstructor(ElementConstructor):
     def construct_constraints(self):
         logger.info("Constructing constraints for ConversionTechnology")
 
-        # add pwa constraints
-        rules = ConversionTechnologyRules(
-            self.config, self.zen_model, self.energy_system, self.time_steps
-        )
-        # capacity factor constraint
-        rules.constraint_capacity_factor_conversion()
-        # opex and emissions constraint for conversion technologies
-        rules.constraint_opex_emissions_technology_conversion()
-        # conversion factor
-        rules.constraint_carrier_conversion()
-        # minimum average annual capacity factor
-        rules.constraint_minimum_full_load_hours()
+        for ConversionTechnologyConstraint in CONVERSION_TECHNOLOGY_CONSTRAINTS:
+            constraint = ConversionTechnologyConstraint(
+                self.config, self.zen_model, self.energy_system, self.time_steps
+            )
+            constraint.build()
 
         # capex
         set_pwa_capex = self.create_custom_set(
@@ -282,7 +279,7 @@ class ConversionTechnologyConstructor(ElementConstructor):
             pwa_breakpoints, pwa_values = self.calculate_capex_pwa_breakpoints_values(
                 set_pwa_capex[0]
             )
-            self.zen_model.constraints.add_pw_constraint(
+            self.zen_model.add_piecewise_constraint(
                 index_values=set_pwa_capex[0],
                 yvar="capex_approximation",
                 xvar="capacity_approximation",
@@ -291,11 +288,19 @@ class ConversionTechnologyConstructor(ElementConstructor):
                 cons_type="EQ",
                 name="constraint_capex_pwa",
             )
+
         if set_linear_capex[0]:
             # if set_linear_capex contains technologies:
-            rules.constraint_linear_capex()
+            linear_capex_constraint = LinearCapexConstraint(
+                self.config, self.zen_model, self.energy_system, self.time_steps
+            )
+            linear_capex_constraint.build()
+
         # Coupling constraints
-        rules.constraint_capacity_capex_coupling()
+        capacity_capex_coupling_constraint = CapacityCapexCouplingConstraint(
+            self.config, self.zen_model, self.energy_system, self.time_steps
+        )
+        capacity_capex_coupling_constraint.build()
 
     def calculate_capex_pwa_breakpoints_values(self, set_pwa):
         """Calculates breakpoints and function values for piecewise affine constraint.

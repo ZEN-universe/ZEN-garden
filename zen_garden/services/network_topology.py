@@ -157,5 +157,5 @@ class NetworkTopology:
         return [
             edge
             for edge, nodes in self.set_nodes_on_edges.items()
-            if nodes[0 if direction == "in" else 1] == node
+            if nodes[0 if direction == "out" else 1] == node
         ]

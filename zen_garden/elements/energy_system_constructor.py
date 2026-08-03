@@ -7,34 +7,16 @@ import numpy as np
 import pandas as pd
 from typing_extensions import override
 
+from zen_garden.constraints.energy_system import ENERGY_SYSTEM_CONSTRAINTS
 from zen_garden.elements import ElementConstructor
-from zen_garden.elements.energy_system import EnergySystem
-from zen_garden.elements.energy_system_rules import EnergySystemRules
-from zen_garden.model.config import Config
-from zen_garden.model.zen_model import ZenModel
 
 if TYPE_CHECKING:
-    from zen_garden.model.time_steps import TimeStepsDicts
-    from zen_garden.services.element_registry import ElementRegistry
+    pass
 
 logger = logging.getLogger(__name__)
 
 
 class EnergySystemConstructor(ElementConstructor):
-    def __init__(
-        self,
-        config: Config,
-        element_registry: "ElementRegistry",
-        zen_model: "ZenModel",
-        energy_system: "EnergySystem",
-        time_steps: "TimeStepsDicts",
-    ):
-        super().__init__(config, element_registry, zen_model, energy_system, time_steps)
-
-        self.rules = EnergySystemRules(
-            self.config, self.zen_model, self.energy_system, self.time_steps
-        )
-
     @override
     def has_elements(self) -> bool:
         """Check if the energy system has elements."""
@@ -251,32 +233,11 @@ class EnergySystemConstructor(ElementConstructor):
         """Constructs the constraints of the class <EnergySystem>."""
         logger.info("Constructing constraints for EnergySystem")
 
-        # cumulative carbon emissions
-        self.rules.constraint_carbon_emissions_cumulative()
-
-        # annual limit carbon emissions
-        self.rules.constraint_carbon_emissions_annual_limit()
-
-        # carbon emission budget limit
-        self.rules.constraint_carbon_emissions_budget()
-
-        # net_present_cost
-        self.rules.constraint_net_present_cost()
-
-        # total carbon emissions
-        self.rules.constraint_carbon_emissions_annual()
-
-        # cost of carbon emissions
-        self.rules.constraint_cost_carbon_emissions_total()
-
-        # costs
-        self.rules.constraint_cost_total()
-
-        # disable carbon emissions budget overshoot
-        self.rules.constraint_carbon_emissions_budget_overshoot()
-
-        # disable annual carbon emissions overshoot
-        self.rules.constraint_carbon_emissions_annual_overshoot()
+        for EnergySystemConstraint in ENERGY_SYSTEM_CONSTRAINTS:
+            constraint = EnergySystemConstraint(
+                self.config, self.zen_model, self.energy_system, self.time_steps
+            )
+            constraint.build()
 
     @override
     def construct_objective(self):
@@ -285,9 +246,9 @@ class EnergySystemConstructor(ElementConstructor):
 
         # get selected objective rule
         if self.config.analysis.objective == "total_cost":
-            objective = self.rules.objective_total_cost()
+            objective = self.objective_total_cost()
         elif self.config.analysis.objective == "total_carbon_emissions":
-            objective = self.rules.objective_total_carbon_emissions()
+            objective = self.objective_total_carbon_emissions()
         else:
             raise KeyError(f"Objective type {self.config.analysis.objective} not known")
 
@@ -347,3 +308,35 @@ class EnergySystemConstructor(ElementConstructor):
                 [component_data.index.to_list()]
             )
         return component_data
+
+    # Objective rules
+    # ---------------
+
+    def objective_total_cost(self):
+        """Objective function to minimize the total net present cost.
+
+        .. math::
+            J = \\sum_{y\\in\\mathcal{Y}} NPC_y
+
+        :param model: optimization model
+        :return: net present cost objective function
+        """
+        return self.zen_model.variables["net_present_cost"].sum("set_years")
+
+    def objective_total_carbon_emissions(self):
+        """Objective function to minimize total emissions.
+
+        .. math::
+            J = E^{\\mathrm{cum}}_Y
+
+        :math:`E^{\\mathrm{cum}}_Y`: cumulative carbon emissions at the end of
+        the time horizon
+
+        :param model: optimization model
+        :return: total carbon emissions objective function
+        """
+        return (
+            self.zen_model.variables["carbon_emissions_cumulative"]
+            .at[self.zen_model.sets["set_years"][-1]]
+            .to_linexpr()
+        )

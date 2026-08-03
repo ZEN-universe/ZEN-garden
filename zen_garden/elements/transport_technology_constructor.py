@@ -6,9 +6,12 @@ import numpy as np
 import xarray as xr
 from typing_extensions import override
 
+from zen_garden.constraints.transport_technology import (
+    TRANSPORT_TECHNOLOGY_CONSTRAINTS,
+    TransportTechnologyCapexConstraint,
+)
 from zen_garden.elements.element_constructor import ElementConstructor
 from zen_garden.elements.transport_technology import TransportTechnology
-from zen_garden.elements.transport_technology_rules import TransportTechnologyRules
 
 logger = logging.getLogger(__name__)
 
@@ -128,21 +131,15 @@ class TransportTechnologyConstructor(ElementConstructor):
     def construct_constraints(self):
         logger.info("Constructing constraints for TransportTechnology")
 
-        rules = TransportTechnologyRules(
-            self.config, self.zen_model, self.energy_system, self.time_steps
-        )
-
-        # limit flow by capacity and max load
-        rules.constraint_capacity_factor_transport()
-
-        # opex and emissions constraint for transport technologies
-        rules.constraint_opex_emissions_technology_transport()
-
-        # carrier flow Losses
-        rules.constraint_transport_technology_losses_flow()
+        for TransportTechnologyConstraint in TRANSPORT_TECHNOLOGY_CONSTRAINTS:
+            TransportTechnologyConstraint(
+                self.config, self.zen_model, self.energy_system, self.time_steps
+            ).build()
 
         # capex of transport technologies
         index_values, index_list = self.create_custom_set(
             ["set_transport_technologies", "set_edges", "set_years"]
         )
-        rules.constraint_transport_technology_capex(index_values, index_list)
+        TransportTechnologyCapexConstraint(
+            self.config, self.zen_model, self.energy_system, self.time_steps
+        ).build(index_values, index_list)

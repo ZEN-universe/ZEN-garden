@@ -67,3 +67,9 @@ class ZenModel:
         See :meth:`zen_garden.model.components.constraint.Constraint.add_constraint`.
         """
         self.constraints.add_constraint(*args, **kwargs)
+
+    def add_piecewise_constraint(self, *args, **kwargs):
+        """Add piecewise constraints to the model.
+        See :meth:`zen_garden.model.components.constraint.Constraint.add_pw_constraint`.
+        """
+        self.constraints.add_piecewise_constraint(*args, **kwargs)

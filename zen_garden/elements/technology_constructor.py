@@ -6,9 +6,16 @@ import numpy as np
 import xarray as xr
 from typing_extensions import override
 
+from zen_garden.constraints.technology import (
+    TECHNOLOGY_CONSTRAINTS,
+    CostCapexYearlyConstraint,
+    TechnologyDiffusionLimitConstraint,
+)
+from zen_garden.constraints.technology.technology_on_off_constraint import (
+    TechnologyOnOffConstraint,
+)
 from zen_garden.elements.element_constructor import ElementConstructor
 from zen_garden.elements.technology import Technology
-from zen_garden.elements.technology_rules import TechnologyRules
 from zen_garden.model.components.index_set import IndexSet
 from zen_garden.model.components.zen_index import ZenIndex
 
@@ -556,34 +563,18 @@ class TechnologyConstructor(ElementConstructor):
     def construct_constraints(self):
         logger.info("Constructing constraints for Technology")
 
-        # construct pe.Constraints of the class <Technology>
-        rules = TechnologyRules(
+        for TechnologyConstraint in TECHNOLOGY_CONSTRAINTS:
+            TechnologyConstraint(
+                self.config, self.zen_model, self.energy_system, self.time_steps
+            ).build()
+
+        TechnologyDiffusionLimitConstraint(
             self.config,
             self.zen_model,
             self.energy_system,
             self.time_steps,
             self.element_registry,
-        )
-        #  technology capacity_limit
-        rules.constraint_technology_capacity_limit()
-
-        # NEW: technology capacity_lower_limit (Lower Limit)
-        rules.constraint_technology_capacity_lower_limit()
-
-        # minimum capacity
-        rules.constraint_technology_min_capacity_addition()
-
-        # maximum capacity
-        rules.constraint_technology_max_capacity_addition()
-
-        # construction period
-        rules.constraint_technology_construction_time()
-
-        # lifetime
-        rules.constraint_technology_lifetime()
-
-        # limit diffusion rate
-        rules.constraint_technology_diffusion_limit()
+        ).build()
 
         # annual capex of having capacity
         index_values, index_names = self.create_custom_set(
@@ -594,24 +585,17 @@ class TechnologyConstructor(ElementConstructor):
                 "set_years",
             ],
         )
-        rules.constraint_cost_capex_yearly(ZenIndex(index_values, index_names))
-
-        # total capex of all technologies
-        rules.constraint_cost_capex_yearly_total()
-
-        # yearly opex
-        rules.constraint_cost_opex_yearly()
-
-        # total opex of all technologies
-        rules.constraint_cost_opex_yearly_total()
-
-        # total carbon emissions of technologies
-        rules.constraint_carbon_emissions_technology_total()
+        CostCapexYearlyConstraint(
+            self.config, self.zen_model, self.energy_system, self.time_steps
+        ).build(ZenIndex(index_values, index_names))
 
         # min load constraints
         n_cons = len(self.zen_model.lp_model.constraints.items())
         techs_on_off = self.create_custom_set(["set_technologies", "set_on_off"])[0]
-        rules.constraint_technology_on_off(techs_on_off)
+        # rules.constraint_technology_on_off(techs_on_off)
+        TechnologyOnOffConstraint(
+            self.config, self.zen_model, self.energy_system, self.time_steps
+        ).build(techs_on_off)
 
         # if nothing was added we can remove the tech vars again
         if len(self.zen_model.lp_model.constraints.items()) == n_cons:
