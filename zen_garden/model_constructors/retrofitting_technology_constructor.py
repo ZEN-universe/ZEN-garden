@@ -8,13 +8,13 @@ from typing_extensions import override
 from zen_garden.constraints.retrofitting_technology import (
     RETROFITTING_TECHNOLOGY_CONSTRAINTS,
 )
-from zen_garden.elements.element_constructor import ElementConstructor
 from zen_garden.elements.retrofitting_technology import RetrofittingTechnology
+from zen_garden.model_constructors.model_constructor import ModelConstructor
 
 logger = logging.getLogger(__name__)
 
 
-class RetrofittingTechnologyConstructor(ElementConstructor):
+class RetrofittingTechnologyConstructor(ModelConstructor):
     element_class = RetrofittingTechnology
 
     @override

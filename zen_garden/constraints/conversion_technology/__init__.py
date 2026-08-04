@@ -1,3 +1,5 @@
+"""Conversion Technology constraints."""
+
 from zen_garden.constraints.generic_constraint import GenericConstraint
 
 from .capacity_capex_coupling_constraint import CapacityCapexCouplingConstraint

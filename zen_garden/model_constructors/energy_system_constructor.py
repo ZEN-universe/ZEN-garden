@@ -8,7 +8,7 @@ import pandas as pd
 from typing_extensions import override
 
 from zen_garden.constraints.energy_system import ENERGY_SYSTEM_CONSTRAINTS
-from zen_garden.elements import ElementConstructor
+from zen_garden.model_constructors.model_constructor import ModelConstructor
 
 if TYPE_CHECKING:
     pass
@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class EnergySystemConstructor(ElementConstructor):
+class EnergySystemConstructor(ModelConstructor):
     @override
     def has_elements(self) -> bool:
         """Check if the energy system has elements."""

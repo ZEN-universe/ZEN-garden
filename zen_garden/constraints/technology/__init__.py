@@ -1,3 +1,5 @@
+"""Technology constraints."""
+
 from zen_garden.constraints.generic_constraint import GenericConstraint
 
 from .carbon_emissions_technology_total_constraint import (

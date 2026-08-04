@@ -6,8 +6,8 @@ from typing import TYPE_CHECKING, Callable
 
 import psutil
 
-from zen_garden.elements import ELEMENT_CONSTRUCTORS
 from zen_garden.model.zen_model import ZenModel
+from zen_garden.model_constructors import MODEL_CONSTRUCTORS
 
 if TYPE_CHECKING:
     from zen_garden.elements.energy_system import EnergySystem
@@ -59,15 +59,21 @@ class ModelConstructionService:
         self.zen_model = ZenModel(
             self.config, self.energy_system, self.unit_handling, self.element_registry
         )
-        self.element_constructors = [
-            ElementConstructor(
+        self._model_constructors = [
+            ModelConstructor(
                 self.config,
                 self.element_registry,
                 self.zen_model,
                 self.energy_system,
                 self.time_steps,
             )
-            for ElementConstructor in ELEMENT_CONSTRUCTORS
+            for ModelConstructor in MODEL_CONSTRUCTORS
+        ]
+        # Filter out model constructors that do not have any elements to construct
+        self._model_constructors = [
+            constructor
+            for constructor in self._model_constructors
+            if constructor.has_elements()
         ]
 
         self._construct_sets()
@@ -80,34 +86,24 @@ class ModelConstructionService:
 
     @measure_run_time
     def _construct_sets(self):
-        for element_constructor in self.element_constructors:
-            if not element_constructor.has_elements():
-                continue
-            element_constructor.construct_sets()
+        for model_constructor in self._model_constructors:
+            model_constructor.construct_sets()
 
     @measure_run_time
     def _construct_params(self):
-        for element_constructor in self.element_constructors:
-            if not element_constructor.has_elements():
-                continue
-            element_constructor.construct_params()
+        for model_constructor in self._model_constructors:
+            model_constructor.construct_params()
 
     @measure_run_time
     def _construct_vars(self):
-        for element_constructor in self.element_constructors:
-            if not element_constructor.has_elements():
-                continue
-            element_constructor.construct_vars()
+        for model_constructor in self._model_constructors:
+            model_constructor.construct_vars()
 
     @measure_run_time
     def _construct_constraints(self):
-        for element_constructor in self.element_constructors:
-            if not element_constructor.has_elements():
-                continue
-            element_constructor.construct_constraints()
+        for model_constructor in self._model_constructors:
+            model_constructor.construct_constraints()
 
     def _construct_objective(self):
-        for element_constructor in self.element_constructors:
-            if not element_constructor.has_elements():
-                continue
-            element_constructor.construct_objective()
+        for model_constructor in self._model_constructors:
+            model_constructor.construct_objective()

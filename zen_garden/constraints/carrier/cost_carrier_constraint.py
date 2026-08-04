@@ -6,8 +6,8 @@ class CostCarrierConstraint(GenericConstraint):
         """Cost of importing and exporting carrier.
 
         .. math::
-        O_{c,n,t} = \\underline{u}_{c,n,t} \\underline{U}_{c,n,t} -
-        \\overline{v}_{c,n,t} \\overline{U}_{c,n,t}
+            O_{c,n,t} = \\underline{u}_{c,n,t} \\underline{U}_{c,n,t} -
+            \\overline{v}_{c,n,t} \\overline{U}_{c,n,t}
 
         :math:`\\underline{u}_{c,n,t}`: import price of carrier :math:`c` at
         node :math:`n` and time step :math:`t`\n

@@ -47,10 +47,10 @@ Class Structure
    :zoom:
 
    ---
-   title: Element Constructors
+   title: Model Constructors
    ---
    classDiagram
-       class ElementConstructor
+       class ModelConstructor
        class CarrierConstructor
        class TechnologyConstructor
        class ConversionTechnologyConstructor
@@ -58,12 +58,12 @@ Class Structure
        class RetrofittingTechnologyConstructor
        class TransportTechnologyConstructor
 
-       ElementConstructor <|-- CarrierConstructor
-       ElementConstructor <|-- TechnologyConstructor
-       ElementConstructor <|-- ConversionTechnologyConstructor
-       ElementConstructor <|-- StorageTechnologyConstructor
-       ElementConstructor <|-- TransportTechnologyConstructor
-       ElementConstructor <|-- RetrofittingTechnologyConstructor
+       ModelConstructor <|-- CarrierConstructor
+       ModelConstructor <|-- TechnologyConstructor
+       ModelConstructor <|-- ConversionTechnologyConstructor
+       ModelConstructor <|-- StorageTechnologyConstructor
+       ModelConstructor <|-- TransportTechnologyConstructor
+       ModelConstructor <|-- RetrofittingTechnologyConstructor
 
 
 .. mermaid::

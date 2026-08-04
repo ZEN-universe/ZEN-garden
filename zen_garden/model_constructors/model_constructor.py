@@ -1,6 +1,6 @@
 """Abstract constructor for elements.
 
-All subclasses of ElementConstructor must implement the abstract methods to construct
+All subclasses of ModelConstructor must implement the abstract methods to construct
 the sets, parameters, variables, and constraints for their respective elements.
 """
 
@@ -22,7 +22,7 @@ if TYPE_CHECKING:
     from zen_garden.services.element_registry import ElementRegistry
 
 
-class ElementConstructor(ABC):
+class ModelConstructor(ABC):
     element_class: type[Element] = Element
 
     def __init__(

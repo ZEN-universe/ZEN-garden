@@ -29,9 +29,9 @@ Adding Sets
 -----------
 
 Sets can be added in the ``construct_sets`` method of the element consturctor class,
-e.g., :py:class:`EnergySystemConstructor <zen_garden.elements.energy_system_constructor.EnergySystemConstructor>`,
-:py:class:`CarrierConstructor <zen_garden.elements.carrier_constructor.CarrierConstructor>`,
-or :py:class:`TechnologyConstructor <zen_garden.elements.technology_constructor.TechnologyConstructor>`.
+e.g., :py:class:`EnergySystemConstructor <zen_garden.model_constructors.energy_system_constructor.EnergySystemConstructor>`,
+:py:class:`CarrierConstructor <zen_garden.model_constructors.carrier_constructor.CarrierConstructor>`,
+or :py:class:`TechnologyConstructor <zen_garden.model_constructors.technology_constructor.TechnologyConstructor>`.
 The new set is added to ``self.zen_model.sets`` through the method ``self.zen_model.add_set()``.
 
 The :py:meth:`add_set <zen_garden.model.components.set_registry.SetRegistry.add_set>` method takes the following parameters:
@@ -223,6 +223,6 @@ Please follow the constraint guide in :ref:`linopy.linopy`.
 
     You can add multiple constraints in the same rule,
     for example ``constraint_availability_import`` and ``constraint_availability_export`` in
-    :py:meth:`CarrierRules.constraint_availability_import_export <zen_garden.elements.carrier_rules.CarrierRules.constraint_availability_import_export>`.
+    :py:class:`AvailabilityImportExportConstraint <zen_garden.constraints.carrier.availability_import_export_constraint.AvailabilityImportExportConstraint>`.
     The rule of thumb is to add all constraints that are related to the same topic in the same rule
     to reuse the code and avoid duplication. If the constraints are too different, it is better to create a new constraint method.

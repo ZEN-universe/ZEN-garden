@@ -14,15 +14,15 @@ from zen_garden.constraints.technology import (
 from zen_garden.constraints.technology.technology_on_off_constraint import (
     TechnologyOnOffConstraint,
 )
-from zen_garden.elements.element_constructor import ElementConstructor
 from zen_garden.elements.technology import Technology
 from zen_garden.model.components.multi_index_helper import MultiIndexHelper
 from zen_garden.model.components.set_registry import SetRegistry
+from zen_garden.model_constructors.model_constructor import ModelConstructor
 
 logger = logging.getLogger(__name__)
 
 
-class TechnologyConstructor(ElementConstructor):
+class TechnologyConstructor(ModelConstructor):
     element_class = Technology
 
     @override

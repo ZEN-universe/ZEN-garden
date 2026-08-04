@@ -10,13 +10,13 @@ from zen_garden.constraints.carrier import (
     NodalEnergyBalanceConstraint,
 )
 from zen_garden.elements.carrier import Carrier
-from zen_garden.elements.element_constructor import ElementConstructor
 from zen_garden.model.components.multi_index_helper import MultiIndexHelper
+from zen_garden.model_constructors.model_constructor import ModelConstructor
 
 logger = logging.getLogger(__name__)
 
 
-class CarrierConstructor(ElementConstructor):
+class CarrierConstructor(ModelConstructor):
     element_class = Carrier
 
     @override

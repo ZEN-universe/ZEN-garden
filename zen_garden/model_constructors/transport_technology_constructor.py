@@ -10,13 +10,13 @@ from zen_garden.constraints.transport_technology import (
     TRANSPORT_TECHNOLOGY_CONSTRAINTS,
     TransportTechnologyCapexConstraint,
 )
-from zen_garden.elements.element_constructor import ElementConstructor
 from zen_garden.elements.transport_technology import TransportTechnology
+from zen_garden.model_constructors.model_constructor import ModelConstructor
 
 logger = logging.getLogger(__name__)
 
 
-class TransportTechnologyConstructor(ElementConstructor):
+class TransportTechnologyConstructor(ModelConstructor):
     element_class = TransportTechnology
 
     @override

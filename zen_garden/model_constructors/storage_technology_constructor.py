@@ -11,13 +11,13 @@ from zen_garden.constraints.storage_technology import (
     ChargeDischargeBinaryConstraint,
     StorageTechnologyCapexConstraint,
 )
-from zen_garden.elements.element_constructor import ElementConstructor
 from zen_garden.elements.storage_technology import StorageTechnology
+from zen_garden.model_constructors.model_constructor import ModelConstructor
 
 logger = logging.getLogger(__name__)
 
 
-class StorageTechnologyConstructor(ElementConstructor):
+class StorageTechnologyConstructor(ModelConstructor):
     element_class = StorageTechnology
 
     @override

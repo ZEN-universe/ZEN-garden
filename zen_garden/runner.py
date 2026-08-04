@@ -13,7 +13,10 @@ from pathlib import Path
 from zen_garden.default_config import Config
 from zen_garden.optimization_setup import OptimizationSetup
 from zen_garden.plugin_system.loader import register_plugins
-from zen_garden.utils import InputDataChecks, ScenarioUtils, StringUtils, setup_logger
+from zen_garden.utils.input_data_checks import InputDataChecks
+from zen_garden.utils.scenario_utils import ScenarioUtils
+from zen_garden.utils.string_utils import StringUtils
+from zen_garden.utils.utils import setup_logger
 
 logger = logging.getLogger(__name__)
 

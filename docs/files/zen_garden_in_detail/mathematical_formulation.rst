@@ -1092,7 +1092,7 @@ technology is not constrained by the capacity limit (Big-M parameter).
 Minimum full-load hours
 -----------------------
 
-.. docstring_method:: zen_garden.elements.conversion_technology_rules.ConversionTechnologyRules.constraint_minimum_full_load_hours
+.. docstring_method:: zen_garden.constraints.conversion_technology.MinimumFullLoadHoursConstraint.build
 
 This constraint is currently only available for conversion technologies.
 

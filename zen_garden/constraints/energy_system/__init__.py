@@ -1,3 +1,5 @@
+"""Energy System constraints."""
+
 from zen_garden.constraints.generic_constraint import GenericConstraint
 
 from .carbon_emissions_annual_constraint import CarbonEmissionsAnnualConstraint

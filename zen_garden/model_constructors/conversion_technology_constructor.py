@@ -13,12 +13,12 @@ from zen_garden.constraints.conversion_technology import (
     LinearCapexConstraint,
 )
 from zen_garden.elements.conversion_technology import ConversionTechnology
-from zen_garden.elements.element_constructor import ElementConstructor
+from zen_garden.model_constructors.model_constructor import ModelConstructor
 
 logger = logging.getLogger(__name__)
 
 
-class ConversionTechnologyConstructor(ElementConstructor):
+class ConversionTechnologyConstructor(ModelConstructor):
     element_class = ConversionTechnology
 
     @override
