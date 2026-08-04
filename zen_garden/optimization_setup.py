@@ -28,6 +28,7 @@ from zen_garden.services.element_registry import ElementRegistry
 from zen_garden.services.input_repository import InputRepository
 from zen_garden.services.model_construction_service import ModelConstructionService
 from zen_garden.services.scenario_dict import ScenarioDict
+from zen_garden.services.service_container import ServiceContainer
 from zen_garden.types import YearSpecificTs
 from zen_garden.utils import (
     IISConstraintParser,
@@ -48,7 +49,8 @@ class OptimizationSetup(object):
     method to solve the optimization problem.
     """
 
-    # dict of element classes, this dict is filled in the __init__ of the package
+    zen_model: ZenModel | None
+    service_container: ServiceContainer
 
     def __init__(
         self,
@@ -70,6 +72,8 @@ class OptimizationSetup(object):
                 verify the integrity of the input data.
 
         """
+        self.service_container = ServiceContainer("service_container")
+
         # Copying is necessary, because the config object is modified,
         # e.g., in add_elements of ElementRegistry
         self.config = Config.from_setup(
@@ -77,13 +81,17 @@ class OptimizationSetup(object):
             copy.deepcopy(raw_config.system),
             copy.deepcopy(raw_config.solver),
         )
+        self.service_container.register("config", self.config)
 
         self.input_data_checks = input_data_checks
         self.input_data_checks.config = self.config
         # check if input data exists
         self.input_data_checks.check_primary_folder_structure()
+        self.service_container.register("input_data_checks", self.input_data_checks)
 
-        self.dataset_path_resolver = DatasetPathResolver(self.config)
+        self.dataset_path_resolver = self.service_container.build_and_register(
+            "dataset_path_resolver", DatasetPathResolver
+        )
         self.input_data_checks.dataset_path_resolver = self.dataset_path_resolver
 
         # dict to update elements according to scenario
@@ -93,15 +101,15 @@ class OptimizationSetup(object):
             self.config,
             ELEMENT_TYPE_CLASSES,
         )
-
-        # optimization model§
-        self.zen_model: ZenModel | None = None
+        self.service_container.register("scenario_dict", self.scenario_dict)
 
         # initiate dictionary for storing extra year data
-        self.year_specific_ts = YearSpecificTs()
+        self.service_container.register("year_specific_ts", YearSpecificTs())
 
         # initiate dictionary for storing time steps
-        self.time_steps = TimeStepsDicts()
+        self.time_steps = self.service_container.build_and_register(
+            "time_steps", TimeStepsDicts
+        )
 
         # check if all needed data inputs for the chosen technologies exist
         # remove non-existent inputs
@@ -111,31 +119,19 @@ class OptimizationSetup(object):
         energy_system_folder_path = Path(
             self.dataset_path_resolver.folder_of_set("energy_system")
         )
-        self.unit_handling = UnitHandling(
-            energy_system_folder_path,
-            self.config.solver.rounding_decimal_points_units,
+        self.unit_handling = self.service_container.build_and_register(
+            "unit_handling", UnitHandling, folder_path=energy_system_folder_path
         )
-        self.input_repository = InputRepository(energy_system_folder_path)
-        self.energy_system = EnergySystem(
-            self.config,
-            self.unit_handling,
-            self.dataset_path_resolver,
-            self.scenario_dict,
-            self.input_data_checks,
-            self.time_steps,
-            self.year_specific_ts,
-            self.input_repository,
+        self.service_container.build_and_register(
+            "input_repository", InputRepository, folder_path=energy_system_folder_path
         )
-        self.element_registry = ElementRegistry(
-            self.config,
-            self.energy_system,
-            self.input_data_checks,
-            self.unit_handling,
-            self.dataset_path_resolver,
-            self.scenario_dict,
-            self.time_steps,
-            self.year_specific_ts,
+        self.energy_system = self.service_container.build_and_register(
+            "energy_system", EnergySystem
         )
+        self.element_registry = self.service_container.build_and_register(
+            "element_registry", ElementRegistry
+        )
+        self.element_registry.register_elements()
 
         # check if all elements from the scenario_dict are in the model
         self.scenario_dict.check_if_all_elements_in_model(self.element_registry)
@@ -149,13 +145,8 @@ class OptimizationSetup(object):
         )
 
         # conduct time series aggregation
-        self.time_series_aggregation = TimeSeriesAggregation(
-            self.energy_system,
-            self.config,
-            self.element_registry,
-            self.time_steps,
-            self.year_specific_ts,
-            self.input_repository,
+        self.service_container.build_and_register(
+            "time_series_aggregation", TimeSeriesAggregation
         )
 
     def store_input_data(self):
@@ -177,19 +168,17 @@ class OptimizationSetup(object):
         ):
             os.makedirs(self.config.solver.solver_dir)
 
-        service = ModelConstructionService(
-            self.config,
-            self.energy_system,
-            self.element_registry,
-            self.unit_handling,
-            self.time_steps,
+        construction_service = self.service_container.build_and_register(
+            "model_construction_service", ModelConstructionService
         )
-        self.zen_model = service.construct_model()
+        self.zen_model = construction_service.construct_model()
 
-        self.scaling = Scaling(
-            self.zen_model.lp_model,
-            self.config.solver.scaling_algorithm,
-            self.config.solver.scaling_include_rhs,
+        self.scaling = self.service_container.build_and_register(
+            "scaling",
+            Scaling,
+            lp_model=self.zen_model.lp_model,
+            algorithm=self.config.solver.scaling_algorithm,
+            include_rhs=self.config.solver.scaling_include_rhs,
         )
 
         return self.zen_model

@@ -24,7 +24,7 @@ class ZenModel:
         energy_system: "EnergySystem",
         unit_handling: "UnitHandling",
         element_registry: "ElementRegistry",
-    ) -> None:
+    ):
         self.config = config
         self.energy_system = energy_system
         self.unit_handling = unit_handling

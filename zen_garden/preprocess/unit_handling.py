@@ -16,10 +16,10 @@ from pint.util import column_echelon_form
 
 from zen_garden.elements.carrier import Carrier
 from zen_garden.elements.technology import Technology
-from zen_garden.model.config import Config
 
 if TYPE_CHECKING:
     from zen_garden.elements.energy_system import EnergySystem
+    from zen_garden.model.config import Config
     from zen_garden.services.element_registry import ElementRegistry
 
 logger = logging.getLogger(__name__)
@@ -44,7 +44,7 @@ class UnitHandling:
           accurately.
     """
 
-    def __init__(self, folder_path, rounding_decimal_points_units):
+    def __init__(self, config: "Config", folder_path):
         """Initializes an instance of the UnitHandling class.
 
         This constructor processes and stores the system's base unit definitions
@@ -52,14 +52,14 @@ class UnitHandling:
         unit conversions.
 
         Args:
+            config (Config): The configuration object containing settings for the
+                optimization, including unit consistency checks and rounding
+                tolerances.
             folder_path (str or Path): The path to the folder containing system
                 specifications (e.g., "unit_definitions.txt", "base_units.csv").
-            rounding_decimal_points_units (int): The number of decimal points to
-                which units should be rounded during conversion and consistency
-                checks.
         """
+        self.config = config
         self.folder_path = folder_path
-        self.rounding_decimal_points_units = rounding_decimal_points_units
         self.ureg = UnitRegistry()
 
         # dict of element attribute values
@@ -439,13 +439,15 @@ class UnitHandling:
             # magnitude of combined unit is multiplier
             multiplier = combined_unit.to_base_units().magnitude
             # check that multiplier is larger than rounding tolerance
-            assert multiplier >= 10 ** (-self.rounding_decimal_points_units), (
+            assert multiplier >= 10 ** (
+                -self.config.solver.rounding_decimal_points_units
+            ), (
                 f"Multiplier {multiplier} of unit {input_unit} in parameter "
                 f"{attribute_name} is smaller than rounding tolerance "
-                f"{10 ** (-self.rounding_decimal_points_units)}"
+                f"{10 ** (-self.config.solver.rounding_decimal_points_units)}"
             )
             # round to decimal points
-            return round(multiplier, self.rounding_decimal_points_units)
+            return round(multiplier, self.config.solver.rounding_decimal_points_units)
 
     def convert_unit_into_base_units(
         self, input_unit, get_multiplier=False, attribute_name=None, path=None
@@ -494,7 +496,7 @@ class UnitHandling:
 
     def consistency_checks_input_units(
         self,
-        config: Config,
+        config: "Config",
         energy_system: "EnergySystem",
         element_registry: "ElementRegistry",
     ):

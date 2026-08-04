@@ -7,6 +7,7 @@ import pandas as pd
 
 from zen_garden.elements import ELEMENT_TYPE_CLASSES
 from zen_garden.elements.element import Element
+from zen_garden.services.service_container import ServiceContainer
 
 if TYPE_CHECKING:
     from zen_garden.elements.energy_system import EnergySystem
@@ -26,6 +27,7 @@ T = TypeVar("T", bound=Element)
 class ElementRegistry:
     def __init__(
         self,
+        service_container: "ServiceContainer",
         config: "Config",
         energy_system: "EnergySystem",
         input_data_checks: "InputDataChecks",
@@ -35,6 +37,7 @@ class ElementRegistry:
         time_steps: "TimeStepsDicts",
         year_specific_ts: "YearSpecificTs",
     ):
+        self.service_container = service_container
         self.config = config
         self.energy_system = energy_system
         self.input_data_checks = input_data_checks
@@ -46,9 +49,7 @@ class ElementRegistry:
 
         self.dict_elements: defaultdict[str, list[Element]] = defaultdict(list)
 
-        self._register_elements()
-
-    def _register_elements(self):
+    def register_elements(self):
         """Set up the parameters, variables and constraints of the carriers."""
         logger.info("\n--- Add elements to model--- \n")
         for element_id in ELEMENT_TYPE_CLASSES.keys():
@@ -112,17 +113,8 @@ class ElementRegistry:
             element_class: Class of the element
             name: Name of the element
         """
-        instance = element_class(
-            element_name,
-            self.config,
-            self.energy_system,
-            self,
-            self.unit_handling,
-            self.dataset_path_resolver,
-            self.scenario_dict,
-            self.input_data_checks,
-            self.time_steps,
-            self.year_specific_ts,
+        instance = self.service_container.build(
+            element_class, element_name=element_name
         )
         # Add instance to all classes that element_class inherits from, including itself
         # MRO (Method Resolution Order) gives the order in which base classes

@@ -8,13 +8,10 @@ import psutil
 
 from zen_garden.model.zen_model import ZenModel
 from zen_garden.model_constructors import MODEL_CONSTRUCTORS
+from zen_garden.services.service_container import ServiceContainer
 
 if TYPE_CHECKING:
-    from zen_garden.elements.energy_system import EnergySystem
     from zen_garden.model.config import Config
-    from zen_garden.model.time_steps import TimeStepsDicts
-    from zen_garden.preprocess.unit_handling import UnitHandling
-    from zen_garden.services.element_registry import ElementRegistry
 
 logger = logging.getLogger(__name__)
 
@@ -42,31 +39,18 @@ def measure_run_time(func: Callable) -> Callable:
 class ModelConstructionService:
     def __init__(
         self,
+        service_container: "ServiceContainer",
         config: "Config",
-        energy_system: "EnergySystem",
-        element_registry: "ElementRegistry",
-        unit_handling: "UnitHandling",
-        time_steps: "TimeStepsDicts",
     ):
+        self.service_container = service_container
         self.config = config
-        self.energy_system = energy_system
-        self.element_registry = element_registry
-        self.unit_handling = unit_handling
-        self.time_steps = time_steps
 
     def construct_model(self) -> ZenModel:
         """Logic to construct a model based on the provided name and parameters."""
-        self.zen_model = ZenModel(
-            self.config, self.energy_system, self.unit_handling, self.element_registry
-        )
+        zen_model = self.service_container.build(ZenModel)
+
         self._model_constructors = [
-            ModelConstructor(
-                self.config,
-                self.element_registry,
-                self.zen_model,
-                self.energy_system,
-                self.time_steps,
-            )
+            self.service_container.build(ModelConstructor, zen_model=zen_model)
             for ModelConstructor in MODEL_CONSTRUCTORS
         ]
         # Filter out model constructors that do not have any elements to construct
@@ -82,7 +66,7 @@ class ModelConstructionService:
         self._construct_constraints()
         self._construct_objective()
 
-        return self.zen_model
+        return zen_model
 
     @measure_run_time
     def _construct_sets(self):
