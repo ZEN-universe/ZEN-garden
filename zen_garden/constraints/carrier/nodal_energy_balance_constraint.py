@@ -1,26 +1,15 @@
-from typing import TYPE_CHECKING
-
 import linopy as lp
 import numpy as np
 import xarray as xr
 from linopy.expressions import LinearExpression
 
-if TYPE_CHECKING:
-    from zen_garden.elements.energy_system import EnergySystem
-    from zen_garden.model.components.multi_index_helper import MultiIndexHelper
-    from zen_garden.model.zen_model import ZenModel
+from zen_garden.constraints.generic_constraint import GenericConstraint
+from zen_garden.elements.carrier import Carrier
+from zen_garden.model.components.multi_index_helper import MultiIndexHelper
 
 
-class NodalEnergyBalanceConstraint:
-    def __init__(
-        self,
-        zen_model: "ZenModel",
-        energy_system: "EnergySystem",
-    ):
-        self.zen_model = zen_model
-        self.energy_system = energy_system
-
-    def build(self, index: "MultiIndexHelper", first_index_name: list[str]):
+class NodalEnergyBalanceConstraint(GenericConstraint):
+    def build(self):
         """Nodal energy balance for each time step.
 
         .. math::
@@ -57,6 +46,12 @@ class NodalEnergyBalanceConstraint:
 
 
         """
+        index_values, index_names = self.zen_model.create_custom_set(
+            ["set_carriers", "set_nodes", "set_time_steps_operation"], Carrier
+        )
+        index = MultiIndexHelper(index_values, index_names)
+        first_index_name = index_names[:1]
+
         ### masks
         # not necessary
 

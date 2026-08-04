@@ -5,12 +5,8 @@ import logging
 import numpy as np
 from typing_extensions import override
 
-from zen_garden.constraints.carrier import (
-    CARRIER_CONSTRAINTS,
-    NodalEnergyBalanceConstraint,
-)
+from zen_garden.constraints.carrier import CARRIER_CONSTRAINTS
 from zen_garden.elements.carrier import Carrier
-from zen_garden.model.components.multi_index_helper import MultiIndexHelper
 from zen_garden.model_constructors.model_constructor import ModelConstructor
 
 logger = logging.getLogger(__name__)
@@ -18,6 +14,7 @@ logger = logging.getLogger(__name__)
 
 class CarrierConstructor(ModelConstructor):
     element_class = Carrier
+    constraints = CARRIER_CONSTRAINTS
 
     @override
     def has_elements(self) -> bool:
@@ -176,26 +173,4 @@ class CarrierConstructor(ModelConstructor):
             bounds=(0.0, np.inf),
             doc="shed demand of carrier",
             unit_category={"money": 1, "time": -1},
-        )
-
-    @override
-    def construct_constraints(self):
-        logger.info("Constructing constraints for Carrier")
-
-        for ConstraintClass in CARRIER_CONSTRAINTS:
-            constraint = ConstraintClass(
-                self.config, self.zen_model, self.energy_system, self.time_steps
-            )
-            constraint.build()
-
-        # Custom constraint for nodal energy balance of carrier
-        nodal_energy_balance_constraint = NodalEnergyBalanceConstraint(
-            self.zen_model, self.energy_system
-        )
-        index_values, index_names = self.create_custom_set(
-            ["set_carriers", "set_nodes", "set_time_steps_operation"]
-        )
-        nodal_energy_balance_constraint.build(
-            MultiIndexHelper(index_values, index_names),
-            index_names[:1],
         )

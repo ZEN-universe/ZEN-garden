@@ -6,11 +6,7 @@ import numpy as np
 import xarray as xr
 from typing_extensions import override
 
-from zen_garden.constraints.storage_technology import (
-    STORAGE_TECHNOLOGY_CONSTRAINTS,
-    ChargeDischargeBinaryConstraint,
-    StorageTechnologyCapexConstraint,
-)
+from zen_garden.constraints.storage_technology import STORAGE_TECHNOLOGY_CONSTRAINTS
 from zen_garden.elements.storage_technology import StorageTechnology
 from zen_garden.model_constructors.model_constructor import ModelConstructor
 
@@ -19,6 +15,7 @@ logger = logging.getLogger(__name__)
 
 class StorageTechnologyConstructor(ModelConstructor):
     element_class = StorageTechnology
+    constraints = STORAGE_TECHNOLOGY_CONSTRAINTS
 
     @override
     def has_elements(self) -> bool:
@@ -179,30 +176,3 @@ class StorageTechnologyConstructor(ModelConstructor):
                 doc="charge binary for storage technology",
                 unit_category=None,
             )
-
-    def construct_constraints(self):
-        logger.info("Constructing constraints for StorageTechnology")
-
-        for StorageTechnologyConstraint in STORAGE_TECHNOLOGY_CONSTRAINTS:
-            StorageTechnologyConstraint(
-                self.config, self.zen_model, self.energy_system, self.time_steps
-            ).build()
-
-        # Linear Capex
-        index_values, index_names = self.create_custom_set(
-            [
-                "set_storage_technologies",
-                "set_capacity_types",
-                "set_nodes",
-                "set_years",
-            ],
-        )
-        StorageTechnologyCapexConstraint(
-            self.config, self.zen_model, self.energy_system, self.time_steps
-        ).build(index_values, index_names)
-
-        # avoid simultaneous charge and discharge
-        if self.config.system.storage_charge_discharge_binary:
-            ChargeDischargeBinaryConstraint(
-                self.config, self.zen_model, self.energy_system, self.time_steps
-            ).build()

@@ -1,13 +1,20 @@
 """Class to prepare parameter data for pyomo parameter prerequisites."""
 
+import itertools
 import logging
 import uuid
+from typing import TYPE_CHECKING
 
 import numpy as np
 import xarray as xr
 
 from zen_garden.model.components.component import Component
 from zen_garden.model.components.zen_set import ZenSet
+
+if TYPE_CHECKING:
+    from zen_garden.elements.element import Element
+    from zen_garden.model.config import Config
+    from zen_garden.services.element_registry import ElementRegistry
 
 logger = logging.getLogger(__name__)
 
@@ -16,10 +23,19 @@ class SetRegistry(Component):
     """Class to prepare parameter data for pyomo parameter prerequisites.
     Formerly known as IndexSet."""
 
-    def __init__(self):
+    def __init__(
+        self,
+        config: "Config",
+        element_registry: "ElementRegistry",
+        indexing_sets: list[str],
+    ):
         """Initialization of the SetRegistry object."""
         # base class init
         super().__init__()
+
+        self.config = config
+        self.element_registry = element_registry
+        self.indexing_sets = indexing_sets
 
         # attributes for the actual sets and index sets of the indexed sets
         self.sets: dict[str, ZenSet] = {}
@@ -233,3 +249,181 @@ class SetRegistry(Component):
         :return: The iterator
         """
         return iter(self.sets.values())
+
+    def create_custom_set(self, list_index: list[str], element_class: "type[Element]"):
+        """Creates custom set for model component.
+
+        :param list_index: list of names of indices
+        :param element_class: class of the element to get attributes from
+        :return: list_index: list of names of indices
+        """
+        list_index = list(list_index)  # make a copy of the list to avoid side effects
+
+        # Case 1: all index sets are already defined in model and no set is indexed
+        if all(
+            index in self.sets and not self.is_indexed(index) for index in list_index
+        ):
+            list_sets = [self.sets[index] for index in list_index if index in self.sets]
+            # return indices as cartesian product of sets
+            custom_set: list[tuple[ZenSet, ...]] | list[ZenSet] = (
+                list(itertools.product(*list_sets))
+                if len(list_sets) > 1
+                else list(list_sets[0])
+            )
+            return custom_set, list_index
+
+        if list_index[0] not in self.indexing_sets:
+            raise NotImplementedError(
+                f"Index <{list_index[0]}> is not in the indexing sets."
+            )
+
+        # Case 2: first index is indexed, build custom set based on first index
+        custom_set = []
+        for element in self.sets[list_index[0]]:
+            append_element = True
+            list_sets = []
+
+            for index in list_index[1:]:
+                # if the set already exist in model
+                if index in self.sets:
+                    append = self._handle_existing_set(index, element, list_sets)
+                    if not append:
+                        raise NotImplementedError(
+                            f"Index <{index}> is not known in sets."
+                        )
+                    continue
+
+                # if index is set_location
+                if index == "set_location":
+                    self._handle_set_location_index(element, list_sets)
+                    continue
+
+                # if set is built for pwa capex:
+                if "set_capex" in index:
+                    append_element = self._append_set_capex_index(
+                        element, index, element_class
+                    )
+                    continue
+
+                # if set is used to determine if on-off behavior is modeled
+                # exclude technologies which have no min_load
+                if "on_off" in index:
+                    append_element = self._append_on_off_modeled(
+                        element, index, element_class
+                    )
+                    continue
+
+                # split in capacity types of power and energy
+                if index == "set_capacity_types":
+                    self._handle_set_capacity_types_index(element, list_sets)
+                    continue
+
+                raise NotImplementedError(f"Index <{index}> not known")
+
+            # append indices to custom_set if element is supposed to be appended
+            if append_element:
+                if list_sets:
+                    custom_set.extend(list(itertools.product([element], *list_sets)))
+                else:
+                    custom_set.extend([element])
+        return custom_set, list_index
+
+    def _handle_existing_set(
+        self, index: str, element: "ZenSet", list_sets: "list[ZenSet]"
+    ):
+        """Handles existing sets in the model.
+        Returns True if handled, False if unknown.
+
+        :param index: index to handle
+        :param element: element to handle
+        :param sets: sets of the optimization setup
+        :param list_sets: list of sets to append
+        """
+        if not self.is_indexed(index):
+            list_sets.append(self.sets[index])
+            return True
+        elif self.get_index_name(index) in self.sets:
+            list_sets.append(self.sets[index][element])
+            return True
+        return False
+
+    def _append_set_capex_index(
+        self, element: str, index: str, element_class: "type[Element]"
+    ) -> bool:
+        """Checks if the capex of a technology needs to be modeled as pwa or linear.
+
+        :param element: technology in model
+        :param index: index to check
+        :return model_capex: Bool indicating if capex must be modeled as pwa or linear
+        """
+        if element not in self.sets["set_conversion_technologies"]:
+            return False
+
+        capex_is_pwa = self.element_registry.get_attribute_of_specific_element(
+            element_class, element, "capex_is_pwa"
+        )
+        return not (
+            ("linear" in index and capex_is_pwa)
+            or ("pwa" in index and not capex_is_pwa)
+        )
+
+    def _append_on_off_modeled(
+        self, element: str, index: str, element_class: "type[Element]"
+    ) -> bool:
+        """Checks if the on-off-behavior (min-load) of a technology needs to be modeled.
+
+        :param element: technology in model
+        :param index: index to check
+        :return model_on_off: Bool indicating if on-off-behavior needs to be modeled
+        """
+        model_on_off = self._check_on_off_modeled(element, element_class)
+        return not (("set_no_on_off" in index and model_on_off) or (not model_on_off))
+
+    def _handle_set_location_index(self, element: str, list_sets: "list[ZenSet]"):
+        """Handles the set_location index for the custom set.
+
+        :param element: element to handle
+        :param sets: sets of the optimization setup
+        :param list_sets: list of sets to append
+        """
+        if (
+            element in self.sets["set_conversion_technologies"]
+            or element in self.sets["set_storage_technologies"]
+            or element in self.sets["set_retrofitting_technologies"]
+        ):
+            list_sets.append(self.sets["set_nodes"])
+        elif element in self.sets["set_transport_technologies"]:
+            list_sets.append(self.sets["set_edges"])
+
+    def _handle_set_capacity_types_index(self, element: str, list_sets: list[str]):
+        """Handles the set_capacity_types index for the custom set.
+
+        :param element: element to handle
+        :param sets: sets of the optimization setup
+        :param list_sets: list of sets to append
+        """
+        if element in self.sets["set_storage_technologies"]:
+            list_sets.append(self.config.system.set_capacity_types)
+        else:
+            list_sets.append([self.config.system.set_capacity_types[0]])
+
+    def _check_on_off_modeled(self, tech: str, element_class: "type[Element]"):
+        """Classmethod checks if on-off-behavior of a technology needs to be modeled.
+
+        If the technology has a minimum load of 0 for all nodes and time steps, and all
+        dependent carriers have a lower bound of 0 (only for conversion technologies
+        modeled as pwa), then on-off-behavior is not necessary to model.
+
+        :param tech: technology in model
+        :return model_on_off: Bool indicating if on-off-behaviour needs to be modeled
+        """
+        # check if any min load
+        unique_min_load = list(
+            set(
+                self.element_registry.get_attribute_of_specific_element(
+                    element_class, tech, "min_load"
+                ).values
+            )
+        )
+        # disable if only one unique min_load which is zero
+        return not (len(unique_min_load) == 1 and unique_min_load[0] == 0)

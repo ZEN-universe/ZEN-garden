@@ -1,10 +1,11 @@
 from zen_garden.constraints.generic_constraint import GenericConstraint
+from zen_garden.elements.storage_technology import StorageTechnology
 from zen_garden.model.components.set_registry import SetRegistry
 from zen_garden.utils import linexpr_from_tuple_np
 
 
 class StorageTechnologyCapexConstraint(GenericConstraint):
-    def build(self, index_values, index_names):
+    def build(self):
         """Definition of the capital expenditures for the storage technology.
 
         .. math::
@@ -14,9 +15,17 @@ class StorageTechnologyCapexConstraint(GenericConstraint):
         on node :math:`n` in year :math:`y` \n
         :math:`\\alpha_{k,n,y}`: specific capex of storage technology :math:`k` on
         node :math:`n` in year :math:`y`
-
-
         """
+        index_values, index_names = self.zen_model.create_custom_set(
+            [
+                "set_storage_technologies",
+                "set_capacity_types",
+                "set_nodes",
+                "set_years",
+            ],
+            StorageTechnology,
+        )
+
         # check if we need to continue
         if len(index_values) == 0:
             return []

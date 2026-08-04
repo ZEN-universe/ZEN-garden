@@ -23,6 +23,7 @@ CARRIER_CONSTRAINTS: list[type[GenericConstraint]] = [
     CostCarrierConstraint,
     CostLimitShedDemandConstraint,
     CarbonEmissionsCarrierConstraint,
+    NodalEnergyBalanceConstraint,
 ]
 
 __all__ = [

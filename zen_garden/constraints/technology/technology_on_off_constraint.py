@@ -6,10 +6,11 @@ import xarray as xr
 from linopy.expressions import LinearExpression
 
 from zen_garden.constraints.generic_constraint import GenericConstraint
+from zen_garden.elements.technology import Technology
 
 
 class TechnologyOnOffConstraint(GenericConstraint):
-    def build(self, techs_on_off=None):
+    def build(self):
         """If technology is on, the binary variable is 1, else 0.
 
         The min load constraint is expressed as six constraints
@@ -35,7 +36,9 @@ class TechnologyOnOffConstraint(GenericConstraint):
         of :math:`S_{i,n,y}` and :math:`B_{i,n,t}` \n
         :math:`s^\\mathrm{max}_{i,n,y}`: Big-M limit on :math:`S_{h,p,y}`
         """
-        assert techs_on_off is not None, "techs_on_off must be provided"
+        techs_on_off = self.zen_model.create_custom_set(
+            ["set_technologies", "set_on_off"], Technology
+        )[0]
 
         # sets
         conversion_techs = self.zen_model.sets["set_conversion_technologies"]

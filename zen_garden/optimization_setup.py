@@ -49,7 +49,7 @@ class OptimizationSetup(object):
     method to solve the optimization problem.
     """
 
-    zen_model: ZenModel | None
+    zen_model: ZenModel
     service_container: ServiceContainer
 
     def __init__(
@@ -149,6 +149,10 @@ class OptimizationSetup(object):
             "time_series_aggregation", TimeSeriesAggregation
         )
 
+        self.zen_model = self.service_container.build_and_register(
+            "zen_model", ZenModel
+        )
+
     def store_input_data(self):
         """Read the input and conducts the time series aggregation."""
         logger.info("\n--- Read input data of elements --- \n")
@@ -168,10 +172,7 @@ class OptimizationSetup(object):
         ):
             os.makedirs(self.config.solver.solver_dir)
 
-        construction_service = self.service_container.build_and_register(
-            "model_construction_service", ModelConstructionService
-        )
-        self.zen_model = construction_service.construct_model()
+        self.service_container.build(ModelConstructionService).construct_model()
 
         self.scaling = self.service_container.build_and_register(
             "scaling",
@@ -287,12 +288,8 @@ class OptimizationSetup(object):
         if self.config.solver.use_scaling:
             self.scaling.re_scale()
 
-    def solve(self, scenario="base"):
+    def solve(self, scenario: str = "base"):
         """Create model instance by assigning parameter values and initializing sets."""
-        assert (
-            self.zen_model is not None
-        ), "The optimization model has not been constructed yet."
-
         solver_name = self.config.solver.name
         # remove options that are None
         solver_options = {
@@ -333,10 +330,6 @@ class OptimizationSetup(object):
 
     def write_IIS(self, scenario=""):
         """Write an ILP file to print the IIS if infeasible and using Gurobi."""
-        assert (
-            self.zen_model is not None
-        ), "The optimization model has not been constructed yet."
-
         if (
             self.zen_model.lp_model.termination_condition == "infeasible"
             and self.config.solver.name == "gurobi"
@@ -394,9 +387,6 @@ class OptimizationSetup(object):
             None
 
         """
-        assert (
-            self.zen_model is not None
-        ), "The optimization model has not been constructed yet."
         capacity_addition = (
             self.zen_model.lp_model.solution["capacity_addition"].to_series().dropna()
         )
@@ -448,9 +438,6 @@ class OptimizationSetup(object):
             None
 
         """
-        assert (
-            self.zen_model is not None
-        ), "The optimization model has not been constructed yet."
         interval_between_years = self.config.system.interval_between_years
         last_year = decision_horizon[-1]
         carbon_emissions_cumulative = (
@@ -488,9 +475,6 @@ class OptimizationSetup(object):
             scenario_name (str): The name of the scenario being optimized.
             param_map (dict): A dictionary mapping parameter names to their values.
         """
-        assert (
-            self.zen_model is not None
-        ), "The optimization model has not been constructed yet."
         Postprocess(
             self.config,
             self.unit_handling,

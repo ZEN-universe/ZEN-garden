@@ -3,11 +3,12 @@ import pandas as pd
 from linopy.expressions import LinearExpression
 
 from zen_garden.constraints.technology.technology_constraint import TechnologyConstraint
+from zen_garden.elements.technology import Technology
 from zen_garden.model.components.multi_index_helper import MultiIndexHelper
 
 
 class CostCapexYearlyConstraint(TechnologyConstraint):
-    def build(self, index: MultiIndexHelper | None = None):
+    def build(self):
         """Aggregates the capex of built capacity and of existing capacity.
 
         .. math::
@@ -28,10 +29,17 @@ class CostCapexYearlyConstraint(TechnologyConstraint):
         at location :math:`p` in year :math:`y` \n
         :math:`l_h`: depreciation time of technology :math:`h`   \n
         :math:`\\mathrm{dy}`: interval between planning periods
-
-
         """
-        assert index is not None, "index must be provided"
+        index_values, index_names = self.zen_model.create_custom_set(
+            [
+                "set_technologies",
+                "set_capacity_types",
+                "set_location",
+                "set_years",
+            ],
+            Technology,
+        )
+        index = MultiIndexHelper(index_values, index_names)
         ### masks
         # not needed
 

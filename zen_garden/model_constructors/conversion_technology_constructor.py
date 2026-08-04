@@ -252,10 +252,7 @@ class ConversionTechnologyConstructor(ModelConstructor):
         logger.info("Constructing constraints for ConversionTechnology")
 
         for ConversionTechnologyConstraint in CONVERSION_TECHNOLOGY_CONSTRAINTS:
-            constraint = ConversionTechnologyConstraint(
-                self.config, self.zen_model, self.energy_system, self.time_steps
-            )
-            constraint.build()
+            self.service_container.build(ConversionTechnologyConstraint).build()
 
         # capex
         set_pwa_capex = self.create_custom_set(
@@ -291,16 +288,10 @@ class ConversionTechnologyConstructor(ModelConstructor):
 
         if set_linear_capex[0]:
             # if set_linear_capex contains technologies:
-            linear_capex_constraint = LinearCapexConstraint(
-                self.config, self.zen_model, self.energy_system, self.time_steps
-            )
-            linear_capex_constraint.build()
+            self.service_container.build(LinearCapexConstraint).build()
 
         # Coupling constraints
-        capacity_capex_coupling_constraint = CapacityCapexCouplingConstraint(
-            self.config, self.zen_model, self.energy_system, self.time_steps
-        )
-        capacity_capex_coupling_constraint.build()
+        self.service_container.build(CapacityCapexCouplingConstraint).build()
 
     def calculate_capex_pwa_breakpoints_values(self, set_pwa):
         """Calculates breakpoints and function values for piecewise affine constraint.

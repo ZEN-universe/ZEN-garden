@@ -9,46 +9,42 @@ from zen_garden.model.components.constraint import Constraint
 from zen_garden.model.components.parameter import Parameter
 from zen_garden.model.components.set_registry import SetRegistry
 from zen_garden.model.components.variable import Variable
-from zen_garden.model.config import Config
 
 if TYPE_CHECKING:
-    from zen_garden.elements.energy_system import EnergySystem
-    from zen_garden.preprocess.unit_handling import UnitHandling
-    from zen_garden.services.element_registry import ElementRegistry
+    from zen_garden.model.config import Config
+    from zen_garden.services.service_container import ServiceContainer
 
 
 class ZenModel:
     def __init__(
         self,
-        config: Config,
-        energy_system: "EnergySystem",
-        unit_handling: "UnitHandling",
-        element_registry: "ElementRegistry",
+        service_container: "ServiceContainer",
+        config: "Config",
     ):
-        self.config = config
-        self.energy_system = energy_system
-        self.unit_handling = unit_handling
-        self.element_registry = element_registry
+        self.indexing_sets = [key for key in config.system.keys() if "set" in key]
 
-        self.indexing_sets = [key for key in self.config.system.keys() if "set" in key]
-
-        self.lp_model = LinopyModel(solver_dir=self.config.solver.solver_dir)
-        self.sets = SetRegistry()
-        self.variables = Variable(
-            self.unit_handling,
-            self.sets,
-            self.lp_model,
-            self.config,
-            self.element_registry,
+        self.lp_model = LinopyModel(solver_dir=config.solver.solver_dir)
+        self.sets = service_container.build(
+            SetRegistry, indexing_sets=self.indexing_sets
         )
-        self.parameters = Parameter(self.sets)
-        self.constraints = Constraint(self.lp_model)
+        self.variables = service_container.build(
+            Variable, lp_model=self.lp_model, sets=self.sets
+        )
+        self.parameters = Parameter(sets=self.sets)
+        self.constraints = Constraint(lp_model=self.lp_model)
 
     def add_set(self, *args, **kwargs):
         """Add sets to the model.
         See :meth:`zen_garden.model.components.set_registry.SetRegistry.add_set`.
         """
         self.sets.add_set(*args, **kwargs)
+
+    def create_custom_set(self, *args, **kwargs):
+        """Create custom sets in the model.
+        See
+        :meth:`zen_garden.model.components.set_registry.SetRegistry.create_custom_set`.
+        """
+        return self.sets.create_custom_set(*args, **kwargs)
 
     def add_variable(self, *args, **kwargs):
         """Add variables to the model.

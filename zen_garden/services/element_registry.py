@@ -130,7 +130,7 @@ class ElementRegistry:
         """Get all elements in the energy system."""
         return self.all_elements_of_type(Element)
 
-    def all_names_of_elements(self, class_name):
+    def all_names_of_elements(self, class_name: type[Element]) -> list[str]:
         """Get all names of elements in class.
 
         :param cls: class of the elements to return

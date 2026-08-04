@@ -8,8 +8,6 @@ from typing_extensions import override
 
 from zen_garden.constraints.technology import (
     TECHNOLOGY_CONSTRAINTS,
-    CostCapexYearlyConstraint,
-    TechnologyDiffusionLimitConstraint,
 )
 from zen_garden.constraints.technology.technology_on_off_constraint import (
     TechnologyOnOffConstraint,
@@ -564,39 +562,11 @@ class TechnologyConstructor(ModelConstructor):
         logger.info("Constructing constraints for Technology")
 
         for TechnologyConstraint in TECHNOLOGY_CONSTRAINTS:
-            TechnologyConstraint(
-                self.config, self.zen_model, self.energy_system, self.time_steps
-            ).build()
-
-        TechnologyDiffusionLimitConstraint(
-            self.config,
-            self.zen_model,
-            self.energy_system,
-            self.time_steps,
-            self.element_registry,
-        ).build()
-
-        # annual capex of having capacity
-        index_values, index_names = self.create_custom_set(
-            [
-                "set_technologies",
-                "set_capacity_types",
-                "set_location",
-                "set_years",
-            ],
-        )
-        CostCapexYearlyConstraint(
-            self.config, self.zen_model, self.energy_system, self.time_steps
-        ).build(MultiIndexHelper(index_values, index_names))
+            self.service_container.build(TechnologyConstraint).build()
 
         # min load constraints
         n_cons = len(self.zen_model.lp_model.constraints.items())
-        techs_on_off = self.create_custom_set(["set_technologies", "set_on_off"])[0]
-        # rules.constraint_technology_on_off(techs_on_off)
-        TechnologyOnOffConstraint(
-            self.config, self.zen_model, self.energy_system, self.time_steps
-        ).build(techs_on_off)
-
+        self.service_container.build(TechnologyOnOffConstraint).build()
         # if nothing was added we can remove the tech vars again
         if len(self.zen_model.lp_model.constraints.items()) == n_cons:
             self.zen_model.lp_model.variables.remove("tech_on_var")

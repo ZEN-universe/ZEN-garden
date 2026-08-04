@@ -33,9 +33,11 @@ TECHNOLOGY_CONSTRAINTS: list[type[GenericConstraint]] = [
     TechnologyMaxCapacityAdditionConstraint,
     TechnologyConstructionTimeConstraint,
     TechnologyLifetimeConstraint,
-    CostOpexYearlyTotalConstraint,
+    TechnologyDiffusionLimitConstraint,
+    CostCapexYearlyConstraint,
     CostCapexYearlyTotalConstraint,
     CostOpexYearlyConstraint,
+    CostOpexYearlyTotalConstraint,
     CarbonEmissionsTechnologyTotalConstraint,
 ]
 

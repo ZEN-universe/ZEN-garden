@@ -88,8 +88,6 @@ class Component:
         Only called when normal attribute lookup fails, so this covers
         parameters set via setattr(self, name, xr_data).
         """
-        if getattr(self, name, None) is None:
-            raise AttributeError(
-                f"Parameter '{name}' does not exist. Did you forget to define it?"
-            )
-        return getattr(self, name)
+        raise AttributeError(
+            f"Parameter '{name}' does not exist. Did you forget to define it?"
+        )

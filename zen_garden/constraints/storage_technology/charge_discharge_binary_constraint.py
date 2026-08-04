@@ -27,6 +27,9 @@ class ChargeDischargeBinaryConstraint(GenericConstraint):
         storage technology :math:`k` is in charging mode (1) or discharging mode (0) at
         location :math:`n` at time step :math:`t` in year :math:`y` \n
         """
+        if not self.config.system.storage_charge_discharge_binary:
+            return
+
         techs = self.zen_model.sets["set_storage_technologies"]
         nodes = self.zen_model.sets["set_nodes"]
         if len(techs) == 0:

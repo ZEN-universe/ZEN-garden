@@ -16,6 +16,7 @@ logger = logging.getLogger(__name__)
 
 class RetrofittingTechnologyConstructor(ModelConstructor):
     element_class = RetrofittingTechnology
+    constraints = RETROFITTING_TECHNOLOGY_CONSTRAINTS
 
     @override
     def has_elements(self) -> bool:
@@ -63,19 +64,3 @@ class RetrofittingTechnologyConstructor(ModelConstructor):
     @override
     def construct_vars(self):
         logger.info("Constructing variables for RetrofittingTechnology")
-
-    @override
-    def construct_constraints(self):
-        logger.info("Constructing constraints for RetrofittingTechnology")
-
-        # # add pwa constraints
-        # rules = RetrofittingTechnologyRules(
-        #     self.config, self.zen_model, self.energy_system, self.time_steps
-        # )
-
-        # # flow coupling of retrofitting technology and its base technology
-        # rules.constraint_retrofit_flow_coupling()
-        for RetrofittingTechnologyConstraint in RETROFITTING_TECHNOLOGY_CONSTRAINTS:
-            RetrofittingTechnologyConstraint(
-                self.config, self.zen_model, self.energy_system, self.time_steps
-            ).build()

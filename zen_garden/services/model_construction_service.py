@@ -6,7 +6,6 @@ from typing import TYPE_CHECKING, Callable
 
 import psutil
 
-from zen_garden.model.zen_model import ZenModel
 from zen_garden.model_constructors import MODEL_CONSTRUCTORS
 from zen_garden.services.service_container import ServiceContainer
 
@@ -45,12 +44,10 @@ class ModelConstructionService:
         self.service_container = service_container
         self.config = config
 
-    def construct_model(self) -> ZenModel:
+    def construct_model(self):
         """Logic to construct a model based on the provided name and parameters."""
-        zen_model = self.service_container.build(ZenModel)
-
         self._model_constructors = [
-            self.service_container.build(ModelConstructor, zen_model=zen_model)
+            self.service_container.build(ModelConstructor)
             for ModelConstructor in MODEL_CONSTRUCTORS
         ]
         # Filter out model constructors that do not have any elements to construct
@@ -65,8 +62,6 @@ class ModelConstructionService:
         self._construct_vars()
         self._construct_constraints()
         self._construct_objective()
-
-        return zen_model
 
     @measure_run_time
     def _construct_sets(self):

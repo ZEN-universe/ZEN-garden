@@ -2,11 +2,12 @@ import numpy as np
 import xarray as xr
 
 from zen_garden.constraints.generic_constraint import GenericConstraint
+from zen_garden.elements.transport_technology import TransportTechnology
 from zen_garden.model.components.set_registry import SetRegistry
 
 
 class TransportTechnologyCapexConstraint(GenericConstraint):
-    def build(self, index_values=None, index_list=None):
+    def build(self):
         """Definition of the capital expenditures for the transport technology.
 
         .. math::
@@ -28,12 +29,14 @@ class TransportTechnologyCapexConstraint(GenericConstraint):
         edge :math:`e`
 
         """
-        assert index_values is not None, "index_values must be provided"
-        assert index_list is not None, "index_list must be provided"
+        index_values, index_list = self.zen_model.create_custom_set(
+            ["set_transport_technologies", "set_edges", "set_years"],
+            TransportTechnology,
+        )
 
         # check if we even need to continue
         if len(index_values) == 0:
-            return []
+            return
         # get the coords
         coords = [
             self.zen_model.parameters.capex_per_distance_transport.coords[

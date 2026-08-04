@@ -17,6 +17,8 @@ logger = logging.getLogger(__name__)
 
 
 class EnergySystemConstructor(ModelConstructor):
+    constraints = ENERGY_SYSTEM_CONSTRAINTS
+
     @override
     def has_elements(self) -> bool:
         """Check if the energy system has elements."""
@@ -227,17 +229,6 @@ class EnergySystemConstructor(ModelConstructor):
             doc="net_present_cost of energy system",
             unit_category={"money": 1},
         )
-
-    @override
-    def construct_constraints(self):
-        """Constructs the constraints of the class <EnergySystem>."""
-        logger.info("Constructing constraints for EnergySystem")
-
-        for EnergySystemConstraint in ENERGY_SYSTEM_CONSTRAINTS:
-            constraint = EnergySystemConstraint(
-                self.config, self.zen_model, self.energy_system, self.time_steps
-            )
-            constraint.build()
 
     @override
     def construct_objective(self):

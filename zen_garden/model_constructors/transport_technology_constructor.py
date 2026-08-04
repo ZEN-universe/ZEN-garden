@@ -6,10 +6,7 @@ import numpy as np
 import xarray as xr
 from typing_extensions import override
 
-from zen_garden.constraints.transport_technology import (
-    TRANSPORT_TECHNOLOGY_CONSTRAINTS,
-    TransportTechnologyCapexConstraint,
-)
+from zen_garden.constraints.transport_technology import TRANSPORT_TECHNOLOGY_CONSTRAINTS
 from zen_garden.elements.transport_technology import TransportTechnology
 from zen_garden.model_constructors.model_constructor import ModelConstructor
 
@@ -18,6 +15,7 @@ logger = logging.getLogger(__name__)
 
 class TransportTechnologyConstructor(ModelConstructor):
     element_class = TransportTechnology
+    constraints = TRANSPORT_TECHNOLOGY_CONSTRAINTS
 
     @override
     def has_elements(self) -> bool:
@@ -126,20 +124,3 @@ class TransportTechnologyConstructor(ModelConstructor):
             "through transport technology on edge i and time t",
             unit_category={"energy_quantity": 1, "time": -1},
         )
-
-    @override
-    def construct_constraints(self):
-        logger.info("Constructing constraints for TransportTechnology")
-
-        for TransportTechnologyConstraint in TRANSPORT_TECHNOLOGY_CONSTRAINTS:
-            TransportTechnologyConstraint(
-                self.config, self.zen_model, self.energy_system, self.time_steps
-            ).build()
-
-        # capex of transport technologies
-        index_values, index_list = self.create_custom_set(
-            ["set_transport_technologies", "set_edges", "set_years"]
-        )
-        TransportTechnologyCapexConstraint(
-            self.config, self.zen_model, self.energy_system, self.time_steps
-        ).build(index_values, index_list)

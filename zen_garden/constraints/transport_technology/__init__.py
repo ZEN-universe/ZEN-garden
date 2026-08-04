@@ -15,6 +15,7 @@ TRANSPORT_TECHNOLOGY_CONSTRAINTS: list[type[GenericConstraint]] = [
     CapacityFactorTransportConstraint,
     OpexEmissionsTechnologyTransportConstraint,
     TransportTechnologyLossesFlowConstraint,
+    TransportTechnologyCapexConstraint,
 ]
 
 __all__ = [

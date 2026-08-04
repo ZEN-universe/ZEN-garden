@@ -70,28 +70,6 @@ Class Structure
    :zoom:
 
    ---
-   title: Rules
-   ---
-   classDiagram
-       class GenericRule
-       class CarrierRules
-       class TechnologyRules
-       class ConversionTechnologyRules
-       class StorageTechnologyRules
-       class RetrofittingTechnologyRules
-       class TransportTechnologyRules
-
-       GenericRule <|-- CarrierRules
-       GenericRule <|-- TechnologyRules
-       GenericRule <|-- ConversionTechnologyRules
-       GenericRule <|-- StorageTechnologyRules
-       GenericRule <|-- TransportTechnologyRules
-       GenericRule <|-- RetrofittingTechnologyRules
-
-.. mermaid::
-   :zoom:
-
-   ---
    title: Default Config
    ---
    classDiagram

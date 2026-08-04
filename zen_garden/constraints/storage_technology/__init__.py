@@ -22,6 +22,8 @@ STORAGE_TECHNOLOGY_CONSTRAINTS: list[type[GenericConstraint]] = [
     CoupleStorageLevelConstraint,
     FlowStorageSpillageConstraint,
     CapacityEnergyToPowerRatioConstraint,
+    StorageTechnologyCapexConstraint,
+    ChargeDischargeBinaryConstraint,
 ]
 
 __all__ = [
