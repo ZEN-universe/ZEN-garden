@@ -4,11 +4,12 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 
-from zen_garden.model.components.index_set import IndexSet
+from zen_garden.model.components.set_registry import SetRegistry
 
 
-class ZenIndex(object):
-    """A multiindex class that can be easily used with xarray."""
+class MultiIndexHelper(object):
+    """A multiindex class that can be easily used with xarray.
+    Formerly known as ZenIndex."""
 
     def __init__(self, index_values, index_names=None):
         """Initialize the multiindex.
@@ -46,7 +47,7 @@ class ZenIndex(object):
         vals = self.df.groupby(level=levels).first().index.to_list()
 
         if as_array:
-            return IndexSet.tuple_to_arr(vals, levels)
+            return SetRegistry.tuple_to_arr(vals, levels)
 
         return vals
 
@@ -91,9 +92,9 @@ class ZenIndex(object):
         return vals[0]
 
     def __repr__(self):
-        """The representation of the ZenIndex."""
+        """The representation of the MultiIndexHelper."""
         # empty index
         if self.index is None:
-            return "ZenIndex: Empty"
+            return "MultiIndexHelper: Empty"
 
         return self.index.__repr__()

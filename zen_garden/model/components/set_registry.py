@@ -12,11 +12,12 @@ from zen_garden.model.components.zen_set import ZenSet
 logger = logging.getLogger(__name__)
 
 
-class IndexSet(Component):
-    """Class to prepare parameter data for pyomo parameter prerequisites."""
+class SetRegistry(Component):
+    """Class to prepare parameter data for pyomo parameter prerequisites.
+    Formerly known as IndexSet."""
 
     def __init__(self):
-        """Initialization of the IndexSet object."""
+        """Initialization of the SetRegistry object."""
         # base class init
         super().__init__()
 
@@ -28,7 +29,7 @@ class IndexSet(Component):
         self.coords_dataset = xr.Dataset()
 
     def add_set(self, name, data, doc, index_set: str | None = None):
-        """Adds a set to the IndexSets (this set it not indexed).
+        """Adds a set to the SetRegistry (this set it not indexed).
 
         :param name: The name of the set
         :param data: The data used for the init
@@ -110,7 +111,7 @@ class IndexSet(Component):
         :return: The mask as xarray
         """
         # get the coords
-        index_arrs = IndexSet.tuple_to_arr(index_values, index_list)
+        index_arrs = SetRegistry.tuple_to_arr(index_values, index_list)
         coords = [
             self.get_coord(data, name)
             for data, name in zip(index_arrs, index_list, strict=False)

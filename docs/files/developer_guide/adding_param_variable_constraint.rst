@@ -34,7 +34,7 @@ e.g., :py:class:`EnergySystemConstructor <zen_garden.elements.energy_system_cons
 or :py:class:`TechnologyConstructor <zen_garden.elements.technology_constructor.TechnologyConstructor>`.
 The new set is added to ``self.zen_model.sets`` through the method ``self.zen_model.add_set()``.
 
-The :py:meth:`add_set <zen_garden.model.components.index_set.IndexSet.add_set>` method takes the following parameters:
+The :py:meth:`add_set <zen_garden.model.components.set_registry.SetRegistry.add_set>` method takes the following parameters:
 
 - ``name``: The name of the set, which should be unique.
 - ``data``: The data for the set, which can be a list or a dictionary.

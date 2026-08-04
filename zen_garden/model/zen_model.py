@@ -6,8 +6,8 @@ from typing import TYPE_CHECKING
 from linopy import Model as LinopyModel
 
 from zen_garden.model.components.constraint import Constraint
-from zen_garden.model.components.index_set import IndexSet
 from zen_garden.model.components.parameter import Parameter
+from zen_garden.model.components.set_registry import SetRegistry
 from zen_garden.model.components.variable import Variable
 from zen_garden.model.config import Config
 
@@ -33,7 +33,7 @@ class ZenModel:
         self.indexing_sets = [key for key in self.config.system.keys() if "set" in key]
 
         self.lp_model = LinopyModel(solver_dir=self.config.solver.solver_dir)
-        self.sets = IndexSet()
+        self.sets = SetRegistry()
         self.variables = Variable(
             self.unit_handling,
             self.sets,
@@ -46,7 +46,7 @@ class ZenModel:
 
     def add_set(self, *args, **kwargs):
         """Add sets to the model.
-        See :meth:`zen_garden.model.components.index_set.IndexSet.add_set`.
+        See :meth:`zen_garden.model.components.set_registry.SetRegistry.add_set`.
         """
         self.sets.add_set(*args, **kwargs)
 

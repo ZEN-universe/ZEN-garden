@@ -2,7 +2,7 @@ import numpy as np
 import xarray as xr
 
 from zen_garden.constraints.generic_constraint import GenericConstraint
-from zen_garden.model.components.index_set import IndexSet
+from zen_garden.model.components.set_registry import SetRegistry
 
 
 class TransportTechnologyCapexConstraint(GenericConstraint):
@@ -48,7 +48,7 @@ class TransportTechnologyCapexConstraint(GenericConstraint):
         mask = np.isinf(self.zen_model.parameters.distance).astype(float)
 
         # This mask ensure we only get constraints where we want them
-        index_arrs = IndexSet.tuple_to_arr(index_values, index_list)
+        index_arrs = SetRegistry.tuple_to_arr(index_values, index_list)
         global_mask = xr.DataArray(False, coords=coords)
         global_mask.loc[index_arrs] = True
 

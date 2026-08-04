@@ -7,7 +7,7 @@ import pandas as pd
 import xarray as xr
 
 from zen_garden.model.components.component import Component
-from zen_garden.model.components.index_set import IndexSet
+from zen_garden.model.components.set_registry import SetRegistry
 from zen_garden.model.components.zen_set import ZenSet
 
 
@@ -34,7 +34,7 @@ class DictParameter(object):
 
 
 class Parameter(Component):
-    def __init__(self, sets: IndexSet):
+    def __init__(self, sets: SetRegistry):
         """Initialization of the parameter object."""
         self.sets = sets
         super().__init__()

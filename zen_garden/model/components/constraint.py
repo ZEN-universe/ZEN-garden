@@ -10,7 +10,7 @@ import xarray as xr
 from linopy import Model as LinopyModel
 
 from zen_garden.model.components.component import Component
-from zen_garden.model.components.index_set import IndexSet
+from zen_garden.model.components.set_registry import SetRegistry
 
 logger = logging.getLogger(__name__)
 
@@ -239,7 +239,7 @@ class Constraint(Component):
         lhs = lhs.drop_vars(list(set(lhs.coords) - set(lhs.dims)))
 
         # get the coordinates
-        index_arrs = IndexSet.tuple_to_arr(index_values, index_names)
+        index_arrs = SetRegistry.tuple_to_arr(index_values, index_names)
         coords = {
             name: np.unique(arr.data)
             for name, arr in zip(index_names, index_arrs, strict=False)

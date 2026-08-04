@@ -1,5 +1,5 @@
 from zen_garden.constraints.generic_constraint import GenericConstraint
-from zen_garden.model.components.index_set import IndexSet
+from zen_garden.model.components.set_registry import SetRegistry
 from zen_garden.utils import linexpr_from_tuple_np
 
 
@@ -29,7 +29,7 @@ class StorageTechnologyCapexConstraint(GenericConstraint):
 
         ### auxiliary calculations
         # get all the arrays and coords
-        techs, capacity_types, nodes, times = IndexSet.tuple_to_arr(
+        techs, capacity_types, nodes, times = SetRegistry.tuple_to_arr(
             index_values, index_names, unique=True
         )
         coords = [

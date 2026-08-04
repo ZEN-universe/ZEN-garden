@@ -3,11 +3,11 @@ import pandas as pd
 from linopy.expressions import LinearExpression
 
 from zen_garden.constraints.technology.technology_constraint import TechnologyConstraint
-from zen_garden.model.components.zen_index import ZenIndex
+from zen_garden.model.components.multi_index_helper import MultiIndexHelper
 
 
 class CostCapexYearlyConstraint(TechnologyConstraint):
-    def build(self, index: ZenIndex | None = None):
+    def build(self, index: MultiIndexHelper | None = None):
         """Aggregates the capex of built capacity and of existing capacity.
 
         .. math::

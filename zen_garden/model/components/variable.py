@@ -14,7 +14,7 @@ from zen_garden.model.components.zen_set import ZenSet
 if TYPE_CHECKING:
     from linopy import Model as LinopyModel
 
-    from zen_garden.model.components.index_set import IndexSet
+    from zen_garden.model.components.set_registry import SetRegistry
     from zen_garden.model.config import Config
     from zen_garden.preprocess.unit_handling import UnitHandling
     from zen_garden.services.element_registry import ElementRegistry
@@ -26,7 +26,7 @@ class Variable(Component):
     def __init__(
         self,
         unit_handling: "UnitHandling",
-        sets: "IndexSet",
+        sets: "SetRegistry",
         lp_model: "LinopyModel",
         config: "Config",
         element_registry: "ElementRegistry",
@@ -34,7 +34,7 @@ class Variable(Component):
         """Initialization of a variable.
 
         :param unit_handling: UnitHandling object
-        :param sets: IndexSet object
+        :param sets: SetRegistry object
         :param lp_model: LinopyModel object
         :param config: Config object
         :param element_registry: ElementRegistry object

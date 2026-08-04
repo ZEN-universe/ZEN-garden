@@ -7,7 +7,7 @@ from linopy.expressions import LinearExpression
 
 if TYPE_CHECKING:
     from zen_garden.elements.energy_system import EnergySystem
-    from zen_garden.model.components.zen_index import ZenIndex
+    from zen_garden.model.components.multi_index_helper import MultiIndexHelper
     from zen_garden.model.zen_model import ZenModel
 
 
@@ -20,7 +20,7 @@ class NodalEnergyBalanceConstraint:
         self.zen_model = zen_model
         self.energy_system = energy_system
 
-    def build(self, index: "ZenIndex", first_index_name: list[str]):
+    def build(self, index: "MultiIndexHelper", first_index_name: list[str]):
         """Nodal energy balance for each time step.
 
         .. math::

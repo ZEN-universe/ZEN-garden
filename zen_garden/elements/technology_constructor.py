@@ -16,8 +16,8 @@ from zen_garden.constraints.technology.technology_on_off_constraint import (
 )
 from zen_garden.elements.element_constructor import ElementConstructor
 from zen_garden.elements.technology import Technology
-from zen_garden.model.components.index_set import IndexSet
-from zen_garden.model.components.zen_index import ZenIndex
+from zen_garden.model.components.multi_index_helper import MultiIndexHelper
+from zen_garden.model.components.set_registry import SetRegistry
 
 logger = logging.getLogger(__name__)
 
@@ -587,7 +587,7 @@ class TechnologyConstructor(ElementConstructor):
         )
         CostCapexYearlyConstraint(
             self.config, self.zen_model, self.energy_system, self.time_steps
-        ).build(ZenIndex(index_values, index_names))
+        ).build(MultiIndexHelper(index_values, index_names))
 
         # min load constraints
         n_cons = len(self.zen_model.lp_model.constraints.items())
@@ -648,7 +648,7 @@ class TechnologyConstructor(ElementConstructor):
                 "set_years",
             ],
         )
-        index = ZenIndex(index_values, index_names)
+        index = MultiIndexHelper(index_values, index_names)
         sub_mask = (
             self.zen_model.parameters.capacity_addition_max.notnull()
             & (self.zen_model.parameters.capacity_addition_max != np.inf)
@@ -675,7 +675,7 @@ class TechnologyConstructor(ElementConstructor):
             ]
         )
         # get all the capacities
-        index_arrs = IndexSet.tuple_to_arr(index_values, index_names)
+        index_arrs = SetRegistry.tuple_to_arr(index_values, index_names)
         coords = [
             self.zen_model.sets.get_coord(data, name)
             for data, name in zip(index_arrs, index_names, strict=False)

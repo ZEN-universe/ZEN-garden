@@ -11,7 +11,7 @@ from zen_garden.constraints.carrier import (
 )
 from zen_garden.elements.carrier import Carrier
 from zen_garden.elements.element_constructor import ElementConstructor
-from zen_garden.model.components.zen_index import ZenIndex
+from zen_garden.model.components.multi_index_helper import MultiIndexHelper
 
 logger = logging.getLogger(__name__)
 
@@ -196,6 +196,6 @@ class CarrierConstructor(ElementConstructor):
             ["set_carriers", "set_nodes", "set_time_steps_operation"]
         )
         nodal_energy_balance_constraint.build(
-            ZenIndex(index_values, index_names),
+            MultiIndexHelper(index_values, index_names),
             index_names[:1],
         )

@@ -125,15 +125,15 @@ Class Structure
    ---
    classDiagram
        class Component
-       class ZenIndex
+       class MultiIndexHelper
        class ZenSet
-       class IndexSet
+       class SetRegistry
        class DictParameter
        class Parameter
        class Variable
        class Constraint
 
-       Component <|-- IndexSet
+       Component <|-- SetRegistry
        Component <|-- Parameter
        Component <|-- Variable
        Component <|-- Constraint
