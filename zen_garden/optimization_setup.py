@@ -119,9 +119,10 @@ class OptimizationSetup(object):
         energy_system_folder_path = Path(
             self.dataset_path_resolver.folder_of_set("energy_system")
         )
-        self.unit_handling = self.service_container.build_and_register(
-            "unit_handling", UnitHandling, folder_path=energy_system_folder_path
+        self.unit_handling = UnitHandling(
+            energy_system_folder_path, self.config.solver.rounding_decimal_points_units
         )
+        self.service_container.register("unit_handling", self.unit_handling)
         self.service_container.build_and_register(
             "input_repository", InputRepository, folder_path=energy_system_folder_path
         )

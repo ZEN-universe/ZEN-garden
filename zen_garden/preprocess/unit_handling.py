@@ -44,7 +44,7 @@ class UnitHandling:
           accurately.
     """
 
-    def __init__(self, config: "Config", folder_path):
+    def __init__(self, folder_path: Path, rounding_decimal_points_units: int):
         """Initializes an instance of the UnitHandling class.
 
         This constructor processes and stores the system's base unit definitions
@@ -58,8 +58,8 @@ class UnitHandling:
             folder_path (str or Path): The path to the folder containing system
                 specifications (e.g., "unit_definitions.txt", "base_units.csv").
         """
-        self.config = config
         self.folder_path = folder_path
+        self.rounding_decimal_points_units = rounding_decimal_points_units
         self.ureg = UnitRegistry()
 
         # dict of element attribute values
@@ -439,15 +439,13 @@ class UnitHandling:
             # magnitude of combined unit is multiplier
             multiplier = combined_unit.to_base_units().magnitude
             # check that multiplier is larger than rounding tolerance
-            assert multiplier >= 10 ** (
-                -self.config.solver.rounding_decimal_points_units
-            ), (
+            assert multiplier >= 10 ** (-self.rounding_decimal_points_units), (
                 f"Multiplier {multiplier} of unit {input_unit} in parameter "
                 f"{attribute_name} is smaller than rounding tolerance "
-                f"{10 ** (-self.config.solver.rounding_decimal_points_units)}"
+                f"{10 ** (-self.rounding_decimal_points_units)}"
             )
             # round to decimal points
-            return round(multiplier, self.config.solver.rounding_decimal_points_units)
+            return round(multiplier, self.rounding_decimal_points_units)
 
     def convert_unit_into_base_units(
         self, input_unit, get_multiplier=False, attribute_name=None, path=None
