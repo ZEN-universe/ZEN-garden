@@ -7,39 +7,34 @@ technologies to the model and returns it. The class also includes a method to
 solve the optimization problem.
 """
 
-import copy
 import logging
 import os
 from pathlib import Path
+from typing import TYPE_CHECKING
+
+import numpy as np
 
 from zen_garden.default_config import Config as DefaultConfig
-from zen_garden.elements import ELEMENT_TYPE_CLASSES
-from zen_garden.elements.energy_system import EnergySystem
 from zen_garden.elements.technology import Technology
-from zen_garden.model.config import Config
-from zen_garden.model.time_steps import TimeStepsDicts
 from zen_garden.model.zen_model import ZenModel
 from zen_garden.postprocess.postprocess import Postprocess
 from zen_garden.preprocess.scaling import Scaling
-from zen_garden.preprocess.time_series_aggregation import TimeSeriesAggregation
-from zen_garden.preprocess.unit_handling import UnitHandling
-from zen_garden.services.dataset_path_resolver import DatasetPathResolver
-from zen_garden.services.element_registry import ElementRegistry
-from zen_garden.services.input_repository import InputRepository
 from zen_garden.services.model_construction_service import ModelConstructionService
-from zen_garden.services.scenario_dict import ScenarioDict
-from zen_garden.services.service_container import ServiceContainer
-from zen_garden.types import YearSpecificTs
-from zen_garden.utils import (
-    IISConstraintParser,
-    InputDataChecks,
-    StringUtils,
-)
+from zen_garden.utils import IISConstraintParser, StringUtils
+
+if TYPE_CHECKING:
+    from zen_garden.elements.energy_system import EnergySystem
+    from zen_garden.model.config import Config
+    from zen_garden.model.time_steps import TimeStepsDicts
+    from zen_garden.preprocess.unit_handling import UnitHandling
+    from zen_garden.services.element_registry import ElementRegistry
+    from zen_garden.services.scenario_dict import ScenarioDict
+    from zen_garden.services.service_container import ServiceContainer
 
 logger = logging.getLogger(__name__)
 
 
-class OptimizationSetup(object):
+class OptimizationStep:
     """Class defining the optimization model.
 
     The class takes as inputs the properties of the optimization problem. The
@@ -49,14 +44,20 @@ class OptimizationSetup(object):
     method to solve the optimization problem.
     """
 
-    zen_model: ZenModel
-    service_container: ServiceContainer
+    zen_model: "ZenModel"
+    service_container: "ServiceContainer"
 
     def __init__(
         self,
-        raw_config: DefaultConfig,
-        init_scenario_dict: dict,
-        input_data_checks: InputDataChecks,
+        service_container: "ServiceContainer",
+        config: "Config",
+        energy_system: "EnergySystem",
+        element_registry: "ElementRegistry",
+        unit_handling: "UnitHandling",
+        scenario_dict: "ScenarioDict",
+        time_steps: "TimeStepsDicts",
+        optimized_time_steps: list[int],
+        steps_horizon: dict[int, list[int]],
     ):
         """Setup optimization of the energy system.
 
@@ -72,98 +73,88 @@ class OptimizationSetup(object):
                 verify the integrity of the input data.
 
         """
-        self.service_container = ServiceContainer("service_container")
+        self.service_container = service_container
+        self.config = config
+        self.energy_system = energy_system
+        self.element_registry = element_registry
+        self.unit_handling = unit_handling
+        self.scenario_dict = scenario_dict
+        self.time_steps = time_steps
 
-        # Copying is necessary, because the config object is modified,
-        # e.g., in add_elements of ElementRegistry
-        self.config = Config.from_setup(
-            copy.deepcopy(raw_config.analysis),
-            copy.deepcopy(raw_config.system),
-            copy.deepcopy(raw_config.solver),
-        )
-        self.service_container.register("config", self.config)
-
-        self.input_data_checks = input_data_checks
-        self.input_data_checks.config = self.config
-        # check if input data exists
-        self.input_data_checks.check_primary_folder_structure()
-        self.service_container.register("input_data_checks", self.input_data_checks)
-
-        self.dataset_path_resolver = self.service_container.build_and_register(
-            "dataset_path_resolver", DatasetPathResolver
-        )
-        self.input_data_checks.dataset_path_resolver = self.dataset_path_resolver
-
-        # dict to update elements according to scenario
-        self.scenario_dict = ScenarioDict(
-            init_scenario_dict,
-            self.dataset_path_resolver,
-            self.config,
-            ELEMENT_TYPE_CLASSES,
-        )
-        self.service_container.register("scenario_dict", self.scenario_dict)
-
-        # initiate dictionary for storing extra year data
-        self.service_container.register("year_specific_ts", YearSpecificTs())
-
-        # initiate dictionary for storing time steps
-        self.time_steps = self.service_container.build_and_register(
-            "time_steps", TimeStepsDicts
-        )
-
-        # check if all needed data inputs for the chosen technologies exist
-        # remove non-existent inputs
-        self.input_data_checks.check_existing_technology_data()
-
-        # Init the energy system
-        energy_system_folder_path = Path(
-            self.dataset_path_resolver.folder_of_set("energy_system")
-        )
-        self.unit_handling = UnitHandling(
-            energy_system_folder_path, self.config.solver.rounding_decimal_points_units
-        )
-        self.service_container.register("unit_handling", self.unit_handling)
-        self.service_container.build_and_register(
-            "input_repository", InputRepository, folder_path=energy_system_folder_path
-        )
-        self.energy_system = self.service_container.build_and_register(
-            "energy_system", EnergySystem
-        )
-        self.element_registry = self.service_container.build_and_register(
-            "element_registry", ElementRegistry
-        )
-        self.element_registry.register_elements()
-
-        # check if all elements from the scenario_dict are in the model
-        self.scenario_dict.check_if_all_elements_in_model(self.element_registry)
-
-        # store input data into elements
-        self.store_input_data()
-
-        # conduct consistency checks of input units
-        self.unit_handling.consistency_checks_input_units(
-            self.config, self.energy_system, self.element_registry
-        )
-
-        # conduct time series aggregation
-        self.service_container.build_and_register(
-            "time_series_aggregation", TimeSeriesAggregation
-        )
+        self.optimized_time_steps = optimized_time_steps
+        self.steps_horizon = steps_horizon
 
         self.zen_model = self.service_container.build_and_register(
             "zen_model", ZenModel
         )
 
-    def store_input_data(self):
-        """Read the input and conducts the time series aggregation."""
-        logger.info("\n--- Read input data of elements --- \n")
-        self.energy_system.store_input_data()
-        for element in self.element_registry.all_elements():
-            element_class = [
-                k for k, v in ELEMENT_TYPE_CLASSES.items() if v == element.__class__
-            ][0]
-            logger.info(f"Create {element_class} {element.name}")
-            element.store_input_data()
+    def run_step(
+        self,
+        scenario: str,
+        step: int,
+        model_name: str,
+        config: "DefaultConfig",
+        steps_horizon_keys: list[int],
+        no_solve: bool = False,
+    ) -> bool:
+        """Run the optimization step.
+
+        :param scenario: The scenario to run the optimization for.
+        :param steps_horizon: The steps of the rolling horizon.
+        :param step: The current step of the rolling horizon.
+        :param no_solve: If True, the optimization problem will be constructed
+            but not solved. Defaults to False.
+        :return: True if the optimization was successful, False otherwise
+        """
+        StringUtils.print_optimization_progress(
+            scenario, steps_horizon_keys, step, system=self.config.system
+        )
+        # overwrite time indices
+        self.overwrite_time_indices(step)
+        # create optimization problem
+        self.construct_optimization_problem()
+        self.prepare_scaling()
+
+        if no_solve:
+            logger.info(
+                "Optimization problem constructed but not solved "
+                "(no_solve=True). Continue with next iteration."
+            )
+            return True
+
+        # SOLVE THE OPTIMIZATION PROBLEM
+        self.solve(scenario)
+
+        # break if infeasible
+        if not self.optimality:
+            # write IIS
+            self.write_IIS(scenario)
+            assert self.zen_model is not None
+            logger.warning(
+                f"Optimization: " f"{self.zen_model.lp_model.termination_condition}"
+            )
+            return False
+
+        self.re_scale()
+        self.add_results_of_optimization_step(step)
+
+        # EVALUATE RESULTS
+        scenario_name, subfolder, param_map = StringUtils.generate_folder_path(
+            config=config,
+            scenario=scenario,
+            scenario_dict=self.scenario_dict,
+            steps_horizon=steps_horizon_keys,
+            step=step,
+        )
+        self.write_results(
+            scenarios=config.scenarios,
+            subfolder=subfolder,
+            model_name=model_name,
+            scenario_name=scenario_name,
+            param_map=param_map,
+        )
+
+        return True
 
     def construct_optimization_problem(self) -> ZenModel:
         """Constructs the optimization problem."""
@@ -184,47 +175,6 @@ class OptimizationSetup(object):
         )
 
         return self.zen_model
-
-    def get_optimization_horizon(self):
-        """Returns list of optimization horizon steps."""
-        # if using rolling horizon
-        if self.config.system.use_rolling_horizon:
-            assert (
-                self.config.system.years_in_rolling_horizon
-                >= self.config.system.years_in_decision_horizon
-            ), (
-                "There must be at least the same number of years in the rolling"
-                "horizon as the decision horizon. years_in_rolling_horizon"
-                f"({self.config.system.years_in_rolling_horizon}) "
-                "< years_in_decision_horizon "
-                f"({self.config.system.years_in_decision_horizon})"
-            )
-            self.years_in_horizon = self.config.system.years_in_rolling_horizon
-            time_steps_yearly = self.energy_system.set_years
-            # skip years_in_decision_horizon years
-            self.optimized_time_steps = [
-                year
-                for year in time_steps_yearly
-                if (
-                    year % self.config.system.years_in_decision_horizon == 0
-                    or year == time_steps_yearly[-1]
-                )
-            ]
-            self.steps_horizon = {
-                year: list(
-                    range(
-                        year,
-                        min(year + self.years_in_horizon, max(time_steps_yearly) + 1),
-                    )
-                )
-                for year in self.optimized_time_steps
-            }
-        # if no rolling horizon
-        else:
-            self.years_in_horizon = len(self.energy_system.set_years)
-            self.optimized_time_steps = [0]
-            self.steps_horizon = {0: self.energy_system.set_years}
-        return list(self.steps_horizon.keys())
 
     def get_decision_horizon(self, step_horizon):
         """Return the decision horizon.
@@ -249,33 +199,37 @@ class OptimizationSetup(object):
 
         :param step_horizon: step of the rolling horizon
         """
-        if self.config.system.use_rolling_horizon:
-            time_steps_yearly_horizon = self.steps_horizon[step_horizon]
-            base_time_steps_horizon = self.time_steps.decode_yearly_time_steps(
-                time_steps_yearly_horizon
-            )
-            # overwrite aggregated time steps - operation
-            set_time_steps_operation = self.time_steps.encode_time_step(
-                base_time_steps=base_time_steps_horizon, time_step_type="operation"
-            )
-            # overwrite aggregated time steps - storage
-            set_time_steps_storage = self.time_steps.encode_time_step(
-                base_time_steps=base_time_steps_horizon, time_step_type="storage"
-            )
-            # copy invest time steps
-            time_steps_operation = set_time_steps_operation.squeeze().tolist()
-            time_steps_storage = set_time_steps_storage.squeeze().tolist()
-            if isinstance(time_steps_operation, int):
-                time_steps_operation = [time_steps_operation]
-                time_steps_storage = [time_steps_storage]
-            self.time_steps.time_steps_operation = time_steps_operation
-            self.time_steps.time_steps_storage = time_steps_storage
-            # overwrite base time steps and yearly base time steps
-            new_base_time_steps_horizon = base_time_steps_horizon.squeeze().tolist()
-            if not isinstance(new_base_time_steps_horizon, list):
-                new_base_time_steps_horizon = [new_base_time_steps_horizon]
-            self.energy_system.set_hours_all_years = new_base_time_steps_horizon
-            self.energy_system.set_years = time_steps_yearly_horizon
+        if not self.config.system.use_rolling_horizon:
+            return
+
+        time_steps_yearly_horizon = self.steps_horizon[step_horizon]
+        base_time_steps_horizon = self.time_steps.decode_yearly_time_steps(
+            time_steps_yearly_horizon
+        )
+        # overwrite aggregated time steps - operation
+        set_time_steps_operation = self.time_steps.encode_time_step(
+            base_time_steps=base_time_steps_horizon, time_step_type="operation"
+        )
+        # overwrite aggregated time steps - storage
+        set_time_steps_storage = self.time_steps.encode_time_step(
+            base_time_steps=base_time_steps_horizon, time_step_type="storage"
+        )
+        # copy invest time steps
+        assert isinstance(set_time_steps_operation, np.ndarray)
+        assert isinstance(set_time_steps_storage, np.ndarray)
+        time_steps_operation = set_time_steps_operation.squeeze().tolist()
+        time_steps_storage = set_time_steps_storage.squeeze().tolist()
+        if isinstance(time_steps_operation, int):
+            time_steps_operation = [time_steps_operation]
+            time_steps_storage = [time_steps_storage]
+        self.time_steps.time_steps_operation = time_steps_operation
+        self.time_steps.time_steps_storage = time_steps_storage
+        # overwrite base time steps and yearly base time steps
+        new_base_time_steps_horizon = base_time_steps_horizon.squeeze().tolist()
+        if not isinstance(new_base_time_steps_horizon, list):
+            new_base_time_steps_horizon = [new_base_time_steps_horizon]
+        self.energy_system.set_hours_all_years = new_base_time_steps_horizon
+        self.energy_system.set_years = time_steps_yearly_horizon
 
     def prepare_scaling(self):
         """Prepare scaling of the optimization problem."""

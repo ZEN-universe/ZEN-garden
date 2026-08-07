@@ -11,7 +11,7 @@ from importlib.metadata import version
 from pathlib import Path
 
 from zen_garden.default_config import Config
-from zen_garden.optimization_setup import OptimizationSetup
+from zen_garden.optimization_workflow import OptimizationWorkflow
 from zen_garden.plugin_system.loader import register_plugins
 from zen_garden.utils.input_data_checks import InputDataChecks
 from zen_garden.utils.scenario_utils import ScenarioUtils
@@ -150,63 +150,14 @@ def run(
 
     ## ITERATE THROUGH SCENARIOS
     scenarios, model_name = prepare_scenarios(config, job_index)
-    optimization_setup = None
+    optimization_workflow = None
     for scenario, scenario_dict in scenarios:
         # FORMULATE THE OPTIMIZATION PROBLEM
         # add the scenario_dict and read input data
-        optimization_setup = OptimizationSetup(config, scenario_dict, input_data_checks)
-        # get rolling horizon years
-        steps_horizon = optimization_setup.get_optimization_horizon()
-        # iterate through horizon steps
-        for step in steps_horizon:
-            StringUtils.print_optimization_progress(
-                scenario, steps_horizon, step, system=config.system
-            )
-            # overwrite time indices
-            optimization_setup.overwrite_time_indices(step)
-            # create optimization problem
-            optimization_setup.construct_optimization_problem()
-            optimization_setup.prepare_scaling()
-
-            if no_solve:
-                logger.info(
-                    "Optimization problem constructed but not solved "
-                    "(no_solve=True). Continue with next iteration."
-                )
-                continue
-
-            # SOLVE THE OPTIMIZATION PROBLEM
-            optimization_setup.solve(scenario)
-
-            # break if infeasible
-            if not optimization_setup.optimality:
-                # write IIS
-                optimization_setup.write_IIS(scenario)
-                assert optimization_setup.zen_model is not None
-                logger.warning(
-                    f"Optimization: "
-                    f"{optimization_setup.zen_model.lp_model.termination_condition}"
-                )
-                break
-
-            optimization_setup.re_scale()
-            optimization_setup.add_results_of_optimization_step(step)
-
-            # EVALUATE RESULTS
-            scenario_name, subfolder, param_map = StringUtils.generate_folder_path(
-                config=config,
-                scenario=scenario,
-                scenario_dict=scenario_dict,
-                steps_horizon=steps_horizon,
-                step=step,
-            )
-            optimization_setup.write_results(
-                scenarios=config.scenarios,
-                subfolder=subfolder,
-                model_name=model_name,
-                scenario_name=scenario_name,
-                param_map=param_map,
-            )
+        optimization_workflow = OptimizationWorkflow(
+            config, scenario_dict, input_data_checks
+        )
+        optimization_workflow.run_steps(scenario, model_name, config, no_solve)
 
     logger.info("\n--- Optimization finished ---")
-    return optimization_setup
+    return optimization_workflow

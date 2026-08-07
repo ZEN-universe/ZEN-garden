@@ -28,7 +28,7 @@ class StorageTechnologyCapexConstraint(GenericConstraint):
 
         # check if we need to continue
         if len(index_values) == 0:
-            return []
+            return
 
         ### masks
         # not necessary
