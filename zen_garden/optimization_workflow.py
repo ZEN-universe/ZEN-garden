@@ -82,16 +82,9 @@ class OptimizationWorkflow:
             "dataset_path_resolver", DatasetPathResolver
         )
 
-        input_data_checks.config = self.config
-        input_data_checks.dataset_path_resolver = self.dataset_path_resolver
-        # check if input data exists
-        input_data_checks.check_primary_folder_structure()
-        # check if all needed data inputs for the chosen technologies exist
-        # remove non-existent inputs
-        input_data_checks.check_existing_technology_data()
-        self.service_container.register("input_data_checks", input_data_checks)
-
         # dict to update elements according to scenario
+        # WARNING: ScenarioDict::__init__ updates the config object!
+        # Hence, input_data_checks must be initialized after ScenarioDict
         scenario_dict = ScenarioDict(
             init_scenario_dict,
             self.dataset_path_resolver,
@@ -99,6 +92,16 @@ class OptimizationWorkflow:
             ELEMENT_TYPE_CLASSES,
         )
         self.service_container.register("scenario_dict", scenario_dict)
+
+        input_data_checks.config = self.config
+        input_data_checks.dataset_path_resolver = self.dataset_path_resolver
+        # check if input data exists
+        input_data_checks.check_primary_folder_structure()
+        # check if all needed data inputs for the chosen technologies exist and
+        # remove non-existent inputs
+        # WARNING: This function modifies the config object!
+        input_data_checks.check_existing_technology_data()
+        self.service_container.register("input_data_checks", input_data_checks)
 
         # initiate dictionary for storing extra year data
         self.service_container.register("year_specific_ts", YearSpecificTs())
