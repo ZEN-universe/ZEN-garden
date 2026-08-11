@@ -3,6 +3,11 @@
 This file gets automatically updated in ZEN-garden's continuous integration 
 procedures. Do not edit the file manually.
 
+## [Unversioned Changes] - 2026-08-11 
+
+### Maintenance Tasks 🧹
+- move code from results class to compute energy balance dataframes to ZEN-temple. [[🔀 PR #1281](https://github.com/ZEN-universe/ZEN-garden/pull/1281) @manud99]
+
 ## [v2.13.0] - 2026-07-01 
 
 ### New Features ✨
