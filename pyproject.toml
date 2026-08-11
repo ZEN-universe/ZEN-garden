@@ -31,7 +31,7 @@ dependencies = [
     "pint",
     "tables",
     "pydantic",
-    "tsam>=3.0,<4.0",
+    "tsam<4.0",
     "h5py",
     "filelock",
     "ordered-set",
