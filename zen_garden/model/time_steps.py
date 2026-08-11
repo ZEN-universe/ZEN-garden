@@ -66,7 +66,7 @@ class TimeStepsDicts(object):
 
         :param tsa: time series aggregation object
         """
-        self.time_steps_operation = list(tsa.set_time_steps)
+        self.time_steps_operation = list(tsa.set_hours)
         self.time_steps_operation_duration = tsa.time_steps_duration
         self.sequence_time_steps_operation = tsa.sequence_time_steps
 

@@ -1,4 +1,4 @@
-"""Functions to apply time series aggregation to time series."""
+﻿"""Functions to apply time series aggregation to time series."""
 
 import copy
 import logging
@@ -28,10 +28,10 @@ class TimeSeriesAggregation(object):
         self.optimization_setup = energy_system.optimization_setup
         self.system = self.optimization_setup.system
         self.analysis = self.optimization_setup.analysis
-        self.header_set_time_steps = self.analysis.header_data_inputs.set_time_steps
-        # if set_time_steps as input (because already aggregated), use this as
-        # base time step, otherwise self.set_base_time_steps
-        self.set_base_time_steps = self.energy_system.set_base_time_steps_yearly
+        self.header_set_time_steps = self.analysis.header_data_inputs.set_hours
+        # if set_hours as input (because already aggregated), use this as
+        # base time step, otherwise self.set_hours
+        self.set_hours_unaggregated = self.energy_system.set_hours
         self.number_typical_periods = min(
             self.system.unaggregated_time_steps_per_year,
             self.system.aggregated_time_steps_per_year,
@@ -40,7 +40,7 @@ class TimeSeriesAggregation(object):
         self.get_excluded_ts()
         # if number of time steps >= number of base time steps, skip aggregation
         if (
-            self.number_typical_periods < np.size(self.set_base_time_steps)
+            self.number_typical_periods < np.size(self.set_hours_unaggregated)
             and self.system.conduct_time_series_aggregation
         ):
             # select time series
@@ -60,10 +60,10 @@ class TimeSeriesAggregation(object):
                 self.single_ts_tsa()
         else:
             self.typical_periods = pd.DataFrame()
-            set_time_steps = self.set_base_time_steps
+            set_hours = self.set_hours_unaggregated
             time_step_duration = (
                 self.energy_system.time_steps.calculate_time_step_duration(
-                    set_time_steps, self.set_base_time_steps
+                    set_hours, self.set_hours_unaggregated
                 )
             )
             sequence_time_steps = np.concatenate(
@@ -72,9 +72,7 @@ class TimeSeriesAggregation(object):
                     for time_step in time_step_duration
                 ]
             )
-            self.set_time_attributes(
-                set_time_steps, time_step_duration, sequence_time_steps
-            )
+            self.set_time_attributes(set_hours, time_step_duration, sequence_time_steps)
             # set aggregated time series
             self.set_aggregated_ts_all_elements()
         # set aggregated time steps to time step object
@@ -181,7 +179,7 @@ class TimeSeriesAggregation(object):
                 df_ts = raw_ts[ts].unstack(level=index_names)
 
                 df_aggregated_ts = pd.DataFrame(
-                    index=self.set_time_steps, columns=df_ts.columns
+                    index=self.set_hours, columns=df_ts.columns
                 )
                 # columns which are in aggregated time series and which are not
                 if (
@@ -297,7 +295,7 @@ class TimeSeriesAggregation(object):
         :param df: dataframe that is manually aggregated
         :return: agg_df: aggregated dataframe
         """
-        agg_df = pd.DataFrame(index=self.set_time_steps, columns=df.columns)
+        agg_df = pd.DataFrame(index=self.set_hours, columns=df.columns)
         tsa_options = self.analysis.time_series_aggregation
         if tsa_options["representationMethod"] == "meanRepresentation":
             representation_method = "mean"
@@ -325,7 +323,7 @@ class TimeSeriesAggregation(object):
                 "series"
             )
 
-        for time_step in self.set_time_steps:
+        for time_step in self.set_hours:
             df_slice = df.loc[self.sequence_time_steps == time_step]
             if representation_method == "mean":
                 agg_df.loc[time_step] = df_slice.mean(axis=0)
@@ -338,7 +336,7 @@ class TimeSeriesAggregation(object):
         non-constant time series to a pd.DataFrame.
 
         :param element: element of the optimization
-        :param header_set_time_steps: name of set_time_steps
+        :param header_set_time_steps: name of set_hours
         :return: df_ts_raw: pd.DataFrame with non-constant time series
         """
         dict_raw_ts = {}
@@ -376,11 +374,11 @@ class TimeSeriesAggregation(object):
             new_sequence_time_steps: new sequence of time steps updated with
                 year specific TSA sequence
         """
-        header_set_time_steps = self.analysis.header_data_inputs.set_time_steps
-        # only run specific TSA if TSA is activated and set_base_time_steps >
-        # aggregated_time_steps
+        header_set_time_steps = self.analysis.header_data_inputs.set_hours
+        # only run specific TSA if TSA is activated and
+        # set_hours_unaggregated > aggregated_time_steps
         if (
-            self.number_typical_periods < np.size(self.set_base_time_steps)
+            self.number_typical_periods < np.size(self.set_hours_unaggregated)
             and self.system.conduct_time_series_aggregation
         ):
             for year in self.optimization_setup.year_specific_ts:
@@ -464,11 +462,11 @@ class TimeSeriesAggregation(object):
             list_sequence_time_steps
         )
         if unique_time_steps_sequences:
-            set_time_steps, time_steps_duration, sequence_time_steps = (
+            set_hours, time_steps_duration, sequence_time_steps = (
                 unique_time_steps_sequences
             )
             # set sequence time steps
-            self.time_steps.time_steps_operation = set_time_steps
+            self.time_steps.time_steps_operation = set_hours
             self.time_steps.time_steps_operation_duration = time_steps_duration
             self.time_steps.sequence_time_steps_operation = sequence_time_steps
             # time series parameters
@@ -489,7 +487,7 @@ class TimeSeriesAggregation(object):
         :param element: element of the optimization
         :param old_sequence_time_steps: old order of operational time steps
         """
-        header_set_time_steps = self.analysis.header_data_inputs.set_time_steps
+        header_set_time_steps = self.analysis.header_data_inputs.set_hours
         idx_old2new = np.array(
             [
                 np.unique(
@@ -530,7 +528,7 @@ class TimeSeriesAggregation(object):
 
         :param element: element of the optimization
         """
-        header_set_time_steps = self.analysis.header_data_inputs.set_time_steps
+        header_set_time_steps = self.analysis.header_data_inputs.set_hours
         for ts in element.raw_time_series:
             if element.raw_time_series[ts] is not None:
                 # multiply with yearly variation
@@ -559,12 +557,10 @@ class TimeSeriesAggregation(object):
             yearly_variation = getattr(
                 element.data_input, ts_name + "_yearly_variation"
             )
-            header_set_time_steps = self.analysis.header_data_inputs.set_time_steps
-            header_set_time_steps_yearly = (
-                self.analysis.header_data_inputs.set_time_steps_yearly
-            )
+            header_set_time_steps = self.analysis.header_data_inputs.set_hours
+            header_set_years = self.analysis.header_data_inputs.set_years
             ts_df = ts.unstack(header_set_time_steps)
-            yearly_variation = yearly_variation.unstack(header_set_time_steps_yearly)
+            yearly_variation = yearly_variation.unstack(header_set_years)
             # if only one unique value
             if len(np.unique(yearly_variation)) == 1:
                 ts = ts_df.stack() * np.unique(yearly_variation)[0]
@@ -582,7 +578,7 @@ class TimeSeriesAggregation(object):
                 )
                 ts = ts_df.stack()
             else:
-                for year in self.energy_system.set_time_steps_yearly:
+                for year in self.energy_system.set_years:
                     if not all(yearly_variation[year] == 1):
                         base_time_steps = (
                             self.energy_system.time_steps.decode_time_step(
@@ -614,7 +610,7 @@ class TimeSeriesAggregation(object):
         :param element: element of the time series
         :param ts: time series to add
         :param new_ts: new time series to add year specific values to
-        :param header_set_time_steps: name of set_time_steps
+        :param header_set_time_steps: name of set_hours
         """
         if self.conducted_tsa:
             for year in self.year_specific_tsa.keys():
@@ -670,7 +666,7 @@ class TimeSeriesAggregation(object):
     def repeat_sequence_time_steps_for_all_years(self):
         """This method repeats the operational time series for all years."""
         logging.info("Repeat the time series sequences for all years")
-        optimized_years = len(self.energy_system.set_time_steps_yearly)
+        optimized_years = len(self.energy_system.set_years)
         # concatenate the order of time steps and link with investment and yearly
         # time steps
         old_sequence_time_steps = self.time_steps.sequence_time_steps_operation
@@ -744,7 +740,7 @@ class TimeSeriesAggregation(object):
             list_sequence_time_steps: list of operational and investment time steps
 
         Returns:
-            tuple: (set_time_steps, time_steps_duration, sequence_time_steps)
+            tuple: (set_hours, time_steps_duration, sequence_time_steps)
                 time steps, duration and sequence
         """
         sequence_time_steps = np.zeros(
@@ -767,12 +763,12 @@ class TimeSeriesAggregation(object):
             or len(np.unique(combined_sequence_time_steps[0, :])) == 1
         ):
             return None
-        set_time_steps = []
+        set_hours = []
         time_steps_duration = {}
         for idx_unique_time_steps, count_unique_time_steps in enumerate(
             count_combined_time_steps
         ):
-            set_time_steps.append(idx_unique_time_steps)
+            set_hours.append(idx_unique_time_steps)
             time_steps_duration[idx_unique_time_steps] = count_unique_time_steps
             unique_time_step = unique_combined_time_steps[:, idx_unique_time_steps]
             idx_input = np.argwhere(
@@ -780,7 +776,7 @@ class TimeSeriesAggregation(object):
             )
             # fill new order time steps
             sequence_time_steps[idx_input] = idx_unique_time_steps
-        return (set_time_steps, time_steps_duration, sequence_time_steps)
+        return (set_hours, time_steps_duration, sequence_time_steps)
 
     def single_ts_tsa(self):
         """Manually aggregates the constant time series to single ts."""
@@ -792,27 +788,23 @@ class TimeSeriesAggregation(object):
             )
             self.number_typical_periods = 1
         unaggregated_time_steps = self.system.unaggregated_time_steps_per_year
-        set_time_steps = [0]
+        set_hours = [0]
         time_steps_duration = {0: unaggregated_time_steps}
-        sequence_time_steps = np.hstack(set_time_steps * unaggregated_time_steps)
-        self.set_time_attributes(
-            set_time_steps, time_steps_duration, sequence_time_steps
-        )
+        sequence_time_steps = np.hstack(set_hours * unaggregated_time_steps)
+        self.set_time_attributes(set_hours, time_steps_duration, sequence_time_steps)
         # create empty typical_period df
-        self.typical_periods = pd.DataFrame(index=set_time_steps)
+        self.typical_periods = pd.DataFrame(index=set_hours)
         # set aggregated time series
         self.set_aggregated_ts_all_elements()
         self.conducted_tsa = True
 
-    def set_time_attributes(
-        self, set_time_steps, time_steps_duration, sequence_time_steps
-    ):
+    def set_time_attributes(self, set_hours, time_steps_duration, sequence_time_steps):
         """This method sets the operational time attributes of an element.
 
-        :param set_time_steps: set_time_steps of operation
+        :param set_hours: set_hours of operation
         :param time_steps_duration: time_steps_duration of operation
         :param sequence_time_steps: sequence of operation
         """
-        self.set_time_steps = set_time_steps
+        self.set_hours = set_hours
         self.time_steps_duration = time_steps_duration
         self.sequence_time_steps = sequence_time_steps
