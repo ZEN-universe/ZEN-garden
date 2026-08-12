@@ -129,7 +129,7 @@ don't worry, the TSA is disabled and it behaves as if
 
 Additionally, you can exclude parameters for specific elements from the 
 clustering process. This is useful if you have time series that should not 
-influence the clustering process. This could, for example, a helper time series 
+influence the clustering process. This could, for example, be a helper time series
 to artificially decrease the capacity factor of a technology. To exclude 
 parameters from the TSA, create a csv file named 
 ``exclude_parameter_from_TSA.csv`` in the ``energy_system`` folder. In this 
@@ -195,8 +195,8 @@ Additional information
    where you can set the ``clusterMethod``, ``solver``, ``extremePeriodMethod`` 
    and ``representationMethod``. Most importantly, the ``clusterMethod`` selects 
    which algorithm is used to determine the clusters of representative time 
-   steps. Probably, the most common ones are `k_means 
-   <https://en.wikipedia.org/wiki/K-means_clustering>`_ and `k_medoids 
+   steps. Probably, the most common ones are `kmeans
+   <https://en.wikipedia.org/wiki/K-means_clustering>`_ and `kmedoids
    <https://en.wikipedia.org/wiki/K-medoids>`_. While it is probably not 
    necessary at this point to understand the difference of k-means and k-medoids 
    in detail, it is important to know that k-means averages the input data over 

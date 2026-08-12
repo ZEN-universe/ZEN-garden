@@ -6,7 +6,8 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 import pandas as pd
-import tsam.timeseriesaggregation as tsam
+import tsam
+from tsam import ClusterConfig, ExtremeConfig
 
 from zen_garden.elements.element import Element
 
@@ -90,7 +91,7 @@ class TimeSeriesAggregation(object):
                     for time_step in time_step_duration
                 ]
             )
-            self.set_time_attributes(set_hours, time_step_duration, sequence_time_steps)
+            self.set_time_attributes(time_step_duration, sequence_time_steps)
             # set aggregated time series
             self.set_aggregated_ts_all_elements()
         # set aggregated time steps to time step object
@@ -145,32 +146,36 @@ class TimeSeriesAggregation(object):
         """This method runs the time series aggregation."""
         # substitute column names
         self.substitute_column_names(direction="flatten", year_specific=year_specific)
-        # create aggregation object
-        self.aggregation = tsam.TimeSeriesAggregation(
-            timeSeries=self.df_ts_raw,
-            noTypicalPeriods=self.number_typical_periods,
-            hoursPerPeriod=self.config.analysis.time_series_aggregation.hoursPerPeriod,
-            resolution=self.config.analysis.time_series_aggregation.resolution,
-            clusterMethod=self.config.analysis.time_series_aggregation.clusterMethod,
+        cluster_config = ClusterConfig(
+            method=self.config.analysis.time_series_aggregation.clusterMethod,
             solver=self.config.analysis.time_series_aggregation.solver,
-            extremePeriodMethod=(
-                self.config.analysis.time_series_aggregation.extremePeriodMethod
-            ),
-            rescaleClusterPeriods=(
+            representation=self.config.analysis.time_series_aggregation.representationMethod
+        )
+        if (self.config.analysis.time_series_aggregation.extremePeriodMethod.lower()
+                == 'none'):
+            extreme_config = None
+        else:
+            extreme_config = ExtremeConfig(
+                method=self.config.analysis.time_series_aggregation.extremePeriodMethod
+            )
+        self.aggregation = tsam.aggregate(
+            data=self.df_ts_raw,
+            n_clusters=self.number_typical_periods,
+            period_duration=self.config.analysis.time_series_aggregation.hoursPerPeriod,
+            temporal_resolution=self.config.analysis.time_series_aggregation.resolution,
+            cluster=cluster_config,
+            extremes=extreme_config,
+            preserve_column_means=(
                 self.config.analysis.time_series_aggregation.rescaleClusterPeriods
-            ),
-            representationMethod=(
-                self.config.analysis.time_series_aggregation.representationMethod
-            ),
+            )
         )
         # create typical periods
-        self.typical_periods = self.aggregation.createTypicalPeriods().reset_index(
+        self.typical_periods = self.aggregation.cluster_representatives.reset_index(
             drop=True
         )
         self.set_time_attributes(
-            self.aggregation.clusterPeriodIdx,
-            self.aggregation.clusterPeriodNoOccur,
-            self.aggregation.clusterOrder,
+            self.aggregation.cluster_counts,
+            self.aggregation.cluster_assignments,
         )
         # resubstitute column names
         self.substitute_column_names(direction="raise")
@@ -311,15 +316,15 @@ class TimeSeriesAggregation(object):
         """
         agg_df = pd.DataFrame(index=self.set_hours, columns=df.columns)
         tsa_options = self.config.analysis.time_series_aggregation
-        if tsa_options["representationMethod"] == "meanRepresentation":
+        if tsa_options["representationMethod"] == "mean":
             representation_method = "mean"
-        elif tsa_options["representationMethod"] == "mediodRepresentation":
+        elif tsa_options["representationMethod"] == "mediod":
             representation_method = "median"
         elif tsa_options["representationMethod"] is None:
-            if tsa_options["clusterMethod"] == "k_means":
+            if tsa_options["clusterMethod"] == "kmeans":
                 representation_method = "mean"
             elif (
-                tsa_options["clusterMethod"] == "k_medoids"
+                tsa_options["clusterMethod"] == "kmedoids"
                 or tsa_options["clusterMethod"] == "hierarchical"
             ):
                 representation_method = "median"
@@ -783,20 +788,22 @@ class TimeSeriesAggregation(object):
         set_hours = [0]
         time_steps_duration = {0: unaggregated_time_steps}
         sequence_time_steps = np.hstack(set_hours * unaggregated_time_steps)
-        self.set_time_attributes(set_hours, time_steps_duration, sequence_time_steps)
+        self.set_time_attributes(time_steps_duration, sequence_time_steps)
         # create empty typical_period df
         self.typical_periods = pd.DataFrame(index=set_hours)
         # set aggregated time series
         self.set_aggregated_ts_all_elements()
         self.conducted_tsa = True
 
-    def set_time_attributes(self, set_hours, time_steps_duration, sequence_time_steps):
+    def set_time_attributes(self, time_steps_duration, sequence_time_steps):
         """This method sets the operational time attributes of an element.
 
-        :param set_hours: set_hours of operation
         :param time_steps_duration: time_steps_duration of operation
         :param sequence_time_steps: sequence of operation
         """
-        self.set_hours = set_hours
+        self.set_hours = list(time_steps_duration.keys())
+        # ensure that time step durations are integers
+        for key in time_steps_duration.keys():
+            time_steps_duration[key] = int(time_steps_duration[key])
         self.time_steps_duration = time_steps_duration
         self.sequence_time_steps = sequence_time_steps

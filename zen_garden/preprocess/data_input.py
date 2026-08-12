@@ -9,7 +9,6 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 import pandas as pd
-from scipy.stats import linregress
 
 if TYPE_CHECKING:
     from zen_garden.elements.element import Element

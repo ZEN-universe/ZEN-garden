@@ -1,8 +1,6 @@
 """Class defining constraints for the optimization model."""
 
 import logging
-import uuid
-from itertools import combinations
 
 import linopy as lp
 import numpy as np

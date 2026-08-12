@@ -200,7 +200,7 @@ class TimeSeriesAggregation(Subscriptable):
     hoursPerPeriod: int = 1  # keep this at 1
     extremePeriodMethod: Optional[str] = "None"
     rescaleClusterPeriods: bool = False
-    representationMethod: str = "meanRepresentation"
+    representationMethod: str = "mean"
     resolution: int = 1
 
 
