@@ -52,6 +52,11 @@ class ConversionTechnology(Technology):
         super().store_input_data()
         # get conversion efficiency and capex
         self.get_conversion_factor()
+        self.capex_specific_conversion = self.data_input.extract_input_data(
+            "capex_specific_conversion",
+            index_sets=["set_nodes", "set_years"],
+            unit_category={"money": 1, "energy_quantity": -1, "time": 1},
+        )
         self.opex_specific_fixed = self.data_input.extract_input_data(
             "opex_specific_fixed",
             index_sets=["set_nodes", "set_years"],
@@ -101,22 +106,11 @@ class ConversionTechnology(Technology):
 
     def convert_to_fraction_of_capex(self):
         """This method retrieves the total capex and converts it to annualized capex."""
-        pwa_capex, self.capex_is_pwa = self.data_input.extract_pwa_capex()
-        assert pwa_capex is not None
+
         # annualize cost_capex_overnight
         fraction_year = self.calculate_fraction_of_year()
         self.opex_specific_fixed = self.opex_specific_fixed * fraction_year
-        if not self.capex_is_pwa:
-            self.capex_specific_conversion = pwa_capex["capex"] * fraction_year
-        else:
-            self.pwa_capex = pwa_capex
-            self.pwa_capex["capex"] = [
-                value * fraction_year for value in self.pwa_capex["capex"]
-            ]
-            # set bounds
-            self.pwa_capex["bounds"]["capex"] = tuple(
-                [(bound * fraction_year) for bound in self.pwa_capex["bounds"]["capex"]]
-            )
+        self.capex_specific_conversion = self.capex_specific_conversion * fraction_year
         # calculate capex of existing capacity
         self.capex_capacity_existing = self.calculate_capex_of_capacities_existing()
 
@@ -129,11 +123,6 @@ class ConversionTechnology(Technology):
         """
         if capacity == 0:
             return 0
-        # linear
-        if not self.capex_is_pwa:
-            capex = self.capex_specific_conversion[index[0]].iloc[0] * capacity
-        else:
-            capex = np.interp(
-                capacity, self.pwa_capex["capacity"], self.pwa_capex["capex"]
-            )
+        capex = self.capex_specific_conversion[index[0]].iloc[0] * capacity
+
         return capex

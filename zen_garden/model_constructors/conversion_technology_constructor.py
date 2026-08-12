@@ -9,7 +9,6 @@ from typing_extensions import override
 
 from zen_garden.constraints.conversion_technology import (
     CONVERSION_TECHNOLOGY_CONSTRAINTS,
-    CapacityCapexCouplingConstraint,
     LinearCapexConstraint,
 )
 from zen_garden.elements.conversion_technology import ConversionTechnology
@@ -76,19 +75,14 @@ class ConversionTechnologyConstructor(ModelConstructor):
     def construct_params(self):
         logger.info("Constructing parameters for ConversionTechnology")
         # slope of linearly modeled capex
-        capex_data, capex_units = self.get_capex_all_elements(
+        self.add_parameter(
+            name="capex_specific_conversion",
             index_names=[
                 "set_conversion_technologies",
-                "set_capex_linear",
                 "set_nodes",
                 "set_years",
             ],
-        )
-        self.zen_model.add_parameter(
-            name="capex_specific_conversion",
-            doc="Parameter specifying the slope of the capex if approximated linearly",
-            data=capex_data,
-            dict_of_units=capex_units,
+            doc="Parameter specifying the slope of the linear capex",
         )
         # slope of linearly modeled conversion efficiencies
         self.add_parameter(
@@ -225,27 +219,6 @@ class ConversionTechnologyConstructor(ModelConstructor):
             doc="Carrier output of conversion technologies",
             unit_category={"energy_quantity": 1, "time": -1},
         )
-        ## pwa Variables - Capex
-        # pwa capacity
-        self.zen_model.add_variable(
-            name="capacity_approximation",
-            index_sets=self.create_custom_set(
-                ["set_conversion_technologies", "set_nodes", "set_years"],
-            ),
-            bounds=(0, np.inf),
-            doc="pwa variable for size of installed technology on edge i and time t",
-            unit_category={"energy_quantity": 1, "time": -1},
-        )
-        # pwa capex technology
-        self.zen_model.add_variable(
-            name="capex_approximation",
-            index_sets=self.create_custom_set(
-                ["set_conversion_technologies", "set_nodes", "set_years"],
-            ),
-            bounds=(0, np.inf),
-            doc="pwa variable for capex for installing technology on edge i and time t",
-            unit_category={"money": 1},
-        )
 
     @override
     def construct_constraints(self):
@@ -255,115 +228,4 @@ class ConversionTechnologyConstructor(ModelConstructor):
             self.service_container.build(ConversionTechnologyConstraint).build()
 
         # capex
-        set_pwa_capex = self.create_custom_set(
-            [
-                "set_conversion_technologies",
-                "set_capex_pwa",
-                "set_nodes",
-                "set_years",
-            ],
-        )
-        set_linear_capex = self.create_custom_set(
-            [
-                "set_conversion_technologies",
-                "set_capex_linear",
-                "set_nodes",
-                "set_years",
-            ],
-        )
-        if len(set_pwa_capex[0]) > 0:
-            # if set_pwa_capex contains technologies:
-            pwa_breakpoints, pwa_values = self.calculate_capex_pwa_breakpoints_values(
-                set_pwa_capex[0]
-            )
-            self.zen_model.add_piecewise_constraint(
-                index_values=set_pwa_capex[0],
-                yvar="capex_approximation",
-                xvar="capacity_approximation",
-                break_points=pwa_breakpoints,
-                f_vals=pwa_values,
-                cons_type="EQ",
-                name="constraint_capex_pwa",
-            )
-
-        if set_linear_capex[0]:
-            # if set_linear_capex contains technologies:
-            self.service_container.build(LinearCapexConstraint).build()
-
-        # Coupling constraints
-        self.service_container.build(CapacityCapexCouplingConstraint).build()
-
-    def calculate_capex_pwa_breakpoints_values(self, set_pwa):
-        """Calculates breakpoints and function values for piecewise affine constraint.
-        Args:
-            set_pwa: Set of variable indices in capex approximation for
-            which pwa is performed.
-        Returns:
-            pwa_breakpoints: Dict of pwa breakpoint values indexed by variable indices.
-            pwa_values: Dict of pwa function values indexed by variable indices.
-        """
-        pwa_breakpoints = {}
-        pwa_values = {}
-
-        # iterate through pwa variable's indices
-        for index in set_pwa:
-            pwa_breakpoints[index] = []
-            pwa_values[index] = []
-            if len(index) > 1:
-                tech = index[0]
-            else:
-                tech = index
-            # retrieve pwa variables
-            pwa_parameter = self.element_registry.get_attribute_of_specific_element(
-                self.element_class, tech, "pwa_capex"
-            )
-            pwa_breakpoints[index] = pwa_parameter["capacity_addition"]
-            pwa_values[index] = pwa_parameter["capex"]
-        return pwa_breakpoints, pwa_values
-
-    def get_capex_all_elements(self, index_names: list[str]):
-        """Similar to Element.get_attribute_of_all_elements but only for capex.
-        If select_pwa, extract pwa attributes, otherwise linear.
-
-        :param index_names: list of index names
-        :return: dict_of_attributes: returns dict of attribute values
-        """
-        class_elements = self.element_registry.all_elements_of_type(
-            ConversionTechnology
-        )
-        dict_of_attributes = {}
-        dict_of_units = {}
-        is_pwa_attribute = "capex_is_pwa"
-        attribute_name_linear = "capex_specific_conversion"
-
-        for element in class_elements:
-            # extract for pwa
-            if not getattr(element, is_pwa_attribute):
-                dict_of_attributes, _, dict_of_units = (
-                    self.element_registry.append_attribute_of_element_to_dict(
-                        element,
-                        attribute_name_linear,
-                        dict_of_attributes,
-                        dict_of_units=dict_of_units,
-                    )
-                )
-
-        if not dict_of_attributes:
-            _, index_names = self.create_custom_set(index_names)
-            return (dict_of_attributes, index_names), dict_of_units
-
-        new_dict_of_attributes = pd.concat(
-            dict_of_attributes, keys=list(dict_of_attributes.keys())
-        )
-
-        if not index_names:
-            raise ValueError(
-                "Initializing the parameter capex without the specifying the "
-                "index names is not possible anymore!",
-            )
-
-        custom_set, index_names = self.create_custom_set(index_names)
-        new_dict_of_attributes = self._check_for_subindex(
-            new_dict_of_attributes, custom_set
-        )
-        return (new_dict_of_attributes, index_names), dict_of_units
+        self.service_container.build(LinearCapexConstraint).build()

@@ -173,8 +173,6 @@ class Parameter(Component):
                 return str(dict_of_units["unit_in_base_units"].units)
             else:
                 unit_series = pd.Series(index=data.index, dtype=str)
-                if name == "capex_specific_conversion":
-                    index_list = [index_list[0]] + index_list[2:]
                 unit_series = unit_series.rename_axis(index=index_list)
                 unit_series = unit_series.sort_index()
                 if "unit_in_base_units" in dict_of_units:

@@ -347,26 +347,6 @@ class SetRegistry(Component):
             return True
         return False
 
-    def _append_set_capex_index(
-        self, element: str, index: str, element_class: "type[Element]"
-    ) -> bool:
-        """Checks if the capex of a technology needs to be modeled as pwa or linear.
-
-        :param element: technology in model
-        :param index: index to check
-        :return model_capex: Bool indicating if capex must be modeled as pwa or linear
-        """
-        if element not in self.sets["set_conversion_technologies"]:
-            return False
-
-        capex_is_pwa = self.element_registry.get_attribute_of_specific_element(
-            element_class, element, "capex_is_pwa"
-        )
-        return not (
-            ("linear" in index and capex_is_pwa)
-            or ("pwa" in index and not capex_is_pwa)
-        )
-
     def _append_on_off_modeled(
         self, element: str, index: str, element_class: "type[Element]"
     ) -> bool:

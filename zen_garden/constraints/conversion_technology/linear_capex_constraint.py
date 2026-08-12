@@ -20,6 +20,8 @@ class LinearCapexConstraint(GenericConstraint):
         technology :math:`h` at node :math:`p` in year :math:`y`
 
         """
+        techs = self.zen_model.sets["set_conversion_technologies"]
+        nodes = self.zen_model.sets["set_nodes"]
         capex_specific_conversion = self.zen_model.parameters.capex_specific_conversion
         capex_specific_conversion = capex_specific_conversion.rename(
             {
@@ -27,23 +29,30 @@ class LinearCapexConstraint(GenericConstraint):
                 for old, new in zip(
                     list(capex_specific_conversion.dims),
                     [
-                        "set_conversion_technologies",
-                        "set_nodes",
+                        "set_technologies",
+                        "set_location",
                         "set_years",
                     ],
                     strict=False,
                 )
             }
         )
+
+        capacity_addition = self.zen_model.variables["capacity_addition"].loc[
+            techs, "power", nodes
+        ]
+        cost_capex_overnight = self.zen_model.variables["cost_capex_overnight"].loc[
+            techs, "power", nodes
+        ]
+
         capex_specific_conversion = capex_specific_conversion.broadcast_like(
-            self.zen_model.variables["capacity_approximation"].lower
+            capacity_addition.lower
         )
         mask = ~np.isnan(capex_specific_conversion)
         lhs = lp.merge(
             [
-                1 * self.zen_model.variables["capex_approximation"],
-                -capex_specific_conversion
-                * self.zen_model.variables["capacity_approximation"],
+                1 * cost_capex_overnight,
+                -capex_specific_conversion * capacity_addition,
             ],
             compat="broadcast_equals",
             join="outer",

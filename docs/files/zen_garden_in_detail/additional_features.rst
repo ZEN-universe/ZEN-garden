@@ -62,17 +62,6 @@ not account for the fact that there might be an initial investment purely from
 the installation before adding the cost for the size of the capacity.
 
 
-.. _additional_features.pwa_conversion_technologies:
-
-**Piecewise affine linearization of the CAPEX of conversion technologies**
-
-The user can specify a ``nonlinear_capex.csv`` file to approximate the CAPEX 
-values of a conversion technology by a set of linear functions. :ref:`input_structure.pwa` 
-provides detailed description on how to use the piecewise affine representation.
-Moreover, :ref:`math_formulation.pwa_constraints` outlines the mathematical constraints that 
-are added.
-
-
 .. _additional_features.year_specific_input_data:
 
 Year-specific hourly time series

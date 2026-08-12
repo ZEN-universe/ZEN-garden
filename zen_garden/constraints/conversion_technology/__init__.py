@@ -2,7 +2,6 @@
 
 from zen_garden.constraints.generic_constraint import GenericConstraint
 
-from .capacity_capex_coupling_constraint import CapacityCapexCouplingConstraint
 from .capacity_factor_conversion_constraint import CapacityFactorConversionConstraint
 from .carrier_conversion_constraint import CarrierConversionConstraint
 from .linear_capex_constraint import LinearCapexConstraint
