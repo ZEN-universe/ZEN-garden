@@ -955,14 +955,8 @@ class Results:
 
 
 if __name__ == "__main__":
-    try:
-        spec = importlib.util.spec_from_file_location("module", "config.py")
-        module = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(module)
-        config = module.config
-    except FileNotFoundError:
-        with open("config.json") as f:
-            config = Config(**json.load(f))
+    with open("config.json") as f:
+        config = Config(**json.load(f))
 
     model_name = os.path.basename(config.analysis.dataset)
     if os.path.exists(
