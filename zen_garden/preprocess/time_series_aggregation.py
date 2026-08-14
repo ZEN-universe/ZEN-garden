@@ -149,10 +149,12 @@ class TimeSeriesAggregation(object):
         cluster_config = ClusterConfig(
             method=self.config.analysis.time_series_aggregation.clusterMethod,
             solver=self.config.analysis.time_series_aggregation.solver,
-            representation=self.config.analysis.time_series_aggregation.representationMethod
+            representation=self.config.analysis.time_series_aggregation.representationMethod,
         )
-        if (self.config.analysis.time_series_aggregation.extremePeriodMethod.lower()
-                == 'none'):
+        if (
+            self.config.analysis.time_series_aggregation.extremePeriodMethod.lower()
+            == "none"
+        ):
             extreme_config = None
         else:
             extreme_config = ExtremeConfig(
@@ -167,7 +169,7 @@ class TimeSeriesAggregation(object):
             extremes=extreme_config,
             preserve_column_means=(
                 self.config.analysis.time_series_aggregation.rescaleClusterPeriods
-            )
+            ),
         )
         # create typical periods
         self.typical_periods = self.aggregation.cluster_representatives.reset_index(

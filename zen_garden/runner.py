@@ -2,11 +2,8 @@
 Compilation  of the optimization problem.
 """
 
-import importlib
-import importlib.util
 import json
 import logging
-import warnings
 from importlib.metadata import version
 from pathlib import Path
 

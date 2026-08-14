@@ -2,7 +2,6 @@
 the results of a model run.
 """
 
-import importlib
 import json
 import logging
 import os
