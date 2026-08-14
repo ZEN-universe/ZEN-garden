@@ -2,7 +2,6 @@
 Compilation  of the optimization problem.
 """
 
-import json
 import logging
 from importlib.metadata import version
 from pathlib import Path
@@ -16,15 +15,6 @@ from zen_garden.utils.string_utils import StringUtils
 from zen_garden.utils.utils import setup_logger
 
 logger = logging.getLogger(__name__)
-
-
-def import_config(config_path) -> Config:
-    config_path = Path(config_path)
-
-    with open(config_path, "r") as f:
-        json_config = json.load(f)
-
-    return Config(**json_config)
 
 
 def adjust_config_paths(
@@ -112,7 +102,7 @@ def run(
     setup_logger(log_level)
 
     config_path = config
-    config = import_config(config_path)
+    config = Config.from_file(config_path)
     register_plugins(config.plugins)
     adjust_config_paths(config, dataset, folder_output, config_path)
 

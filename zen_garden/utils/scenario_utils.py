@@ -1,9 +1,10 @@
-import importlib.util
 import json
 import logging
 import os
 import shutil
 from collections import defaultdict
+
+import yaml
 
 from zen_garden.services.scenario_dict import ScenarioDict
 
@@ -83,32 +84,35 @@ class ScenarioUtils:
         :return: elements in scenario
         """
         if config.system.conduct_scenario_analysis:
-            scenarios_path = os.path.abspath(
-                os.path.join(config.analysis.dataset, "scenarios.json")
-            )
-            if os.path.exists(scenarios_path):
-                with open(scenarios_path, "r") as file:
-                    scenarios = json.load(file)
-            else:
-                scenarios_path = os.path.abspath(
-                    os.path.join(config.analysis.dataset, "scenarios.py")
+            scenarios_path = None
+            for filename in ["scenarios.yaml", "scenarios.yml", "scenarios.json"]:
+                candidate = os.path.join(config.analysis.dataset, filename)
+                if os.path.isfile(candidate):
+                    scenarios_path = os.path.abspath(candidate)
+                    break
+
+            if scenarios_path is None:
+                raise FileNotFoundError(
+                    f"No scenarios file found in dataset '{config.analysis.dataset}'. "
+                    "Expected one of: scenarios.yaml, scenarios.yml, scenarios.json."
                 )
-                if not os.path.exists(scenarios_path):
-                    raise FileNotFoundError(
-                        f"Neither scenarios.json nor scenarios.py not found in "
-                        f"dataset: {config.analysis.dataset}"
-                    )
-                spec = importlib.util.spec_from_file_location("module", scenarios_path)
-                assert (
-                    spec is not None
-                ), f"Could not load scenarios.py from {scenarios_path}. spec is None."
-                module = importlib.util.module_from_spec(spec)
-                assert spec.loader is not None, (
-                    f"Could not load scenarios.py from {scenarios_path}. "
-                    "spec.loader is None."
+
+            try:
+                with open(scenarios_path, "r", encoding="utf-8") as file:
+                    if scenarios_path.endswith((".yaml", ".yml")):
+                        scenarios = yaml.safe_load(file)
+                    else:
+                        scenarios = json.load(file)
+            except (json.JSONDecodeError, yaml.YAMLError) as exc:
+                raise ValueError(
+                    f"Failed to parse scenarios file '{scenarios_path}': {exc}"
+                ) from exc
+
+            if scenarios is None:
+                raise ValueError(
+                    f"Scenarios file '{scenarios_path}' is empty or contains no data."
                 )
-                spec.loader.exec_module(module)
-                scenarios = module.scenarios
+
             config.scenarios.update(scenarios)
             # remove the default scenario if necessary
             if not config.system.run_default_scenario and "" in config.scenarios:
