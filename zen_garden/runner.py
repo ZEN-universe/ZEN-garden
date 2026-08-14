@@ -2,11 +2,8 @@
 Compilation  of the optimization problem.
 """
 
-import importlib
-import importlib.util
 import json
 import logging
-import warnings
 from importlib.metadata import version
 from pathlib import Path
 
@@ -22,29 +19,7 @@ logger = logging.getLogger(__name__)
 
 
 def import_config(config_path) -> Config:
-    # Inform the user about the deprecation of `config.py` instead of renaming the file
-    # if not os.path.exists(config_path):
-    #     config = config_path.replace(".py", ".json")
-
-    # Use pathlib instead of os.path
     config_path = Path(config_path)
-
-    # Handle side-cases with early returns and early warnings
-    if config_path.suffix == ".py":
-        warnings.warn(
-            "Use of the `config.py` file is deprecated and will be removed "
-            "in ZEN-garden v3.0.0. Please switch to using a `config.json` "
-            "file instead.",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-
-        spec = importlib.util.spec_from_file_location("module", config_path)
-        assert spec is not None  # add more specific types for more information
-        module = importlib.util.module_from_spec(spec)
-        assert module is not None and spec.loader is not None
-        spec.loader.exec_module(module)
-        return module.config
 
     with open(config_path, "r") as f:
         json_config = json.load(f)
