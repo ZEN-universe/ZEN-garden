@@ -101,7 +101,7 @@ class TestEvents:
         """
         # Arrange
         plugins = {"fake_plugin": {}}
-        register_plugins(plugins, source_package="tests.unit_tests")
+        register_plugins(plugins, source_package="tests.unit_tests.plugins.fixtures")
         spy = []
 
         # Act

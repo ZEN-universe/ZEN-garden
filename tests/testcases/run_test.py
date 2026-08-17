@@ -189,7 +189,7 @@ def test_1c(folder_path):
     # run the test
     data_set_name = "test_1c"
     run(
-        config=os.path.join(folder_path, "config.json"),
+        config=os.path.join(folder_path, "config.yaml"),
         dataset=os.path.join(folder_path, data_set_name),
         folder_output=os.path.join(folder_path, "outputs"),
     )
