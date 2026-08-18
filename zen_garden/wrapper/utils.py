@@ -182,7 +182,9 @@ def format_capacity_addition(
     suffix: str,
     location_name: str,
 ) -> pd.DataFrame:
-    """Format the capacity addition DataFrame for consistency in column names.
+    """Format the capacity addition DataFrame for consistency.
+
+    Adjusts column names and subtracts one year from the year of capacity addition.
 
     Args:
         capacity_addition_tech (pd.DataFrame): The DataFrame with capacity
@@ -194,13 +196,22 @@ def format_capacity_addition(
     Returns:
         pd.DataFrame: The formatted DataFrame with the correct column names.
     """
-    return capacity_addition_tech.rename(
+    # rename columns for consistency
+    df = capacity_addition_tech.rename(
         columns={
             "location": location_name,
             capacity_type: f"capacity_existing{suffix}",
             "year": "year_construction",
         }
     )
+
+    # Adjust year_construction to be one year earlier than the year of capacity addition
+    # This is required to ensure consistency in lifetime with the capacity planning
+    # model. For example, wind installed in 2025 with 25 year lifetime would otherwise
+    # be included in the operational problem for 2050 but not in the capacity problem.
+    df["year_construction"] = df["year_construction"] - 1
+
+    return df
 
 
 def aggregate_capacity(
