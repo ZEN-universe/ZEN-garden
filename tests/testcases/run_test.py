@@ -2,8 +2,10 @@ import json
 import os
 import warnings
 from collections import defaultdict
+from typing import Any
 
 import numpy as np
+import pandas as pd
 import pytest
 
 from zen_garden import Results, compare_configs, compare_model_values, run
@@ -42,7 +44,7 @@ def compare_variables_results(test_model: str, results: Results, folder_path: st
         test_variables = json.load(f)
     # dictionary to store variable names, indices, values and test values of
     # variables which don't match the test values
-    failed_variables = defaultdict(dict)
+    failed_variables: defaultdict[str, dict[Any, Any]] = defaultdict(dict)
     compare_counter = 0
     # iterate through dataframe rows
     if test_model in test_variables:
@@ -53,6 +55,7 @@ def compare_variables_results(test_model: str, results: Results, folder_path: st
                 for c in test_values:
                     if c in scenario.components:
                         values = results.get_df(c, scenario_name=s)
+                        assert isinstance(values, pd.Series)
                         for test_value in test_values[c]:
                             if isinstance(test_value["index"], list):
                                 if len(test_value["index"]) == 1:
@@ -720,5 +723,5 @@ def test_11a(folder_path):
 
 
 if __name__ == "__main__":
-    folder_path = os.path.dirname(__file__)
-    test_7b(folder_path)
+    testcase_folder = os.path.dirname(__file__)
+    test_7b(testcase_folder)

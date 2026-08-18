@@ -2,7 +2,7 @@
 
 import copy
 import logging
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 import pandas as pd
@@ -41,7 +41,7 @@ class TimeSeriesAggregation(object):
         """
         logger.info("\n--- Time series aggregation ---\n")
         # initiate dictionary for saving year specific TSA results
-        self.year_specific_tsa = {}
+        self.year_specific_tsa: dict[int, dict[tuple[str, str], Any]] = {}
         self.energy_system = energy_system
         self.time_steps = time_steps
         self.config = config

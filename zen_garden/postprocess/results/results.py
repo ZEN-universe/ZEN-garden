@@ -24,14 +24,14 @@ from zen_garden.utils import reformat_slicing_index
 
 logger = logging.getLogger(__name__)
 
-NestedTuple = tuple[list[str]] | tuple[str]
+NestedTuple = tuple[list[str], ...] | tuple[str, ...]
 NestedDict = dict[str, str | list[str]]
 
 
 class Results:
     """The Results class is used to extract and process the results of a model run."""
 
-    def __init__(self, path: str, enable_cache: bool = True):
+    def __init__(self, path: str | os.PathLike[str], enable_cache: bool = True):
         """Initializes the Results class.
 
         :param path: Path to the results folder
@@ -127,8 +127,8 @@ class Results:
         component: Component,
         year: Optional[int] = None,
         discount_to_first_step: bool = True,
-        keep_raw: Optional[bool] = False,
-        index: tuple[str] = None,
+        keep_raw: bool = False,
+        index: tuple[str, ...] | None = None,
     ) -> "pd.DataFrame":
         """Calculates the full timeseries per scenario.
 
@@ -298,9 +298,9 @@ class Results:
         self,
         component_name: str,
         scenario_name: Optional[str] = None,
-        discount_to_first_step: Optional[bool] = True,
+        discount_to_first_step: bool = True,
         year: Optional[int] = None,
-        keep_raw: Optional[bool] = False,
+        keep_raw: bool = False,
         index: Optional[
             Union[NestedTuple, NestedDict, list[str], str, float, int]
         ] = None,
@@ -356,8 +356,8 @@ class Results:
         scenario: Scenario,
         component: Component,
         year: Optional[int] = None,
-        keep_raw: Optional[bool] = False,
-        index: tuple[str] = None,
+        keep_raw: bool = False,
+        index: tuple[str, ...] | None = None,
     ) -> "pd.DataFrame | pd.Series[Any]":
         """Calculates the total values of a component for a specific scenario.
 
@@ -428,7 +428,7 @@ class Results:
         component_name: str,
         year: Optional[int] = None,
         scenario_name: Optional[str] = None,
-        keep_raw: Optional[bool] = False,
+        keep_raw: bool = False,
         index: Optional[
             Union[NestedTuple, NestedDict, list[str], str, float, int]
         ] = None,
@@ -575,7 +575,7 @@ class Results:
         scenario_name: Optional[str] = None,
         year: Optional[int] = None,
         discount_to_first_step: bool = True,
-        keep_raw: Optional[bool] = False,
+        keep_raw: bool = False,
         index: Optional[
             Union[NestedTuple, NestedDict, list[str], str, float, int]
         ] = None,
@@ -654,10 +654,15 @@ class Results:
                     f"{self.get_analysis(scenario_name=scenario_name)}"
                 )
         units = self.get_df(
-            component_name, scenario_name=scenario_name, data_type="units", index=index
+            component_name,
+            scenario_name=scenario_name,
+            data_type="units",
+            index=index,
         )
         if units is None:
             return None
+        if not isinstance(units, pd.Series):
+            raise TypeError(f"Invalid units type: {type(units)}")
         if droplevel:
             # TODO make more flexible
             loc_idx = ["node", "location", "edge", "set_location", "set_nodes"]
@@ -704,10 +709,10 @@ class Results:
         timestep_type = component.timestep_type
 
         try:
-            u = self.ureg.parse_expression(u)
+            unit_expression = self.ureg.parse_expression(u)
             if convert_to_yearly_unit and timestep_type is TimestepType.operational:
-                u = u * self.ureg.h
-            u_return = f"{u.u:~D}"
+                unit_expression = unit_expression * self.ureg.h
+            u_return = f"{unit_expression.u:~D}"
         # if the unit is not in the pint registry, change the string manually
         # (normally when the unit_definition.txt is not saved)
         except Exception:
@@ -917,6 +922,8 @@ class Results:
             reference_carriers = self.get_df(
                 "set_reference_carriers", scenario_name=scenario_name
             )
+            if not isinstance(reference_carriers, pd.Series):
+                raise TypeError("set_reference_carriers must contain a pandas Series")
             data_extracted = pd.DataFrame()
             for tech in dataframe.index.get_level_values("technology"):
                 if reference_carriers[tech] == carrier:

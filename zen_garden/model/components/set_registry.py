@@ -3,7 +3,7 @@
 import itertools
 import logging
 import uuid
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 import xarray as xr
@@ -263,14 +263,14 @@ class SetRegistry(Component):
         if all(
             index in self.sets and not self.is_indexed(index) for index in list_index
         ):
-            list_sets = [self.sets[index] for index in list_index if index in self.sets]
+            base_sets = [self.sets[index] for index in list_index if index in self.sets]
             # return indices as cartesian product of sets
-            custom_set: list[tuple[ZenSet, ...]] | list[ZenSet] = (
-                list(itertools.product(*list_sets))
-                if len(list_sets) > 1
-                else list(list_sets[0])
+            base_custom_set: list[Any] = (
+                list(itertools.product(*base_sets))
+                if len(base_sets) > 1
+                else list(base_sets[0])
             )
-            return custom_set, list_index
+            return base_custom_set, list_index
 
         if list_index[0] not in self.indexing_sets:
             raise NotImplementedError(
@@ -278,10 +278,10 @@ class SetRegistry(Component):
             )
 
         # Case 2: first index is indexed, build custom set based on first index
-        custom_set = []
+        custom_set: list[Any] = []
         for element in self.sets[list_index[0]]:
             append_element = True
-            list_sets = []
+            list_sets: list[Any] = []
 
             for index in list_index[1:]:
                 # if the set already exist in model
@@ -328,9 +328,7 @@ class SetRegistry(Component):
                     custom_set.extend([element])
         return custom_set, list_index
 
-    def _handle_existing_set(
-        self, index: str, element: "ZenSet", list_sets: "list[ZenSet]"
-    ):
+    def _handle_existing_set(self, index: str, element: str, list_sets: list[Any]):
         """Handles existing sets in the model.
         Returns True if handled, False if unknown.
 
@@ -359,7 +357,7 @@ class SetRegistry(Component):
         model_on_off = self._check_on_off_modeled(element, element_class)
         return not (("set_no_on_off" in index and model_on_off) or (not model_on_off))
 
-    def _handle_set_location_index(self, element: str, list_sets: "list[ZenSet]"):
+    def _handle_set_location_index(self, element: str, list_sets: list[Any]):
         """Handles the set_location index for the custom set.
 
         :param element: element to handle
@@ -375,7 +373,7 @@ class SetRegistry(Component):
         elif element in self.sets["set_transport_technologies"]:
             list_sets.append(self.sets["set_edges"])
 
-    def _handle_set_capacity_types_index(self, element: str, list_sets: list[str]):
+    def _handle_set_capacity_types_index(self, element: str, list_sets: list[Any]):
         """Handles the set_capacity_types index for the custom set.
 
         :param element: element to handle

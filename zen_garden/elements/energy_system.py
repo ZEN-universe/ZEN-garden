@@ -2,9 +2,10 @@
 
 import copy
 import logging
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
+import pandas as pd
 
 from zen_garden.model.config import Config
 from zen_garden.model.time_steps import TimeStepsDicts
@@ -46,7 +47,7 @@ class EnergySystem:
         self.config = config
 
         # empty dict of technologies of carrier
-        self.dict_technology_of_carrier = {}
+        self.dict_technology_of_carrier: dict[str, list[str]] = {}
         # The timesteps
         self.time_steps = time_steps
         self.input_repository = input_repository
@@ -70,9 +71,11 @@ class EnergySystem:
             unit_handling=unit_handling,
         )
         # initialize empty set_carriers list
-        self.set_carriers = []
+        self.set_carriers: list[str] = []
         # dict to save the parameter units (and save them in the results later on)
-        self.units = {}
+        self.units: dict[str, Any] = {}
+        self.time_steps_operation_duration: pd.Series | None = None
+        self.time_steps_storage_duration: pd.Series | None = None
 
     def store_input_data(self):
         """Retrieves and stores input data for EnergySystem as attributes."""

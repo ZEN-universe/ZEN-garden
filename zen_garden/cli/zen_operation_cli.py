@@ -69,7 +69,7 @@ def create_zen_operation_cli() -> None:
 
     # Make dataset a required argument
     if args.dataset is None:
-        raise argparse.ArgumentError("Missing required argument --dataset.")
+        parser.error("Missing required argument --dataset.")
 
     # Resolve job index
     job_index = resolve_job_index(args.job_index, args.job_index_var)

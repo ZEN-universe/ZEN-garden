@@ -13,7 +13,7 @@ class Carrier(Element):
     # set label
     label = "set_carriers"
     # empty list of elements
-    list_of_elements = []
+    list_of_elements: list[str] = []
 
     def store_input_data(self):
         """Retrieves and stores input data for element as attributes. Each Child class

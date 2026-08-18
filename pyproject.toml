@@ -66,6 +66,8 @@ dev = [
     "mypy==1.19.1",
     "pre-commit",
     "typing_extensions",
+    "types-docutils",
+    "types-PyYAML",
 ]
 
 vis = [
