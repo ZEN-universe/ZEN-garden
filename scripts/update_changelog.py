@@ -24,7 +24,14 @@ import re
 import tomllib  # Python 3.11+
 from datetime import date, datetime
 from pathlib import Path
-from typing import Tuple
+from typing import Tuple, TypedDict
+
+
+class ChangeCategory(TypedDict):
+    """A changelog category and its collected entries."""
+
+    title: str
+    changes: list[str]
 
 
 def extract_pr_info(pr_body_file: Path) -> Tuple[str, str, str]:
@@ -119,7 +126,7 @@ def parse_changes_from_pr_body(pr_body: str, pr_number: str, pr_author: str) -> 
 
     # Parse each line: expect "- type: description"
     # Format: "Section Tytle": {"Keyword": keyword, "changes": changes}
-    categorized_changes = {
+    categorized_changes: dict[str, ChangeCategory] = {
         "feat": {"title": "New Features ✨", "changes": []},
         "fix": {"title": "Bug Fixes 🐛", "changes": []},
         "docs": {"title": "Documentation Changes 📝", "changes": []},

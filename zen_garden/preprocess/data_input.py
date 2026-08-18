@@ -697,6 +697,8 @@ class DataInput:
             )
             # get reference year
             reference_year = self.config.system.reference_year
+            if not hasattr(self.element, "lifetime"):
+                raise TypeError("Construction years require a technology element")
             # calculate remaining lifetime
             df_output[df_output > 0] = (
                 -reference_year + df_output[df_output > 0] + self.element.lifetime[0]

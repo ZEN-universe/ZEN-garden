@@ -23,10 +23,10 @@ logger = logging.getLogger(__name__)
 
 
 class ComponentType(Enum):
-    parameter: str = "parameter"
-    variable: str = "variable"
-    dual: str = "dual"
-    sets: str = "sets"
+    parameter = "parameter"
+    variable = "variable"
+    dual = "dual"
+    sets = "sets"
 
     @classmethod
     def get_component_type_names(cls) -> list[str]:
@@ -46,9 +46,9 @@ class ComponentType(Enum):
 
 
 class TimestepType(Enum):
-    yearly: str = "year"
-    operational: str = "time_operation"
-    storage: str = "time_storage_level"
+    yearly = "year"
+    operational = "time_operation"
+    storage = "time_storage_level"
 
     @classmethod
     def get_time_steps_names(cls) -> list[str]:
@@ -58,7 +58,7 @@ class TimestepType(Enum):
         return [time_step_type.value for time_step_type in cls]
 
     @classmethod
-    def get_time_step_type(cls, time_step: str) -> Optional["TimestepType"]:
+    def get_time_step_type(cls, time_step: str | None) -> Optional["TimestepType"]:
         """Method that returns the timestep type given a timestep name.
         :param time_step: The name of the timestep.
         :return: The timestep type.
@@ -131,17 +131,19 @@ class Scenario:
     corresponding folder.
     """
 
-    def __init__(self, path: str, name: str, base_scenario: str) -> None:
+    def __init__(
+        self, path: str | os.PathLike[str], name: str, base_scenario: str
+    ) -> None:
         self.name = name
         self.base_name = base_scenario
         self._exists = True
-        self._path = path
+        self._path = os.fspath(path)
         self._analysis: Analysis = self._read_analysis()
         self._system: System = self._read_system()
         self._solver: Solver = self._read_solver()
         self._benchmarking: dict[str, Any] = self._read_benchmarking()
-        self._component_types: dict[str, list[str]] = None
-        self._components: dict[str, Component] = None
+        self._component_types: dict[str, list[str]] = {}
+        self._components: dict[str, dict[str, Any]] = {}
         self._read_components()
 
     def _read_analysis(self) -> Analysis:
@@ -184,15 +186,15 @@ class Scenario:
         # suppress pint output about redefining units
         logging.getLogger("pint").setLevel(logging.ERROR)
         # load ureg
-        ureg = copy.copy(pint.UnitRegistry())
+        ureg: pint.UnitRegistry = copy.copy(pint.UnitRegistry())
         unit_path = os.path.join(self.path, "unit_definitions.txt")
         if os.path.exists(unit_path):
             ureg.load_definitions(unit_path)
         return ureg
 
     def convert_ts2year(
-        self, df: ["pd.DataFrame", "pd.Series"]
-    ) -> ["pd.DataFrame", "pd.Series"]:
+        self, df: "pd.DataFrame | pd.Series[Any]"
+    ) -> "pd.DataFrame | pd.Series[Any]":
         """Converts the yearly ts column to the corresponding year."""
         df = df.copy()
         if isinstance(df, pd.Series):
@@ -235,7 +237,7 @@ class Scenario:
             raise KeyError(f"Year {year} not in optimized years {all_years}.")
         return ts
 
-    def _read_components(self) -> dict[str, list[str]]:
+    def _read_components(self) -> None:
         """Create the component instances.
 
         The components are stored in three files and the file-names define
@@ -246,10 +248,12 @@ class Scenario:
         component_types: dict[str, list[str]] = {
             t: [] for t in ComponentType.get_component_type_names()
         }
-        components: dict[str, dict] = {}
+        components: dict[str, dict[str, Any]] = {}
 
         if not self._exists:
-            return component_types
+            self._component_types = component_types
+            self._components = components
+            return
 
         if self.has_rh:
             mf_name = [i for i in os.listdir(self.path) if "MF_" in i][0]
@@ -364,8 +368,8 @@ class Scenario:
 class SolutionLoader:
     """Implementation of a SolutionLoader."""
 
-    def __init__(self, path: str, enable_cache: bool = True) -> None:
-        self.path = path
+    def __init__(self, path: str | os.PathLike[str], enable_cache: bool = True) -> None:
+        self.path = os.fspath(path)
         assert len(os.listdir(path)) > 0, f"Path {path} is empty."
         self._scenarios: dict[str, Scenario] = self._read_scenarios()
         self._ureg = get_first_scenario(self._scenarios).ureg
@@ -446,7 +450,7 @@ class SolutionLoader:
 
     def _concatenate_raw_dataseries(
         self,
-        pd_dict: dict[int, "pd.Series[Any]"],
+        pd_dict: dict[int | str, "pd.Series[Any]"],
     ) -> "pd.DataFrame | pd.Series[Any]":
         """Method that concatenates the raw values when a solution is created
         without perfect foresight given a component, a scenario and a
@@ -485,10 +489,12 @@ class SolutionLoader:
             subfolder_names = list(
                 filter(lambda x: pattern.match(x), os.listdir(scenario.path))
             )
-            pd_series_dict = {}
+            combined_series: dict[int, pd.Series[Any]] = {}
+            raw_series: dict[int | str, pd.Series[Any]] = {}
 
             for subfolder_name in subfolder_names:
                 sf_stripped = subfolder_name.replace("MF_", "")
+                mf_idx: int | str
                 if not sf_stripped.isnumeric():
                     if keep_raw:
                         mf_idx = subfolder_name.replace("MF_", "")
@@ -499,15 +505,20 @@ class SolutionLoader:
                 file_path = os.path.join(
                     scenario.path, subfolder_name, component.file_name
                 )
-                pd_series_dict[mf_idx] = get_df_from_path(
+                series = get_df_from_path(
                     file_path, component.name, version, data_type, index
                 )
+                if keep_raw:
+                    raw_series[mf_idx] = series
+                else:
+                    assert isinstance(mf_idx, int)
+                    combined_series[mf_idx] = series
             if not keep_raw:
                 combined_dataseries = self._combine_dataseries(
-                    component, scenario, pd_series_dict
+                    component, scenario, combined_series
                 )
             else:
-                combined_dataseries = self._concatenate_raw_dataseries(pd_series_dict)
+                combined_dataseries = self._concatenate_raw_dataseries(raw_series)
             return combined_dataseries
         else:
             # If solution does not use rolling horizon, simply load the HDF file.
@@ -789,8 +800,11 @@ def get_solution_version(scenario: Scenario) -> str:
     versions = {"v1": "2.0.14", "v2": "2.2.15", "v3": "2.9.2"}
     version = "v0"
     if hasattr(scenario.analysis, "zen_garden_version"):
+        zen_garden_version = scenario.analysis.zen_garden_version
+        if zen_garden_version is None:
+            return version
         for k, v in versions.items():
-            if check_if_v1_leq_v2(v, scenario.analysis.zen_garden_version):
+            if check_if_v1_leq_v2(v, zen_garden_version):
                 version = k
     return version
 
@@ -879,7 +893,7 @@ def get_df_from_path(
     component_name: str,
     version: str,
     data_type: Literal["dataframe", "units"] = "dataframe",
-    index: Optional[tuple[str]] = None,
+    index: tuple[str, ...] | None = None,
 ) -> "pd.Series[Any]":
     """Helper-function that returns a Pandas series given the path of a file and
     the component name.

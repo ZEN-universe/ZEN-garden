@@ -128,7 +128,7 @@ class ElementRegistry:
 
     def all_elements(self) -> list[Element]:
         """Get all elements in the energy system."""
-        return self.all_elements_of_type(Element)
+        return list(self.dict_elements[Element.__name__])
 
     def all_names_of_elements(self, class_name: type[Element]) -> list[str]:
         """Get all names of elements in class.
@@ -138,9 +138,7 @@ class ElementRegistry:
         """
         return [_element.name for _element in self.all_elements_of_type(class_name)]
 
-    def get_element(
-        self, class_name: type[Element], element_name: str
-    ) -> Element | None:
+    def get_element(self, class_name: type[T], element_name: str) -> T | None:
         """Get single element in class by name.
 
         :param name: name of element
@@ -179,8 +177,8 @@ class ElementRegistry:
             attribute_is_series: return information on attribute type
         """
         class_elements = self.all_elements_of_type(cls)
-        dict_of_attributes = {}
-        dict_of_units = {}
+        dict_of_attributes: dict[str | tuple[str, ...], Any] = {}
+        dict_of_units: dict[str | tuple[str, ...], Any] = {}
         attribute_is_series = False
         for element in class_elements:
             if not capacity_types:
@@ -230,8 +228,8 @@ class ElementRegistry:
         self,
         element: "Element",
         attribute_name,
-        dict_of_attributes: dict[str | tuple[str, str], pd.DataFrame | pd.Series | Any],
-        dict_of_units,
+        dict_of_attributes: dict[str | tuple[str, ...], Any],
+        dict_of_units: dict[str | tuple[str, ...], Any],
         capacity_type=None,
     ):
         """Get attribute values of all elements in this class.
@@ -276,6 +274,7 @@ class ElementRegistry:
                 {(element.name,) + (key,): val for key, val in attribute.items()}
             )
         elif isinstance(attribute, pd.Series):
+            combined_key: str | tuple[str, str]
             if capacity_type:
                 combined_key = (element.name, capacity_type)
             else:

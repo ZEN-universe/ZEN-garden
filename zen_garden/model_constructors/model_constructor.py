@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 
 
 class ModelConstructor(ABC):
-    element_class: type[Element] = Element
+    element_class = Element
     constraints: list[type[GenericConstraint]] = []
 
     def __init__(

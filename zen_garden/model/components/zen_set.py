@@ -1,6 +1,6 @@
 """A set class that is similar to pyomo.Set."""
 
-from typing import List, Sequence, overload
+from typing import Any
 
 from ordered_set import OrderedSet
 from typing_extensions import override
@@ -18,14 +18,12 @@ class ZenSet(OrderedSet):
         :param doc: The corresponding docstring
         :param index_set: The name of the index set
         """
-        if index_set is None:
-            index_set = "UnnamedIndex"
-
         # set attributes
         self.data = data
         self.name = name
         self.doc = doc
-        self.superset = OrderedSet()
+        self.superset: OrderedSet[Any] = OrderedSet()
+        self.index_set: str | None
 
         if isinstance(data, dict):
             # init the children
@@ -42,7 +40,7 @@ class ZenSet(OrderedSet):
             # for an indexed sets the init data are the keys
             data = data.keys()
             self.indexed = True
-            self.index_set = index_set
+            self.index_set = index_set or "UnnamedIndex"
 
         else:
             self.indexed = False
@@ -65,15 +63,6 @@ class ZenSet(OrderedSet):
     def __repr__(self):
         """Return a string representation of the set."""
         return f"{super().__repr__()} indexed={self.indexed}"
-
-    @overload
-    def __getitem__(self, item: slice) -> "OrderedSet | ZenSet": ...
-
-    @overload
-    def __getitem__(self, item: Sequence[int]) -> List: ...
-
-    @overload
-    def __getitem__(self, item: int) -> object: ...
 
     @override
     def __getitem__(self, item):

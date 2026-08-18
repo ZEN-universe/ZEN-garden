@@ -16,7 +16,8 @@ class Technology(Element):
 
     # set label
     label = "set_technologies"
-    location_type = None
+    location_type: str | None = None
+    reference_carrier: list[str]
 
     def initialize_reference_carrier(self):
         """Retrieves and stores information on reference."""

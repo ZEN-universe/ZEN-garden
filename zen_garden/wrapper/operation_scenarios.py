@@ -160,7 +160,11 @@ def run_operational_simulation(
         folder_output (Path): Directory where simulation outputs will be written.
     """
     logger.info("Running operational simulation for %s", dataset_op.name)
-    run(dataset=dataset_op, config=config, folder_output=folder_output)
+    run(
+        dataset=str(dataset_op),
+        config=str(config),
+        folder_output=str(folder_output),
+    )
 
 
 def cleanup_dataset(dataset_op: Path, delete_data: bool) -> None:
@@ -218,6 +222,7 @@ def operation_scenarios(
     dataset, folder_output, job_index_list = validate_inputs(
         dataset, folder_output, job_index
     )
+    config = Path(config)
 
     dataset_path = dataset.parent
     dataset_name = dataset.name

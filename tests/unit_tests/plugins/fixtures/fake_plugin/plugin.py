@@ -1,6 +1,8 @@
+from typing import Any
+
 from zen_garden.plugin_system.events import Event, EventPublisher
 
-config = {}
+config: dict[str, Any] = {}
 
 
 @EventPublisher.register(Event.test_event1)

@@ -17,7 +17,7 @@ def compare_model_values(
     results: list[Results],
     component_type: ComponentType | str,
     compare_total: bool = True,
-    scenarios: list[str] = None,
+    scenarios: list[str] | None = None,
 ) -> dict[str, pd.DataFrame]:
     """Compares the input data of two or more results.
 
@@ -63,7 +63,7 @@ def compare_model_values(
 
 def compare_configs(
     results: list[Results],
-    scenarios: list[str] = None,
+    scenarios: list[str] | None = None,
 ) -> dict[str, Any]:
     """Compares the configs of two results, namely the Analysis-Config and the
     System-config.
@@ -171,7 +171,7 @@ def get_component_diff(
 def compare_dicts(
     dict1: dict[Any, Any],
     dict2: dict[Any, Any],
-    result_names: list[str] = None,
+    result_names: list[str] | None = None,
 ) -> Optional[dict[Any, Any]]:
     """Compares two dictionaries and returns only the fields with different values.
 
@@ -268,7 +268,7 @@ def compare_component_values(
     results: list[Results],
     component_name: str,
     compare_total: bool,
-    scenarios: list[str] = None,
+    scenarios: list[str] | None = None,
     rtol: float = 1e-3,
 ) -> pd.DataFrame:
     """Compares component values of two results.

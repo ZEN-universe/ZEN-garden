@@ -2,7 +2,7 @@
 
 from abc import abstractmethod
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import pandas as pd
 
@@ -80,7 +80,7 @@ class Element:
             input_repository=self.input_repository,
         )
         # dict to save the parameter units element-wise and to save them in the results
-        self.units = {}
+        self.units: dict[str, Any] = {}
         self.raw_time_series = {}
 
         self._initialize()

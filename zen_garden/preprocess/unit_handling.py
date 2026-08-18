@@ -6,7 +6,7 @@ import logging
 import os
 import warnings
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 import pandas as pd
@@ -15,6 +15,7 @@ from pint import UnitRegistry
 from pint.util import column_echelon_form
 
 from zen_garden.elements.carrier import Carrier
+from zen_garden.elements.retrofitting_technology import RetrofittingTechnology
 from zen_garden.elements.technology import Technology
 
 if TYPE_CHECKING:
@@ -60,11 +61,11 @@ class UnitHandling:
         """
         self.folder_path = folder_path
         self.rounding_decimal_points_units = rounding_decimal_points_units
-        self.ureg = UnitRegistry()
+        self.ureg: UnitRegistry = UnitRegistry()
 
         # dict of element attribute values
-        self.dict_attribute_values = {}
-        self.carrier_energy_quantities = {}
+        self.dict_attribute_values: dict[str, dict[str, Any]] = {}
+        self.carrier_energy_quantities: dict[str, Any] = {}
 
         self._get_base_units()
 
@@ -522,11 +523,12 @@ class UnitHandling:
             return
         elements = element_registry.all_elements()
         items = elements + [energy_system]
-        conversion_factor_units = {}
-        retrofit_flow_coupling_factors = {}
+        conversion_factor_units: dict[str, Any] = {}
+        retrofit_flow_coupling_factors: dict[str, Any] = {}
         for item in items:
-            energy_quantity_units = {}
+            energy_quantity_units: dict[str, Any] = {}
             unit_dict = item.units
+            reference_carrier: Carrier | None = None
             # since technology elements have a lot of parameters related to
             # their reference carrier, their unit consistency must be checked
             # together (second if for retrofit techs)
@@ -575,18 +577,24 @@ class UnitHandling:
             # conduct consistency checks
             for attribute_name, unit_specs in unit_dict.items():
                 if attribute_name == "conversion_factor":
+                    assert isinstance(item, Technology)
+                    assert reference_carrier is not None
                     conversion_factor_units[item.name] = (
                         self._get_conversion_factor_units(
                             item, unit_specs, reference_carrier, elements
                         )
                     )
                 elif attribute_name == "retrofit_flow_coupling_factor":
+                    assert isinstance(item, RetrofittingTechnology)
+                    retrofit_base_technology = item.retrofit_base_technology
                     base_technology = element_registry.get_element(
-                        Technology, item.retrofit_base_technology[0]
+                        Technology, retrofit_base_technology[0]
                     )
+                    assert base_technology is not None
                     reference_carrier = element_registry.get_element(
                         Carrier, base_technology.reference_carrier[0]
                     )
+                    assert reference_carrier is not None
                     retrofit_flow_coupling_factors[item.name] = (
                         self._get_conversion_factor_units(
                             item, unit_specs, reference_carrier, elements
@@ -634,7 +642,7 @@ class UnitHandling:
                 energy_quantity_units_check,
                 item,
                 config,
-                reference_carrier.name,
+                reference_carrier.name if reference_carrier is not None else None,
                 unit_dict,
             )
         logger.info("Parameter unit consistency is fulfilled!")

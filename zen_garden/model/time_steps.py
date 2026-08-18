@@ -132,7 +132,7 @@ class TimeStepsDicts(object):
             assert sequence_time_steps is not None
             element_time_step = np.unique(sequence_time_steps[base_time_steps])
         else:
-            element_time_step = [-1]
+            element_time_step = np.array([-1])
         return element_time_step
 
     def decode_time_step(
