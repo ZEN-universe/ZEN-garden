@@ -30,28 +30,83 @@ Default values are overwritten by any changes specified in the input files
 ``system.json``, ``scenarios.json``, and ``config.json``.
 """
 
+import json
 from collections.abc import ItemsView, KeysView, ValuesView
+from pathlib import Path
 from typing import Any, Literal, Optional, Union
 
-from pydantic import BaseModel, ConfigDict
+import yaml
+from pydantic import BaseModel, ConfigDict, ValidationError
 
 
-class Subscriptable(BaseModel):
-    """Allows dictionary-like access to class attributes.
+class ConfigBase(BaseModel):
+    """Base class for configuration schema objects.
 
-    This class allows dictionary-like access to class attributes, such as
-    ``obj["key"]`` instead of ``obj.key``. Similarly, attribute values can
-    be changed in a dictionary like fashion ``obj["key"] = new_value``. Lastly,
-    attribute names and values can be called using the methods ``.keys()``,
-    ``.values()``, and ``.items()`` like in a normal dictionary.
+    Provides a shared base for configuration objects in ZEN-garden.
+    It supports dictionary-style access to attributes while relying on
+    :class:`pydantic.BaseModel` for schema validation and typed fields.
 
-    Inherits from:
-        :class:`BaseModel` - Class from the Pydantic package which provides
-        advanced features in input data handling and validation.
+    Attributes:
+        model_config: Pydantic configuration for the model. The class allows extra
+            fields and enforces strict validation for incoming data.
 
+    Methods:
+        __getitem__: Access a field by key as if the model were a dict.
+        __setitem__: Set a field by key.
+        keys: Return the model field names.
+        items: Return the model field items.
+        values: Return the model field values.
     """
 
-    model_config = ConfigDict(extra="allow")
+    model_config = ConfigDict(extra="forbid", strict=True)
+
+    @classmethod
+    def from_file(cls, path: str | Path) -> "ConfigBase":
+        """Create a config object from a JSON or YAML file.
+
+        Args:
+            path: Path to a JSON or YAML configuration file.
+
+        Returns:
+            An instantiated subclass of :class:`ConfigBase` populated from the file.
+
+        Raises:
+            FileNotFoundError: If the file does not exist.
+            ValueError: If the file is empty, malformed, not a mapping, or fails
+                schema validation.
+        """
+        path = Path(path)
+        if not path.exists():
+            raise FileNotFoundError(
+                f"File not found: '{path}'. Expected a JSON or YAML configuration file."
+            )
+
+        try:
+            with path.open("r", encoding="utf-8") as file:
+                if path.suffix.lower() in {".yaml", ".yml"}:
+                    data = yaml.safe_load(file)
+                else:
+                    data = json.load(file)
+        except (json.JSONDecodeError, yaml.YAMLError) as exc:
+            raise ValueError(
+                f"Failed to parse configuration file '{path}': {exc}"
+            ) from exc
+
+        if data is None:
+            raise ValueError(f"File '{path}' is empty or contains no data.")
+        if not isinstance(data, dict):
+            raise ValueError(
+                f"File '{path}' must contain a top-level object mapping keys to "
+                f"values. Got {type(data).__name__} instead."
+            )
+
+        try:
+            return cls.model_validate(data)
+        except ValidationError as exc:
+            raise ValueError(
+                f"Failed to validate configuration from '{path}' against "
+                f"the {cls.__name__} schema."
+            ) from exc
 
     def __getitem__(self, __name: str) -> Any:
         return getattr(self, __name)
@@ -69,7 +124,7 @@ class Subscriptable(BaseModel):
         return self.model_dump().values()
 
 
-class Subsets(Subscriptable):
+class Subsets(ConfigBase):
     set_carriers: list[str] = []
     set_technologies: dict[str, list[str]] | list[str] = {
         "set_conversion_technologies": ["set_retrofitting_technologies"],
@@ -78,7 +133,7 @@ class Subsets(Subscriptable):
     }
 
 
-class HeaderDataInputs(Subscriptable):
+class HeaderDataInputs(ConfigBase):
     """Maps input/output headers to internal set names used in ZEN-garden.
 
     This class defines standard header names for the input and
@@ -116,7 +171,7 @@ class HeaderDataInputs(Subscriptable):
     set_capacity_types: str = "capacity_type"
 
 
-class System(Subscriptable):
+class System(ConfigBase):
     """Class which contains the system configuration.
 
     This defines for example the set of carriers, technologies, etc.
@@ -155,7 +210,7 @@ class System(Subscriptable):
     storage_charge_discharge_binary: bool = False
 
 
-class Solver(Subscriptable):
+class Solver(ConfigBase):
     """Class which contains the solver configuration.
 
     This defines for example the solver options, scaling, etc.
@@ -189,7 +244,7 @@ class Solver(Subscriptable):
     scaling_algorithm: Union[list[str], str] = ["geom", "geom", "geom"]
 
 
-class TimeSeriesAggregation(Subscriptable):
+class TimeSeriesAggregation(ConfigBase):
     """Class which contains the time series aggregation configuration.
 
     This defines for example the clustering method, etc.
@@ -204,7 +259,7 @@ class TimeSeriesAggregation(Subscriptable):
     resolution: int = 1
 
 
-class Analysis(Subscriptable):
+class Analysis(ConfigBase):
     """Class which contains the analysis configuration.
 
     This defines for example the objective function, output settings, etc.
@@ -223,7 +278,7 @@ class Analysis(Subscriptable):
     zen_garden_version: str | None = None
 
 
-class Config(Subscriptable):
+class Config(ConfigBase):
     """Class which contains the configuration of the model.
 
     This includes the configurations of the system, solver, and analysis as

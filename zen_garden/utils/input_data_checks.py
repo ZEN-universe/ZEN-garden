@@ -1,5 +1,3 @@
-import importlib.util
-import json
 import logging
 import os
 import warnings
@@ -7,7 +5,7 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 
-from zen_garden.default_config import Subscriptable
+from zen_garden.default_config import System
 from zen_garden.services.dataset_path_resolver import DatasetPathResolver
 
 if TYPE_CHECKING:
@@ -265,13 +263,19 @@ class InputDataChecks:
                     f"{dataset}\nProhibited characters: "
                     f"{PROHIBITED_DATASET_CHARACTERS}"
                 )
-        # check if chosen dataset contains a system.py file
-        if not os.path.exists(
-            os.path.join(self.analysis.dataset, "system.py")
-        ) and not os.path.exists(os.path.join(self.analysis.dataset, "system.json")):
+        system_files = [
+            "system.yaml",
+            "system.yml",
+            "system.json",
+        ]
+        if not any(
+            os.path.exists(os.path.join(self.analysis.dataset, filename))
+            for filename in system_files
+        ):
             raise FileNotFoundError(
-                f"Neither system.json nor system.py not found in dataset: "
-                f"{self.analysis.dataset}"
+                f"No system definition file found in dataset "
+                f"'{self.analysis.dataset}'. "
+                "Expected one of: system.yaml, system.yml, system.json."
             )
 
     def check_single_directed_edges(self, set_edges_input):
@@ -297,49 +301,30 @@ class InputDataChecks:
                 )
 
     def read_system_file(self, config):
-        """Reads the system file and returns the system dictionary.
+        """Reads the system file and updates the config instance.
 
-        :param config: config object
+        Args:
+            config: config object containing the dataset path and current system
+                settings.
         """
-        # check if system.json file exists
-        if os.path.exists(os.path.join(config.analysis.dataset, "system.json")):
-            with open(
-                os.path.join(config.analysis.dataset, "system.json"), "r"
-            ) as file:
-                system = json.load(file)
-        # otherwise read system.py file
-        else:
-            system_path = os.path.join(config.analysis.dataset, "system.py")
-            spec = importlib.util.spec_from_file_location("module", system_path)
-            assert spec is not None, f"Could not load system.py from {system_path}"
-            module = importlib.util.module_from_spec(spec)
-            assert (
-                spec.loader is not None
-            ), f"Could not load system.py from {system_path}. spec.loader is None."
-            spec.loader.exec_module(module)
-            system = module.system
-        new_system = config.system.model_copy(update=system)
+        system_path = None
+        for filename in ["system.yaml", "system.yml", "system.json"]:
+            candidate = os.path.join(config.analysis.dataset, filename)
+            if os.path.exists(candidate):
+                system_path = candidate
+                break
+
+        if system_path is None:
+            raise FileNotFoundError(
+                f"No system definition file found in dataset "
+                f"'{config.analysis.dataset}'. "
+                f"Expected one of: system.yaml, system.yml, system.json."
+            )
+
+        system = System.from_file(system_path)
+        new_system = config.system.model_copy(update=system.model_dump())
         config.system = new_system
         self.system = new_system
-        self.check_no_extra_config_fields(config)
-
-    def check_no_extra_config_fields(self, config, config_name="config"):
-        """Checks if the config object has no extra fields that are not defined
-        in the default_config.
-        """
-        assert len(config.model_extra) == 0, (
-            f"The config object '{config_name}' has extra fields that are not "
-            f"defined in the default_config: {config.model_extra}."
-        )
-        for name in config.__class__.model_fields:
-            subconfig = getattr(config, name)
-            # Detect if the subconfig is a subclass of Subscriptable
-            if isinstance(subconfig.__class__, type) and issubclass(
-                subconfig.__class__, Subscriptable
-            ):
-                self.check_no_extra_config_fields(
-                    subconfig, config_name=config_name + "/" + name
-                )
 
     def check_carrier_configuration(
         self, input_carrier, output_carrier, reference_carrier, name
