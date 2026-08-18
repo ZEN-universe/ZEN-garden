@@ -135,6 +135,23 @@ Some issues can be fixed automatically:
 
     ruff check . --fix
 
+
+.. _contributing.type_checking:
+
+Type Checking
+-------------
+
+All code must pass type checking using *Mypy*.
+
+Run the following command in the repository root:
+
+.. code:: shell
+
+    mypy .
+
+Please resolve all reported issues before submitting a pull request.
+
+
 .. _contributing.pre_commit_hooks:
 
 Pre-commit Hooks
