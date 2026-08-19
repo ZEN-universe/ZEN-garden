@@ -2,7 +2,6 @@
 the results of a model run.
 """
 
-import json
 import logging
 import os
 from pathlib import Path
@@ -12,7 +11,7 @@ import numpy as np
 import pandas as pd
 from pandas import Series
 
-from zen_garden.default_config import Analysis, Config, Solver, System
+from zen_garden.default_config import Analysis, Solver, System
 from zen_garden.postprocess.results.solution_loader import (
     Component,
     ComponentType,
@@ -100,6 +99,12 @@ class Results:
                 scenario, component, data_type=data_type, index=idx
             )
         else:
+            raise NotImplementedError(
+                (
+                    "Getting data for multiple scenarios is not implemented yet. "
+                    "Please specify a scenario_name."
+                )
+            )
             ans = {}
             for scenario_name in scenario_names:
                 scenario = self.solution_loader.scenarios[scenario_name]
@@ -665,15 +670,25 @@ class Results:
             raise TypeError(f"Invalid units type: {type(units)}")
         if droplevel:
             # TODO make more flexible
-            loc_idx = ["node", "location", "edge", "set_location", "set_nodes"]
+            loc_idx = [
+                "node",
+                "location",
+                "edge",
+                "set_location",
+                "set_nodes",
+                "set_edges",
+            ]
             time_idx = [
                 "year",
                 "time_operation",
                 "time_storage_level",
                 "set_time_steps_operation",
+                "set_years",
             ]
             drop_idx = pd.Index(loc_idx + time_idx).intersection(units.index.names)
-            if len(units.index.names.difference(drop_idx)) == 0:
+            if units.size == 1 and units.index.name is None:
+                units = units.iloc[0]
+            elif len(units.index.names.difference(drop_idx)) == 0:
                 units = units.iloc[0]
             else:
                 units.index = units.index.droplevel(drop_idx.to_list())
@@ -958,16 +973,3 @@ class Results:
                 if cn not in list_names:
                     list_names.append(cn)
         return list_names
-
-
-if __name__ == "__main__":
-    with open("config.json") as f:
-        config = Config(**json.load(f))
-
-    model_name = os.path.basename(config.analysis.dataset)
-    if os.path.exists(
-        out_folder := os.path.join(config.analysis.folder_output, model_name)
-    ):
-        r = Results(out_folder)
-    else:
-        logger.critical("No results folder found!")

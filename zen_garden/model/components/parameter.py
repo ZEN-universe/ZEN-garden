@@ -1,7 +1,6 @@
 """Class to define parameters for the optimization model."""
 
 import copy
-from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -42,7 +41,7 @@ class Parameter(Component):
         self.min_parameter_value = {"name": None, "value": None}
         self.max_parameter_value = {"name": None, "value": None}
         self.dict_parameters = DictParameter()
-        self.units: dict[str, Any] = {}
+        self.units: dict[str, pd.Series | str | None] = {}
 
     def add_parameter(
         self,
