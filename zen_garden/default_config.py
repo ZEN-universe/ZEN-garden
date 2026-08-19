@@ -224,7 +224,7 @@ class Solver(ConfigBase):
     """
 
     name: str = "highs"
-    solver_options: dict = {}
+    solver_options: dict[str, Any] = {}
     check_unit_consistency: bool = True
     solver_dir: str = ".//outputs//solver_files"
     keep_files: bool = False
@@ -232,12 +232,12 @@ class Solver(ConfigBase):
     save_duals: bool = False
     save_reduced_costs: bool = False
     save_parameters: bool = True
-    selected_saved_parameters: list = []  # if empty, all parameters are saved
-    selected_saved_variables: list = []  # if empty, all variables are saved
-    selected_saved_duals: list = (
+    selected_saved_parameters: list[str] = []  # if empty, all parameters are saved
+    selected_saved_variables: list[str] = []  # if empty, all variables are saved
+    selected_saved_duals: list[str] = (
         []
     )  # if empty, all duals are saved (if save_duals is True)
-    selected_saved_reduced_costs: list = (
+    selected_saved_reduced_costs: list[str] = (
         []
     )  # if empty, all reduced costs are saved (if save_reduced_costs is True)
     round_parameters: bool = False

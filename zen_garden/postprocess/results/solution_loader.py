@@ -7,17 +7,17 @@ import os
 import re
 import warnings
 from enum import Enum
-from typing import Any, Literal, Optional
+from pathlib import Path
+from typing import Any, Literal, Optional, cast
 
 import h5py  # type: ignore
 import numpy as np
 import pandas as pd
 import pint
+import xarray as xr
 
 from zen_garden.default_config import Analysis, Solver, System
 from zen_garden.utils import slice_df_by_index
-
-from .cache import ConditionalCache
 
 logger = logging.getLogger(__name__)
 
@@ -143,7 +143,7 @@ class Scenario:
         self._solver: Solver = self._read_solver()
         self._benchmarking: dict[str, Any] = self._read_benchmarking()
         self._component_types: dict[str, list[str]] = {}
-        self._components: dict[str, dict[str, Any]] = {}
+        self._components: dict[str, tuple[ComponentType, str, str]] = {}
         self._read_components()
 
     def _read_analysis(self) -> Analysis:
@@ -207,7 +207,7 @@ class Scenario:
         )
         ry = self.system.reference_year
         del_y = self.system.interval_between_years
-        years = [ry + i * del_y for i in year_index]
+        years = [ry + int(i) * del_y for i in year_index]
         if isinstance(df, pd.Series):
             df.index = years
         else:
@@ -248,7 +248,7 @@ class Scenario:
         component_types: dict[str, list[str]] = {
             t: [] for t in ComponentType.get_component_type_names()
         }
-        components: dict[str, dict[str, Any]] = {}
+        components: dict[str, tuple[ComponentType, str, str]] = {}
 
         if not self._exists:
             self._component_types = component_types
@@ -261,30 +261,75 @@ class Scenario:
         else:
             component_folder = self.path
 
-        for file_name, component_type in ComponentType.get_file_names_maps().items():
-            file_path = os.path.join(component_folder, file_name)
+        if check_if_v1_leq_v2(get_solution_version(self), "v3"):
+            for (
+                file_name,
+                component_type,
+            ) in ComponentType.get_file_names_maps().items():
+                file_path = os.path.join(component_folder, file_name)
 
-            if not os.path.exists(file_path):
-                continue
+                if not os.path.exists(file_path):
+                    continue
 
-            h5_file = h5py.File(file_path)
-            component_types[component_type.value] = list(h5_file.keys())
-            components.update(
-                {
-                    cn: {
-                        "component_type": component_type,
-                        "file_name": file_name,
-                        "file_path": file_path,
+                h5_file = h5py.File(file_path)
+                component_types[component_type.value] = list(h5_file.keys())
+                components.update(
+                    {
+                        cn: (
+                            component_type,
+                            file_name,
+                            file_path,
+                        )
+                        for cn in h5_file.keys()
                     }
-                    for cn in h5_file.keys()
-                }
-            )
+                )
+        else:
+            file_name_map = {
+                ComponentType.dual: "duals.nc",
+                ComponentType.variable: "variables.nc",
+                ComponentType.parameter: "parameters.nc",
+                ComponentType.sets: "sets.h5",
+            }
+            for component_type, file_name in file_name_map.items():
+                file_path = os.path.join(component_folder, file_name)
+
+                if not os.path.exists(file_path):
+                    continue
+
+                if component_type is ComponentType.sets:
+                    h5_file = h5py.File(file_path)
+                    component_types[component_type.value] = list(h5_file.keys())
+                    components.update(
+                        {
+                            cn: (
+                                component_type,
+                                file_name,
+                                file_path,
+                            )
+                            for cn in h5_file.keys()
+                        }
+                    )
+                else:
+                    nc_file = xr.open_dataset(file_path)
+                    component_types[component_type.value] = list(
+                        str(cn) for cn in nc_file.data_vars
+                    )
+                    components.update(
+                        {
+                            str(cn): (
+                                component_type,
+                                file_name,
+                                file_path,
+                            )
+                            for cn in nc_file.data_vars
+                        }
+                    )
 
         self._component_types = component_types
         self._components = components
 
     @property
-    def components(self) -> dict[str, dict]:
+    def components(self) -> dict[str, tuple[ComponentType, str, str]]:
         return self._components
 
     @property
@@ -335,34 +380,95 @@ class Scenario:
                 f"{list(self.components.keys())}"
             )
 
-        component_info = self.components[component_name]
-        component_type = component_info["component_type"]
-        file_name = component_info["file_name"]
-
-        h5_file = h5py.File(component_info["file_path"])
         version = get_solution_version(self)
-        index_names = get_index_names(h5_file, component_name, version)
-        time_index = set(index_names).intersection(
-            set(TimestepType.get_time_steps_names())
-        )
-        timestep_name = time_index.pop() if len(time_index) > 0 else None
-        timestep_type = TimestepType.get_time_step_type(timestep_name)
+        component_type, file_name, file_path = self.components[component_name]
+        if check_if_v1_leq_v2(version, "v3"):
+            h5_file = h5py.File(file_path)
+            index_names = get_index_names(h5_file, component_name, version)
+            time_index = set(index_names).intersection(
+                set(TimestepType.get_time_steps_names())
+            )
+            timestep_name = time_index.pop() if len(time_index) > 0 else None
+            timestep_type = TimestepType.get_time_step_type(timestep_name)
 
-        doc = get_doc(h5_file, component_name, version)
+            doc = get_doc(h5_file, component_name, version)
 
-        has_units = get_has_units(h5_file, component_name, version)
+            has_units = get_has_units(h5_file, component_name, version)
 
-        ans = Component(
-            component_name,
-            component_type,
-            index_names,
-            timestep_type,
-            timestep_name,
-            file_name,
-            doc,
-            has_units,
-        )
-        return ans
+            return Component(
+                component_name,
+                component_type,
+                index_names,
+                timestep_type,
+                timestep_name,
+                file_name,
+                doc,
+                has_units,
+            )
+        else:
+            file_path = Path(file_path)
+            if component_type is ComponentType.sets:
+                h5_file = h5py.File(file_path)
+                index_names = get_index_names(h5_file, component_name, version)
+                time_index = set(index_names).intersection(
+                    set(TimestepType.get_time_steps_names())
+                )
+                timestep_name = time_index.pop() if len(time_index) > 0 else None
+                timestep_type = TimestepType.get_time_step_type(timestep_name)
+
+                doc = get_doc_from_json(
+                    file_path.parent / "sets_docs.json", component_name, version
+                )
+
+                has_units = False  # Sets do not have units
+
+                return Component(
+                    component_name,
+                    component_type,
+                    index_names,
+                    timestep_type,
+                    timestep_name,
+                    file_name,
+                    doc,
+                    has_units,
+                )
+            else:
+                nc_file = xr.open_dataset(file_path)
+                index_names = [str(dim) for dim in nc_file[component_name].dims]
+                time_index = set(index_names).intersection(
+                    set(TimestepType.get_time_steps_names())
+                )
+                timestep_name = time_index.pop() if len(time_index) > 0 else None
+                timestep_type = TimestepType.get_time_step_type(timestep_name)
+
+                DOCS_FILENAME_MAP = {
+                    ComponentType.parameter: "parameters_docs.json",
+                    ComponentType.variable: "variables_docs.json",
+                    ComponentType.dual: "duals_docs.json",
+                }
+                doc = get_doc_from_json(
+                    file_path.parent / DOCS_FILENAME_MAP[component_type],
+                    component_name,
+                    version,
+                )
+
+                has_units = component_type in [
+                    ComponentType.parameter,
+                    ComponentType.variable,
+                ] and component_name in h5py.File(
+                    str(file_path).replace(".nc", "_units.h5")
+                )
+
+                return Component(
+                    component_name,
+                    component_type,
+                    index_names,
+                    timestep_type,
+                    timestep_name,
+                    file_name,
+                    doc,
+                    has_units,
+                )
 
 
 class SolutionLoader:
@@ -465,7 +571,6 @@ class SolutionLoader:
         series.index.names = new_index_names
         return series
 
-    @ConditionalCache("enable_cache")
     def get_component_data(
         self,
         scenario: Scenario,
@@ -506,7 +611,7 @@ class SolutionLoader:
                     scenario.path, subfolder_name, component.file_name
                 )
                 series = get_df_from_path(
-                    file_path, component.name, version, data_type, index
+                    file_path, component, version, data_type, index
                 )
                 if keep_raw:
                     raw_series[mf_idx] = series
@@ -523,7 +628,7 @@ class SolutionLoader:
         else:
             # If solution does not use rolling horizon, simply load the HDF file.
             file_path = os.path.join(scenario.path, component.file_name)
-            ans = get_df_from_path(file_path, component.name, version, data_type, index)
+            ans = get_df_from_path(file_path, component, version, data_type, index)
             return ans
 
     def _read_scenarios(self) -> dict[str, Scenario]:
@@ -565,7 +670,6 @@ class SolutionLoader:
 
         return ans
 
-    @ConditionalCache("enable_cache")
     def get_timestep_duration(
         self, scenario: Scenario, component: Component
     ) -> "pd.Series[Any]":
@@ -598,7 +702,6 @@ class SolutionLoader:
 
         return time_step_duration
 
-    @ConditionalCache("enable_cache")
     def get_timesteps(
         self, scenario: Scenario, component: Component, year: int
     ) -> "pd.Series[Any]":
@@ -635,7 +738,6 @@ class SolutionLoader:
 
         return ans
 
-    @ConditionalCache("enable_cache")
     def get_timesteps_of_years(
         self, scenario: Scenario, ts_type: TimestepType, years: tuple
     ) -> "pd.DataFrame | pd.Series[Any]":
@@ -797,7 +899,7 @@ def get_solution_version(scenario: Scenario) -> str:
 
     :return: The version of the solution.
     """
-    versions = {"v1": "2.0.14", "v2": "2.2.15", "v3": "2.9.2"}
+    versions = {"v1": "2.0.14", "v2": "2.2.15", "v3": "2.9.2", "v4": "3.0.0"}
     version = "v0"
     if hasattr(scenario.analysis, "zen_garden_version"):
         zen_garden_version = scenario.analysis.zen_garden_version
@@ -849,10 +951,13 @@ def get_index_names(h5_file: h5py.File, component_name: str, version: str) -> li
 
             if name != "N.":
                 ans.append(name)
-    else:
+    elif check_if_v1_leq_v2(version, "v3"):
         h5_group = h5_file[component_name]
         index_names = h5_group.attrs["index_names"].decode()
         ans = index_names.split(",")
+    else:
+        series = pd.read_hdf(h5_file.filename, component_name)
+        ans = series.index.names
     return ans
 
 
@@ -862,12 +967,34 @@ def get_doc(h5_file: h5py.File, component_name: str, version: str) -> str:
         doc = str(
             np.char.decode(h5_file[component_name + "/docstring"].attrs.get("value"))
         )
-    else:
+    elif check_if_v1_leq_v2(version, "v3"):
         doc = h5_file[component_name].attrs["docstring"].decode()
+    else:
+        raise ValueError(f"Version {version} not supported for getting docstring.")
     if ";" in doc and ":" in doc:
         doc = "\n".join(
             [f"{v.split(':')[0]}: {v.split(':')[1]}" for v in doc.split(";")]
         )
+    return doc
+
+
+def get_doc_from_json(json_path: str | Path, component_name: str, version: str) -> str:
+    """Helper-function that returns the documentation of a component from a json file.
+
+    :param json_path: The path to the json file.
+    :param component_name: The name of the component.
+    :param version: The version of the component.
+    :return: The documentation of the component.
+    """
+    with open(json_path, "r") as f:
+        doc_dict = cast(dict[str, str], json.load(f))
+
+    if component_name not in doc_dict:
+        raise KeyError(f"Component {component_name} not found in {json_path}.")
+
+    doc = doc_dict[component_name]
+    if ";" in doc and ":" in doc:
+        doc = "\n".join(v.replace(":", ": ") for v in doc.split(";"))
     return doc
 
 
@@ -890,7 +1017,7 @@ def get_has_units(h5_file: h5py.File, component_name: str, version: str) -> bool
 
 def get_df_from_path(
     path: str,
-    component_name: str,
+    component: Component,
     version: str,
     data_type: Literal["dataframe", "units"] = "dataframe",
     index: tuple[str, ...] | None = None,
@@ -902,25 +1029,25 @@ def get_df_from_path(
         index = tuple()
 
     if check_if_v1_leq_v2(version, "v0"):
-        pd_read = pd.read_hdf(path, f"{component_name}/{data_type}")
+        pd_read = pd.read_hdf(path, f"{component.name}/{data_type}")
         if len(index) > 0:
             pd_read = slice_df_by_index(pd_read, index)
     elif check_if_v1_leq_v2(version, "v2"):
         if data_type == "dataframe":
             try:
-                pd_read = pd.read_hdf(path, component_name, where=index)
+                pd_read = pd.read_hdf(path, component.name, where=index)
             except Exception:
-                pd_read = pd.read_hdf(path, component_name)
+                pd_read = pd.read_hdf(path, component.name)
             if isinstance(pd_read, pd.DataFrame):
                 pd_read = pd_read["value"]
         elif data_type == "units":
             try:
                 pd_read = pd.read_hdf(
-                    path, component_name, where=index, columns=["units"]
+                    path, component.name, where=index, columns=["units"]
                 )
             except Exception:
                 try:
-                    pd_read = pd.read_hdf(path, component_name, columns=["units"])
+                    pd_read = pd.read_hdf(path, component.name, columns=["units"])
                 except IndexError:
                     logger.warning(
                         "Cannot retrieve units. Make sure you have updated the "
@@ -929,19 +1056,33 @@ def get_df_from_path(
                     return pd.Series([])
         else:
             raise ValueError(f"Data type {data_type} not supported.")
-    else:
+    elif (
+        check_if_v1_leq_v2(version, "v3")
+        or component.component_type is ComponentType.sets
+    ):
         if data_type == "dataframe":
             try:
-                pd_read = pd.read_hdf(path, component_name, where=index)
+                pd_read = pd.read_hdf(path, component.name, where=index)
             except Exception:
-                pd_read = pd.read_hdf(path, component_name)
+                pd_read = pd.read_hdf(path, component.name)
         elif data_type == "units":
             try:
-                pd_read = pd.read_hdf(path, component_name + "_units", where=index)
+                pd_read = pd.read_hdf(path, component.name + "_units", where=index)
             except Exception:
-                pd_read = pd.read_hdf(path, component_name + "_units")
+                pd_read = pd.read_hdf(path, component.name + "_units")
         else:
             raise ValueError(f"Data type {data_type} not supported.")
+    else:
+        if index is not None and len(index) > 0:
+            raise ValueError(f"Index slicing is not supported for version {version}.")
+        if data_type == "dataframe":
+            pd_read = xr.open_dataset(path)[component.name].to_series().dropna()
+        elif data_type == "units":
+            pd_read = pd.read_hdf(path.replace(".nc", "_units.h5"), component.name)
+        else:
+            raise ValueError(f"Data type {data_type} not supported.")
+
+        # If index is not empty, slice the series by index
 
     if isinstance(pd_read, pd.DataFrame):
         ans = pd_read.squeeze()

@@ -47,7 +47,7 @@ class Variable(Component):
         self.config = config
         self.element_registry = element_registry
 
-        self.units: dict[str, Any] = {}
+        self.units: dict[str, pd.Series] = {}
 
     def add_variable(
         self,
