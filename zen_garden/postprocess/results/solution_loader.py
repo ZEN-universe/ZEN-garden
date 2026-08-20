@@ -8,7 +8,7 @@ import re
 import warnings
 from enum import Enum
 from pathlib import Path
-from typing import Any, Literal, Optional, cast
+from typing import Any, Literal, Optional, cast, override
 
 import h5py  # type: ignore
 import numpy as np
@@ -124,6 +124,21 @@ class Component:
     def has_units(self) -> bool:
         return self._has_units
 
+    @override
+    def __repr__(self) -> str:
+        return (
+            f"Component("
+            f"name={self.name}, "
+            f"component_type={self.component_type}, "
+            f"index_names={self.index_names}, "
+            f"ts_type={self._ts_type}, "
+            f"ts_name={self._ts_name}, "
+            f"file_name={self.file_name}, "
+            f"doc={self.doc}, "
+            f"has_units={self.has_units}"
+            f")"
+        )
+
 
 class Scenario:
     """Implementation of the scenario. In this solution version, the analysis and
@@ -212,6 +227,20 @@ class Scenario:
             df.index = years
         else:
             df.columns = years
+        return df
+
+    def rename_index(
+        self, df: "pd.DataFrame | pd.Series[Any]"
+    ) -> "pd.DataFrame | pd.Series[Any]":
+        """Renames the index of the dataframe."""
+        if isinstance(df, pd.Series) and df.index.name == "scalar":
+            return df.reset_index(drop=True)
+        map = self.analysis.header_data_inputs
+        df = df.copy()
+        renamed_index = [
+            map[str(idx)] if idx in map.keys() else idx for idx in df.index.names
+        ]
+        df.index.names = renamed_index
         return df
 
     def convert_year2ts(self, year: int) -> int:
@@ -435,11 +464,17 @@ class Scenario:
             else:
                 nc_file = xr.open_dataset(file_path)
                 index_names = [str(dim) for dim in nc_file[component_name].dims]
-                time_index = set(index_names).intersection(
-                    set(TimestepType.get_time_steps_names())
-                )
+                time_index_map = {
+                    "set_years": TimestepType.yearly,
+                    "set_time_steps_operation": TimestepType.operational,
+                    "set_time_steps_storage_level": TimestepType.storage,
+                    "set_time_steps_storage": TimestepType.storage,
+                }
+                time_index = set(index_names).intersection(set(time_index_map.keys()))
                 timestep_name = time_index.pop() if len(time_index) > 0 else None
-                timestep_type = TimestepType.get_time_step_type(timestep_name)
+                timestep_type = (
+                    time_index_map[timestep_name] if timestep_name is not None else None
+                )
 
                 DOCS_FILENAME_MAP = {
                     ComponentType.parameter: "parameters_docs.json",
@@ -526,8 +561,12 @@ class SolutionLoader:
             if current_mf.empty:
                 continue
             if component.timestep_type is TimestepType.yearly:
+                if check_if_v1_leq_v2(get_solution_version(scenario), "v3"):
+                    year_index = "year"
+                else:
+                    year_index = "set_years"
                 year_series = current_mf[
-                    current_mf.index.get_level_values("year").isin(decision_horizon)
+                    current_mf.index.get_level_values(year_index).isin(decision_horizon)
                 ]
                 series_to_concat.append(year_series)
             elif component.timestep_type in [
@@ -1020,19 +1059,19 @@ def get_df_from_path(
     component: Component,
     version: str,
     data_type: Literal["dataframe", "units"] = "dataframe",
-    index: tuple[str, ...] | None = None,
+    index: tuple[str, ...] | dict[str, str] | None = None,
 ) -> "pd.Series[Any]":
     """Helper-function that returns a Pandas series given the path of a file and
     the component name.
     """
-    if index is None:
-        index = tuple()
 
     if check_if_v1_leq_v2(version, "v0"):
         pd_read = pd.read_hdf(path, f"{component.name}/{data_type}")
         if len(index) > 0:
             pd_read = slice_df_by_index(pd_read, index)
     elif check_if_v1_leq_v2(version, "v2"):
+        if index is None:
+            index = tuple()
         if data_type == "dataframe":
             try:
                 pd_read = pd.read_hdf(path, component.name, where=index)
@@ -1060,6 +1099,8 @@ def get_df_from_path(
         check_if_v1_leq_v2(version, "v3")
         or component.component_type is ComponentType.sets
     ):
+        if index is None:
+            index = tuple()
         if data_type == "dataframe":
             try:
                 pd_read = pd.read_hdf(path, component.name, where=index)
@@ -1073,10 +1114,14 @@ def get_df_from_path(
         else:
             raise ValueError(f"Data type {data_type} not supported.")
     else:
-        if index is not None and len(index) > 0:
-            raise ValueError(f"Index slicing is not supported for version {version}.")
+        if index == ():
+            index = {}
+        elif type(index) is not dict:
+            raise ValueError(f"Index must be a mapping for version {version}.")
         if data_type == "dataframe":
-            pd_read = xr.open_dataset(path)[component.name].to_series().dropna()
+            pd_read = (
+                xr.open_dataset(path)[component.name].query(index).to_series().dropna()
+            )
         elif data_type == "units":
             pd_read = pd.read_hdf(path.replace(".nc", "_units.h5"), component.name)
         else:

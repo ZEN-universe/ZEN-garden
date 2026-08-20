@@ -98,6 +98,7 @@ class Results:
             ans = self.solution_loader.get_component_data(
                 scenario, component, data_type=data_type, index=idx
             )
+            ans = scenario.rename_index(ans)
         else:
             raise NotImplementedError(
                 (
@@ -133,7 +134,7 @@ class Results:
         year: Optional[int] = None,
         discount_to_first_step: bool = True,
         keep_raw: bool = False,
-        index: tuple[str, ...] | None = None,
+        index: tuple[str, ...] | dict[str, str] | None = None,
     ) -> "pd.DataFrame":
         """Calculates the full timeseries per scenario.
 
@@ -150,7 +151,8 @@ class Results:
         Returns:
             Full timeseries
         """
-        assert component.timestep_type is not None, "Component has no timestep type."
+        if component.timestep_type is None:
+            raise ValueError(f"Component {component.name} has no timestep type.")
 
         if index is None:
             index = tuple()
@@ -169,16 +171,20 @@ class Results:
         if (
             component.timestep_type is TimestepType.operational
             or component.timestep_type is TimestepType.storage
-        ):
-            if not any(str(component.timestep_type.value) in i for i in index):
-                time_steps = self.solution_loader.get_timesteps_of_years(
-                    scenario, component.timestep_type, tuple(years)
-                ).values
-                index = index + (
-                    f"{component.timestep_type.value} in "
-                    f"[{', '.join(time_steps.astype(str))}]",
-                )
-                select_year_time_steps = True
+        ) and not any(str(component.timestep_type.value) in i for i in index):
+            time_steps = self.solution_loader.get_timesteps_of_years(
+                scenario, component.timestep_type, tuple(years)
+            ).values
+            if len(index) == 0:
+                index = {}
+            elif type(index) is not dict:
+                raise TypeError(f"Invalid index type {type(index)}. Expected dict.")
+            assert component.timestep_name is not None
+            steps = ",".join(time_steps.astype(str))
+            index.update(
+                {component.timestep_name: (f"{component.timestep_name} in [{steps}]")}
+            )
+            select_year_time_steps = True
         series = self.solution_loader.get_component_data(
             scenario, component, keep_raw=keep_raw, index=index
         )
@@ -225,6 +231,8 @@ class Results:
             elif component.timestep_type is TimestepType.storage:
                 # for storage components, the last timestep is the final state,
                 # linear interpolation is used
+                if isinstance(series, pd.Series):
+                    series = series.to_frame()
                 last_occurrences = sequence_timesteps.drop_duplicates(keep="last")
                 first_occurrences = sequence_timesteps.drop_duplicates(keep="first")
                 last_occurrences = pd.Series(
@@ -338,7 +346,7 @@ class Results:
                 continue
             component = scenario.get_component(component_name)
             idx = reformat_slicing_index(index, component)
-            scenarios_dict[scenario_name] = self.get_full_ts_per_scenario(
+            full_ts = self.get_full_ts_per_scenario(
                 scenario,
                 component,
                 discount_to_first_step=discount_to_first_step,
@@ -346,6 +354,9 @@ class Results:
                 keep_raw=keep_raw,
                 index=idx,
             )
+            full_ts = full_ts.sort_index()
+            full_ts = scenario.rename_index(full_ts)
+            scenarios_dict[scenario_name] = full_ts
         if len(scenarios_dict) == 0:
             logger.warning(
                 f"Component {component_name} not found. If you expected "
@@ -388,19 +399,21 @@ class Results:
         if component.timestep_type is None or type(series.index) is not pd.MultiIndex:
             if component.timestep_type is TimestepType.yearly:
                 series = scenario.convert_ts2year(series)
+            series = scenario.rename_index(series)
             return series
 
         if component.timestep_type is TimestepType.yearly:
-            ans = series.unstack(component.timestep_name)
+            ans = series.unstack(component.timestep_name).sort_index()
             ans = ans[years]
             ans = scenario.convert_ts2year(ans)
+            ans = scenario.rename_index(ans)
             return ans
 
         timestep_duration = self.solution_loader.get_timestep_duration(
             scenario, component
         )
 
-        unstacked_series = series.unstack(component.timestep_name)
+        unstacked_series = series.unstack(component.timestep_name).sort_index()
         total_value = unstacked_series.multiply(timestep_duration, axis=1)
 
         ans = pd.DataFrame(index=unstacked_series.index)
@@ -426,6 +439,7 @@ class Results:
                 [i for i in ans.index.names if i != "mf"] + ["mf"]
             ).sort_index(axis=0)
         ans = scenario.convert_ts2year(ans)
+        ans = scenario.rename_index(ans)
         return ans
 
     def get_total(
