@@ -155,7 +155,7 @@ class StorageTechnologyConstructor(ModelConstructor):
                 ["set_storage_technologies", "set_nodes", "set_time_steps_storage"],
             ),
             bounds=(0, np.inf),
-            doc="storage level of storage technology ón node in each storage time step",
+            doc="storage level of storage technology on node in each storage time step",
             unit_category={"energy_quantity": 1},
         )
         # energy spillage

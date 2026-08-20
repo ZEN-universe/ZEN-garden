@@ -4,11 +4,14 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 import scipy as sp
+import xarray as xr
 
 from zen_garden.utils import get_label_position
 
 if TYPE_CHECKING:
     from linopy import Model as LinopyModel
+
+    from zen_garden.model import Config
 
 logger = logging.getLogger(__name__)
 
@@ -23,7 +26,13 @@ class Scaling:
     solution.
     """
 
-    def __init__(self, lp_model: "LinopyModel", algorithm=None, include_rhs=True):
+    def __init__(
+        self,
+        config: "Config",
+        lp_model: "LinopyModel",
+        algorithm: list[str] | None = None,
+        include_rhs: bool = True,
+    ):
         """Initializes scaling instance.
 
         Args:
@@ -40,6 +49,8 @@ class Scaling:
                 "Please provide a list of scaling algorithms, not a single string."
             )
             algorithm = [algorithm]
+
+        self.config = config
         self.lp_model = lp_model
         self.algorithm = algorithm
         self.include_rhs = include_rhs
@@ -80,6 +91,40 @@ class Scaling:
                 ~cond,  # Where condition is False, keep original data
                 var.solution * self.D_c_inv[var.labels],  # Where True, apply math
             )
+
+        if self.config.solver.save_duals:
+            for name_con in self.lp_model.constraints:
+                con = self.lp_model.constraints[name_con]
+                cond = con.labels != -1
+                con.dual = con.dual.where(
+                    ~cond,  # Where condition is False, keep original data
+                    con.dual * self.D_r_inv[con.labels],  # Where True, apply math
+                )
+
+    def rescale_dataarray(self, arr: xr.DataArray, name: str) -> xr.DataArray:
+        """Rescales a dataarray with the scaling factors of the optimization model.
+
+        Args:
+            arr: dataarray to be rescaled
+            name: name of the variable or constraint to which the dataarray belongs
+
+        Returns:
+            rescaled dataarray
+        """
+        if name in self.lp_model.variables:
+            component = self.lp_model.variables[name]
+            D_inv = self.D_c_inv[component.labels]
+        elif name in self.lp_model.constraints:
+            component = self.lp_model.constraints[name]
+            D_inv = self.D_r_inv[component.labels]
+        else:
+            raise ValueError(f"{name} is not a variable or constraint in the model.")
+
+        cond = component.labels != -1
+        return arr.where(
+            ~cond,  # Where condition is False, keep original data
+            arr * D_inv,  # Where True, apply math
+        )
 
     def analyze_numerics(self):
         """Analyzes the numerics of the optimization model."""

@@ -430,17 +430,11 @@ class OptimizationStep:
             scenario_name (str): The name of the scenario being optimized.
             param_map (dict): A dictionary mapping parameter names to their values.
         """
-        Postprocess(
-            self.config,
-            self.unit_handling,
-            self.zen_model,
-            self.energy_system,
-            self.scaling,
-            self.time_steps,
+        self.service_container.build(
+            Postprocess,
             optimized_time_steps=self.optimized_time_steps,
             scenarios=scenarios,
             model_name=model_name,
             subfolder=subfolder,
-            scenario_name=scenario_name,
             param_map=param_map,
-        )
+        ).save_results(scenario_name)
