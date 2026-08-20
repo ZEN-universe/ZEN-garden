@@ -260,6 +260,11 @@ class Postprocess:
             cast(str, name): self.zen_model.variables.units[cast(str, name)]
             for name in self.lp_model.solution.keys()
         }
+        units = {
+            name: series
+            for name, series in units.items()
+            if series is not None and not series.empty
+        }
         self._write_units_to_file(self.name_dir / "variables_units.h5", units)
         self._write_json_file(
             self.name_dir / "variables_docs.json", self.zen_model.variables.docs
@@ -523,9 +528,9 @@ class Postprocess:
             )
             if levels_to_drop and len(levels_to_drop) < len(series.index.names):
                 reduced_series = series.droplevel(levels_to_drop)
-            elif len(levels_to_drop) == len(series.index.names):
-                assert series.size == 1
-                reduced_series = series.reset_index(drop=True)
+            elif levels_to_drop:
+                # if there are no index levels left, we must only keep one entry
+                reduced_series = series.reset_index(drop=True).loc[[0]]
             else:
                 reduced_series = series
             units_dict_reduced[key] = reduced_series

@@ -137,7 +137,7 @@ def get_component_diff(
             for name, component in results_0.solution_loader.scenarios[
                 scenarios[0]
             ].components.items()
-            if component["component_type"] is component_type and "_units" not in name
+            if component[0] is component_type and "_units" not in name
         ]
     )
 
@@ -147,7 +147,7 @@ def get_component_diff(
             for name, component in results_1.solution_loader.scenarios[
                 scenarios[1]
             ].components.items()
-            if component["component_type"] is component_type and "_units" not in name
+            if component[0] is component_type and "_units" not in name
         ]
     )
     only_in_0 = component_names_0.difference(component_names_0)
