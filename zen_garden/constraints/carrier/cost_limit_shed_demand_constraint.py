@@ -5,21 +5,26 @@ from zen_garden.constraints.generic_constraint import GenericConstraint
 
 class CostLimitShedDemandConstraint(GenericConstraint):
     def build(self):
-        """Cost and limit of shedding demand of carrier.
+        """Summary:
+        Cost and limit of shedding demand of carrier.
+
+        Formulation:
 
         .. math::
-           O_{c,n,t}^{\\mathrm{shed\\ demand}} = D_{c,n,t} \\nu_c \n
-           D_{c,n,t} \\leq d_{c,n,t}
+           C^{\\mathrm{shed}}_{c,n,t} =
+           F^{\\mathrm{shed}}_{c,n,t} \\pi^{\\mathrm{shed}}_c
+           F^{\\mathrm{shed}}_{c,n,t} \\leq d_{c,n,t}
 
-        :math:`O_{c,n,t}^{\\mathrm{shed\\ demand}}`: total cost of shedding
-        demand of carrier :math:`c` at node :math:`n` and time step :math:`t`\n
-        :math:`\\nu_c`: price to shed demand of carrier :math:`c`\n
-        :math:`D_{c,n,t}`: shed demand of carrier :math:`c` at node :math:`n` and
-        time step :math:`t`\n
-        :math:`d_{c,n,t}`: demand of carrier :math:`c` at node :math:`n` and
-        time step :math:`t`
+        Notation:
 
-
+        :math:`C^{\\mathrm{shed}}_{c,n,t}`: total cost of
+        shedding demand of carrier :math:`c` at node :math:`n` in time step :math:`t`
+        of year :math:`y`
+        :math:`\\pi^{\\mathrm{shed}}_c`: price to shed demand of carrier :math:`c`
+        :math:`F^{\\mathrm{shed}}_{c,n,t}`: shed demand of carrier :math:`c` at
+        node :math:`n` in time step :math:`t` of year :math:`y`
+        :math:`d_{c,n,t}`: demand of carrier :math:`c` at node :math:`n` in
+        time step :math:`t` of year :math:`y`
         """
         ### mask for finite price, otherwise the shed demand is zero
         mask = self.zen_model.parameters.price_shed_demand != np.inf

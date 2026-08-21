@@ -5,19 +5,25 @@ from zen_garden.constraints.generic_constraint import GenericConstraint
 
 class CapacityFactorConversionConstraint(GenericConstraint):
     def build(self):
-        """Load is limited by the installed capacity and the maximum load factor.
+        """Summary:
+        Load is limited by the installed capacity and the maximum load factor.
+
+        Formulation:
 
         .. math::
-            G_{i,n,t}^\\mathrm{r} \\leq m^{\\mathrm{max}}_{i,n,t}S_{i,n,y}
+            F^{\\mathrm{ref}}_{h,n,t} \\leq
+            \\ell^{\\mathrm{max}}_{h,n,t}K_{h,n,y}
 
-        :math:`m_{i,n,t}^{\\mathrm{max}}`: maximum load factor of the
-        technology :math:`i` at node :math:`n` in time step :math:`t` \n
-        :math:`S_{i,n,y}`: installed capacity of the technology :math:`i` at
-        node :math:`n` in year :math:`y` \n
-        :math:`G_{i,n,t}^\\mathrm{r}`: reference carrier flow of the
-        technology :math:`i` at node :math:`n` in time step :math:`t`
+        Notation:
 
-
+        :math:`m_{h,n,t}^{\\mathrm{max}}`: maximum load factor of the
+        technology :math:`h` at node :math:`n` in time step :math:`t` of year
+        :math:`y`
+        :math:`K_{h,n,y}`: installed capacity of the technology :math:`h` at
+        node :math:`n` in year :math:`y`
+        :math:`F^{\\mathrm{ref}}_{h,n,t}`: reference carrier flow of the
+        technology :math:`h` at node :math:`n` in time step :math:`t` of year
+        :math:`y`
         """
         techs = self.zen_model.sets["set_conversion_technologies"]
         if len(techs) == 0:

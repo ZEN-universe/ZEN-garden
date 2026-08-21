@@ -3,21 +3,29 @@ from zen_garden.constraints.generic_constraint import GenericConstraint
 
 class CarbonEmissionsCarrierConstraint(GenericConstraint):
     def build(self):
-        """Carbon emissions of importing and exporting carrier.
+        """Summary:
+        Carbon emissions of importing and exporting carrier.
+
+        Formulation:
 
         .. math::
-           \\theta_{c,n,t}^{\\mathrm{carrier}} = \\underline{\\epsilon_c}
-           \\underline{U}_{c,n,t} - \\overline{\\epsilon_c} \\overline{U}_{c,n,t}
+           M^{\\mathrm{carrier}}_{c,n,t} = \\varepsilon^{\\mathrm{imp}}_{c,y}
+           F^{\\mathrm{imp}}_{c,n,t} - \\varepsilon^{\\mathrm{exp}}_{c,y}
+           F^{\\mathrm{exp}}_{c,n,t}
 
-        :math:`\\theta_{c,n,t}^{\\mathrm{carrier}}`: carbon emissions of importing and
-        exporting carrier :math:`c` at node :math:`n` and time step :math:`t`\n
-        :math:`\\underline{\\epsilon_c}`: carbon intensity of carrier import :math:`c`\n
-        :math:`\\overline{\\epsilon_c}`: carbon intensity of carrier export :math:`c`\n
-        :math:`\\underline{U}_{c,n,t}`: flow of carrier :math:`c` imported at
-        node :math:`n` and time step :math:`t`\n
-        :math:`\\overline{U}_{c,n,t}`: flow of carrier :math:`c` exported at
-        node :math:`n` and time step :math:`t`
+        Notation:
 
+        :math:`M^{\\mathrm{carrier}}_{c,n,t}`: carbon emissions of importing
+        and exporting carrier :math:`c` at node :math:`n` in time step :math:`t`
+        of year :math:`y`
+        :math:`\\varepsilon^{\\mathrm{imp}}_{c,y}`: carbon intensity of carrier import
+        :math:`c` in year :math:`y`
+        :math:`\\varepsilon^{\\mathrm{exp}}_{c,y}`: carbon intensity of carrier export
+        :math:`c` in year :math:`y`
+        :math:`F^{\\mathrm{imp}}_{c,n,t}`: flow of carrier :math:`c` imported at
+        node :math:`n` in time step :math:`t` of year :math:`y`
+        :math:`F^{\\mathrm{exp}}_{c,n,t}`: flow of carrier :math:`c` exported at
+        node :math:`n` in time step :math:`t` of year :math:`y`
         """
         # create times xarray with 1 where the operation time step is in the year
         times = self.get_year_time_step_array()

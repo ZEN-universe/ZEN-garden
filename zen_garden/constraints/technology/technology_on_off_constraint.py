@@ -11,30 +11,40 @@ from zen_garden.elements.technology import Technology
 
 class TechnologyOnOffConstraint(GenericConstraint):
     def build(self):
-        """If technology is on, the binary variable is 1, else 0.
+        """Summary:
+        If technology is on, the binary variable is 1, else 0.
 
-        The min load constraint is expressed as six constraints
-        (here for conversion technologies):
+        The minimum-load relation is expressed through a linearized product of
+        installed capacity and the on/off binary:
+
+        Formulation:
 
         .. math::
-             m^\\mathrm{min}_{i,n,t}S^\\mathrm{approx}_{i,n,t}\\leq
-             G^\\mathrm{r}_{i,n,t} \\leq S^\\mathrm{approx}_{i,n,t} \n
-             0 \\leq S^\\mathrm{approx}_{i,n,t}
-             \\leq s^\\mathrm{max}_{i,n,y} B_{i,n,t} \n
-             S_{i,n,y} - s^\\mathrm{max}_{i,n,y}(1-B_{i,n,t})
-             \\leq S^\\mathrm{approx}_{i,n,t} \\leq S_{i,n,y}
+             \\ell^{\\mathrm{min}}_{h,p,t}\\widehat{K}_{h,p,t}\\leq
+             F^{\\mathrm{act}}_{h,p,t} \\leq \\widehat{K}_{h,p,t}
+             0 \\leq \\widehat{K}_{h,p,t}
+             \\leq \\overline{k}_{h,p,y} z^{\\mathrm{on}}_{h,p,t}
+             K_{h,p,y} - \\overline{k}_{h,p,y}(1-z^{\\mathrm{on}}_{h,p,t})
+             \\leq \\widehat{K}_{h,p,t} \\leq K_{h,p,y}
 
-        :math:`m^\\mathrm{min}_{i,n,t}`: minimum load parameter for
-        technology :math:`i`, node :math:`n`, time step :math:`t` \n
-        :math:`G_{i,n,t}^\\mathrm{r}`: reference carrier flow of the
-        technology :math:`i` at node :math:`n` in time step :math:`t` \n
-        :math:`S_{h,p,y}`: installed capacity of technology :math:`h` at
-        location :math:`p` in year :math:`y` \n
-        :math:`B_{i,n,t}`: binary variable indicating whether the technology is on or
-        off for technology :math:`i`, node :math:`n`, time step :math:`t` \n
-        :math:`S^\\mathrm{approx}_{i,n,t}`: helper variable that represents the product
-        of :math:`S_{i,n,y}` and :math:`B_{i,n,t}` \n
-        :math:`s^\\mathrm{max}_{i,n,y}`: Big-M limit on :math:`S_{h,p,y}`
+        Notation:
+
+        :math:`\\ell^{\\mathrm{min}}_{h,p,t}`: minimum load parameter for
+        technology :math:`h` at location :math:`p` in time step :math:`t` of
+        year :math:`y`
+        :math:`F^{\\mathrm{act}}_{h,p,t}`: constrained activity flow:
+        :math:`F^{\\mathrm{ref}}_{h,n,t}`
+        for conversion technologies, :math:`F^{\\mathrm{ch}}_{h,n,t}
+        +F^{\\mathrm{dis}}_{h,n,t}` for storage technologies, and
+        :math:`F^{\\mathrm{trans}}_{h,e,t}` for transport technologies
+        :math:`K_{h,p,y}`: installed capacity of technology :math:`h` at
+        location :math:`p` in year :math:`y`
+        :math:`z^{\\mathrm{on}}_{h,p,t}`: binary variable indicating whether
+        technology :math:`h` is on at location :math:`p` in time step :math:`t` of
+        year :math:`y`
+        :math:`\\widehat{K}_{h,p,t}`: helper variable representing the
+        product of :math:`K_{h,p,y}` and :math:`z^{\\mathrm{on}}_{h,p,t}`
+        :math:`\\overline{k}_{h,p,y}`: Big-M limit on :math:`K_{h,p,y}`
         """
         techs_on_off = self.zen_model.create_custom_set(
             ["set_technologies", "set_on_off"], Technology

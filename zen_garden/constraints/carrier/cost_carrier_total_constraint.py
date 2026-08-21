@@ -3,20 +3,24 @@ from zen_garden.constraints.generic_constraint import GenericConstraint
 
 class CostCarrierTotalConstraint(GenericConstraint):
     def build(self):
-        """Total cost of importing and exporting carrier.
+        """Summary:
+        Total cost of importing and exporting carrier.
+
+        Formulation:
 
         .. math::
-            C_y^{\\mathcal{C}} = \\sum_{c\\in\\mathcal{C}}\\sum_{n\\in\\mathcal{N}}
-            \\sum_{t\\in\\mathcal{T}} \\tau_t (O_{c,n,t} + O_{c,n,t}^{\\mathrm{shed}\\
-            \\mathrm{demand}})
+            C^{\\mathrm{carrier}}_y = \\sum_{c\\in\\mathcal{C}}\\sum_{n\\in\\mathcal{N}}
+            \\sum_{t\\in\\mathcal{T}_y} \\Delta t_t (C^{\\mathrm{carrier}}_{c,n,t}
+            + C^{\\mathrm{shed}}_{c,n,t})
 
-        :math:`O_{c,n,t}`: cost of importing and exporting carrier :math:`c`
-        at node :math:`n` and time step :math:`t`\n
-        :math:`O_{c,n,t}^{\\mathrm{shed\\ demand}}`: cost of shedding demand
-        of carrier :math:`c` at node :math:`n` and time step :math:`t`\n
-        :math:`\\tau_t`: duration of time step :math:`t`
+        Notation:
 
-
+        :math:`C^{\\mathrm{carrier}}_{c,n,t}`: cost of importing and exporting carrier
+        :math:`c` at node :math:`n` in time step :math:`t` of year :math:`y`
+        :math:`C^{\\mathrm{shed}}_{c,n,t}`: cost of shedding
+        demand of carrier :math:`c` at node :math:`n` in time step :math:`t` of year
+        :math:`y`
+        :math:`\\Delta t_t`: duration of time step :math:`t`
         """
         times = self.get_year_time_step_duration_array()
         term_summed_cost_carrier = (

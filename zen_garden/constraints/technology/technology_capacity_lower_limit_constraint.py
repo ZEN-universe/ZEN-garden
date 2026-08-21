@@ -3,7 +3,24 @@ from zen_garden.constraints.generic_constraint import GenericConstraint
 
 class TechnologyCapacityLowerLimitConstraint(GenericConstraint):
     def build(self):
-        """Constraint that installed capacity must be >= the defined lower limit."""
+        """Summary:
+        Constrain installed capacity by each positive lower limit.
+
+        Formulation:
+
+        .. math::
+            K_{h,p,y} \\geq \\underline{k}_{h,p,y}
+
+        No constraint is created where the configured lower limit is zero.
+        For storage technologies, the equation is applied independently to power
+        and energy capacity.
+
+        Notation:
+
+        :math:`K_{h,p,y}`: installed capacity of technology :math:`h` at
+        location :math:`p` in year :math:`y`
+        :math:`\\underline{k}_{h,p,y}`: lower capacity limit
+        """
 
         # In TechnologyRules, we access variables and parameters directly via self
         capacity = self.zen_model.variables["capacity"]

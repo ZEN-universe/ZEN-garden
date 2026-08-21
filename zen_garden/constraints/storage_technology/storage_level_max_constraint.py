@@ -3,16 +3,21 @@ from zen_garden.constraints.generic_constraint import GenericConstraint
 
 class StorageLevelMaxConstraint(GenericConstraint):
     def build(self):
-        """Limit maximum storage level to capacity.
+        """Summary:
+        Limit maximum storage level to capacity.
+
+        Formulation:
 
         .. math::
-            L_{k,n,t^\\mathrm{k}} \\le S^\\mathrm{e}_{k,n,y}
+            S^{\\mathrm{level}}_{h,n,\\tilde{t}} \\le K^{\\mathrm{energy}}_{h,n,y}
 
-        :math:`L_{k,n,t^\\mathrm{k}}`: storage level of storage technology :math:`k`
-        on node :math:`n` and time :math:`t` \n
-        :math:`S^\\mathrm{e}_{k,n,y}`: energy capacity of storage technology :math:`k`
-        on node :math:`n` in year :math:`y`
+        Notation:
 
+        :math:`S^{\\mathrm{level}}_{h,n,\\tilde{t}}`: storage level of storage
+        technology :math:`h` at node :math:`n` in storage time step :math:`\\tilde{t}`
+        of year :math:`y`
+        :math:`K^{\\mathrm{energy}}_{h,n,y}`: energy capacity of storage technology
+        :math:`h` on node :math:`n` in year :math:`y`
         """
         techs = self.zen_model.sets["set_storage_technologies"]
         nodes = self.zen_model.sets["set_nodes"]

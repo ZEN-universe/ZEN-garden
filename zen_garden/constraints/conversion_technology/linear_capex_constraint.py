@@ -7,18 +7,21 @@ from zen_garden.constraints.generic_constraint import GenericConstraint
 
 class LinearCapexConstraint(GenericConstraint):
     def build(self):
-        """If capacity and capex have a linear relationship.
+        """Summary:
+        If capacity and capex have a linear relationship.
+
+        Formulation:
 
         .. math::
-            A_{h,p,y}^{approximation} = \\alpha_{h,n,y} \\Delta S_{h,p,y}^{approx}
+            C^{\\mathrm{cap,overnight}}_{h,n,y} =
+            \\kappa^{\\mathrm{cap}}_{h,y} \\Delta K_{h,n,y}
 
-        :math:`A_{h,p,y}^{approx}`: approximated capex of the technology :math:`h`
-        at node :math:`p` in year :math:`y` \n
-        :math:`\\alpha_{h,n,y}`: specific capex of the technology :math:`h` at
-        node :math:`n` in year :math:`y` \n
-        :math:`\\Delta S_{h,p,y}^{approx}`: approximated capacity of the
-        technology :math:`h` at node :math:`p` in year :math:`y`
+        Notation:
 
+        :math:`C^{\\mathrm{cap,overnight}}_{h,n,y}`: overnight CAPEX of conversion
+        technology :math:`h` at node :math:`n` in year :math:`y`
+        :math:`\\kappa^{\\mathrm{cap}}_{h,y}`: specific CAPEX
+        :math:`\\Delta K_{h,n,y}`: power-capacity addition
         """
         techs = self.zen_model.sets["set_conversion_technologies"]
         nodes = self.zen_model.sets["set_nodes"]

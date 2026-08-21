@@ -8,26 +8,33 @@ from zen_garden.model.components.set_registry import SetRegistry
 
 class TransportTechnologyCapexConstraint(GenericConstraint):
     def build(self):
-        """Definition of the capital expenditures for the transport technology.
+        """Summary:
+        Definition of the capital expenditures for the transport technology.
+
+        Formulation:
 
         .. math::
-            \\text{if transport distance set to inf: } \\Delta S_{j,e,y} = 0
+            \\text{if transport distance set to inf: } \\Delta K_{h,e,y} = 0
         .. math::
-            \\text{else: } CAPEX_{j,e,y} = \\Delta S_{j,e,y}
-            \\alpha_{j,y}^{\\mathrm{const}} +
-            \\Delta S_{j,e,y} h_{j,e} \\alpha^\\mathrm{dist}_{j,e,y}
+            \\text{else: } C^{\\mathrm{cap,overnight}}_{h,e,y} = \\Delta K_{h,e,y}
+            \\kappa^{\\mathrm{cap,fixed}}_{h,y} +
+            g_{h,e,y} d^{\\mathrm{dist}}_{h,e}
+            \\kappa^{\\mathrm{cap,dist}}_{h,e,y}
 
-        :math:`\\Delta S_{j,e,y}`: Capacity addition of transport technology :math:`j`
-        on edge :math:`e` in year :math:`y` \n
-        :math:`CAPEX_{j,e,y}`: Capital expenditures of transport technology :math:`j`
-        on edge :math:`e` in year :math:`y` \n
-        :math:`\\alpha_{j,y}^{\\mathrm{const}}`: Specific constant capital expenditures
-        of transport technology :math:`j` in year :math:`y`
-        :math:`\\alpha^\\mathrm{dist}_{j,e,y}`: Specific capital expenditures per
-        distance of transport technology :math:`j` on edge :math:`e` in year :math:`y`
-        :math:`h_{j,e}`: Transport distance for transport technology :math:`j` on
-        edge :math:`e`
+        Notation:
 
+        :math:`\\Delta K_{h,e,y}`: Capacity addition of transport technology :math:`h`
+        on edge :math:`e` in year :math:`y`
+        :math:`C^{\\mathrm{cap,overnight}}_{h,e,y}`: overnight CAPEX of transport
+        technology :math:`h` on edge :math:`e` in year :math:`y`
+        :math:`\\kappa^{\\mathrm{cap,fixed}}_{h,y}`: Specific constant capital
+        expenditures of transport technology :math:`h` in year :math:`y`
+        :math:`\\kappa^{\\mathrm{cap,dist}}_{h,e,y}`: Specific capital expenditures per
+        distance of transport technology :math:`h` on edge :math:`e` in year :math:`y`
+        :math:`g_{h,e,y}`: binary installation decision for
+        transport technology :math:`h` on edge :math:`e` in year :math:`y`
+        :math:`d^{\\mathrm{dist}}_{h,e}`: Transport distance for transport technology
+        :math:`h` on edge :math:`e`
         """
         index_values, index_list = self.zen_model.create_custom_set(
             ["set_transport_technologies", "set_edges", "set_years"],

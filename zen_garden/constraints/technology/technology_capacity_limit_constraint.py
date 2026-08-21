@@ -5,21 +5,28 @@ from zen_garden.constraints.generic_constraint import GenericConstraint
 
 class TechnologyCapacityLimitConstraint(GenericConstraint):
     def build(self):
-        """Limited capacity_limit of technology.
+        """Summary:
+        Limited capacity_limit of technology.
+
+        Formulation:
 
         .. math::
             \\text{if existing capacities < capacity limit: }
-            s^\\mathrm{max}_{h,p,y} \\geq S_{h,p,y}
+            \\overline{k}_{h,p,y} \\geq K_{h,p,y}
         .. math::
-            \\text{else: } \\Delta S_{h,p,y} = 0
+            \\text{else: } \\Delta K_{h,p,y} = 0
 
-        :math:`S_{h,p,y}`: installed capacity of technology :math:`h` at
-        location :math:`p` in year :math:`y` \n
-        :math:`s^\\mathrm{max}_{h,p,y}`: capacity limit of technology :math:`h` at
-        location :math:`p` in year :math:`y` \n
-        :math:`\\Delta S_{h,p,y}`: size of built technology :math:`h` (invested
-        capacity after construction) at location :math:`p` in year :math:`y`
+        Infinite capacity limits are skipped. If investment is disabled globally,
+        all capacity additions are fixed to zero irrespective of the limit.
 
+        For storage technologies, the equation is applied independently to power
+        capacity and energy capacity :math:`K^{\\mathrm{energy}}_{h,n,y}`.
+
+        Notation:
+
+        :math:`K_{h,p,y}`: installed capacity
+        :math:`\\overline{k}_{h,p,y}`: capacity limit
+        :math:`\\Delta K_{h,p,y}`: capacity addition
         """
         # if the capacity limit is not reached by the existing capacities,
         # the capacity is constrained by the capacity limit.

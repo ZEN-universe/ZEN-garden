@@ -3,18 +3,31 @@ from zen_garden.constraints.generic_constraint import GenericConstraint
 
 class OpexEmissionsTechnologyTransportConstraint(GenericConstraint):
     def build(self):
-        """Calculate opex of each technology.
+        """Summary:
+        Calculate opex of each technology.
+
+        Formulation:
 
         .. math::
-            O_{j,t,y}^\\mathrm{t} = \\beta_{j,y} F_{j,e,t,y}
+            C^{\\mathrm{op,var}}_{h,e,t} = \\kappa^{\\mathrm{op,var}}_{h,y}
+            F^{\mathrm{trans}}_{h,e,t}
 
-        :math:`O_{h,p,t}^\\mathrm{t}`: Variable operating expenditures of transport
-        technology :math:`j` on edge :math:`e` at time :math:`t` in year :math:`y` \n
-        :math:`\\beta_{j,y}`: Specific variable operating expenditures of transport
-        technology :math:`j` in year :math:`y` \n
-        :math:`F_{j,e,t,y}`: Reference flow of carrier through transport
-        technology :math:`j` on edge :math:`e` at time :math:`t` in year :math:`y`
+        .. math::
+            M^{\\mathrm{tech}}_{h,e,t} =
+            \\varepsilon^{\\mathrm{op}}_hF^{\\mathrm{trans}}_{h,e,t}
 
+        Notation:
+
+        :math:`C^{\\mathrm{op,var}}_{h,e,t}`: variable OPEX of transport
+        technology :math:`h` on edge :math:`e` at time :math:`t` in year :math:`y`
+        :math:`\\kappa^{\\mathrm{op,var}}_{h,y}`: specific variable OPEX of
+        transport technology
+        :math:`h` in year :math:`y`
+        :math:`F^{\mathrm{trans}}_{h,e,t}`: carrier flow through transport
+        technology :math:`h` on edge :math:`e` at time :math:`t` in year :math:`y`
+        :math:`M^{\\mathrm{tech}}_{h,e,t}`: carbon emissions from transport
+        technology :math:`h` on edge :math:`e` at time :math:`t` in year :math:`y`
+        :math:`\\varepsilon^{\\mathrm{op}}_h`: carbon intensity of transport technology
         """
         techs = self.zen_model.sets["set_transport_technologies"]
         if len(techs) == 0:

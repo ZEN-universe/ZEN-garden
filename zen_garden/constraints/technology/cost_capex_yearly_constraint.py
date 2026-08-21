@@ -9,26 +9,32 @@ from zen_garden.model.components.multi_index_helper import MultiIndexHelper
 
 class CostCapexYearlyConstraint(TechnologyConstraint):
     def build(self):
-        """Aggregates the capex of built capacity and of existing capacity.
+        """Summary:
+        Aggregates the capex of built capacity and of existing capacity.
+
+        Formulation:
 
         .. math::
-            A_{h,p,y} = f_h (\\sum_{\\tilde{y} = \\max(y_0,y-\\lceil\\frac{l_h}
-            {\\mathrm{dy}}\\rceil+1)}^y \\alpha_{h,y}\\Delta S_{h,p,\\tilde{y}}
-            + \\sum_{\\hat{y}=\\psi(\\min(y_0-1,y-\\lceil\\frac{l_h}
-            {\\mathrm{dy}}\\rceil+1))}^{\\psi(y_0)} \\alpha_{h,y_0}
-            \\Delta s^\\mathrm{ex}_{h,p,\\hat{y}})
+            C^{\\mathrm{cap,ann}}_{h,p,y} = a^{\\mathrm{ann}}_h\\left(
+            \\sum_{\\tilde y\\in\\mathcal{Y}^{\\mathrm{dep}}_{h,y}}
+            C^{\\mathrm{cap,overnight}}_{h,p,\\tilde y} +
+            \\kappa^{\\mathrm{cap,ex}}_{h,p,y}\\right)
 
-        :math:`A_{h,p,y}`: annual capex of technology :math:`h` at location :math:`p`
-        in year :math:`y` \n
-        :math:`f_h`: annuity factor of technology :math:`h` \n
-        :math:`\\alpha_{h,y}`: unit cost of capital investment of technology :math:`h`
-        in year :math:`y` \n
-        :math:`\\Delta S_{h,p,y}`: size of built technology :math:`h` (invested capacity
-        after construction) at location :math:`p` in year :math:`y` \n
-        :math:`\\Delta s^\\mathrm{ex}_{h,p,y}`: size of the previously added capacities
-        at location :math:`p` in year :math:`y` \n
-        :math:`l_h`: depreciation time of technology :math:`h`   \n
-        :math:`\\mathrm{dy}`: interval between planning periods
+        Storage power- and energy-capacity CAPEX are stored separately and the
+        equation is applied to both terms before aggregation.
+
+        Notation:
+
+        :math:`C^{\\mathrm{cap,ann}}_{h,p,y}`: annualized CAPEX for technology
+        :math:`h` at location :math:`p` in year :math:`y`
+        :math:`a^{\\mathrm{ann}}_h`: annuity factor calculated from discount rate and
+        depreciation time
+        :math:`\\mathcal{Y}^{\\mathrm{dep}}_{h,y}`: modeled investment years whose
+        depreciation period still includes :math:`y`
+        :math:`C^{\\mathrm{cap,overnight}}_{h,p,y}`: overnight CAPEX of modeled
+        additions
+        :math:`\\kappa^{\\mathrm{cap,ex}}_{h,p,y}`: remaining overnight CAPEX of
+        existing capacity
         """
         index_values, index_names = self.zen_model.create_custom_set(
             [

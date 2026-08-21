@@ -3,20 +3,25 @@ from zen_garden.constraints.generic_constraint import GenericConstraint
 
 class CostTotalConstraint(GenericConstraint):
     def build(self):
-        """Add up all costs from technologies and carriers.
+        """Summary:
+        Add up all costs from technologies and carriers.
+
+        Formulation:
 
         .. math::
-            C_y = CAPEX_y + OPEX_y^\\mathrm{t} + OPEX_y^\\mathrm{c} + OPEX_y^\\mathrm{e}
+            C^{\\mathrm{total}}_y = C^{\\mathrm{cap}}_y + C^{\\mathrm{op}}_y +
+            C^{\\mathrm{carrier}}_y + C^{\\mathrm{CO_2}}_y
 
-        :math:`C_y`: total cost of energy system in year :math:`y` \n
-        :math:`CAPEX_y`: annual capital expenditures in year :math:`y` \n
-        :math:`OPEX_y^\\mathrm{t}`: annual operational expenditures for operating
-        technologies in year :math:`y` \n
-        :math:`OPEX_y^\\mathrm{c}`: annual operational expenditures for for importing
-        and exporting carriers in year :math:`y` \n
-        :math:`OPEX_y^\\mathrm{e}`: annual operational expenditures for carbon
+        Notation:
+
+        :math:`C^{\\mathrm{total}}_y`: total cost of energy system in year :math:`y`
+        :math:`C^{\\mathrm{cap}}_y`: annual capital expenditures in year :math:`y`
+        :math:`C^{\\mathrm{op}}_y`: annual operational expenditures for operating
+        technologies in year :math:`y`
+        :math:`C^{\\mathrm{carrier}}_y`: annual operational expenditures for for
+        importing and exporting carriers in year :math:`y`
+        :math:`C^{\\mathrm{CO_2}}_y`: annual operational expenditures for carbon
         emissions in year :math:`y`
-
         """
         lhs = (
             self.zen_model.variables["cost_total"]

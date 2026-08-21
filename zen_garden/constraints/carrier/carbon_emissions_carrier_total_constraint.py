@@ -3,16 +3,22 @@ from zen_garden.constraints.generic_constraint import GenericConstraint
 
 class CarbonEmissionsCarrierTotalConstraint(GenericConstraint):
     def build(self):
-        """Total carbon emissions of importing and exporting carrier.
+        """Summary:
+        Total carbon emissions of importing and exporting carrier.
+
+        Formulation:
 
         .. math::
-            E_y^{\\mathcal{C}} = \\sum_{c\\in\\mathcal{C}}\\sum_{n\\in\\mathcal{N}}
-            \\sum_{t\\in\\mathcal{T}} \\tau_t \\theta_{c,n,t}^{\\mathrm{carrier}}
+            M_y^{\\mathrm{carrier}} = \\sum_{c\\in\\mathcal{C}}\\sum_{n\\in\\mathcal{N}}
+            \\sum_{t\\in\\mathcal{T}_y} \\Delta t_t
+            M^{\\mathrm{carrier}}_{c,n,t}
 
-        :math:`\\theta_{c,n,t}^{\\mathrm{carrier}}`: carbon emissions of importing and
-        exporting carrier :math:`c` at node :math:`n` and time step :math:`t`\n
-        :math:`\\tau_t`: duration of time step :math:`t`
+        Notation:
 
+        :math:`M^{\\mathrm{carrier}}_{c,n,t}`: carbon emissions of importing
+        and exporting carrier :math:`c` at node :math:`n` in time step :math:`t`
+        of year :math:`y`
+        :math:`\\Delta t_t`: duration of time step :math:`t`
         """
         term_summed_carbon_emissions_carrier = (
             self.zen_model.variables["carbon_emissions_carrier"]

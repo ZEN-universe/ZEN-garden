@@ -3,27 +3,29 @@ from zen_garden.constraints.generic_constraint import GenericConstraint
 
 class OpexEmissionsTechnologyStorageConstraint(GenericConstraint):
     def build(self):
-        """Calculate opex of each technology.
+        """Summary:
+        Calculate variable OPEX and carbon emissions of each storage technology.
+
+        Formulation:
 
         .. math::
-            O_{h,p,t}^\\mathrm{t} = \\beta_{h,p,t} (\\underline{H}_{k,n,t} +
-            \\overline{H}_{k,n,t}) \n
-            \\theta_{h,p,t}^{\\mathrm{tech}} = \\epsilon_h (\\underline{H}_{k,n,t} +
-            \\overline{H}_{k,n,t})
+            C^{\\mathrm{op,var}}_{h,n,t} = \\kappa^{\\mathrm{op,var}}_{h,y}
+            (F^{\\mathrm{ch}}_{h,n,t} + F^{\\mathrm{dis}}_{h,n,t})
+            M^{\\mathrm{tech}}_{h,n,t} = \\varepsilon^{\\mathrm{op}}_h
+            (F^{\\mathrm{ch}}_{h,n,t} + F^{\\mathrm{dis}}_{h,n,t})
 
-        :math:`O_{h,p,t}^\\mathrm{t}`: variable operational expenditures for storage
-        technology :math:`h` on node :math:`n` and time :math:`t` \n
-        :math:`\\beta_{h,p,t}`: specific variable operational expenditures for storage
-        technology :math:`h` on node :math:`n` and time :math:`t` \n
-        :math:`\\underline{H}_{k,n,t}`: carrier flow into storage technology :math:`k`
-        on node :math:`n` and time :math:`t` \n
-        :math:`\\overline{H}_{k,n,t}`: carrier flow out of storage technology :math:`k`
-        on node :math:`n` and time :math:`t` \n
-        :math:`\\theta_{h,p,t}^{\\mathrm{tech}}`: carbon emissions for storage
-        technology :math:`h` on node :math:`n` and time :math:`t` \n
-        :math:`\\epsilon_h`: carbon intensity for operating storage technology :math:`h`
-        on node :math:`n`
+        Notation:
 
+        :math:`C^{\\mathrm{op,var}}_{h,n,t}`: variable OPEX of storage technology
+        :math:`h` at node :math:`n` in time step :math:`t` of year :math:`y`
+        :math:`\\kappa^{\\mathrm{op,var}}_{h,y}`: specific variable OPEX
+        :math:`F^{\\mathrm{ch}}_{h,n,t}`: carrier flow into storage technology
+        :math:`h`
+        :math:`F^{\\mathrm{dis}}_{h,n,t}`: carrier flow out of storage technology
+        :math:`h`
+        :math:`M^{\\mathrm{tech}}_{h,n,t}`: operating carbon emissions
+        :math:`\\varepsilon^{\\mathrm{op}}_h`: carbon intensity of the storage
+        technology
         """
         techs = self.zen_model.sets["set_storage_technologies"]
         if len(techs) == 0:

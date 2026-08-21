@@ -5,17 +5,26 @@ from zen_garden.constraints.generic_constraint import GenericConstraint
 
 class NetPresentCostConstraint(GenericConstraint):
     def build(self):
-        """Discounts the annual capital flows to calculate the net_present_cost.
+        """Summary:
+        Discounts the annual capital flows to calculate the net_present_cost.
+
+        Formulation:
 
         .. math::
-            NPC_y = \\sum_{i \\in [0,dy(y))-1]}
-            \\left( \\dfrac{1}{1+r} \\right)^{\\left(dy (y-y_0) + i \\right)} C_y
+            C^{\\mathrm{NPC}}_y = \\sum_{i=0}^{\\delta_y-1}
+            \\left( \\dfrac{1}{1+r^{\\mathrm{disc}}} \\right)^{\\Delta y(y-y_0)+i}
+            C^{\\mathrm{total}}_y
 
-        :math:`NPC_y`: net present cost of energy system in year :math:`y` \n
-        :math:`C_y`: total cost of energy system in year :math:`y` \n
-        :math:`r`: discount rate \n
-        :math:`dy`: interval between planning periods \n
+        where :math:`\\delta_y=\\Delta y` for ordinary planning periods and
 
+        Notation:
+
+        :math:`\\delta_y=1` when :math:`y` is the final year of the entire horizon.
+
+        :math:`C^{\\mathrm{NPC}}_y`: net present cost of energy system in year :math:`y`
+        :math:`C^{\\mathrm{total}}_y`: total cost of energy system in year :math:`y`
+        :math:`r^{\\mathrm{disc}}`: discount rate
+        :math:`\\Delta y`: interval between planning periods
         """
         factor = pd.Series(index=self.energy_system.set_years)
         for year in self.energy_system.set_years:

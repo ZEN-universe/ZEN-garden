@@ -11,25 +11,43 @@ from zen_garden.constraints.generic_constraint import GenericConstraint
 
 class TechnologyConstructionTimeConstraint(GenericConstraint):
     def build(self):
-        """Construction time of technology: time between investment and availability.
+        """Summary:
+        Construction time of technology: time between investment and availability.
+
+        Formulation:
 
         .. math::
-            \\text{if start time step in set time steps yearly: } \\Delta S_{h,p,y} =
-            \\Delta S_{h,p,(y-dy^{\\mathrm{construction}})}^\\mathrm{invest}
+            \\text{if start time step is modeled: } \\Delta K_{h,p,y} =
+            \\Delta K_{h,p,(y-\\Delta y^{\\mathrm{construction}})}^\\mathrm{invest}
         .. math::
-            \\text{elif start time step in set time steps yearly entire horizon:}
-            \\Delta S_{h,p,y} =
-            \\Delta s^\\mathrm{ex,invest}_{h,p,(y-dy^{\\mathrm{construction}})}
+            \\text{elif start time step is before the modeled horizon:}
+            \\Delta K_{h,p,y} =
+            k^{\\mathrm{ex,inv}}_{h,p,
+            (y-\\Delta y^{\\mathrm{construction}})}
         .. math::
-            \\text{else: } \\Delta S_{h,p,y} = 0
+            \\text{else: } \\Delta K_{h,p,y} = 0
 
-        :math:`\\Delta S_{h,p,y}`: size of built technology :math:`h` (invested
-        capacity after construction) at location :math:`p` in year :math:`y` \n
-        :math:`\\Delta S_{h,p,y}^\\mathrm{invest}`: size of invested technology at
-        location :math:`p` in year :math:`y` \n
-        :math:`\\Delta s^\\mathrm{ex,invest}_{h,p,y}`: size of the previously invested
-        capacities at location :math:`p` in year :math:`y` \n
+        Investments whose completion would occur after the modeled horizon are
+        fixed to zero:
 
+        .. math::
+            \\Delta K^{\\mathrm{inv}}_{h,p,y}=0
+            \\quad\\text{if }y+\\Delta y^\\mathrm{construction}
+            \\notin\\mathcal{Y}.
+
+        For storage technologies, each equation is applied independently to power
+        and energy capacity.
+
+        Notation:
+
+        :math:`\\Delta K_{h,p,y}`: size of built technology :math:`h` (invested
+        capacity after construction) at location :math:`p` in year :math:`y`
+        :math:`\\Delta K_{h,p,y}^\\mathrm{invest}`: size of invested technology at
+        location :math:`p` in year :math:`y`
+        :math:`k^{\\mathrm{ex,inv}}_{h,p,y}`: size of the previously invested
+        capacities at location :math:`p` in year :math:`y`
+        :math:`\\Delta y^\\mathrm{construction}`: construction time rounded up to an
+        integer number of planning intervals
         """
         # get investment time step
         investment_time = pd.Series(

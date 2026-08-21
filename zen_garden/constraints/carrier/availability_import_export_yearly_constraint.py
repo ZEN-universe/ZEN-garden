@@ -5,28 +5,31 @@ from zen_garden.constraints.generic_constraint import GenericConstraint
 
 class AvailabilityImportExportYearlyConstraint(GenericConstraint):
     def build(self):
-        """node- and year-dependent carrier availability to import/export from outside
+        """Summary:
+        node- and year-dependent carrier availability to import/export from outside
         the system boundaries.
 
-        .. math::
-            \\underline{a}_{c,n,y}^\\mathrm{Y} \\geq \\sum_{t\\in\\mathcal{T}}\\tau_t
-            \\underline{U}_{c,n,t}
+        Formulation:
 
         .. math::
-            \\overline{a}_{c,n,y}^\\mathrm{Y} \\geq \\sum_{t\\in\\mathcal{T}}\\tau_t
-            \\overline{U}_{c,n,t}
+            a^{\\mathrm{imp}}_{c,n,y} \\geq \\sum_{t\\in\\mathcal{T}_y}\\Delta t_t
+            F^{\\mathrm{imp}}_{c,n,t}
 
-        :math:`\\underline{a}_{c,n,y}^\\mathrm{Y}`: yearly availability of
-        carrier :math:`c` to import at node :math:`n`\n
-        :math:`\\overline{a}_{c,n,y}^\\mathrm{Y}`: yearly availability of
-        carrier :math:`c` to export at node :math:`n`\n
-        :math:`\\tau_t`: is the duration of time step :math:`t`\n
-        :math:`\\underline{U}_{c,n,t}`: flow of carrier :math:`c` imported at
-        node :math:`n` at time step :math:`t`\n
-        :math:`\\overline{U}_{c,n,t}`: flow of carrier :math:`c` exported at
-        node :math:`n` at time step :math:`t`
+        .. math::
+            a^{\\mathrm{exp}}_{c,n,y} \\geq \\sum_{t\\in\\mathcal{T}_y}\\Delta t_t
+            F^{\\mathrm{exp}}_{c,n,t}
 
+        Notation:
 
+        :math:`a^{\\mathrm{imp}}_{c,n,y}`: yearly availability of
+        carrier :math:`c` to import at node :math:`n`
+        :math:`a^{\\mathrm{exp}}_{c,n,y}`: yearly availability of
+        carrier :math:`c` to export at node :math:`n`
+        :math:`\\Delta t_t`: is the duration of time step :math:`t`
+        :math:`F^{\\mathrm{imp}}_{c,n,t}`: flow of carrier :math:`c` imported at
+        node :math:`n` in time step :math:`t` of year :math:`y`
+        :math:`F^{\\mathrm{exp}}_{c,n,t}`: flow of carrier :math:`c` exported at
+        node :math:`n` in time step :math:`t` of year :math:`y`
         """
         # The constraint is only constrained if the availability is finite
         mask_imp = self.zen_model.parameters.availability_import_yearly != np.inf

@@ -13,15 +13,27 @@ logger = logging.getLogger(__name__)
 
 class RetrofitFlowCouplingConstraint(GenericConstraint):
     def build(self):
-        """Couples reference flow variables based on modeling technique.
+        """Summary:
+        Limit retrofit reference flow by the associated base-technology flow.
+
+        Formulation:
 
         .. math::
-            \\text{if reference carrier in input carriers}
-            \\underline{G}_{i,n,t}^\\mathrm{r} = G^\\mathrm{d,approximation}_{i,n,t}
-        .. math::
-            \\text{if reference carrier in output carriers}
-            \\overline{G}_{i,n,t}^\\mathrm{r} = G^\\mathrm{d,approximation}_{i,n,t}
+            F^{\\mathrm{ref}}_{h^{\\mathrm{retro}},n,t} \\leq
+            \\eta^{\\mathrm{retro}}_{h^{\\mathrm{retro}},n,t}
+            F^{\\mathrm{ref}}_{h^{\mathrm{base}},n,t}
 
+        Notation:
+
+        :math:`F^{\\mathrm{ref}}_{h^{\\mathrm{retro}},n,t}`: reference flow of retrofit
+        technology :math:`h^{\\mathrm{retro}}`
+        :math:`F^{\\mathrm{ref}}_{h^{\mathrm{base}},n,t}`: reference flow of its
+        associated base
+        technology :math:`h^{\mathrm{base}}`
+        :math:`\\eta^{\\mathrm{retro}}_{h^{\\mathrm{retro}},n,t}`: retrofit
+        flow-coupling factor.
+        Reference flow is selected from the input or output flow according to each
+        technology's configured reference carrier.
         """
         flow_conversion_input = self.zen_model.variables["flow_conversion_input"]
         flow_conversion_output = self.zen_model.variables["flow_conversion_output"]

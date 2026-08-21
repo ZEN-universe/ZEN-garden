@@ -3,24 +3,28 @@ from zen_garden.constraints.generic_constraint import GenericConstraint
 
 class OpexEmissionsTechnologyConversionConstraint(GenericConstraint):
     def build(self):
-        """Calculate opex and carbon emissions of each technology.
+        """Summary:
+        Calculate opex and carbon emissions of each technology.
+
+        Formulation:
 
         .. math::
-            O_{h,p,t}^\\mathrm{t} = \\beta_{h,p,t} G_{i,n,t}^\\mathrm{r} \n
-            \\theta_{h,p,t} = \\epsilon_h G_{i,n,t}^\\mathrm{r}
+            C^{\\mathrm{op,var}}_{h,n,t} = \\kappa^{\\mathrm{op,var}}_{h,y}
+            F^{\\mathrm{ref}}_{h,n,t}
+            M^{\\mathrm{tech}}_{h,n,t}
+            = \\varepsilon^{\\mathrm{op}}_h F^{\\mathrm{ref}}_{h,n,t}
 
-        :math:`O_{h,p,t}^\\mathrm{t}`: variable opex of the technology :math:`h` at
-        node :math:`p` in time step :math:`t` \n
-        :math:`\\beta_{h,p,t}`: specific variable opex of the technology :math:`h` at
-        node :math:`p` in time step :math:`t` \n
-        :math:`G_{i,n,t}^\\mathrm{r}`: reference carrier flow of the
-        technology :math:`i` at node :math:`n` in time step :math:`t` \n
-        :math:`\\theta^{\\mathrm{tech}}_{h,p,t}`: carbon emissions of operating the
-        technology :math:`h` at node :math:`p` in time step :math:`t` \n
-        :math:`\\epsilon_h`: carbon intensity of the reference carrier of
-        technology :math:`h`
+        Notation:
 
-
+        :math:`C^{\\mathrm{op,var}}_{h,n,t}`: variable OPEX of conversion technology
+        :math:`h` at node :math:`n` in time step :math:`t` of year :math:`y`
+        :math:`\\kappa^{\\mathrm{op,var}}_{h,y}`: specific variable OPEX
+        :math:`F^{\\mathrm{ref}}_{h,n,t}`: reference carrier flow of the
+        technology :math:`h` at node :math:`n` in time step :math:`t` of year
+        :math:`y`
+        :math:`M^{\\mathrm{tech}}_{h,n,t}`: operating carbon emissions
+        :math:`\\varepsilon^{\\mathrm{op}}_h`: carbon intensity of the
+        conversion technology
         """
         techs = self.zen_model.sets["set_conversion_technologies"]
         if len(techs) == 0:

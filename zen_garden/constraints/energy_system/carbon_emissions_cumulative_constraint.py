@@ -5,18 +5,24 @@ from zen_garden.constraints.generic_constraint import GenericConstraint
 
 class CarbonEmissionsCumulativeConstraint(GenericConstraint):
     def build(self):
-        """Cumulative carbon emissions over time.
+        """Summary:
+        Cumulative carbon emissions over time.
+
+        Formulation:
 
         .. math::
-            \\text{First planning period } y = y_0, \\quad E_y^\\mathrm{cum} = E_y
+            \\text{First planning period } y = y_0, \\quad
+            M_y^{\\mathrm{cum}} = m_0^{\\mathrm{cum}}+M_y
         .. math::
-            \\text{Subsequent periods } y > y_0, \\quad E_y^{cum}
-            = E_{y-1}^{cum} + (dy-1)E_{y-1}+E_y
+            \\text{Subsequent periods } y > y_0, \\quad M_y^{\\mathrm{cum}}
+            = M_{y-1}^{\\mathrm{cum}} + (\\Delta y-1)M_{y-1}+M_y
 
-        :math:`dy`: interval between planning periods \n
-        :math:`E_y`: annual carbon emissions in year :math:`y` \n
-        :math:`E_y^{cum}`: cumulative carbon emissions in year :math:`y`
+        Notation:
 
+        :math:`\\Delta y`: interval between planning periods
+        :math:`M_y`: annual carbon emissions in year :math:`y`
+        :math:`M_y^{\\mathrm{cum}}`: cumulative carbon emissions in year :math:`y`
+        :math:`m_0^{\\mathrm{cum}}`: cumulative emissions before the modeled horizon
         """
         m = [
             True if year == self.energy_system.set_years[0] else False

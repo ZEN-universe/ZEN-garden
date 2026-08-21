@@ -3,18 +3,23 @@ from zen_garden.constraints.generic_constraint import GenericConstraint
 
 class TechnologyMinCapacityAdditionConstraint(GenericConstraint):
     def build(self):
-        """Min capacity addition of technology.
+        """Summary:
+        Min capacity addition of technology.
+
+        Formulation:
 
         .. math::
-            \\Delta s^\\mathrm{min}_{h} g_{i,p,y} \\le \\Delta S_{h,p,y}
+            \\underline{\\Delta k}_{h,p,y} g_{h,p,y}
+            \\leq \\Delta K_{h,p,y}
 
-        :math:`\\Delta s^\\mathrm{min}_{h}`: minimum capacity addition of
-        technology :math:`h` \n
-        :math:`g_{i,p,y}`: binary variable which equals 1 if technology is installed
-        at location :math:`p` in year :math:`y` \n
-        :math:`\\Delta S_{h,p,y}`: size of built technology :math:`h` (invested
-        capacity after construction) at location :math:`p` in year :math:`y`
+        The constraint is omitted for zero or missing minimum additions.
 
+        Notation:
+
+        :math:`\\underline{\\Delta k}_{h,p,y}`: minimum capacity addition
+        :math:`g_{h,p,y}`: binary variable which equals 1 if technology is installed
+        at location :math:`p` in year :math:`y`
+        :math:`\\Delta K_{h,p,y}`: capacity addition
         """
         capacity_addition_min = self.zen_model.parameters.capacity_addition_min
         mask = (capacity_addition_min != 0) & (capacity_addition_min.notnull())
