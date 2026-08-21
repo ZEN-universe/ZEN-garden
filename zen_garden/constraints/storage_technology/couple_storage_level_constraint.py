@@ -3,13 +3,13 @@ from zen_garden.constraints.generic_constraint import GenericConstraint
 
 class CoupleStorageLevelConstraint(GenericConstraint):
     def build(self):
-        r"""Summary:
+        """Summary:
         Couple subsequent storage levels (time coupling constraints).
 
         Formulation:
 
         .. math::
-            S^{\\mathrm{level}}_{h,n,\\tilde{t}} = 
+            S^{\\mathrm{level}}_{h,n,\\tilde{t}} =
             S^{\\mathrm{level}}_{h,n,\\tilde{t}-1,y}
             (1-\\lambda^{\\mathrm{self}}_h)^{\\Delta \\tilde{t}_{\\tilde{t}}} +
             (\\eta^{\\mathrm{ch}}_h F^{\\mathrm{ch}}_{h,n,\\sigma(\\tilde{t})} -
@@ -22,10 +22,10 @@ class CoupleStorageLevelConstraint(GenericConstraint):
 
         Notation:
 
-        :math:`S^{\\mathrm{level}}_{h,n,\\tilde{t}}`: storage level of storage 
+        :math:`S^{\\mathrm{level}}_{h,n,\\tilde{t}}`: storage level of storage
         technology :math:`h` at node :math:`n` in storage time step :math:`\\tilde{t}`
         of year :math:`y`
-        :math:`\\lambda^{\\mathrm{self}}_h`: self-discharge rate of storage 
+        :math:`\\lambda^{\\mathrm{self}}_h`: self-discharge rate of storage
         technology :math:`h`
         :math:`\\Delta \\tilde{t}_{\\tilde{t}}`: duration of storage time step of
         technology :math:`h`
@@ -40,7 +40,7 @@ class CoupleStorageLevelConstraint(GenericConstraint):
         storage technology :math:`h` at node :math:`n` and time
         :math:`\\sigma(\\tilde{t})` in
         year :math:`y`
-        :math:`q^{\\mathrm{in}}_{h,n,\\sigma(\\tilde{t})}`: exogenous inflow into 
+        :math:`q^{\\mathrm{in}}_{h,n,\\sigma(\\tilde{t})}`: exogenous inflow into
         storage
         :math:`F^{\\mathrm{spill}}_{h,n,\\sigma(\\tilde{t})}`: storage spillage
         """

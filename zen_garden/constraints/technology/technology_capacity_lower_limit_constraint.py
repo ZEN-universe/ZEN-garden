@@ -3,7 +3,7 @@ from zen_garden.constraints.generic_constraint import GenericConstraint
 
 class TechnologyCapacityLowerLimitConstraint(GenericConstraint):
     def build(self):
-        r"""Summary:
+        """Summary:
         Constrain installed capacity by each positive lower limit.
 
         Formulation:

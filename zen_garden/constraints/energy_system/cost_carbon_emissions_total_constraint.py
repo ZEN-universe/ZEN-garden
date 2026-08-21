@@ -5,7 +5,7 @@ from zen_garden.constraints.generic_constraint import GenericConstraint
 
 class CostCarbonEmissionsTotalConstraint(GenericConstraint):
     def build(self):
-        r"""Summary:
+        """Summary:
         Carbon cost associated with the carbon emissions of the system in each year.
 
         Formulation:
@@ -23,11 +23,11 @@ class CostCarbonEmissionsTotalConstraint(GenericConstraint):
         :math:`C^{\\mathrm{CO_2}}_y`: cost of carbon emissions in year :math:`y`
         :math:`M_y`: annual carbon emissions of energy system in year :math:`y`
         :math:`\\pi^{\\mathrm{CO_2}}`: carbon price
-        :math:`M_y^{\\mathrm{ann,over}}`: annual carbon emissions overshoot in year 
+        :math:`M_y^{\\mathrm{ann,over}}`: annual carbon emissions overshoot in year
         :math:`y`
         :math:`\\pi^{\\mathrm{CO_2,ann}}`: carbon price for annual overshoot
         :math:`M_y^{\\mathrm{bud,over}}`: carbon-budget overshoot
-        :math:`\\pi^{\\mathrm{CO_2,bud}}`: carbon price for budget overshoot. This cost 
+        :math:`\\pi^{\\mathrm{CO_2,bud}}`: carbon price for budget overshoot. This cost
         is assigned only to the last modeled year.
         """
         mask_last_year = [

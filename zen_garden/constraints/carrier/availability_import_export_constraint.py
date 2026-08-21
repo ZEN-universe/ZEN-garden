@@ -3,7 +3,7 @@ from zen_garden.constraints.generic_constraint import GenericConstraint
 
 class AvailabilityImportExportConstraint(GenericConstraint):
     def build(self):
-        r"""Summary:
+        """Summary:
         node- and time-dependent carrier availability to import/export from outside
         the system boundaries.
 

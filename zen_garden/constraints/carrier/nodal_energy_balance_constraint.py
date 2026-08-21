@@ -10,7 +10,7 @@ from zen_garden.model.components.multi_index_helper import MultiIndexHelper
 
 class NodalEnergyBalanceConstraint(GenericConstraint):
     def build(self):
-        r"""Summary:
+        """Summary:
         Nodal energy balance for each time step.
 
         Formulation:
@@ -33,10 +33,10 @@ class NodalEnergyBalanceConstraint(GenericConstraint):
         Sources of carrier :math:`c` at node :math:`n` in time step :math:`t`
         of year :math:`y`:
 
-        :math:`F^{\\mathrm{conv,out}}_{h,c^{\\mathrm{out}},n,t}`: output flow of 
+        :math:`F^{\\mathrm{conv,out}}_{h,c^{\\mathrm{out}},n,t}`: output flow of
         carrier :math:`c` from conversion technology :math:`h`
-        :math:`F^{\mathrm{trans}}_{h,e,t}`: transported flow on ingoing edge 
-        :math:`e`, minus loss :math:`F^{\\mathrm{loss}}_{h,e,t}`, for transport 
+        :math:`F^{\mathrm{trans}}_{h,e,t}`: transported flow on ingoing edge
+        :math:`e`, minus loss :math:`F^{\\mathrm{loss}}_{h,e,t}`, for transport
         technology :math:`h`
         :math:`F^{\\mathrm{dis}}_{h,n,t}`: output flow from storage technology
         :math:`h`
@@ -45,10 +45,10 @@ class NodalEnergyBalanceConstraint(GenericConstraint):
         Sinks of carrier :math:`c` at node :math:`n` in time step :math:`t`
         of year :math:`y`:
         :math:`d_{c,n,t}-F^{\\mathrm{shed}}_{c,n,t}`: served demand
-        :math:`F^{\\mathrm{conv,in}}_{h,c^{\\mathrm{in}},n,t}`: input flow to 
+        :math:`F^{\\mathrm{conv,in}}_{h,c^{\\mathrm{in}},n,t}`: input flow to
         conversion technology
         :math:`h`
-        :math:`F^{\mathrm{trans}}_{h,e',t}`: transported flow on outgoing 
+        :math:`F^{\mathrm{trans}}_{h,e',t}`: transported flow on outgoing
         edge :math:`e'`
         :math:`F^{\\mathrm{ch}}_{h,n,t}`: input flow to storage technology :math:`h`
         :math:`F^{\\mathrm{exp}}_{c,n,t}`: exported carrier flow

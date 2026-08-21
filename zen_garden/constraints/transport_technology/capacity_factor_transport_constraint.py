@@ -5,7 +5,7 @@ from zen_garden.constraints.generic_constraint import GenericConstraint
 
 class CapacityFactorTransportConstraint(GenericConstraint):
     def build(self):
-        r"""Summary:
+        """Summary:
         Load is limited by the installed capacity and the maximum load factor.
 
         Formulation:
@@ -15,7 +15,7 @@ class CapacityFactorTransportConstraint(GenericConstraint):
 
         Notation:
 
-        :math:`F^{\mathrm{trans}}_{h,e,t}`: carrier flow through transport 
+        :math:`F^{\mathrm{trans}}_{h,e,t}`: carrier flow through transport
         technology :math:`h`
         on edge :math:`e` in time step :math:`t` of year :math:`y`
         :math:`\\ell^{\\mathrm{max}}_{h,e,t}`: Maximum load factor of transport

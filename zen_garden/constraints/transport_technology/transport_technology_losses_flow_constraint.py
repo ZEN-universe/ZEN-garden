@@ -8,37 +8,37 @@ from zen_garden.constraints.generic_constraint import GenericConstraint
 
 class TransportTechnologyLossesFlowConstraint(GenericConstraint):
     def build(self):
-        r"""Summary:
+        """Summary:
         Compute the flow losses for a carrier through a transport technology.
 
         Formulation:
 
         .. math::
             \\text{if } d^{\\mathrm{dist}}_{h,e}<\\infty:\\quad
-            F^{\\mathrm{loss}}_{h,e,t} = \\lambda^{\\mathrm{loss}}_{h,e} 
-            F^{\mathrm{trans}}_{h,e,t}
+            F^{\\mathrm{loss}}_{h,e,t} = \\lambda^{\\mathrm{loss}}_{h,e}
+            F^{\\mathrm{trans}}_{h,e,t}
 
         For infinite transport distances, this constraint does not restrict the loss
         variable.
 
         .. math::
-            \\lambda^{\\mathrm{loss}}_{h,e} = 
+            \\lambda^{\\mathrm{loss}}_{h,e} =
             d^{\\mathrm{dist}}_{h,e}\\lambda^{\\mathrm{lin}}_h
             \\quad\\text{or}\\quad
-            \\lambda^{\\mathrm{loss}}_{h,e} = 
+            \\lambda^{\\mathrm{loss}}_{h,e} =
             1-\\exp(-d^{\\mathrm{dist}}_{h,e}\\lambda^{\\mathrm{exp}}_h)
 
         Notation:
 
         :math:`F^{\\mathrm{loss}}_{h,e,t}`: flow losses through transport technology
         :math:`h` on edge :math:`e` in time step :math:`t` of year :math:`y`
-        :math:`d^{\\mathrm{dist}}_{h,e}`: Transport distance for transport technology 
+        :math:`d^{\\mathrm{dist}}_{h,e}`: Transport distance for transport technology
         :math:`h` on
         edge :math:`e`
-        :math:`\\lambda^{\\mathrm{loss}}_{h,e}`: effective loss factor, 
+        :math:`\\lambda^{\\mathrm{loss}}_{h,e}`: effective loss factor,
         calculated during preprocessing
         from either a linear or exponential loss-rate input
-        :math:`F^{\mathrm{trans}}_{h,e,t}`: carrier flow through transport 
+        :math:`F^{\mathrm{trans}}_{h,e,t}`: carrier flow through transport
         technology :math:`h` on edge :math:`e` in time step :math:`t` of year :math:`y`
         """
         if len(self.zen_model.sets["set_transport_technologies"]) == 0:

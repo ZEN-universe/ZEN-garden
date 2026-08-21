@@ -5,7 +5,7 @@ from zen_garden.constraints.generic_constraint import GenericConstraint
 
 class CapacityEnergyToPowerRatioConstraint(GenericConstraint):
     def build(self):
-        r"""Summary:
+        """Summary:
         Limit the energy-to-power ratio of capacity additions.
 
         Formulation:
@@ -24,9 +24,9 @@ class CapacityEnergyToPowerRatioConstraint(GenericConstraint):
         storage :math:`h` at node :math:`n` in year :math:`y`
         :math:`\\Delta K^{\\mathrm{e}}_{h,n,y}`: energy-capacity addition of
         storage :math:`h` at node :math:`n` in year :math:`y`
-        :math:`r^{\\mathrm{EP,min}}_h`: minimum energy-to-power ratio of storage 
+        :math:`r^{\\mathrm{EP,min}}_h`: minimum energy-to-power ratio of storage
         :math:`h`
-        :math:`r^{\\mathrm{EP,max}}_h`: maximum energy-to-power ratio of storage 
+        :math:`r^{\\mathrm{EP,max}}_h`: maximum energy-to-power ratio of storage
         :math:`h`
         """
         techs = self.zen_model.sets["set_storage_technologies"]

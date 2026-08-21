@@ -3,7 +3,7 @@ from zen_garden.constraints.generic_constraint import GenericConstraint
 
 class CostOpexYearlyTotalConstraint(GenericConstraint):
     def build(self):
-        r"""Summary:
+        """Summary:
         Sums over all technologies to calculate total opex.
 
         Formulation:

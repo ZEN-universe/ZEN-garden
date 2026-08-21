@@ -5,7 +5,7 @@ from zen_garden.constraints.generic_constraint import GenericConstraint
 
 class TechnologyCapacityLimitConstraint(GenericConstraint):
     def build(self):
-        r"""Summary:
+        """Summary:
         Limited capacity_limit of technology.
 
         Formulation:

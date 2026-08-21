@@ -3,17 +3,18 @@ from __future__ import annotations
 import importlib
 import inspect
 import re
+from typing import Any
 
 from docutils import nodes
 from docutils.parsers.rst import directives
-from docutils.statemachine import ViewList
+from docutils.statemachine import StringList
 from sphinx.application import Sphinx
 from sphinx.util.docutils import SphinxDirective
 from sphinx.util.nodes import nested_parse_with_titles
 from sphinx.util.typing import ExtensionMetadata
 
 """
-TO DUBUG:
+TO DEBUG:
 
 import pdb;
 pdb.set_trace()
@@ -104,7 +105,7 @@ class DocstringDirective(SphinxDirective):
             selected.extend(content)
         return selected
 
-    def render_docstring(self, obj: object, full_name: str) -> list[nodes.Node]:
+    def render_docstring(self, obj: Any, full_name: str) -> list[nodes.Node]:
         """Render a cleaned docstring and register its source as a dependency."""
         doc = inspect.getdoc(obj)
         if not doc:
@@ -145,7 +146,7 @@ class DocstringDirective(SphinxDirective):
         except (OSError, TypeError):
             source_line = 0
 
-        content = ViewList()
+        content = StringList()
         for offset, line in enumerate(filtered):
             content.append(line, source, source_line + offset)
 

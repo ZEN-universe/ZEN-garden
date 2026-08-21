@@ -5,7 +5,7 @@ from zen_garden.constraints.generic_constraint import GenericConstraint
 
 class CostOpexYearlyConstraint(GenericConstraint):
     def build(self):
-        r"""Summary:
+        """Summary:
         Yearly opex for a technology at a location in each year.
 
         Formulation:

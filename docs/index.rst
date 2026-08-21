@@ -63,7 +63,6 @@ Documentation
    files/zen_garden_in_detail/configurations
    files/zen_garden_in_detail/sets_params_constraints
    files/zen_garden_in_detail/mathematical_formulation
-   files/zen_garden_in_detail/mathematical_formulation_new
    files/zen_garden_in_detail/additional_features
    files/zen_garden_in_detail/dataset_examples
 

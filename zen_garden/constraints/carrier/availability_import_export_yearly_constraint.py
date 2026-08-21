@@ -5,25 +5,25 @@ from zen_garden.constraints.generic_constraint import GenericConstraint
 
 class AvailabilityImportExportYearlyConstraint(GenericConstraint):
     def build(self):
-        r"""Summary:
+        """Summary:
         node- and year-dependent carrier availability to import/export from outside
         the system boundaries.
 
         Formulation:
 
         .. math::
-            a^{\\mathrm{imp}}_{c,n,y}^{Y} \\geq \\sum_{t\\in\\mathcal{T}_y}\\Delta t_t
+            a^{\\mathrm{imp}}_{c,n,y} \\geq \\sum_{t\\in\\mathcal{T}_y}\\Delta t_t
             F^{\\mathrm{imp}}_{c,n,t}
 
         .. math::
-            a^{\\mathrm{exp}}_{c,n,y}^{Y} \\geq \\sum_{t\\in\\mathcal{T}_y}\\Delta t_t
+            a^{\\mathrm{exp}}_{c,n,y} \\geq \\sum_{t\\in\\mathcal{T}_y}\\Delta t_t
             F^{\\mathrm{exp}}_{c,n,t}
 
         Notation:
 
-        :math:`a^{\\mathrm{imp}}_{c,n,y}^{Y}`: yearly availability of
+        :math:`a^{\\mathrm{imp}}_{c,n,y}`: yearly availability of
         carrier :math:`c` to import at node :math:`n`
-        :math:`a^{\\mathrm{exp}}_{c,n,y}^{Y}`: yearly availability of
+        :math:`a^{\\mathrm{exp}}_{c,n,y}`: yearly availability of
         carrier :math:`c` to export at node :math:`n`
         :math:`\\Delta t_t`: is the duration of time step :math:`t`
         :math:`F^{\\mathrm{imp}}_{c,n,t}`: flow of carrier :math:`c` imported at

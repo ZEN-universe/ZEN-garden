@@ -375,21 +375,3 @@ Transport CAPEX
 .. docstring_method:: zen_garden.constraints.transport_technology.TransportTechnologyCapexConstraint.build
    :sections: summary, formulation
 
-
-Documentation maintenance rule
-------------------------------
-
-This draft deliberately avoids maintaining a second copy of any implemented
-constraint equation. A documentation change should therefore be made according
-to the following ownership rule:
-
-* edit a constraint's ``build`` docstring when its equation, applicability, or
-  implementation qualification changes;
-* edit :ref:`notation.notation` when a set, parameter, variable, symbol,
-  description, temporal resolution, or unit changes; and
-* edit this page only when the explanatory narrative, ordering, or relationship
-  between constraints changes.
-
-Derived explanations that do not correspond to implemented constraints may
-remain directly in this page, but should not restate an equation already owned
-by a constraint docstring.

@@ -8,7 +8,7 @@ from zen_garden.model.components.set_registry import SetRegistry
 
 class TransportTechnologyCapexConstraint(GenericConstraint):
     def build(self):
-        r"""Summary:
+        """Summary:
         Definition of the capital expenditures for the transport technology.
 
         Formulation:
@@ -25,15 +25,15 @@ class TransportTechnologyCapexConstraint(GenericConstraint):
 
         :math:`\\Delta K_{h,e,y}`: Capacity addition of transport technology :math:`h`
         on edge :math:`e` in year :math:`y`
-        :math:`C^{\\mathrm{cap,overnight}}_{h,e,y}`: overnight CAPEX of transport 
+        :math:`C^{\\mathrm{cap,overnight}}_{h,e,y}`: overnight CAPEX of transport
         technology :math:`h` on edge :math:`e` in year :math:`y`
-        :math:`\\kappa^{\\mathrm{cap,fixed}}_{h,y}`: Specific constant capital 
+        :math:`\\kappa^{\\mathrm{cap,fixed}}_{h,y}`: Specific constant capital
         expenditures of transport technology :math:`h` in year :math:`y`
         :math:`\\kappa^{\\mathrm{cap,dist}}_{h,e,y}`: Specific capital expenditures per
         distance of transport technology :math:`h` on edge :math:`e` in year :math:`y`
         :math:`g_{h,e,y}`: binary installation decision for
         transport technology :math:`h` on edge :math:`e` in year :math:`y`
-        :math:`d^{\\mathrm{dist}}_{h,e}`: Transport distance for transport technology 
+        :math:`d^{\\mathrm{dist}}_{h,e}`: Transport distance for transport technology
         :math:`h` on edge :math:`e`
         """
         index_values, index_list = self.zen_model.create_custom_set(

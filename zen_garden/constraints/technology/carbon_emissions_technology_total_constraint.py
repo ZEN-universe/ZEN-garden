@@ -3,7 +3,7 @@ from zen_garden.constraints.generic_constraint import GenericConstraint
 
 class CarbonEmissionsTechnologyTotalConstraint(GenericConstraint):
     def build(self):
-        r"""Summary:
+        """Summary:
         Calculate total carbon emissions of each technology.
 
         Formulation:

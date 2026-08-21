@@ -11,7 +11,7 @@ from zen_garden.constraints.generic_constraint import GenericConstraint
 
 class TechnologyConstructionTimeConstraint(GenericConstraint):
     def build(self):
-        r"""Summary:
+        """Summary:
         Construction time of technology: time between investment and availability.
 
         Formulation:

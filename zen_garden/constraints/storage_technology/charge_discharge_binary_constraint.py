@@ -3,7 +3,7 @@ from zen_garden.constraints.generic_constraint import GenericConstraint
 
 class ChargeDischargeBinaryConstraint(GenericConstraint):
     def build(self):
-        r"""Summary:
+        """Summary:
         Avoid simultaneous charge and discharge of storage technologies.
 
         Ensure that the storage technology cannot charge and discharge simultaneously

@@ -5,7 +5,7 @@ from zen_garden.constraints.generic_constraint import GenericConstraint
 
 class CarbonEmissionsBudgetOvershootConstraint(GenericConstraint):
     def build(self):
-        r"""Summary:
+        """Summary:
         Enforces zero budget overshoot if price for budget overshoot is inf.
 
         ensures carbon emissions overshoot of carbon budget is zero when

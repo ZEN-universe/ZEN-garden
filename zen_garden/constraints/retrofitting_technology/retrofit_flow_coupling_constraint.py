@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 class RetrofitFlowCouplingConstraint(GenericConstraint):
     def build(self):
-        r"""Summary:
+        """Summary:
         Limit retrofit reference flow by the associated base-technology flow.
 
         Formulation:
@@ -27,7 +27,7 @@ class RetrofitFlowCouplingConstraint(GenericConstraint):
 
         :math:`F^{\\mathrm{ref}}_{h^{\\mathrm{retro}},n,t}`: reference flow of retrofit
         technology :math:`h^{\\mathrm{retro}}`
-        :math:`F^{\\mathrm{ref}}_{h^{\mathrm{base}},n,t}`: reference flow of its 
+        :math:`F^{\\mathrm{ref}}_{h^{\mathrm{base}},n,t}`: reference flow of its
         associated base
         technology :math:`h^{\mathrm{base}}`
         :math:`\\eta^{\\mathrm{retro}}_{h^{\\mathrm{retro}},n,t}`: retrofit

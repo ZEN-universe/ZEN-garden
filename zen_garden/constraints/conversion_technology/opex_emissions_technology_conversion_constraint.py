@@ -3,13 +3,13 @@ from zen_garden.constraints.generic_constraint import GenericConstraint
 
 class OpexEmissionsTechnologyConversionConstraint(GenericConstraint):
     def build(self):
-        r"""Summary:
+        """Summary:
         Calculate opex and carbon emissions of each technology.
 
         Formulation:
 
         .. math::
-            C^{\\mathrm{op,var}}_{h,n,t} = \\kappa^{\\mathrm{op,var}}_{h,y} 
+            C^{\\mathrm{op,var}}_{h,n,t} = \\kappa^{\\mathrm{op,var}}_{h,y}
             F^{\\mathrm{ref}}_{h,n,t}
             M^{\\mathrm{tech}}_{h,n,t}
             = \\varepsilon^{\\mathrm{op}}_h F^{\\mathrm{ref}}_{h,n,t}
@@ -23,7 +23,7 @@ class OpexEmissionsTechnologyConversionConstraint(GenericConstraint):
         technology :math:`h` at node :math:`n` in time step :math:`t` of year
         :math:`y`
         :math:`M^{\\mathrm{tech}}_{h,n,t}`: operating carbon emissions
-        :math:`\\varepsilon^{\\mathrm{op}}_h`: carbon intensity of the 
+        :math:`\\varepsilon^{\\mathrm{op}}_h`: carbon intensity of the
         conversion technology
         """
         techs = self.zen_model.sets["set_conversion_technologies"]

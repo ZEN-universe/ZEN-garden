@@ -3,7 +3,7 @@ from zen_garden.constraints.generic_constraint import GenericConstraint
 
 class FlowStorageSpillageConstraint(GenericConstraint):
     def build(self):
-        r"""Summary:
+        """Summary:
         Limit storage spillage to the exogenous storage inflow.
 
         Formulation:
@@ -15,7 +15,7 @@ class FlowStorageSpillageConstraint(GenericConstraint):
 
         Notation:
 
-        :math:`F^{\\mathrm{spill}}_{h,n,t}`: storage spillage of storage technology 
+        :math:`F^{\\mathrm{spill}}_{h,n,t}`: storage spillage of storage technology
         :math:`h`
         at node :math:`n` in time step :math:`t` of year :math:`y`
         :math:`q^{\\mathrm{in}}_{h,n,t}`: exogenous inflow into storage technology

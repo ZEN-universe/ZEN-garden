@@ -5,7 +5,7 @@ from zen_garden.constraints.generic_constraint import GenericConstraint
 
 class CapacityFactorConversionConstraint(GenericConstraint):
     def build(self):
-        r"""Summary:
+        """Summary:
         Load is limited by the installed capacity and the maximum load factor.
 
         Formulation:

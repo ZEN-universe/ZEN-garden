@@ -10,7 +10,7 @@ from zen_garden.constraints.technology.technology_constraint import TechnologyCo
 
 class TechnologyLifetimeConstraint(TechnologyConstraint):
     def build(self):
-        r"""Summary:
+        """Summary:
         Calculates remaining capacity of technologies based on the lifetime.
 
         limited lifetime of the technologies. calculates 'capacity', i.e., the

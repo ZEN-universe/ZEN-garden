@@ -5,23 +5,23 @@ from zen_garden.constraints.generic_constraint import GenericConstraint
 
 class CostLimitShedDemandConstraint(GenericConstraint):
     def build(self):
-        r"""Summary:
+        """Summary:
         Cost and limit of shedding demand of carrier.
 
         Formulation:
 
         .. math::
-           C^{\\mathrm{shed}}_{c,n,t}^{\\mathrm{shed\\ demand}} = 
+           C^{\\mathrm{shed}}_{c,n,t} =
            F^{\\mathrm{shed}}_{c,n,t} \\pi^{\\mathrm{shed}}_c
            F^{\\mathrm{shed}}_{c,n,t} \\leq d_{c,n,t}
 
         Notation:
 
-        :math:`C^{\\mathrm{shed}}_{c,n,t}^{\\mathrm{shed\\ demand}}`: total cost of 
+        :math:`C^{\\mathrm{shed}}_{c,n,t}`: total cost of
         shedding demand of carrier :math:`c` at node :math:`n` in time step :math:`t`
         of year :math:`y`
         :math:`\\pi^{\\mathrm{shed}}_c`: price to shed demand of carrier :math:`c`
-        :math:`F^{\\mathrm{shed}}_{c,n,t}`: shed demand of carrier :math:`c` at 
+        :math:`F^{\\mathrm{shed}}_{c,n,t}`: shed demand of carrier :math:`c` at
         node :math:`n` in time step :math:`t` of year :math:`y`
         :math:`d_{c,n,t}`: demand of carrier :math:`c` at node :math:`n` in
         time step :math:`t` of year :math:`y`

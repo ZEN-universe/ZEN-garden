@@ -3,7 +3,7 @@ from zen_garden.constraints.generic_constraint import GenericConstraint
 
 class CarbonEmissionsCarrierTotalConstraint(GenericConstraint):
     def build(self):
-        r"""Summary:
+        """Summary:
         Total carbon emissions of importing and exporting carrier.
 
         Formulation:

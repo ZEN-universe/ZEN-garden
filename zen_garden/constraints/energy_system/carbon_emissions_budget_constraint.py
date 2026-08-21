@@ -3,7 +3,7 @@ from zen_garden.constraints.generic_constraint import GenericConstraint
 
 class CarbonEmissionsBudgetConstraint(GenericConstraint):
     def build(self):
-        r"""Summary:
+        """Summary:
         Carbon emissions budget of whole time horizon.
         The prediction extends until the end of the horizon, i.e., last optimization
         time step plus the current carbon emissions until the end of the horizon.
@@ -22,7 +22,7 @@ class CarbonEmissionsBudgetConstraint(GenericConstraint):
         :math:`M_y`: annual carbon emissions of energy system in year :math:`y`
         :math:`M_y^{\\mathrm{bud,over}}`: cumulative carbon emissions budget overshoot
         of energy system
-        :math:`\\overline{m}^{\\mathrm{budget}}`: carbon emissions budget of energy 
+        :math:`\\overline{m}^{\\mathrm{budget}}`: carbon emissions budget of energy
         system
         :math:`y_\\mathrm{H}`: final year of the entire optimization horizon. The
         extrapolation term is omitted there because no intermediate years remain.

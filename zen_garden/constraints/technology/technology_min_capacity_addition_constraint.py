@@ -3,7 +3,7 @@ from zen_garden.constraints.generic_constraint import GenericConstraint
 
 class TechnologyMinCapacityAdditionConstraint(GenericConstraint):
     def build(self):
-        r"""Summary:
+        """Summary:
         Min capacity addition of technology.
 
         Formulation:

@@ -5,7 +5,7 @@ from zen_garden.constraints.generic_constraint import GenericConstraint
 
 class CapacityFactorStorageConstraint(GenericConstraint):
     def build(self):
-        r"""Summary:
+        """Summary:
         Limits load of storage technologies by capacity and maximum load factor.
 
         Formulation:

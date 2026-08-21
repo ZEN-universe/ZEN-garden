@@ -5,7 +5,7 @@ from zen_garden.constraints.generic_constraint import GenericConstraint
 
 class CarbonEmissionsCumulativeConstraint(GenericConstraint):
     def build(self):
-        r"""Summary:
+        """Summary:
         Cumulative carbon emissions over time.
 
         Formulation:

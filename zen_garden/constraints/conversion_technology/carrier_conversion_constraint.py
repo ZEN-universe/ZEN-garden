@@ -11,7 +11,7 @@ from zen_garden.utils import align_like
 
 class CarrierConversionConstraint(GenericConstraint):
     def build(self):
-        r"""Summary:
+        """Summary:
         Conversion factor between reference carrier and dependent carrier.
 
         Formulation:
@@ -28,7 +28,7 @@ class CarrierConversionConstraint(GenericConstraint):
         :math:`G^\\mathrm{d}_{c,h,n,t}`: dependent carrier flow of the
         technology :math:`h` at node :math:`n` in time step :math:`t` of year
         :math:`y`
-        :math:`\\eta^{\mathrm{conv}}_{h,c,t}`: conversion factor of 
+        :math:`\\eta^{\mathrm{conv}}_{h,c,t}`: conversion factor of
         technology :math:`h` from
         its reference carrier to dependent carrier :math:`c`
         :math:`F^{\\mathrm{ref}}_{h,n,t}`: reference carrier flow of the

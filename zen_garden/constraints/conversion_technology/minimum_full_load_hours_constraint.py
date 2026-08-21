@@ -6,7 +6,7 @@ from zen_garden.constraints.generic_constraint import GenericConstraint
 
 class MinimumFullLoadHoursConstraint(GenericConstraint):
     def build(self):
-        r"""Summary:
+        """Summary:
         Sets minimum full load hours for each unit.
 
         This constraint requires that a minimum number of full_load_hours be met

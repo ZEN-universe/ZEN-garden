@@ -5,7 +5,7 @@ from zen_garden.constraints.generic_constraint import GenericConstraint
 
 class CarbonEmissionsAnnualOvershootConstraint(GenericConstraint):
     def build(self):
-        r"""Summary:
+        """Summary:
         Enforce zero annual overshoot when exactly one disabling condition holds.
 
         Annual overshoot is fixed to zero when either its price is infinite or no

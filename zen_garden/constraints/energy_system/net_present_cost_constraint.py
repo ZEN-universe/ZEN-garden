@@ -5,14 +5,14 @@ from zen_garden.constraints.generic_constraint import GenericConstraint
 
 class NetPresentCostConstraint(GenericConstraint):
     def build(self):
-        r"""Summary:
+        """Summary:
         Discounts the annual capital flows to calculate the net_present_cost.
 
         Formulation:
 
         .. math::
             C^{\\mathrm{NPC}}_y = \\sum_{i=0}^{\\delta_y-1}
-            \\left( \\dfrac{1}{1+r^{\\mathrm{disc}}}} \\right)^{\\Delta y(y-y_0)+i} 
+            \\left( \\dfrac{1}{1+r^{\\mathrm{disc}}} \\right)^{\\Delta y(y-y_0)+i}
             C^{\\mathrm{total}}_y
 
         where :math:`\\delta_y=\\Delta y` for ordinary planning periods and

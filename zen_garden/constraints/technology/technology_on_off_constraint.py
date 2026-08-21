@@ -11,7 +11,7 @@ from zen_garden.elements.technology import Technology
 
 class TechnologyOnOffConstraint(GenericConstraint):
     def build(self):
-        r"""Summary:
+        """Summary:
         If technology is on, the binary variable is 1, else 0.
 
         The minimum-load relation is expressed through a linearized product of
@@ -39,8 +39,8 @@ class TechnologyOnOffConstraint(GenericConstraint):
         :math:`F^{\\mathrm{trans}}_{h,e,t}` for transport technologies
         :math:`K_{h,p,y}`: installed capacity of technology :math:`h` at
         location :math:`p` in year :math:`y`
-        :math:`z^{\\mathrm{on}}_{h,p,t}`: binary variable indicating whether 
-        technology :math:`h` is on at location :math:`p` in time step :math:`t` of 
+        :math:`z^{\\mathrm{on}}_{h,p,t}`: binary variable indicating whether
+        technology :math:`h` is on at location :math:`p` in time step :math:`t` of
         year :math:`y`
         :math:`\\widehat{K}_{h,p,t}`: helper variable representing the
         product of :math:`K_{h,p,y}` and :math:`z^{\\mathrm{on}}_{h,p,t}`

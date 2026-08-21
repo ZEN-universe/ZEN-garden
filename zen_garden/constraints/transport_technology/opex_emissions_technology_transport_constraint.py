@@ -3,24 +3,24 @@ from zen_garden.constraints.generic_constraint import GenericConstraint
 
 class OpexEmissionsTechnologyTransportConstraint(GenericConstraint):
     def build(self):
-        r"""Summary:
+        """Summary:
         Calculate opex of each technology.
 
         Formulation:
 
         .. math::
-            C^{\\mathrm{op,var}}_{h,e,t} = \\kappa^{\\mathrm{op,var}}_{h,y} 
+            C^{\\mathrm{op,var}}_{h,e,t} = \\kappa^{\\mathrm{op,var}}_{h,y}
             F^{\mathrm{trans}}_{h,e,t}
 
         .. math::
-            M^{\\mathrm{tech}}_{h,e,t} = 
+            M^{\\mathrm{tech}}_{h,e,t} =
             \\varepsilon^{\\mathrm{op}}_hF^{\\mathrm{trans}}_{h,e,t}
 
         Notation:
 
         :math:`C^{\\mathrm{op,var}}_{h,e,t}`: variable OPEX of transport
         technology :math:`h` on edge :math:`e` at time :math:`t` in year :math:`y`
-        :math:`\\kappa^{\\mathrm{op,var}}_{h,y}`: specific variable OPEX of 
+        :math:`\\kappa^{\\mathrm{op,var}}_{h,y}`: specific variable OPEX of
         transport technology
         :math:`h` in year :math:`y`
         :math:`F^{\mathrm{trans}}_{h,e,t}`: carrier flow through transport

@@ -9,7 +9,7 @@ from zen_garden.model.components.multi_index_helper import MultiIndexHelper
 
 class CostCapexYearlyConstraint(TechnologyConstraint):
     def build(self):
-        r"""Summary:
+        """Summary:
         Aggregates the capex of built capacity and of existing capacity.
 
         Formulation:
@@ -17,7 +17,7 @@ class CostCapexYearlyConstraint(TechnologyConstraint):
         .. math::
             C^{\\mathrm{cap,ann}}_{h,p,y} = a^{\\mathrm{ann}}_h\\left(
             \\sum_{\\tilde y\\in\\mathcal{Y}^{\\mathrm{dep}}_{h,y}}
-            C^{\\mathrm{cap,overnight}}_{h,p,\\tilde y} + 
+            C^{\\mathrm{cap,overnight}}_{h,p,\\tilde y} +
             \\kappa^{\\mathrm{cap,ex}}_{h,p,y}\\right)
 
         Storage power- and energy-capacity CAPEX are stored separately and the
@@ -25,15 +25,15 @@ class CostCapexYearlyConstraint(TechnologyConstraint):
 
         Notation:
 
-        :math:`C^{\\mathrm{cap,ann}}_{h,p,y}`: annualized CAPEX for technology 
+        :math:`C^{\\mathrm{cap,ann}}_{h,p,y}`: annualized CAPEX for technology
         :math:`h` at location :math:`p` in year :math:`y`
-        :math:`a^{\\mathrm{ann}}_h`: annuity factor calculated from discount rate and 
+        :math:`a^{\\mathrm{ann}}_h`: annuity factor calculated from discount rate and
         depreciation time
         :math:`\\mathcal{Y}^{\\mathrm{dep}}_{h,y}`: modeled investment years whose
         depreciation period still includes :math:`y`
-        :math:`C^{\\mathrm{cap,overnight}}_{h,p,y}`: overnight CAPEX of modeled 
+        :math:`C^{\\mathrm{cap,overnight}}_{h,p,y}`: overnight CAPEX of modeled
         additions
-        :math:`\\kappa^{\\mathrm{cap,ex}}_{h,p,y}`: remaining overnight CAPEX of 
+        :math:`\\kappa^{\\mathrm{cap,ex}}_{h,p,y}`: remaining overnight CAPEX of
         existing capacity
         """
         index_values, index_names = self.zen_model.create_custom_set(

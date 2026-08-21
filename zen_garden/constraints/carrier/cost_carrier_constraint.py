@@ -3,7 +3,7 @@ from zen_garden.constraints.generic_constraint import GenericConstraint
 
 class CostCarrierConstraint(GenericConstraint):
     def build(self):
-        r"""Summary:
+        """Summary:
         Cost of importing and exporting carrier.
 
         Formulation:

@@ -33,7 +33,7 @@ class TechnologyDiffusionLimitConstraint(GenericConstraint):
         self.element_registry = element_registry
 
     def build(self):
-        r"""Summary:
+        """Summary:
         Limit additions using depreciated installation knowledge.
 
         For conversion and storage technologies at each node, when knowledge
@@ -73,12 +73,12 @@ class TechnologyDiffusionLimitConstraint(GenericConstraint):
 
         :math:`\\Delta K_{h,e,y}`: size of built technology :math:`h` (invested capacity
         after construction) at location :math:`e` in year :math:`y`
-        :math:`r^{\\mathrm{diff}}_j`: maximum diffusion rate of technology :math:`j` 
+        :math:`r^{\\mathrm{diff}}_j`: maximum diffusion rate of technology :math:`j`
         which is the maximum increase in capacity between investment steps
         :math:`K_{h,p,y}`: depreciated installation-knowledge stock
         :math:`\\chi`: parameter which specifies the unbounded market share
-        :math:`k^{\\mathrm{add,free}}_j`: parameter which specifies the unbounded 
-        capacity addition that can be added each year (only for delayed technology 
+        :math:`k^{\\mathrm{add,free}}_j`: parameter which specifies the unbounded
+        capacity addition that can be added each year (only for delayed technology
         deployment)
         :math:`\\Delta y`: interval between planning periods
         :math:`\\omega`: parameter which specifies the knowledge spillover rate

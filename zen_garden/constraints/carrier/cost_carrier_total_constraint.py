@@ -3,7 +3,7 @@ from zen_garden.constraints.generic_constraint import GenericConstraint
 
 class CostCarrierTotalConstraint(GenericConstraint):
     def build(self):
-        r"""Summary:
+        """Summary:
         Total cost of importing and exporting carrier.
 
         Formulation:
@@ -11,14 +11,13 @@ class CostCarrierTotalConstraint(GenericConstraint):
         .. math::
             C^{\\mathrm{carrier}}_y = \\sum_{c\\in\\mathcal{C}}\\sum_{n\\in\\mathcal{N}}
             \\sum_{t\\in\\mathcal{T}_y} \\Delta t_t (C^{\\mathrm{carrier}}_{c,n,t}
-            + C^{\\mathrm{shed}}_{c,n,t}^{\\mathrm{shed}\\
-            \\mathrm{demand}})
+            + C^{\\mathrm{shed}}_{c,n,t})
 
         Notation:
 
         :math:`C^{\\mathrm{carrier}}_{c,n,t}`: cost of importing and exporting carrier
         :math:`c` at node :math:`n` in time step :math:`t` of year :math:`y`
-        :math:`C^{\\mathrm{shed}}_{c,n,t}^{\\mathrm{shed\\ demand}}`: cost of shedding 
+        :math:`C^{\\mathrm{shed}}_{c,n,t}`: cost of shedding
         demand of carrier :math:`c` at node :math:`n` in time step :math:`t` of year
         :math:`y`
         :math:`\\Delta t_t`: duration of time step :math:`t`

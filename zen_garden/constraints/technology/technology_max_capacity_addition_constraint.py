@@ -5,7 +5,7 @@ from zen_garden.constraints.generic_constraint import GenericConstraint
 
 class TechnologyMaxCapacityAdditionConstraint(GenericConstraint):
     def build(self):
-        r"""Summary:
+        """Summary:
         Max capacity addition of technology.
 
         Formulation:

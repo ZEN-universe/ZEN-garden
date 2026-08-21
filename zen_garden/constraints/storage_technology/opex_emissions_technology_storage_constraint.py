@@ -3,7 +3,7 @@ from zen_garden.constraints.generic_constraint import GenericConstraint
 
 class OpexEmissionsTechnologyStorageConstraint(GenericConstraint):
     def build(self):
-        r"""Summary:
+        """Summary:
         Calculate variable OPEX and carbon emissions of each storage technology.
 
         Formulation:
@@ -24,7 +24,7 @@ class OpexEmissionsTechnologyStorageConstraint(GenericConstraint):
         :math:`F^{\\mathrm{dis}}_{h,n,t}`: carrier flow out of storage technology
         :math:`h`
         :math:`M^{\\mathrm{tech}}_{h,n,t}`: operating carbon emissions
-        :math:`\\varepsilon^{\\mathrm{op}}_h`: carbon intensity of the storage 
+        :math:`\\varepsilon^{\\mathrm{op}}_h`: carbon intensity of the storage
         technology
         """
         techs = self.zen_model.sets["set_storage_technologies"]
