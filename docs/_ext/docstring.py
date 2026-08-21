@@ -8,9 +8,9 @@ from docutils import nodes
 from docutils.parsers.rst import directives
 from docutils.statemachine import ViewList
 from sphinx.application import Sphinx
+from sphinx.util.docstrings import prepare_docstring
 from sphinx.util.docutils import SphinxDirective
 from sphinx.util.typing import ExtensionMetadata
-from sphinx.util.docstrings import prepare_docstring
 
 """
 TO DUBUG:
@@ -58,68 +58,64 @@ class DocstringDirective(SphinxDirective):
 
     section_header = re.compile(r"^(Summary|Formulation|Notation):$", re.I)
 
-def preprocess_math_content(lines: list[str]) -> list[str]:
-    """Fix double backslashes and join wrapped math lines before reST parsing."""
-    processed: list[str] = []
-    in_math_block = False
-    math_indent = 0
-    current_math_lines: list[str] = []
+    def preprocess_math_content(self,lines: list[str]) -> list[str]:
+        """Fix double backslashes and join wrapped math lines before reST parsing."""
+        processed: list[str] = []
+        in_math_block = False
+        math_indent = 0
+        current_math_lines: list[str] = []
 
-    for line in lines:
-        # 1. Un-escape double backslashes (\\command -> \command)
-        line = line.replace("\\\\", "\\")
+        for line in lines:
+            # 1. Un-escape double backslashes (\\command -> \command)
+            line = line.replace("\\\\", "\\")
 
-        # 2. Track .. math:: directive blocks
-        stripped = line.strip()
-        current_indent = len(line) - len(line.lstrip())
+            # 2. Track .. math:: directive blocks
+            stripped = line.strip()
+            current_indent = len(line) - len(line.lstrip())
 
-        if stripped.startswith(".. math::"):
-            in_math_block = True
-            math_indent = current_indent
-            processed.append(line)
-            continue
-
-        if in_math_block:
-            # Empty lines or non-indented lines mark the end of the .. math:: block
-            if stripped and current_indent <= math_indent:
-                # Flush collected math lines into a single continuous equation string
-                if current_math_lines:
-                    combined_math = " ".join(
-                        line.strip() for line in current_math_lines
-                    )
-                    # Indent the combined block relative to the directive
-                    indent_str = " " * (math_indent + 4)
-                    processed.append(f"{indent_str}{combined_math}")
-                    current_math_lines = []
-                in_math_block = False
-            else:
-                if stripped:
-                    current_math_lines.append(stripped)
+            if stripped.startswith(".. math::"):
+                in_math_block = True
+                math_indent = current_indent
+                processed.append(line)
                 continue
 
-        # 3. Fix inline :math: roles split across lines
-        processed.append(line)
+            if in_math_block:
+                # Empty lines or non-indented lines mark the end of the .. math:: block
+                if stripped and current_indent <= math_indent:
+                    # Flush collected math lines into a single continuous equation string
+                    if current_math_lines:
+                        combined_math = " ".join(
+                            line.strip() for line in current_math_lines
+                        )
+                        # Indent the combined block relative to the directive
+                        indent_str = " " * (math_indent + 4)
+                        processed.append(f"{indent_str}{combined_math}")
+                        current_math_lines = []
+                    in_math_block = False
+                else:
+                    if stripped:
+                        current_math_lines.append(stripped)
+                    continue
 
-    # Flush if docstring ends with a math block
-    if in_math_block and current_math_lines:
-        combined_math = " ".join(line.strip() for line in current_math_lines)
-        indent_str = " " * (math_indent + 4)
-        processed.append(f"{indent_str}{combined_math}")
+            # 3. Fix inline :math: roles split across lines
+            processed.append(line)
 
-    # 4. Join multi-line :math:`...` roles back onto single lines
-    full_text = "\n".join(processed)
-    full_text = re.sub(
-        r"(:math:`[^`]+`)",
-        lambda m: m.group(1).replace("\n", " "),
-        full_text,
-        flags=re.DOTALL,
-    )
+        # Flush if docstring ends with a math block
+        if in_math_block and current_math_lines:
+            combined_math = " ".join(line.strip() for line in current_math_lines)
+            indent_str = " " * (math_indent + 4)
+            processed.append(f"{indent_str}{combined_math}")
 
-    return full_text.splitlines()
+        # 4. Join multi-line :math:`...` roles back onto single lines
+        full_text = "\n".join(processed)
+        full_text = re.sub(
+            r"(:math:`[^`]+`)",
+            lambda m: m.group(1).replace("\n", " "),
+            full_text,
+            flags=re.DOTALL,
+        )
 
-
-class DocstringDirective(SphinxDirective):
-    # ... keep your existing option_spec & section_header definition ...
+        return full_text.splitlines()
 
     def select_sections(self, lines: list[str]) -> list[str] | None:
         sections: dict[str, list[str]] = {}
@@ -199,7 +195,7 @@ class DocstringDirective(SphinxDirective):
                 filtered.append(line)
 
         # Preprocess lines to fix math line-wrapping and double backslashes automatically
-        filtered = preprocess_math_content(filtered)
+        filtered = self.preprocess_math_content(filtered)
 
         source = inspect.getsourcefile(obj)
         if source is not None:

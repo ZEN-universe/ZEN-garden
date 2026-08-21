@@ -22,8 +22,8 @@ class CoupleStorageLevelConstraint(GenericConstraint):
 
         Notation:
 
-        :math:`S^{\\mathrm{level}}_{h,n,\\tilde{t}}`: storage level of storage technology
-        :math:`h` at node :math:`n` in storage time step :math:`\\tilde{t}`
+        :math:`S^{\\mathrm{level}}_{h,n,\\tilde{t}}`: storage level of storage 
+        technology :math:`h` at node :math:`n` in storage time step :math:`\\tilde{t}`
         of year :math:`y`
         :math:`\\lambda^{\\mathrm{self}}_h`: self-discharge rate of storage 
         technology :math:`h`
