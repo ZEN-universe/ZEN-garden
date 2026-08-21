@@ -33,33 +33,55 @@ class TechnologyDiffusionLimitConstraint(GenericConstraint):
         self.element_registry = element_registry
 
     def build(self):
-        """Limits technology diffusion based on existing capacity in the previous year.
+        r"""Summary:
+        Limit additions using depreciated installation knowledge.
 
-        For storage and conversion technologies: \n
+        For conversion and storage technologies at each node, when knowledge
+        spillover is finite:
+
+        Formulation:
+
         .. math::
-            \\Delta S_{k,n,y}\\leq ((1+\\vartheta_k)^{\\mathrm{dy}}-1)(K_{k,n,y} +
-            \\omega \\sum_{\\tilde{n}\\in\\tilde{\\mathcal{N}}}K_{k,\\tilde{n},y})
-            +\\mathrm{dy}(\\xi\\sum_{\\tilde{k}
-            \\in\\tilde{\\mathcal{K}}}S_{\\tilde{k},n,y} + \\zeta_k)
+            \\Delta K_{h,p,y}\\leq d_{h,y}
+            K^\\omega_{h,p,y}
+            +\\chi
+            \\sum_{\\tilde h\\in\\tilde{\\mathcal H}}
+            K^{\\mathrm{prev}}_{\\tilde h,p,y}+k^{\\mathrm{add,free}}_h
 
-        For transport technologies: \n
+        where :math:`d_{h,y}=(1+r^{\\mathrm{diff}}_h)^{\\Delta y}-1`.
+        :math:`K^\\omega` contains all earlier modeled additions and existing
+        capacities, depreciated by the configured knowledge-depreciation rate;
+        for non-transport technologies it additionally contains
+        :math:`\\omega` times knowledge at other nodes.
+
+        A global constraint is always added:
+
         .. math::
-            \\Delta S_{j,e,y}\\leq ((1+\\vartheta_j)^{\\mathrm{dy}}-1)K_{j,e,y}
-            + \\mathrm{dy}(\\xi\\sum_{\\tilde{j}\\in\\tilde{\\mathcal{J}}}
-            S_{\\tilde{j},e,y} + \\zeta_j)
+            \\sum_p\\Delta K_{h,p,y}\\leq
+            \\sum_p\\left[d_{h,y}K_{h,p,y}
+            +\\chi
+            \\sum_{\\tilde h\\in\\tilde{\\mathcal H}}
+            K^{\\mathrm{prev}}_{\\tilde h,p,y}+k^{\\mathrm{add,free}}_h\\right].
 
-        :math:`\\Delta S_{j,e,y}`: size of built technology :math:`j` (invested capacity
-        after construction) at location :math:`e` in year :math:`y` \n
-        :math:`\\vartheta_j`: maximum diffusion rate of technology :math:`j` which is
-        the maximum increase in capacity between investment steps \n
-        :math:`K_{j,e,y}`: existing knowledge of how to install the technology :math:`j`
-        at location :math:`e` in year :math:`y` \n
-        :math:`\\xi`: parameter which specifies the unbounded market share \n
-        :math:`\\zeta_j`: parameter which specifies the unbounded capacity addition that
-        can be added each year (only for delayed technology deployment) \n
-        :math:`dy`: interval between planning periods\n
+        If :math:`\\omega=\\infty`, only the global constraint is created.
+        Transport technologies never receive node-to-node knowledge spillover.
+
+        For storage technologies, each equation is applied independently to power
+        and energy capacity.
+
+        Notation:
+
+        :math:`\\Delta K_{h,e,y}`: size of built technology :math:`h` (invested capacity
+        after construction) at location :math:`e` in year :math:`y`
+        :math:`r^{\\mathrm{diff}}_j`: maximum diffusion rate of technology :math:`j` 
+        which is the maximum increase in capacity between investment steps
+        :math:`K_{h,p,y}`: depreciated installation-knowledge stock
+        :math:`\\chi`: parameter which specifies the unbounded market share
+        :math:`k^{\\mathrm{add,free}}_j`: parameter which specifies the unbounded 
+        capacity addition that can be added each year (only for delayed technology 
+        deployment)
+        :math:`\\Delta y`: interval between planning periods
         :math:`\\omega`: parameter which specifies the knowledge spillover rate
-
         """
         # load variables and parameters
         capacity_addition = self.zen_model.variables["capacity_addition"]

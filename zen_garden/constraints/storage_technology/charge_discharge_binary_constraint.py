@@ -3,29 +3,34 @@ from zen_garden.constraints.generic_constraint import GenericConstraint
 
 class ChargeDischargeBinaryConstraint(GenericConstraint):
     def build(self):
-        """Avoid simultaneous charge and discharge of storage technologies.
+        r"""Summary:
+        Avoid simultaneous charge and discharge of storage technologies.
 
         Ensure that the storage technology cannot charge and discharge simultaneously
         within the same operational time step. This is only active if the
         storage_charge_discharge_binary flag in the system.json file is set to True.
 
-        .. math::
-            \\underline{H}_{k,n,t,y} \\le B^\\mathrm{charge}_{k,n,t,y}
-            s^\\mathrm{max, power}_{k,n,y}
+        Formulation:
 
         .. math::
-            \\overline{H}_{k,n,t,y} \\le (1-B^\\mathrm{charge}_{k,n,t,y})
-            s^\\mathrm{max, power}_{k,n,y}
+            F^{\\mathrm{ch}}_{h,n,t} \\le z^{\\mathrm{ch}}_{h,n,t}
+            s^\\mathrm{max,power}_{h,n,y}
 
-        :math:`\\underline{H}_{k,n,t,y}`: carrier flow into storage technology :math:`k`
-        on node :math:`n` and time :math:`t` in year :math:`y` \n
-        :math:`\\overline{H}_{k,n,t,y}`: carrier flow out of storage
-        technology :math:`k`on node :math:`n` and time :math:`t` in year :math:`y` \n
-        :math:`s^\\mathrm{max, power}_{k,n,y}`: power capacity limit of storage
-        technology :math:`k` at location :math:`n` in year :math:`y` \n
-        :math:`B^\\mathrm{charge}_{k,n,t,y}`: binary variable indicating whether the
-        storage technology :math:`k` is in charging mode (1) or discharging mode (0) at
-        location :math:`n` at time step :math:`t` in year :math:`y` \n
+        .. math::
+            F^{\\mathrm{dis}}_{h,n,t} \\le (1-z^{\\mathrm{ch}}_{h,n,t})
+            s^\\mathrm{max,power}_{h,n,y}
+
+        Notation:
+
+        :math:`F^{\\mathrm{ch}}_{h,n,t}`: carrier flow into storage technology :math:`h`
+        on node :math:`n` and time :math:`t` in year :math:`y`
+        :math:`F^{\\mathrm{dis}}_{h,n,t}`: carrier flow out of storage
+        technology :math:`h`on node :math:`n` and time :math:`t` in year :math:`y`
+        :math:`s^\\mathrm{max,power}_{h,n,y}`: power-capacity limit of storage
+        technology :math:`h` at location :math:`n` in year :math:`y`
+        :math:`z^{\\mathrm{ch}}_{h,n,t}`: binary variable indicating whether the
+        storage technology :math:`h` is in charging mode (1) or discharging mode (0) at
+        location :math:`n` at time step :math:`t` in year :math:`y`
         """
         if not self.config.system.storage_charge_discharge_binary:
             return

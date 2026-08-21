@@ -398,15 +398,24 @@ or return values (prefaced by 'Args:', 'Returns:', 'Raises:', etc.).
 The docstring extension can help reduce redundant text and avoid inconsistencies
 in the documentation. 
 
-To activate the docstring extension, insert the ``docstring_class`` or 
-``docstring_method`` directive into an reStructuredText files. These directives 
-are followed by a module name or method name, respectively. Two examples below 
-show how to insert the docstrings for the ``ConversionTechnologyRules`` class 
-and its method ``constraint_capacity_factor_conversion``.
+To activate the docstring extension, insert the ``docstring_class`` or
+``docstring_method`` directive into a reStructuredText file. These directives
+are followed by the dotted path of a class or method, respectively.
 
 
 .. code::
 
-    .. docstring_class:: zen_garden.model.objects.technology.conversion_technology.ConversionTechnologyRules
+    .. docstring_class:: zen_garden.elements.carrier.Carrier
 
-    .. docstring_method:: zen_garden.model.objects.technology.conversion_technology.ConversionTechnologyRules.constraint_capacity_factor_conversion
+    .. docstring_method:: zen_garden.constraints.conversion_technology.CapacityFactorConversionConstraint.build
+
+Constraint docstrings are divided into ``Summary:``, ``Formulation:``, and
+``Notation:`` sections. Use the ``sections`` option to select any subset and
+control its rendering order. For example, the mathematical formulation pages
+exclude the notation definitions because those are maintained in the notation
+tables:
+
+.. code::
+
+    .. docstring_method:: zen_garden.constraints.conversion_technology.CapacityFactorConversionConstraint.build
+       :sections: summary, formulation

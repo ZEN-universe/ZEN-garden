@@ -6,15 +6,28 @@ from zen_garden.utils import linexpr_from_tuple_np
 
 class StorageTechnologyCapexConstraint(GenericConstraint):
     def build(self):
-        """Definition of the capital expenditures for the storage technology.
+        r"""Summary:
+        Definition of the capital expenditures for the storage technology.
+
+        Formulation:
 
         .. math::
-            CAPEX_{y,n,i} = \\Delta S_{h,p,y} \\alpha_{k,n,y}
+            C^{\\mathrm{cap,overnight}}_{h,n,y} = 
+            \\kappa^{\\mathrm{cap,power}}_{h,y}\\Delta K_{h,n,y}
+            + \\kappa^{\\mathrm{cap,energy}}_{h,y}\\Delta K^{\\mathrm{energy}}_{h,n,y}
 
-        :math:`\\Delta S_{h,p,y}`: capacity addition of storage technology :math:`h`
-        on node :math:`n` in year :math:`y` \n
-        :math:`\\alpha_{k,n,y}`: specific capex of storage technology :math:`k` on
-        node :math:`n` in year :math:`y`
+        The implementation stores the two terms separately along its capacity-type
+        dimension; their sum is :math:`C^{\\mathrm{cap,overnight}}_{h,n,y}`.
+
+        Notation:
+
+        :math:`C^{\\mathrm{cap,overnight}}_{h,n,y}`: total overnight CAPEX of storage 
+        technology :math:`h` at node :math:`n` in year :math:`y`
+        :math:`\\Delta K_{h,n,y}` and :math:`\\Delta K^{\\mathrm{energy}}_{h,n,y}`:
+        power- and energy-capacity additions
+        :math:`\\kappa^{\\mathrm{cap,power}}_{h,y}` and :math:
+        `\\kappa^{\\mathrm{cap,energy}}_{h,y}`: specific power- and energy-capacity 
+        CAPEX
         """
         index_values, index_names = self.zen_model.create_custom_set(
             [

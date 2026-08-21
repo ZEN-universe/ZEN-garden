@@ -3,15 +3,20 @@ from zen_garden.constraints.generic_constraint import GenericConstraint
 
 class CostCapexYearlyTotalConstraint(GenericConstraint):
     def build(self):
-        """Sums over all technologies to calculate total capex.
+        r"""Summary:
+        Sums over all technologies to calculate total capex.
+
+        Formulation:
 
         .. math::
-            CAPEX_y = \\sum_{h\\in\\mathcal{H}}\\sum_{p\\in\\mathcal{P}}A_{h,p,y} +
-            \\sum_{k\\in\\mathcal{K}}\\sum_{n\\in\\mathcal{N}}A^\\mathrm{e}_{k,n,y}
+            C^{\\mathrm{cap}}_y = \\sum_{h\\in\\mathcal{H}}
+            \\sum_{p\\in\\mathcal{P}_h}C^{\\mathrm{cap,ann}}_{h,p,y}
 
-        :math:`A_{h,p,y}`: annual capex of technology :math:`h` at location :math:`p`
-        in year :math:`y`
+        Notation:
 
+        :math:`C^{\\mathrm{cap,ann}}_{h,p,y}`: annual CAPEX of technology :math:`h` at 
+        location :math:`p` in year :math:`y`
+        :math:`p` in year :math:`y`, including all applicable capacity types
         """
         lhs = self.zen_model.variables[
             "cost_capex_yearly_total"

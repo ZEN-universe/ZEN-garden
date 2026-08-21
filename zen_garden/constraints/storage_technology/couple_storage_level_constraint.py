@@ -3,30 +3,46 @@ from zen_garden.constraints.generic_constraint import GenericConstraint
 
 class CoupleStorageLevelConstraint(GenericConstraint):
     def build(self):
-        """Couple subsequent storage levels (time coupling constraints).
+        r"""Summary:
+        Couple subsequent storage levels (time coupling constraints).
+
+        Formulation:
 
         .. math::
-            L_{k,n,t^k,y} = L_{k,n,t^k-1,y} (1-\\phi_k)^{\\tau_{t^k}^k} +
-            (\\underline{\\eta}_k \\underline{H}_{k,n,\\sigma(t^k),y} -
-            \\frac{\\overline{H}_{k,n,\\sigma(t^k),y}}{\\overline{\\eta}_k})
-            \\sum^{\\tau_{t^k}^k-1}_{\\tilde{t}^k=0} (1-\\phi_k)^{\\tilde{t}^k}
+            S^{\\mathrm{level}}_{h,n,\\tilde{t}} = 
+            S^{\\mathrm{level}}_{h,n,\\tilde{t}-1,y}
+            (1-\\lambda^{\\mathrm{self}}_h)^{\\Delta \\tilde{t}_{\\tilde{t}}} +
+            (\\eta^{\\mathrm{ch}}_h F^{\\mathrm{ch}}_{h,n,\\sigma(\\tilde{t})} -
+            \\frac{F^{\\mathrm{dis}}_{h,n,\\sigma(\\tilde{t})}}
+            {\\eta^{\\mathrm{dis}}_h}
+            + q^{\\mathrm{in}}_{h,n,\\sigma(\\tilde{t})}
+            - F^{\\mathrm{spill}}_{h,n,\\sigma(\\tilde{t})})
+            \\sum^{\\Delta \\tilde{t}_{\\tilde{t}}-1}_{\\tilde{t}'=0}
+            (1-\\lambda^{\\mathrm{self}}_h)^{\\tilde{t}'}
 
-        :math:`L_{k,n,t^k,y}`: storage level of storage technology :math:`k` on
-        node :math:`n` and time :math:`t^k` in year :math:`y` \n
-        :math:`\\phi_k`: self discharge rate of storage technology :math:`k` \n
-        :math:`\\tau_{t^k}^k`: duration of storage level time step of storage
-        technology :math:`k` \n
-        :math:`\\underline{\\eta}_k`: efficiency during charging of storage
-        technology :math:`k` \n
-        :math:`\\overline{\\eta}_k`: efficiency during discharging of storage
-        technology :math:`k` \n
-        :math:`\\underline{H}_{k,n,\\sigma(t^k),y}`: charge flow into storage
-        technology :math:`k` on node :math:`n` and time :math:`\\sigma(t^k)` in
-        year :math:`y` \n
-        :math:`\\overline{H}_{k,n,\\sigma(t^k),y}`: discharge flow out of storage
-        technology :math:`k` on node :math:`n` and time :math:`\\sigma(t^k)` in
+        Notation:
+
+        :math:`S^{\\mathrm{level}}_{h,n,\\tilde{t}}`: storage level of storage technology
+        :math:`h` at node :math:`n` in storage time step :math:`\\tilde{t}`
+        of year :math:`y`
+        :math:`\\lambda^{\\mathrm{self}}_h`: self-discharge rate of storage 
+        technology :math:`h`
+        :math:`\\Delta \\tilde{t}_{\\tilde{t}}`: duration of storage time step of
+        technology :math:`h`
+        :math:`\\eta^{\\mathrm{ch}}_h`: efficiency during charging of storage
+        technology :math:`h`
+        :math:`\\eta^{\\mathrm{dis}}_h`: efficiency during discharging of storage
+        technology :math:`h`
+        :math:`F^{\\mathrm{ch}}_{h,n,\\sigma(\\tilde{t})}`: charge flow into storage
+        technology :math:`h` at node :math:`n` and time
+        :math:`\\sigma(\\tilde{t})` in year :math:`y`
+        :math:`F^{\\mathrm{dis}}_{h,n,\\sigma(\\tilde{t})}`: discharge flow out of
+        storage technology :math:`h` at node :math:`n` and time
+        :math:`\\sigma(\\tilde{t})` in
         year :math:`y`
-
+        :math:`q^{\\mathrm{in}}_{h,n,\\sigma(\\tilde{t})}`: exogenous inflow into 
+        storage
+        :math:`F^{\\mathrm{spill}}_{h,n,\\sigma(\\tilde{t})}`: storage spillage
         """
         techs = self.zen_model.sets["set_storage_technologies"]
         if len(techs) == 0:

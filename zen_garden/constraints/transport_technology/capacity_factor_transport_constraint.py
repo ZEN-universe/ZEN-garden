@@ -5,20 +5,24 @@ from zen_garden.constraints.generic_constraint import GenericConstraint
 
 class CapacityFactorTransportConstraint(GenericConstraint):
     def build(self):
-        """Load is limited by the installed capacity and the maximum load factor.
+        r"""Summary:
+        Load is limited by the installed capacity and the maximum load factor.
+
+        Formulation:
 
         .. math::
-            F_{j,e,t,y}^\\mathrm{r} \\leq m^{\\mathrm{max}}_{j,e,t,y}S_{j,e,y}
+            F^{\mathrm{trans}}_{h,e,t} \\leq \\ell^{\\mathrm{max}}_{h,e,t}K_{h,e,y}
 
+        Notation:
 
-        :math:`F_{j,e,t,y}^\\mathrm{r}`: Reference flow of carrier through transport
-        technology :math:`j` on edge :math:`i` and time :math:`t` in year :math:`y` \n
-        :math:`m^{\\mathrm{max}}_{j,e,t,y}`: Maximum load factor of transport
-        technology :math:`j` on edge :math:`i` and time :math:`t` in year :math:`y` \n
-        :math:`S_{j,e,y}`: Capacity of transport technology :math:`j` on
-        edge :math:`i` in year :math:`y`
-
-
+        :math:`F^{\mathrm{trans}}_{h,e,t}`: carrier flow through transport 
+        technology :math:`h`
+        on edge :math:`e` in time step :math:`t` of year :math:`y`
+        :math:`\\ell^{\\mathrm{max}}_{h,e,t}`: Maximum load factor of transport
+        technology :math:`h` on edge :math:`e` in time step :math:`t` of year
+        :math:`y`
+        :math:`K_{h,e,y}`: Capacity of transport technology :math:`h` on
+        edge :math:`e` in year :math:`y`
         """
         techs = self.zen_model.sets["set_transport_technologies"]
         if len(techs) == 0:

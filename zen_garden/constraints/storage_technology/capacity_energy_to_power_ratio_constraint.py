@@ -5,21 +5,29 @@ from zen_garden.constraints.generic_constraint import GenericConstraint
 
 class CapacityEnergyToPowerRatioConstraint(GenericConstraint):
     def build(self):
-        """Limit capacity power to energy ratio.
+        r"""Summary:
+        Limit the energy-to-power ratio of capacity additions.
+
+        Formulation:
 
         .. math::
-            \\rho_k^{min} S^{e}_{k,n,y} \\le S_{k,n,y}
+            r^{\\mathrm{EP,min}}_h \\Delta K_{h,n,y}
+            \\leq \\Delta K^{\\mathrm{e}}_{h,n,y}
 
         .. math::
-            S_{k,n,y} \\le \\rho_k^{max} S^{e}_{k,n,y}
+            \\Delta K^{\\mathrm{e}}_{h,n,y}
+            \\leq r^{\\mathrm{EP,max}}_h \\Delta K_{h,n,y}
 
-        :math:`S^{\\mathrm{power}}_{k,n,y}`: installed capacity in terms of power of
-        storage :math:`k` at node :math:`n` in year :math:`y` \n
-        :math:`S^{e}_{k,n,y}`: installed capacity in terms of energy of
-        storage :math:`k` at node :math:`n` in year :math:`y` \n
-        :math:`\\rho_k^{min}`: minimum power-to-energy ratio of storage :math:`k` \n
-        :math:`\\rho_k^{max}`: maximum power-to-energy ratio of storage :math:`k`
+        Notation:
 
+        :math:`\\Delta K_{h,n,y}`: power-capacity addition of
+        storage :math:`h` at node :math:`n` in year :math:`y`
+        :math:`\\Delta K^{\\mathrm{e}}_{h,n,y}`: energy-capacity addition of
+        storage :math:`h` at node :math:`n` in year :math:`y`
+        :math:`r^{\\mathrm{EP,min}}_h`: minimum energy-to-power ratio of storage 
+        :math:`h`
+        :math:`r^{\\mathrm{EP,max}}_h`: maximum energy-to-power ratio of storage 
+        :math:`h`
         """
         techs = self.zen_model.sets["set_storage_technologies"]
         if len(techs) == 0:

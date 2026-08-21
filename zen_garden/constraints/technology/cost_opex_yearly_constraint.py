@@ -5,26 +5,30 @@ from zen_garden.constraints.generic_constraint import GenericConstraint
 
 class CostOpexYearlyConstraint(GenericConstraint):
     def build(self):
-        """Yearly opex for a technology at a location in each year.
+        r"""Summary:
+        Yearly opex for a technology at a location in each year.
+
+        Formulation:
 
         .. math::
-            OPEX_{h,p,y} = \\sum_{t\\in\\mathcal{T}}\\tau_t O_{h,p,t}^t
-            + \\gamma_{h,y} S_{h,p,y} + \\gamma_{k,y}^\\mathrm{e} S_{k,n,y}^\\mathrm{e}
+            C^{\\mathrm{op,ann}}_{h,p,y} =
+            \\sum_{t\\in\\mathcal{T}_y}\\Delta t_t C^{\\mathrm{op,var}}_{h,p,t}
+            + \\kappa^{\\mathrm{op,fix}}_{h,y} K_{h,p,y}
 
-        :math:`OPEX_{h,p,y}`: opex of operating technology :math:`h` at
-        location :math:`p` in year :math:`y` \n
-        :math:`\\tau_t`: duration of time step :math:`t` \n
-        :math:`O_{h,p,t}^t`: variable opex of operating technology :math:`h` at
-        location :math:`p` in time step :math:`t` \n
-        :math:`\\gamma_{h,y}`: specific fixed opex of technology :math:`h` in
-        year :math:`y` \n
-        :math:`S_{h,p,y}`: installed capacity of technology :math:`h` at
-        location :math:`p` in year :math:`y` \n
-        :math:`\\gamma_{k,y}^\\mathrm{e}`: specific fixed opex of storage
-        technology :math:`k` in year :math:`y` \n
-        :math:`S_{k,n,y}^\\mathrm{e}`: installed capacity of storage
-        technology :math:`k` at node :math:`n` in year :math:`y`
+        For storage technologies, the implementation additionally includes the
+        corresponding energy-capacity term
+        :math:`\\kappa^{\\mathrm{op,fix,energy}}_{h,y}K^{\\mathrm{energy}}_{h,n,y}`.
 
+        Notation:
+
+        :math:`C^{\\mathrm{op,ann}}_{h,p,y}`: OPEX of operating technology :math:`h` at
+        location :math:`p` in year :math:`y`
+        :math:`\\Delta t_t`: duration of time step :math:`t`
+        :math:`C^{\\mathrm{op,var}}_{h,p,t}`: variable OPEX of operating technology
+        :math:`h` at location :math:`p` in time step :math:`t` of year :math:`y`
+        :math:`\\kappa^{\\mathrm{op,fix}}_{h,y}`: specific fixed OPEX
+        :math:`K_{h,p,y}`: installed capacity of technology :math:`h` at location
+        :math:`p` in year :math:`y`
         """
         times_dict: dict[str, pd.Series] = {
             y: self.zen_model.parameters.time_steps_operation_duration.loc[

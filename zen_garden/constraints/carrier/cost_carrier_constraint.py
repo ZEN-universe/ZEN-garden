@@ -3,21 +3,26 @@ from zen_garden.constraints.generic_constraint import GenericConstraint
 
 class CostCarrierConstraint(GenericConstraint):
     def build(self):
-        """Cost of importing and exporting carrier.
+        r"""Summary:
+        Cost of importing and exporting carrier.
+
+        Formulation:
 
         .. math::
-            O_{c,n,t} = \\underline{u}_{c,n,t} \\underline{U}_{c,n,t} -
-            \\overline{v}_{c,n,t} \\overline{U}_{c,n,t}
+            C^{\\mathrm{carrier}}_{c,n,t} = \\pi^{\\mathrm{imp}}_{c,n,t}
+            F^{\\mathrm{imp}}_{c,n,t} - \\pi^{\\mathrm{exp}}_{c,n,t}
+            F^{\\mathrm{exp}}_{c,n,t}
 
-        :math:`\\underline{u}_{c,n,t}`: import price of carrier :math:`c` at
-        node :math:`n` and time step :math:`t`\n
-        :math:`\\overline{v}_{c,n,t}`: export price of carrier :math:`c` at
-        node :math:`n` and time step :math:`t`\n
-        :math:`\\underline{U}_{c,n,t}`: flow of carrier :math:`c` imported at
-        node :math:`n` and time step :math:`t`\n
-        :math:`\\overline{U}_{c,n,t}`: flow of carrier :math:`c` exported at
-        node :math:`n` and time step :math:`t`
+        Notation:
 
+        :math:`\\pi^{\\mathrm{imp}}_{c,n,t}`: import price of carrier :math:`c` at
+        node :math:`n` in time step :math:`t` of year :math:`y`
+        :math:`\\pi^{\\mathrm{exp}}_{c,n,t}`: export price of carrier :math:`c` at
+        node :math:`n` in time step :math:`t` of year :math:`y`
+        :math:`F^{\\mathrm{imp}}_{c,n,t}`: flow of carrier :math:`c` imported at
+        node :math:`n` in time step :math:`t` of year :math:`y`
+        :math:`F^{\\mathrm{exp}}_{c,n,t}`: flow of carrier :math:`c` exported at
+        node :math:`n` in time step :math:`t` of year :math:`y`
         """
         ### formulate constraint
         lhs = (

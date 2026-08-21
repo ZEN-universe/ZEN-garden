@@ -5,22 +5,25 @@ from zen_garden.constraints.generic_constraint import GenericConstraint
 
 class CapacityFactorStorageConstraint(GenericConstraint):
     def build(self):
-        """Limits load of storage technologies by capacity and maximum load factor.
+        r"""Summary:
+        Limits load of storage technologies by capacity and maximum load factor.
+
+        Formulation:
 
         .. math::
-            \\underline{H}_{k,n,t,y}+\\overline{H}_{k,n,t,y}\\leq
-            m^{\\mathrm{max}}_{k,n,t,y}S_{k,n,y}
+            F^{\\mathrm{ch}}_{h,n,t}+F^{\\mathrm{dis}}_{h,n,t}\\leq
+            \\ell^{\\mathrm{max}}_{h,n,t}K_{h,n,y}
 
-        :math:`\\underline{H}_{k,n,t,y}`: carrier flow into storage technology :math:`k`
-        on node :math:`n` and time :math:`t` in year :math:`y` \n
-        :math:`\\overline{H}_{k,n,t,y}`: carrier flow out of storage
-        technology :math:`k`on node :math:`n` and time :math:`t` in year :math:`y` \n
-        :math:`m^{\\mathrm{max}}_{k,n,t,y}`: maximum load factor for storage
-        technology :math:`k` on node :math:`n` and time :math:`t` in year :math:`y` \n
-        :math:`S_{k,n,y}`: storage capacity of storage technology :math:`k` on
+        Notation:
+
+        :math:`F^{\\mathrm{ch}}_{h,n,t}`: carrier flow into storage technology :math:`h`
+        on node :math:`n` and time :math:`t` in year :math:`y`
+        :math:`F^{\\mathrm{dis}}_{h,n,t}`: carrier flow out of storage
+        technology :math:`h`on node :math:`n` and time :math:`t` in year :math:`y`
+        :math:`\\ell^{\\mathrm{max}}_{h,n,t}`: maximum load factor for storage
+        technology :math:`h` on node :math:`n` and time :math:`t` in year :math:`y`
+        :math:`K_{h,n,y}`: storage capacity of storage technology :math:`h` on
         node :math:`n` in year :math:`y`
-
-
         """
         techs = self.zen_model.sets["set_storage_technologies"]
         if len(techs) == 0:

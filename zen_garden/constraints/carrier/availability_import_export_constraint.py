@@ -3,24 +3,28 @@ from zen_garden.constraints.generic_constraint import GenericConstraint
 
 class AvailabilityImportExportConstraint(GenericConstraint):
     def build(self):
-        """node- and time-dependent carrier availability to import/export from outside
+        r"""Summary:
+        node- and time-dependent carrier availability to import/export from outside
         the system boundaries.
 
-        .. math::
-            \\underline{U}_{c,n,t} \\leq \\underline{a}_{c,n,t}
+        Formulation:
 
         .. math::
-            \\overline{U}_{c,n,t} \\leq \\overline{a}_{c,n,t}
+            F^{\\mathrm{imp}}_{c,n,t} \\leq a^{\\mathrm{imp}}_{c,n,t}
 
-        :math:`\\underline{U}_{c,n,t}`: flow of carrier :math:`c` imported
-        at node :math:`n` and time step :math:`t`\n
-        :math:`\\overline{U}_{c,n,t}`: flow of carrier :math:`c` exported
-        at node :math:`n` and time step :math:`t`\n
-        :math:`\\underline{a}_{c,n,t}`: availability of carrier :math:`c` to import
-        at node :math:`n` and time step :math:`t`\n
-        :math:`\\overline{a}_{c,n,t}`: availability of carrier :math:`c` to export
-        at node :math:`n` and time step :math:`t`
+        .. math::
+            F^{\\mathrm{exp}}_{c,n,t} \\leq a^{\\mathrm{exp}}_{c,n,t}
 
+        Notation:
+
+        :math:`F^{\\mathrm{imp}}_{c,n,t}`: flow of carrier :math:`c` imported
+        at node :math:`n` in time step :math:`t` of year :math:`y`
+        :math:`F^{\\mathrm{exp}}_{c,n,t}`: flow of carrier :math:`c` exported
+        at node :math:`n` in time step :math:`t` of year :math:`y`
+        :math:`a^{\\mathrm{imp}}_{c,n,t}`: availability of carrier :math:`c` to import
+        at node :math:`n` in time step :math:`t` of year :math:`y`
+        :math:`a^{\\mathrm{exp}}_{c,n,t}`: availability of carrier :math:`c` to export
+        at node :math:`n` in time step :math:`t` of year :math:`y`
         """
         lhs_imp = self.zen_model.variables["flow_import"]
         rhs_imp = self.zen_model.parameters.availability_import

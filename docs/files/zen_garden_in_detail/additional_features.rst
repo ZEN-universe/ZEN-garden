@@ -265,23 +265,23 @@ The three options can be used individually or in combination.
 **Annual carbon emission limits**
 
 The user can also set annual carbon emission limits by specifying the parameter
-``carbon_emissions_annual_limit`` (:ref:`notation.energy_system`). The parameter is indexed by year, so a separate limit can be set for each year in
+``carbon_emissions_annual_limit`` (:ref:`notation.notation`). The parameter is indexed by year, so a separate limit can be set for each year in
 ``carbon_emissions_annual_limit.csv``. The annual limits can be overshot, if
-``price_carbon_emissions_annual_overshoot != inf`` (:ref:`notation.energy_system`).
+``price_carbon_emissions_annual_overshoot != inf`` (:ref:`notation.notation`).
 
 **Cumulative carbon budget**
 
-A cumulative carbon budget can be set by specifying the parameter ``carbon_emissions_budget`` (:ref:`notation.energy_system`). Note that the budget
+A cumulative carbon budget can be set by specifying the parameter ``carbon_emissions_budget`` (:ref:`notation.notation`). Note that the budget
 is for the entire planning horizon, not per year, so it is sufficient to specify a single value in the
 ``attributes.json`` file of the energy system.
-The budget can be overshot, if ``price_carbon_emissions_budget_overshoot != inf`` (:ref:`notation.energy_system`).
+The budget can be overshot, if ``price_carbon_emissions_budget_overshoot != inf`` (:ref:`notation.notation`).
 Using a carbon budget instead of annual limits allows the optimizer to allocate the optimal annual emission
 levels over the planning horizon.
 
 **Carbon price**
 
 Instead of setting hard limits on carbon emissions, the user can also set a carbon price by specifying the parameter
-``price_carbon_emissions`` (:ref:`notation.energy_system`). The carbon price is indexed by year, so a separate price can be set for each year in
+``price_carbon_emissions`` (:ref:`notation.notation`). The carbon price is indexed by year, so a separate price can be set for each year in
 ``price_carbon_emissions.csv``. The carbon price penalizes all carbon emissions in the objective function.
 
 .. _additional_features.demand_shedding:
@@ -289,7 +289,7 @@ Instead of setting hard limits on carbon emissions, the user can also set a carb
 Demand shedding
 ---------------------------------
 
-ZEN-garden allows for demand shedding by specifying the parameter ``price_shed_demand`` (:ref:`notation.carrier`).
+ZEN-garden allows for demand shedding by specifying the parameter ``price_shed_demand`` (:ref:`notation.notation`).
 The shed demand acts as an additional source in the energy balance (:eq:`energy_balance`); hence, demand can be
 supplied either by actual supply or by shedding demand. Shedding demand incurs a cost in the objective function
 based on the ``price_shed_demand``. If ``price_shed_demand=inf``, demand shedding is disabled.

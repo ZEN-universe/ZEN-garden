@@ -1,0 +1,57 @@
+Parameter Name;Symbol;Time Step Type;Description;Unit Category
+``availability_export``;:math:`a^{\mathrm{exp}}_{c,n,t}`;``set_time_steps_operation``;Parameter which specifies the maximum energy that can be exported to outside the system boundaries;"{""energy_quantity"": 1, ""time"": -1}"
+``availability_export_yearly``;:math:`a^{\mathrm{exp,yr}}_{c,n,y}`;``set_years``;Parameter which specifies the maximum energy that can be exported to outside the system boundaries for the entire year;"{""energy_quantity"": 1}"
+``availability_import``;:math:`a^{\mathrm{imp}}_{c,n,t}`;``set_time_steps_operation``;Parameter which specifies the maximum energy that can be imported from outside the system boundaries;"{""energy_quantity"": 1, ""time"": -1}"
+``availability_import_yearly``;:math:`a^{\mathrm{imp,yr}}_{c,n,y}`;``set_years``;Parameter which specifies the maximum energy that can be imported from outside the system boundaries for the entire year;"{""energy_quantity"": 1}"
+``market_share_unbounded``;:math:`\chi`;temporal immutable;Parameter which specifies the unbounded market share;{}
+``demand``;:math:`d_{c,n,t}`;``set_time_steps_operation``;Parameter which specifies the carrier demand;"{""energy_quantity"": 1, ""time"": -1}"
+``distance``;:math:`d^{\mathrm{dist}}_{h,e}`;temporal immutable;distance between two nodes for transport technologies;"{""distance"": 1}"
+``capacity_addition_min``;:math:`\underline{\Delta k}_{h,p,y}`;temporal immutable;Parameter which specifies the minimum capacity addition that can be installed;"{""energy_quantity"": 1, ""time"": -1}"
+``capacity_addition_max``;:math:`\overline{\Delta k}_{h,p,y}`;temporal immutable;Parameter which specifies the maximum capacity addition that can be installed;"{""energy_quantity"": 1, ""time"": -1}"
+``time_steps_operation_duration``;:math:`\Delta t_{t}`;``set_time_steps_operation``;Parameter which specifies the duration of each operational time step;"{""time"": 1}"
+``time_steps_storage_duration``;:math:`\Delta \tilde{t}_{\tilde{t}}`;``set_time_steps_storage``;Parameter which specifies the duration of each storage time step;"{""time"": 1}"
+``interval_between_years``;:math:`\Delta y`;temporal immutable;Parameter which specifies the interval between planning periods;"{""time"": 1}"
+``min_full_load_hours_fraction``;:math:`\ell^{\mathrm{FLH,min}}_{h,n,y}`;``set_years``; Minimum number of full load hours, expressed as a fraction of the unaggregated time steps per year;{}
+``max_load``;:math:`\ell^{\mathrm{max}}_{h,p,t}`;``set_time_steps_operation``;Parameter which specifies the maximum load of technology relative to installed capacity;{}
+``min_load``;:math:`\ell^{\mathrm{min}}_{h,p,t}`;``set_time_steps_operation``;Parameter which specifies the minimum load of technology relative to installed capacity;{}
+``carbon_intensity_carrier_export``;:math:`\varepsilon^{\mathrm{exp}}_{c,y}`;``set_years``;Parameter which specifies the carrier carbon intensity for carrier export flows;"{""emissions"": 1, ""energy_quantity"": -1}"
+``carbon_intensity_carrier_import``;:math:`\varepsilon^{\mathrm{imp}}_{c,y}`;``set_years``;Parameter which specifies the carrier carbon intensity for carrier import flows;"{""emissions"": 1, ""energy_quantity"": -1}"
+``carbon_intensity_technology``;:math:`\varepsilon^{\mathrm{op}}_{h}`;temporal immutable;Parameter which specifies the carbon intensity of each technology;"{""emissions"": 1, ""energy_quantity"": -1}"
+``efficiency_charge``;:math:`\eta^{\mathrm{ch}}_{h,y}`;``set_years``;efficiency during charging for storage technologies;{}
+``conversion_factor``;:math:`\eta^{\mathrm{conv}}_{h,c,t}`;``set_years``;Parameter which specifies the slope of the conversion efficiency if approximated linearly;{}
+``efficiency_discharge``;:math:`\eta^{\mathrm{dis}}_{h,y}`;``set_years``;efficiency during discharging for storage technologies;{}
+``retrofit_flow_coupling_factor``;:math:`\eta^{\mathrm{retro}}_{h,n,t}`;``set_time_steps_operation``;Parameter which specifies the flow coupling between a retrofitting technology and its base technology;{}
+``capacity_addition_unbounded``;:math:`k^{\mathrm{add,free}}_{h}`;temporal immutable;Parameter which specifies the unbounded capacity addition that can be added each year (only for delayed technology deployment);"{""energy_quantity"": 1, ""time"": -1}"
+``capacity_existing``;:math:`k^{\mathrm{ex}}_{h,p,v}`;temporal immutable;Parameter which specifies the existing technology size;"{""energy_quantity"": 1, ""time"": -1}"
+``capacity_investment_existing``;:math:`k^{\mathrm{ex,inv}}_{h,p,v}`;``set_technologies_existing``;Parameter which specifies the size of the previously invested capacities;"{""energy_quantity"": 1, ""time"": -1}"
+``capacity_lower_limit``;:math:`\underline{k}_{h,p,y}`;temporal immutable;Parameter which specifies the capacity lower limit of technologies;"{""energy_quantity"": 1, ""time"": -1}"
+``capacity_limit``;:math:`\overline{k}_{h,p,y}`;temporal immutable;Parameter which specifies the capacity limit of technologies;"{""energy_quantity"": 1, ""time"": -1}"
+``capex_specific_conversion``;:math:`\kappa^{\mathrm{cap}}_{h,y}`;``set_years``;Parameter which specifies the slope of the capex if approximated linearly;{"money": 1, "energy_quantity": -1, "time": 1}
+``capex_per_distance_transport``;:math:`\kappa^{\mathrm{cap,dist}}_{h,e,y}`;``set_years``;capex per distance for transport technologies;"{""money"": 1, ""distance"": -1, ""energy_quantity"": -1, ""time"": 1}"
+``capex_capacity_existing``;:math:`\kappa^{\mathrm{cap,ex}}_{h,p,v}`;temporal immutable;Parameter which specifies the total capex of an existing technology which still has to be paid;"{""money"": 1, ""energy_quantity"": -1}"
+``capex_specific_transport``;:math:`\kappa^{\mathrm{cap,fixed}}_{h,y}`;``set_years``;capex per unit for transport technologies;"{""money"": 1, ""energy_quantity"": -1, ""time"": 1}"
+``capex_specific_storage``;:math:`\kappa^{\mathrm{cap,power}}_{h,y}` and :math:`\kappa^{\mathrm{cap,energy}}_{h,y}`;``set_years``;specific capex of power- and energy-rated storage capacity;{"money": 1, "energy_quantity": -1, "time": 1}
+``opex_specific_fixed``;:math:`\kappa^{\mathrm{op,fix}}_{h,y}`;``set_years``;Parameter which specifies the fixed annual specific opex;"{""money"": 1, ""energy_quantity"": -1, ""time"": 1}"
+``opex_specific_variable``;:math:`\kappa^{\mathrm{op,var}}_{h,y}`;``set_time_steps_operation``;Parameter which specifies the variable specific opex;"{""money"": 1, ""energy_quantity"": -1}"
+``lifetime``;:math:`L_{h}`;temporal immutable;Parameter which specifies the lifetime of a newly built technology;{}
+``construction_time``;:math:`L^{\mathrm{con}}_{h}`;temporal immutable;Parameter which specifies the construction time of a newly built technology;{}
+``depreciation_time``;:math:`L^{\mathrm{dep}}_{h}`;temporal immutable;Parameter which specifies the depreciation time of invested technologies (optional, default value is the lifetime);{}
+``lifetime_existing``;:math:`L^{\mathrm{ex}}_{h,v}`;temporal immutable;Parameter which specifies the remaining lifetime of an existing technology;{}
+``transport_loss_factor_exponential``;:math:`\lambda^{\mathrm{exp}}_{h}`;temporal immutable;exponential carrier losses due to transport with transport technologies;"{""distance"": -1}"
+``transport_loss_factor_linear``;:math:`\lambda^{\mathrm{lin}}_{h}`;temporal immutable;carrier losses due to transport with transport technologies;"{""distance"": -1}"
+``self_discharge``;:math:`\lambda^{\mathrm{self}}_{h}`;temporal immutable;self-discharge rate of storage technologies;{}
+``carbon_emissions_cumulative_existing``;:math:`m^{\mathrm{cum}}_{0}`;temporal immutable;Parameter which specifies the total previous carbon emissions;"{""emissions"": 1}"
+``carbon_emissions_annual_limit``;:math:`\overline{m}_{y}`;``set_years``;Parameter which specifies the total limit on carbon emissions;"{""emissions"": 1}"
+``carbon_emissions_budget``;:math:`\overline{m}^{\mathrm{budget}}`;temporal immutable;Parameter which specifies the total budget of carbon emissions until the end of the entire time horizon;"{""emissions"": 1}"
+``knowledge_spillover_rate``;:math:`\omega`;temporal immutable;Parameter which specifies the knowledge spillover rate;{}
+``price_carbon_emissions``;:math:`\pi^{\mathrm{CO_2}}_{y}`;``set_years``;Parameter which specifies the yearly carbon price;"{""money"": 1, ""emissions"": -1}"
+``price_carbon_emissions_annual_overshoot``;:math:`\pi^{\mathrm{CO_2,ann}}`;temporal immutable;Parameter which specifies the carbon price for annual overshoot;"{""money"": 1, ""emissions"": -1}"
+``price_carbon_emissions_budget_overshoot``;:math:`\pi^{\mathrm{CO_2,bud}}`;temporal immutable;Parameter which specifies the carbon price for budget overshoot;"{""money"": 1, ""emissions"": -1}"
+``price_export``;:math:`\pi^{\mathrm{exp}}_{c,n,t}`;``set_time_steps_operation``;Parameter which specifies the export carrier price;"{""money"": 1, ""energy_quantity"": -1}"
+``price_import``;:math:`\pi^{\mathrm{imp}}_{c,n,t}`;``set_time_steps_operation``;Parameter which specifies the import carrier price;"{""money"": 1, ""energy_quantity"": -1}"
+``price_shed_demand``;:math:`\pi^{\mathrm{shed}}_{c}`;``temporal immutable``;Parameter which specifies the price to shed demand;"{""money"": 1, ""energy_quantity"": -1}"
+``flow_storage_inflow``;:math:`q^{\mathrm{in}}_{h,n,t}`;``set_time_steps_operation``;energy inflow for storage technology;{"energy_quantity": 1, "time": -1}
+``max_diffusion_rate``;:math:`r^{\mathrm{diff}}_{h}`;``set_years``;Parameter which specifies the maximum diffusion rate which is the maximum increase in capacity between investment steps;{}
+``discount_rate``;:math:`r^{\mathrm{disc}}`;temporal immutable;Parameter which specifies the discount rate of the energy system;
+``energy_to_power_ratio_max``;:math:`r^{\mathrm{EP,max}}_{h}`;temporal immutable;maximum energy-to-power ratio for storage technologies;{}
+``energy_to_power_ratio_min``;:math:`r^{\mathrm{EP,min}}_{h}`;temporal immutable;minimum energy-to-power ratio for storage technologies;{}

@@ -10,25 +10,35 @@ from zen_garden.constraints.technology.technology_constraint import TechnologyCo
 
 class TechnologyLifetimeConstraint(TechnologyConstraint):
     def build(self):
-        """Calculates remaining capacity of technologies based on the lifetime.
+        r"""Summary:
+        Calculates remaining capacity of technologies based on the lifetime.
 
         limited lifetime of the technologies. calculates 'capacity', i.e., the
         capacity at the end of the year and 'capacity_previous', i.e., the capacity at
         the beginning of the year.
 
-        .. math::
-            S_{h,p,y} = \\sum_{\\tilde{y}=\\max(y_0,y-\\lceil\\frac{l_h}
-            {\\Delta^\\mathrm{y}}\\rceil+1)}^y \\Delta S_{h,p,\\tilde{y}}
-            + \\sum_{\\hat{y}=\\psi(\\min(y_0-1,y-\\lceil\\frac{l_h}
-            {\\Delta^\\mathrm{y}}\\rceil+1))}^{\\psi(y_0)}
-            \\Delta s^\\mathrm{ex}_{h,p,\\hat{y}}
+        Formulation:
 
-        :math:`S_{h,p,y}`: installed capacity of technology :math:`h` at
-        location :math:`p` in year :math:`y` \n
-        :math:`\\Delta S_{h,p,y}`: size of built technology :math:`h` (invested capacity
-        after construction) at location :math:`p` in year :math:`y` \n
-        :math:`\\Delta s^\\mathrm{ex}_{h,p,y}`: size of the previously invested
-        capacities at location :math:`p` in year :math:`y`
+        .. math::
+            K_{h,p,y} = k^{\\mathrm{ex}}_{h,p,y}
+            + \\sum_{\\tilde y\\in\\mathcal{Y}^{\\mathrm{life}}_{h,y}}
+            \\Delta K_{h,p,\\tilde y}
+
+        .. math::
+            K^{\\mathrm{prev}}_{h,p,y}
+            = K_{h,p,y}-\\Delta K_{h,p,y}
+
+        For storage technologies, each equation is applied independently to power
+        and energy capacity.
+
+        Notation:
+
+        :math:`\\mathcal{Y}^{\\mathrm{life}}_{h,y}` contains modeled additions that
+        remain active according to
+        :math:`\\lfloor L_h/\\Delta y\\rfloor`
+        :math:`k^{\\mathrm{ex}}_{h,p,y}`: surviving existing capacity
+        :math:`K^{\\mathrm{prev}}_{h,p,y}`: capacity available before the current
+        year's addition
         """
         lt_range = pd.MultiIndex.from_tuples(
             [

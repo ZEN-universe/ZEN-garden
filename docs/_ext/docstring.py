@@ -1,13 +1,16 @@
 from __future__ import annotations
 
 import importlib
+import inspect
+import re
 
 from docutils import nodes
+from docutils.parsers.rst import directives
 from docutils.statemachine import ViewList
 from sphinx.application import Sphinx
 from sphinx.util.docutils import SphinxDirective
-from sphinx.util.nodes import nested_parse_with_titles
 from sphinx.util.typing import ExtensionMetadata
+from sphinx.util.docstrings import prepare_docstring
 
 """
 TO DUBUG:
@@ -23,7 +26,253 @@ leave the debugger.
 """
 
 
-class DocstringMethod(SphinxDirective):
+GOOGLE_SECTION_HEADERS = (
+    "Args:",
+    "Arguments:",
+    "Parameters:",
+    "Notation:",
+    "Returns:",
+    "Yields:",
+    "Raises:",
+    "Examples:",
+    "Attributes:",
+)
+
+FIELD_LIST_PREFIXES = (":param", ":return", ":rtype", ":raises")
+
+
+class DocstringDirective(SphinxDirective):
+    """Base directive for rendering selected portions of a docstring.
+
+    Structured docstrings use ``Summary:``, ``Formulation:``, and
+    ``Notation:`` headers. The optional ``sections`` argument accepts a
+    comma-separated subset of those names, in the order in which they should
+    be rendered.
+    """
+
+    required_arguments = 1
+    option_spec = {
+        "include-summary": directives.flag,
+        "sections": directives.unchanged_required,
+    }
+
+    section_header = re.compile(r"^(Summary|Formulation|Notation):$", re.I)
+
+def preprocess_math_content(lines: list[str]) -> list[str]:
+    """Fix double backslashes and join wrapped math lines before reST parsing."""
+    processed: list[str] = []
+    in_math_block = False
+    math_indent = 0
+    current_math_lines: list[str] = []
+
+    for line in lines:
+        # 1. Un-escape double backslashes (\\command -> \command)
+        line = line.replace("\\\\", "\\")
+
+        # 2. Track .. math:: directive blocks
+        stripped = line.strip()
+        current_indent = len(line) - len(line.lstrip())
+
+        if stripped.startswith(".. math::"):
+            in_math_block = True
+            math_indent = current_indent
+            processed.append(line)
+            continue
+
+        if in_math_block:
+            # Empty lines or non-indented lines mark the end of the .. math:: block
+            if stripped and current_indent <= math_indent:
+                # Flush collected math lines into a single continuous equation string
+                if current_math_lines:
+                    combined_math = " ".join(
+                        line.strip() for line in current_math_lines
+                    )
+                    # Indent the combined block relative to the directive
+                    indent_str = " " * (math_indent + 4)
+                    processed.append(f"{indent_str}{combined_math}")
+                    current_math_lines = []
+                in_math_block = False
+            else:
+                if stripped:
+                    current_math_lines.append(stripped)
+                continue
+
+        # 3. Fix inline :math: roles split across lines
+        processed.append(line)
+
+    # Flush if docstring ends with a math block
+    if in_math_block and current_math_lines:
+        combined_math = " ".join(line.strip() for line in current_math_lines)
+        indent_str = " " * (math_indent + 4)
+        processed.append(f"{indent_str}{combined_math}")
+
+    # 4. Join multi-line :math:`...` roles back onto single lines
+    full_text = "\n".join(processed)
+    full_text = re.sub(
+        r"(:math:`[^`]+`)",
+        lambda m: m.group(1).replace("\n", " "),
+        full_text,
+        flags=re.DOTALL,
+    )
+
+    return full_text.splitlines()
+
+
+class DocstringDirective(SphinxDirective):
+    # ... keep your existing option_spec & section_header definition ...
+
+    def select_sections(self, lines: list[str]) -> list[str] | None:
+        sections: dict[str, list[str]] = {}
+        current_section: str | None = None
+
+        for line in lines:
+            match = self.section_header.match(line.strip())
+            if match:
+                current_section = match.group(1).lower()
+                if current_section in sections:
+                    raise ValueError(
+                        f"docstring contains duplicate '{current_section}' sections"
+                    )
+                sections[current_section] = []
+            elif current_section is not None:
+                sections[current_section].append(line)
+
+        required_sections = {"summary", "formulation", "notation"}
+        if not required_sections.issubset(sections):
+            return None
+
+        requested_option = self.options.get("sections")
+        requested = (
+            [part.strip().lower() for part in requested_option.split(",")]
+            if requested_option
+            else list(sections)
+        )
+
+        selected: list[str] = []
+        for part in requested:
+            content = sections[part]
+            if not content:
+                continue
+
+            # Dedent content so nested parser receives base column 0
+            dedented_block = textwrap.dedent("\n".join(content)).splitlines()
+
+            while dedented_block and not dedented_block[0].strip():
+                dedented_block.pop(0)
+            while dedented_block and not dedented_block[-1].strip():
+                dedented_block.pop()
+
+            if selected and dedented_block:
+                selected.append("")
+            selected.extend(dedented_block)
+
+        return selected
+
+    def render_docstring(self, obj: object, full_name: str) -> list[nodes.Node]:
+        raw_doc = getattr(obj, "__doc__", "") or ""
+        if not raw_doc.strip():
+            raise ValueError("the selected object has no docstring")
+
+        lines = prepare_docstring(raw_doc)
+
+        selected = self.select_sections(lines)
+        if selected is not None:
+            filtered = selected
+        else:
+            if "sections" in self.options:
+                raise ValueError(
+                    "the :sections: option requires Summary:, Formulation:, "
+                    "and Notation: docstring sections"
+                )
+            if "include-summary" not in self.options and lines:
+                lines.pop(0)
+                while lines and not lines[0].strip():
+                    lines.pop(0)
+
+            filtered = []
+            for line in lines:
+                stripped = line.strip()
+                if stripped.startswith(FIELD_LIST_PREFIXES) or any(
+                    stripped.startswith(header) for header in GOOGLE_SECTION_HEADERS
+                ):
+                    break
+                filtered.append(line)
+
+        # Preprocess lines to fix math line-wrapping and double backslashes automatically
+        filtered = preprocess_math_content(filtered)
+
+        source = inspect.getsourcefile(obj)
+        if source is not None:
+            self.env.note_dependency(source)
+        else:
+            source = f"{full_name} docstring"
+
+        try:
+            _, source_line = inspect.getsourcelines(obj)
+        except (OSError, TypeError):
+            source_line = 0
+
+        content = ViewList()
+        for offset, line in enumerate(filtered):
+            content.append(line, source, source_line + offset)
+
+        container = nodes.container()
+        container.document = self.state.document
+        self.state.nested_parse(content, 0, container)
+        return container.children
+
+    # def render_docstring(self, obj: object, full_name: str) -> list[nodes.Node]:
+    #     """Render a cleaned docstring and register its source as a dependency."""
+    #     doc = inspect.getdoc(obj)
+    #     if not doc:
+    #         raise ValueError("the selected object has no docstring")
+
+    #     lines = doc.splitlines()
+    #     selected = self.select_sections(lines)
+    #     if selected is not None:
+    #         filtered = selected
+    #     else:
+    #         if "sections" in self.options:
+    #             raise ValueError(
+    #                 "the :sections: option requires Summary:, Formulation:, "
+    #                 "and Notation: docstring sections"
+    #             )
+    #         if "include-summary" not in self.options and lines:
+    #             lines.pop(0)
+    #             while lines and not lines[0].strip():
+    #                 lines.pop(0)
+
+    #         filtered = []
+    #         for line in lines:
+    #             stripped = line.strip()
+    #             if stripped.startswith(FIELD_LIST_PREFIXES) or any(
+    #                 stripped.startswith(header) for header in GOOGLE_SECTION_HEADERS
+    #             ):
+    #                 break
+    #             filtered.append(line)
+
+    #     source = inspect.getsourcefile(obj)
+    #     if source is not None:
+    #         self.env.note_dependency(source)
+    #     else:
+    #         source = f"{full_name} docstring"
+
+    #     try:
+    #         _, source_line = inspect.getsourcelines(obj)
+    #     except (OSError, TypeError):
+    #         source_line = 0
+
+    #     content = ViewList()
+    #     for offset, line in enumerate(filtered):
+    #         content.append(line, source, source_line + offset)
+
+    #     node = nodes.section()
+    #     node.document = self.state.document
+    #     nested_parse_with_titles(self.state, content, node)
+    #     return node.children
+
+
+class DocstringMethod(DocstringDirective):
     """A directive insert the trimmed docstring of a class method.
 
     The can be used to insert the docstring of a class method directly into
@@ -45,17 +294,19 @@ class DocstringMethod(SphinxDirective):
     Example:
 
     .. docstring_method::
-       zen_garden.model.objects.technology.conversion_technology.
-       ConversionTechnologyRules.constraint_capacity_factor_conversion
+       zen_garden.constraints.conversion_technology.
+       CapacityFactorConversionConstraint.build
+
+    To include only selected structured sections:
+
+    .. docstring_method:: package.module.ConstraintClass.build
+       :sections: summary, formulation
 
 
     """
 
-    required_arguments = 1
-
     def run(self):
         full_name = self.arguments[0]
-        module_name, _, obj_name = full_name.rpartition(".")
 
         try:
             parts = full_name.split(".")
@@ -67,53 +318,7 @@ class DocstringMethod(SphinxDirective):
             for attr in obj_path:
                 obj = getattr(obj, attr)
 
-            doc = obj.__doc__ or ""
-            lines = doc.strip().splitlines()
-
-            # Remove summary (first non-empty line)
-            while lines and not lines[0].strip():
-                lines.pop(0)
-            if lines:
-                lines.pop(0)  # Remove summary
-
-            # Remove param/return sections
-            filtered = []
-            for line in lines:
-                if line.strip().startswith((":param", ":return", ":rtype", ":raises")):
-                    break
-                filtered.append(line)
-
-            # Remove Google-style section headers and everything after
-            google_section_headers = (
-                "Args:",
-                "Arguments:",
-                "Parameters:",
-                "Returns:",
-                "Yields:",
-                "Raises:",
-                "Examples:",
-                "Attributes:",
-            )
-
-            filtered = []
-            for line in lines:
-                if any(
-                    line.strip().startswith(header) for header in google_section_headers
-                ):
-                    break
-                filtered.append(line)
-
-            # Convert list of strings to a ViewList so Sphinx can parse it
-            content = ViewList()
-            for i, line in enumerate(filtered):
-                content.append(line, f"{full_name} docstring", i)
-
-            # Create a container node and parse the content into it
-            node = nodes.section()
-            node.document = self.state.document
-            nested_parse_with_titles(self.state, content, node)
-
-            return node.children
+            return self.render_docstring(obj, full_name)
 
         except Exception as e:
             error = self.state_machine.reporter.error(
@@ -122,7 +327,7 @@ class DocstringMethod(SphinxDirective):
             return [error]
 
 
-class DocstringClass(SphinxDirective):
+class DocstringClass(DocstringDirective):
     """A directive insert the trimmed docstring of a class.
 
     The can be used to insert the docstring of a class directly into
@@ -143,12 +348,8 @@ class DocstringClass(SphinxDirective):
 
     Example:
 
-    .. docstring_class::
-       zen_garden.model.objects.technology.conversion_technology.
-       ConversionTechnologyRules
+    .. docstring_class:: zen_garden.elements.carrier.Carrier
     """
-
-    required_arguments = 1
 
     def run(self):
         full_name = self.arguments[0]
@@ -158,53 +359,7 @@ class DocstringClass(SphinxDirective):
             module = importlib.import_module(module_name)
             obj = getattr(module, obj_name)
 
-            doc = obj.__doc__ or ""
-            lines = doc.strip().splitlines()
-
-            # Remove summary (first non-empty line)
-            while lines and not lines[0].strip():
-                lines.pop(0)
-            if lines:
-                lines.pop(0)  # Remove summary
-
-            # Remove param/return sections
-            filtered = []
-            for line in lines:
-                if line.strip().startswith((":param", ":return", ":rtype", ":raises")):
-                    break
-                filtered.append(line)
-
-            # Remove Google-style section headers and everything after
-            google_section_headers = (
-                "Args:",
-                "Arguments:",
-                "Parameters:",
-                "Returns:",
-                "Yields:",
-                "Raises:",
-                "Examples:",
-                "Attributes:",
-            )
-
-            filtered = []
-            for line in lines:
-                if any(
-                    line.strip().startswith(header) for header in google_section_headers
-                ):
-                    break
-                filtered.append(line)
-
-            # Convert list of strings to a ViewList so Sphinx can parse it
-            content = ViewList()
-            for i, line in enumerate(filtered):
-                content.append(line, f"{full_name} docstring", i)
-
-            # Create a container node and parse the content into it
-            node = nodes.section()
-            node.document = self.state.document
-            nested_parse_with_titles(self.state, content, node)
-
-            return node.children
+            return self.render_docstring(obj, full_name)
 
         except Exception as e:
             error = self.state_machine.reporter.error(

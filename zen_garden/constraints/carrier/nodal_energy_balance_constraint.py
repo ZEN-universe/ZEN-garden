@@ -10,41 +10,48 @@ from zen_garden.model.components.multi_index_helper import MultiIndexHelper
 
 class NodalEnergyBalanceConstraint(GenericConstraint):
     def build(self):
-        """Nodal energy balance for each time step.
+        r"""Summary:
+        Nodal energy balance for each time step.
+
+        Formulation:
 
         .. math::
-            0 = -(d_{c,n,t}-D_{c,n,t})
-            + \\sum_{i\\in\\mathcal{I}}(\\overline{G}_{c,i,n,t}
-            - \\underline{G}_{c,i,n,t})
-            + \\sum_{j\\in\\mathcal{J}}(\\sum_{e\\in\\underline{\\mathcal{E}}}(F_{j,e,t}
-            - F^\\mathrm{l}_{j,e,t}) - \\sum_{e'\\in\\overline{\\mathcal{E}}}F_{j,e',t})
-            + \\sum_{k\\in\\mathcal{K}}(\\overline{H}_{k,n,t} - \\underline{H}_{k,n,t})
-            + \\underline{U}_{c,n,t} - \\overline{U}_{c,n,t}
+            0 = -(d_{c,n,t}-F^{\\mathrm{shed}}_{c,n,t})
+            + \\sum_{h\\in\\mathcal{H}^{\\mathrm{conv}}}
+            (F^{\\mathrm{conv,out}}_{h,c^{\\mathrm{out}},n,t}
+            - F^{\\mathrm{conv,in}}_{h,c^{\\mathrm{in}},n,t})
+            + \\sum_{h\\in\\mathcal{H}^{\\mathrm{trans}}}
+            (\\sum_{e\\in\\mathcal{E}^{\\mathrm{in}}_n}
+            (F^{\mathrm{trans}}_{h,e,t} - F^{\\mathrm{loss}}_{h,e,t})
+            - \\sum_{e'\\in\\mathcal{E}^{\\mathrm{out}}_n}F^{\mathrm{trans}}_{h,e',t})
+            + \\sum_{h\\in\\mathcal{H}^{\\mathrm{stor}}}(F^{\\mathrm{dis}}_{h,n,t}
+            - F^{\\mathrm{ch}}_{h,n,t})
+            + F^{\\mathrm{imp}}_{c,n,t} - F^{\\mathrm{exp}}_{c,n,t}
 
-        Sources of carrier :math:`c` at node :math:`n` and time step :math:`t`:\n
-        :math:`\\overline{G}_{c,i,n,t}`: output flow of carrier :math:`c` from all
-        conversion technologies :math:`i` at node :math:`n` at time step :math:`t`\n
-        :math:`F_{j,e,t}`: transported flow of carrier :math:`c` on ingoing
-        edges :math:`e` minues the losses :math:`F^\\mathrm{l}_{j,e,t})` of all
-        transport technologies :math:`j` at time step :math:`t`\n
-        :math:`\\overline{H}_{k,n,t}`: output flow of carrier :math:`c` from all
-        storage technologies :math:`k` at node :math:`n` at time step :math:`t`\n
-        :math:`\\underline{U}_{c,n,t}`: flow of carrier :math:`c` imported at
-        node :math:`n` at time step :math:`t`\n
+        Notation:
 
-        Sinks of carrier :math:`c` at node :math:`n` and time step :math:`t`:\n
-        :math:`d_{c,n,t}`: demand of carrier :math:`c` at node :math:`n` at
-        time step :math:`t` minus the shed demand :math:`D_{c,n,t}`\n
-        :math:`\\underline{G}_{c,i,n,t}`: input flow of carrier :math:`c` to all
-        conversion technologies :math:`i` at node :math:`n` at time step :math:`t`\n
-        :math:`F_{j,e',t}`: transported flow of carrier :math:`c` on outgoing
-        edges :math:`e'` at time step :math:`t`\n
-        :math:`\\underline{H}_{k,n,t}`: input flow of carrier :math:`c` to all
-        storage technologies :math:`k` at node :math:`n` at time step :math:`t`\n
-        :math:`\\overline{U}_{c,n,t}`: flow of carrier :math:`c` exported at
-        node :math:`n` at time step :math:`t`
+        Sources of carrier :math:`c` at node :math:`n` in time step :math:`t`
+        of year :math:`y`:
 
+        :math:`F^{\\mathrm{conv,out}}_{h,c^{\\mathrm{out}},n,t}`: output flow of 
+        carrier :math:`c` from conversion technology :math:`h`
+        :math:`F^{\mathrm{trans}}_{h,e,t}`: transported flow on ingoing edge 
+        :math:`e`, minus loss :math:`F^{\\mathrm{loss}}_{h,e,t}`, for transport 
+        technology :math:`h`
+        :math:`F^{\\mathrm{dis}}_{h,n,t}`: output flow from storage technology
+        :math:`h`
+        :math:`F^{\\mathrm{imp}}_{c,n,t}`: imported carrier flow
 
+        Sinks of carrier :math:`c` at node :math:`n` in time step :math:`t`
+        of year :math:`y`:
+        :math:`d_{c,n,t}-F^{\\mathrm{shed}}_{c,n,t}`: served demand
+        :math:`F^{\\mathrm{conv,in}}_{h,c^{\\mathrm{in}},n,t}`: input flow to 
+        conversion technology
+        :math:`h`
+        :math:`F^{\mathrm{trans}}_{h,e',t}`: transported flow on outgoing 
+        edge :math:`e'`
+        :math:`F^{\\mathrm{ch}}_{h,n,t}`: input flow to storage technology :math:`h`
+        :math:`F^{\\mathrm{exp}}_{c,n,t}`: exported carrier flow
         """
         index_values, index_names = self.zen_model.create_custom_set(
             ["set_carriers", "set_nodes", "set_time_steps_operation"], Carrier

@@ -3,15 +3,20 @@ from zen_garden.constraints.generic_constraint import GenericConstraint
 
 class CarbonEmissionsAnnualConstraint(GenericConstraint):
     def build(self):
-        """Add up all carbon emissions from technologies and carriers.
+        r"""Summary:
+        Add up all carbon emissions from technologies and carriers.
+
+        Formulation:
 
         .. math::
-            E_y = E_{y,\\mathcal{H}} + E_{y,\\mathcal{C}}
+            M_y = M_y^\\mathrm{tech} + M_y^\\mathrm{carrier}
 
-        :math:`E_{y,\\mathcal{H}}`: carbon emissions from technologies in
-        year :math:`y` \n
-        :math:`E_{y,\\mathcal{C}}`: carbon emissions from carriers in year :math
+        Notation:
 
+        :math:`M_y^\\mathrm{tech}`: carbon emissions from technologies in
+        year :math:`y`
+        :math:`M_y^\\mathrm{carrier}`: carbon emissions from carriers in year
+        :math:`y`
         """
         lhs = (
             self.zen_model.variables["carbon_emissions_annual"]

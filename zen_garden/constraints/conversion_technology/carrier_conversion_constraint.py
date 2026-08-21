@@ -11,19 +11,29 @@ from zen_garden.utils import align_like
 
 class CarrierConversionConstraint(GenericConstraint):
     def build(self):
-        """Conversion factor between reference carrier and dependent carrier.
+        r"""Summary:
+        Conversion factor between reference carrier and dependent carrier.
+
+        Formulation:
 
         .. math::
-            G^\\mathrm{d}_{i,n,t} = \\eta_{i,c,n,y}G^\\mathrm{r}_{i,n,t}
+            G^\\mathrm{d}_{c,h,n,t} =
+            \\eta^{\mathrm{conv}}_{h,c,t}F^{\\mathrm{ref}}_{h,n,t}
 
-        :math:`G^\\mathrm{d}_{i,n,t}`: dependent carrier flow of the
-        technology :math:`i` at node :math:`n` in time step :math:`t` \n
-        :math:`\\eta_{i,c,n,y}`: conversion factor of the technology :math:`i` from
-        reference carrier to dependent carrier :math:`c` at node :math:`n`
-        in year :math:`y` \n
-        :math:`G^\\mathrm{r}_{i,n,t}`: reference carrier flow of the
-        technology :math:`i` at node :math:`n` in time step :math:`t`
+        For each technology, the implementation selects reference and dependent
+        flows from their configured input or output carrier dimensions.
 
+        Notation:
+
+        :math:`G^\\mathrm{d}_{c,h,n,t}`: dependent carrier flow of the
+        technology :math:`h` at node :math:`n` in time step :math:`t` of year
+        :math:`y`
+        :math:`\\eta^{\mathrm{conv}}_{h,c,t}`: conversion factor of 
+        technology :math:`h` from
+        its reference carrier to dependent carrier :math:`c`
+        :math:`F^{\\mathrm{ref}}_{h,n,t}`: reference carrier flow of the
+        technology :math:`h` at node :math:`n` in time step :math:`t` of year
+        :math:`y`
         """
         # dependent carriers
         flow_conversion_input_dep = self.zen_model.variables[

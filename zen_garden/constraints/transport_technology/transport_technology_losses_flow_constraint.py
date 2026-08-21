@@ -8,21 +8,38 @@ from zen_garden.constraints.generic_constraint import GenericConstraint
 
 class TransportTechnologyLossesFlowConstraint(GenericConstraint):
     def build(self):
-        """Compute the flow losses for a carrier through a transport technology.
+        r"""Summary:
+        Compute the flow losses for a carrier through a transport technology.
+
+        Formulation:
 
         .. math::
-            \\text{if transport distance set to inf: } F^\\mathrm{l}_{j,e,t} = 0
+            \\text{if } d^{\\mathrm{dist}}_{h,e}<\\infty:\\quad
+            F^{\\mathrm{loss}}_{h,e,t} = \\lambda^{\\mathrm{loss}}_{h,e} 
+            F^{\mathrm{trans}}_{h,e,t}
+
+        For infinite transport distances, this constraint does not restrict the loss
+        variable.
+
         .. math::
-            \\text{else: } F^\\mathrm{l}_{j,e,t} = h_{j,e} \\rho_{j} F_{j,e,t}
+            \\lambda^{\\mathrm{loss}}_{h,e} = 
+            d^{\\mathrm{dist}}_{h,e}\\lambda^{\\mathrm{lin}}_h
+            \\quad\\text{or}\\quad
+            \\lambda^{\\mathrm{loss}}_{h,e} = 
+            1-\\exp(-d^{\\mathrm{dist}}_{h,e}\\lambda^{\\mathrm{exp}}_h)
 
-        :math:`F^\\mathrm{l}_{j,e,t}`: Flow losses of carrier through transport
-        technology :math:`j` on edge :math:`e` at time :math:`t` \n
-        :math:`h_{j,e}`: Transport distance for transport technology :math:`j` on
-        edge :math:`e` \n
-        :math:`\\rho_{j}`: Loss factor for transport technology :math:`j` \n
-        :math:`F_{j,e,t}`: Reference flow of carrier through transport
-        technology :math:`j` on edge :math:`e` at time :math:`t`
+        Notation:
 
+        :math:`F^{\\mathrm{loss}}_{h,e,t}`: flow losses through transport technology
+        :math:`h` on edge :math:`e` in time step :math:`t` of year :math:`y`
+        :math:`d^{\\mathrm{dist}}_{h,e}`: Transport distance for transport technology 
+        :math:`h` on
+        edge :math:`e`
+        :math:`\\lambda^{\\mathrm{loss}}_{h,e}`: effective loss factor, 
+        calculated during preprocessing
+        from either a linear or exponential loss-rate input
+        :math:`F^{\mathrm{trans}}_{h,e,t}`: carrier flow through transport 
+        technology :math:`h` on edge :math:`e` in time step :math:`t` of year :math:`y`
         """
         if len(self.zen_model.sets["set_transport_technologies"]) == 0:
             return

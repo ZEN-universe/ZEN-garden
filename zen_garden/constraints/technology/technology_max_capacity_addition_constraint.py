@@ -5,18 +5,23 @@ from zen_garden.constraints.generic_constraint import GenericConstraint
 
 class TechnologyMaxCapacityAdditionConstraint(GenericConstraint):
     def build(self):
-        """Max capacity addition of technology.
+        r"""Summary:
+        Max capacity addition of technology.
+
+        Formulation:
 
         .. math::
-            s^\\mathrm{max}_{h} g_{i,p,y} \\ge \\Delta S_{h,p,y}
+            \\overline{\\Delta k}_{h,p,y} g_{h,p,y}
+            \\geq \\Delta K_{h,p,y}
 
-        :math:`s^\\mathrm{add, max}_{h}`: maximum capacity addition of
-        technology :math:`h`  \n
-        :math:`g_{i,p,y}`: binary variable which equals 1 if technology is installed
-        at location :math:`p` in year :math:`y` \n
-        :math:`\\Delta S_{h,p,y}`: size of built technology :math:`h` (invested
-        capacity after construction) at location :math:`p` in year :math:`y`
+        The constraint is omitted for zero, missing, or infinite maximum additions.
 
+        Notation:
+
+        :math:`\\overline{\\Delta k}_{h,p,y}`: maximum capacity addition
+        :math:`g_{h,p,y}`: binary variable which equals 1 if technology is installed
+        at location :math:`p` in year :math:`y`
+        :math:`\\Delta K_{h,p,y}`: capacity addition
         """
         capacity_addition_max = self.zen_model.parameters.capacity_addition_max
         mask = (
