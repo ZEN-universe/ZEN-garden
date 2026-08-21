@@ -8,8 +8,8 @@ from docutils import nodes
 from docutils.parsers.rst import directives
 from docutils.statemachine import ViewList
 from sphinx.application import Sphinx
-from sphinx.util.docstrings import prepare_docstring
 from sphinx.util.docutils import SphinxDirective
+from sphinx.util.nodes import nested_parse_with_titles
 from sphinx.util.typing import ExtensionMetadata
 
 """
@@ -30,7 +30,6 @@ GOOGLE_SECTION_HEADERS = (
     "Args:",
     "Arguments:",
     "Parameters:",
-    "Notation:",
     "Returns:",
     "Yields:",
     "Raises:",
@@ -58,66 +57,8 @@ class DocstringDirective(SphinxDirective):
 
     section_header = re.compile(r"^(Summary|Formulation|Notation):$", re.I)
 
-    def preprocess_math_content(self,lines: list[str]) -> list[str]:
-        """Fix double backslashes and join wrapped math lines before reST parsing."""
-        processed: list[str] = []
-        in_math_block = False
-        math_indent = 0
-        current_math_lines: list[str] = []
-
-        for line in lines:
-            # 1. Un-escape double backslashes (\\command -> \command)
-            line = line.replace("\\\\", "\\")
-
-            # 2. Track .. math:: directive blocks
-            stripped = line.strip()
-            current_indent = len(line) - len(line.lstrip())
-
-            if stripped.startswith(".. math::"):
-                in_math_block = True
-                math_indent = current_indent
-                processed.append(line)
-                continue
-
-            if in_math_block:
-                # Empty lines or non-indented lines mark the end of the .. math:: block
-                if stripped and current_indent <= math_indent:
-                    # Flush collected math lines into a single continuous equation string
-                    if current_math_lines:
-                        combined_math = " ".join(
-                            line.strip() for line in current_math_lines
-                        )
-                        # Indent the combined block relative to the directive
-                        indent_str = " " * (math_indent + 4)
-                        processed.append(f"{indent_str}{combined_math}")
-                        current_math_lines = []
-                    in_math_block = False
-                else:
-                    if stripped:
-                        current_math_lines.append(stripped)
-                    continue
-
-            # 3. Fix inline :math: roles split across lines
-            processed.append(line)
-
-        # Flush if docstring ends with a math block
-        if in_math_block and current_math_lines:
-            combined_math = " ".join(line.strip() for line in current_math_lines)
-            indent_str = " " * (math_indent + 4)
-            processed.append(f"{indent_str}{combined_math}")
-
-        # 4. Join multi-line :math:`...` roles back onto single lines
-        full_text = "\n".join(processed)
-        full_text = re.sub(
-            r"(:math:`[^`]+`)",
-            lambda m: m.group(1).replace("\n", " "),
-            full_text,
-            flags=re.DOTALL,
-        )
-
-        return full_text.splitlines()
-
     def select_sections(self, lines: list[str]) -> list[str] | None:
+        """Select named sections from a structured constraint docstring."""
         sections: dict[str, list[str]] = {}
         current_section: str | None = None
 
@@ -143,34 +84,33 @@ class DocstringDirective(SphinxDirective):
             if requested_option
             else list(sections)
         )
+        invalid = [part for part in requested if part not in sections]
+        if invalid:
+            available = ", ".join(sections)
+            raise ValueError(
+                f"unknown or unavailable docstring sections {invalid}; "
+                f"available sections: {available}"
+            )
 
         selected: list[str] = []
         for part in requested:
             content = sections[part]
-            if not content:
-                continue
-
-            # Dedent content so nested parser receives base column 0
-            dedented_block = textwrap.dedent("\n".join(content)).splitlines()
-
-            while dedented_block and not dedented_block[0].strip():
-                dedented_block.pop(0)
-            while dedented_block and not dedented_block[-1].strip():
-                dedented_block.pop()
-
-            if selected and dedented_block:
+            while content and not content[0].strip():
+                content = content[1:]
+            while content and not content[-1].strip():
+                content = content[:-1]
+            if selected and content:
                 selected.append("")
-            selected.extend(dedented_block)
-
+            selected.extend(content)
         return selected
 
     def render_docstring(self, obj: object, full_name: str) -> list[nodes.Node]:
-        raw_doc = getattr(obj, "__doc__", "") or ""
-        if not raw_doc.strip():
+        """Render a cleaned docstring and register its source as a dependency."""
+        doc = inspect.getdoc(obj)
+        if not doc:
             raise ValueError("the selected object has no docstring")
 
-        lines = prepare_docstring(raw_doc)
-
+        lines = doc.splitlines()
         selected = self.select_sections(lines)
         if selected is not None:
             filtered = selected
@@ -194,9 +134,6 @@ class DocstringDirective(SphinxDirective):
                     break
                 filtered.append(line)
 
-        # Preprocess lines to fix math line-wrapping and double backslashes automatically
-        filtered = self.preprocess_math_content(filtered)
-
         source = inspect.getsourcefile(obj)
         if source is not None:
             self.env.note_dependency(source)
@@ -212,60 +149,10 @@ class DocstringDirective(SphinxDirective):
         for offset, line in enumerate(filtered):
             content.append(line, source, source_line + offset)
 
-        container = nodes.container()
-        container.document = self.state.document
-        self.state.nested_parse(content, 0, container)
-        return container.children
-
-    # def render_docstring(self, obj: object, full_name: str) -> list[nodes.Node]:
-    #     """Render a cleaned docstring and register its source as a dependency."""
-    #     doc = inspect.getdoc(obj)
-    #     if not doc:
-    #         raise ValueError("the selected object has no docstring")
-
-    #     lines = doc.splitlines()
-    #     selected = self.select_sections(lines)
-    #     if selected is not None:
-    #         filtered = selected
-    #     else:
-    #         if "sections" in self.options:
-    #             raise ValueError(
-    #                 "the :sections: option requires Summary:, Formulation:, "
-    #                 "and Notation: docstring sections"
-    #             )
-    #         if "include-summary" not in self.options and lines:
-    #             lines.pop(0)
-    #             while lines and not lines[0].strip():
-    #                 lines.pop(0)
-
-    #         filtered = []
-    #         for line in lines:
-    #             stripped = line.strip()
-    #             if stripped.startswith(FIELD_LIST_PREFIXES) or any(
-    #                 stripped.startswith(header) for header in GOOGLE_SECTION_HEADERS
-    #             ):
-    #                 break
-    #             filtered.append(line)
-
-    #     source = inspect.getsourcefile(obj)
-    #     if source is not None:
-    #         self.env.note_dependency(source)
-    #     else:
-    #         source = f"{full_name} docstring"
-
-    #     try:
-    #         _, source_line = inspect.getsourcelines(obj)
-    #     except (OSError, TypeError):
-    #         source_line = 0
-
-    #     content = ViewList()
-    #     for offset, line in enumerate(filtered):
-    #         content.append(line, source, source_line + offset)
-
-    #     node = nodes.section()
-    #     node.document = self.state.document
-    #     nested_parse_with_titles(self.state, content, node)
-    #     return node.children
+        node = nodes.section()
+        node.document = self.state.document
+        nested_parse_with_titles(self.state, content, node)
+        return node.children
 
 
 class DocstringMethod(DocstringDirective):
