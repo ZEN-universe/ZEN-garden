@@ -1,8 +1,6 @@
 """This module contains the Results class, which is used to extract and process
 the results of a model run.
 """
-
-import json
 import logging
 import os
 from pathlib import Path
@@ -11,8 +9,9 @@ from typing import Any, Literal, Optional, Union
 import numpy as np
 import pandas as pd
 from pandas import Series
+from typing import Literal
 
-from zen_garden.default_config import Analysis, Config, Solver, System
+from zen_garden.default_config import Analysis, Solver, System
 from zen_garden.postprocess.results.solution_loader import (
     Component,
     ComponentType,
@@ -20,6 +19,8 @@ from zen_garden.postprocess.results.solution_loader import (
     SolutionLoader,
     TimestepType,
 )
+from zen_garden.postprocess.results.cost_emission_calculation import (
+    CostEmissionCalculation)
 from zen_garden.utils import reformat_slicing_index
 
 logger = logging.getLogger(__name__)
@@ -27,6 +28,8 @@ logger = logging.getLogger(__name__)
 NestedTuple = tuple[list[str], ...] | tuple[str, ...]
 NestedDict = dict[str, str | list[str]]
 
+# used for the cost and emission calculation to specify the mode of calculation
+CostEmissionMode = Literal["final_demand", "total_production", "relative"]
 
 class Results:
     """The Results class is used to extract and process the results of a model run."""
@@ -47,6 +50,7 @@ class Results:
         first_scenario = next(iter(self.solution_loader.scenarios.values()))
         self.name = Path(first_scenario.analysis.dataset).name
         self.ureg = first_scenario.ureg
+        self.cost_emission_calculation = CostEmissionCalculation(self)
 
     def __str__(self) -> str:
         first_scenario = next(iter(self.solution_loader.scenarios.values()))
@@ -63,7 +67,7 @@ class Results:
     ) -> Optional[Union[dict[str, "pd.DataFrame | pd.Series[Any]"], pd.Series]]:
         """Returns the raw results without any further processing.
 
-        Transforms a parameter or variable dataframe (compressed) string into
+        Transforms a parameter or variable dataframe string into
         an actual pandas dataframe.
 
         Args:
@@ -75,6 +79,19 @@ class Results:
 
         Returns:
             DataFrame: The corresponding dataframe
+
+        Examples:
+            Basic usage example:
+
+            >>> from zen_garden.postprocess.results.results import Results
+            >>> r = Results(path='<result_folder>')
+            >>> r.get_df('<component_name>') # dataframe of "<component_name>"
+            >>> r.get_df('<component_name>', '<scenario_name>') # dataframe of
+                "<component_name>" in "<scenario_name>"
+            >>> r.get_df('<component_name>', index={'<index_name>': '<index_value>'})
+                # dataframe of "<component_name>" for a specific index value to slice the
+                dataframe
+
         """
         scenario_names = (
             list(self.solution_loader.scenarios.keys())
@@ -121,7 +138,7 @@ class Results:
                 return {}
         return ans
 
-    def get_full_ts_per_scenario(
+    def _get_full_ts_per_scenario(
         self,
         scenario: Scenario,
         component: Component,
@@ -333,7 +350,7 @@ class Results:
                 continue
             component = scenario.get_component(component_name)
             idx = reformat_slicing_index(index, component)
-            scenarios_dict[scenario_name] = self.get_full_ts_per_scenario(
+            scenarios_dict[scenario_name] = self._get_full_ts_per_scenario(
                 scenario,
                 component,
                 discount_to_first_step=discount_to_first_step,
@@ -351,7 +368,7 @@ class Results:
 
         return self._concat_scenarios_dict(scenarios_dict, scenario_names)
 
-    def get_total_per_scenario(
+    def _get_total_per_scenario(
         self,
         scenario: Scenario,
         component: Component,
@@ -445,6 +462,23 @@ class Results:
 
         Returns:
             DataFrame: Total values of the component
+
+        Examples:
+            Basic usage example:
+
+            >>> from zen_garden.postprocess.results.results import Results
+            >>> r = Results(path='<result_folder>')
+            >>> r.get_total('<component_name>') # total values of "<component_name>"
+            >>> r.get_total('<component_name>', '<scenario_name>') # total values of
+                "<component_name>" in "<scenario_name>"
+            >>> r.get_total('<component_name>', <year>) # total values of
+                "<component_name>" for a specific year
+            >>> r.get_total('<component_name>', index={'<index_name>': '<index_value>'})
+                # total values of "<component_name>" for a specific index value to slice
+                the dataframe
+            >>> r.get_total('<component_name>', keep_raw=True) # total values for the 
+                following years in one rolling horizon step are kept, instead of only 
+                the first year of the rolling horizon step
         """
         # Throw error if used for a dual variable
         if component_name in self.get_component_names("dual"):
@@ -467,7 +501,7 @@ class Results:
                 continue
             component = scenario.get_component(component_name)
             idx = reformat_slicing_index(index, component)
-            current_total = self.get_total_per_scenario(
+            current_total = self._get_total_per_scenario(
                 scenario, component, year, keep_raw, index=idx
             )
 
@@ -574,11 +608,11 @@ class Results:
         component_name: str,
         scenario_name: Optional[str] = None,
         year: Optional[int] = None,
-        discount_to_first_step: bool = True,
-        keep_raw: bool = False,
         index: Optional[
             Union[NestedTuple, NestedDict, list[str], str, float, int]
         ] = None,
+        discount_to_first_step: bool = True,
+        keep_raw: bool = False,
     ) -> Optional["pd.DataFrame | pd.Series[Any]"]:
         """Extracts the dual variables of a component.
 
@@ -586,13 +620,32 @@ class Results:
             component_name: Name of dual
             scenario_name: Scenario Name
             year: Year
+            index: slicing index of the resulting dataframe
             discount_to_first_step: apply annuity to first year of interval or
                 entire interval
             keep_raw: Keep the raw values of the rolling horizon optimization
-            index: slicing index of the resulting dataframe
 
         Returns:
             DataFrame: Duals of the component
+
+        Examples:
+            Basic usage example:
+
+            >>> from zen_garden.postprocess.results.results import Results
+            >>> r = Results(path='<result_folder>')
+            >>> r.get_dual('<component_name>') # duals of "<component_name>"
+            >>> r.get_dual('<component_name>', '<scenario_name>') # duals of 
+                "<component_name>" in "<scenario_name>"
+            >>> r.get_dual('<component_name>', <year>) # duals of
+                "<component_name>" for a specific year
+            >>> r.get_dual('<component_name>', index={'<index_name>': '<index_value>'}) 
+                # duals of "<component_name>" for a specific index value to slice the
+                dataframe
+            >>> r.get_dual('<component_name>', discount_to_first_step=False) # duals of
+                "<component_name>" without discounting to the first step
+            >>> r.get_dual('<component_name>', keep_raw=True) # duals for the following
+                years in one rolling horizon step are kept, instead of only the first 
+                year of the rolling horizon step
         """
         if not self.get_solver(scenario_name=scenario_name).save_duals:
             logger.warning("Duals are not calculated. Skip.")
@@ -632,6 +685,25 @@ class Results:
 
         Returns:
             DataFrame: The corresponding unit
+
+        Examples:
+            Basic usage example:
+
+            >>> from zen_garden.postprocess.results.results import Results
+            >>> r = Results(path='<result_folder>')
+            >>> r.get_unit('<component_name>') # unit of "<component_name>"
+            >>> r.get_unit('<component_name>', '<scenario_name>') # unit of 
+                "<component_name>" in "<scenario_name>"
+            >>> r.get_unit('<component_name>', index={'<index_name>': '<index_value>'}) 
+                # unit of "<component_name>" for a specific index value to slice the 
+                dataframe
+            >>> r.get_unit('<component_name>', droplevel=False) # unit of
+                "<component_name>" without dropping the location and 
+                time levels of the multiindex
+            >>> r.get_unit('<component_name>', convert_to_yearly_unit=True) # unit of
+                "<component_name>" converted to a yearly unit, i.e., for components with 
+                an operational time step type, the unit is multiplied by hours.
+             
         """
         if scenario_name is None:
             scenario_name = next(iter(self.solution_loader.scenarios.keys()))
@@ -746,7 +818,7 @@ class Results:
             >>> from zen_garden.postprocess.results.results import Results
             >>> r = Results(path='<result_folder>')
             >>> r.get_system() # system configurations of first scenario
-            >>> r.get_system('scenario_name') # system configuration of "scenario_name"
+            >>> r.get_system('<scenario_name>') # system configuration of "scenario_name"
 
         """
         if scenario_name is None:
@@ -775,7 +847,7 @@ class Results:
             >>> from zen_garden.postprocess.results.results import Results
             >>> r = Results(path='<result_folder>')
             >>> r.get_analysis() # analysis config of first scenario
-            >>> r.get_analysis('scenario_name') # analysis config of "scenario_name"
+            >>> r.get_analysis('<scenario_name>') # analysis config of "scenario_name"
 
         """
         if scenario_name is None:
@@ -804,7 +876,7 @@ class Results:
             >>> from zen_garden.postprocess.results.results import Results
             >>> r = Results(path='<result_folder>')
             >>> r.get_solver() # solver configurations of first scenario
-            >>> r.get_solver('scenario_name') # solver configuration of "scenario_name"
+            >>> r.get_solver('<scenario_name>') # solver configuration of "scenario_name"
 
         """
         if scenario_name is None:
@@ -814,8 +886,18 @@ class Results:
     def get_doc(self, component_name: str) -> str:
         """Extracts the documentation of a given Component.
 
-        :param component_name: Name of the component
-        :return: The corresponding documentation
+        Args:
+            component_name (str): Name of the component
+
+        Returns:
+            str: The corresponding documentation of the component.
+
+        Examples:
+            Basic usage example:
+
+            >>> from zen_garden.postprocess.results.results import Results
+            >>> r = Results(path='<result_folder>')
+            >>> r.get_doc('<component_name>') # documentation of "<component_name>"
         """
         component = None
         for scenario in self.solution_loader.scenarios.values():
@@ -835,13 +917,23 @@ class Results:
     ) -> list[str]:
         """Docstring for get_index_names.
 
-        :param self: Description
-        :param component_name: Description
-        :type component_name: str
-        :param scenario_name: Description
-        :type scenario_name: Optional[str]
-        :return: Description
-        :rtype: list[str]
+        Args:
+            component_name (str): The name of the component for which to 
+                extract the index names.
+            scenario_name (Optional[str]): The name of the scenario for which
+                to extract the index names. If no value is given, then the first
+                scenario is used. Default value: ``None``.
+        Returns:
+            list[str]: A list of index names for the specified component.
+
+            
+        Examples:
+            Basic usage example:
+
+            >>> from zen_garden.postprocess.results.results import Results
+            >>> r = Results(path='<result_folder>')
+            >>> r.get_index_names('<component_name>') # index names of "<component_name>"
+            >>> r.get_index_names('<component_name>', '<scenario_name>') # index names of "<component_name>" in "<scenario_name>"
         """
         if scenario_name is None:
             scenario_name = next(iter(self.solution_loader.scenarios.keys()))
@@ -856,24 +948,38 @@ class Results:
         return component.index_names
 
     def get_years(self, scenario_name: Optional[str] = None) -> list[int]:
-        """Extracts the years of a given Scenario. If no scenario is given, a
-        random one is taken.
+        """Extracts the years of a given Scenario. If no scenario is given, the first
+        scenario is taken.
 
-        :param scenario_name: Name of the scenario
-        :return: List of years
+        Args:
+            scenario_name (str, optional): The name of the scenario for which
+                to extract the years. If no value is given, then the first
+                scenario is used. Default value: ``None``.
+
+        Returns:
+            list[int]: A list of years for the specified scenario.
         """
         if scenario_name is None:
             scenario_name = next(iter(self.solution_loader.scenarios.keys()))
-        system = self.solution_loader.scenarios[scenario_name].system
-        years = list(range(0, system.optimized_years))
+        system = self.get_system(scenario_name)
+        reference_year = system.reference_year
+        interval_between_years = system.interval_between_years
+        optimized_years = system.optimized_years
+        years = [reference_year + i * interval_between_years 
+                 for i in range(optimized_years)]
         return years
 
     def has_MF(self, scenario_name: Optional[str] = None) -> bool:
         """Extracts the System config of a given Scenario. If no scenario is given,
         a random one is taken.
 
-        :param scenario_name: Name of the scenario
-        :return: The corresponding System config
+        Args:
+            scenario_name (str, optional): The name of the scenario for which
+                to extract the System config. If no value is given, then the first
+                scenario is used. Default value: ``None``.
+
+        Returns:
+            bool: A boolean indicating whether the scenario uses a rolling horizon.
         """
         if scenario_name is None:
             scenario_name = next(iter(self.solution_loader.scenarios.keys()))
@@ -884,8 +990,13 @@ class Results:
         """Extracts the coordinates of the nodes of a given Scenario. If no
         scenario is given, a random one is taken.
 
-        :param scenario_name: Name of the scenario
-        :return: The corresponding coordinates
+        Args:
+            scenario_name (str, optional): The name of the scenario for which
+                to extract the coordinates. If no value is given, then the first
+                scenario is used. Default value: ``None``.
+
+        Returns:
+            pd.DataFrame: The corresponding coordinates.
         """
         if scenario_name is None:
             scenario_name = next(iter(self.solution_loader.scenarios.keys()))
@@ -906,45 +1017,25 @@ class Results:
             )
             return None
 
-    def extract_carrier(
-        self, dataframe: pd.DataFrame, carrier: str, scenario_name: str
-    ) -> pd.DataFrame:
-        """Returns a dataframe that only contains the desired carrier.
-        If carrier is not contained in the dataframe, the technologies that
-        have the provided reference carrier are returned.
-
-        :param dataframe: pd.Dataframe containing the base data
-        :param carrier: name of the carrier
-        :param scenario_name: name of the scenario
-        :return: filtered pd.Dataframe containing only the provided carrier
-        """
-        if "carrier" not in dataframe.index.names:
-            reference_carriers = self.get_df(
-                "set_reference_carriers", scenario_name=scenario_name
-            )
-            if not isinstance(reference_carriers, pd.Series):
-                raise TypeError("set_reference_carriers must contain a pandas Series")
-            data_extracted = pd.DataFrame()
-            for tech in dataframe.index.get_level_values("technology"):
-                if reference_carriers[tech] == carrier:
-                    data_extracted = pd.concat(
-                        [data_extracted, dataframe.query(f"technology == '{tech}'")],
-                        axis=0,
-                    )
-            return data_extracted
-
-        # check if desired carrier isn't contained in data
-        # (otherwise .loc raises an error)
-        if carrier not in dataframe.index.get_level_values("carrier"):
-            return pd.DataFrame()
-
-        return dataframe.query(f"carrier == '{carrier}'")
-
     def get_component_names(self, component_type: str) -> list[str]:
         """Returns the names of all components of a given type.
+        
+        Args:
+            component_type (str): Type of the component. Must be one of the
+                valid component types defined in ComponentType:
+                ["variable", "dual", "parameter", "set", "constraint"].
+                Duals are only available if the solver has been configured to save them.
 
-        :param component_type: Type of the component
-        :return: List of component names
+        Returns:
+            list[str]: List of component names of the specified type.
+
+        Examples:
+            Basic usage example:
+
+            >>> from zen_garden.postprocess.results.results import Results
+            >>> r = Results(path='<result_folder>')
+            >>> r.get_component_names('variable') # list of variable component names
+            >>> r.get_component_names('dual') # list of dual component names
         """
         assert component_type in ComponentType.get_component_type_names(), (
             f"Invalid component type: {component_type}. Valid types are: "
@@ -959,15 +1050,142 @@ class Results:
                     list_names.append(cn)
         return list_names
 
+    def get_sectoral_costs(
+        self,
+        scenario_name: Optional[str] = None,
+        carrier: Optional[str] = None,
+        spatially_resolved: bool = False,
+        mode: CostEmissionMode = "final_demand",
+        overwrite: bool = False,
+    ) -> tuple[pd.DataFrame, pd.DataFrame]:
+        """Calculates the sectoral costs of a scenario through 
+        Leontief Input-Output tables. The capital and operational expenditures of each 
+        technology and the fuel cost of each carrier are allocated to the sectors 
+        that use them. 
 
-if __name__ == "__main__":
-    with open("config.json") as f:
-        config = Config(**json.load(f))
+        When specifying a carrier, only the cost of producing that carrier is returned.
+        Note that the tables are formulated for all sectors, so returning the costs for
+        all sectors does not add any overhead.
+        The sectoral costs are either returned aggregated over all locations or
+        spatially resolved for each location (`spatially_resolved = True`). 
+        The cost of transport technologies are 50/50 allocated to the connecting nodes.
+        By default, the costs to produce the final demand of each sector are returned
+        (`mode = "final_demand"`), but the costs of the total production of each carrier
+        can also be returned (`mode = "total_production"`). Finally, the relative 
+        production costs of each sector can be returned (`mode = "relative"`).
 
-    model_name = os.path.basename(config.analysis.dataset)
-    if os.path.exists(
-        out_folder := os.path.join(config.analysis.folder_output, model_name)
-    ):
-        r = Results(out_folder)
-    else:
-        logger.critical("No results folder found!")
+        Args:
+            scenario_name: The scenario for which the sectoral costs should be
+                calculated; if None, the costs of the first scenario are returned.
+            carrier: The carrier for which the sectoral costs should be calculated. If
+                None, the costs of all carriers are returned.
+            spatially_resolved: Whether the sectoral costs should be returned
+                spatially resolved for each node or aggregated over all nodes.
+            mode: The mode of calculation for the sectoral costs 
+                ("final_demand", "total_production", or "relative").
+            overwrite: Whether to rebuild the leontief input-output tables even if 
+                they have already been built and saved.
+
+        Returns:
+            DataFrame: Sectoral costs of the scenario
+
+        Examples:
+            Basic usage example:
+
+            >>> from zen_garden.postprocess.results.results import Results
+            >>> r = Results(path='<result_folder>')
+            >>> r.get_sectoral_costs('<scenario_name>') 
+                # sectoral costs of "<scenario_name>"
+            >>> r.get_sectoral_costs('<scenario_name>', carrier='<carrier_name>') 
+                # sectoral costs of "<carrier_name>" in "<scenario_name>"
+            >>> r.get_sectoral_costs('<scenario_name>', spatially_resolved=True)
+                # spatially resolved sectoral costs of "<scenario_name>"
+            >>> r.get_sectoral_costs('<scenario_name>', mode='total_production')
+                # sectoral costs of the total production of each carrier in 
+                "<scenario_name>"
+            >>> r.get_sectoral_costs('<scenario_name>', mode='relative')
+                # relative production costs of each sector in "<scenario_name>"
+        """
+        if scenario_name is None:
+            scenario_name = next(iter(self.solution_loader.scenarios.keys()))
+        sectoral_costs, direct_costs = (
+            self.cost_emission_calculation.calculate_leontief_data(
+                scenario_name=scenario_name,
+                carrier=carrier,
+                spatially_resolved=spatially_resolved,
+                mode=mode,
+                overwrite=overwrite,
+                is_cost=True
+            )
+        )
+        return sectoral_costs, direct_costs
+    
+    def get_sectoral_emissions(
+        self,
+        scenario_name: Optional[str] = None,
+        carrier: Optional[str] = None,
+        spatially_resolved: bool = False,
+        mode: CostEmissionMode = "final_demand",
+        overwrite: bool = False,
+    ) -> tuple[pd.DataFrame, pd.DataFrame]:
+        """Calculates the sectoral emissions of a scenario through 
+        Leontief Input-Output tables. The capital and operational expenditures of each 
+        technology and the fuel cost of each carrier are allocated to the sectors 
+        that use them. 
+
+        When specifying a carrier, only the emissions of producing that carrier is returned.
+        Note that the tables are formulated for all sectors, so returning the emissions for
+        all sectors does not add any overhead.
+        The sectoral emissions are either returned aggregated over all locations or
+        spatially resolved for each location (`spatially_resolved = True`). 
+        The emissions of transport technologies are 50/50 allocated to the connecting nodes.
+        By default, the emissions to produce the final demand of each sector are returned
+        (`mode = "final_demand"`), but the emissions of the total production of each carrier
+        can also be returned (`mode = "total_production"`). Finally, the relative 
+        production emissions of each sector can be returned (`mode = "relative"`).
+
+        Args:
+            scenario_name: The scenario for which the sectoral emissions should be
+                calculated; if None, the emissions of the first scenario are returned.
+            carrier: The carrier for which the sectoral emissions should be calculated. If
+                None, the emissions of all carriers are returned.
+            spatially_resolved: Whether the sectoral emissions should be returned
+                spatially resolved for each node or aggregated over all nodes.
+            mode: The mode of calculation for the sectoral emissions
+                ("final_demand", "total_production", or "relative").
+            overwrite: Whether to rebuild the leontief input-output tables even if 
+                they have already been built and saved.
+
+        Returns:
+            DataFrame: Sectoral emissions of the scenario
+
+        Examples:
+            Basic usage example:
+
+            >>> from zen_garden.postprocess.results.results import Results
+            >>> r = Results(path='<result_folder>')
+            >>> r.get_sectoral_emissions('<scenario_name>') 
+                # sectoral emissions of "<scenario_name>"
+            >>> r.get_sectoral_emissions('<scenario_name>', carrier='<carrier_name>') 
+                # sectoral emissions of "<carrier_name>" in "<scenario_name>"
+            >>> r.get_sectoral_emissions('<scenario_name>', spatially_resolved=True)
+                # spatially resolved sectoral emissions of "<scenario_name>"
+            >>> r.get_sectoral_emissions('<scenario_name>', mode='total_production')
+                # sectoral emissions of the total production of each carrier in 
+                "<scenario_name>"
+            >>> r.get_sectoral_emissions('<scenario_name>', mode='relative')
+                # relative production emissions of each sector in "<scenario_name>"
+        """
+        if scenario_name is None:
+            scenario_name = next(iter(self.solution_loader.scenarios.keys()))
+        sectoral_emissions, direct_emissions = (
+            self.cost_emission_calculation.calculate_leontief_data(
+                scenario_name=scenario_name,
+                carrier=carrier,
+                spatially_resolved=spatially_resolved,
+                mode=mode,
+                overwrite=overwrite,
+                is_cost=False
+            )
+        )
+        return sectoral_emissions, direct_emissions
