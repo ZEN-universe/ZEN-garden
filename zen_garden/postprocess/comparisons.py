@@ -8,7 +8,7 @@ import pandas as pd
 from tqdm import tqdm
 
 from zen_garden.postprocess.results import Results
-from zen_garden.postprocess.results.solution_loader import ComponentType
+from zen_garden.postprocess.results.component_type import ComponentType
 
 logger = logging.getLogger(__name__)
 

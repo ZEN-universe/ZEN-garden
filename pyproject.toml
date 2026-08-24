@@ -113,3 +113,8 @@ warn_unused_configs = true
 ignore_missing_imports = true
 check_untyped_defs = false
 disallow_untyped_defs = false
+
+[tool.basedpyright]
+typeCheckingMode = "recommended"
+reportUnknownVariableType = false
+reportMissingTypeArgument = "warning"

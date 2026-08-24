@@ -43,8 +43,10 @@ class Component:
         for string in prohibited_strings:
             if string in doc:
                 logger.warning(
-                    f"Docstring '{original_doc}' contains prohibited "
-                    f"string '{string}'. Occurrences are dropped."
+                    (
+                        f"Docstring '{original_doc}' contains prohibited "
+                        f"string '{string}'. Occurrences are dropped."
+                    )
                 )
                 doc = doc.replace(string, "")
         # joined index names

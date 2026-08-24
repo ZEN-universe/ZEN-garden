@@ -281,6 +281,7 @@ class Analysis(ConfigBase):
     folder_output: str = "./outputs/"
     overwrite_output: bool = True
     output_format: str = "h5"
+    output_version: int = 4
     earliest_year_of_data: int = 1900
     zen_garden_version: str | None = None
 
