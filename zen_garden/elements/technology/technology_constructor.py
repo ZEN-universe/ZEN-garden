@@ -6,16 +6,16 @@ import numpy as np
 import xarray as xr
 from typing_extensions import override
 
-from zen_garden.constraints.technology import (
+from zen_garden.elements.technology import (
     TECHNOLOGY_CONSTRAINTS,
 )
-from zen_garden.constraints.technology.technology_on_off_constraint import (
+from zen_garden.elements.technology import (
     TechnologyOnOffConstraint,
 )
 from zen_garden.elements.technology import Technology
 from zen_garden.model.components.multi_index_helper import MultiIndexHelper
 from zen_garden.model.components.set_registry import SetRegistry
-from zen_garden.model_constructors.model_constructor import ModelConstructor
+from zen_garden.elements.model_constructor import ModelConstructor
 
 logger = logging.getLogger(__name__)
 

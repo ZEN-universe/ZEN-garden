@@ -7,8 +7,8 @@ import numpy as np
 import pandas as pd
 from typing_extensions import override
 
-from zen_garden.constraints.energy_system import ENERGY_SYSTEM_CONSTRAINTS
-from zen_garden.model_constructors.model_constructor import ModelConstructor
+from zen_garden.elements.energy_system import ENERGY_SYSTEM_CONSTRAINTS
+from zen_garden.elements.model_constructor import ModelConstructor
 
 if TYPE_CHECKING:
     pass

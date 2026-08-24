@@ -5,9 +5,9 @@ import logging
 import numpy as np
 from typing_extensions import override
 
-from zen_garden.constraints.carrier import CARRIER_CONSTRAINTS
+from zen_garden.elements.carrier import CARRIER_CONSTRAINTS
 from zen_garden.elements.carrier import Carrier
-from zen_garden.model_constructors.model_constructor import ModelConstructor
+from zen_garden.elements.model_constructor import ModelConstructor
 
 logger = logging.getLogger(__name__)
 

@@ -11,7 +11,6 @@ import numpy as np
 import pandas as pd
 
 if TYPE_CHECKING:
-    from zen_garden.elements.element import Element
     from zen_garden.elements.energy_system import EnergySystem
     from zen_garden.model.config import Config
     from zen_garden.preprocess.unit_handling import UnitHandling

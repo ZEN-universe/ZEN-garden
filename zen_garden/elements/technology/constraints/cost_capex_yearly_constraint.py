@@ -2,7 +2,7 @@ import linopy as lp
 import pandas as pd
 from linopy.expressions import LinearExpression
 
-from zen_garden.constraints.technology.technology_constraint import TechnologyConstraint
+from zen_garden.elements.technology.constraints.technology_constraint import TechnologyConstraint
 from zen_garden.elements.technology import Technology
 from zen_garden.model.components.multi_index_helper import MultiIndexHelper
 
