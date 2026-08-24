@@ -15,6 +15,7 @@ logger = logging.getLogger(__name__)
 class CarrierConstructor(ModelConstructor):
     element_class = Carrier
     constraints = CARRIER_CONSTRAINTS
+    parameters = Carrier.parameters
 
     @override
     def has_elements(self) -> bool:
@@ -28,75 +29,6 @@ class CarrierConstructor(ModelConstructor):
     @override
     def construct_sets(self):
         logger.info("Constructing sets for Carrier")
-
-    @override
-    def construct_params(self):
-        logger.info("Constructing parameters for Carrier")
-
-        # demand of carrier
-        self.add_parameter(
-            name="demand",
-            index_names=["set_carriers", "set_nodes", "set_time_steps_operation"],
-            doc="Parameter which specifies the carrier demand",
-        )
-        # availability of carrier
-        self.add_parameter(
-            name="availability_import",
-            index_names=["set_carriers", "set_nodes", "set_time_steps_operation"],
-            doc="Parameter which specifies the maximum energy that can be imported "
-            "from outside the system boundaries",
-        )
-        # availability of carrier
-        self.add_parameter(
-            name="availability_export",
-            index_names=["set_carriers", "set_nodes", "set_time_steps_operation"],
-            doc="Parameter which specifies the maximum energy that can be exported "
-            "to outside the system boundaries",
-        )
-        # availability of carrier
-        self.add_parameter(
-            name="availability_import_yearly",
-            index_names=["set_carriers", "set_nodes", "set_years"],
-            doc="Parameter which specifies the maximum energy that can be imported "
-            "from outside the system boundaries for the entire year",
-        )
-        # availability of carrier
-        self.add_parameter(
-            name="availability_export_yearly",
-            index_names=["set_carriers", "set_nodes", "set_years"],
-            doc="Parameter which specifies the maximum energy that can be exported "
-            "to outside the system boundaries for the entire year",
-        )
-        # import price
-        self.add_parameter(
-            name="price_import",
-            index_names=["set_carriers", "set_nodes", "set_time_steps_operation"],
-            doc="Parameter which specifies the import carrier price",
-        )
-        # export price
-        self.add_parameter(
-            name="price_export",
-            index_names=["set_carriers", "set_nodes", "set_time_steps_operation"],
-            doc="Parameter which specifies the export carrier price",
-        )
-        # demand shedding price
-        self.add_parameter(
-            name="price_shed_demand",
-            index_names=["set_carriers"],
-            doc="Parameter which specifies the price to shed demand",
-        )
-        # carbon intensity carrier import
-        self.add_parameter(
-            name="carbon_intensity_carrier_import",
-            index_names=["set_carriers", "set_nodes", "set_years"],
-            doc="Parameter which specifies the carbon intensity of carrier import",
-        )
-        # carbon intensity carrier export
-        self.add_parameter(
-            name="carbon_intensity_carrier_export",
-            index_names=["set_carriers", "set_nodes", "set_years"],
-            doc="Parameter which specifies the carbon intensity of carrier export",
-        )
 
     @override
     def construct_vars(self):

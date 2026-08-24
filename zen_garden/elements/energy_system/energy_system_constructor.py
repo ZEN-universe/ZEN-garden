@@ -7,6 +7,7 @@ import numpy as np
 import pandas as pd
 from typing_extensions import override
 
+from zen_garden.elements.energy_system import EnergySystem
 from zen_garden.elements.energy_system.constraints import ENERGY_SYSTEM_CONSTRAINTS
 from zen_garden.elements.model_constructor import ModelConstructor
 
@@ -17,7 +18,9 @@ logger = logging.getLogger(__name__)
 
 
 class EnergySystemConstructor(ModelConstructor):
+    element_class = EnergySystem
     constraints = ENERGY_SYSTEM_CONSTRAINTS
+    parameters = EnergySystem.parameters
 
     @override
     def has_elements(self) -> bool:
@@ -99,77 +102,6 @@ class EnergySystemConstructor(ModelConstructor):
             name="set_time_steps_storage",
             data=self.energy_system.time_steps.time_steps_storage,
             doc="Set of storage level time steps",
-        )
-
-    @override
-    def construct_params(self):
-        """Constructs the pe.Params of the class <EnergySystem>."""
-        logger.info("Constructing parameters for EnergySystem")
-
-        # operational time step duration
-        self.add_parameter(
-            name="time_steps_operation_duration",
-            set_time_steps="set_time_steps_operation",
-            doc="Parameter which specifies the duration of each operational time step",
-        )
-        # storage time step duration
-        self.add_parameter(
-            name="time_steps_storage_duration",
-            set_time_steps="set_time_steps_storage",
-            doc="Parameter which specifies the duration of each storage time step",
-        )
-        # discount rate
-        self.add_parameter(
-            name="discount_rate",
-            doc="Parameter which specifies the discount rate of the energy system",
-        )
-        # carbon emissions limit
-        self.add_parameter(
-            name="carbon_emissions_annual_limit",
-            set_time_steps="set_years",
-            doc="Parameter which specifies the total limit on carbon emissions",
-        )
-        # carbon emissions budget
-        self.add_parameter(
-            name="carbon_emissions_budget",
-            doc="Parameter which specifies the total budget of carbon emissions "
-            "until the end of the entire time horizon",
-        )
-        # carbon emissions budget
-        self.add_parameter(
-            name="carbon_emissions_cumulative_existing",
-            doc="Parameter which specifies the total previous carbon emissions",
-        )
-        # carbon price
-        self.add_parameter(
-            name="price_carbon_emissions",
-            set_time_steps="set_years",
-            doc="Parameter which specifies the yearly carbon price",
-        )
-        # carbon price of budget overshoot
-        self.add_parameter(
-            name="price_carbon_emissions_budget_overshoot",
-            doc="Parameter which specifies the carbon price for budget overshoot",
-        )
-        # carbon price of annual overshoot
-        self.add_parameter(
-            name="price_carbon_emissions_annual_overshoot",
-            doc="Parameter which specifies the carbon price for annual overshoot",
-        )
-        # carbon price of overshoot
-        self.add_parameter(
-            name="market_share_unbounded",
-            doc="Parameter which specifies the unbounded market share",
-        )
-        # knowledge depreciation rate
-        self.add_parameter(
-            name="knowledge_depreciation_rate",
-            doc="Parameter which specifies the knowledge depreciation rate",
-        )
-        # knowledge spillover rate
-        self.add_parameter(
-            name="knowledge_spillover_rate",
-            doc="Parameter which specifies the knowledge spillover rate",
         )
 
     @override

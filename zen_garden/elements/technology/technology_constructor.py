@@ -20,6 +20,7 @@ logger = logging.getLogger(__name__)
 
 class TechnologyConstructor(ModelConstructor):
     element_class = Technology
+    parameters = Technology.parameters
 
     @override
     def has_elements(self) -> bool:
@@ -82,191 +83,17 @@ class TechnologyConstructor(ModelConstructor):
 
     @override
     def construct_params(self):
-        logger.info("Constructing parameters for Technology")
-
-        # existing capacity
-        self.add_parameter(
-            name="capacity_existing",
-            index_names=[
-                "set_technologies",
-                "set_capacity_types",
-                "set_location",
-                "set_technologies_existing",
-            ],
-            capacity_types=True,
-            doc="Parameter which specifies the existing technology size",
-        )
-        # existing capacity
-        self.add_parameter(
-            name="capacity_investment_existing",
-            index_names=[
-                "set_technologies",
-                "set_capacity_types",
-                "set_location",
-                "set_years_entire_horizon",
-            ],
-            capacity_types=True,
-            doc="Parameter specifying the size of the previously invested capacities",
-        )
-        # minimum capacity addition
-        self.add_parameter(
-            name="capacity_addition_min",
-            index_names=["set_technologies", "set_capacity_types"],
-            capacity_types=True,
-            doc="Parameter which specifies the minimum capacity addition "
-            "that can be installed",
-        )
-        # maximum capacity addition
-        self.add_parameter(
-            name="capacity_addition_max",
-            index_names=["set_technologies", "set_capacity_types"],
-            capacity_types=True,
-            doc="Parameter which specifies the maximum capacity addition "
-            "that can be installed",
-        )
-        # unbounded capacity addition
-        self.add_parameter(
-            name="capacity_addition_unbounded",
-            index_names=["set_technologies"],
-            doc="Parameter which specifies the unbounded capacity addition that can be "
-            "added each year (only for delayed technology deployment)",
-        )
-        # lifetime existing technologies
-        self.add_parameter(
-            name="lifetime_existing",
-            index_names=[
-                "set_technologies",
-                "set_location",
-                "set_technologies_existing",
-            ],
-            doc="Parameter specifying the remaining lifetime of an existing technology",
-        )
-        # lifetime existing technologies
-        self.add_parameter(
-            name="capex_capacity_existing",
-            index_names=[
-                "set_technologies",
-                "set_capacity_types",
-                "set_location",
-                "set_technologies_existing",
-            ],
-            capacity_types=True,
-            doc="Parameter which specifies the total capex of an existing technology "
-            "which still has to be paid",
-        )
-        # variable specific opex
-        self.add_parameter(
-            name="opex_specific_variable",
-            index_names=[
-                "set_technologies",
-                "set_location",
-                "set_time_steps_operation",
-            ],
-            doc="Parameter which specifies the variable specific opex",
-        )
-        # fixed specific opex
-        self.add_parameter(
-            name="opex_specific_fixed",
-            index_names=[
-                "set_technologies",
-                "set_capacity_types",
-                "set_location",
-                "set_years",
-            ],
-            capacity_types=True,
-            doc="Parameter which specifies the fixed annual specific opex",
-        )
-        # lifetime newly built technologies
-        self.add_parameter(
-            name="lifetime",
-            index_names=["set_technologies"],
-            doc="Parameter which specifies the lifetime of a newly built technology",
-        )
-        # amortization time newly built technologies
-        self.add_parameter(
-            name="depreciation_time",
-            index_names=["set_technologies"],
-            doc="Parameter which specifies the depreciation time of a "
-            "newly built technology",
-        )
-        # construction_time newly built technologies
-        self.add_parameter(
-            name="construction_time",
-            index_names=["set_technologies"],
-            doc="Parameter which specifies the construction time of a "
-            "newly built technology",
-        )
-        # maximum diffusion rate, i.e., increase in capacity
-        self.add_parameter(
-            name="max_diffusion_rate",
-            index_names=["set_technologies", "set_years"],
-            doc="Parameter which specifies the maximum diffusion rate which is the "
-            "maximum increase in capacity between investment steps",
-        )
-        # capacity_limit of technologies
-        self.add_parameter(
-            name="capacity_limit",
-            index_names=[
-                "set_technologies",
-                "set_capacity_types",
-                "set_location",
-                "set_years",
-            ],
-            capacity_types=True,
-            doc="Parameter which specifies the capacity limit of technologies",
-        )
-        # NEW: lower capacity limit of technologies
-        self.add_parameter(
-            name="capacity_lower_limit",
-            index_names=[
-                "set_technologies",
-                "set_capacity_types",
-                "set_location",
-                "set_years",
-            ],
-            capacity_types=True,
-            doc="Parameter which specifies the lower capacity limit of technologies",
-        )
-        # minimum load relative to capacity
-        self.add_parameter(
-            name="min_load",
-            index_names=[
-                "set_technologies",
-                "set_location",
-                "set_time_steps_operation",
-            ],
-            doc="Parameter which specifies the minimum load of technology "
-            "relative to installed capacity",
-        )
-        # maximum load relative to capacity
-        self.add_parameter(
-            name="max_load",
-            index_names=[
-                "set_technologies",
-                "set_location",
-                "set_time_steps_operation",
-            ],
-            doc="Parameter which specifies the maximum load of technology relative to "
-            "installed capacity",
-        )
-        # carbon intensity
-        self.add_parameter(
-            name="carbon_intensity_technology",
-            index_names=["set_technologies", "set_location"],
-            doc="Parameter which specifies the carbon intensity of each technology",
-        )
-        # calculate additional existing parameters
+        """Construct technology parameters and calculated existing quantities."""
+        super().construct_params()
         self.zen_model.add_parameter(
             name="existing_capacities",
             data=self.get_existing_quantity("capacity"),
-            doc="Parameter which specifies the total available capacity of existing "
-            "technologies at the beginning of the optimization",
+            doc="Total available existing capacity at the optimization start",
         )
         self.zen_model.add_parameter(
             name="existing_capex",
             data=self.get_existing_quantity("cost_capex_overnight"),
-            doc="Parameter which specifies the total capex of existing technologies at "
-            "the beginning of the optimization",
+            doc="Total capex of existing technologies at the optimization start",
         )
 
     @override

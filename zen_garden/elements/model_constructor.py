@@ -6,7 +6,7 @@ the sets, parameters, variables, and constraints for their respective elements.
 
 import logging
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, ClassVar
 
 import numpy as np
 import pandas as pd
@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 
 
 class ModelConstructor(ABC):
-    element_class = Element
+    element_class: ClassVar[type["Element"] | type["EnergySystem"]] = Element
     constraints: list[type[GenericConstraint]] = []
 
     def __init__(
@@ -58,10 +58,22 @@ class ModelConstructor(ABC):
         """Constructs the Sets of this class."""
         pass
 
-    @abstractmethod
     def construct_params(self):
-        """Constructs the Params of this class."""
-        pass
+        logger.info(f"Constructing parameters for {self.element_class.name}")
+
+        for parameter in self.parameters:
+            # rename time steps
+            index_names = [
+                "set_time_steps_operation" if x == "set_hours" else x
+                for x in parameter.indices
+            ]
+            self.add_parameter(
+                name=parameter.name,
+                index_names=index_names,
+                doc=parameter.doc,
+                capacity_types=parameter.capacity_types,
+                set_time_steps=parameter.set_time_steps,
+            )
 
     @abstractmethod
     def construct_vars(self):
@@ -132,6 +144,18 @@ class ModelConstructor(ABC):
             index_list: list of names of index sets
             dict_of_units: dictionary of units for the component
         """
+
+        if self.element_class.__name__ == "EnergySystem":
+            component_data = getattr(self.energy_system, component_name)
+            if set_time_steps is not None:
+                index_list = [set_time_steps]
+            else:
+                index_list = []
+            return (
+                component_data,
+                index_list,
+                self.energy_system.units.get(component_name, {}),
+            )
 
         if index_names is None:
             raise ValueError(f"Index names for {component_name} not specified")

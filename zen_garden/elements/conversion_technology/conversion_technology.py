@@ -1,12 +1,16 @@
 """Class defining conversion technologies."""
 
 import logging
-from typing import cast
+from typing import ClassVar, cast
 
 import pandas as pd
 from typing_extensions import override
 
+from zen_garden.elements.conversion_technology.parameters import (
+    CONVERSION_TECHNOLOGY_PARAMETERS,
+)
 from zen_garden.elements.technology import Technology
+from zen_garden.topology.generic_parameter import GenericParameter
 
 logger = logging.getLogger(__name__)
 
@@ -17,6 +21,9 @@ class ConversionTechnology(Technology):
     # set label
     label = "set_conversion_technologies"
     location_type = "set_nodes"
+    parameters: ClassVar[list[type[GenericParameter]]] = (
+        CONVERSION_TECHNOLOGY_PARAMETERS
+    )
 
     @override
     def _initialize(self):

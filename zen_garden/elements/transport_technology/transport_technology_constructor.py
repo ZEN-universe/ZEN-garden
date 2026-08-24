@@ -18,6 +18,7 @@ logger = logging.getLogger(__name__)
 class TransportTechnologyConstructor(ModelConstructor):
     element_class = TransportTechnology
     constraints = TRANSPORT_TECHNOLOGY_CONSTRAINTS
+    parameters = TransportTechnology.parameters
 
     @override
     def has_elements(self) -> bool:
@@ -31,43 +32,6 @@ class TransportTechnologyConstructor(ModelConstructor):
     @override
     def construct_sets(self):
         logger.info("Constructing sets for TransportTechnology")
-
-    @override
-    def construct_params(self):
-        logger.info("Constructing parameters for TransportTechnology")
-
-        # distance between nodes
-        self.add_parameter(
-            name="distance",
-            index_names=["set_transport_technologies", "set_edges"],
-            doc="distance between two nodes for transport technologies",
-        )
-        # capital cost per unit
-        self.add_parameter(
-            name="capex_specific_transport",
-            index_names=[
-                "set_transport_technologies",
-                "set_edges",
-                "set_years",
-            ],
-            doc="capex per unit for transport technologies",
-        )
-        # capital cost per distance
-        self.add_parameter(
-            name="capex_per_distance_transport",
-            index_names=[
-                "set_transport_technologies",
-                "set_edges",
-                "set_years",
-            ],
-            doc="capex per distance for transport technologies",
-        )
-        # carrier losses
-        self.add_parameter(
-            name="transport_loss_factor",
-            index_names=["set_transport_technologies", "set_edges"],
-            doc="linear carrier losses due to transport with transport technologies",
-        )
 
     @override
     def construct_vars(self):

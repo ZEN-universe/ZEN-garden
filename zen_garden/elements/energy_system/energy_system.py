@@ -2,15 +2,17 @@
 
 import copy
 import logging
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, ClassVar
 
 import numpy as np
 import pandas as pd
 
+from zen_garden.elements.energy_system.parameters import ENERGY_SYSTEM_PARAMETERS
 from zen_garden.model.config import Config
 from zen_garden.model.time_steps import TimeStepsDicts
 from zen_garden.preprocess.data_input import DataInput
 from zen_garden.services.network_topology import NetworkTopology
+from zen_garden.topology.generic_parameter import GenericParameter
 from zen_garden.types import YearSpecificTs
 
 if TYPE_CHECKING:
@@ -27,6 +29,7 @@ class EnergySystem:
     """Class defining a standard energy system."""
 
     name: str = "EnergySystem"
+    parameters: ClassVar[list[type[GenericParameter]]] = ENERGY_SYSTEM_PARAMETERS
 
     def __init__(
         self,

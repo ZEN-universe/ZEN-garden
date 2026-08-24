@@ -1,11 +1,16 @@
 """Class defining the transport technologies."""
 
 import logging
+from typing import ClassVar
 
 import numpy as np
 from typing_extensions import override
 
 from zen_garden.elements.technology import Technology
+from zen_garden.elements.transport_technology.parameters import (
+    TRANSPORT_TECHNOLOGY_PARAMETERS,
+)
+from zen_garden.topology.generic_parameter import GenericParameter
 
 logger = logging.getLogger(__name__)
 
@@ -15,6 +20,7 @@ class TransportTechnology(Technology):
     label = "set_transport_technologies"
     location_type = "set_edges"
     dict_reversed_edges: dict[str, str] = {}
+    parameters: ClassVar[list[type[GenericParameter]]] = TRANSPORT_TECHNOLOGY_PARAMETERS
 
     @override
     def _initialize(self):

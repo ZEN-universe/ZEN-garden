@@ -1,12 +1,14 @@
 """Class defining technologies."""
 
 import logging
-from typing import cast
+from typing import ClassVar, cast
 
 import numpy as np
 import pandas as pd
 
 from zen_garden.elements.element import Element
+from zen_garden.elements.technology.parameters import TECHNOLOGY_PARAMETERS
+from zen_garden.topology.generic_parameter import GenericParameter
 
 logger = logging.getLogger(__name__)
 
@@ -18,6 +20,7 @@ class Technology(Element):
     label = "set_technologies"
     location_type: str | None = None
     reference_carrier: list[str]
+    parameters: ClassVar[list[type[GenericParameter]]] = TECHNOLOGY_PARAMETERS
 
     def initialize_reference_carrier(self):
         """Retrieves and stores information on reference."""

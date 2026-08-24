@@ -18,6 +18,7 @@ logger = logging.getLogger(__name__)
 class StorageTechnologyConstructor(ModelConstructor):
     element_class = StorageTechnology
     constraints = STORAGE_TECHNOLOGY_CONSTRAINTS
+    parameters = StorageTechnology.parameters
 
     @override
     def has_elements(self) -> bool:
@@ -31,69 +32,6 @@ class StorageTechnologyConstructor(ModelConstructor):
     @override
     def construct_sets(self):
         logger.info("Constructing sets for StorageTechnology")
-
-    @override
-    def construct_params(self):
-        logger.info("Constructing parameters for StorageTechnology")
-        # energy to power ratio
-        self.add_parameter(
-            name="energy_to_power_ratio_min",
-            index_names=["set_storage_technologies"],
-            doc="power to energy ratio for storage technologies - lower bound",
-        )
-        self.add_parameter(
-            name="energy_to_power_ratio_max",
-            index_names=["set_storage_technologies"],
-            doc="power to energy ratio for storage technologies - upper bound",
-        )
-        # efficiency charge
-        self.add_parameter(
-            name="efficiency_charge",
-            index_names=[
-                "set_storage_technologies",
-                "set_nodes",
-                "set_years",
-            ],
-            doc="efficiency during charging for storage technologies",
-        )
-        # efficiency discharge
-        self.add_parameter(
-            name="efficiency_discharge",
-            index_names=[
-                "set_storage_technologies",
-                "set_nodes",
-                "set_years",
-            ],
-            doc="efficiency during discharging for storage technologies",
-        )
-        #  flow_storage_inflow
-        self.add_parameter(
-            name="flow_storage_inflow",
-            index_names=[
-                "set_storage_technologies",
-                "set_nodes",
-                "set_time_steps_operation",
-            ],
-            doc="energy inflow in storage technologies",
-        )
-        # self discharge
-        self.add_parameter(
-            name="self_discharge",
-            index_names=["set_storage_technologies", "set_nodes"],
-            doc="self discharge of storage technologies",
-        )
-        # capex specific
-        self.add_parameter(
-            name="capex_specific_storage",
-            index_names=[
-                "set_storage_technologies",
-                "set_capacity_types",
-                "set_nodes",
-                "set_years",
-            ],
-            capacity_types=True,
-            doc="specific capex of storage technologies",
-        )
 
     @override
     def construct_vars(self):

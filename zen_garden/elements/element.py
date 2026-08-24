@@ -1,8 +1,7 @@
 """Abstract class defining a standard Element."""
 
-from abc import abstractmethod
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, ClassVar
 
 import pandas as pd
 
@@ -17,6 +16,7 @@ if TYPE_CHECKING:
     from zen_garden.services.dataset_path_resolver import DatasetPathResolver
     from zen_garden.services.element_registry import ElementRegistry
     from zen_garden.services.scenario_dict import ScenarioDict
+    from zen_garden.topology.generic_parameter import GenericParameter
     from zen_garden.types import YearSpecificTs
     from zen_garden.utils.input_data_checks import InputDataChecks
 
@@ -25,8 +25,10 @@ class Element:
     """Class defining a standard Element."""
 
     # set label
+    name: str = "Element"
     label: str = "set_elements"
     raw_time_series: dict[str, pd.Series | pd.DataFrame | None]
+    parameters: ClassVar[list[type["GenericParameter"]]]
 
     def __init__(
         self,
@@ -89,12 +91,22 @@ class Element:
         """Initialize the element."""
         pass
 
-    @abstractmethod
-    def store_input_data(self):
+    def store_input_data(self) -> None:
         """Retrieves and stores input data for element as attributes. Each Child class
         overwrites method to store different attributes.
         """
-        pass
+        for parameter in self.parameters:
+            index_sets = [index for index in parameter.indices if index != self.label]
+            value = self.data_input.extract_input_data(
+                parameter.name,
+                index_sets=index_sets,
+                unit_category=parameter.unit_category,
+            )
+
+            if parameter.time_series:
+                self.raw_time_series[parameter.name] = value
+            else:
+                setattr(self, parameter.name, value)
 
     def _get_input_path(self):
         """Get input path where input data is stored input_path."""

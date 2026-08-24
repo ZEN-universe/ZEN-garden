@@ -19,6 +19,7 @@ logger = logging.getLogger(__name__)
 class RetrofittingTechnologyConstructor(ModelConstructor):
     element_class = RetrofittingTechnology
     constraints = RETROFITTING_TECHNOLOGY_CONSTRAINTS
+    parameters = RetrofittingTechnology.parameters
 
     @override
     def has_elements(self) -> bool:
@@ -44,23 +45,6 @@ class RetrofittingTechnologyConstructor(ModelConstructor):
             doc="set of base technologies for a specific retrofitting technology. "
             "Indexed by set_retrofitting_technologies",
             index_set="set_retrofitting_technologies",
-        )
-
-    @override
-    def construct_params(self):
-        logger.info("Constructing parameters for RetrofittingTechnology")
-
-        # slope of linearly modeled capex
-        self.add_parameter(
-            name="retrofit_flow_coupling_factor",
-            index_names=[
-                "set_retrofitting_technologies",
-                "set_nodes",
-                "set_time_steps_operation",
-            ],
-            capacity_types=False,
-            doc="Parameter which specifies the flow coupling between the retrofitting "
-            "technologies and its base technology",
         )
 
     @override

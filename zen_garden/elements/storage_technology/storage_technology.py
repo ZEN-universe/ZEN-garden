@@ -1,10 +1,15 @@
 """Class defining storage technologies."""
 
 import logging
+from typing import ClassVar
 
 from typing_extensions import override
 
+from zen_garden.elements.storage_technology.parameters import (
+    STORAGE_TECHNOLOGY_PARAMETERS,
+)
 from zen_garden.elements.technology import Technology
+from zen_garden.topology.generic_parameter import GenericParameter
 
 logger = logging.getLogger(__name__)
 
@@ -15,6 +20,7 @@ class StorageTechnology(Technology):
     # set label
     label = "set_storage_technologies"
     location_type = "set_nodes"
+    parameters: ClassVar[list[type[GenericParameter]]] = STORAGE_TECHNOLOGY_PARAMETERS
 
     @override
     def _initialize(self):

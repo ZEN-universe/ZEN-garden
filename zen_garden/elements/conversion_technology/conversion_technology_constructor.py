@@ -20,6 +20,7 @@ logger = logging.getLogger(__name__)
 
 class ConversionTechnologyConstructor(ModelConstructor):
     element_class = ConversionTechnology
+    parameters = ConversionTechnology.parameters
 
     @override
     def has_elements(self) -> bool:
@@ -70,42 +71,6 @@ class ConversionTechnologyConstructor(ModelConstructor):
             doc="set of carriers that are an output to a specific conversion "
             "technology. Indexed by set_conversion_technologies",
             index_set="set_conversion_technologies",
-        )
-
-    @override
-    def construct_params(self):
-        logger.info("Constructing parameters for ConversionTechnology")
-        # slope of linearly modeled capex
-        self.add_parameter(
-            name="capex_specific_conversion",
-            index_names=[
-                "set_conversion_technologies",
-                "set_nodes",
-                "set_years",
-            ],
-            doc="Parameter specifying the slope of the linear capex",
-        )
-        # slope of linearly modeled conversion efficiencies
-        self.add_parameter(
-            name="conversion_factor",
-            index_names=[
-                "set_conversion_technologies",
-                "set_dependent_carriers",
-                "set_nodes",
-                "set_time_steps_operation",
-            ],
-            doc="Parameter which specifies the conversion factor",
-        )
-        # minimum annual average capacity factor
-        self.add_parameter(
-            name="min_full_load_hours_fraction",
-            index_names=[
-                "set_conversion_technologies",
-                "set_nodes",
-                "set_years",
-            ],
-            doc="Minimum full load hours as a fraction of the total hours "
-            "per planning period",
         )
 
     @override
