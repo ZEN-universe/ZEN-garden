@@ -5,7 +5,9 @@ import pandas as pd
 import xarray as xr
 from linopy.expressions import LinearExpression
 
-from zen_garden.elements.technology.constraints.technology_constraint import TechnologyConstraint
+from zen_garden.elements.technology.constraints.technology_constraint import (
+    TechnologyConstraint,
+)
 
 
 class TechnologyLifetimeConstraint(TechnologyConstraint):

@@ -8,9 +8,9 @@ from typing_extensions import override
 
 from zen_garden.elements.conversion_technology import (
     CONVERSION_TECHNOLOGY_CONSTRAINTS,
+    ConversionTechnology,
     LinearCapexConstraint,
 )
-from zen_garden.elements.conversion_technology import ConversionTechnology
 from zen_garden.elements.model_constructor import ModelConstructor
 
 logger = logging.getLogger(__name__)

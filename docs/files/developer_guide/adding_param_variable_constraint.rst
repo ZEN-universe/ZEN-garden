@@ -29,9 +29,9 @@ Adding Sets
 -----------
 
 Sets can be added in the ``construct_sets`` method of the element consturctor class,
-e.g., :py:class:`EnergySystemConstructor <zen_garden.model_constructors.energy_system_constructor.EnergySystemConstructor>`,
-:py:class:`CarrierConstructor <zen_garden.model_constructors.carrier_constructor.CarrierConstructor>`,
-or :py:class:`TechnologyConstructor <zen_garden.model_constructors.technology_constructor.TechnologyConstructor>`.
+e.g., :py:class:`EnergySystemConstructor <zen_garden.elements.energy_system.energy_system_constructor.EnergySystemConstructor>`,
+:py:class:`CarrierConstructor <zen_garden.elements.carrier.carrier_constructor.CarrierConstructor>`,
+or :py:class:`TechnologyConstructor <zen_garden.elements.technology.technology_constructor.TechnologyConstructor>`.
 The new set is added to ``self.zen_model.sets`` through the method ``self.zen_model.add_set()``.
 
 The :py:meth:`add_set <zen_garden.model.components.set_registry.SetRegistry.add_set>` method takes the following parameters:

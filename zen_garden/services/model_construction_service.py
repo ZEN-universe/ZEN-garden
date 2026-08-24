@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, Callable
 
 import psutil
 
-from zen_garden.model_constructors import MODEL_CONSTRUCTORS
+from zen_garden.elements.model_constructors import MODEL_CONSTRUCTORS
 from zen_garden.services.service_container import ServiceContainer
 
 if TYPE_CHECKING:

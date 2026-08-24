@@ -5,11 +5,11 @@ import logging
 import numpy as np
 from typing_extensions import override
 
+from zen_garden.elements.model_constructor import ModelConstructor
 from zen_garden.elements.retrofitting_technology import (
     RETROFITTING_TECHNOLOGY_CONSTRAINTS,
+    RetrofittingTechnology,
 )
-from zen_garden.elements.retrofitting_technology import RetrofittingTechnology
-from zen_garden.elements.model_constructor import ModelConstructor
 
 logger = logging.getLogger(__name__)
 
