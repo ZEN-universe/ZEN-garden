@@ -3,7 +3,7 @@ from typing import cast
 
 import numpy as np
 
-from zen_garden.constraints.generic_constraint import GenericConstraint
+from zen_garden.topology.generic_constraint import GenericConstraint
 
 
 class TechnologyConstraint(GenericConstraint, ABC):

@@ -5,8 +5,8 @@ import numpy as np
 import xarray as xr
 from linopy.expressions import LinearExpression
 
-from zen_garden.constraints.generic_constraint import GenericConstraint
 from zen_garden.elements.technology import Technology
+from zen_garden.topology.generic_constraint import GenericConstraint
 
 
 class TechnologyOnOffConstraint(GenericConstraint):

@@ -11,9 +11,9 @@ from typing import TYPE_CHECKING
 import numpy as np
 import pandas as pd
 
-from zen_garden.constraints.generic_constraint import GenericConstraint
 from zen_garden.elements.element import Element
 from zen_garden.services.service_container import ServiceContainer
+from zen_garden.topology.generic_constraint import GenericConstraint
 
 if TYPE_CHECKING:
     from zen_garden.elements.energy_system import EnergySystem

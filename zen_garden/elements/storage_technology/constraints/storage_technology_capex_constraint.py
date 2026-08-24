@@ -1,6 +1,6 @@
-from zen_garden.constraints.generic_constraint import GenericConstraint
 from zen_garden.elements.storage_technology import StorageTechnology
 from zen_garden.model.components.set_registry import SetRegistry
+from zen_garden.topology.generic_constraint import GenericConstraint
 from zen_garden.utils import linexpr_from_tuple_np
 
 

@@ -7,10 +7,10 @@ import pandas as pd
 import xarray as xr
 from linopy.expressions import LinearExpression
 
-from zen_garden.constraints.generic_constraint import GenericConstraint
 from zen_garden.elements.element import Element
 from zen_garden.elements.technology import Technology
 from zen_garden.model.components.zen_set import ZenSet
+from zen_garden.topology.generic_constraint import GenericConstraint
 
 if TYPE_CHECKING:
     from zen_garden.elements.energy_system import EnergySystem

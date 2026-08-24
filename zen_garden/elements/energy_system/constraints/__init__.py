@@ -1,6 +1,6 @@
 """Energy system constraints."""
 
-from zen_garden.constraints.generic_constraint import GenericConstraint
+from zen_garden.topology.generic_constraint import GenericConstraint
 
 from .carbon_emissions_annual_constraint import CarbonEmissionsAnnualConstraint
 from .carbon_emissions_annual_limit_constraint import (
