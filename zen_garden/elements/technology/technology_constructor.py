@@ -7,9 +7,9 @@ import xarray as xr
 from typing_extensions import override
 
 from zen_garden.elements.model_constructor import ModelConstructor
-from zen_garden.elements.technology import (
+from zen_garden.elements.technology import Technology
+from zen_garden.elements.technology.constraints import (
     TECHNOLOGY_CONSTRAINTS,
-    Technology,
     TechnologyOnOffConstraint,
 )
 from zen_garden.model.components.multi_index_helper import MultiIndexHelper

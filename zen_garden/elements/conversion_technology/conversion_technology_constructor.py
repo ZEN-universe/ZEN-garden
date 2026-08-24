@@ -7,8 +7,10 @@ import xarray as xr
 from typing_extensions import override
 
 from zen_garden.elements.conversion_technology import (
-    CONVERSION_TECHNOLOGY_CONSTRAINTS,
     ConversionTechnology,
+)
+from zen_garden.elements.conversion_technology.constraints import (
+    CONVERSION_TECHNOLOGY_CONSTRAINTS,
     LinearCapexConstraint,
 )
 from zen_garden.elements.model_constructor import ModelConstructor

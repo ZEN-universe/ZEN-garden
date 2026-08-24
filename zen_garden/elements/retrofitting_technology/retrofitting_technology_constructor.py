@@ -7,8 +7,10 @@ from typing_extensions import override
 
 from zen_garden.elements.model_constructor import ModelConstructor
 from zen_garden.elements.retrofitting_technology import (
-    RETROFITTING_TECHNOLOGY_CONSTRAINTS,
     RetrofittingTechnology,
+)
+from zen_garden.elements.retrofitting_technology.constraints import (
+    RETROFITTING_TECHNOLOGY_CONSTRAINTS,
 )
 
 logger = logging.getLogger(__name__)

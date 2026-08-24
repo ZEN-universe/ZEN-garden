@@ -7,9 +7,9 @@ import xarray as xr
 from typing_extensions import override
 
 from zen_garden.elements.model_constructor import ModelConstructor
-from zen_garden.elements.storage_technology import (
+from zen_garden.elements.storage_technology import StorageTechnology
+from zen_garden.elements.storage_technology.constraints import (
     STORAGE_TECHNOLOGY_CONSTRAINTS,
-    StorageTechnology,
 )
 
 logger = logging.getLogger(__name__)
