@@ -65,6 +65,7 @@ dev = [
     "black==26.5.1",
     "ruff==0.14.13",
     "mypy==1.19.1",
+    "pandas-stubs",
     "pre-commit",
     "typing_extensions",
     "types-docutils",
