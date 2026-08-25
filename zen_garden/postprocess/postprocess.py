@@ -31,8 +31,8 @@ logger = logging.getLogger(__name__)
 # Warnings
 warnings.filterwarnings("ignore", category=NaturalNameWarning)
 
-H5_COMP_LEVEL = 4
-H5_COMP_LIB = "blosc"
+H5_COMP_LEVEL: int = 4
+H5_COMP_LIB: Literal["zlib", "lzo", "bzip2", "blosc"] = "blosc"
 
 UNRELATED_INDEXES_FOR_UNITS = set(
     [
@@ -198,11 +198,11 @@ class Postprocess:
                 continue
 
             data = [",".join([str(t) for t in tpl]) for tpl in set.data.values()]
-            indices = list(set.data.keys())
-            if len(indices) >= 1 and isinstance(indices[0], tuple):
-                indices = pd.MultiIndex.from_tuples(indices, names=[set.name])
+            indices_list = list(set.data.keys())
+            if len(indices_list) >= 1 and isinstance(indices_list[0], tuple):
+                indices = pd.MultiIndex.from_tuples(indices_list, names=[set.name])
             else:
-                indices = pd.Index(data=indices, name=set.name)
+                indices = pd.Index(data=indices_list, name=set.name)
 
             series[set.name] = pd.Series(data, name=set.name, index=indices)
 
@@ -260,12 +260,12 @@ class Postprocess:
             cast(str, name): self.zen_model.variables.units[cast(str, name)]
             for name in self.lp_model.solution.keys()
         }
-        units = {
+        units_filtered = {
             name: series
             for name, series in units.items()
             if series is not None and not series.empty
         }
-        self._write_units_to_file(self.name_dir / "variables_units.h5", units)
+        self._write_units_to_file(self.name_dir / "variables_units.h5", units_filtered)
         self._write_json_file(
             self.name_dir / "variables_docs.json", self.zen_model.variables.docs
         )

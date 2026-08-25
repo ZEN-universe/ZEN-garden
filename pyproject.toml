@@ -119,3 +119,4 @@ disallow_untyped_defs = false
 typeCheckingMode = "recommended"
 reportUnknownVariableType = false
 reportMissingTypeArgument = "warning"
+reportUnknownArgumentType = false
