@@ -342,16 +342,15 @@ class CostEmissionCalculation:
         return X_use.astype(float), demand_served.astype(float)
 
     def _get_or_build_leontief_systems(
-        self, 
-        scenario_name: str, overwrite: bool=False, is_cost: bool=True
+        self, scenario_name: str, overwrite: bool = False, is_cost: bool = True
     ) -> dict[int, dict[str, any]]:
-        """builds or loads the Leontief system for every year of a scenario. 
-        
+        """builds or loads the Leontief system for every year of a scenario.
+
         Args:
             scenario_name: The name of the scenario
-            overwrite: If True, the Leontief system will be rebuilt even if 
+            overwrite: If True, the Leontief system will be rebuilt even if
                 it exists in the cache.
-            is_cost: If True, the cost Leontief system will be built. 
+            is_cost: If True, the cost Leontief system will be built.
                 If False, the emissions Leontief system will be built.
 
         Returns:
@@ -407,11 +406,7 @@ class CostEmissionCalculation:
         set_nodes = self.r.get_system(scenario_name=scenario_name).set_nodes
         systems, picklable_state = {}, {}
         for year in self.r.get_years(scenario_name=scenario_name):
-            if is_cost:
-                fkt = self._build_leontief_cost_year_system
-            else:
-                fkt = self._build_leontief_emissions_year_system
-            sys_step = fkt(
+            sys_step = self._build_leontief_year_system(
                 year,
                 raw,
                 ref_carrier,
@@ -422,6 +417,7 @@ class CostEmissionCalculation:
                 sector_index,
                 X[year],
                 demand_served[year],
+                is_cost=is_cost,
             )
             systems[year] = sys_step
             picklable_state[year] = {k: v for k, v in sys_step.items() if k != "lu"}
@@ -436,23 +432,23 @@ class CostEmissionCalculation:
         return systems
 
     def _leontief_solve_targets(
-            self, sys_step: dict, target_sectors: list, is_cost: bool=True
-        ) -> np.ndarray:
+        self, sys_step: dict, target_sectors: list, is_cost: bool = True
+    ) -> np.ndarray:
         """solves (I-A) x = e_j for each requested target sector j (batched into a
         single sparse solve), returning the component-by-target contribution matrix
         (rows=(component,cost_type), columns=target_sectors) as a dense numpy array.
-        
+
         Args:
             sys_step: The Leontief system for a specific year.
             target_sectors: A list of target sectors to solve for.
-            is_cost: If True, the cost Leontief system will be used ('v_matrix'); 
+            is_cost: If True, the cost Leontief system will be used ('v_matrix');
                 otherwise, the emissions system will be used ('e_matrix').
-        
+
         Returns:
             A dense numpy array representing the component-by-target contribution
             matrix, where rows correspond to (component, cost_type) and columns
             correspond to target_sectors.
-        
+
         """
         if is_cost:
             value_key = "v_matrix"
@@ -467,16 +463,16 @@ class CostEmissionCalculation:
         return sys_step[value_key].dot(Xsol)
 
     def _leontief_assemble_frame(
-        self, 
-        contrib: np.ndarray, 
-        comp_to_pos: dict, 
-        target_sectors: list, 
-        spatially_resolved: bool, 
-        is_cost: bool
-        ) -> pd.DataFrame:
-        """ Turns a (component, target) contribution array into a (component, cost_type,
-        origin_node[, node]) indexed Series for one year. 
-        
+        self,
+        contrib: np.ndarray,
+        comp_to_pos: dict,
+        target_sectors: list,
+        spatially_resolved: bool,
+        is_cost: bool,
+    ) -> pd.DataFrame:
+        """Turns a (component, target) contribution array into a (component, cost_type,
+        origin_node[, node]) indexed Series for one year.
+
         Args:
             contrib: A numpy array of contributions from components to target sectors.
             comp_to_pos: A dictionary mapping (component, cost_type, origin_node) to
@@ -488,11 +484,11 @@ class CostEmissionCalculation:
                 over nodes (indexed by carrier only).
             is_cost: If True, the output will be for cost contributions. If False,
                 the output will be for emissions contributions.
-        
+
         Returns:
             A pandas DataFrame representing the contributions from components to
-                target sectors, indexed by (component, cost_type, origin_node[, node]).      
-        
+                target sectors, indexed by (component, cost_type, origin_node[, node]).
+
         """
         if is_cost:
             value_type_name = "cost_type"
@@ -522,7 +518,7 @@ class CostEmissionCalculation:
 
         return out[out != 0]
 
-    def _build_leontief_cost_year_system(
+    def _build_leontief_year_system(
         self,
         step: int,
         raw: dict[str, pd.DataFrame],
@@ -534,16 +530,21 @@ class CostEmissionCalculation:
         sector_index: list[str],
         X_year: pd.Series,
         demand_served_year: pd.Series,
+        is_cost: bool,
         eps: float = 1e-6,
     ) -> dict[str, any]:
-        """ builds the sparse technical-coefficient matrix A, the component-by-sector
-        direct-cost matrix V_comp, and the LU factorization of (I - A), for a single
-        optimization year (a single column `step` of the totals in `raw`). 
-        
+        """builds the sparse technical-coefficient matrix A, the component-by-sector
+        direct-value matrix, and the LU factorization of (I - A), for a single
+        optimization year (a single column `step` of the totals in `raw`). Shared
+        by the cost and embodied-emissions Leontief systems, which use identical
+        physical-flow technical coefficients but attach different direct values
+        (capex/opex/fuel/shed_demand cost vs. process/storage/transport/fuel
+        emissions) to them; `is_cost` selects which.
+
         Args:
             step: The optimization year for which the Leontief system is being built.
-            raw: A dictionary containing the raw totals needed to 
-                build the Leontief cost system.
+            raw: A dictionary containing the raw totals needed to
+                build the Leontief system.
             ref_carrier: A Series mapping each technology to its reference carrier.
             input_carriers: A list of input carriers for conversion technologies.
             output_carriers: A list of output carriers for conversion technologies.
@@ -555,13 +556,15 @@ class CostEmissionCalculation:
                 from the use side for the given year.
             demand_served_year: A Series representing the total demand served per sector
                 for the given year.
+            is_cost: If True, builds the cost system ("V_comp"/"v_matrix"). If
+                False, builds the emissions system ("E_comp"/"e_matrix").
             eps: A small threshold value to determine active sectors.
 
         Returns:
-            A dictionary containing the following keys:
+            A dictionary containing (among others) the following keys:
                 - "A": The sparse technical-coefficient matrix A.
-                - "v_matrix": The component-by-sector direct-cost matrix V_comp.
-                - "lu": The LU factorization of (I - A).        
+                - "v_matrix"/"e_matrix": The component-by-sector direct-value matrix.
+                - "lu": The LU factorization of (I - A).
         """
         active_sectors = [s for s in sector_index if X_year.loc[s] > eps]
         sector_to_pos = {s: i for i, s in enumerate(active_sectors)}
@@ -569,20 +572,20 @@ class CostEmissionCalculation:
         X_active = X_year.loc[active_sectors]
 
         A_rows, A_cols, A_vals = [], [], []
-        V_rows, V_cols, V_vals = [], [], []
+        M_rows, M_cols, M_vals = [], [], []
         comp_to_pos = {}
         tech_flow_in_conversion = (
             {}
-        )  # (tech, input_carrier, node) -> flow value, kept for single_tech isolation
+        )  
 
-        def add_v(component, cost_type, sector, value):
+        def add_direct(component, value_type, sector, value):
             if value == 0 or sector not in sector_to_pos:
                 return
-            key = (component, cost_type, sector[1])
+            key = (component, value_type, sector[1])
             pos = comp_to_pos.setdefault(key, len(comp_to_pos))
-            V_rows.append(pos)
-            V_cols.append(sector_to_pos[sector])
-            V_vals.append(value)
+            M_rows.append(pos)
+            M_cols.append(sector_to_pos[sector])
+            M_vals.append(value)
 
         def add_a(sector_in, sector_out, value):
             if (
@@ -612,255 +615,12 @@ class CostEmissionCalculation:
             ):
                 sector_out_preset = ("emissions", "global")
             else:
+                kind = "cost" if is_cost else "emissions"
                 raise NotImplementedError(
-                    f"Leontief cost calculation not implemented for technology {tech} "
-                    f"with multiple output carriers {c_out} that does not include its "
-                    f"reference carrier {c_ref} or that is a carbon sink."
-                )
-            in_cs = self._get_carriers_of_tech(input_carriers, tech)
-            for node in set_nodes:
-                key = (tech, node)
-                if key not in raw["capex"].index:
-                    continue
-                if sector_out_preset is None:
-                    sector_out = (c_out, node)
-                else:
-                    sector_out = sector_out_preset
-                if sector_out not in sector_to_pos:
-                    continue
-                add_v(tech, "capex", sector_out, raw["capex"].loc[key, step])
-                add_v(tech, "opex", sector_out, raw["opex"].loc[key, step])
-                x_out = X_active.loc[sector_out]
-                for c_in in in_cs:
-                    fi_key = (tech, c_in, node)
-                    if fi_key not in raw["flow_in_conversion"].index:
-                        continue
-                    flow_val = raw["flow_in_conversion"].loc[fi_key, step]
-                    if flow_val == 0:
-                        continue
-                    tech_flow_in_conversion[(tech, c_in, node)] = flow_val
-                    sector_in = (c_in, node)
-
-                    if sector_in not in sector_to_pos or x_out <= eps:
-                        continue
-                    add_a(sector_in, sector_out, flow_val / x_out)
-                # emissions
-                if key in raw["carbon_emissions_technology"].index:
-                    if raw["carbon_emissions_technology"].loc[key, step] < 0:
-                        continue
-                    add_a(
-                        ("emissions", "global"),
-                        sector_out,
-                        raw["carbon_emissions_technology"].loc[key, step] / x_out,
-                    )
-        # --- storage technologies: direct capex/opex ---
-        # --- add A entries for charge flow, which is the only flow that creates a
-        # --- cross-node dependency ---
-        for tech in self.storage_technologies:
-            if tech not in ref_carrier.index:
-                continue
-            c_ref = ref_carrier.loc[tech]
-            for node in set_nodes:
-                key = (tech, node)
-                if key in raw["flow_storage_charge"].index:
-                    flow_charge = raw["flow_storage_charge"].loc[key, step]
-                    add_a(
-                        (c_ref, node),
-                        (c_ref, node),
-                        flow_charge / X_active.loc[(c_ref, node)],
-                    )
-                if key not in raw["capex"].index:
-                    continue
-                sector = (c_ref, node)
-                if sector not in sector_to_pos:
-                    continue
-                add_v(tech, "capex", sector, raw["capex"].loc[key, step])
-                add_v(tech, "opex", sector, raw["opex"].loc[key, step])
-
-        # --- transport technologies: capex/opex split 50/50 across endpoints; ---
-        # --- gross flow creates the cross-node A entry that resolves cycles.  ---
-        for tech in self.transport_technologies:
-            if tech not in ref_carrier.index:
-                continue
-            c_ref = ref_carrier.loc[tech]
-            for edge in nodes_on_edges.index:
-                key = (tech, edge)
-                if key not in raw["capex"].index:
-                    continue
-                n_from, n_to = nodes_on_edges.loc[edge, 0], nodes_on_edges.loc[edge, 1]
-                sector_from, sector_to = (c_ref, n_from), (c_ref, n_to)
-                capex_val, opex_val = (
-                    raw["capex"].loc[key, step],
-                    raw["opex"].loc[key, step],
-                )
-                add_v(tech, "capex", sector_from, capex_val / 2)
-                add_v(tech, "opex", sector_from, opex_val / 2)
-                add_v(tech, "capex", sector_to, capex_val / 2)
-                add_v(tech, "opex", sector_to, opex_val / 2)
-                flow_key = (tech, edge)
-                if (
-                    flow_key not in raw["flow_transport"].index
-                    or sector_to not in sector_to_pos
-                ):
-                    continue
-                flow_val = raw["flow_transport"].loc[flow_key, step]
-                x_to = X_active.loc[sector_to] if sector_to in X_active.index else 0
-                if flow_val == 0 or x_to <= eps:
-                    continue
-                add_a(sector_from, sector_to, flow_val / x_to)
-
-        # --- carrier import/export cost and (optionally) shed demand penalty ---
-        for sector in active_sectors:
-            c, n = sector
-            ck = (c, n)
-            if ck in raw["cost_carrier"].index:
-                add_v(c, "fuel", sector, raw["cost_carrier"].loc[ck, step])
-            if ck in raw["cost_shed_demand"].index:
-                add_v(c, "shed_demand", sector, raw["cost_shed_demand"].loc[ck, step])
-            # add emissions
-            x_active = X_active.loc[ck]
-            if ck in raw["carbon_emissions_carrier"].index:
-                add_a(
-                    ("emissions", "global"),
-                    sector,
-                    raw["carbon_emissions_carrier"].loc[ck, step] / x_active,
-                )
-
-        A = coo_matrix((A_vals, (A_rows, A_cols)), shape=(S, S)).tocsc()
-        n_comp = len(comp_to_pos)
-        V_comp = coo_matrix((V_vals, (V_rows, V_cols)), shape=(n_comp, S)).tocsr()
-        inv_X = 1.0 / X_active.to_numpy()
-        v_matrix = V_comp.multiply(inv_X[np.newaxis, :]).tocsr()
-
-        I_minus_A = identity(S, format="csc") - A
-        lu = splu(I_minus_A)
-        min_pivot = np.abs(lu.U.diagonal()).min() if S > 0 else np.inf
-        if min_pivot < 1e-8:
-            print(
-                f"WARNING: Leontief system for year step {step} is near-singular "
-                f"(smallest pivot {min_pivot:.3g}) -- results may be unreliable."
-            )
-
-        demand_from_AX = X_active - A.dot(X_active)
-        diff_demand = (
-            demand_served_year.reindex_like(demand_from_AX) - demand_from_AX
-        ).abs()
-        eps_diff = 1e-3
-        assert (diff_demand <= eps_diff).all(), (
-            f"Leontief demand self-test failed for year step {step}: max abs diff "
-            f"{diff_demand.max():.3g} > {eps_diff}. This indicates a bug in the "
-            f"A-matrix assembly."
-        )
-        return {
-            "sector_to_pos": sector_to_pos,
-            "pos_to_sector": active_sectors,
-            "comp_to_pos": comp_to_pos,
-            "X": X_active,
-            "A": A,
-            "V_comp": V_comp,
-            "v_matrix": v_matrix,
-            "lu": lu,
-            "tech_flow_in_conversion": tech_flow_in_conversion,
-            "demand_served": demand_served_year,
-        }
-
-    def _build_leontief_emissions_year_system(
-        self,
-        step: int,
-        raw: dict[str, pd.DataFrame],
-        ref_carrier: pd.DataFrame,
-        input_carriers: pd.DataFrame,
-        output_carriers: pd.DataFrame,
-        set_nodes: list,
-        nodes_on_edges: pd.DataFrame,
-        sector_index: pd.MultiIndex,
-        X_year: pd.Series,
-        demand_served_year: pd.Series,
-        eps=1e-6,
-    ):
-        """ Counterpart to _build_leontief_cost_year_system for embodied-
-        emissions tracing. 
-        
-        Builds the sparse technical-coefficient matrix A, the component-by-sector
-        direct-emissions matrix E_comp, and the LU factorization of (I - A), for a single
-        optimization year (a single column `step` of the totals in `raw`). 
-
-        Args:
-            step: The optimization year for which the Leontief system is being built.
-            raw: A dictionary containing the raw totals needed to build the Leontief 
-                emissions system.
-            ref_carrier: A Series mapping each technology to its reference carrier.
-            input_carriers: A list of input carriers for conversion technologies.
-            output_carriers: A list of output carriers for conversion technologies.
-            set_nodes: A list of nodes in the system.
-            nodes_on_edges: A DataFrame of nodes on edges in the system.
-            sector_index: A MultiIndex of (carrier, node) representing
-                all sectors with recorded flows.
-            X_year: A Series representing the total gross throughput per sector
-                from the use side for the given year.
-            demand_served_year: A Series representing the total demand served per sector
-                for the given year.
-
-        Returns:
-            A dictionary containing the following keys:
-                - "A": The sparse technical-coefficient matrix A.
-                - "e_matrix": The component-by-sector direct-emissions matrix E_comp.
-                - "lu": The LU factorization of (I - A).
-        """
-        active_sectors = [s for s in sector_index if X_year.loc[s] > eps]
-        sector_to_pos = {s: i for i, s in enumerate(active_sectors)}
-        S = len(active_sectors)
-        X_active = X_year.loc[active_sectors]
-
-        A_rows, A_cols, A_vals = [], [], []
-        E_rows, E_cols, E_vals = [], [], []
-        comp_to_pos = {}
-        tech_flow_in_conversion = {}
-        tech_sector_out_preset = {}
-
-        def add_e(component, emission_type, sector, value):
-            if value == 0 or sector not in sector_to_pos:
-                return
-            key = (component, emission_type, sector[1])
-            pos = comp_to_pos.setdefault(key, len(comp_to_pos))
-            E_rows.append(pos)
-            E_cols.append(sector_to_pos[sector])
-            E_vals.append(value)
-
-        def add_a(sector_in, sector_out, value):
-            if (
-                value == 0
-                or sector_in not in sector_to_pos
-                or sector_out not in sector_to_pos
-            ):
-                return
-            A_rows.append(sector_to_pos[sector_in])
-            A_cols.append(sector_to_pos[sector_out])
-            A_vals.append(value)
-
-        # --- conversion technologies:
-        for tech in self.conversion_technologies:
-            if tech not in ref_carrier.index:
-                continue
-            c_out = self._get_carriers_of_tech(output_carriers, tech)
-            c_ref = ref_carrier.loc[tech]
-            sector_out_preset = None
-            if len(c_out) == 1:
-                c_out = c_out[0]
-            elif c_ref in c_out:
-                c_out = c_ref
-            elif (
-                len(c_out) == 0
-                and raw["carbon_intensity_technology"].loc[tech].sum() < 0
-            ):
-                sector_out_preset = ("emissions", "global")
-            else:
-                raise NotImplementedError(
-                    f"Leontief emissions calculation not implemented for technology "
+                    f"Leontief {kind} calculation not implemented for technology "
                     f"{tech} with multiple output carriers {c_out} that does not "
                     f"include its reference carrier {c_ref} or that is a carbon sink."
                 )
-            tech_sector_out_preset[tech] = sector_out_preset
             in_cs = self._get_carriers_of_tech(input_carriers, tech)
             for node in set_nodes:
                 key = (tech, node)
@@ -872,8 +632,11 @@ class CostEmissionCalculation:
                     sector_out = sector_out_preset
                 if sector_out not in sector_to_pos:
                     continue
-                if key in raw["carbon_emissions_technology"].index:
-                    add_e(
+                if is_cost:
+                    add_direct(tech, "capex", sector_out, raw["capex"].loc[key, step])
+                    add_direct(tech, "opex", sector_out, raw["opex"].loc[key, step])
+                elif key in raw["carbon_emissions_technology"].index:
+                    add_direct(
                         tech,
                         "process",
                         sector_out,
@@ -889,9 +652,11 @@ class CostEmissionCalculation:
                         continue
                     tech_flow_in_conversion[(tech, c_in, node)] = flow_val
                     sector_in = (c_in, node)
+
                     if sector_in not in sector_to_pos or x_out <= eps:
                         continue
                     add_a(sector_in, sector_out, flow_val / x_out)
+                # emissions (priced pass-through edge, shared by both systems)
                 if key in raw["carbon_emissions_technology"].index:
                     if raw["carbon_emissions_technology"].loc[key, step] < 0:
                         continue
@@ -900,9 +665,9 @@ class CostEmissionCalculation:
                         sector_out,
                         raw["carbon_emissions_technology"].loc[key, step] / x_out,
                     )
-
-        # --- storage technologies: same self-loop as cost; no direct emissions
-        # --- booked ---
+        # --- storage technologies: direct capex/opex (cost) or process emissions
+        # --- (emissions); add A entries for charge flow, which is the only flow
+        # --- that creates a cross-node dependency ---
         for tech in self.storage_technologies:
             if tech not in ref_carrier.index:
                 continue
@@ -916,107 +681,159 @@ class CostEmissionCalculation:
                         (c_ref, node),
                         flow_charge / X_active.loc[(c_ref, node)],
                     )
-                if key not in raw["carbon_emissions_technology"].index:
-                    continue
                 sector = (c_ref, node)
-                if sector not in sector_to_pos:
-                    continue
-                add_e(
-                    tech,
-                    "storage",
-                    sector,
-                    raw["carbon_emissions_technology"].loc[key, step],
-                )
-        # --- transport technologies: same gross-flow edge as cost; no direct
-        # --- emissions ---
+                if is_cost:
+                    if key not in raw["capex"].index or sector not in sector_to_pos:
+                        continue
+                    add_direct(tech, "capex", sector, raw["capex"].loc[key, step])
+                    add_direct(tech, "opex", sector, raw["opex"].loc[key, step])
+                else:
+                    if (
+                        key not in raw["carbon_emissions_technology"].index
+                        or sector not in sector_to_pos
+                    ):
+                        continue
+                    add_direct(
+                        tech,
+                        "storage",
+                        sector,
+                        raw["carbon_emissions_technology"].loc[key, step],
+                    )
+
+        # --- transport technologies: capex/opex (cost) or process emissions
+        # --- (emissions) split 50/50 across endpoints; gross flow creates the
+        # --- cross-node A entry that resolves cycles. ---
         for tech in self.transport_technologies:
             if tech not in ref_carrier.index:
                 continue
             c_ref = ref_carrier.loc[tech]
             for edge in nodes_on_edges.index:
                 key = (tech, edge)
-                if key not in raw["carbon_emissions_technology"].index:
+                required_index = (
+                    raw["capex"].index
+                    if is_cost
+                    else raw["carbon_emissions_technology"].index
+                )
+                if key not in required_index:
                     continue
                 n_from, n_to = nodes_on_edges.loc[edge, 0], nodes_on_edges.loc[edge, 1]
                 sector_from, sector_to = (c_ref, n_from), (c_ref, n_to)
-                add_e(
-                    tech,
-                    "transport",
-                    sector_from,
-                    raw["carbon_emissions_technology"].loc[key, step] / 2,
-                )
-                add_e(
-                    tech,
-                    "transport",
-                    sector_to,
-                    raw["carbon_emissions_technology"].loc[key, step] / 2,
-                )
+                if is_cost:
+                    capex_val, opex_val = (
+                        raw["capex"].loc[key, step],
+                        raw["opex"].loc[key, step],
+                    )
+                    add_direct(tech, "capex", sector_from, capex_val / 2)
+                    add_direct(tech, "opex", sector_from, opex_val / 2)
+                    add_direct(tech, "capex", sector_to, capex_val / 2)
+                    add_direct(tech, "opex", sector_to, opex_val / 2)
+                else:
+                    emission_val = raw["carbon_emissions_technology"].loc[key, step]
+                    add_direct(tech, "transport", sector_from, emission_val / 2)
+                    add_direct(tech, "transport", sector_to, emission_val / 2)
                 flow_key = (tech, edge)
-                if flow_key not in raw["flow_transport"].index:
+                if (
+                    flow_key not in raw["flow_transport"].index
+                    or sector_to not in sector_to_pos
+                ):
                     continue
                 flow_val = raw["flow_transport"].loc[flow_key, step]
                 x_to = X_active.loc[sector_to] if sector_to in X_active.index else 0
-                if flow_val == 0 or x_to <= eps or sector_to not in sector_to_pos:
+                if flow_val == 0 or x_to <= eps:
                     continue
                 add_a(sector_from, sector_to, flow_val / x_to)
 
-        # --- carrier-level direct ("fuel") emissions:
+        # --- carrier import/export cost (or fuel emissions) and (cost-only,
+        # --- optionally) shed demand penalty; emissions price pass-through A
+        # --- edge is shared by both systems ---
         for sector in active_sectors:
             c, n = sector
-            if sector in raw["carbon_emissions_carrier"].index:
-                add_e(
-                    c, "fuel", sector, raw["carbon_emissions_carrier"].loc[sector, step]
+            ck = (c, n)
+            if is_cost:
+                if ck in raw["cost_carrier"].index:
+                    add_direct(c, "fuel", sector, raw["cost_carrier"].loc[ck, step])
+                if ck in raw["cost_shed_demand"].index:
+                    add_direct(
+                        c,
+                        "shed_demand",
+                        sector,
+                        raw["cost_shed_demand"].loc[ck, step],
+                    )
+            elif ck in raw["carbon_emissions_carrier"].index:
+                add_direct(
+                    c, "fuel", sector, raw["carbon_emissions_carrier"].loc[ck, step]
                 )
+            # add emissions
+            x_active = X_active.loc[ck]
+            if ck in raw["carbon_emissions_carrier"].index:
                 add_a(
                     ("emissions", "global"),
                     sector,
-                    raw["carbon_emissions_carrier"].loc[sector, step]
-                    / X_active.loc[sector],
+                    raw["carbon_emissions_carrier"].loc[ck, step] / x_active,
                 )
 
         A = coo_matrix((A_vals, (A_rows, A_cols)), shape=(S, S)).tocsc()
         n_comp = len(comp_to_pos)
-        E_comp = coo_matrix((E_vals, (E_rows, E_cols)), shape=(n_comp, S)).tocsr()
+        M_comp = coo_matrix((M_vals, (M_rows, M_cols)), shape=(n_comp, S)).tocsr()
         inv_X = 1.0 / X_active.to_numpy()
-        e_matrix = E_comp.multiply(inv_X[np.newaxis, :]).tocsr()
+        m_matrix = M_comp.multiply(inv_X[np.newaxis, :]).tocsr()
 
         I_minus_A = identity(S, format="csc") - A
         lu = splu(I_minus_A)
         min_pivot = np.abs(lu.U.diagonal()).min() if S > 0 else np.inf
         if min_pivot < 1e-8:
+            kind = "" if is_cost else " emissions"
             print(
-                f"WARNING: Leontief emissions system for year step {step} is "
+                f"WARNING: Leontief{kind} system for year step {step} is "
                 f"near-singular (smallest pivot {min_pivot:.3g}) -- results may be "
                 f"unreliable."
             )
 
         demand_from_AX = X_active - A.dot(X_active)
-        diff_demand = (demand_served_year.loc[active_sectors] - demand_from_AX).abs()
-        eps_diff = 1e-4
-        assert (diff_demand <= eps_diff).all(), (
-            f"Leontief emissions demand self-test failed for year step {step}: "
-            f"max abs diff {diff_demand.max():.3g} > {eps_diff}. This indicates a bug "
-            f"in the physical-only A-matrix assembly."
-        )
-        return {
+        if is_cost:
+            diff_demand = (
+                demand_served_year.reindex_like(demand_from_AX) - demand_from_AX
+            ).abs()
+            eps_diff = 1e-3
+            assert (diff_demand <= eps_diff).all(), (
+                f"Leontief demand self-test failed for year step {step}: max abs "
+                f"diff {diff_demand.max():.3g} > {eps_diff}. This indicates a bug "
+                f"in the A-matrix assembly."
+            )
+        else:
+            diff_demand = (
+                demand_served_year.loc[active_sectors] - demand_from_AX
+            ).abs()
+            eps_diff = 1e-4
+            assert (diff_demand <= eps_diff).all(), (
+                f"Leontief emissions demand self-test failed for year step {step}: "
+                f"max abs diff {diff_demand.max():.3g} > {eps_diff}. This indicates "
+                f"a bug in the physical-only A-matrix assembly."
+            )
+
+        result = {
             "sector_to_pos": sector_to_pos,
             "pos_to_sector": active_sectors,
             "comp_to_pos": comp_to_pos,
             "X": X_active,
             "A": A,
-            "E_comp": E_comp,
-            "e_matrix": e_matrix,
             "lu": lu,
             "tech_flow_in_conversion": tech_flow_in_conversion,
-            "tech_sector_out_preset": tech_sector_out_preset,
             "demand_served": demand_served_year,
         }
+        if is_cost:
+            result["V_comp"] = M_comp
+            result["v_matrix"] = m_matrix
+        else:
+            result["E_comp"] = M_comp
+            result["e_matrix"] = m_matrix
+        return result
 
     @staticmethod
     def _leontief_storage_by_carrier_node(
         flow_df: pd.DataFrame, ref_carrier: pd.Series
     ) -> pd.DataFrame:
-        """ remaps a (technology, node) indexed storage flow to (carrier, node), using
+        """remaps a (technology, node) indexed storage flow to (carrier, node), using
         each storage technology's own reference carrier, summing technologies that
         share a (carrier, node) (e.g. two different storage techs for electricity
         at the same node).
@@ -1119,7 +936,7 @@ class CostEmissionCalculation:
     @staticmethod
     def _get_carriers_of_tech(carrier_mapping: pd.Series, tech: str) -> list[str]:
         """returns the list of carriers associated with a given technology
-        
+
         Args:
             carrier_mapping: A Series mapping each technology to its associated
                 carriers (comma-separated string).
