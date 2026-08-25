@@ -93,7 +93,7 @@ class SolutionLoader:
         """Find the scenario with the given name or raise exception.
 
         :param scenario_name: Name of the scenario
-        :return Scenario instance for the given name
+        :return: Scenario instance for the given name
         """
         if scenario_name is None:
             return self.first_scenario

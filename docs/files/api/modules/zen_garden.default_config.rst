@@ -29,5 +29,3 @@
 
 .. autoclass:: zen_garden.default_config.TimeSeriesAggregation
    :exclude-members: model_config
-   
-

@@ -10,6 +10,8 @@ from zen_garden.utils import get_label_position
 
 if TYPE_CHECKING:
     from linopy import Model as LinopyModel
+    from linopy.constraints import Constraint
+    from linopy.variables import Variable
 
     from zen_garden.model import Config
 
@@ -111,6 +113,7 @@ class Scaling:
         Returns:
             rescaled dataarray
         """
+        component: "Variable | Constraint"
         if name in self.lp_model.variables:
             component = self.lp_model.variables[name]
             D_inv = self.D_c_inv[component.labels]

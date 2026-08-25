@@ -9,14 +9,14 @@ ZEN-garden formulates energy-system design and operation as a mixed-integer
 linear program (MILP), or as a linear program (LP) when no binary decisions are
 required. The following
 sections describe the constraints and equations that define the optimization
-problem. For a complete list of symbols, see :ref:`notation.notation`.  
+problem. For a complete list of symbols, see :ref:`notation.notation`.
 
 .. note::
 
    Important notes on the development and maintenance of this formulation:
 
-   * constraint ``build`` docstrings are the source of truth for equations and 
-     implementation-specific conditions. Do not write equations into this file. 
+   * constraint ``build`` docstrings are the source of truth for equations and
+     implementation-specific conditions. Do not write equations into this file.
      If an equation changes, its docstring should be updated in the same change.
    * The objective function definitions are documented here because they are implemented
      as objective methods rather than constraint ``build`` methods.
