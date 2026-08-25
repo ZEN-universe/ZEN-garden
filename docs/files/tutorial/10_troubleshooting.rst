@@ -25,6 +25,27 @@ Comma at the end of a list in json
  caused the error.
 
 
+Unit consistency errors
+-----------------------
+
+The dataset example ``15_unit_consistency_expected_error`` intentionally
+contains inconsistent units. Run it following the instructions for
+:ref:`using dataset examples <building.examples>` and use the error message to
+locate the inconsistent ``unit`` entries in the ``attributes.json`` files.
+See :ref:`t_units.t_units` and :ref:`input_structure.attribute_files` for the
+unit conventions.
+
+For this example, the affected units include:
+
+1. ``CHP_plant/conversion_factor[natural_gas]``: ``kilotons/GWh``
+2. ``natural_gas_pipeline/capacity_investment_existing``: ``kilotons/hour``
+3. The energy-related units of ``natural_gas_storage``: use the kiloton basis
+   instead of the GWh/MWh basis.
+
+After correcting the units, run the dataset again. ZEN-garden should complete
+without a unit-consistency error.
+
+
 Building smaller test models
 ============================
 
@@ -54,5 +75,3 @@ improve them:
 4. improve your numerics by selecting other solver options (if you are using 
    Gurobi see `Guidelines for Numerical Issues 
    <https://www.gurobi.com/documentation/current/refman/guidelines_for_numerical_i.html>`_)
-
-
