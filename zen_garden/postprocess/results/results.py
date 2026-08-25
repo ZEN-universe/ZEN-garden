@@ -4,7 +4,7 @@ the results of a model run.
 
 import logging
 from pathlib import Path
-from typing import Literal, cast
+from typing import Literal, cast, overload
 
 import pandas as pd
 from pandas import Series
@@ -83,12 +83,28 @@ class Results:
         """
         return self.solution_loader.scenarios[key]
 
+    @overload
+    def get_df(
+        self,
+        component_name: str,
+        scenario_name: str,
+        index: dict[str, str] | None = None,
+    ) -> pd.Series: ...
+
+    @overload
+    def get_df(
+        self,
+        component_name: str,
+        scenario_name: None = None,
+        index: dict[str, str] | None = None,
+    ) -> pd.Series | dict[str, pd.Series]: ...
+
     def get_df(
         self,
         component_name: str,
         scenario_name: str | None = None,
         index: dict[str, str] | None = None,
-    ) -> pd.Series:
+    ) -> pd.Series | dict[str, pd.Series]:
         """Returns the raw results without any further processing.
 
         Transforms a parameter or variable dataframe (compressed) string into
@@ -104,8 +120,18 @@ class Results:
         Returns:
             DataFrame: The corresponding dataframe
         """
-        scenario = self.solution_loader.find_scenario(scenario_name)
-        return scenario.get_values(component_name, index)
+        if scenario_name is not None or len(self.scenarios) == 1:
+            scenario = (
+                self.solution_loader.find_scenario(scenario_name)
+                if scenario_name is not None
+                else self.first_scenario
+            )
+            return scenario.get_values(component_name, index)
+
+        return {
+            name: scenario.get_values(component_name, index)
+            for name, scenario in self.scenarios.items()
+        }
 
     def get_full_ts(
         self,
@@ -131,18 +157,31 @@ class Results:
         Returns:
            Full timeseries
         """
-        # TODO: Maybe revert decision to load only first scenario
-        #       if scenario_name is None.
+        if scenario_name is not None or len(self.scenarios) == 1:
+            scenario = (
+                self.solution_loader.find_scenario(scenario_name)
+                if scenario_name is not None
+                else self.first_scenario
+            )
+            return scenario.get_full_ts(
+                component_name,
+                discount_to_first_step=discount_to_first_step,
+                year=year,
+                keep_raw=keep_raw,
+                index=index,
+            )
 
-        scenario = self.solution_loader.find_scenario(scenario_name)
-        full_ts = scenario.get_full_ts(
-            component_name,
-            discount_to_first_step=discount_to_first_step,
-            year=year,
-            keep_raw=keep_raw,
-            index=index,
-        )
-        return full_ts
+        df_dict = {
+            name: scenario.get_full_ts(
+                component_name,
+                discount_to_first_step=discount_to_first_step,
+                year=year,
+                keep_raw=keep_raw,
+                index=index,
+            )
+            for name, scenario in self.scenarios.items()
+        }
+        return self._concatenate_scenarios(df_dict)
 
     def get_total(
         self,
@@ -174,8 +213,19 @@ class Results:
                 )
             )
 
-        scenario = self.solution_loader.find_scenario(scenario_name)
-        return scenario.get_total(component_name, year, keep_raw, index)
+        if scenario_name is not None or len(self.scenarios) == 1:
+            scenario = (
+                self.solution_loader.find_scenario(scenario_name)
+                if scenario_name is not None
+                else self.first_scenario
+            )
+            return scenario.get_total(component_name, year, keep_raw, index)
+
+        df_dict = {
+            name: scenario.get_total(component_name, year, keep_raw, index)
+            for name, scenario in self.scenarios.items()
+        }
+        return self._concatenate_scenarios(df_dict)
 
     def get_dual(
         self,
@@ -340,10 +390,12 @@ class Results:
         :return: Description
         :rtype: list[str]
         """
-        # TODO: read out the index names from the docstring
-        return [
-            str(name) for name in self.get_df(component_name, scenario_name).index.names
-        ]
+        df = (
+            self.solution_loader.find_scenario(scenario_name).get_values(component_name)
+            if scenario_name is not None
+            else self.first_scenario.get_values(component_name)
+        )
+        return [str(name) for name in df.index.names]
 
     def get_years(self, scenario_name: str | None = None) -> list[int]:
         """Extracts the years of a given Scenario. If no scenario is given, a
@@ -427,3 +479,22 @@ class Results:
         if component_type is None:
             return scenario.component_map.all_components
         return cast(list[str], getattr(scenario.component_map, component_type))
+
+    def _concatenate_scenarios(
+        self, df_dict: dict[str, pd.DataFrame] | dict[str, pd.DataFrame | pd.Series]
+    ) -> pd.DataFrame | pd.Series:
+        """Concatenates the dataframes or series from different scenarios."""
+        if len(df_dict) == 1:
+            return next(iter(df_dict.values()))
+
+        if all(isinstance(df, pd.Series) for df in df_dict.values()):
+            return pd.concat(df_dict, axis=1)
+        elif all(isinstance(df, pd.DataFrame) for df in df_dict.values()):
+            return pd.concat(df_dict, keys=df_dict.keys())
+        else:
+            raise ValueError(
+                (
+                    "All values in df_dict must be of the same type "
+                    "(either all DataFrames or all Series)."
+                )
+            )

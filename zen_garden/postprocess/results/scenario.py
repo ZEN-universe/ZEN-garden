@@ -162,6 +162,7 @@ class Scenario:
         self,
         component_name: str,
         index: dict[str, str] | None = None,
+        keep_raw: bool = False,
         rename_index: bool = True,
     ):
         """Get the values for a given component filtered by the index.
@@ -173,7 +174,7 @@ class Scenario:
         """
         if self.has_rh:
             return self.get_values_of_rolling_horizon(
-                component_name, index, rename_index
+                component_name, index, keep_raw, rename_index
             )
         else:
             return self.get_raw_values(component_name, index, rename_index)
@@ -219,6 +220,7 @@ class Scenario:
         self,
         component_name: str,
         index: dict[str, str] | None,
+        keep_raw: bool = False,
         rename_index: bool = True,
     ) -> pd.Series:
         """Get values for a system that uses rolling horizon.
@@ -240,7 +242,7 @@ class Scenario:
             if p.is_dir() and p.name.startswith("MF_")
         ]
 
-        combined_series: dict[int, pd.Series] = {}
+        series_dict: dict[int, pd.Series] = {}
         for subfolder_name in subfolder_names:
             sf_stripped = subfolder_name.replace("MF_", "")
             mf_idx: int | str
@@ -251,8 +253,7 @@ class Scenario:
                         f"format 'MF_<number>' or 'MF_<number>_<description>'."
                     )
                 )
-            else:
-                mf_idx = int(subfolder_name.replace("MF_", ""))
+            mf_idx = int(subfolder_name.replace("MF_", ""))
             series = self.get_raw_values(
                 component_name,
                 index,
@@ -260,75 +261,14 @@ class Scenario:
                 rename_index=rename_index,
             )
             assert isinstance(mf_idx, int)
-            combined_series[mf_idx] = series
+            series_dict[mf_idx] = series
 
         timestep_column, timestep_type = TimestepType.from_index_names(
-            [str(name) for name in next(iter(combined_series.values())).index.names]
+            [str(name) for name in next(iter(series_dict.values())).index.names]
         )
-        return self._combine_dataseries(combined_series, timestep_column, timestep_type)
-
-    def get_unit(
-        self,
-        component_name: str,
-        convert_to_yearly_unit: bool,
-    ) -> pd.Series | str | None:
-        """Method that returns the unit of a component given its name and index.
-
-        :param component_name: The name of the component.
-        :param convert_to_yearly_unit: Whether to convert to yearly unit.
-        :return: The unit of the component.
-            Returns None if the component does not have a unit.
-        """
-        if component_name == "objective":
-            if self.analysis.objective not in OBJECTIVE_FUNCTION_MAP:
-                raise ValueError(
-                    f"Invalid objective function {self.analysis.objective}"
-                )
-            component_name = OBJECTIVE_FUNCTION_MAP[self.analysis.objective]
-
-        component_type = self.component_map.find_type(component_name)
-        file_path = self.component_path / component_type.get_units_file_name()
-        with pd.HDFStore(file_path) as store:
-            if f"/{component_name}" not in store.keys():
-                return None
-            series = pd.read_hdf(store, component_name)
-        assert isinstance(
-            series, pd.Series
-        ), f"Component {component_name} is not a series, but a {type(series)}."
-
-        _, timestep_type = TimestepType.from_index_names(
-            [str(name) for name in series.index.names]
-        )
-        unit_map = {
-            unit: self._convert_to_pint_unit(
-                unit, timestep_type, convert_to_yearly_unit
-            )
-            for unit in cast("pd.Series[str]", series.unique())
-        }
-        series = series.map(unit_map)
-        if series.size == 1 and series.index.name is None:
-            return series.iloc[0]
-        else:
-            return self._rename_index(series)
-
-    def get_doc(self, component_name: str) -> str | None:
-        """Method that returns the docstring of a component given its name.
-
-        :param component_name: The name of the component.
-        :return: The docstring of the component.
-        """
-        component_type = self.component_map.find_type(component_name)
-        doc_file = self.component_path / DOCS_FILENAME_MAP[component_type]
-        with open(doc_file, "r") as f:
-            docs = cast(dict[str, str], json.load(f))
-
-        if component_name not in docs:
-            return None
-
-        doc = docs[component_name]
-        if ";" in doc and ":" in doc:
-            doc = "\n".join(v.replace(":", ": ") for v in doc.split(";"))
-        return doc
+        if keep_raw:
+            return self._concatenate_raw_series(series_dict)
+        return self._combine_dataseries(series_dict, timestep_column, timestep_type)
 
     def get_full_ts(
         self,
@@ -354,7 +294,9 @@ class Scenario:
             Full timeseries
         """
         component_type = self.component_map.find_type(component_name)
-        values = self.get_values(component_name, index, rename_index=False)
+        values = self.get_values(
+            component_name, index, keep_raw=keep_raw, rename_index=False
+        )
         timestep_column, timestep_type = TimestepType.from_index_names(
             [str(name) for name in values.index.names]
         )
@@ -509,7 +451,9 @@ class Scenario:
         :param index: slicing index of the resulting dataframe
         :return: Total values of the component
         """
-        series = self.get_values(component_name, index, rename_index=False)
+        series = self.get_values(
+            component_name, index, keep_raw=keep_raw, rename_index=False
+        )
         timestep_column, timestep_type = TimestepType.from_index_names(
             [str(name) for name in series.index.names]
         )
@@ -555,6 +499,69 @@ class Scenario:
         ans = self._rename_index(ans)
         return ans
 
+    def get_unit(
+        self,
+        component_name: str,
+        convert_to_yearly_unit: bool,
+    ) -> pd.Series | str | None:
+        """Method that returns the unit of a component given its name and index.
+
+        :param component_name: The name of the component.
+        :param convert_to_yearly_unit: Whether to convert to yearly unit.
+        :return: The unit of the component.
+            Returns None if the component does not have a unit.
+        """
+        if component_name == "objective":
+            if self.analysis.objective not in OBJECTIVE_FUNCTION_MAP:
+                raise ValueError(
+                    f"Invalid objective function {self.analysis.objective}"
+                )
+            component_name = OBJECTIVE_FUNCTION_MAP[self.analysis.objective]
+
+        component_type = self.component_map.find_type(component_name)
+        file_path = self.component_path / component_type.get_units_file_name()
+        with pd.HDFStore(file_path) as store:
+            if f"/{component_name}" not in store.keys():
+                return None
+            series = pd.read_hdf(store, component_name)
+        assert isinstance(
+            series, pd.Series
+        ), f"Component {component_name} is not a series, but a {type(series)}."
+
+        _, timestep_type = TimestepType.from_index_names(
+            [str(name) for name in series.index.names]
+        )
+        unit_map = {
+            unit: self._convert_to_pint_unit(
+                unit, timestep_type, convert_to_yearly_unit
+            )
+            for unit in cast("pd.Series[str]", series.unique())
+        }
+        series = series.map(unit_map)
+        if series.size == 1 and series.index.name is None:
+            return series.iloc[0]
+        else:
+            return self._rename_index(series)
+
+    def get_doc(self, component_name: str) -> str | None:
+        """Method that returns the docstring of a component given its name.
+
+        :param component_name: The name of the component.
+        :return: The docstring of the component.
+        """
+        component_type = self.component_map.find_type(component_name)
+        doc_file = self.component_path / DOCS_FILENAME_MAP[component_type]
+        with open(doc_file, "r") as f:
+            docs = cast(dict[str, str], json.load(f))
+
+        if component_name not in docs:
+            return None
+
+        doc = docs[component_name]
+        if ";" in doc and ":" in doc:
+            doc = "\n".join(v.replace(":", ": ") for v in doc.split(";"))
+        return doc
+
     def _read_json_file(self, file_name: Path, obj_constr: type[T]) -> T:
         """Reads a JSON file and returns an object of the specified type.
 
@@ -575,7 +582,7 @@ class Scenario:
 
         :return: A pint.UnitRegistry object.
         """
-        ureg = UnitRegistry(on_redefinition="ignore")
+        ureg: UnitRegistry = UnitRegistry(on_redefinition="ignore")
         unit_path = self.path / "unit_definitions.txt"
         if unit_path.exists():
             ureg.load_definitions(unit_path)  # pyright:ignore[reportUnusedCallResult]
@@ -744,6 +751,20 @@ class Scenario:
             return pd.Series(dtype=float)
         return pd.concat(series_to_concat)
 
+    def _concatenate_raw_series(self, series_dict: dict[int, pd.Series]) -> pd.Series:
+        """Concatenate the raw values when a solution is created
+        without perfect foresight given a component, a scenario and a
+        dictionary containing the name of the MF-data (Format: "MF_{year}").
+        The raw values are not combined, i.e., the data is kept for all the
+        foresight steps.
+        """
+        if not series_dict:
+            raise ValueError("series_dict must not be empty")
+
+        index_names = next(iter(series_dict.values())).index.names
+        series = pd.concat(series_dict, names=["mf", *index_names])
+        return series.sort_index(level="mf")
+
     def _convert_to_pint_unit(
         self,
         u: str,
@@ -864,13 +885,12 @@ class Scenario:
         is to define the correct name depending on the component timestep type.
         """
         if timestep_type is TimestepType.operational:
-            time_step_duration = self.time_steps.time_steps_operation_duration
+            raw_data = self.time_steps.time_steps_operation_duration
         else:
-            time_step_duration = self.time_steps.time_steps_storage_duration
-        time_step_duration = pd.Series(time_step_duration)
-        time_step_duration.index = time_step_duration.index.astype(int)
-        time_step_duration = time_step_duration.astype(int)
-        return time_step_duration
+            raw_data = self.time_steps.time_steps_storage_duration
+        ans = pd.Series(raw_data)
+        ans.index = ans.index.astype(int)
+        return ans.astype(int)
 
     def _get_time_steps_storage_level_startend_year(self) -> dict[int, int]:
         """Return time steps that define the start and end of the storage level.
@@ -878,8 +898,7 @@ class Scenario:
         :param scenario: scenario name.
         """
         ans = self.time_steps.time_steps_storage_level_startend_year
-        ans = {int(k): int(v) for k, v in ans.items()}
-        return ans
+        return {int(k): int(v) for k, v in ans.items()}
 
     def _get_time_steps(self, timestep_type: TimestepType, year: int) -> pd.Series:
         """THe timesteps are stored in a file HDF-File called
