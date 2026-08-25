@@ -49,20 +49,20 @@ class ElementRegistry:
 
         self.dict_elements: defaultdict[str, list[Element]] = defaultdict(list)
 
-    def register_elements(self):
+    def register_elements(self) -> None:
         """Set up the parameters, variables and constraints of the carriers."""
         logger.info("\n--- Add elements to model--- \n")
         for element_id in ELEMENT_TYPE_CLASSES.keys():
             element_class = ELEMENT_TYPE_CLASSES[element_id]
             element_name = element_class.label
-            element_set = self.config.system[element_name]
+            element_set = cast(list[str], self.config.system[element_name])
 
             # before adding the carriers, get set_carriers
             # check if carrier data exists
             if element_name == "set_carriers":
                 # TODO: Eliminate this hidden dependency on ConversionTechnology,
                 # which modifies set_carriers in EnergySystem
-                element_set: list[str] = self.energy_system.set_carriers
+                element_set = self.energy_system.set_carriers
                 self.config.system.set_carriers = element_set
                 self.input_data_checks.check_existing_carrier_data(element_set)
 
