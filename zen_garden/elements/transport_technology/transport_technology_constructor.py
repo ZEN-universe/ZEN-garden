@@ -90,3 +90,26 @@ class TransportTechnologyConstructor(ModelConstructor):
             "through transport technology on edge i and time t",
             unit_category={"energy_quantity": 1, "time": -1},
         )
+
+    @override
+    def construct_expressions(self):
+        """Construct reusable transport coefficients."""
+        parameters = self.zen_model.parameters
+        transport_technologies = self.zen_model.sets[
+            "set_transport_technologies"
+        ]
+
+        self.zen_model.add_expression(
+            "transport_capex_distance",
+            parameters.distance * parameters.capex_per_distance_transport,
+        )
+        self.zen_model.add_expression(
+            "transport_loss_factor_effective",
+            parameters.transport_loss_factor,
+        )
+        self.zen_model.add_expression(
+            "transport_carbon_intensity_effective",
+            parameters.carbon_intensity_technology.sel(
+                set_technologies=transport_technologies
+            ),
+        )

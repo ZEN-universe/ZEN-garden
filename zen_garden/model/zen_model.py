@@ -1,7 +1,7 @@
-"""ZEN-model to combine sets, paramters, variables and constraints
+"""ZEN-model to combine sets, parameters, expressions, variables and constraints
 from all elements into a single model."""
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from linopy import Model as LinopyModel
 
@@ -31,6 +31,8 @@ class ZenModel:
             Variable, lp_model=self.lp_model, sets=self.sets
         )
         self.parameters = Parameter(sets=self.sets)
+        # Expressions are model-construction artifacts rather than input data.
+        self.expressions: dict[str, Any] = {}
         self.constraints = Constraint(lp_model=self.lp_model)
 
     def add_set(self, *args, **kwargs):
@@ -57,6 +59,12 @@ class ZenModel:
         See :meth:`zen_garden.model.components.parameter.Parameter.add_parameter`.
         """
         self.parameters.add_parameter(*args, **kwargs)
+
+    def add_expression(self, name: str, expression: Any) -> None:
+        """Register a reusable expression created during model construction."""
+        if name in self.expressions:
+            raise ValueError(f"Expression {name!r} already added")
+        self.expressions[name] = expression
 
     def add_constraint(self, *args, **kwargs):
         """Add constraints to the model.

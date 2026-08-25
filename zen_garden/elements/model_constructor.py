@@ -80,6 +80,10 @@ class ModelConstructor(ABC):
         """Constructs the Vars of this class."""
         pass
 
+    def construct_expressions(self):  # noqa: B027
+        """Construct reusable expressions from parameters and variables."""
+        pass
+
     def construct_constraints(self):
         """Constructs the Constraints of this class."""
         logger.info(f"Constructing constraints for {self.element_class.__name__}")

@@ -82,8 +82,7 @@ class TransportTechnologyCapexConstraint(GenericConstraint):
         )
         # Additional check to avoid binary variables when their coefficient is 0
         if np.any(
-            self.zen_model.parameters.distance.loc[coords[0], coords[1]]
-            * self.zen_model.parameters.capex_per_distance_transport.loc[
+            self.zen_model.expressions["transport_capex_distance"].loc[
                 coords[0], coords[1]
             ]
             != 0
@@ -94,8 +93,7 @@ class TransportTechnologyCapexConstraint(GenericConstraint):
                     coords[0], "power", coords[1], coords[2]
                 ]
                 * (
-                    self.zen_model.parameters.distance.loc[coords[0], coords[1]]
-                    * self.zen_model.parameters.capex_per_distance_transport.loc[
+                    self.zen_model.expressions["transport_capex_distance"].loc[
                         coords[0], coords[1]
                     ]
                 )
