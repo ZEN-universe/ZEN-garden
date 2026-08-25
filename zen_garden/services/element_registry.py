@@ -63,6 +63,7 @@ class ElementRegistry:
                 # TODO: Eliminate this hidden dependency on ConversionTechnology,
                 # which modifies set_carriers in EnergySystem
                 element_set: list[str] = self.energy_system.set_carriers
+                self.config.system.set_carriers = element_set
                 self.input_data_checks.check_existing_carrier_data(element_set)
 
             # check if element_set has a subset and remove subset from element_set
