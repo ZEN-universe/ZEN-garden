@@ -7,6 +7,14 @@ Notation
 This page defines the mathematical notation used throughout ZEN-garden. Entries
 are listed alphabetically by their mathematical symbols.
 
+.. raw:: html
+
+   <style>
+   #notation table.docutils {
+       font-size: 0.82rem;
+   }
+   </style>
+
 **Naming conventions.** Code names use ``snake_case`` and set names begin with
 ``set_``. Mathematical sets use calligraphic uppercase letters, parameters use
 lowercase letters, and variables use uppercase letters. Superscripts describe
@@ -21,7 +29,7 @@ Sets
 .. csv-table:: Sets
     :header-rows: 1
     :file: tables/sets.csv
-    :widths: 18 22 18 42
+    :widths: 18 22 18 52
     :delim: ;
 
 .. _notation.parameters:
