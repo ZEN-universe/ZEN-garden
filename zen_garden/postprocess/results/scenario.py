@@ -3,8 +3,6 @@
 import itertools
 import json
 import logging
-import os
-import re
 import warnings
 from pathlib import Path
 from typing import Any, TypeVar, cast, overload
@@ -65,42 +63,46 @@ class Scenario:
 
     @property
     def analysis(self) -> Analysis:
+        """Returns the analysis config information of the scenario."""
         if self._analysis is None:
-            self._analysis = self._read_json_file(
-                self._path / "analysis.json", Analysis
-            )
+            self._analysis = self._read_json_file(self.path / "analysis.json", Analysis)
         return self._analysis
 
     @property
     def solver(self) -> Solver:
+        """Returns the solver config information of the scenario."""
         if self._solver is None:
-            self._solver = self._read_json_file(self._path / "solver.json", Solver)
+            self._solver = self._read_json_file(self.path / "solver.json", Solver)
         return self._solver
 
     @property
     def system(self) -> System:
+        """Returns the system config information of the scenario."""
         if self._system is None:
-            self._system = self._read_json_file(self._path / "system.json", System)
+            self._system = self._read_json_file(self.path / "system.json", System)
         return self._system
 
     @property
     def benchmarking(self) -> dict[str, Any]:
+        """Returns the benchmarking information of the scenario."""
         if self._benchmarking is None:
             self._benchmarking = self._read_json_file(
-                self._path / "benchmarking.json", dict
+                self.path / "benchmarking.json", dict
             )
         return self._benchmarking
 
     @property
     def component_map(self) -> ComponentMap:
+        """Returns the component map of the scenario."""
         if self._component_map is None:
             self._component_map = self._read_json_file(
-                self._path / "component_map.json", ComponentMap
+                self.component_path / "component_map.json", ComponentMap
             )
         return self._component_map
 
     @property
     def time_steps(self) -> TimestepMap:
+        """Returns the time steps of the scenario."""
         if self._time_steps is None:
             time_steps_file_name = list(
                 self.path.glob("dict_all_sequence_time_steps*.json")
@@ -113,14 +115,37 @@ class Scenario:
 
     @property
     def path(self) -> Path:
+        """Path to the folder containing the scenario files."""
+        return self._path
+
+    @property
+    def component_path(self) -> Path:
+        """Path to the folder containing the component files.
+        If the solution has rolling horizon enabled,
+        the component files are stored in a subfolder named "MF_<number>".
+        """
+        if self.has_rh:
+            mf_folder = next(
+                s
+                for s in sorted(self.path.iterdir())
+                if s.is_dir() and s.name.startswith("MF_")
+            )
+            return self._path / mf_folder
         return self._path
 
     @property
     def has_rh(self) -> bool:
+        """Returns True if the solution has rolling horizon enabled."""
         return self.system.use_rolling_horizon
 
     @property
+    def components(self) -> list[str]:
+        """Returns a list of all components in the scenario."""
+        return self.component_map.all_components
+
+    @property
     def ureg(self) -> UnitRegistry:
+        """Returns the unit registry for the scenario."""
         if self._ureg is None:
             self._ureg = self._read_ureg()
         return self._ureg
@@ -137,8 +162,28 @@ class Scenario:
         self,
         component_name: str,
         index: dict[str, str] | None = None,
-        subfolder: str = ".",
         rename_index: bool = True,
+    ):
+        """Get the values for a given component filtered by the index.
+
+        :param component_name: The name of the component.
+        :param index: The index used to slice the series unless the component is a set.
+        :param rename_index: Whether to rename the index of the series.
+        :return: The pandas series object.
+        """
+        if self.has_rh:
+            return self.get_values_of_rolling_horizon(
+                component_name, index, rename_index
+            )
+        else:
+            return self.get_raw_values(component_name, index, rename_index)
+
+    def get_raw_values(
+        self,
+        component_name: str,
+        index: dict[str, str] | None = None,
+        rename_index: bool = True,
+        mf_folder: str | None = None,
     ) -> pd.Series:
         """Get the values for a given component filtered by the index.
 
@@ -149,7 +194,12 @@ class Scenario:
         :return: The pandas series object.
         """
         component_type = self.component_map.find_type(component_name)
-        file_path = self._path / subfolder / component_type.get_file_name()
+        sub_folder: Path = (
+            Path(".")
+            if mf_folder is None or not self.has_rh
+            else Path("..") / mf_folder
+        )
+        file_path = self.component_path / sub_folder / component_type.get_file_name()
 
         if component_type is ComponentType.sets:
             series = pd.read_hdf(file_path, component_name)
@@ -166,20 +216,29 @@ class Scenario:
         return ans
 
     def get_values_of_rolling_horizon(
-        self, component_name: str, index: dict[str, str] | None
+        self,
+        component_name: str,
+        index: dict[str, str] | None,
+        rename_index: bool = True,
     ) -> pd.Series:
         """Get values for a system that uses rolling horizon.
 
         :param component_name: The name of the component.
         :param index: The index used to slice the series unless the component is a set.
-        :param subfolder: Optional subfolder name.
+        :param rename_index: Whether to rename the index of the series.
         """
-        assert self.system.use_rolling_horizon
+        if not self.has_rh:
+            raise ValueError(
+                f"Scenario {self.name} does not have rolling horizon enabled."
+            )
 
         # If solution has rolling horizon, load the values
         # for all the foresight steps and combine them.
-        pattern = re.compile(r"^MF_\d+(_.*)?$")
-        subfolder_names = [p for p in os.listdir(self.path) if pattern.match(p)]
+        subfolder_names = [
+            p.name
+            for p in self.path.iterdir()
+            if p.is_dir() and p.name.startswith("MF_")
+        ]
 
         combined_series: dict[int, pd.Series] = {}
         for subfolder_name in subfolder_names:
@@ -194,7 +253,12 @@ class Scenario:
                 )
             else:
                 mf_idx = int(subfolder_name.replace("MF_", ""))
-            series = self.get_values(component_name, index, subfolder_name)
+            series = self.get_raw_values(
+                component_name,
+                index,
+                mf_folder=subfolder_name,
+                rename_index=rename_index,
+            )
             assert isinstance(mf_idx, int)
             combined_series[mf_idx] = series
 
@@ -223,7 +287,7 @@ class Scenario:
             component_name = OBJECTIVE_FUNCTION_MAP[self.analysis.objective]
 
         component_type = self.component_map.find_type(component_name)
-        file_path = self._path / component_type.get_units_file_name()
+        file_path = self.component_path / component_type.get_units_file_name()
         with pd.HDFStore(file_path) as store:
             if f"/{component_name}" not in store.keys():
                 return None
@@ -254,7 +318,7 @@ class Scenario:
         :return: The docstring of the component.
         """
         component_type = self.component_map.find_type(component_name)
-        doc_file = self._path / DOCS_FILENAME_MAP[component_type]
+        doc_file = self.component_path / DOCS_FILENAME_MAP[component_type]
         with open(doc_file, "r") as f:
             docs = cast(dict[str, str], json.load(f))
 
@@ -290,9 +354,9 @@ class Scenario:
             Full timeseries
         """
         component_type = self.component_map.find_type(component_name)
-        series = self.get_values(component_name, index, rename_index=False)
+        values = self.get_values(component_name, index, rename_index=False)
         timestep_column, timestep_type = TimestepType.from_index_names(
-            [str(name) for name in series.index.names]
+            [str(name) for name in values.index.names]
         )
 
         if timestep_type is None:
@@ -317,15 +381,15 @@ class Scenario:
             index.update({timestep_column: (f"{timestep_column} in [{steps}]")})
             select_year_time_steps = True
 
-        if isinstance(series.index, pd.MultiIndex):
-            series = series.unstack(timestep_column)
+        if isinstance(values.index, pd.MultiIndex):
+            values = values.unstack(timestep_column)
 
         if timestep_type is TimestepType.yearly:
             if component_type is ComponentType.dual:
                 annuity = self._annuity(discount_to_first_step)
-                ans = series / annuity
+                ans = values / annuity
             else:
-                ans = series
+                ans = values
 
             years_list = (
                 [y for y in years if y in ans.columns]
@@ -344,13 +408,13 @@ class Scenario:
         if component_type is ComponentType.dual:
             timestep_duration = self._get_timestep_duration(timestep_type)
             annuity = self._annuity()
-            series = series.div(timestep_duration, axis=1)
+            values = values.div(timestep_duration, axis=1)
 
             for year_temp in annuity.index:
                 time_steps_year = self._get_timesteps_of_years(
                     timestep_type, (year_temp,)
                 )
-                series[time_steps_year] = series[time_steps_year] / annuity[year_temp]
+                values[time_steps_year] = values[time_steps_year] / annuity[year_temp]
 
         # try:
         if timestep_type is TimestepType.operational:
@@ -358,12 +422,15 @@ class Scenario:
                 sequence_timesteps = sequence_timesteps[
                     sequence_timesteps.isin(time_steps)
                 ]
-            output_df = series[sequence_timesteps]
+            try:
+                output_df = values[sequence_timesteps]
+            except KeyError:
+                output_df = values
         elif timestep_type is TimestepType.storage:
             # for storage components, the last timestep is the final state,
             # linear interpolation is used
-            if isinstance(series, pd.Series):
-                series = series.to_frame()
+            if isinstance(values, pd.Series):
+                values = values.to_frame()
             last_occurrences = sequence_timesteps.drop_duplicates(keep="last")
             first_occurrences = sequence_timesteps.drop_duplicates(keep="first")
             last_occurrences = pd.Series(
@@ -373,9 +440,9 @@ class Scenario:
                 first_occurrences.index, index=first_occurrences.values
             )
             last_occurrences = last_occurrences[
-                last_occurrences.index.intersection(series.columns)
+                last_occurrences.index.intersection(values.columns)
             ]
-            output_df = series[last_occurrences.index].rename(last_occurrences, axis=1)
+            output_df = values[last_occurrences.index].rename(last_occurrences, axis=1)
             output_df = output_df.apply(
                 lambda row: np.interp(
                     sequence_timesteps.index,
@@ -402,12 +469,12 @@ class Scenario:
                     np.isnan(_output_df_recon).argmin()
                 ]
                 df_temp = pd.DataFrame(
-                    index=series.index,
+                    index=values.index,
                     columns=range(tstart_reconstructed - 1, first_valid_timestep + 1),
                     dtype=float,
                 )
-                df_temp.loc[:, tstart_reconstructed - 1] = series.loc[:, tend]
-                df_temp.loc[:, first_valid_timestep] = series.loc[
+                df_temp.loc[:, tstart_reconstructed - 1] = values.loc[:, tend]
+                df_temp.loc[:, first_valid_timestep] = values.loc[
                     :, sequence_timesteps[first_valid_timestep]
                 ]
                 df_temp = df_temp.interpolate(method="linear", axis=1)
@@ -423,7 +490,7 @@ class Scenario:
             if not output_df.empty:
                 output_df = output_df[sequence_timesteps.index]
             else:
-                output_df = series
+                output_df = values
 
         return self._rename_index(output_df.T.reset_index(drop=True).T.sort_index())
 
@@ -460,7 +527,7 @@ class Scenario:
 
         if timestep_type is TimestepType.yearly:
             ans = series.unstack(timestep_column).sort_index()
-            ans = ans[years]
+            ans = ans.loc[:, years]
             ans = self._convert_ts2year(ans)
             ans = self._rename_index(ans)
             return ans
@@ -509,7 +576,7 @@ class Scenario:
         :return: A pint.UnitRegistry object.
         """
         ureg = UnitRegistry(on_redefinition="ignore")
-        unit_path = self._path / "unit_definitions.txt"
+        unit_path = self.path / "unit_definitions.txt"
         if unit_path.exists():
             ureg.load_definitions(unit_path)  # pyright:ignore[reportUnusedCallResult]
         return ureg
