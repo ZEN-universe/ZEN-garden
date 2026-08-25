@@ -9,3 +9,5 @@ class OpexSpecificFixed(GenericParameter):
     doc = "Fixed annual specific opex"
     unit_category = {"money": 1, "energy_quantity": -1, "time": 1}
     capacity_types = True
+    input_loader = "fixed_opex"
+    input_dependencies = ("distance",)

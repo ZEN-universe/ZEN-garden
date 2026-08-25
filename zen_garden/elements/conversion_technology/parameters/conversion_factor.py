@@ -14,3 +14,5 @@ class ConversionFactor(GenericParameter):
     doc = "Conversion factor"
     unit_category = {}
     time_series = True
+    input_loader = "dependent_carrier"
+    input_indices = ("set_nodes", "set_hours")

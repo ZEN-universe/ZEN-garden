@@ -18,26 +18,17 @@ class RetrofittingTechnology(ConversionTechnology):
     # set label
     label = "set_retrofitting_technologies"
     location_type = "set_nodes"
-    parameters: ClassVar[list[type[GenericParameter]]] = (
+    own_parameters: ClassVar[list[type[GenericParameter]]] = (
         RETROFITTING_TECHNOLOGY_PARAMETERS
     )
 
-    def store_input_data(self):
-        """Retrieves and stores input data for element as attributes.
-
-        Each Child class overwrites method to store different attributes.
-        """
-        # get attributes from class <Technology>
-        super().store_input_data()
-        # get retrofit base technology
+    def prepare_input_data(self) -> None:
+        """Load the retrofit relationship before generic parameter loading."""
+        super().prepare_input_data()
         self.retrofit_base_technology = (
             self.data_input.extract_retrofit_base_technology()
         )
-        # get flow_coupling factor and capex
-        self.raw_time_series["retrofit_flow_coupling_factor"] = (
-            self.data_input.extract_input_data(
-                "retrofit_flow_coupling_factor",
-                index_sets=["set_nodes", "set_hours"],
-                unit_category={},
-            )
-        )
+
+    def postprocess_input_data(self) -> None:
+        """Reuse conversion-technology persistent-state processing."""
+        super().postprocess_input_data()

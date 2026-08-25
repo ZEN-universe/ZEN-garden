@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 
 class ConversionTechnologyConstructor(ModelConstructor):
     element_class = ConversionTechnology
-    parameters = ConversionTechnology.parameters
+    parameters = ConversionTechnology.own_parameters
 
     @override
     def has_elements(self) -> bool:

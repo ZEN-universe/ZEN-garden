@@ -18,4 +18,4 @@ class Carrier(Element):
     label = "set_carriers"
     # empty list of elements
     list_of_elements: list[str] = []
-    parameters: ClassVar[list[type[GenericParameter]]] = CARRIER_PARAMETERS
+    own_parameters: ClassVar[list[type[GenericParameter]]] = CARRIER_PARAMETERS

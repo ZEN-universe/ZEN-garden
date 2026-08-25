@@ -8,3 +8,5 @@ class DepreciationTime(GenericParameter):
     indices = ("set_technologies",)
     doc = "Depreciation time of a newly built technology"
     unit_category = {}
+    input_loader = "depreciation_time"
+    input_dependencies = ("lifetime",)

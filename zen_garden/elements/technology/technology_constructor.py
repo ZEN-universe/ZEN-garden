@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 
 class TechnologyConstructor(ModelConstructor):
     element_class = Technology
-    parameters = Technology.parameters
+    parameters = Technology.own_parameters
 
     @override
     def has_elements(self) -> bool:

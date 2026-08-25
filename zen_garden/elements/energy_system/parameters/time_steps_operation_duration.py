@@ -9,3 +9,4 @@ class TimeStepsOperationDuration(GenericParameter):
     doc = "Duration of each operational time step"
     unit_category = {"time": 1}
     set_time_steps = "set_time_steps_operation"
+    input_loader = "skip"

@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 class CarrierConstructor(ModelConstructor):
     element_class = Carrier
     constraints = CARRIER_CONSTRAINTS
-    parameters = Carrier.parameters
+    parameters = Carrier.own_parameters
 
     @override
     def has_elements(self) -> bool:

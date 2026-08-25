@@ -8,3 +8,5 @@ class TransportLossFactor(GenericParameter):
     indices = ("set_transport_technologies", "set_edges")
     doc = "Carrier losses due to transport"
     unit_category = {}
+    input_loader = "transport_loss"
+    input_dependencies = ("distance",)

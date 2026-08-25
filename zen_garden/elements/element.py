@@ -28,7 +28,17 @@ class Element:
     name: str = "Element"
     label: str = "set_elements"
     raw_time_series: dict[str, pd.Series | pd.DataFrame | None]
-    parameters: ClassVar[list[type["GenericParameter"]]]
+    own_parameters: ClassVar[list[type["GenericParameter"]]] = []
+    parameters: ClassVar[list[type["GenericParameter"]]] = []
+
+    def __init_subclass__(cls, **kwargs):
+        """Compose parameter declarations inherited from element base classes."""
+        super().__init_subclass__(**kwargs)
+        inherited: list[type["GenericParameter"]] = []
+        for base in cls.__bases__:
+            inherited.extend(getattr(base, "parameters", ()))
+        own = cls.__dict__.get("own_parameters", ())
+        cls.parameters = list(dict.fromkeys([*inherited, *own]))
 
     def __init__(
         self,
@@ -92,21 +102,44 @@ class Element:
         pass
 
     def store_input_data(self) -> None:
-        """Retrieves and stores input data for element as attributes. Each Child class
-        overwrites method to store different attributes.
-        """
-        for parameter in self.parameters:
-            index_sets = [index for index in parameter.indices if index != self.label]
-            value = self.data_input.extract_input_data(
-                parameter.name,
-                index_sets=index_sets,
-                unit_category=parameter.unit_category,
-            )
+        """Load all declared parameters through the shared input-loader service."""
+        from zen_garden.services.parameter_input_loader import ParameterInputLoader
 
-            if parameter.time_series:
-                self.raw_time_series[parameter.name] = value
-            else:
-                setattr(self, parameter.name, value)
+        self.prepare_input_data()
+        loader = ParameterInputLoader()
+        for parameter in self._ordered_parameters():
+            loader.load_into(parameter, self)
+        self.postprocess_input_data()
+
+    @classmethod
+    def _ordered_parameters(cls) -> list[type["GenericParameter"]]:
+        """Order input parameters according to their declared dependencies."""
+        remaining = list(cls.parameters)
+        available_names = {parameter.name for parameter in remaining}
+        ordered: list[type["GenericParameter"]] = []
+        completed: set[str] = set()
+        while remaining:
+            ready = [
+                parameter
+                for parameter in remaining
+                if not (set(parameter.input_dependencies) & available_names).difference(
+                    completed
+                )
+            ]
+            if not ready:
+                cycle = ", ".join(parameter.name for parameter in remaining)
+                raise ValueError(f"Cyclic parameter input dependencies: {cycle}")
+            for parameter in ready:
+                remaining.remove(parameter)
+                ordered.append(parameter)
+                completed.add(parameter.name)
+        return ordered
+
+    def prepare_input_data(self) -> None:
+        """Prepare structural information required to load parameters."""
+
+    def postprocess_input_data(self) -> None:
+        """Handle stateful data that must persist outside a model instance."""
 
     def _get_input_path(self):
         """Get input path where input data is stored input_path."""

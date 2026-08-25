@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 class StorageTechnologyConstructor(ModelConstructor):
     element_class = StorageTechnology
     constraints = STORAGE_TECHNOLOGY_CONSTRAINTS
-    parameters = StorageTechnology.parameters
+    parameters = StorageTechnology.own_parameters
 
     @override
     def has_elements(self) -> bool:

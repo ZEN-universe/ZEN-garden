@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 class RetrofittingTechnologyConstructor(ModelConstructor):
     element_class = RetrofittingTechnology
     constraints = RETROFITTING_TECHNOLOGY_CONSTRAINTS
-    parameters = RetrofittingTechnology.parameters
+    parameters = RetrofittingTechnology.own_parameters
 
     @override
     def has_elements(self) -> bool:

@@ -8,3 +8,5 @@ class CarbonIntensityTechnology(GenericParameter):
     indices = ("set_technologies", "set_location")
     doc = "Carbon intensity of each technology"
     unit_category = {"emissions": 1, "energy_quantity": -1}
+    input_loader = "carbon_intensity"
+    input_dependencies = ("distance",)

@@ -14,3 +14,4 @@ class CapexSpecificStorage(GenericParameter):
     doc = "Specific capex of storage technologies"
     unit_category = {"money": 1, "energy_quantity": -1, "time": 1}
     capacity_types = True
+    input_loader = "storage_capex"

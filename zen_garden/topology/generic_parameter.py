@@ -12,6 +12,12 @@ class GenericParameter(ABC):
     time_series: ClassVar[bool] = False
     capacity_types: ClassVar[bool] = False
     set_time_steps: ClassVar[str | None] = None
+    # Named strategy used by ParameterInputLoader. The strategy describes the
+    # physical input layout; it is deliberately separate from model construction.
+    input_loader: ClassVar[str] = "standard"
+    input_name: ClassVar[str | None] = None
+    input_indices: ClassVar[tuple[str, ...] | None] = None
+    input_dependencies: ClassVar[tuple[str, ...]] = ()
 
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)

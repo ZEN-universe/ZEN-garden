@@ -9,3 +9,4 @@ class TimeStepsStorageDuration(GenericParameter):
     doc = "Duration of each storage time step"
     unit_category = {"time": 1}
     set_time_steps = "set_time_steps_storage"
+    input_loader = "skip"

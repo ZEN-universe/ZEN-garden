@@ -8,3 +8,5 @@ class CapexSpecificTransport(GenericParameter):
     indices = ("set_transport_technologies", "set_edges", "set_years")
     doc = "Capex per capacity unit"
     unit_category = {"money": 1, "energy_quantity": -1, "time": 1}
+    input_loader = "transport_capex"
+    input_dependencies = ("distance",)

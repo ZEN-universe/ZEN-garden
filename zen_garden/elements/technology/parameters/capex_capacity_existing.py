@@ -14,3 +14,4 @@ class CapexCapacityExisting(GenericParameter):
     doc = "Total outstanding capex of an existing technology"
     unit_category = {"money": 1}
     capacity_types = True
+    input_loader = "skip"

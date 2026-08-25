@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 class TransportTechnologyConstructor(ModelConstructor):
     element_class = TransportTechnology
     constraints = TRANSPORT_TECHNOLOGY_CONSTRAINTS
-    parameters = TransportTechnology.parameters
+    parameters = TransportTechnology.own_parameters
 
     @override
     def has_elements(self) -> bool:
@@ -95,9 +95,7 @@ class TransportTechnologyConstructor(ModelConstructor):
     def construct_expressions(self):
         """Construct reusable transport coefficients."""
         parameters = self.zen_model.parameters
-        transport_technologies = self.zen_model.sets[
-            "set_transport_technologies"
-        ]
+        transport_technologies = self.zen_model.sets["set_transport_technologies"]
 
         self.zen_model.add_expression(
             "transport_capex_distance",

@@ -7,4 +7,4 @@ class EnergyToPowerRatioMin(GenericParameter):
     name = "energy_to_power_ratio_min"
     indices = ("set_storage_technologies",)
     doc = "Energy-to-power ratio lower bound"
-    unit_category = {}
+    unit_category = {"time": 1}
