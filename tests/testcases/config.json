@@ -1,3 +1,7 @@
 {
-  "solver": {"keep_files": false}
+  "solver": {"keep_files": false,"name": "gurobi",
+    "solver_options": {
+      "DualReductions": 0
+    }
+  }
 }

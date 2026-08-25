@@ -99,7 +99,6 @@ def compare_variables_results(test_model: str, results: Results, folder_path: st
             stacklevel=2,
         )
 
-
 def check_get_total_get_full_ts(
     results: Results,
     specific_scenario=False,
@@ -149,6 +148,42 @@ def check_comparison_functions(results: list[Results], scenarios: list[str]):
         results, component_type="variable", scenarios=scenarios, compare_total=False
     )
 
+def check_sectoral_costs_emissions(
+        results: Results, 
+        scenario_name: str = None,
+        spatially_resolved: bool = False,
+        ):
+    """
+    Tests the functionality of the Results methods get_sectoral_costs() and
+    get_sectoral_emissions().
+
+    Args:
+        results: Results instance of testcase function has been called from
+        scenario_name: Name of the scenario to test
+        spatially_resolved: Whether to return spatially resolved data
+    """
+    costs, direct_costs = results.get_sectoral_costs(
+        scenario_name=scenario_name,
+        spatially_resolved=spatially_resolved,
+        overwrite=True
+    )
+    emissions, direct_emissions = results.get_sectoral_emissions(
+        scenario_name=scenario_name,
+        spatially_resolved=spatially_resolved,
+        overwrite=True
+    )
+    if "cost_total" in results.get_component_names("variable"):
+        total_costs = results.get_total("cost_total", scenario_name=scenario_name)
+        assert np.isclose(
+            total_costs, costs.sum(), rtol=1e-3
+        ).all(), "Total costs do not match the sum of sectoral costs"
+    if "carbon_emissions_annual" in results.get_component_names("variable"):
+        total_emissions = results.get_total(
+            "carbon_emissions_annual", scenario_name=scenario_name
+        )
+        assert np.isclose(
+            total_emissions, emissions.sum(), rtol=1e-3
+        ).all(), "Total emissions do not match the sum of sectoral emissions"
 
 # All the tests
 ###############
@@ -171,6 +206,8 @@ def test_1a(folder_path):
     compare_variables_results(data_set_name, res, folder_path)
     # test functions get_total() and get_full_ts()
     check_get_total_get_full_ts(res)
+    # test sectoral costs and emissions
+    check_sectoral_costs_emissions(res, spatially_resolved=True)
     os.chdir(cwd)
 
 
@@ -314,6 +351,20 @@ def test_1j(folder_path):
     compare_variables_results(data_set_name + "_capacity", res_cap, folder_path)
     compare_variables_results(data_set_name + "_operation", res_op, folder_path)
 
+def test_1k(folder_path):
+    # run the test
+    data_set_name = "test_1k"
+    run(
+        config=os.path.join(folder_path, "config.json"),
+        dataset=os.path.join(folder_path, data_set_name),
+        folder_output=os.path.join(folder_path, "outputs"),
+    )
+
+    # read the results and check again
+    res = Results(os.path.join(folder_path, "outputs", data_set_name))
+    compare_variables_results(data_set_name, res, folder_path)
+    # test sectoral costs and emissions
+    check_sectoral_costs_emissions(res, spatially_resolved=True)
 
 def test_2a(folder_path):
     # run the test
@@ -724,4 +775,4 @@ def test_11a(folder_path):
 
 if __name__ == "__main__":
     testcase_folder = os.path.dirname(__file__)
-    test_7b(testcase_folder)
+    test_1k(testcase_folder)

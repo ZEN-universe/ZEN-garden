@@ -1087,7 +1087,12 @@ class Results:
                 they have already been built and saved.
 
         Returns:
-            DataFrame: Sectoral costs of the scenario
+            Tuple of two DataFrames:
+                - The first DataFrame contains the total upstream/downstream costs 
+                  of each sector.
+                - The second DataFrame contains the direct costs of each sector. 
+                  These are the costs that are directly associated with 
+                  the sector itself, without considering the upstream/downstream effects.
 
         Examples:
             Basic usage example:
@@ -1156,8 +1161,14 @@ class Results:
             overwrite: Whether to rebuild the leontief input-output tables even if 
                 they have already been built and saved.
 
+        
         Returns:
-            DataFrame: Sectoral emissions of the scenario
+            Tuple of two DataFrames:
+                - The first DataFrame contains the total upstream/downstream emissions 
+                  of each sector.
+                - The second DataFrame contains the direct emissions of each sector. 
+                  These are the emissions that are directly associated with 
+                  the sector itself, without considering the upstream/downstream effects.
 
         Examples:
             Basic usage example:
