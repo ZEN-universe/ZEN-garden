@@ -1,7 +1,7 @@
-from zen_garden.topology.generic_parameter import GenericParameter
+from zen_garden.topology.generic_parameter import GenericComputedParameters
 
 
-class CapexCapacityExisting(GenericParameter):
+class CapexCapacityExisting(GenericComputedParameters):
     """Total outstanding capex of an existing technology."""
 
     name = "capex_capacity_existing"
@@ -15,3 +15,4 @@ class CapexCapacityExisting(GenericParameter):
     unit_category = {"money": 1}
     capacity_types = True
     input_loader = "skip"
+    dependencies = ["capacity_existing"]

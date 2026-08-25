@@ -1,7 +1,7 @@
-from zen_garden.topology.generic_parameter import GenericParameter
+from zen_garden.topology.generic_parameter import GenericComputedParameters
 
 
-class TimeStepsStorageDuration(GenericParameter):
+class TimeStepsStorageDuration(GenericComputedParameters):
     """Duration of each storage time step."""
 
     name = "time_steps_storage_duration"
@@ -10,3 +10,4 @@ class TimeStepsStorageDuration(GenericParameter):
     unit_category = {"time": 1}
     set_time_steps = "set_time_steps_storage"
     input_loader = "skip"
+    dependencies = []

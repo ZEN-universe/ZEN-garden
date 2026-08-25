@@ -1,7 +1,7 @@
-from zen_garden.topology.generic_parameter import GenericParameter
+from zen_garden.topology.generic_parameter import GenericComputedParameters
 
 
-class TransportLossFactor(GenericParameter):
+class TransportLossFactor(GenericComputedParameters):
     """Carrier losses due to transport."""
 
     name = "transport_loss_factor"
@@ -9,4 +9,4 @@ class TransportLossFactor(GenericParameter):
     doc = "Carrier losses due to transport"
     unit_category = {}
     input_loader = "transport_loss"
-    input_dependencies = ("distance",)
+    dependencies = ["distance"]

@@ -1,7 +1,7 @@
-from zen_garden.topology.generic_parameter import GenericParameter
+from zen_garden.topology.generic_parameter import GenericComputedParameters
 
 
-class DepreciationTime(GenericParameter):
+class DepreciationTime(GenericComputedParameters):
     """Depreciation time of a newly built technology."""
 
     name = "depreciation_time"
@@ -9,4 +9,4 @@ class DepreciationTime(GenericParameter):
     doc = "Depreciation time of a newly built technology"
     unit_category = {}
     input_loader = "depreciation_time"
-    input_dependencies = ("lifetime",)
+    dependencies = ["lifetime"]

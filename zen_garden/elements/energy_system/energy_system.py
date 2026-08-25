@@ -136,9 +136,14 @@ class EnergySystem:
             self.config.system.set_retrofitting_technologies
         )
         from zen_garden.services.parameter_input_loader import ParameterInputLoader
+        from zen_garden.topology.generic_parameter import GenericComputedParameters
 
         loader = ParameterInputLoader()
         for parameter in self.parameters:
+            if issubclass(parameter, GenericComputedParameters):
+                continue
+            loader.load_into(parameter, self)  # type: ignore[arg-type]
+        for parameter in GenericComputedParameters.construction_order(self.parameters):
             loader.load_into(parameter, self)  # type: ignore[arg-type]
 
         # Limits are expressed for a full year in the input data.

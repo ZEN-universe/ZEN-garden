@@ -1,7 +1,7 @@
-from zen_garden.topology.generic_parameter import GenericParameter
+from zen_garden.topology.generic_parameter import GenericComputedParameters
 
 
-class LifetimeExisting(GenericParameter):
+class LifetimeExisting(GenericComputedParameters):
     """Parameter specifying the remaining lifetime of an existing technology."""
 
     name = "lifetime_existing"
@@ -9,4 +9,4 @@ class LifetimeExisting(GenericParameter):
     doc = "Parameter specifying the remaining lifetime of an existing technology"
     unit_category = {}
     input_loader = "existing_lifetime"
-    input_dependencies = ("lifetime",)
+    dependencies = ["lifetime"]

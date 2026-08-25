@@ -1,7 +1,7 @@
-from zen_garden.topology.generic_parameter import GenericParameter
+from zen_garden.topology.generic_parameter import GenericComputedParameters
 
 
-class CapexSpecificTransport(GenericParameter):
+class CapexSpecificTransport(GenericComputedParameters):
     """Capex per capacity unit."""
 
     name = "capex_specific_transport"
@@ -9,4 +9,4 @@ class CapexSpecificTransport(GenericParameter):
     doc = "Capex per capacity unit"
     unit_category = {"money": 1, "energy_quantity": -1, "time": 1}
     input_loader = "transport_capex"
-    input_dependencies = ("distance",)
+    dependencies = ["distance"]

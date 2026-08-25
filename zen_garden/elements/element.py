@@ -16,7 +16,10 @@ if TYPE_CHECKING:
     from zen_garden.services.dataset_path_resolver import DatasetPathResolver
     from zen_garden.services.element_registry import ElementRegistry
     from zen_garden.services.scenario_dict import ScenarioDict
-    from zen_garden.topology.generic_parameter import GenericParameter
+    from zen_garden.topology.generic_parameter import (
+        GenericComputedParameters,
+        GenericParameter,
+    )
     from zen_garden.types import YearSpecificTs
     from zen_garden.utils.input_data_checks import InputDataChecks
 
@@ -104,36 +107,26 @@ class Element:
     def store_input_data(self) -> None:
         """Load all declared parameters through the shared input-loader service."""
         from zen_garden.services.parameter_input_loader import ParameterInputLoader
+        from zen_garden.topology.generic_parameter import GenericComputedParameters
 
         self.prepare_input_data()
         loader = ParameterInputLoader()
-        for parameter in self._ordered_parameters():
+        for parameter in self.parameters:
+            if issubclass(parameter, GenericComputedParameters):
+                continue
+            loader.load_into(parameter, self)
+        for parameter in self._ordered_computed_parameters():
             loader.load_into(parameter, self)
         self.postprocess_input_data()
 
     @classmethod
-    def _ordered_parameters(cls) -> list[type["GenericParameter"]]:
-        """Order input parameters according to their declared dependencies."""
-        remaining = list(cls.parameters)
-        available_names = {parameter.name for parameter in remaining}
-        ordered: list[type["GenericParameter"]] = []
-        completed: set[str] = set()
-        while remaining:
-            ready = [
-                parameter
-                for parameter in remaining
-                if not (set(parameter.input_dependencies) & available_names).difference(
-                    completed
-                )
-            ]
-            if not ready:
-                cycle = ", ".join(parameter.name for parameter in remaining)
-                raise ValueError(f"Cyclic parameter input dependencies: {cycle}")
-            for parameter in ready:
-                remaining.remove(parameter)
-                ordered.append(parameter)
-                completed.add(parameter.name)
-        return ordered
+    def _ordered_computed_parameters(
+        cls,
+    ) -> list[type["GenericComputedParameters"]]:
+        """Topologically order computed parameters using their dependency DAG."""
+        from zen_garden.topology.generic_parameter import GenericComputedParameters
+
+        return GenericComputedParameters.construction_order(cls.parameters)
 
     def prepare_input_data(self) -> None:
         """Prepare structural information required to load parameters."""
