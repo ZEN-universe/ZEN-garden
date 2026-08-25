@@ -118,10 +118,10 @@ class Postprocess:
         # save components
         component_map: dict[str, list[Hashable]] = {}
         component_map["sets"] = self.save_sets()
-        component_map["params"] = self.save_param()
-        component_map["vars"] = self.save_var()
-        component_map["duals"] = self.save_duals()
-        component_map["reduced_costs"] = self.save_reduced_costs()
+        component_map["parameter"] = self.save_param()
+        component_map["variable"] = self.save_var()
+        component_map["dual"] = self.save_duals()
+        component_map["reduced_cost"] = self.save_reduced_costs()
         self.save_component_map(component_map)
 
         self.save_system()
@@ -183,7 +183,7 @@ class Postprocess:
         )
         benchmarking_data["numerical_range_lhs"] = range_lhs
         benchmarking_data["numerical_range_rhs"] = range_rhs
-        fname = self.name_dir.joinpath("benchmarking").with_suffix(".json")
+        fname = self.name_dir.joinpath("benchmarking.json")
         self._write_json_file(fname, benchmarking_data)
 
     def save_sets(self) -> list[Hashable]:

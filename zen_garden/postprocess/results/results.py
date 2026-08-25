@@ -12,6 +12,7 @@ from pint import UnitRegistry
 from typing_extensions import override
 
 from zen_garden.default_config import Analysis, Solver, System
+from zen_garden.postprocess.results.scenario import Scenario
 from zen_garden.postprocess.results.solution_loader import SolutionLoader
 
 logger = logging.getLogger(__name__)
@@ -49,7 +50,38 @@ class Results:
 
     @override
     def __str__(self) -> str:
-        return f"Results of '{self.solution_loader.first_scenario.analysis.dataset}'"
+        return (
+            f"Results of '{self.solution_loader.name}' "
+            f"with scenarios: {list(self.scenarios.keys())}"
+        )
+
+    @property
+    def scenarios(self) -> dict[str, Scenario]:
+        """Returns the scenarios of the results.
+
+        :return: Dictionary of scenarios
+        """
+        return self.solution_loader.scenarios
+
+    @property
+    def first_scenario(self) -> Scenario:
+        """Returns the first scenario in the loaded results.
+
+        :return: First scenario
+        """
+        return self.solution_loader.first_scenario
+
+    def __getitem__(self, key: str) -> Scenario:
+        """Returns the scenario with the given key.
+
+        Example:
+            This syntax allows for easy access to specific scenarios and their data::
+
+                res = Results("<result_folder>")
+                res["scenario_1"].get_df("capacity")
+
+        """
+        return self.solution_loader.scenarios[key]
 
     def get_df(
         self,
@@ -73,9 +105,6 @@ class Results:
             DataFrame: The corresponding dataframe
         """
         scenario = self.solution_loader.find_scenario(scenario_name)
-
-        if scenario.system.use_rolling_horizon:
-            return scenario.get_values_of_rolling_horizon(component_name, index)
         return scenario.get_values(component_name, index)
 
     def get_full_ts(
@@ -136,7 +165,7 @@ class Results:
         Returns:
             DataFrame: Total values of the component
         """
-        if component_name in self.get_component_names("duals"):
+        if component_name in self.get_component_names("dual"):
             raise ValueError(
                 (
                     "This method does not support the extraction of "
@@ -336,7 +365,7 @@ class Results:
             uses rolling horizon optimization.
         """
         scenario = self.solution_loader.find_scenario(scenario_name)
-        return scenario.system.use_rolling_horizon
+        return scenario.has_rh
 
     def get_coords(self, scenario_name: str | None = None) -> pd.DataFrame | None:
         """Extracts the coordinates of the nodes of a given Scenario. If no
@@ -385,7 +414,7 @@ class Results:
     def get_component_names(
         self,
         component_type: (
-            Literal["sets", "vars", "params", "duals", "reduced_costs"] | None
+            Literal["sets", "variable", "parameter", "dual", "reduced_cost"] | None
         ),
         scenario_name: str | None = None,
     ) -> list[str]:
