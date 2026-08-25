@@ -499,6 +499,37 @@ class Scenario:
         ans = self._rename_index(ans)
         return ans
 
+    def get_dual(
+        self,
+        component_name: str,
+        year: int | None = None,
+        discount_to_first_step: bool = True,
+        keep_raw: bool = False,
+        index: dict[str, str] | None = None,
+    ) -> pd.DataFrame | pd.Series | None:
+        """Calculates the dual values of a component for a specific scenario.
+
+        :param component_name: Name of the component.
+        :param year: Filter the results by a given year.
+        :param discount_to_first_step: Whether to discount the dual values
+            to the first step.
+        :param keep_raw: Keep the raw values of the rolling horizon optimization.
+        :param index: Slicing index of the resulting dataframe.
+        :return: Dual values of the component.
+            Returns None if the duals were not saved for this scenario.
+        """
+        if not self.solver.save_duals:
+            logger.warning("Duals were not saved for this scenario.")
+            return None
+
+        return self.get_full_ts(
+            component_name,
+            year=year,
+            discount_to_first_step=discount_to_first_step,
+            keep_raw=keep_raw,
+            index=index,
+        )
+
     def get_unit(
         self,
         component_name: str,
@@ -561,6 +592,13 @@ class Scenario:
         if ";" in doc and ":" in doc:
             doc = "\n".join(v.replace(":", ": ") for v in doc.split(";"))
         return doc
+
+    def get_index_names(self, component_name: str) -> list[str]:
+        """Method that returns the index names of a component given its name."""
+        component_type = self.component_map.find_type(component_name)
+        file_path = self.component_path / component_type.get_file_name()
+        ds = xr.open_dataset(file_path)
+        return [str(dim) for dim in ds[component_name].dims]
 
     def _read_json_file(self, file_name: Path, obj_constr: type[T]) -> T:
         """Reads a JSON file and returns an object of the specified type.

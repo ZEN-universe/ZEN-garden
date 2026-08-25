@@ -231,8 +231,8 @@ class Results:
         self,
         component_name: str,
         scenario_name: str | None = None,
-        discount_to_first_step: bool = True,
         year: int | None = None,
+        discount_to_first_step: bool = True,
         keep_raw: bool = False,
         index: dict[str, str] | None = None,
     ) -> pd.DataFrame | pd.Series | None:
@@ -390,12 +390,8 @@ class Results:
         :return: Description
         :rtype: list[str]
         """
-        df = (
-            self.solution_loader.find_scenario(scenario_name).get_values(component_name)
-            if scenario_name is not None
-            else self.first_scenario.get_values(component_name)
-        )
-        return [str(name) for name in df.index.names]
+        scenario = self.solution_loader.find_scenario(scenario_name)
+        return scenario.get_index_names(component_name)
 
     def get_years(self, scenario_name: str | None = None) -> list[int]:
         """Extracts the years of a given Scenario. If no scenario is given, a
