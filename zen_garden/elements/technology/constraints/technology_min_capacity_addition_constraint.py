@@ -9,14 +9,15 @@ class TechnologyMinCapacityAdditionConstraint(GenericConstraint):
         Formulation:
 
         .. math::
-            \\underline{\\Delta k}_{h,p,y} g_{h,p,y}
+            \\underline{\\Delta k}_{h} g_{h,p,y}
             \\leq \\Delta K_{h,p,y}
 
         The constraint is omitted for zero or missing minimum additions.
 
         Notation:
 
-        :math:`\\underline{\\Delta k}_{h,p,y}`: minimum capacity addition
+        :math:`\\underline{\\Delta k}_{h}`: minimum capacity addition for technology
+        :math:`h` (with capacity type implicit)
         :math:`g_{h,p,y}`: binary variable which equals 1 if technology is installed
         at location :math:`p` in year :math:`y`
         :math:`\\Delta K_{h,p,y}`: capacity addition

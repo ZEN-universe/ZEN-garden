@@ -6,7 +6,7 @@ from zen_garden.topology.generic_constraint import GenericConstraint
 class NetPresentCostConstraint(GenericConstraint):
     def build(self):
         """Summary:
-        Discounts the annual capital flows to calculate the net_present_cost.
+        Discounts the annual capital flows to calculate the net present cost.
 
         Formulation:
 
@@ -16,6 +16,7 @@ class NetPresentCostConstraint(GenericConstraint):
             C^{\\mathrm{total}}_y
 
         where :math:`\\delta_y=\\Delta y` for ordinary planning periods and
+        :math:`\\delta_y=1` at the end of the planning horizon.
 
         Notation:
 

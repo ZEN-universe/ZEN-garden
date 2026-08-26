@@ -36,50 +36,86 @@ class TechnologyDiffusionLimitConstraint(GenericConstraint):
         """Summary:
         Limit additions using depreciated installation knowledge.
 
-        For conversion and storage technologies at each node, when knowledge
-        spillover is finite:
+        When knowledge spillover is finite, a location-wise constraint is added
+        for each applicable technology location. Conversion and storage
+        technologies can receive node-to-node spillover; transport technologies
+        are constrained on edges and receive no node-to-node spillover.
 
         Formulation:
 
         .. math::
-            \\Delta K_{h,p,y}\\leq d_{h,y}
-            K^\\omega_{h,p,y}
-            +\\chi
-            \\sum_{\\tilde h\\in\\tilde{\\mathcal H}}
-            K^{\\mathrm{prev}}_{\\tilde h,p,y}+k^{\\mathrm{add,free}}_h
+            \\Delta K_{h,p,y}\\leq
+            d_{h,y}K^\\omega_{h,p,y}
+            +\\chi\\sum_{\\tilde h\\in\\tilde{\\mathcal H}}
+            K^{\\mathrm{prev}}_{\\tilde h,p,y}
+            +k^{\\mathrm{add,free}}_h.
 
-        where :math:`d_{h,y}=(1+r^{\\mathrm{diff}}_h)^{\\Delta y}-1`.
-        :math:`K^\\omega` contains all earlier modeled additions and existing
-        capacities, depreciated by the configured knowledge-depreciation rate;
-        for non-transport technologies it additionally contains
-        :math:`\\omega` times knowledge at other nodes.
+        where :math:`d_{h,y}=(1+r^{\\mathrm{diff}}_{h,y})^{\\Delta y}-1`.
+        The unbounded market share term :math:`\\chi` is separate from
+        knowledge spillover. It uses :math:`K^{\\mathrm{prev}}` for other
+        technologies in the target technology's class (excluding the target
+        itself) whose reference carrier matches the target. The term is
+        calculated at the target location; ``market_share_unbounded`` supplies
+        the coefficient :math:`\\chi`.
 
-        A global constraint is always added:
+        Define the no-spillover knowledge stock as
+
+        .. math::
+            K^0_{h,p,y}=K^{\\mathrm{add},0}_{h,p,y}+K^{\\mathrm{ex},0}_{h,p,y},
+            \\
+            K^{\\mathrm{add},0}_{h,p,y}=\\sum_{\\tilde y<y}
+            (1-\\delta_h)^{\\Delta y\\,(y-1-\\tilde y)}
+            \\Delta K_{h,p,\\tilde y}.
+
+        Here :math:`K^{\\mathrm{ex},0}` is existing capacity at :math:`p`
+        weighted by its remaining-lifetime depreciation factor. For finite
+        :math:`\\omega`, conversion and storage technologies use
+
+        .. math::
+            K^\\omega_{h,p,y}=K^0_{h,p,y}+\\omega
+            \\sum_{p'\\ne p}K^0_{h,p',y},
+
+        where the sum is over other nodes. For transport technologies,
+        :math:`K^\\omega=K^0` because node-to-node spillover is zero.
+
+        For finite maximum diffusion rates, a global constraint is added:
 
         .. math::
             \\sum_p\\Delta K_{h,p,y}\\leq
-            \\sum_p\\left[d_{h,y}K_{h,p,y}
-            +\\chi
-            \\sum_{\\tilde h\\in\\tilde{\\mathcal H}}
-            K^{\\mathrm{prev}}_{\\tilde h,p,y}+k^{\\mathrm{add,free}}_h\\right].
+            \\sum_p\\left[
+            d_{h,y}K^0_{h,p,y}
+            +\\chi\\sum_{\\tilde h\\in\\tilde{\\mathcal H}}
+            K^{\\mathrm{prev}}_{\\tilde h,p,y}
+            +k^{\\mathrm{add,free}}_h\\right].
 
         If :math:`\\omega=\\infty`, only the global constraint is created.
-        Transport technologies never receive node-to-node knowledge spillover.
+        In the global constraint, :math:`K^0` is the depreciated installation-knowledge
+        stock without node-to-node spillover. It is distinct from K^\\omega,
+        which is used by the location-wise constraints when spillover applies.
 
         For storage technologies, each equation is applied independently to power
         and energy capacity.
 
         Notation:
 
-        :math:`\\Delta K_{h,e,y}`: size of built technology :math:`h` (invested capacity
-        after construction) at location :math:`e` in year :math:`y`
-        :math:`r^{\\mathrm{diff}}_j`: maximum diffusion rate of technology :math:`j`
-        which is the maximum increase in capacity between investment steps
-        :math:`K_{h,p,y}`: depreciated installation-knowledge stock
+        :math:`\\Delta K_{h,p,y}`: size of built technology :math:`h` (invested capacity
+        after construction) at location :math:`p` in year :math:`y`
+        :math:`r^{\\mathrm{diff}}_{h,y}`: maximum diffusion rate of technology
+        :math:`h` in year :math:`y`, which is the maximum increase in
+        capacity between investment steps
+        :math:`K^\\omega_{h,p,y}`: depreciated installation-knowledge stock
+        at location :math:`p`, including applicable knowledge spillover
+        :math:`K^0_{h,p,y}`: depreciated installation-knowledge stock at
+        location :math:`p` without node-to-node knowledge spillover
         :math:`\\chi`: parameter which specifies the unbounded market share
-        :math:`k^{\\mathrm{add,free}}_j`: parameter which specifies the unbounded
-        capacity addition that can be added each year (only for delayed technology
-        deployment)
+        :math:`K^{\\mathrm{prev}}_{h,p,y}`: capacity available before the
+        current year's addition
+        :math:`\\tilde{\\mathcal H}`: other technologies in the target
+        technology's class, excluding the target itself, with the same
+        reference carrier
+        :math:`k^{\\mathrm{add,free}}_h`: parameter which specifies the unbounded
+        capacity addition that can be added each investment step (only for
+        delayed technology deployment)
         :math:`\\Delta y`: interval between planning periods
         :math:`\\omega`: parameter which specifies the knowledge spillover rate
         """

@@ -15,10 +15,11 @@ class TransportTechnologyCapexConstraint(GenericConstraint):
 
         .. math::
             \\text{if transport distance set to inf: } \\Delta K_{h,e,y} = 0
+
         .. math::
-            \\text{else: } C^{\\mathrm{cap,overnight}}_{h,e,y} = \\Delta K_{h,e,y}
-            \\kappa^{\\mathrm{cap,fixed}}_{h,y} +
-            g_{h,e,y} d^{\\mathrm{dist}}_{h,e}
+            \\text{else: } C^{\\mathrm{cap,overnight}}_{h,e,y} =
+            \\Delta K_{h,e,y}\\kappa^{\\mathrm{cap,fixed}}_{h,e,y}
+            + g_{h,e,y}d^{\\mathrm{dist}}_{h,e}
             \\kappa^{\\mathrm{cap,dist}}_{h,e,y}
 
         Notation:
@@ -27,7 +28,7 @@ class TransportTechnologyCapexConstraint(GenericConstraint):
         on edge :math:`e` in year :math:`y`
         :math:`C^{\\mathrm{cap,overnight}}_{h,e,y}`: overnight CAPEX of transport
         technology :math:`h` on edge :math:`e` in year :math:`y`
-        :math:`\\kappa^{\\mathrm{cap,fixed}}_{h,y}`: Specific constant capital
+        :math:`\\kappa^{\\mathrm{cap,fixed}}_{h,e,y}`: Specific constant capital
         expenditures of transport technology :math:`h` in year :math:`y`
         :math:`\\kappa^{\\mathrm{cap,dist}}_{h,e,y}`: Specific capital expenditures per
         distance of transport technology :math:`h` on edge :math:`e` in year :math:`y`
