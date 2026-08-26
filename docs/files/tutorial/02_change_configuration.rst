@@ -16,7 +16,7 @@ in the :ref:`configurations <configuration.configuration>`.
 
 
 This tutorial assumes that you have installed and run the example dataset 
-``5_multiple_time_steps_per_year`` as described in the tutorial :ref:`setup 
+``4_multiple_time_steps_per_year`` as described in the tutorial :ref:`setup
 instructions <tutorials_intro.setup>`. 
 
 
@@ -91,7 +91,7 @@ The following steps can be used to change the ``config.json`` file:
 
     {
       "analysis": {
-        "dataset": "5_multiple_time_steps_per_year"
+        "dataset": "4_multiple_time_steps_per_year"
       },
       "solver": {
         "name": "gurobi",
@@ -118,7 +118,7 @@ Example Exercise
 
 
 1. **Modify the default ``conf.py`` file from the dataset example
-   ``5_multiple_time_steps_per_year`` in order to save the dual variables
+   ``4_multiple_time_steps_per_year`` in order to save the dual variables
    to the outputs. Note: by default, dual variables are not saved to reduce
    the memory requirement of the solution**
 
@@ -136,7 +136,7 @@ Example Exercise
 
          {
            "analysis": {
-             "dataset": "5_multiple_time_steps_per_year"
+             "dataset": "4_multiple_time_steps_per_year"
            },
            "solver": {
              "save_duals": true
@@ -157,7 +157,7 @@ can be adjusted to match user preferences. Importantly, the ``system.json`` file
 lists which technologies and regions are to be included in the model. It also 
 controls the temporal resolution of the model and sets parameters for spatial 
 aggregation. The ``system.json`` file which comes with the dataset example
-``5_multiple_time_steps_per_year`` is shown below:
+``4_multiple_time_steps_per_year`` is shown below:
 
 
 .. code:: JSON
@@ -205,7 +205,7 @@ Example Exercise
 1. **Remove the natural gas boiler from the system. What heat pump capacity
    is installed in Switzerland in 2023 to meet the heat demand?**
 
-   a. Open the ``system.json`` file for the ``5_multiple_time_steps_per_year``
+   a. Open the ``system.json`` file for the ``4_multiple_time_steps_per_year``
       dataset. Under the option ``set_conversion_technologies``, delete the 
       line containing the ``natural_gas_boiler``. Save the file.
 
@@ -222,7 +222,7 @@ Example Exercise
    is the new heat pump capacity installed in Switzerland in 2023? How did 
    the heat demand profile change?**
 
-   a. Open the ``system.json`` file for the ``5_multiple_time_steps_per_year``
+   a. Open the ``system.json`` file for the ``4_multiple_time_steps_per_year``
       dataset. Change the configuration of ``conduct_time_series_aggregation``
       to ``true``. This tells ZEN-garden to use time series aggregation. Then,
       change the configuration of ``aggregated_time_steps_per_year`` to 10. This

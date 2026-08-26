@@ -16,10 +16,10 @@ In general, adding new technologies and carriers involves the following steps:
 6.  Run the model with the new dataset.
 
 This tutorial assumes that you have installed and run the example dataset
-``5_multiple_time_steps_per_year`` as described in the tutorial :ref:`setup
+``4_multiple_time_steps_per_year`` as described in the tutorial :ref:`setup
 instructions <tutorials_intro.setup>`.
 
-Practically, we want to extend the example dataset ``5_multiple_time_steps_per_year`` by a new technology
+Practically, we want to extend the example dataset ``4_multiple_time_steps_per_year`` by a new technology
 called ``biomass_boiler`` which uses the carrier ``biomass`` to produce heat.
 Therefore, we need to add the new technology ``biomass_boiler`` and the new carrier ``biomass`` to the dataset.
 
@@ -28,7 +28,7 @@ Therefore, we need to add the new technology ``biomass_boiler`` and the new carr
 Step 1: Copy the existing dataset
 =================================
 
-Copy-paste the entire folder of the dataset example ``5_multiple_time_steps_per_year`` to a new folder
+Copy-paste the entire folder of the dataset example ``4_multiple_time_steps_per_year`` to a new folder
 called ``tutorial_3_add_technologies_carrier``.
 
 .. _t_add_techs_carriers.copy_tech_carrier:
