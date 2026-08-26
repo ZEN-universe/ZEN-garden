@@ -1,7 +1,7 @@
-from zen_garden.topology.generic_parameter import GenericComputedParameters
+from zen_garden.topology.generic_parameter import GenericParameter
 
 
-class CapexCapacityExisting(GenericComputedParameters):
+class CapexCapacityExisting(GenericParameter):
     """Total outstanding capex of an existing technology."""
 
     name = "capex_capacity_existing"
@@ -14,7 +14,6 @@ class CapexCapacityExisting(GenericComputedParameters):
     doc = "Total outstanding capex of an existing technology"
     unit_category = {"money": 1}
     capacity_types = True
-    input_loader = "skip"
     dependencies = [
         "capacity_existing",
         "opex_specific_fixed",
@@ -25,7 +24,7 @@ class CapexCapacityExisting(GenericComputedParameters):
     ]
 
     @classmethod
-    def store_input_data(cls, element, loader):
+    def store_input_data(cls, element):
         """Annualize costs and materialize persistent existing-capacity capex."""
         fraction_year = element.calculate_fraction_of_year()
         annualized_attributes = (

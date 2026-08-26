@@ -6,11 +6,7 @@ from typing import Any
 from zen_garden.elements import ELEMENT_TYPE_CLASSES
 from zen_garden.elements.energy_system import EnergySystem
 from zen_garden.services.element_registry import ElementRegistry
-from zen_garden.services.parameter_input_loader import ParameterInputLoader
-from zen_garden.topology.generic_parameter import (
-    GenericComputedParameters,
-    GenericParameter,
-)
+from zen_garden.topology.generic_parameter import GenericParameter
 
 logger = logging.getLogger(__name__)
 
@@ -21,7 +17,6 @@ class ParameterLoadingService:
     def __init__(self, energy_system: EnergySystem, element_registry: ElementRegistry):
         self.energy_system = energy_system
         self.element_registry = element_registry
-        self.input_loader = ParameterInputLoader()
 
     def load_parameters(self) -> None:
         """Load parameters globally in dependency order."""
@@ -36,10 +31,7 @@ class ParameterLoadingService:
             for target in targets:
                 if parameter not in target.parameters:
                     continue
-                if issubclass(parameter, GenericComputedParameters):
-                    parameter.store_input_data(target, self.input_loader)
-                else:
-                    self.input_loader.load_into(parameter, target)
+                parameter.store_input_data(target)
 
         for target in targets:
             finalize = getattr(target, "finalize_input_data", None)

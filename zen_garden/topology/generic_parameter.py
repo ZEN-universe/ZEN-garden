@@ -1,10 +1,7 @@
 from __future__ import annotations
 
-from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any, ClassVar
-
-if TYPE_CHECKING:
-    from zen_garden.services.parameter_input_loader import ParameterInputLoader
+from abc import ABC
+from typing import Any, ClassVar
 
 
 class GenericParameter(ABC):
@@ -17,9 +14,6 @@ class GenericParameter(ABC):
     time_series: ClassVar[bool] = False
     capacity_types: ClassVar[bool] = False
     set_time_steps: ClassVar[str | None] = None
-    # Named strategy used by ParameterInputLoader. The strategy describes the
-    # physical input layout; it is deliberately separate from model construction.
-    input_loader: ClassVar[str] = "standard"
     input_name: ClassVar[str | None] = None
     input_indices: ClassVar[tuple[str, ...] | None] = None
     dependencies: ClassVar[list[str]] = []
@@ -35,6 +29,8 @@ class GenericParameter(ABC):
         for attr in required:
             if not hasattr(cls, attr):
                 raise TypeError(f"{cls.__name__} must define {attr!r}")
+        if not isinstance(cls.dependencies, list):
+            raise TypeError(f"{cls.__name__}.dependencies must be a list")
 
     # This is a classmethod so that it can be called without creating an
     # instance of the class, e.g. Parameter.build() rather than Parameter().build().
@@ -42,6 +38,65 @@ class GenericParameter(ABC):
     def build(cls):
         """Build the parameter."""
         raise NotImplementedError("ToDO:")
+
+    @classmethod
+    def store_input_data(cls, element: Any) -> None:
+        """Load and store a parameter using the standard input layout."""
+        name = cls.input_name or cls.name
+        indices = cls._input_indices(element)
+        value = element.data_input.extract_input_data(
+            name,
+            index_sets=indices,
+            unit_category=cls.unit_category,
+        )
+        cls._store_value(element, cls.name, value)
+
+        if cls.capacity_types and cls._has_energy_capacity(element):
+            energy_units = dict(cls.unit_category)
+            energy_units.pop("time", None)
+            energy_value = element.data_input.extract_input_data(
+                f"{name}_energy",
+                index_sets=indices,
+                unit_category=energy_units,
+            )
+            cls._store_value(element, f"{cls.name}_energy", energy_value)
+
+    @classmethod
+    def _store_value(cls, element: Any, name: str, value: Any) -> None:
+        """Store a loaded value in its time-series or scalar destination."""
+        if cls.time_series:
+            element.raw_time_series[name] = value
+        else:
+            setattr(element, name, value)
+
+    @classmethod
+    def _input_indices(cls, element: Any) -> list[str]:
+        """Resolve schema indices to the physical input indices for an element."""
+        if cls.input_indices is not None:
+            indices = list(cls.input_indices)
+        else:
+            owner_labels = {
+                base.__dict__["label"]
+                for base in type(element).mro()
+                if "label" in base.__dict__
+            }
+            indices = [
+                index
+                for index in cls.indices
+                if index not in owner_labels and index != "set_capacity_types"
+            ]
+
+        location_type = getattr(element, "location_type", None)
+        if "set_location" in indices and location_type is None:
+            raise ValueError(f"Element {element.name!r} has no location type")
+        return [
+            str(location_type) if index == "set_location" else index
+            for index in indices
+        ]
+
+    @staticmethod
+    def _has_energy_capacity(element: Any) -> bool:
+        return element.name in element.config.system.set_storage_technologies
 
     @classmethod
     def construction_order(
@@ -84,27 +139,3 @@ class GenericParameter(ABC):
                 ordered.append(parameter)
                 completed.add(parameter.name)
         return ordered
-
-
-class GenericComputedParameters(GenericParameter):
-    """Parameter that is processed after ordinary input parameters.
-
-    Dependencies are parameter names and define a directed acyclic graph used
-    to determine processing order. Subclasses must declare the list explicitly,
-    including an empty list when no other parameter is required.
-    """
-
-    _abstract_parameter = True
-    dependencies: ClassVar[list[str]]
-
-    def __init_subclass__(cls, **kwargs):
-        super().__init_subclass__(**kwargs)
-        if "dependencies" not in cls.__dict__:
-            raise TypeError(f"{cls.__name__} must define 'dependencies'")
-        if not isinstance(cls.dependencies, list):
-            raise TypeError(f"{cls.__name__}.dependencies must be a list")
-
-    @classmethod
-    @abstractmethod
-    def store_input_data(cls, element: Any, loader: ParameterInputLoader) -> None:
-        """Load or calculate the parameter and store it on ``element``."""

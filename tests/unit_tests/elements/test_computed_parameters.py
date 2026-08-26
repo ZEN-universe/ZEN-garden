@@ -2,10 +2,7 @@
 
 import pytest
 
-from zen_garden.topology.generic_parameter import (
-    GenericComputedParameters,
-    GenericParameter,
-)
+from zen_garden.topology.generic_parameter import GenericParameter
 
 
 class InputParameter(GenericParameter):
@@ -15,7 +12,7 @@ class InputParameter(GenericParameter):
     unit_category = {}
 
 
-class FirstComputed(GenericComputedParameters):
+class FirstComputed(GenericParameter):
     name = "first"
     indices = ()
     doc = "First computed parameter"
@@ -23,7 +20,7 @@ class FirstComputed(GenericComputedParameters):
     dependencies = ["input"]
 
 
-class SecondComputed(GenericComputedParameters):
+class SecondComputed(GenericParameter):
     name = "second"
     indices = ()
     doc = "Second computed parameter"
@@ -31,14 +28,10 @@ class SecondComputed(GenericComputedParameters):
     dependencies = ["first"]
 
 
-def test_computed_parameters_are_topologically_ordered():
+def test_dependent_parameters_are_topologically_ordered():
     parameters = [SecondComputed, InputParameter, FirstComputed]
-    ordered_computed = [
-        parameter
-        for parameter in GenericParameter.construction_order(parameters)
-        if issubclass(parameter, GenericComputedParameters)
-    ]
-    assert ordered_computed == [
+    assert GenericParameter.construction_order(parameters) == [
+        InputParameter,
         FirstComputed,
         SecondComputed,
     ]
@@ -54,18 +47,8 @@ def test_all_parameters_are_globally_ordered():
     ]
 
 
-def test_computed_parameter_requires_explicit_dependencies():
-    with pytest.raises(TypeError, match="must define 'dependencies'"):
-
-        class MissingDependencies(GenericComputedParameters):
-            name = "missing_dependencies"
-            indices = ()
-            doc = "Invalid computed parameter"
-            unit_category = {}
-
-
 def test_unknown_dependency_is_rejected():
-    class UnknownDependency(GenericComputedParameters):
+    class UnknownDependency(GenericParameter):
         name = "unknown_dependency"
         indices = ()
         doc = "Invalid computed parameter"
@@ -77,14 +60,14 @@ def test_unknown_dependency_is_rejected():
 
 
 def test_computed_parameter_cycle_is_rejected():
-    class ComputedA(GenericComputedParameters):
+    class ComputedA(GenericParameter):
         name = "computed_a"
         indices = ()
         doc = "Computed A"
         unit_category = {}
         dependencies = ["computed_b"]
 
-    class ComputedB(GenericComputedParameters):
+    class ComputedB(GenericParameter):
         name = "computed_b"
         indices = ()
         doc = "Computed B"
