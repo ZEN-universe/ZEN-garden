@@ -7,7 +7,7 @@ class StorageLevel(GenericVariable):
 
     name = "storage_level"
     indices = ["set_storage_technologies", "set_nodes", "set_time_steps_storage"]
-    doc = "Variable for storage level of storage technology on node in each storage time step"
+    doc = "Variable for storage level of storage technology"
     unit_category = {"energy_quantity": 1}
 
     @classmethod

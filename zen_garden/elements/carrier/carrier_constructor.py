@@ -2,7 +2,6 @@
 
 import logging
 
-import numpy as np
 from typing_extensions import override
 
 from zen_garden.elements.carrier import Carrier

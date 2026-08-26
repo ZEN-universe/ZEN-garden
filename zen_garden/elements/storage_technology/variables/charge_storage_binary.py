@@ -6,8 +6,8 @@ class ChargeStorageBinary(GenericVariable):
 
     name = "charge_storage_binary"
     indices = ["set_storage_technologies", "set_nodes", "set_time_steps_operation"]
-    doc = "Variable for charge binary for storage technology"
-    unit_category = None
+    doc = "Binary variable for charge binary for storage technology"
+    unit_category = {}
     binary = True
 
     @classmethod
