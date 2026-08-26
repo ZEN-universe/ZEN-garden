@@ -46,21 +46,15 @@ horizon. The location of these files in the ZEN-garden input data is shown below
     `--config.yaml
 
 
-The configuration files are formatted in JavaScript Object Notation (JSON),
-an easy-to-read-and-interpret file format for representing objects and data 
-structures. The following `video <https://www.youtube.com/watch?v=iiADhChRriM>`_
-provides a introduction to JSON files. Users are recommended to familiarize 
-themselves with the JSON files structure before continuing with this tutorial.
+The configuration files are formatted in YAML, a human-readable format for
+representing mappings, lists, and scalar values.
 
 .. tip::
 
-    A common mistake when writing JSON files is to put a comma at the end of a 
-    list in json. For example, `"list": [1, 2, 3,]`` is wrong, it should be 
-    ``"list": [1, 2, 3]``. The cryptic error message which results is:
-    ``json.decoder.yamlDecodeError: Expecting value: [...]``. If you recieve
-    this message, check the ''`system.yaml``, ``config.yaml``, and 
-    ``attributes.yaml`` for commas at the end of lists. When you scroll up in 
-    the error message, it will tell you which file caused the error.
+    YAML structure is defined by indentation. Use spaces consistently and align
+    nested keys beneath their parent. If parsing fails, check ``system.yaml``,
+    ``config.yaml``, and ``attributes.yaml`` near the location reported by the
+    parser.
 
 
 Modifying config.yaml
@@ -87,30 +81,25 @@ The following steps can be used to change the ``config.yaml`` file:
    the appropriate dictionary (``analysis`` or ``solver``).
 
 
-.. code:: JSON
+.. code:: yaml
 
-    {
-      "analysis": {
-        "dataset": "4_multiple_time_steps_per_year"
-      },
-      "solver": {
-        "name": "gurobi",
-        "solver_options": {
-          "Method": 2,
-          "NodeMethod": 2,
-          "BarHomogeneous": 1,
-          "DualReductions": 0,
-          "Threads": 128,
-          "Crossover": 0,
-          "ScaleFlag": 2,
-          "BarOrder": 0
-        },
-        "save_duals": false,
-        "use_scaling": false,
-        "run_diagnostics": true,
-        "scaling_include_rhs": true
-      }
-    }
+    analysis:
+      dataset: 4_multiple_time_steps_per_year
+    solver:
+      name: gurobi
+      solver_options:
+        Method: 2
+        NodeMethod: 2
+        BarHomogeneous: 1
+        DualReductions: 0
+        Threads: 128
+        Crossover: 0
+        ScaleFlag: 2
+        BarOrder: 0
+      save_duals: false
+      use_scaling: false
+      run_diagnostics: true
+      scaling_include_rhs: true
 
 
 Example Exercise
@@ -132,16 +121,12 @@ Example Exercise
    b. Add the ``save_duals`` to the ``config.yaml`` file. The new file should
       look like this:
 
-      .. code:: JSON
+      .. code:: yaml
 
-         {
-           "analysis": {
-             "dataset": "4_multiple_time_steps_per_year"
-           },
-           "solver": {
-             "save_duals": true
-           }
-         }
+         analysis:
+           dataset: 4_multiple_time_steps_per_year
+         solver:
+           save_duals: true
 
    c. You can verify that the dual variables were saved running the model and
       using the results codebase described in the tutorial on :ref:`analyzing 
@@ -160,33 +145,27 @@ aggregation. The ``system.yaml`` file which comes with the dataset example
 ``4_multiple_time_steps_per_year`` is shown below:
 
 
-.. code:: JSON
+.. code:: yaml
     
-    {
-        "set_conversion_technologies": [
-            "natural_gas_boiler",
-            "photovoltaics",
-            "heat_pump"
-        ],
-        "set_storage_technologies": [
-            "natural_gas_storage"
-        ],
-        "set_transport_technologies": [
-            "natural_gas_pipeline"
-        ],
-        "set_nodes": [
-            "DE",
-            "CH"
-        ],
-        "reference_year": 2023,
-        "unaggregated_time_steps_per_year": 96,
-        "aggregated_time_steps_per_year": 96,
-        "conduct_time_series_aggregation": false,
-        "optimized_years": 3,
-        "interval_between_years": 1,
-        "use_rolling_horizon": false,
-        "years_in_rolling_horizon": 1
-    }
+    set_conversion_technologies:
+      - natural_gas_boiler
+      - photovoltaics
+      - heat_pump
+    set_storage_technologies:
+      - natural_gas_storage
+    set_transport_technologies:
+      - natural_gas_pipeline
+    set_nodes:
+      - DE
+      - CH
+    reference_year: 2023
+    unaggregated_time_steps_per_year: 96
+    aggregated_time_steps_per_year: 96
+    conduct_time_series_aggregation: false
+    optimized_years: 3
+    interval_between_years: 1
+    use_rolling_horizon: false
+    years_in_rolling_horizon: 1
 
 
 To modify the system configurations, use the following steps:
@@ -197,7 +176,7 @@ To modify the system configurations, use the following steps:
 
 2. Set the desired configuration in the ``system.yaml`` file. To add 
    configurations which are not already listed, simply add the desired 
-   ``<configuration_name>: <value>`` to the JSON file.
+   ``<configuration_name>: <value>`` to the YAML file.
 
 Example Exercise
 ----------------

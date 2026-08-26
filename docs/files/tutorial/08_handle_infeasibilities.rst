@@ -67,13 +67,11 @@ To find out whether your problem is actually infeasible or has bad numerics and
 **you are using Gurobi**, you can disable the 
 `DualReductions <https://www.gurobi.com/documentation/8.1/refman/dualreductions.html#parameter:DualReductions>`_ parameter. Just add this line to the ``config.yaml``:
 
-.. code-block::
+.. code-block:: yaml
 
-    "solver": {
-        "solver_options": {
-          "DualReductions": 0
-        }
-    }
+    solver:
+      solver_options:
+        DualReductions: 0
 
 This should give you a definite answer if your problem is infeasible. If not, 
 you most probably have numerical issues.
@@ -170,6 +168,5 @@ desired. Now, if you consider ``constraint_availability_import``, you see that
 neither heat nor natural gas can be imported ``(flow_import <= 0)``, and so the 
 problem becomes infeasible. This simple example can help you to understand the 
 IIS and thereby find infeasibilities in your problem.
-
 
 

@@ -98,13 +98,12 @@ iterations of the geometric mean scaling followed by one iteration of the
 infinity norm algorithm as well as taking into account the right-hand side 
 vector:
 
-.. code-block::
+.. code-block:: yaml
 
-  "solver": {
-    "use_scaling": true,
-    "scaling_algorithm": ["geom", "geom","infnorm"],
-    "scaling_include_rhs": true
-  }
+  solver:
+    use_scaling: true
+    scaling_algorithm: [geom, geom, infnorm]
+    scaling_include_rhs: true
 
 The default configuration are three iterations of the geometric mean scaling 
 algorithm with right-hand-side scaling.
@@ -327,7 +326,6 @@ The key takeaways from the regression analysis are:
 Please note, that these results can not be generalized. They only represent the 
 average effect observed for the models considered here and might vary from case 
 to case.
-
 
 
 

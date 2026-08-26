@@ -136,6 +136,9 @@ To debug ZEN-garden with VSCode, follow these steps:
 - Create a new file in the folder ``./.vscode/`` called ``launch.json`` with the 
   following content:
 
+  This block remains JSON because VS Code requires ``launch.json`` to use JSON;
+  it is not a ZEN-garden input file.
+
   .. code-block:: JSON
 
       {   
@@ -154,12 +157,11 @@ To debug ZEN-garden with VSCode, follow these steps:
 
 To debug ZEN-Garden, select ``Python Debugger: Debug using launch.json`` from 
 the debug menu as shown in the figure. Note that no command line flags can be 
-entered. The dataset must therefore be specified in the config.json file which 
+entered. The dataset must therefore be specified in the ``config.yaml`` file which
 is located in the dataset folder.
 
 .. image:: ../figures/developer_guide/VSCode_Debug.png
     :alt: VSCode Debug
-
 
 
 

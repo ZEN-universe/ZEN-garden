@@ -61,11 +61,11 @@ The time parameters in ZEN-garden
 
 Example I, no rolling horizon:
 
-.. code-block::
+.. code-block:: yaml
 
-    "reference_year": 2020,
-    "optimized_years": 4,
-    "interval_between_years": 10
+    reference_year: 2020
+    optimized_years: 4
+    interval_between_years: 10
 
 The resulting investigated years are
 
@@ -75,14 +75,14 @@ The resulting investigated years are
 
 Example II, rolling horizon:
 
-.. code-block::
+.. code-block:: yaml
 
-    "reference_year": 2020,
-    "optimized_years": 4,
-    "interval_between_years": 10,
-    "use_rolling_horizon": True,
-    "years_in_rolling_horizon": 2,
-    "interval_between_optimizations": 1
+    reference_year: 2020
+    optimized_years: 4
+    interval_between_years: 10
+    use_rolling_horizon: true
+    years_in_rolling_horizon: 2
+    interval_between_optimizations: 1
 
 The resulting sequence of investigated years are:
 

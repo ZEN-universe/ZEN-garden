@@ -233,20 +233,16 @@ heat/electricity is specified with the ``conversion_factor`` parameter of the
 CHP plant. The respective parameter in the  ``attributes.yaml`` file of the CHP
 plant is specified as::
 
-    "conversion_factor": {
-        "heat": {
-            "default_value": 1.257,
-            "unit": "GWh/GWh"
-        },
-        "natural_gas": {
-            "default_value": 1.427,
-            "unit": "GWh/GWh"
-        },
-        "bio_gas": {
-            "default_value": 1.427,
-            "unit": "GWh/GWh"
-        }
-    }
+    conversion_factor:
+      heat:
+        default_value: 1.257
+        unit: GWh/GWh
+      natural_gas:
+        default_value: 1.427
+        unit: GWh/GWh
+      bio_gas:
+        default_value: 1.427
+        unit: GWh/GWh
 
 12_yearly_interpolation
 -----------------------
@@ -257,7 +253,7 @@ annual limit of carbon emissions is introduced (file
 ``carbon_emissions_annual_limit`` and ``price_carbon_emissions`` have yearly
 values missing. Per default, ZEN-garden interpolates the missing values linearly
 between the two closest known values. If this behaviour is not wanted, parameter
-names can be added to the file ``parameters_interpolation_off.json`` inside the
+names can be added to the file ``parameters_interpolation_off.yaml`` inside the
 ``energy_system`` folder. For the parameter names in this file, the
 interpolation of missing values is switched off. In this case, the default value
 from the ``attributes.yaml`` file is used for the missing values.
@@ -282,11 +278,10 @@ technology: ``carbon_storage``.
 Since the retrofit technology can only be added to a specific conversion
 technology, it requires an additional parameter in the ``attributes.yaml`` file::
 
-    "retrofit_flow_coupling_factor": {
-        "base_technology": "CHP_plant",
-        "default_value": 0.18,
-        "unit": "kilotons/GWh"
-    }
+    retrofit_flow_coupling_factor:
+      base_technology: CHP_plant
+      default_value: 0.18
+      unit: kilotons/GWh
 
 The ``retrofit_flow_coupling_factor`` specifies to which technology the retrofit
 technology can be added and the coupling factor between the retrofit and the

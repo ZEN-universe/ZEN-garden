@@ -181,7 +181,7 @@ Clean input formats
 
 ZEN-garden completely separates the model code and the input data. No input data 
 is **ever** hard-coded into the model code. Instead, all inputs are structured 
-in the form of human-readable csv/json files (:ref:`input_structure.input_structure`).
+in human-readable CSV and YAML files (:ref:`input_structure.input_structure`).
 Inputs are designed to be minimalistic, with no redundant values. At minimum, 
 each parameter of every element must have a user-specified default value 
 (:ref:`input_structure.attribute_files`). Default values are always set in the ``.yaml`` 
@@ -257,6 +257,5 @@ following functionalities:
 2. Visualization of the results with the ZEN-explorer visualization platform 
    (:ref:`t_analyze.visualization`), both offline and online `<https://zen-garden.ethz.ch/>`_.
 3. Comparison of two different results objects (:ref:`t_analyze.compare`)
-
 
 

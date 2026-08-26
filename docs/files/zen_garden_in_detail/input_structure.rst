@@ -227,27 +227,21 @@ How are ``attributes.yaml`` files structured?
 ---------------------------------------------
 The general structure of each ``attributes.yaml`` file is the following:
 
-.. code-block::
+.. code-block:: yaml
 
-    {
-      "parameter_1": {
-        "default_value": v_1,
-        "unit": "u_1"
-      },
-      "parameter_2": {
-        "default_value": v_2,
-        "unit": "u_2"
-      },
-      ...
-    }
+    parameter_1:
+      default_value: v_1
+      unit: u_1
+    parameter_2:
+      default_value: v_2
+      unit: u_2
+    # ...
 
-The structure is a normal dictionary structure.
-Make sure to have the correct positioning of the brackets.
+The structure is a normal YAML mapping.
 
-* There is **one curly** bracket around all parameters ``{...}``
-* Each parameter has a name, followed **by a colon and curly brackets** 
-  ``name: {...}``
-* Inside the curly brackets are in most cases a ``default_value`` as a ``float`` 
+* Each parameter has a name followed by a colon.
+* Nested fields are indented consistently.
+* Each parameter contains, in most cases, a ``default_value`` as a ``float``
   or ``"inf"`` and a ``unit`` as a ``string`` (see :ref:`t_units.t_units`).
 
 
@@ -265,28 +259,22 @@ The input and output carriers refer to the energy carriers which a technology
 takes as input or output. The data format for these attributes differs
 since technologies can have more than one input or output carrier.
 Consequentially, these attributes take a list ``[..., ...]`` rather 
-than a single value such as ``"inf"`` or ``0``. The JSON below, for example, 
+than a single value such as ``"inf"`` or ``0``. The YAML below, for example,
 describes the Haber-Bosch process, which converts hydrogen and electricity to 
 ammonia.
 
-.. code-block:: json
+.. code-block:: yaml
 
-   "reference_carrier": {
-     "default_value": [
-       "ammonia"
-     ]
-   },
-   "input_carrier": {
-     "default_value": [
-       "hydrogen",
-       "electricity"
-     ]
-   },
-   "output_carrier": {
-     "default_value": [
-       "ammonia"
-     ]
-   }
+   reference_carrier:
+     default_value:
+       - ammonia
+   input_carrier:
+     default_value:
+       - hydrogen
+       - electricity
+   output_carrier:
+     default_value:
+       - ammonia
 
 The ``reference_carrier`` attribute defines the carrier based on which technology
 performance is measured. It must be one of the input or output carriers.
@@ -320,27 +308,19 @@ The units of the conversion factor are always
 For the Haber-Bosch process, the conversion factor could for example be defined
 as:
 
-.. code-block:: json
+.. code-block:: yaml
 
-   "conversion_factor": [
-     {
-       "electricity": {
-         "default_value": 0.05,
-         "unit": "GW/GW"
-       }
-     },
-     {
-       "hydrogen": {
-         "default_value": 0.95,
-         "unit": "GW/GW"
-       }
-     }
-   ]
+   conversion_factor:
+     electricity:
+       default_value: 0.05
+       unit: GW/GW
+     hydrogen:
+       default_value: 0.95
+       unit: GW/GW
 
-This format consists of a list ``[...]`` in which each carrier (excluding the
-reference carrier) is wrapped in curly brackets. Inside each curly bracket, 
-there are the ``default_value`` and the ``unit`` attributes. The above
-JSON means that the Haber-Bosch process consumes 0.05 GW of electricity and 
+This format is a mapping from each non-reference carrier to its
+``default_value`` and ``unit`` attributes. The above
+YAML means that the Haber-Bosch process consumes 0.05 GW of electricity and
 0.95 GW of hydrogen per unit of ammonia produced. The conversion factors for the
 Haber-Bosch process are expressed per unit of ammonia since ammonia is 
 defined as the reference carrier. 
@@ -353,13 +333,12 @@ retrofitting technology and the base technology
 (:ref:`input_structure.conversion_technologies`). The default value is defined in 
 ``attributes.yaml`` as:
 
-.. code-block::
+.. code-block:: yaml
 
-    "retrofit_flow_coupling_factor": {
-      "base_technology": <base_technology_name>,
-      "default_value": 0.5,
-      "unit": "GWh/GWh"
-    }
+    retrofit_flow_coupling_factor:
+      base_technology: <base_technology_name>
+      default_value: 0.5
+      unit: GWh/GWh
 
 The retrofitting flow coupling factor is a single parameter with the base 
 technology as a string and the default value and unit as usual.
@@ -380,14 +359,11 @@ file.
 Let's assume the following example: The purpose of the energy system is to 
 provide ``heat``, whose default ``demand`` is given as ``10 GW``:
 
-.. code-block::
+.. code-block:: yaml
 
-    {
-      "demand": {
-        "default_value": 10,
-        "unit": "GW"
-      }
-    }
+    demand:
+      default_value: 10
+      unit: GW
 
 The energy system is modeled for two nodes, ``CH`` and ``DE`` and spans one year 
 with 8760 time steps.
@@ -547,14 +523,11 @@ If the user wants to disable the interpolation for a specific parameter, the
 user can create a ``parameters_interpolation_off.yaml`` file and specify the 
 parameter names in the file:
 
-.. code-block::
+.. code-block:: yaml
 
-    {
-      "parameter_name": [
-        "carbon_emissions_annual_limit",
-        "demand_yearly_variation"
-      ]
-    }
+    parameter_name:
+      - carbon_emissions_annual_limit
+      - demand_yearly_variation
 
 .. note::
     The user must specify the file name, i.e., in the example above, the 
