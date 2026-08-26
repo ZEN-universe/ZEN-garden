@@ -11,7 +11,7 @@ class CostCarbonEmissionsTotalConstraint(GenericConstraint):
         Formulation:
 
         .. math::
-            C^{\\mathrm{CO_2}}_y = M_y\\pi^{\\mathrm{CO_2}}
+            C^{\\mathrm{CO_2}}_y = M_y\\pi^{\\mathrm{CO_2}}_y
             + M_y^{\\mathrm{ann,over}}\\pi^{\\mathrm{CO_2,ann}}
             + \\mathbb{1}_{y=y_\\mathrm{last}}
             M_y^{\\mathrm{bud,over}}\\pi^{\\mathrm{CO_2,bud}}
@@ -22,7 +22,7 @@ class CostCarbonEmissionsTotalConstraint(GenericConstraint):
 
         :math:`C^{\\mathrm{CO_2}}_y`: cost of carbon emissions in year :math:`y`
         :math:`M_y`: annual carbon emissions of energy system in year :math:`y`
-        :math:`\\pi^{\\mathrm{CO_2}}`: carbon price
+        :math:`\\pi^{\\mathrm{CO_2}}_y`: carbon price in year :math:`y`
         :math:`M_y^{\\mathrm{ann,over}}`: annual carbon emissions overshoot in year
         :math:`y`
         :math:`\\pi^{\\mathrm{CO_2,ann}}`: carbon price for annual overshoot

@@ -16,26 +16,40 @@ class NodalEnergyBalanceConstraint(GenericConstraint):
         Formulation:
 
         .. math::
-            0 = -(d_{c,n,t}-F^{\\mathrm{shed}}_{c,n,t})
-            + \\sum_{h\\in\\mathcal{H}^{\\mathrm{conv}}}
-            (F^{\\mathrm{conv,out}}_{h,c^{\\mathrm{out}},n,t}
-            - F^{\\mathrm{conv,in}}_{h,c^{\\mathrm{in}},n,t})
-            + \\sum_{h\\in\\mathcal{H}^{\\mathrm{trans}}}
-            (\\sum_{e\\in\\mathcal{E}^{\\mathrm{in}}_n}
-            (F^{\mathrm{trans}}_{h,e,t} - F^{\\mathrm{loss}}_{h,e,t})
-            - \\sum_{e'\\in\\mathcal{E}^{\\mathrm{out}}_n}F^{\mathrm{trans}}_{h,e',t})
-            + \\sum_{h\\in\\mathcal{H}^{\\mathrm{stor}}}(F^{\\mathrm{dis}}_{h,n,t}
-            - F^{\\mathrm{ch}}_{h,n,t})
-            + F^{\\mathrm{imp}}_{c,n,t} - F^{\\mathrm{exp}}_{c,n,t}
+            \\begin{aligned}
+            0={}&-(d_{c,n,t}-F^{\\mathrm{shed}}_{c,n,t})\\\\
+            &+\\sum_{h\\in\\mathcal{H}^{\\mathrm{conv,out}}_c}
+              F^{\\mathrm{conv,out}}_{h,c,n,t}
+            -\\sum_{h\\in\\mathcal{H}^{\\mathrm{conv,in}}_c}
+              F^{\\mathrm{conv,in}}_{h,c,n,t}\\\\
+            &+\\sum_{h\\in\\mathcal{H}^{\\mathrm{trans}}_c}
+              \\left[
+                \\sum_{e\\in\\mathcal{E}^{\\mathrm{in}}_n}
+                  (F^{\\mathrm{trans}}_{h,e,t}-F^{\\mathrm{loss}}_{h,e,t})
+                -\\sum_{e'\\in\\mathcal{E}^{\\mathrm{out}}_n}
+                  F^{\\mathrm{trans}}_{h,e',t}
+              \\right]\\\\
+            &+\\sum_{h\\in\\mathcal{H}^{\\mathrm{stor}}_c}
+              (F^{\\mathrm{dis}}_{h,n,t}-F^{\\mathrm{ch}}_{h,n,t})
+            +F^{\\mathrm{imp}}_{c,n,t}-F^{\\mathrm{exp}}_{c,n,t}.
+            \\end{aligned}
+
+        The carrier-specific sets restrict each sum to technologies that actually
+        use carrier :math:`c`: :math:`\\mathcal{H}^{\\mathrm{conv,in}}_c` and
+        :math:`\\mathcal{H}^{\\mathrm{conv,out}}_c` contain conversion technologies
+        consuming and producing :math:`c`, respectively, while
+        :math:`\\mathcal{H}^{\\mathrm{trans}}_c` and
+        :math:`\\mathcal{H}^{\\mathrm{stor}}_c` contain transport and storage
+        technologies whose reference carrier is :math:`c`.
 
         Notation:
 
         Sources of carrier :math:`c` at node :math:`n` in time step :math:`t`
         of year :math:`y`:
 
-        :math:`F^{\\mathrm{conv,out}}_{h,c^{\\mathrm{out}},n,t}`: output flow of
+        :math:`F^{\\mathrm{conv,out}}_{h,c,n,t}`: output flow of
         carrier :math:`c` from conversion technology :math:`h`
-        :math:`F^{\mathrm{trans}}_{h,e,t}`: transported flow on ingoing edge
+        :math:`F^{\\mathrm{trans}}_{h,e,t}`: transported flow on ingoing edge
         :math:`e`, minus loss :math:`F^{\\mathrm{loss}}_{h,e,t}`, for transport
         technology :math:`h`
         :math:`F^{\\mathrm{dis}}_{h,n,t}`: output flow from storage technology
@@ -45,10 +59,10 @@ class NodalEnergyBalanceConstraint(GenericConstraint):
         Sinks of carrier :math:`c` at node :math:`n` in time step :math:`t`
         of year :math:`y`:
         :math:`d_{c,n,t}-F^{\\mathrm{shed}}_{c,n,t}`: served demand
-        :math:`F^{\\mathrm{conv,in}}_{h,c^{\\mathrm{in}},n,t}`: input flow to
+        :math:`F^{\\mathrm{conv,in}}_{h,c,n,t}`: input flow to
         conversion technology
         :math:`h`
-        :math:`F^{\mathrm{trans}}_{h,e',t}`: transported flow on outgoing
+        :math:`F^{\\mathrm{trans}}_{h,e',t}`: transported flow on outgoing
         edge :math:`e'`
         :math:`F^{\\mathrm{ch}}_{h,n,t}`: input flow to storage technology :math:`h`
         :math:`F^{\\mathrm{exp}}_{c,n,t}`: exported carrier flow

@@ -11,9 +11,17 @@ class CostLimitShedDemandConstraint(GenericConstraint):
         Formulation:
 
         .. math::
-           C^{\\mathrm{shed}}_{c,n,t} =
-           F^{\\mathrm{shed}}_{c,n,t} \\pi^{\\mathrm{shed}}_c
-           F^{\\mathrm{shed}}_{c,n,t} \\leq d_{c,n,t}
+           \\begin{aligned}
+           C^{\\mathrm{shed}}_{c,n,t}
+               &= \\pi^{\\mathrm{shed}}_c F^{\\mathrm{shed}}_{c,n,t},
+               && \\pi^{\\mathrm{shed}}_c < \\infty, \\\\
+           0 \\leq F^{\\mathrm{shed}}_{c,n,t}
+               &\\leq d_{c,n,t},
+               && \\pi^{\\mathrm{shed}}_c < \\infty, \\\\
+           F^{\\mathrm{shed}}_{c,n,t}
+               &= 0,
+               && \\pi^{\\mathrm{shed}}_c = \\infty.
+           \\end{aligned}
 
         Notation:
 

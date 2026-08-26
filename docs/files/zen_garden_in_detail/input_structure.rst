@@ -146,7 +146,7 @@ base technology. A possible application of retrofitting technologies is the
 installation of a carbon-capture unit on top of a power plant. In this case, 
 the base technology would be ``power_plant`` and the retrofitting technology 
 would be ``carbon_capture``. Refer to the dataset example 
-``14_retrofitting_and_fuel_substitution`` for more information.
+``13_retrofitting_and_fuel_substitution`` for more information.
 
 
 .. _input_structure.storage_technologies:

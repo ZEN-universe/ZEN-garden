@@ -49,9 +49,8 @@ Documentation
    files/tutorial/04_scenario_analysis
    files/tutorial/05_time_series_aggregation
    files/tutorial/07_scaling
-   files/tutorial/08_operation_only
-   files/tutorial/09_handle_infeasibilities
-   files/tutorial/10_troubleshooting
+   files/tutorial/08_handle_infeasibilities
+   files/tutorial/09_troubleshooting
 
    
 .. toctree::
@@ -107,7 +106,6 @@ Documentation
    :caption: Support
 
    files/support/get_help
-
 
 
 

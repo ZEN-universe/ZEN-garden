@@ -32,7 +32,7 @@
     "unit": "1"
   },
   "market_share_unbounded": {
-    "default_value": 0.1,
+    "default_value": 0.2,
     "unit": "1"
   },
   "discount_rate": {

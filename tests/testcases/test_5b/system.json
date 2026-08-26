@@ -1,6 +1,7 @@
 {
     "set_conversion_technologies": [
-        "natural_gas_boiler"
+        "natural_gas_boiler",
+        "high_efficiency_ng_boiler"
     ],
     "set_storage_technologies": [],
     "set_transport_technologies": [

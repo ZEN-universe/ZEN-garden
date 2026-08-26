@@ -101,36 +101,25 @@ class DataInput:
         # load attributes file
         self.attribute_dict = self.input_repository.load_attribute_file()
 
-    def extract_input_data(
-        self,
-        file_name,
-        index_sets,
-        unit_category,
-        subelement=None,
-        time_steps: str | None = None,
-    ):
-        """Reads input data and restructures the dataframe to return
-        (multi)indexed dict.
+    def extract_input_data(self, file_name, index_sets, unit_category, subelement=None):
+        """Loads and restructures input data for the current scenario.
+
+        Defaults and units are taken from the attributes file, then values from the
+        selected parameter CSV and any scenario-specific CSV are applied, converted
+        to base units, and scaled by the scenario factor.
 
         Args:
             file_name: name of selected file.
-            index_sets: index sets of attribute. Creates (multi)index.
-                Corresponds to order in pe.Set/pe.Param
+            index_sets: ordered configured model sets defining the output index,
+                e.g., location, year, or hour sets. An empty
+                list denotes a scalar parameter.
             unit_category: dict defining the dimensions of the parameter's unit
             subelement: string specifying dependent element
-            time_step: string specifying the time step of the attribute
 
         Returns:
-            dictionary with attribute values
+            numeric values as a pandas Series with a MultiIndex in ``index_sets``
+            order, or index ``[0]`` for a scalar parameter.
         """
-        if time_steps is not None:
-            logging.warning(
-                "Deprecated: "
-                "The time_step argument is deprecated "
-                "and will be removed in future versions. "
-                "The value is ignored and is determined "
-                "automatically from the index_sets."
-            )
         # generic time steps
         yearly_variation = False
         if "set_hours" in index_sets:

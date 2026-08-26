@@ -9,21 +9,23 @@ class OpexEmissionsTechnologyConversionConstraint(GenericConstraint):
         Formulation:
 
         .. math::
-            C^{\\mathrm{op,var}}_{h,n,t} = \\kappa^{\\mathrm{op,var}}_{h,y}
-            F^{\\mathrm{ref}}_{h,n,t}
+            \\begin{aligned}
+            C^{\\mathrm{op,var}}_{h,n,t}
+            &= \\kappa^{\\mathrm{op,var}}_{h,n,t}F^{\\mathrm{ref}}_{h,n,t},\\\\
             M^{\\mathrm{tech}}_{h,n,t}
-            = \\varepsilon^{\\mathrm{op}}_h F^{\\mathrm{ref}}_{h,n,t}
+            &= \\varepsilon^{\\mathrm{op}}_{h,n}F^{\\mathrm{ref}}_{h,n,t}.
+            \\end{aligned}
 
         Notation:
 
         :math:`C^{\\mathrm{op,var}}_{h,n,t}`: variable OPEX of conversion technology
         :math:`h` at node :math:`n` in time step :math:`t` of year :math:`y`
-        :math:`\\kappa^{\\mathrm{op,var}}_{h,y}`: specific variable OPEX
+        :math:`\\kappa^{\\mathrm{op,var}}_{h,n,t}`: specific variable OPEX
         :math:`F^{\\mathrm{ref}}_{h,n,t}`: reference carrier flow of the
         technology :math:`h` at node :math:`n` in time step :math:`t` of year
         :math:`y`
         :math:`M^{\\mathrm{tech}}_{h,n,t}`: operating carbon emissions
-        :math:`\\varepsilon^{\\mathrm{op}}_h`: carbon intensity of the
+        :math:`\\varepsilon^{\\mathrm{op}}_{h,n}`: carbon intensity of the
         conversion technology
         """
         techs = self.zen_model.sets["set_conversion_technologies"]

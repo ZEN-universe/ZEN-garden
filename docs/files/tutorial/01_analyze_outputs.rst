@@ -20,7 +20,7 @@ and produce custom plots or calculations. The results object allows users to eas
 filter, extract, and compare results from various scenarios. 
 
 This tutorial assumes that you have installed and run the example dataset 
-``5_multiple_time_steps_per_year`` as described in the tutorial :ref:`setup 
+``4_multiple_time_steps_per_year`` as described in the tutorial :ref:`setup
 instructions <tutorials_intro.setup>`. It also assumes that the ZEN-garden conda 
 environment is already activated (:ref:`see instructions 
 <installation.activate>`). The raw results of each ZEN-garden simulation are 
@@ -122,10 +122,10 @@ Example Exercises
    a. Click on "The Transition Pathway."
    b. Click on "Capacity."
    c. Select the following options when asked: `Solution` = 
-      ``5_multiple_time_steps_per_year``, `Variable` = ``capacity``, `Technology 
+      ``4_multiple_time_steps_per_year``, `Variable` = ``capacity``, `Technology
       Type` = ``conversion``, `Carrier` = ``heat``. These options tell the 
       visualization platform to look at all conversion technology capacities in 
-      the output ``5_multiple_time_steps_per_year`` for technologies which 
+      the output ``4_multiple_time_steps_per_year`` for technologies which
       either produce or consume heat.
    d. You can now hover your cursor over the shown diagram to identify the 
       total capacity of natural gas boilers installed in the model. To get
@@ -143,7 +143,7 @@ Example Exercises
    a. Click on "The Energy Balance".
    b. Click "Nodal Energy Balance".
    c. Select the following options when asked: `Solution` = 
-      ``5_multiple_time_steps_per_year``, `Year` = ``2023``, 
+      ``4_multiple_time_steps_per_year``, `Year` = ``2023``,
       `Node` = ``Germany``, `Carrier` = ``electricity``. These options tell
       the visualization platform to display an hourly electricity balance for
       Germany in 2023.

@@ -144,7 +144,7 @@ investment :math:`\kappa^{\mathrm{cap}}_{h,y}` and the capacity addition
 
 .. note::
     The capex of conversion technologies can also be approximated by a piecewise
-    linear approximation as described in :ref:`input_structure.pwa` and
+    linear approximation as described in
     :ref:`math_formulation.pwa_constraints`.
 
 For existing conversion technology capacities :math:`s_{h,n,y}^{ex}` that were
@@ -1094,7 +1094,7 @@ technology is not constrained by the capacity limit (Big-M parameter).
 Minimum full-load hours
 -----------------------
 
-.. docstring_method:: zen_garden.constraints.conversion_technology.MinimumFullLoadHoursConstraint.build
+.. docstring_method:: zen_garden.elements.conversion_technology.constraints.MinimumFullLoadHoursConstraint.build
 
 This constraint is currently only available for conversion technologies.
 

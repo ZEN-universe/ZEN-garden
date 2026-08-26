@@ -28,7 +28,7 @@ Comma at the end of a list in json
 Unit consistency errors
 -----------------------
 
-The dataset example ``15_unit_consistency_expected_error`` intentionally
+The dataset example ``14_unit_consistency_expected_error`` intentionally
 contains inconsistent units. Run it following the instructions for
 :ref:`using dataset examples <building.examples>` and use the error message to
 locate the inconsistent ``unit`` entries in the ``attributes.json`` files.

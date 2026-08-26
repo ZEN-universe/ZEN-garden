@@ -14,13 +14,13 @@ class LinearCapexConstraint(GenericConstraint):
 
         .. math::
             C^{\\mathrm{cap,overnight}}_{h,n,y} =
-            \\kappa^{\\mathrm{cap}}_{h,y} \\Delta K_{h,n,y}
+            \\kappa^{\\mathrm{cap}}_{h,n,y} \\Delta K_{h,n,y}
 
         Notation:
 
         :math:`C^{\\mathrm{cap,overnight}}_{h,n,y}`: overnight CAPEX of conversion
         technology :math:`h` at node :math:`n` in year :math:`y`
-        :math:`\\kappa^{\\mathrm{cap}}_{h,y}`: specific CAPEX
+        :math:`\\kappa^{\\mathrm{cap}}_{h,n,y}`: specific CAPEX
         :math:`\\Delta K_{h,n,y}`: power-capacity addition
         """
         techs = self.zen_model.sets["set_conversion_technologies"]

@@ -21,8 +21,9 @@ can be used to enhance the user experience:
 Additional mixed-integer constraints
 ------------------------------------
 
-Besides, PWA representation of the CAPEX (see :ref:`input_structure.pwa`), ZEN-garden allows the 
-use of three additional mixed-integer linear constraints:
+ZEN-garden includes optional mixed-integer constraints, which are described below.
+They cover minimum technology loads, minimum capacity additions, and transport
+investments with separate capacity- and distance-dependent cost terms.
 
 
 .. _additional_features.min_load:
@@ -151,8 +152,8 @@ and :eq:`constrained_technology_deployment_j`.
 
 The user can set five parameters:
 
-1. The ``max_diffusion_rate`` (:math:`\vartheta_i`, indexed by each technology):
-The ``max_diffusion_rate`` limits the maximum annual capacity addition as a fraction of the existing knowledge.
+1. The ``max_diffusion_rate`` (:math:`r^{\mathrm{diff}}_{h,y}`, indexed by technology and year):
+The ``max_diffusion_rate`` limits the capacity addition rate as a fraction of the existing knowledge.
 Since the maximum capacity addition is proportional to the existing capacity, this constraint is linear
 in the capacity but results in an exponential capacity growth. Therefore, it describes the exponential growth phase
 of the logistic S-curve of technology diffusion.
@@ -162,17 +163,16 @@ The knowledge spillover rate allows for learning effects from other nodes. A val
 5% of the knowledge from other nodes is added to the local knowledge stock. If setting the spillover rate to ``inf``,
 perfect spillover is assumed and only the global capacity additions are constrained by the global knowledge stock.
 
-3. The ``market_share_unbounded`` (:math:`\xi`):
-The unbounded market share allows for a small (we have found values of 1%-2% to be realistic)
-contribution of the existing capacity of all technologies in the same sector (i.e., technologies
-with the same reference carrier) to the capacity addition limit of a technology.
-For example, a value of 0.01 means that every year, 1% of the existing capacity of all technologies in the same sector
-can be added, even if no capacity of the considered technology exists.
-(If no capacity of the considered technology exists, the knowledge stock is zero,
-and thus no capacity addition would be possible otherwise.)
+3. The ``market_share_unbounded`` (:math:`\chi`):
+The unbounded market share provides an additional capacity-addition allowance
+based on the capacity available before the current addition for technologies in
+the same technology class (excluding the considered technology) with the same
+reference carrier. For example, a value of 0.01 allows an addition equal to 1%
+of that capacity, even if the considered technology has no previous capacity
+of its own.
 
-4. The ``capacity_addition_unbounded`` (:math:`\zeta_i`, indexed by each technology):
-The unbounded capacity addition allows for a fixed amount of capacity addition each year,
+4. The ``capacity_addition_unbounded`` (:math:`k^{\mathrm{add,free}}_h`, indexed by each technology):
+The unbounded capacity addition allows for a fixed amount of capacity addition each investment step,
 regardless of the existing knowledge stock of the considered technology and all other technologies in the same sector.
 This should only be used when there is no existing capacity of any technology in the same sector,
 An example would be an emerging sector like carbon capture and storage.
@@ -207,7 +207,8 @@ the reference flow of another conversion technology. Specifically, the reference
 must be lower or equal to the reference flow of the converted technology times the ``retrofit_flow_coupling_factor``.
 The lower-or-equal sign allows for partial retrofitting of the converted technology.
 
-Check out the dataset example :ref:`dataset_examples.14_retrofitting_and_fuel_substitution`.
+Check out the dataset example
+:ref:`dataset_examples.13_retrofitting_and_fuel_substitution`.
 
 Retrofitting technologies are useful for two main applications:
 
