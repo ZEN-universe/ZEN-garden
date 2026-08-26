@@ -1,0 +1,11 @@
+from zen_garden.topology.generic_variable import GenericVariable
+
+
+class CostOpexYearlyTotal(GenericVariable):
+    """Variable for total operational expenditure."""
+
+    name = "cost_opex_yearly_total"
+    indices = ("set_years",)
+    doc = "Variable for total opex all technologies and locations in year y"
+    unit_category = {"money": 1}
+

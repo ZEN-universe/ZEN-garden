@@ -1,0 +1,11 @@
+from zen_garden.topology.generic_variable import GenericVariable
+
+
+class FlowExport(GenericVariable):
+    """Variable for export flow."""
+
+    name = "flow_export"
+    indices = ("set_carriers", "set_nodes", "set_time_steps_operation")
+    doc = "Variable for node- and time-dependent carrier export from the grid"
+    unit_category = {"energy_quantity": 1, "time": -1}
+

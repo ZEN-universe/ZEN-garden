@@ -71,7 +71,9 @@ class StorageTechnologyConstructor(ModelConstructor):
         bounds = flow_storage_bounds(index_values, index_names)
         self.zen_model.add_variable(
             name="flow_storage_charge",
-            index_sets=(index_values, index_names),
+            index_sets=self.create_custom_set(
+            ["set_storage_technologies", "set_nodes", "set_time_steps_operation"],
+            ),
             bounds=bounds,
             doc="carrier flow into storage technology on node i and time t",
             unit_category={"energy_quantity": 1, "time": -1},
@@ -79,7 +81,9 @@ class StorageTechnologyConstructor(ModelConstructor):
         # flow of carrier on node out of storage
         self.zen_model.add_variable(
             name="flow_storage_discharge",
-            index_sets=(index_values, index_names),
+            index_sets=self.create_custom_set(
+            ["set_storage_technologies", "set_nodes", "set_time_steps_operation"],
+            ),
             bounds=bounds,
             doc="carrier flow out of storage technology on node i and time t",
             unit_category={"energy_quantity": 1, "time": -1},
@@ -97,7 +101,9 @@ class StorageTechnologyConstructor(ModelConstructor):
         # energy spillage
         self.zen_model.add_variable(
             name="flow_storage_spillage",
-            index_sets=(index_values, index_names),
+            index_sets=self.create_custom_set(
+            ["set_storage_technologies", "set_nodes", "set_time_steps_operation"],
+            ),
             bounds=(0, np.inf),
             doc="storage spillage of storage technology on node i in each "
             "storage time step",
@@ -107,7 +113,9 @@ class StorageTechnologyConstructor(ModelConstructor):
         if self.config.system.storage_charge_discharge_binary:
             self.zen_model.add_variable(
                 name="charge_storage_binary",
-                index_sets=(index_values, index_names),
+                index_sets=self.create_custom_set(
+                ["set_storage_technologies", "set_nodes", "set_time_steps_operation"],
+                ),
                 binary=True,
                 doc="charge binary for storage technology",
                 unit_category=None,
