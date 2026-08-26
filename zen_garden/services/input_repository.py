@@ -66,27 +66,44 @@ class InputRepository:
             )
         return df_input
 
-    def read_json(self, input_file_name: str) -> dict | None:
-        """Reads a JSON file and returns a dictionary with its content.
+    def read_mapping_file(self, input_file_name: str) -> dict | None:
+        """Read a mapping from YAML or deprecated JSON.
 
         Args:
-            input_file_name (str): The name of the input file (without extension).
+            input_file_name: Name of the input file without its extension.
 
         Returns:
-            dict | None: The dictionary containing the JSON data,
-                or None if the file does not exist.
+            The loaded mapping, or ``None`` if no supported file exists.
+
+        Raises:
+            ValueError: If the file does not contain a mapping.
         """
-        file_path = self.folder_path / f"{input_file_name}.json"
-        if not file_path.exists():
+        file_path = next(
+            (
+                self.folder_path / f"{input_file_name}.{extension}"
+                for extension in ("yaml", "yml", "json")
+                if (self.folder_path / f"{input_file_name}.{extension}").exists()
+            ),
+            None,
+        )
+        if file_path is None:
             return None
-        with open(file_path, "r") as file:
-            warnings.warn(
-                f"Loading JSON from '{file_path}' is deprecated. Convert the file "
-                "to YAML.",
-                DeprecationWarning,
-                stacklevel=2,
-            )
-            return json.load(file)
+
+        with open(file_path, "r", encoding="utf-8") as file:
+            if file_path.suffix in {".yaml", ".yml"}:
+                data = yaml.safe_load(file)
+            else:
+                warnings.warn(
+                    f"Loading JSON from '{file_path}' is deprecated. Convert the "
+                    "file to YAML.",
+                    DeprecationWarning,
+                    stacklevel=2,
+                )
+                data = json.load(file)
+
+        if not isinstance(data, dict):
+            raise ValueError(f"The mapping file '{file_path}' must contain a mapping.")
+        return data
 
     def load_attribute_file(self, filename="attributes"):
         """Load an attribute file from JSON or YAML.
