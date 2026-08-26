@@ -13,6 +13,8 @@ from typing_extensions import override
 from zen_garden.default_config import Analysis, Solver, System
 from zen_garden.postprocess.results.scenario import Scenario
 from zen_garden.postprocess.results.solution_loader import SolutionLoader
+from zen_garden.postprocess.results.cost_emission_calculation import (
+    CostEmissionCalculation)
 
 logger = logging.getLogger(__name__)
 
@@ -48,6 +50,8 @@ class Results:
         self.has_scenarios: bool = len(self.solution_loader.scenarios) > 1
         self.name: str = self.solution_loader.name
         self.ureg: UnitRegistry = self.solution_loader.ureg
+        self.cost_emission_calculation: CostEmissionCalculation = (
+            CostEmissionCalculation(self))
 
     @override
     def __str__(self) -> str:
@@ -79,13 +83,13 @@ class Results:
             This syntax allows for easy access to specific scenarios and their data::
 
                 res = Results("<result_folder>")
-                res["scenario_1"].get_df("capacity")
+                res["scenario_1"].get_unprocessed_result("capacity")
 
         """
         return self.solution_loader.scenarios[key]
 
     @overload
-    def get_df(
+    def get_unprocessed_result(
         self,
         component_name: str,
         scenario_name: str,
@@ -93,14 +97,14 @@ class Results:
     ) -> pd.Series: ...
 
     @overload
-    def get_df(
+    def get_unprocessed_result(
         self,
         component_name: str,
         scenario_name: None = None,
         index: dict[str, str] | None = None,
     ) -> pd.Series | dict[str, pd.Series]: ...
 
-    def get_df(
+    def get_unprocessed_result(
         self,
         component_name: str,
         scenario_name: str | None = None,
@@ -126,10 +130,10 @@ class Results:
 
             >>> from zen_garden.postprocess.results.results import Results
             >>> r = Results(path='<result_folder>')
-            >>> r.get_df('<component_name>') # dataframe of "<component_name>"
-            >>> r.get_df('<component_name>', '<scenario_name>') # dataframe of
+            >>> r.get_unprocessed_result('<component_name>') # dataframe of "<component_name>"
+            >>> r.get_unprocessed_result('<component_name>', '<scenario_name>') # dataframe of
                 "<component_name>" in "<scenario_name>"
-            >>> r.get_df('<component_name>', index={'<index_name>': '<index_value>'})
+            >>> r.get_unprocessed_result('<component_name>', index={'<index_name>': '<index_value>'})
                 # dataframe of "<component_name>" for a specific index value to slice the
                 dataframe
 
@@ -495,7 +499,11 @@ class Results:
             list[int]: A list of years for the specified scenario.
         """
         scenario = self.solution_loader.find_scenario(scenario_name)
-        return list(range(0, scenario.system.optimized_years))
+        ref_year = scenario.system.reference_year
+        interval_between_years = scenario.system.interval_between_years
+        return [
+            ref_year + i * interval_between_years 
+            for i in range(scenario.system.optimized_years)]
 
     def has_MF(self, scenario_name: str | None = None) -> bool:
         """Whether the given scenario uses rolling horizon optimization.
@@ -548,7 +556,7 @@ class Results:
         if "carrier" in series.index.names:
             return series.xs(carrier, level="carrier", drop_level=False)
 
-        reference_carriers = self.get_df("set_reference_carriers", scenario_name)
+        reference_carriers = self.get_unprocessed_result("set_reference_carriers", scenario_name)
         assert isinstance(reference_carriers, pd.Series)
 
         technologies_with_carrier = reference_carriers[reference_carriers == carrier]

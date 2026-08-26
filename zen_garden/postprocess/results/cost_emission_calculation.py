@@ -385,10 +385,10 @@ class CostEmissionCalculation:
                 self._leontief_cache["emissions"][cache_key] = systems
             return systems
 
-        ref_carrier = self.r.get_df(
+        ref_carrier = self.r.get_unprocessed_result(
             "set_reference_carriers", scenario_name=scenario_name
         ).squeeze()
-        nodes_on_edges = self.r.get_df(
+        nodes_on_edges = self.r.get_unprocessed_result(
             "set_nodes_on_edges", scenario_name=scenario_name
         ).str.split(",", expand=True)
         raw = self._get_leontief_raw_totals(scenario_name)
@@ -397,10 +397,10 @@ class CostEmissionCalculation:
             raw, sector_index, nodes_on_edges, ref_carrier
         )
 
-        input_carriers = self.r.get_df(
+        input_carriers = self.r.get_unprocessed_result(
             "set_input_carriers", scenario_name=scenario_name
         )
-        output_carriers = self.r.get_df(
+        output_carriers = self.r.get_unprocessed_result(
             "set_output_carriers", scenario_name=scenario_name
         )
         set_nodes = self.r.get_system(scenario_name=scenario_name).set_nodes

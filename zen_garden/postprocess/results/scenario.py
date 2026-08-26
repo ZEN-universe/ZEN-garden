@@ -609,7 +609,7 @@ class Scenario:
         """
         if not file_name.exists():
             logger.warning(f"{file_name.name} does not exist for scenario {self.name}.")
-            return obj_constr()
+            return obj_constr([], [], [], [], [])
 
         with open(file_name, "r") as f:
             return obj_constr(**json.load(f))
