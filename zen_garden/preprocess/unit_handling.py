@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING, Any
 import numpy as np
 import pandas as pd
 import scipy as sp
+import yaml
 from pint import UnitRegistry
 from pint.util import column_echelon_form
 
@@ -167,11 +168,9 @@ class UnitHandling:
         )
 
     def extract_base_units(self):
-        """Extracts the base units from either a CSV or JSON file.
+        """Extract the base units from YAML, JSON, or CSV.
 
-        The JSON file (``base_units.json``) is preferred. If it is not found,
-        the method falls back on the deprecated CSV file (``base_units.csv``)
-        and emits a warning.
+        YAML is preferred. JSON and CSV remain supported as deprecated fallbacks.
         If ``hour`` is not found in the list of base units, a warning will
         be raised. This method provides the list of all base units that will be
         used for further calculations and unit consistency checks.
@@ -184,8 +183,27 @@ class UnitHandling:
             UserWarning: If the hour unit is not found in the base unit
             definitions.
         """
-        if os.path.exists(os.path.join(self.folder_path / "base_units.json")):
-            with open(os.path.join(self.folder_path, "base_units.json"), "r") as f:
+        yaml_path = next(
+            (
+                self.folder_path / filename
+                for filename in ("base_units.yaml", "base_units.yml")
+                if (self.folder_path / filename).exists()
+            ),
+            None,
+        )
+        json_path = self.folder_path / "base_units.json"
+        if yaml_path is not None:
+            with open(yaml_path, "r", encoding="utf-8") as file:
+                data = yaml.safe_load(file)
+            list_base_units = data["unit"]
+        elif json_path.exists():
+            with open(json_path, "r", encoding="utf-8") as f:
+                warnings.warn(
+                    f"Loading JSON from '{f.name}' is deprecated. Convert the file "
+                    "to YAML.",
+                    DeprecationWarning,
+                    stacklevel=2,
+                )
                 data = json.load(f)
             list_base_units = data["unit"]
         else:
@@ -196,7 +214,7 @@ class UnitHandling:
             )
             logger.warning(
                 "DeprecationWarning: Specifying the base units in .csv file "
-                "format is deprecated. Use the .json file format instead."
+                "format is deprecated. Use the .yaml file format instead."
             )
         if "hour" not in list_base_units:
             warnings.warn(

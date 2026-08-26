@@ -307,7 +307,7 @@ class DataInput:
             df_output_copy.index
         ), (
             f"Input for {file_name} does not provide entire dataset and no "
-            "default given in attributes.json"
+            "default given in the attributes file"
         )
         df_output_copy.loc[common_index] = df_input.loc[common_index]
         return df_output_copy
@@ -711,7 +711,7 @@ class DataInput:
             unit_category: dict defining the dimensions of the parameter's unit
             file_name: name of selected file.
             manual_default_value: if given, use manual_default_value instead
-                of searching for default value in attributes.json
+                of searching for a default value in the attributes file
             subelement: dependent element for which data is extracted
         """
         # select index

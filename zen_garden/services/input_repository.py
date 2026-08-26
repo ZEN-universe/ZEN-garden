@@ -5,6 +5,7 @@ import warnings
 from pathlib import Path
 
 import pandas as pd
+import yaml
 
 
 class InputRepository:
@@ -79,10 +80,16 @@ class InputRepository:
         if not file_path.exists():
             return None
         with open(file_path, "r") as file:
+            warnings.warn(
+                f"Loading JSON from '{file_path}' is deprecated. Convert the file "
+                "to YAML.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
             return json.load(file)
 
     def load_attribute_file(self, filename="attributes"):
-        """Loads the attribute file, preferring JSON format over CSV.
+        """Load an attribute file from JSON or YAML.
 
         Args:
             filename (str): The name of the attribute file (without extension).
@@ -92,21 +99,30 @@ class InputRepository:
 
         Raises:
             NotImplementedError: If a CSV format is found, indicating deprecation.
-            FileNotFoundError: If neither CSV nor JSON attribute files are found.
+            FileNotFoundError: If no supported attribute file is found.
         """
         if (self.folder_path / f"{filename}.csv").exists():
             raise NotImplementedError(
                 f"The .csv format for attributes is deprecated "
-                f"({filename} of {Path(self.folder_path).name}). Use .json instead."
-            )
-        if not (self.folder_path / f"{filename}.json").exists():
-            raise FileNotFoundError(
-                f"Attributes file does not exist for {Path(self.folder_path).name}"
+                f"({filename} of {Path(self.folder_path).name}). "
+                "Use .json or .yaml instead."
             )
 
-        return self._load_attribute_file_json(filename=filename)
+        loaders = (
+            ("json", self._load_attribute_file_json),
+            ("yaml", self._load_attribute_file_yaml),
+            ("yml", self._load_attribute_file_yaml),
+        )
+        for extension, loader in loaders:
+            if (self.folder_path / f"{filename}.{extension}").exists():
+                return loader(filename=filename, extension=extension)
 
-    def _load_attribute_file_json(self, filename: str):
+        raise FileNotFoundError(
+            f"Attributes file does not exist for {Path(self.folder_path).name}. "
+            f"Expected one of: {filename}.json, {filename}.yaml, {filename}.yml."
+        )
+
+    def _load_attribute_file_json(self, filename: str, extension: str = "json"):
         """Loads the attribute file in JSON format.
 
         Args:
@@ -115,13 +131,39 @@ class InputRepository:
         Returns:
             dict: The dictionary containing the attribute data.
         """
-        file_path = self.folder_path / f"{filename}.json"
-        with open(file_path, "r") as file:
+        file_path = self.folder_path / f"{filename}.{extension}"
+        with open(file_path, "r", encoding="utf-8") as file:
+            warnings.warn(
+                f"Loading JSON from '{file_path}' is deprecated. Convert the file "
+                "to YAML.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
             data = json.load(file)
+        return self._normalize_attribute_data(data, file_path.name)
+
+    def _load_attribute_file_yaml(self, filename: str, extension: str = "yaml"):
+        """Load an attribute file in YAML format.
+
+        Args:
+            filename: Name of the attribute file without its extension.
+            extension: YAML file extension to use.
+
+        Returns:
+            The normalized attribute data.
+        """
+        file_path = self.folder_path / f"{filename}.{extension}"
+        with open(file_path, "r", encoding="utf-8") as file:
+            data = yaml.safe_load(file)
+        return self._normalize_attribute_data(data, file_path.name)
+
+    @staticmethod
+    def _normalize_attribute_data(data, source_name: str):
+        """Normalize supported attribute structures into a dictionary."""
         attribute_dict = {}
         if isinstance(data, list):
             warnings.warn(
-                "The list format in attributes.json [{...}] is deprecated. "
+                f"The list format in {source_name} [{{...}}] is deprecated. "
                 "Use a dict format instead {...}.",
                 DeprecationWarning,
                 stacklevel=2,
