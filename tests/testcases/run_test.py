@@ -775,4 +775,4 @@ def test_11a(folder_path):
 
 if __name__ == "__main__":
     testcase_folder = os.path.dirname(__file__)
-    test_1k(testcase_folder)
+    test_1g(testcase_folder)
