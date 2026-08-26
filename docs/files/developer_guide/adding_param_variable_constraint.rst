@@ -223,6 +223,6 @@ Please follow the constraint guide in :ref:`linopy.linopy`.
 
     You can add multiple constraints in the same rule,
     for example ``constraint_availability_import`` and ``constraint_availability_export`` in
-    :py:class:`AvailabilityImportExportConstraint <zen_garden.constraints.carrier.availability_import_export_constraint.AvailabilityImportExportConstraint>`.
+    :py:class:`AvailabilityImportExportConstraint <zen_garden.elements.carrier.constraints.availability_import_export_constraint.AvailabilityImportExportConstraint>`.
     The rule of thumb is to add all constraints that are related to the same topic in the same rule
     to reuse the code and avoid duplication. If the constraints are too different, it is better to create a new constraint method.

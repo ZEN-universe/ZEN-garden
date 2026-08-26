@@ -48,7 +48,6 @@ Documentation
    files/tutorial/03_add_technologies_carrier
    files/tutorial/04_scenario_analysis
    files/tutorial/05_time_series_aggregation
-   files/tutorial/06_unit_handling
    files/tutorial/07_scaling
    files/tutorial/08_operation_only
    files/tutorial/09_handle_infeasibilities
@@ -60,6 +59,7 @@ Documentation
    :caption: ZEN-garden in detail
 
    files/zen_garden_in_detail/input_structure
+   files/zen_garden_in_detail/unit_handling
    files/zen_garden_in_detail/configurations
    files/zen_garden_in_detail/sets_params_constraints
    files/zen_garden_in_detail/mathematical_formulation
@@ -107,7 +107,6 @@ Documentation
    :caption: Support
 
    files/support/get_help
-
 
 
 

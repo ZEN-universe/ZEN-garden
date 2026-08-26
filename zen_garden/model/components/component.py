@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 class Component:
     """Class to prepare parameter, variable and constraint data to suit linopy."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Instantiate object of Component class."""
         self.docs: dict[str, str] = {}
 
@@ -43,8 +43,10 @@ class Component:
         for string in prohibited_strings:
             if string in doc:
                 logger.warning(
-                    f"Docstring '{original_doc}' contains prohibited "
-                    f"string '{string}'. Occurrences are dropped."
+                    (
+                        f"Docstring '{original_doc}' contains prohibited "
+                        f"string '{string}'. Occurrences are dropped."
+                    )
                 )
                 doc = doc.replace(string, "")
         # joined index names
@@ -67,6 +69,8 @@ class Component:
         :return index_values: names of indices
         :return index_names:  values of indices
         """
+        index_values: list | pd.Series
+        index_names: list[str]
         if isinstance(index_list, ZenSet):
             index_values = list(index_list)
             index_names = [index_list.name]

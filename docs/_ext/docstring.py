@@ -20,7 +20,7 @@ import pdb;
 pdb.set_trace()
 
 The latter line can be placed anywhere in the code and will set a breakpoint
-at the location. When calling "make html" to build the documentation, the 
+at the location. When calling "make html" to build the documentation, the
 breakpoint will be activated. Type variable names to view variables values
 "next" to go to the next line, "step" to step into a function, and "exit" to
 leave the debugger.
@@ -178,7 +178,7 @@ class DocstringMethod(DocstringDirective):
     Example:
 
     .. docstring_method::
-       zen_garden.constraints.conversion_technology.
+       zen_garden.elements.conversion_technology.constraints.
        CapacityFactorConversionConstraint.build
 
     To include only selected structured sections:

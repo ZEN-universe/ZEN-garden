@@ -8,7 +8,7 @@ import pandas as pd
 from tqdm import tqdm
 
 from zen_garden.postprocess.results import Results
-from zen_garden.postprocess.results.solution_loader import ComponentType
+from zen_garden.postprocess.results.component_type import ComponentType
 
 logger = logging.getLogger(__name__)
 
@@ -131,23 +131,23 @@ def get_component_diff(
     assert len(results) == 2, "Please give exactly two components"
 
     results_0, results_1 = results
+    component_map_0 = results_0.solution_loader.scenarios[scenarios[0]].component_map
     component_names_0 = set(
         [
             name
-            for name, component in results_0.solution_loader.scenarios[
-                scenarios[0]
-            ].components.items()
-            if component["component_type"] is component_type and "_units" not in name
+            for name in component_map_0.all_components
+            if component_map_0.find_type(name) is component_type
+            and "_units" not in name
         ]
     )
 
+    component_map_1 = results_1.solution_loader.scenarios[scenarios[1]].component_map
     component_names_1 = set(
         [
             name
-            for name, component in results_1.solution_loader.scenarios[
-                scenarios[1]
-            ].components.items()
-            if component["component_type"] is component_type and "_units" not in name
+            for name in component_map_1.all_components
+            if component_map_1.find_type(name) is component_type
+            and "_units" not in name
         ]
     )
     only_in_0 = component_names_0.difference(component_names_0)
@@ -386,7 +386,7 @@ def _get_different_vals(
     :return: comparison_df
     """
     is_close = np.isclose(val_0, val_1, rtol=rtol, equal_nan=True)
-    if isinstance(val_0, pd.DataFrame):
+    if isinstance(val_0, pd.DataFrame) and isinstance(val_1, pd.DataFrame):
         diff_val_0 = val_0[(~is_close).any(axis=1)]
         diff_val_1 = val_1[(~is_close).any(axis=1)]
     else:

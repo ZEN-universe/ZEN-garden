@@ -16,9 +16,10 @@ specific dataset and must contain the following files and subfolders:
     |--<dataset>/
     |   |--energy_system/
     |   |   |--attributes.json
-    |   |   |--base_units.csv
+    |   |   |--base_units.json
     |   |   |--set_nodes.csv
-    |   |   `--set_edges.csv
+    |   |   |--set_edges.csv
+    |   |   `--unit_definitions.txt
     |   |
     |   |--set_carriers/
     |   |   |--<carrier1>/
@@ -69,8 +70,9 @@ Folders
 Energy System
 ==============
 
-The folder ``energy_system`` contains four necessary files: ``attributes.json``, 
-``base_units.csv``, ``set_nodes.csv``, and ``set_edges.csv``. The file 
+The folder ``energy_system`` contains five necessary files: ``attributes.json``,
+``base_units.json``, ``set_nodes.csv``, ``set_edges.csv``, and
+``unit_definitions.txt``. The file
 ``attributes.json`` defines the numerical setup of the energy system, e.g., the 
 carbon emission limits, the discount rate, or the carbon price. 
 ``set_nodes.csv`` and ``set_edges.csv`` define the nodes and edges of the energy 
@@ -88,8 +90,9 @@ edges, but note that you are not forced to follow that convention. In fact,
     model. If you do not specify any nodes in ``system.json``, all nodes from 
     ``set_nodes.csv`` are used.
 
-``base_units.csv`` define the base units in the model. That means that all units 
-in the model are converted to a combination of base units. See 
+``base_units.json`` defines the base units in the model. That means that all
+units in the model are converted to a combination of base units.
+``unit_definitions.txt`` contains additional Pint unit definitions. See
 :ref:`t_units.t_units` for more information.
 
 
@@ -558,4 +561,3 @@ parameter names in the file:
     specified file is ``demand_yearly_variation.csv``, not ``demand.csv``.
     Therefore, the interpolation is only disabled for the yearly variation, not 
     for the hourly-dependent data.
-

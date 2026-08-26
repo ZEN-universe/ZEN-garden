@@ -169,8 +169,9 @@ class UnitHandling:
     def extract_base_units(self):
         """Extracts the base units from either a CSV or JSON file.
 
-        If the CSV file (``base_units.csv``) is not found, the method will
-        fall back on a JSON file (``base_units.json``) to load the base units.
+        The JSON file (``base_units.json``) is preferred. If it is not found,
+        the method falls back on the deprecated CSV file (``base_units.csv``)
+        and emits a warning.
         If ``hour`` is not found in the list of base units, a warning will
         be raised. This method provides the list of all base units that will be
         used for further calculations and unit consistency checks.
@@ -183,7 +184,11 @@ class UnitHandling:
             UserWarning: If the hour unit is not found in the base unit
             definitions.
         """
-        if os.path.exists(os.path.join(self.folder_path / "base_units.csv")):
+        if os.path.exists(os.path.join(self.folder_path / "base_units.json")):
+            with open(os.path.join(self.folder_path, "base_units.json"), "r") as f:
+                data = json.load(f)
+            list_base_units = data["unit"]
+        else:
             list_base_units = (
                 pd.read_csv(self.folder_path / "base_units.csv")
                 .squeeze()
@@ -193,10 +198,6 @@ class UnitHandling:
                 "DeprecationWarning: Specifying the base units in .csv file "
                 "format is deprecated. Use the .json file format instead."
             )
-        else:
-            with open(os.path.join(self.folder_path, "base_units.json"), "r") as f:
-                data = json.load(f)
-            list_base_units = data["unit"]
         if "hour" not in list_base_units:
             warnings.warn(
                 "The base unit for time is intended to be `hour` but is not "
