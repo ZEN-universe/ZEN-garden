@@ -19,6 +19,7 @@ class StorageTechnologyConstructor(ModelConstructor):
     element_class = StorageTechnology
     constraints = STORAGE_TECHNOLOGY_CONSTRAINTS
     parameters = StorageTechnology.own_parameters
+    variables = StorageTechnology.variables
 
     @override
     def has_elements(self) -> bool:

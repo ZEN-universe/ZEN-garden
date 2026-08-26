@@ -8,8 +8,12 @@ from typing_extensions import override
 from zen_garden.elements.storage_technology.parameters import (
     STORAGE_TECHNOLOGY_PARAMETERS,
 )
+from zen_garden.elements.storage_technology.variables import (
+    STORAGE_TECHNOLOGY_VARIABLES,
+)
 from zen_garden.elements.technology import Technology
 from zen_garden.topology.generic_parameter import GenericParameter
+from zen_garden.topology.generic_variable import GenericVariable
 
 logger = logging.getLogger(__name__)
 
@@ -20,9 +24,11 @@ class StorageTechnology(Technology):
     # set label
     label = "set_storage_technologies"
     location_type = "set_nodes"
+    # Todo: Add the constraints here?
     own_parameters: ClassVar[list[type[GenericParameter]]] = (
         STORAGE_TECHNOLOGY_PARAMETERS
     )
+    variables: ClassVar[list[type[GenericVariable]]] = STORAGE_TECHNOLOGY_VARIABLES
 
     @override
     def _initialize(self):

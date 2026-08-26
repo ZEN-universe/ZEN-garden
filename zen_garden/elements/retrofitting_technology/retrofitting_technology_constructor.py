@@ -20,6 +20,7 @@ class RetrofittingTechnologyConstructor(ModelConstructor):
     element_class = RetrofittingTechnology
     constraints = RETROFITTING_TECHNOLOGY_CONSTRAINTS
     parameters = RetrofittingTechnology.own_parameters
+    variables = RetrofittingTechnology.variables
     sets = RetrofittingTechnology.own_sets
 
     @override

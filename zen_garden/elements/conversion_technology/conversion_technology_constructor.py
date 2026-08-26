@@ -22,6 +22,7 @@ class ConversionTechnologyConstructor(ModelConstructor):
     element_class = ConversionTechnology
     parameters = ConversionTechnology.own_parameters
     sets = ConversionTechnology.own_sets
+    variables = ConversionTechnology.variables
 
     @override
     def has_elements(self) -> bool:

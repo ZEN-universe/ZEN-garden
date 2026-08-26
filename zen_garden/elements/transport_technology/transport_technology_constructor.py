@@ -19,6 +19,7 @@ class TransportTechnologyConstructor(ModelConstructor):
     element_class = TransportTechnology
     constraints = TRANSPORT_TECHNOLOGY_CONSTRAINTS
     parameters = TransportTechnology.own_parameters
+    variables = TransportTechnology.variables
 
     @override
     def has_elements(self) -> bool:

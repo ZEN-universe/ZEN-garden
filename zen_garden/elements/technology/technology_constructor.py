@@ -21,6 +21,7 @@ logger = logging.getLogger(__name__)
 class TechnologyConstructor(ModelConstructor):
     element_class = Technology
     parameters = Technology.own_parameters
+    variables = Technology.variables
     sets = Technology.own_sets
 
     @override

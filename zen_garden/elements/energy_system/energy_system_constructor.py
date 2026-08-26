@@ -21,6 +21,7 @@ class EnergySystemConstructor(ModelConstructor):
     element_class = EnergySystem
     constraints = ENERGY_SYSTEM_CONSTRAINTS
     parameters = EnergySystem.parameters
+    variables = EnergySystem.variables
     sets = EnergySystem.own_sets
 
     @override

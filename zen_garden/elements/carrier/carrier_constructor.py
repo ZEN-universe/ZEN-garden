@@ -16,6 +16,7 @@ class CarrierConstructor(ModelConstructor):
     element_class = Carrier
     constraints = CARRIER_CONSTRAINTS
     parameters = Carrier.own_parameters
+    variables = Carrier.variables
 
     @override
     def has_elements(self) -> bool:
