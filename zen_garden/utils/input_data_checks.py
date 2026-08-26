@@ -158,7 +158,6 @@ class InputDataChecks:
             "base_units.yaml",
             "base_units.yml",
             "base_units.json",
-            "base_units.csv",
         )
         if not any(name in energy_system_files for name in base_unit_filenames):
             raise FileNotFoundError(
