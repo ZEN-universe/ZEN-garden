@@ -5,8 +5,12 @@ class ChargeStorageBinary(GenericVariable):
     """Variable for charge storage binary."""
 
     name = "charge_storage_binary"
-    indices = ("set_storage_technologies", "set_nodes", "set_time_steps_operation")
+    indices = ["set_storage_technologies", "set_nodes", "set_time_steps_operation"]
     doc = "Variable for charge binary for storage technology"
     unit_category = None
     binary = True
+
+    @classmethod
+    def get_bounds(cls):
+        return None
 

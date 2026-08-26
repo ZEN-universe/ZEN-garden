@@ -5,7 +5,10 @@ class CarbonEmissionsCumulative(GenericVariable):
     """Variable for cumulative carbon emissions."""
 
     name = "carbon_emissions_cumulative"
-    indices = ("set_years",)
+    indices = ["set_years"]
     doc = "Variable for cumulative carbon emissions of energy system over time for each year"
     unit_category = {"emissions": 1}
 
+    @classmethod
+    def get_bounds(cls):
+        return None

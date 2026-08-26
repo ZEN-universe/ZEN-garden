@@ -1,12 +1,14 @@
 from abc import ABC
 from typing import ClassVar
 
+import xarray as xr
+
 
 class GenericVariable(ABC):
     """Abstract base class for variables in ZEN-garden."""
 
     name: ClassVar[str]
-    indices: ClassVar[tuple[str, ...]]
+    indices: ClassVar[list[str]]
     doc: ClassVar[str]
     unit_category: ClassVar[dict[str, int]]
     integer: ClassVar[bool] = False
@@ -21,9 +23,12 @@ class GenericVariable(ABC):
             if not hasattr(cls, attr):
                 raise TypeError(f"{cls.__name__} must define {attr!r}")
 
-    # This is a classmethod so that it can be called without creating an
-    # instance of the class, e.g. Variable.build() rather than Variable().build().
     @classmethod
     def build(cls):
+        """Build the Variable."""
+        raise NotImplementedError("ToDO:")
+
+    @classmethod
+    def get_bounds(cls, *args, **kwargs):
         """Build the Variable."""
         raise NotImplementedError("ToDO:")

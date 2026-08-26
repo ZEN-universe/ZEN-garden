@@ -34,58 +34,33 @@ class EnergySystemConstructor(ModelConstructor):
         """Constructs the pe.Vars of the class <EnergySystem>."""
         logger.info("Constructing variables for EnergySystem")
 
-        # carbon emissions
-        self.zen_model.add_variable(
-            name="carbon_emissions_annual",
-            index_sets=self.zen_model.sets["set_years"],
-            doc="annual carbon emissions of energy system",
-            unit_category={"emissions": 1},
-        )
-        # cumulative carbon emissions
-        self.zen_model.add_variable(
-            name="carbon_emissions_cumulative",
-            index_sets=self.zen_model.sets["set_years"],
-            doc="cumulative carbon emissions of energy system over time for each year",
-            unit_category={"emissions": 1},
-        )
-        # carbon emission overshoot
-        self.zen_model.add_variable(
-            name="carbon_emissions_budget_overshoot",
-            index_sets=self.zen_model.sets["set_years"],
-            bounds=(0, np.inf),
-            doc="overshoot carbon emissions of energy system "
-            "at the end of the time horizon",
-            unit_category={"emissions": 1},
-        )
-        # carbon emission overshoot
-        self.zen_model.add_variable(
-            name="carbon_emissions_annual_overshoot",
-            index_sets=self.zen_model.sets["set_years"],
-            bounds=(0, np.inf),
-            doc="overshoot of the annual carbon emissions limit of energy system",
-            unit_category={"emissions": 1},
-        )
-        # cost of carbon emissions
-        self.zen_model.add_variable(
-            name="cost_carbon_emissions_total",
-            index_sets=self.zen_model.sets["set_years"],
-            doc="total cost of carbon emissions of energy system",
-            unit_category={"money": 1},
-        )
-        # costs
-        self.zen_model.add_variable(
-            name="cost_total",
-            index_sets=self.zen_model.sets["set_years"],
-            doc="total cost of energy system",
-            unit_category={"money": 1},
-        )
-        # net_present_cost
-        self.zen_model.add_variable(
-            name="net_present_cost",
-            index_sets=self.zen_model.sets["set_years"],
-            doc="net_present_cost of energy system",
-            unit_category={"money": 1},
-        )
+        for variable in self.variables:
+
+            if variable.name in ["carbon_emissions_annual",
+                             "carbon_emissions_cumulative",
+                             "carbon_emissions_budget_overshoot",
+                             "carbon_emissions_annual_overshoot",
+                             "cost_carbon_emissions_total",
+                             "cost_total",
+                             "net_present_cost"]:
+                # Exceptional bounds, masks or indices
+                index_sets = self.zen_model.sets["set_years"]
+                bounds = variable.get_bounds()
+            else:
+                # Standard behavior
+                index_sets = self.create_custom_set(variable.indices)
+                bounds = variable.get_bounds()
+
+            self.zen_model.add_variable(
+                name=variable.name,
+                index_sets=index_sets,
+                binary=variable.binary,
+                bounds=bounds,
+                doc=variable.doc,
+                unit_category=variable.unit_category,
+            )
+
+
 
     @override
     def construct_objective(self):
