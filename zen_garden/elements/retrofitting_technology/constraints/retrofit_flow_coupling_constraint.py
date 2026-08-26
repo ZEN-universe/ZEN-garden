@@ -46,7 +46,7 @@ class RetrofitFlowCouplingConstraint(GenericConstraint):
                 )
                 for t, c in itertools.product(
                     self.zen_model.sets["set_conversion_technologies"],
-                    self.zen_model.sets["set_input_carriers"].superset,
+                    self.zen_model.sets["set_input_carriers"].coordinate_values,
                 )
             }
         )
@@ -59,7 +59,7 @@ class RetrofitFlowCouplingConstraint(GenericConstraint):
                 )
                 for t, c in itertools.product(
                     self.zen_model.sets["set_conversion_technologies"],
-                    self.zen_model.sets["set_output_carriers"].superset,
+                    self.zen_model.sets["set_output_carriers"].coordinate_values,
                 )
             }
         )

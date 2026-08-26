@@ -9,7 +9,7 @@ from linopy.expressions import LinearExpression
 
 from zen_garden.elements.element import Element
 from zen_garden.elements.technology import Technology
-from zen_garden.model.components.zen_set import ZenSet
+from zen_garden.model.components.zen_set import BaseSet
 from zen_garden.topology.generic_constraint import GenericConstraint
 
 if TYPE_CHECKING:
@@ -301,7 +301,7 @@ class TechnologyDiffusionLimitConstraint(GenericConstraint):
 
     def _get_class_set_of_element(
         self, element_name: str, class_name: type[Element]
-    ) -> ZenSet:
+    ) -> BaseSet:
         """Returns the set of all elements in the class of the element.
 
         :param element_name: name of element

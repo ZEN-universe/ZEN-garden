@@ -3,13 +3,14 @@
 import itertools
 import logging
 import uuid
+from collections.abc import Mapping
 from typing import TYPE_CHECKING, Any
 
 import numpy as np
 import xarray as xr
 
 from zen_garden.model.components.component import Component
-from zen_garden.model.components.zen_set import ZenSet
+from zen_garden.model.components.zen_set import BaseSet, IndexedSet, SimpleSet
 
 if TYPE_CHECKING:
     from zen_garden.elements.element import Element
@@ -38,7 +39,7 @@ class SetRegistry(Component):
         self.indexing_sets = indexing_sets
 
         # attributes for the actual sets and index sets of the indexed sets
-        self.sets: dict[str, ZenSet] = {}
+        self.sets: dict[str, BaseSet] = {}
         self.index_sets: dict[str, str] = {}
 
         # this is the Dataset with the coords
@@ -56,9 +57,15 @@ class SetRegistry(Component):
             logger.warning(f"{name} already added. Will be overwritten!")
 
         # added data and docs
-        self.sets[name] = ZenSet(data=data, name=name, doc=doc, index_set=index_set)
+        if isinstance(data, Mapping):
+            model_set: BaseSet = IndexedSet(
+                data=data, name=name, doc=doc, index_set=index_set
+            )
+        else:
+            model_set = SimpleSet(data=data, name=name, doc=doc)
+        self.sets[name] = model_set
         self.coords_dataset = self.coords_dataset.assign_coords(
-            {name: np.array(list(self.sets[name].superset))}
+            {name: np.array(list(model_set.coordinate_values))}
         )
         self.docs[name] = self.compile_doc_string(
             doc, name=name, index_list=[index_set] if index_set is not None else []
@@ -72,7 +79,7 @@ class SetRegistry(Component):
         :param name: The name of the set
         :return: True if indexed, False otherwise
         """
-        return name in self.index_sets
+        return isinstance(self.sets[name], IndexedSet)
 
     def get_index_name(self, name: str) -> str:
         """Returns the index name of an indexed set.
@@ -82,7 +89,10 @@ class SetRegistry(Component):
         """
         if not self.is_indexed(name):
             raise ValueError(f"Set {name} is not an indexed set!")
-        return self.index_sets[name]
+        zen_set = self.sets[name]
+        if not isinstance(zen_set, IndexedSet):
+            raise ValueError(f"Set {name} is not an indexed set!")
+        return zen_set.index_set
 
     @staticmethod
     def tuple_to_arr(index_values, index_list, unique=False):
@@ -227,7 +237,7 @@ class SetRegistry(Component):
         else:
             return np.unique(data)
 
-    def __getitem__(self, name) -> ZenSet:
+    def __getitem__(self, name) -> BaseSet:
         """Returns a set.
 
         :param name: The name of the set to get
@@ -341,7 +351,10 @@ class SetRegistry(Component):
             list_sets.append(self.sets[index])
             return True
         elif self.get_index_name(index) in self.sets:
-            list_sets.append(self.sets[index][element])
+            indexed_set = self.sets[index]
+            if not isinstance(indexed_set, IndexedSet):
+                raise TypeError(f"Set {index} is not indexed")
+            list_sets.append(indexed_set[element])
             return True
         return False
 
