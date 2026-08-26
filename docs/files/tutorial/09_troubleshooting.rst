@@ -2,7 +2,7 @@
 
 
 ############################
-Tutorial 10: Troubleshooting
+Tutorial 9: Troubleshooting
 ############################
 
 Frequently made mistakes
