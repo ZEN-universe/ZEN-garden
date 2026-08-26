@@ -229,7 +229,8 @@ class TechnologyDiffusionLimitConstraint(GenericConstraint):
         market_share_unbounded = {
             (t, ot): (
                 self.zen_model.parameters.market_share_unbounded
-                if self.zen_model.sets["set_reference_carriers"][t][0]
+                if ot != t
+                and self.zen_model.sets["set_reference_carriers"][t][0]
                 == self.zen_model.sets["set_reference_carriers"][ot][0]
                 else 0
             )
