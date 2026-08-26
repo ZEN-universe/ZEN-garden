@@ -30,10 +30,6 @@ class StorageTechnologyConstructor(ModelConstructor):
         return True
 
     @override
-    def construct_sets(self):
-        logger.info("Constructing sets for StorageTechnology")
-
-    @override
     def construct_vars(self):
         logger.info("Constructing variables for StorageTechnology")
 

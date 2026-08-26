@@ -33,10 +33,6 @@ class ConversionTechnologyConstructor(ModelConstructor):
         return True
 
     @override
-    def construct_sets(self):
-        super().construct_sets()
-
-    @override
     def construct_vars(self):
         logger.info("Constructing variables for ConversionTechnology")
 

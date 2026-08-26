@@ -29,11 +29,6 @@ class EnergySystemConstructor(ModelConstructor):
         return True
 
     @override
-    def construct_sets(self):
-        """Constructs the pe.Sets of the class <EnergySystem>."""
-        super().construct_sets()
-
-    @override
     def construct_vars(self):
         """Constructs the pe.Vars of the class <EnergySystem>."""
         logger.info("Constructing variables for EnergySystem")

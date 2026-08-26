@@ -32,9 +32,5 @@ class RetrofittingTechnologyConstructor(ModelConstructor):
         return np.size(self.config.system["set_retrofitting_technologies"]) > 0
 
     @override
-    def construct_sets(self):
-        super().construct_sets()
-
-    @override
     def construct_vars(self):
         logger.info("Constructing variables for RetrofittingTechnology")
