@@ -64,7 +64,7 @@ nbsphinx_allow_errors = True
 
 # Generate .rst files when encountering an autosummary directive
 autosummary_generate = True
-autosummary_generate_overwrite = False
+autosummary_generate_overwrite = True
 
 # configure docstring options
 # todo_include_todos = True  # <- REQUIRED
@@ -76,6 +76,10 @@ autodoc_default_options = {
     "members": True,
     "special-members": "__init__",
 }
+
+# The visualization CLI delegates to the separately distributed ZEN-temple
+# package. Its local implementation is not needed to render this API page.
+autodoc_mock_imports = ["zen_temple"]
 
 numfig = True
 

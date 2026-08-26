@@ -21,8 +21,9 @@ can be used to enhance the user experience:
 Additional mixed-integer constraints
 ------------------------------------
 
-Besides, PWA representation of the CAPEX (see :ref:`input_structure.pwa`), ZEN-garden allows the 
-use of three additional mixed-integer linear constraints:
+ZEN-garden includes optional mixed-integer constraints, which are described below.
+They cover minimum technology loads, minimum capacity additions, and transport
+investments with separate capacity- and distance-dependent cost terms.
 
 
 .. _additional_features.min_load:
@@ -206,7 +207,8 @@ the reference flow of another conversion technology. Specifically, the reference
 must be lower or equal to the reference flow of the converted technology times the ``retrofit_flow_coupling_factor``.
 The lower-or-equal sign allows for partial retrofitting of the converted technology.
 
-Check out the dataset example :ref:`dataset_examples.14_retrofitting_and_fuel_substitution`.
+Check out the dataset example
+:ref:`dataset_examples.14_retrofitting_and_fuel_substitution`.
 
 Retrofitting technologies are useful for two main applications:
 

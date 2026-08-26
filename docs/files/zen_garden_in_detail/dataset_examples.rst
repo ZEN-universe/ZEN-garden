@@ -17,17 +17,18 @@ The following datasets are available:
 1. ``1_base_case``
 2. ``2_multi_year_optimization``
 3. ``3_reduced_import_availability``
-4. ``4_multiple_time_steps_per_year``
-5. ``5_reduced_import_availability_yearly``
-6. ``6_time_series_aggregation``
-7. ``7_yearly_variation``
-8. ``8_myopic_foresight``
-9. ``9_brown_field``
-10. ``10_multi_scenario``
-11. ``11_multiple_in_output_carriers_conversion``
-12. ``12_yearly_interpolation``
-13. ``13_retrofitting_and_fuel_substitution``
-14. ``14_unit_consistency_expected_error``
+4. ``4_PWA_nonlinear_capex``
+5. ``5_multiple_time_steps_per_year``
+6. ``6_reduced_import_availability_yearly``
+7. ``7_time_series_aggregation``
+8. ``8_yearly_variation``
+9. ``9_myopic_foresight``
+10. ``10_brown_field``
+11. ``11_multi_scenario``
+12. ``12_multiple_in_output_carriers_conversion``
+13. ``13_yearly_interpolation``
+14. ``14_retrofitting_and_fuel_substitution``
+15. ``15_unit_consistency_expected_error``
 
 All datasets build upon the dataset ``1_base_case`` and extend it with 
 additional features. In the following we describe the datasets and highlight the 
@@ -101,8 +102,15 @@ the model is a mixed integer linear program. This method for calculating the
 costs of transport modes needs to be activated in the ``system.json`` file by 
 setting the parameter ``double_capex_transport`` to ``true``.
 
-4_multiple_time_steps_per_year
---------------------------------
+4_PWA_nonlinear_capex
+---------------------
+This example adds a piecewise affine representation of conversion-technology
+capital expenditures to demonstrate nonlinear economies of scale. See
+:ref:`math_formulation.pwa_constraints` for the mathematical formulation.
+
+
+5_multiple_time_steps_per_year
+------------------------------
 Now the model includes time steps within a year and optimizes the operation of
 the energy system. In the ``system.json`` file the parameters
 ``aggregated_time_steps_per_year`` and ``unaggregated_time_steps_per_year`` are
@@ -111,8 +119,8 @@ include variation between the time steps, the electricity and heat demands are
 hourly resolved in the ``demand.csv`` file.
 
 
-5_reduced_import_availability_yearly
---------------------------------------
+6_reduced_import_availability_yearly
+------------------------------------
 With the file ``availability_import_yearly.csv`` the import availability of
 natural gas in CH is step-wise reduced for each year. In contrast to
 the ``availability_import.csv`` file, the ``availability_import_yearly.csv``
@@ -122,8 +130,8 @@ storage and pipelines to store natural gas for the years with a smaller import
 limit.
 
 
-6_time_series_aggregation
----------------------------
+7_time_series_aggregation
+-------------------------
 Now the time series aggregation is switched on in the ``system.json`` file by
 setting the parameter ``conduct_time_series_aggregation`` to ``true``.
 Additionally, the parameter ``aggregated_time_steps_per_year`` needs to be
@@ -134,7 +142,7 @@ differently to the previous examples:
 
 .. csv-table:: Yearly import availability of natural gas in CH
     :header-rows: 1
-    :file: ../../dataset_examples/6_time_series_aggregation/set_carriers/
+    :file: ../../dataset_examples/7_time_series_aggregation/set_carriers/
            natural_gas/availability_import_yearly.csv
     :widths: 15 15 15 15
     :delim: ,
@@ -143,8 +151,8 @@ The years are now set as the columns of the file and the nodes as the rows.
 Both structures are supported in ZEN-garden and depending on the input data,
 one might be easier to handle than the other.
 
-7_yearly_variation
----------------------
+8_yearly_variation
+------------------
 In addition to the variation within a year, ZEN-garden's input data can also
 handle variation between years. The yearly variation multiplies a parameter with
 a constant factor for the entire year. Consequently, the shape of the input data
@@ -162,8 +170,8 @@ parameter ``unaggregated_time_steps_per_year`` is set to 8760 in the
 the optimization uses 10 representative time steps for the entire year.
 
 
-8_myopic_foresight
----------------------
+9_myopic_foresight
+------------------
 All the previous datasets are optimized using so-called perfect foresight, i.e.,
 all years are optimized at once with the assumption that all the future
 parameter data are known at the time the optimization is conducted. In this
@@ -185,8 +193,8 @@ horizon are visualized:
           years. After one year is optimized, the horizon shifts to the next
           year.
 
-9_brown_field
-----------------
+10_brown_field
+--------------
 Up to this model, all examples have assumed so-called ``green field`` capacity
 expansion. The assumption is that all capacities are newly built and no
 capacities are existing on nodes or edges, i.e., the whole system is built
@@ -197,16 +205,16 @@ that are built in the past, i.e., can be used immediately and have a reduced
 lifetime left. Additionally, capacities that will be built in the future, i.e.
 within the optimization horizon, can be considered. For example, this may cover
 installations for which the decision to build them has already been made, but
-the construction has not yet started. The model ``9_brown_field`` builds upon
-the example ``7_yearly_variation``, i.e., with perfect foresight optimization.
+the construction has not yet started. The model ``10_brown_field`` builds upon
+the example ``8_yearly_variation``, i.e., with perfect foresight optimization.
 For photovoltaic systems, the file ``existing_capacities.csv`` is added which
 specifies the capacities that exist in the nodes and the year in which they
 were or will be built.
 
 
-10_multi_scenario
--------------------
-The model ``10_multi_scenario`` showcases the scenario analysis feature of
+11_multi_scenario
+-----------------
+The model ``11_multi_scenario`` showcases the scenario analysis feature of
 ZEN-garden. The parameter ``conduct_scenario_analysis`` in the ``system.json``
 file is set to ``true`` and a new file, ``scenarios.json``, is added to the
 dataset. The file ``scenarios.json`` contains the different scenarios that are
@@ -220,11 +228,11 @@ them from the standard input data files. The ending is specified in the
 electricity is named ``attributes_low_carbon.json``.
 
 
-11_multiple_in_output_carriers_conversion
---------------------------------------------
+12_multiple_in_output_carriers_conversion
+-----------------------------------------
 This model introduces conversion technologies which work with more than one in-
 or output carrier. For this purpose, the model from example
-``7_yearly_variation`` is extended with a combined heat and power (CHP)
+``8_yearly_variation`` is extended with a combined heat and power (CHP)
 technology. The CHP technology replaces the natural gas boiler and works with
 natural gas and biogas as input carriers. The carrier biogas is newly introduced
 as well. The output carriers of the CHP plant are heat and electricity. The
@@ -248,8 +256,8 @@ plant is specified as::
         }
     }
 
-12_yearly_interpolation
------------------------------
+13_yearly_interpolation
+-----------------------
 This example showcases how missing values in input data can be interpolated and
 how the interpolation can be switched off. Compared to the previous example, an
 annual limit of carbon emissions is introduced (file
@@ -262,9 +270,9 @@ names can be added to the file ``parameters_interpolation_off.json`` inside the
 interpolation of missing values is switched off. In this case, the default value
 from the ``attributes.json`` file is used for the missing values.
 
-.. _dataset_examples.13_retrofitting_and_fuel_substitution:
+.. _dataset_examples.14_retrofitting_and_fuel_substitution:
 
-13_retrofitting_and_fuel_substitution
+14_retrofitting_and_fuel_substitution
 -------------------------------------
 
 In this example, the concept of ``retrofit technologies`` is introduced. Retrofit
@@ -300,8 +308,8 @@ require carbon as an input/output carrier, ``carbon`` is included in the
 dataset.
 
 
-14_unit_consistency_expected_error
-------------------------------------
+15_unit_consistency_expected_error
+----------------------------------
 
 The example should illustrate the ZEN-garden response in case the input data is 
 faulty. Specifically, ZEN-garden checks whether the units of the input data are 

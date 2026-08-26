@@ -101,13 +101,7 @@ class DataInput:
         # load attributes file
         self.attribute_dict = self.input_repository.load_attribute_file()
 
-    def extract_input_data(
-        self,
-        file_name,
-        index_sets,
-        unit_category,
-        subelement=None
-    ):
+    def extract_input_data(self, file_name, index_sets, unit_category, subelement=None):
         """Loads and restructures input data for the current scenario.
 
         Defaults and units are taken from the attributes file, then values from the
