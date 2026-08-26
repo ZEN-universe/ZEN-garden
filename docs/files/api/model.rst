@@ -7,8 +7,8 @@ General
 .. autosummary::
    :toctree: generated
 
-   zen_garden.optimization_step
    zen_garden.optimization_workflow
+   zen_garden.optimization_step
 
 .. toctree::
    :maxdepth: 1

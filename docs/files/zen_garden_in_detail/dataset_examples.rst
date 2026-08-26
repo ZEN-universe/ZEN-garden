@@ -132,12 +132,11 @@ steps are aggregated to 10 representative time steps. For illustration purposes,
 the ``availability_import_yearly.csv`` file of natural gas is structured
 differently to the previous examples:
 
-.. csv-table:: Yearly import availability of natural gas in CH
-    :header-rows: 1
-    :file: ../../dataset_examples/6_time_series_aggregation/set_carriers/
-           natural_gas/availability_import_yearly.csv
-    :widths: 15 15 15 15
-    :delim: ,
+.. code-block:: text
+
+    node,2023,2024,2025
+    CH,<value>,<value>,<value>
+    DE,<value>,<value>,<value>
 
 The years are now set as the columns of the file and the nodes as the rows.
 Both structures are supported in ZEN-garden and depending on the input data,
