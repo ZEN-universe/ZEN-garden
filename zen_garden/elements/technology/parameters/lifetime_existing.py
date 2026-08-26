@@ -10,3 +10,7 @@ class LifetimeExisting(GenericComputedParameters):
     unit_category = {}
     input_loader = "existing_lifetime"
     dependencies = ["lifetime"]
+
+    @classmethod
+    def store_input_data(cls, element, loader):
+        loader.load_into(cls, element)

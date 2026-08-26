@@ -1,7 +1,7 @@
-from zen_garden.topology.generic_parameter import GenericComputedParameters
+from zen_garden.topology.generic_parameter import GenericParameter
 
 
-class CapexSpecificStorage(GenericComputedParameters):
+class CapexSpecificStorage(GenericParameter):
     """Specific capex of storage technologies."""
 
     name = "capex_specific_storage"
@@ -15,4 +15,3 @@ class CapexSpecificStorage(GenericComputedParameters):
     unit_category = {"money": 1, "energy_quantity": -1, "time": 1}
     capacity_types = True
     input_loader = "storage_capex"
-    dependencies = []

@@ -10,3 +10,7 @@ class CapexPerDistanceTransport(GenericComputedParameters):
     unit_category = {"money": 1, "distance": -1}
     input_loader = "skip"
     dependencies = ["capex_specific_transport"]
+
+    @classmethod
+    def store_input_data(cls, element, loader):
+        loader.load_into(cls, element)

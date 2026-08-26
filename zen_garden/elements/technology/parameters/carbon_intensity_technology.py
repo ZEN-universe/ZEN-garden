@@ -1,7 +1,7 @@
-from zen_garden.topology.generic_parameter import GenericComputedParameters
+from zen_garden.topology.generic_parameter import GenericParameter
 
 
-class CarbonIntensityTechnology(GenericComputedParameters):
+class CarbonIntensityTechnology(GenericParameter):
     """Carbon intensity of each technology."""
 
     name = "carbon_intensity_technology"
@@ -9,4 +9,3 @@ class CarbonIntensityTechnology(GenericComputedParameters):
     doc = "Carbon intensity of each technology"
     unit_category = {"emissions": 1, "energy_quantity": -1}
     input_loader = "carbon_intensity"
-    dependencies = []

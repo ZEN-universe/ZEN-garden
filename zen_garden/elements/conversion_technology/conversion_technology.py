@@ -48,19 +48,6 @@ class ConversionTechnology(Technology):
             name=self.name,
         )
 
-    def postprocess_input_data(self) -> None:
-        """Materialize persistent existing-capacity cost state."""
-        self.convert_to_fraction_of_capex()
-        self.capex_capacity_existing = self.calculate_capex_of_capacities_existing()
-
-    def convert_to_fraction_of_capex(self):
-        """This method retrieves the total capex and converts it to annualized capex."""
-
-        # annualize cost_capex_overnight
-        fraction_year = self.calculate_fraction_of_year()
-        self.opex_specific_fixed = self.opex_specific_fixed * fraction_year
-        self.capex_specific_conversion = self.capex_specific_conversion * fraction_year
-
     def calculate_capex_of_single_capacity(self, capacity, index, **kwargs):
         """This method calculates the annualized capex of a single existing capacity.
 

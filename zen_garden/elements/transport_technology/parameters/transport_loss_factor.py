@@ -10,3 +10,7 @@ class TransportLossFactor(GenericComputedParameters):
     unit_category = {}
     input_loader = "transport_loss"
     dependencies = ["distance"]
+
+    @classmethod
+    def store_input_data(cls, element, loader):
+        loader.load_into(cls, element)

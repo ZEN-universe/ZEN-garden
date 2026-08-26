@@ -1,7 +1,7 @@
-from zen_garden.topology.generic_parameter import GenericComputedParameters
+from zen_garden.topology.generic_parameter import GenericParameter
 
 
-class ConversionFactor(GenericComputedParameters):
+class ConversionFactor(GenericParameter):
     """Conversion factor."""
 
     name = "conversion_factor"
@@ -16,4 +16,3 @@ class ConversionFactor(GenericComputedParameters):
     time_series = True
     input_loader = "dependent_carrier"
     input_indices = ("set_nodes", "set_hours")
-    dependencies = []

@@ -10,3 +10,7 @@ class DepreciationTime(GenericComputedParameters):
     unit_category = {}
     input_loader = "depreciation_time"
     dependencies = ["lifetime"]
+
+    @classmethod
+    def store_input_data(cls, element, loader):
+        loader.load_into(cls, element)

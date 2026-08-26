@@ -28,7 +28,3 @@ class RetrofittingTechnology(ConversionTechnology):
         self.retrofit_base_technology = (
             self.data_input.extract_retrofit_base_technology()
         )
-
-    def postprocess_input_data(self) -> None:
-        """Reuse conversion-technology persistent-state processing."""
-        super().postprocess_input_data()

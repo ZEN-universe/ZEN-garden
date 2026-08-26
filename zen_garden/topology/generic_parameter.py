@@ -1,7 +1,10 @@
 from __future__ import annotations
 
-from abc import ABC
-from typing import ClassVar
+from abc import ABC, abstractmethod
+from typing import TYPE_CHECKING, Any, ClassVar
+
+if TYPE_CHECKING:
+    from zen_garden.services.parameter_input_loader import ParameterInputLoader
 
 
 class GenericParameter(ABC):
@@ -57,6 +60,13 @@ class GenericComputedParameters(GenericParameter):
             raise TypeError(f"{cls.__name__} must define 'dependencies'")
         if not isinstance(cls.dependencies, list):
             raise TypeError(f"{cls.__name__}.dependencies must be a list")
+
+    @classmethod
+    @abstractmethod
+    def store_input_data(
+        cls, element: Any, loader: ParameterInputLoader
+    ) -> None:
+        """Load or calculate the parameter and store it on ``element``."""
 
     @classmethod
     def construction_order(

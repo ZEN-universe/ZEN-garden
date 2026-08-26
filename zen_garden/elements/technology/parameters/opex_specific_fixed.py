@@ -1,7 +1,7 @@
-from zen_garden.topology.generic_parameter import GenericComputedParameters
+from zen_garden.topology.generic_parameter import GenericParameter
 
 
-class OpexSpecificFixed(GenericComputedParameters):
+class OpexSpecificFixed(GenericParameter):
     """Fixed annual specific opex."""
 
     name = "opex_specific_fixed"
@@ -10,4 +10,3 @@ class OpexSpecificFixed(GenericComputedParameters):
     unit_category = {"money": 1, "energy_quantity": -1, "time": 1}
     capacity_types = True
     input_loader = "fixed_opex"
-    dependencies = []

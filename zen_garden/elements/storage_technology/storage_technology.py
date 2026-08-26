@@ -30,31 +30,6 @@ class StorageTechnology(Technology):
         # get reference carrier from class <Technology>
         super().initialize_reference_carrier()
 
-    def postprocess_input_data(self) -> None:
-        """Materialize persistent existing-capacity cost state."""
-        self.convert_to_fraction_of_capex()
-        # calculate capex of existing capacity
-        self.capex_capacity_existing = self.calculate_capex_of_capacities_existing()
-        self.capex_capacity_existing_energy = (
-            self.calculate_capex_of_capacities_existing(storage_energy=True)
-        )
-
-    def convert_to_fraction_of_capex(self):
-        """Converts the capex and fixed opex to fraction of capex.
-
-        this method converts the total capex to fraction of capex, depending on
-        how many hours per year are calculated.
-        """
-        fraction_year = self.calculate_fraction_of_year()
-        self.opex_specific_fixed = self.opex_specific_fixed * fraction_year
-        self.opex_specific_fixed_energy = (
-            self.opex_specific_fixed_energy * fraction_year
-        )
-        self.capex_specific_storage = self.capex_specific_storage * fraction_year
-        self.capex_specific_storage_energy = (
-            self.capex_specific_storage_energy * fraction_year
-        )
-
     def calculate_capex_of_single_capacity(
         self, capacity, index, storage_energy=False, **kwargs
     ):

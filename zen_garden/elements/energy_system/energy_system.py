@@ -12,7 +12,11 @@ from zen_garden.model.config import Config
 from zen_garden.model.time_steps import TimeStepsDicts
 from zen_garden.preprocess.data_input import DataInput
 from zen_garden.services.network_topology import NetworkTopology
-from zen_garden.topology.generic_parameter import GenericParameter
+from zen_garden.services.parameter_input_loader import ParameterInputLoader
+from zen_garden.topology.generic_parameter import (
+    GenericComputedParameters,
+    GenericParameter,
+)
 from zen_garden.types import YearSpecificTs
 
 if TYPE_CHECKING:
@@ -135,16 +139,13 @@ class EnergySystem:
         self.set_retrofitting_technologies = (
             self.config.system.set_retrofitting_technologies
         )
-        from zen_garden.services.parameter_input_loader import ParameterInputLoader
-        from zen_garden.topology.generic_parameter import GenericComputedParameters
-
         loader = ParameterInputLoader()
         for parameter in self.parameters:
             if issubclass(parameter, GenericComputedParameters):
                 continue
             loader.load_into(parameter, self)  # type: ignore[arg-type]
         for parameter in GenericComputedParameters.construction_order(self.parameters):
-            loader.load_into(parameter, self)  # type: ignore[arg-type]
+            parameter.store_input_data(self, loader)
 
         # Limits are expressed for a full year in the input data.
         _fraction_year = (

@@ -7,6 +7,11 @@ import pandas as pd
 
 from zen_garden.preprocess.data_input import DataInput
 from zen_garden.services.input_repository import InputRepository
+from zen_garden.services.parameter_input_loader import ParameterInputLoader
+from zen_garden.topology.generic_parameter import (
+    GenericComputedParameters,
+    GenericParameter,
+)
 
 if TYPE_CHECKING:
     from zen_garden.elements.energy_system import EnergySystem
@@ -16,10 +21,6 @@ if TYPE_CHECKING:
     from zen_garden.services.dataset_path_resolver import DatasetPathResolver
     from zen_garden.services.element_registry import ElementRegistry
     from zen_garden.services.scenario_dict import ScenarioDict
-    from zen_garden.topology.generic_parameter import (
-        GenericComputedParameters,
-        GenericParameter,
-    )
     from zen_garden.types import YearSpecificTs
     from zen_garden.utils.input_data_checks import InputDataChecks
 
@@ -106,9 +107,6 @@ class Element:
 
     def store_input_data(self) -> None:
         """Load all declared parameters through the shared input-loader service."""
-        from zen_garden.services.parameter_input_loader import ParameterInputLoader
-        from zen_garden.topology.generic_parameter import GenericComputedParameters
-
         self.prepare_input_data()
         loader = ParameterInputLoader()
         for parameter in self.parameters:
@@ -116,23 +114,17 @@ class Element:
                 continue
             loader.load_into(parameter, self)
         for parameter in self._ordered_computed_parameters():
-            loader.load_into(parameter, self)
-        self.postprocess_input_data()
+            parameter.store_input_data(self, loader)
 
     @classmethod
     def _ordered_computed_parameters(
         cls,
     ) -> list[type["GenericComputedParameters"]]:
         """Topologically order computed parameters using their dependency DAG."""
-        from zen_garden.topology.generic_parameter import GenericComputedParameters
-
         return GenericComputedParameters.construction_order(cls.parameters)
 
     def prepare_input_data(self) -> None:
         """Prepare structural information required to load parameters."""
-
-    def postprocess_input_data(self) -> None:
-        """Handle stateful data that must persist outside a model instance."""
 
     def _get_input_path(self):
         """Get input path where input data is stored input_path."""
