@@ -12,11 +12,7 @@ from zen_garden.model.config import Config
 from zen_garden.model.time_steps import TimeStepsDicts
 from zen_garden.preprocess.data_input import DataInput
 from zen_garden.services.network_topology import NetworkTopology
-from zen_garden.services.parameter_input_loader import ParameterInputLoader
-from zen_garden.topology.generic_parameter import (
-    GenericComputedParameters,
-    GenericParameter,
-)
+from zen_garden.topology.generic_parameter import GenericParameter
 from zen_garden.types import YearSpecificTs
 
 if TYPE_CHECKING:
@@ -34,6 +30,7 @@ class EnergySystem:
 
     name: str = "EnergySystem"
     parameters: ClassVar[list[type[GenericParameter]]] = ENERGY_SYSTEM_PARAMETERS
+    carbon_emissions_annual_limit: pd.Series
 
     def __init__(
         self,
@@ -85,8 +82,8 @@ class EnergySystem:
         self.time_steps_operation_duration: pd.Series | None = None
         self.time_steps_storage_duration: pd.Series | None = None
 
-    def store_input_data(self):
-        """Retrieves and stores input data for EnergySystem as attributes."""
+    def prepare_input_data(self) -> None:
+        """Prepare structural energy-system data required by parameter loading."""
         # in class <EnergySystem>, all sets are constructed
         self.set_technologies = self.config.system.set_technologies
         # base time steps
@@ -139,14 +136,9 @@ class EnergySystem:
         self.set_retrofitting_technologies = (
             self.config.system.set_retrofitting_technologies
         )
-        loader = ParameterInputLoader()
-        for parameter in self.parameters:
-            if issubclass(parameter, GenericComputedParameters):
-                continue
-            loader.load_into(parameter, self)  # type: ignore[arg-type]
-        for parameter in GenericComputedParameters.construction_order(self.parameters):
-            parameter.store_input_data(self, loader)
 
+    def finalize_input_data(self) -> None:
+        """Apply transformations that require all parameters to be loaded."""
         # Limits are expressed for a full year in the input data.
         _fraction_year = (
             self.config.system.unaggregated_time_steps_per_year

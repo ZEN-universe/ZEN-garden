@@ -22,6 +22,7 @@ class GenericParameter(ABC):
     input_loader: ClassVar[str] = "standard"
     input_name: ClassVar[str | None] = None
     input_indices: ClassVar[tuple[str, ...] | None] = None
+    dependencies: ClassVar[list[str]] = []
 
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)
@@ -41,6 +42,48 @@ class GenericParameter(ABC):
     def build(cls):
         """Build the parameter."""
         raise NotImplementedError("ToDO:")
+
+    @classmethod
+    def construction_order(
+        cls, parameters: list[type[GenericParameter]]
+    ) -> list[type[GenericParameter]]:
+        """Return all parameter specifications in global dependency order."""
+        parameters_by_name: dict[str, type[GenericParameter]] = {}
+        for parameter in parameters:
+            existing = parameters_by_name.get(parameter.name)
+            if existing is not None and existing is not parameter:
+                raise ValueError(
+                    f"Multiple parameter specifications define {parameter.name!r}: "
+                    f"{existing.__name__} and {parameter.__name__}"
+                )
+            parameters_by_name[parameter.name] = parameter
+
+        all_names = set(parameters_by_name)
+        for parameter in parameters_by_name.values():
+            missing = set(parameter.dependencies).difference(all_names)
+            if missing:
+                names = ", ".join(sorted(missing))
+                raise ValueError(
+                    f"Parameter {parameter.name!r} has unknown dependencies: {names}"
+                )
+
+        remaining = list(parameters_by_name.values())
+        completed: set[str] = set()
+        ordered: list[type[GenericParameter]] = []
+        while remaining:
+            ready = [
+                parameter
+                for parameter in remaining
+                if set(parameter.dependencies).issubset(completed)
+            ]
+            if not ready:
+                cycle = ", ".join(parameter.name for parameter in remaining)
+                raise ValueError(f"Cyclic parameter dependencies: {cycle}")
+            for parameter in ready:
+                remaining.remove(parameter)
+                ordered.append(parameter)
+                completed.add(parameter.name)
+        return ordered
 
 
 class GenericComputedParameters(GenericParameter):
@@ -63,42 +106,5 @@ class GenericComputedParameters(GenericParameter):
 
     @classmethod
     @abstractmethod
-    def store_input_data(
-        cls, element: Any, loader: ParameterInputLoader
-    ) -> None:
+    def store_input_data(cls, element: Any, loader: ParameterInputLoader) -> None:
         """Load or calculate the parameter and store it on ``element``."""
-
-    @classmethod
-    def construction_order(
-        cls, parameters: list[type[GenericParameter]]
-    ) -> list[type[GenericComputedParameters]]:
-        """Return computed parameters in topological construction order."""
-        computed = [parameter for parameter in parameters if issubclass(parameter, cls)]
-        all_names = {parameter.name for parameter in parameters}
-        for parameter in computed:
-            missing = set(parameter.dependencies).difference(all_names)
-            if missing:
-                names = ", ".join(sorted(missing))
-                raise ValueError(
-                    f"Computed parameter {parameter.name!r} has unknown "
-                    f"dependencies: {names}"
-                )
-
-        remaining = list(computed)
-        computed_names = {parameter.name for parameter in computed}
-        completed = all_names.difference(computed_names)
-        ordered: list[type[GenericComputedParameters]] = []
-        while remaining:
-            ready = [
-                parameter
-                for parameter in remaining
-                if set(parameter.dependencies).issubset(completed)
-            ]
-            if not ready:
-                cycle = ", ".join(parameter.name for parameter in remaining)
-                raise ValueError(f"Cyclic computed-parameter dependencies: {cycle}")
-            for parameter in ready:
-                remaining.remove(parameter)
-                ordered.append(parameter)
-                completed.add(parameter.name)
-        return ordered

@@ -7,11 +7,7 @@ import pandas as pd
 
 from zen_garden.preprocess.data_input import DataInput
 from zen_garden.services.input_repository import InputRepository
-from zen_garden.services.parameter_input_loader import ParameterInputLoader
-from zen_garden.topology.generic_parameter import (
-    GenericComputedParameters,
-    GenericParameter,
-)
+from zen_garden.topology.generic_parameter import GenericParameter
 
 if TYPE_CHECKING:
     from zen_garden.elements.energy_system import EnergySystem
@@ -104,24 +100,6 @@ class Element:
     def _initialize(self):
         """Initialize the element."""
         pass
-
-    def store_input_data(self) -> None:
-        """Load all declared parameters through the shared input-loader service."""
-        self.prepare_input_data()
-        loader = ParameterInputLoader()
-        for parameter in self.parameters:
-            if issubclass(parameter, GenericComputedParameters):
-                continue
-            loader.load_into(parameter, self)
-        for parameter in self._ordered_computed_parameters():
-            parameter.store_input_data(self, loader)
-
-    @classmethod
-    def _ordered_computed_parameters(
-        cls,
-    ) -> list[type["GenericComputedParameters"]]:
-        """Topologically order computed parameters using their dependency DAG."""
-        return GenericComputedParameters.construction_order(cls.parameters)
 
     def prepare_input_data(self) -> None:
         """Prepare structural information required to load parameters."""

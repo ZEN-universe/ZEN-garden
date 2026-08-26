@@ -15,7 +15,14 @@ class CapexCapacityExisting(GenericComputedParameters):
     unit_category = {"money": 1}
     capacity_types = True
     input_loader = "skip"
-    dependencies = ["capacity_existing", "opex_specific_fixed"]
+    dependencies = [
+        "capacity_existing",
+        "opex_specific_fixed",
+        "capex_specific_conversion",
+        "capex_specific_storage",
+        "capex_specific_transport",
+        "capex_per_distance_transport",
+    ]
 
     @classmethod
     def store_input_data(cls, element, loader):

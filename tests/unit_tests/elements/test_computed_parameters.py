@@ -2,7 +2,6 @@
 
 import pytest
 
-from zen_garden.elements.element import Element
 from zen_garden.topology.generic_parameter import (
     GenericComputedParameters,
     GenericParameter,
@@ -32,12 +31,24 @@ class SecondComputed(GenericComputedParameters):
     dependencies = ["first"]
 
 
-class OrderedElement(Element):
-    own_parameters = [SecondComputed, InputParameter, FirstComputed]
-
-
 def test_computed_parameters_are_topologically_ordered():
-    assert OrderedElement._ordered_computed_parameters() == [
+    parameters = [SecondComputed, InputParameter, FirstComputed]
+    ordered_computed = [
+        parameter
+        for parameter in GenericParameter.construction_order(parameters)
+        if issubclass(parameter, GenericComputedParameters)
+    ]
+    assert ordered_computed == [
+        FirstComputed,
+        SecondComputed,
+    ]
+
+
+def test_all_parameters_are_globally_ordered():
+    assert GenericParameter.construction_order(
+        [SecondComputed, InputParameter, FirstComputed]
+    ) == [
+        InputParameter,
         FirstComputed,
         SecondComputed,
     ]
@@ -61,11 +72,8 @@ def test_unknown_dependency_is_rejected():
         unit_category = {}
         dependencies = ["not_registered"]
 
-    class InvalidElement(Element):
-        own_parameters = [UnknownDependency]
-
     with pytest.raises(ValueError, match="unknown dependencies"):
-        InvalidElement._ordered_computed_parameters()
+        GenericParameter.construction_order([UnknownDependency])
 
 
 def test_computed_parameter_cycle_is_rejected():
@@ -83,8 +91,5 @@ def test_computed_parameter_cycle_is_rejected():
         unit_category = {}
         dependencies = ["computed_a"]
 
-    class CyclicElement(Element):
-        own_parameters = [ComputedA, ComputedB]
-
-    with pytest.raises(ValueError, match="Cyclic computed-parameter dependencies"):
-        CyclicElement._ordered_computed_parameters()
+    with pytest.raises(ValueError, match="Cyclic parameter dependencies"):
+        GenericParameter.construction_order([ComputedA, ComputedB])
