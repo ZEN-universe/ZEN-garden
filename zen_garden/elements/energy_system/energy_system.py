@@ -8,15 +8,15 @@ import numpy as np
 import pandas as pd
 
 from zen_garden.elements.energy_system.parameters import ENERGY_SYSTEM_PARAMETERS
-from zen_garden.elements.energy_system.variables import ENERGY_SYSTEM_VARIABLES
 from zen_garden.elements.energy_system.sets import ENERGY_SYSTEM_SETS
+from zen_garden.elements.energy_system.variables import ENERGY_SYSTEM_VARIABLES
 from zen_garden.model.config import Config
 from zen_garden.model.time_steps import TimeStepsDicts
 from zen_garden.preprocess.data_input import DataInput
 from zen_garden.services.network_topology import NetworkTopology
 from zen_garden.topology.generic_parameter import GenericParameter
-from zen_garden.topology.generic_variable import GenericVariable
 from zen_garden.topology.generic_set import GenericSet
+from zen_garden.topology.generic_variable import GenericVariable
 from zen_garden.types import YearSpecificTs
 
 if TYPE_CHECKING:

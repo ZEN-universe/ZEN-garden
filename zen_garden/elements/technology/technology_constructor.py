@@ -134,27 +134,30 @@ class TechnologyConstructor(ModelConstructor):
             dims=["set_time_steps_operation"],
         )
         mask_nonzero_cap_limit = (
-                self.zen_model.parameters.capacity_limit.sel(
-                    {"set_capacity_types": "power", "set_years": time_step_year}
-                )
-                != 0
+            self.zen_model.parameters.capacity_limit.sel(
+                {"set_capacity_types": "power", "set_years": time_step_year}
+            )
+            != 0
         )
         mask_on_off = mask_on_off & mask_nonzero_cap_limit.drop_vars(
             "set_capacity_types"
         )
 
-
         for variable in self.variables:
-            if variable.name in ["carbon_emissions_technology_total",
-                                 "cost_opex_yearly_total",
-                                 "cost_capex_yearly_total"]:
+            if variable.name in [
+                "carbon_emissions_technology_total",
+                "cost_opex_yearly_total",
+                "cost_capex_yearly_total",
+            ]:
                 # Exceptional bounds, masks or indices
                 index_sets = self.zen_model.sets["set_years"]
                 bounds = variable.get_bounds()
                 mask = None
 
             elif variable.name in ["capacity"]:
-                techs_on_off_flag = self.create_custom_set(["set_technologies", "set_on_off"])[0]
+                techs_on_off_flag = self.create_custom_set(
+                    ["set_technologies", "set_on_off"]
+                )[0]
                 index_sets = self.create_custom_set(variable.indices)
                 bounds = capacity_bounds
                 mask = None
@@ -170,8 +173,7 @@ class TechnologyConstructor(ModelConstructor):
                 mask = self._technology_installation_mask()
                 if not mask.any():
                     continue
-            elif variable.name in ["capacity_on_off_helper_var",
-                                   "tech_on_var"]:
+            elif variable.name in ["capacity_on_off_helper_var", "tech_on_var"]:
                 index_sets = self.create_custom_set(variable.indices)
                 bounds = variable.get_bounds()
                 mask = mask_on_off

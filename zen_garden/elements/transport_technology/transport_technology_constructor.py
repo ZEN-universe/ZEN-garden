@@ -92,7 +92,6 @@ class TransportTechnologyConstructor(ModelConstructor):
         #     unit_category={"energy_quantity": 1, "time": -1},
         # )
 
-
         for variable in self.variables:
             if variable.name in ["flow_transport"]:
                 # Exceptional bounds, masks or indices

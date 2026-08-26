@@ -2,6 +2,7 @@ import numpy as np
 
 from zen_garden.topology.generic_variable import GenericVariable
 
+
 class CostOpexYearlyTotal(GenericVariable):
     """Variable for total operational expenditure."""
 

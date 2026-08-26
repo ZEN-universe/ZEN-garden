@@ -1,8 +1,6 @@
 from abc import ABC
 from typing import ClassVar
 
-import xarray as xr
-
 
 class GenericVariable(ABC):
     """Abstract base class for variables in ZEN-garden."""

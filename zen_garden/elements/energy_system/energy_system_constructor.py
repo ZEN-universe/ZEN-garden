@@ -3,7 +3,6 @@
 import logging
 from typing import TYPE_CHECKING
 
-import numpy as np
 import pandas as pd
 from typing_extensions import override
 
@@ -36,13 +35,15 @@ class EnergySystemConstructor(ModelConstructor):
 
         for variable in self.variables:
 
-            if variable.name in ["carbon_emissions_annual",
-                             "carbon_emissions_cumulative",
-                             "carbon_emissions_budget_overshoot",
-                             "carbon_emissions_annual_overshoot",
-                             "cost_carbon_emissions_total",
-                             "cost_total",
-                             "net_present_cost"]:
+            if variable.name in [
+                "carbon_emissions_annual",
+                "carbon_emissions_cumulative",
+                "carbon_emissions_budget_overshoot",
+                "carbon_emissions_annual_overshoot",
+                "cost_carbon_emissions_total",
+                "cost_total",
+                "net_present_cost",
+            ]:
                 # Exceptional bounds, masks or indices
                 index_sets = self.zen_model.sets["set_years"]
                 bounds = variable.get_bounds()
@@ -59,8 +60,6 @@ class EnergySystemConstructor(ModelConstructor):
                 doc=variable.doc,
                 unit_category=variable.unit_category,
             )
-
-
 
     @override
     def construct_objective(self):

@@ -13,4 +13,3 @@ class TechnologyInstallation(GenericVariable):
     @classmethod
     def get_bounds(cls):
         return None
-

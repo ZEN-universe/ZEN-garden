@@ -35,7 +35,10 @@ class CarrierConstructor(ModelConstructor):
         logger.info("Constructing variables for Carrier")
 
         for variable in self.variables:
-            if variable.name in ["cost_carrier_total", "carbon_emissions_carrier_total"]:
+            if variable.name in [
+                "cost_carrier_total",
+                "carbon_emissions_carrier_total",
+            ]:
                 # Exceptional bounds, masks or indices
                 index_sets = self.zen_model.sets["set_years"]
                 bounds = variable.get_bounds()
@@ -52,4 +55,3 @@ class CarrierConstructor(ModelConstructor):
                 doc=variable.doc,
                 unit_category=variable.unit_category,
             )
-

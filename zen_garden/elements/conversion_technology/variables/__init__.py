@@ -15,4 +15,3 @@ __all__ = [
     "FlowConversionOutput",
     "CONVERSION_TECHNOLOGY_VARIABLES",
 ]
-

@@ -3,9 +3,9 @@
 import logging
 from typing import ClassVar
 
-from zen_garden.elements.element import Element
 from zen_garden.elements.carrier.parameters import CARRIER_PARAMETERS
 from zen_garden.elements.carrier.variables import CARRIER_VARIABLES
+from zen_garden.elements.element import Element
 from zen_garden.topology.generic_parameter import GenericParameter
 from zen_garden.topology.generic_variable import GenericVariable
 

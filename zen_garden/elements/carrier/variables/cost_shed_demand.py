@@ -14,4 +14,3 @@ class CostShedDemand(GenericVariable):
     @classmethod
     def get_bounds(cls):
         return 0.0, np.inf
-

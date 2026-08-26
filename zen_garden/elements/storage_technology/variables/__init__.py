@@ -24,4 +24,3 @@ __all__ = [
     "ChargeStorageBinary",
     "STORAGE_TECHNOLOGY_VARIABLES",
 ]
-

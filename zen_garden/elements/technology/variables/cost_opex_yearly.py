@@ -2,6 +2,7 @@ import numpy as np
 
 from zen_garden.topology.generic_variable import GenericVariable
 
+
 class CostOpexYearly(GenericVariable):
     """Variable for yearly operational expenditure."""
 
@@ -13,4 +14,3 @@ class CostOpexYearly(GenericVariable):
     @classmethod
     def get_bounds(cls):
         return 0, np.inf
-

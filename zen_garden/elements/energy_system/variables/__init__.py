@@ -30,4 +30,3 @@ __all__ = [
     "NetPresentCost",
     "ENERGY_SYSTEM_VARIABLES",
 ]
-

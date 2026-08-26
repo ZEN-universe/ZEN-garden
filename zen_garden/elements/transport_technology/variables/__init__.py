@@ -15,4 +15,3 @@ __all__ = [
     "FlowTransportLoss",
     "TRANSPORT_TECHNOLOGY_VARIABLES",
 ]
-

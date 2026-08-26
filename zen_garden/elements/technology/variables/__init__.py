@@ -54,4 +54,3 @@ __all__ = [
     "CapacityOnOffHelperVar",
     "TECHNOLOGY_VARIABLES",
 ]
-

@@ -66,13 +66,20 @@ class StorageTechnologyConstructor(ModelConstructor):
             return np.stack([lower, upper], axis=-1)
 
         for variable in self.variables:
-            if variable.name == "charge_storage_binary" and not self.config.system.storage_charge_discharge_binary:
+            if (
+                variable.name == "charge_storage_binary"
+                and not self.config.system.storage_charge_discharge_binary
+            ):
                 continue
 
             if variable.name in ["flow_storage_charge", "flow_storage_discharge"]:
                 # Exceptional bounds, masks or indices
                 index_values, index_names = self.create_custom_set(
-                    ["set_storage_technologies", "set_nodes", "set_time_steps_operation"],
+                    [
+                        "set_storage_technologies",
+                        "set_nodes",
+                        "set_time_steps_operation",
+                    ],
                 )
                 index_sets = index_values, index_names
                 bounds = flow_storage_bounds(index_values, index_names)

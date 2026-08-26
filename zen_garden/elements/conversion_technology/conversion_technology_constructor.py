@@ -112,7 +112,6 @@ class ConversionTechnologyConstructor(ModelConstructor):
             # make sure lower is never below 0
             return lower, upper
 
-
         for variable in self.variables:
             if variable.name in ["flow_conversion_input", "flow_conversion_output"]:
                 # Exceptional bounds, masks or indices

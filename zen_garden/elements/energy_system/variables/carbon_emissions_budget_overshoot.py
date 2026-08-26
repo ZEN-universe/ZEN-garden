@@ -1,4 +1,5 @@
 import numpy as np
+
 from zen_garden.topology.generic_variable import GenericVariable
 
 
