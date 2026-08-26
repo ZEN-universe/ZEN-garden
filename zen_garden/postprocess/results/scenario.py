@@ -5,7 +5,7 @@ import json
 import logging
 import warnings
 from pathlib import Path
-from typing import Any, TypeVar, cast, overload
+from typing import Any, Callable, TypeVar, cast, overload
 
 import numpy as np
 import pandas as pd
@@ -60,26 +60,33 @@ class Scenario:
         )
         self._component_map: ComponentMap | None = None
         self._time_steps: TimestepMap | None = None
+        self._datasets: dict[str, xr.Dataset] = {}
 
     @property
     def analysis(self) -> Analysis:
         """Returns the analysis config information of the scenario."""
         if self._analysis is None:
-            self._analysis = self._read_json_file(self.path / "analysis.json", Analysis)
+            self._analysis = self._read_json_file(
+                self.path / "analysis.json", Analysis, Analysis.model_construct
+            )
         return self._analysis
 
     @property
     def solver(self) -> Solver:
         """Returns the solver config information of the scenario."""
         if self._solver is None:
-            self._solver = self._read_json_file(self.path / "solver.json", Solver)
+            self._solver = self._read_json_file(
+                self.path / "solver.json", Solver, Solver.model_construct
+            )
         return self._solver
 
     @property
     def system(self) -> System:
         """Returns the system config information of the scenario."""
         if self._system is None:
-            self._system = self._read_json_file(self.path / "system.json", System)
+            self._system = self._read_json_file(
+                self.path / "system.json", System, System.model_construct
+            )
         return self._system
 
     @property
@@ -208,10 +215,11 @@ class Scenario:
                 f"Component {component_name} is not a series, but a {type(series)}. "
                 f"Please check the component_map.json file."
             )
+            series = series.sort_index()
             return series
 
-        ds = xr.open_dataset(file_path)
-        ans = ds[component_name].query(index).to_series().dropna()
+        ds = self._load_dataset(file_path)
+        ans = ds[component_name].query(index).to_series().dropna().sort_index()
         if rename_index:
             ans = self._rename_index(ans)
         return ans
@@ -550,8 +558,9 @@ class Scenario:
             component_name = OBJECTIVE_FUNCTION_MAP[self.analysis.objective]
 
         component_type = self.component_map.find_type(component_name)
-        file_path = self.component_path / component_type.get_units_file_name()
-        with pd.HDFStore(file_path) as store:
+        with pd.HDFStore(
+            self.component_path / component_type.get_units_file_name(), mode="r"
+        ) as store:
             if f"/{component_name}" not in store.keys():
                 return None
             series = pd.read_hdf(store, component_name)
@@ -569,6 +578,7 @@ class Scenario:
             for unit in cast("pd.Series[str]", series.unique())
         }
         series = series.map(unit_map)
+        series = series.sort_index()
         if series.size == 1 and series.index.name is None:
             return series.iloc[0]
         else:
@@ -597,14 +607,21 @@ class Scenario:
         """Method that returns the index names of a component given its name."""
         component_type = self.component_map.find_type(component_name)
         file_path = self.component_path / component_type.get_file_name()
-        ds = xr.open_dataset(file_path)
+        ds = self._load_dataset(file_path)
         return [str(dim) for dim in ds[component_name].dims]
 
-    def _read_json_file(self, file_name: Path, obj_constr: type[T]) -> T:
+    def _read_json_file(
+        self,
+        file_name: Path,
+        obj_constr: type[T],
+        model_constr: Callable[..., T] | None = None,
+    ) -> T:
         """Reads a JSON file and returns an object of the specified type.
 
         :param file_name: The path to the JSON file.
         :param obj_constr: The constructor of the object to be created.
+        :param model_constr: Optional constructor for the pydantic model.
+            If provided, it will be used to create the object from the JSON data.
         :return: An object of the specified type.
         """
         if not file_name.exists():
@@ -612,6 +629,8 @@ class Scenario:
             return obj_constr()
 
         with open(file_name, "r") as f:
+            if model_constr is not None:
+                return model_constr(**json.load(f))
             return obj_constr(**json.load(f))
 
     def _read_ureg(self) -> UnitRegistry:  # pyright:ignore[reportMissingTypeArgument]
@@ -669,6 +688,17 @@ class Scenario:
             elif int(i) < int(j):
                 return -1
         return 0
+
+    def _load_dataset(self, path: Path) -> xr.Dataset:
+        """Load a dataset from a given path and cache it.
+
+        :param path: The path to the dataset file.
+        :return: The loaded xarray.Dataset object.
+        """
+        rel_path = str(path.relative_to(self.path))
+        if rel_path not in self._datasets:
+            self._datasets[rel_path] = xr.open_dataset(path)
+        return self._datasets[rel_path]
 
     @overload
     def _convert_ts2year(self, df: pd.DataFrame) -> pd.DataFrame: ...
