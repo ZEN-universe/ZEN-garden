@@ -108,7 +108,7 @@ representative time steps, e.g., 200.
 Disabling the time series aggregation
 -------------------------------------------------------------------------------------------
 
-Open the ``system.json`` file and set ``"conduct_time_series_aggregation"=False``. 
+Open the ``system.yaml`` file and set ``"conduct_time_series_aggregation"=False``. 
 This disables the time series aggregation. If you do not want to investigate a 
 full year, set ``"unaggregated_time_steps_per_year"<8760``
 
@@ -118,7 +118,7 @@ full year, set ``"unaggregated_time_steps_per_year"<8760``
 Using time series aggregation
 -------------------------------------------------------
 
-Open the ``system.json`` file and set ``"aggregated_time_steps_per_year"`` 
+Open the ``system.yaml`` file and set ``"aggregated_time_steps_per_year"`` 
 smaller than ``"unaggregated_time_steps_per_year"``. You are then aggregating 
 ``"unaggregated_time_steps_per_year"`` (e.g., 8760 base time steps) to 
 ``"aggregated_time_steps_per_year"`` (e.g., 200 representative time steps). If

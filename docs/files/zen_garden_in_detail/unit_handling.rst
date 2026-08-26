@@ -34,7 +34,7 @@ For example:
 
 The numeric value is multiplied by this conversion factor.
 
-Base units are defined in ``<dataset>/energy_system/base_units.json``. The
+Base units are defined in ``<dataset>/energy_system/base_units.yaml``. The
 canonical format is:
 
 .. code-block:: json
@@ -53,7 +53,7 @@ The older ``base_units.csv`` format is still accepted for compatibility, but
 the JSON format should be used for new datasets.
 
 Input units are specified in the ``unit`` field next to ``default_value`` in
-each ``attributes.json`` file (see :ref:`input_structure.attribute_files`).
+each ``attributes.yaml`` file (see :ref:`input_structure.attribute_files`).
 Values in CSV input files are assumed to use the same unit as the corresponding
 attribute.
 

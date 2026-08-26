@@ -25,7 +25,7 @@ Scenario tool set-up
 Scenarios can be easily defined using the scenario tool. To activate the 
 scenario tool, two steps need to be taken:
 
-1. Add a new file, called ``scenarios.json`` to the dataset folder:
+1. Add a new file, called ``scenarios.yaml`` to the dataset folder:
 
 .. code-block::
 
@@ -34,13 +34,13 @@ scenario tool, two steps need to be taken:
     |   |--energy_system/...
     |   |--set_carriers/...
     |   |--set_technologies/...
-    |   |--scenarios.json
-    |   `--system.json
+    |   |--scenarios.yaml
+    |   `--system.yaml
     |
-    `--config.json
+    `--config.yaml
 
 2. Set the setting ``conduct_scenario_analysis`` to ``true`` in the  
-``systems.json`` file. This can be done by adding the following line to the end 
+``systems.yaml`` file. This can be done by adding the following line to the end 
 of the file (before the closing bracket):
 
 .. code-block::
@@ -53,7 +53,7 @@ of the file (before the closing bracket):
 Scenario definition 
 ====================
 
-Scenarios are defined in the ``scenarios.json``::
+Scenarios are defined in the ``scenarios.yaml``::
 
     {"scenario_name_1":
         {"element_1": 
@@ -91,7 +91,7 @@ perform a different analysis. Five options are available:
     possible to use multiple options at the same time.
 
 If you would like to change the import price for the element ``natural_gas``, 
-the ``scenario.json`` would look like this::
+the ``scenario.yaml`` would look like this::
 
     {"high_gas_price":
         {"natural_gas": 
@@ -107,7 +107,7 @@ the ``scenario.json`` would look like this::
     }
 
 In this example, first the default value would be read from 
-``attributes_high.json``. Thereafter, the default value would be multiplied by 
+``attributes_high.yaml``. Thereafter, the default value would be multiplied by 
 1.5. Now, the values specified in the file ``price_import_high.csv`` are read 
 and overwrite the corresponding default values. Then, the values specified in 
 ``price_import_high_part.csv`` overwrite the values of those indices specified 
@@ -230,7 +230,7 @@ Per default, the names for the generated scenarios are ``p{i:02d}_{j:03d}``,
 where ``i`` is an int referring to the expanded parameter name (e.g. 
 ``natural_gas``, ``import_price``, ``file``, ``default_op``) and ``j`` to its 
 value in the list (e.g. ``[0.25, 0.3, 0.35]``). The mappings of ``i`` and ``j`` 
-to the parameter names and values are written to  ``param_map.json`` in the $
+to the parameter names and values are written to  ``param_map.yaml`` in the $
 root directory of the corresponding scenario (see below). It is possible to 
 overwrite this default naming with a formatting key::
 
@@ -260,12 +260,12 @@ subfolder, for example, the output structure could look something like this::
             scenario_p00_000_p001_000/
             scenario_p01_000_p001_000/
             ...
-            param_map.json
+            param_map.yaml
         scenario_3/
     ...
 
 Here, ``scenario_2`` was defined via lists and its sub-scenarios are now in 
-subfolders with the definitions of the parameters in the ``param_map.json``. 
+subfolders with the definitions of the parameters in the ``param_map.yaml``. 
 
 .. _t_scenario.sets_and_lists:
 

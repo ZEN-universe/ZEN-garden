@@ -6,7 +6,7 @@ Input data structure
 
 The input data is structured in a folder hierarchy. The root folder 
 ``<data_folder>`` contains a subfolder for each dataset and a configuration 
-file ``config.json``. ZEN-garden is run from this root folder (:ref:`running.running`). 
+file ``config.yaml``. ZEN-garden is run from this root folder (:ref:`running.running`). 
 The dataset folder ``<dataset>`` comprises the input data for a 
 specific dataset and must contain the following files and subfolders:
 
@@ -15,44 +15,44 @@ specific dataset and must contain the following files and subfolders:
     <data_folder>/
     |--<dataset>/
     |   |--energy_system/
-    |   |   |--attributes.json
-    |   |   |--base_units.json
+    |   |   |--attributes.yaml
+    |   |   |--base_units.yaml
     |   |   |--set_nodes.csv
     |   |   |--set_edges.csv
     |   |   `--unit_definitions.txt
     |   |
     |   |--set_carriers/
     |   |   |--<carrier1>/
-    |   |   |   `--attributes.json
+    |   |   |   `--attributes.yaml
     |   |   `--<carrier2>/
-    |   |       `--attributes.json
+    |   |       `--attributes.yaml
     |   |
     |   |--set_technologies/
     |   |   |--set_conversion_technologies/
     |   |   |   |--<conversion_technology1>/
-    |   |   |   |   `--attributes.json
+    |   |   |   |   `--attributes.yaml
     |   |   |   |
     |   |   |   `--<conversion_technology2>/
-    |   |   |       `--attributes.json
+    |   |   |       `--attributes.yaml
     |   |   |
     |   |   |--set_storage_technologies/
     |   |   |      `--<storage_technology1>/
-    |   |   |          `--attributes.json
+    |   |   |          `--attributes.yaml
     |   |   |
     |   |   `--set_transport_technologies/
     |   |       `--<transport_technology1>/
-    |   |           `--attributes.json
+    |   |           `--attributes.yaml
     |   |
-    |   `--system.json
+    |   `--system.yaml
     |
-    `--config.json
+    `--config.yaml
 
 Note that all folder names in ``<>`` in the structure above can be chosen 
 freely. The dataset is described by the properties of the ``energy_system``, the 
 ``set_carriers``, and the ``set_technologies``. The system configuration is 
-stored in the file ``system.json`` and defines dataset-specific settings, e.g., 
+stored in the file ``system.yaml`` and defines dataset-specific settings, e.g., 
 which technologies to model or how many years and time steps to include. The 
-configuration file ``config.json`` contains more general settings for the 
+configuration file ``config.yaml`` contains more general settings for the 
 optimization problem and the solver. Refer to the section :ref:`configuration.configuration`
 for more details.
 
@@ -70,10 +70,10 @@ Folders
 Energy System
 ==============
 
-The folder ``energy_system`` contains five necessary files: ``attributes.json``,
-``base_units.json``, ``set_nodes.csv``, ``set_edges.csv``, and
+The folder ``energy_system`` contains five necessary files: ``attributes.yaml``,
+``base_units.yaml``, ``set_nodes.csv``, ``set_edges.csv``, and
 ``unit_definitions.txt``. The file
-``attributes.json`` defines the numerical setup of the energy system, e.g., the 
+``attributes.yaml`` defines the numerical setup of the energy system, e.g., the 
 carbon emission limits, the discount rate, or the carbon price. 
 ``set_nodes.csv`` and ``set_edges.csv`` define the nodes and edges of the energy 
 system graph, respectively. ``set_nodes.csv`` contains the coordinates of the 
@@ -86,11 +86,11 @@ edges, but note that you are not forced to follow that convention. In fact,
 
 .. note::
     You can specify more nodes in ``set_nodes.csv`` than you end up using. In 
-    ``system.json`` you can define a subset of nodes you want to select in the 
-    model. If you do not specify any nodes in ``system.json``, all nodes from 
+    ``system.yaml`` you can define a subset of nodes you want to select in the 
+    model. If you do not specify any nodes in ``system.yaml``, all nodes from 
     ``set_nodes.csv`` are used.
 
-``base_units.json`` defines the base units in the model. That means that all
+``base_units.yaml`` defines the base units in the model. That means that all
 units in the model are converted to a combination of base units.
 ``unit_definitions.txt`` contains additional Pint unit definitions. See
 :ref:`t_units.t_units` for more information.
@@ -104,7 +104,7 @@ Technologies
 The ``set_technologies`` folder is specified in three subfolders: 
 ``set_conversion_technologies``, ``set_storage_technologies``, and 
 ``set_transport_technologies``. Each technology has its own folder in the 
-respective subfolder and must contain the ``attributes.json`` file. Additional 
+respective subfolder and must contain the ``attributes.yaml`` file. Additional 
 files can further parametrize the technologies (see :ref:`input_structure.attribute_files`).
 
 .. note::
@@ -116,7 +116,7 @@ Each technology has a reference carrier, i.e., that carrier by which the
 capacity of the technology is rated. As an example, a :math:`10kW` heat pump 
 could refer to :math:`10kW_{th}` heat output or :math:`10kW_{el}` electricity 
 input. Hence, the user has to specify which carrier is the reference carrier in 
-the file ``attributes.json``. For storage technologies and transport 
+the file ``attributes.yaml``. For storage technologies and transport 
 technologies, the reference carrier is the carrier that is stored or 
 transported, respectively.
 
@@ -131,7 +131,7 @@ The conversion technologies are defined in the folder
 ``n`` input carriers into ``0`` to ``m`` output carriers. Note that the 
 conversion factor between the carriers is fixed, e.g., a combined heat and 
 power (CHP) plant cannot sometimes generate more heat and sometimes generate 
-more electricity. The file ``attributes.json`` defines the properties of the 
+more electricity. The file ``attributes.yaml`` defines the properties of the 
 conversion technology, e.g., the capacity limit, the maximum load, the 
 conversion factor, or the investment cost.
 
@@ -140,7 +140,7 @@ These technologies are defined in the folder
 ``set_conversion_technologies\set_retrofitting_technologies``, if any exist.
 They behave equal to conversion technologies, but they are always connected to 
 a conversion technology. They are coupled to a conversion technology by the 
-attribute ``retrofit_flow_coupling_factor`` in the file ``attributes.json``, 
+attribute ``retrofit_flow_coupling_factor`` in the file ``attributes.yaml``, 
 which couples the reference carrier flow of the retrofitting technology and the 
 base technology. A possible application of retrofitting technologies is the 
 installation of a carbon-capture unit on top of a power plant. In this case, 
@@ -162,7 +162,7 @@ discharging at ``t=t1``.
     In ZEN-garden, the power-rated (charging-discharging) capacity and 
     energy-rated (storage level) capacity of storage technologies are optimized 
     independently.     If you want to fix the energy-to-power ratio, the 
-    attribute ``energy_to_power_ratio`` in ``attributes.json`` can be set to 
+    attribute ``energy_to_power_ratio`` in ``attributes.yaml`` can be set to 
     anything different than ``inf``.
 
 
@@ -187,11 +187,11 @@ Carriers
 ==============
 
 Each energy carrier is defined in its own folder in ``set_carriers``. You do not 
-need to specify the used energy carriers explicitly in ``system.json``, but the 
+need to specify the used energy carriers explicitly in ``system.yaml``, but the 
 carriers are implied from the used technologies. All input, output, and 
 reference carriers that are used in the selected technologies 
 (see `input_structure.technologies`_) must be defined in the ``set_carriers`` folder. The file 
-``attributes.json`` defines the properties of the carrier, e.g., the carbon 
+``attributes.yaml`` defines the properties of the carrier, e.g., the carbon 
 intensity or the cost of the carrier. Additional files can further parametrize 
 the carriers (see :ref:`input_structure.attribute_files`).
 
@@ -208,24 +208,24 @@ Files
 
 .. _input_structure.attribute_files:
 
-Attribute.json files
+Attribute.yaml files
 =========================
-Each element in the input data folder has an ``attributes.json`` file, as shown 
+Each element in the input data folder has an ``attributes.yaml`` file, as shown 
 in :ref:`input_structure.input_structure`, which defines the default values for the 
 element. This file must be specified for each element and must contain all 
 parameters that this class of elements (Technology, Carrier, etc.) can have 
 (see :ref:`notation.notation`).
 
-The ``attributes.json`` files have three main purposes:
+The ``attributes.yaml`` files have three main purposes:
 
 1. Defining all parameters of each element
 2. Providing the default value for each parameter
 3. Defining the unit of each parameter
 
 
-How are ``attributes.json`` files structured?
+How are ``attributes.yaml`` files structured?
 ---------------------------------------------
-The general structure of each ``attributes.json`` file is the following:
+The general structure of each ``attributes.yaml`` file is the following:
 
 .. code-block::
 
@@ -251,7 +251,7 @@ Make sure to have the correct positioning of the brackets.
   or ``"inf"`` and a ``unit`` as a ``string`` (see :ref:`t_units.t_units`).
 
 
-Special parameters in the ``attributes.json`` file
+Special parameters in the ``attributes.yaml`` file
 ---------------------------------------------------------------
 
 Some technology parameters do not have the structure above. These are: 
@@ -301,7 +301,7 @@ The following properties must hold for all carriers:
 1. The reference carrier is one of the input or output carriers.
 2. The input and output carriers must be mutually exclusive (i.e. no carrier can
    be both).
-3. All carriers must be defined by ``attributes.json`` files within their 
+3. All carriers must be defined by ``attributes.yaml`` files within their 
    respective folders ``set_carriers\<carrier_name>``.
 
 The units of the input, output, and reference carriers are defined by carrier 
@@ -351,7 +351,7 @@ defined as the reference carrier.
 The retrofitting flow coupling factor couples the reference carrier flow of the 
 retrofitting technology and the base technology 
 (:ref:`input_structure.conversion_technologies`). The default value is defined in 
-``attributes.json`` as:
+``attributes.yaml`` as:
 
 .. code-block::
 
@@ -372,9 +372,9 @@ Overwriting default values
 
 The paradigm of ZEN-garden is that the user only has to specify those input data 
 that they want to specify. Therefore, the user defines default values for all 
-parameters in the ``attributes.json`` files. Whenever more information is 
+parameters in the ``attributes.yaml`` files. Whenever more information is 
 required, the user can overwrite the default values by providing a 
-``<parameter_name>.csv`` file in the same folder as the ``attributes.json`` 
+``<parameter_name>.csv`` file in the same folder as the ``attributes.yaml`` 
 file.
 
 Let's assume the following example: The purpose of the energy system is to 
@@ -446,9 +446,9 @@ GW`` for ``DE``.
 
 .. warning::
     Make sure that the unit of the values in the ``.csv`` file is consistent 
-    with the unit defined in the ``attributes.json`` file! Since we do not 
+    with the unit defined in the ``attributes.yaml`` file! Since we do not 
     specify a unit in the ``.csv`` file, the unit of the values is assumed to be 
-    the same as the unit in the ``attributes.json`` file.
+    the same as the unit in the ``attributes.yaml`` file.
 
 
 Constant dimensions
@@ -544,7 +544,7 @@ So, the user can reduce the number of data points in the
     2050,4
 
 If the user wants to disable the interpolation for a specific parameter, the 
-user can create a ``parameters_interpolation_off.json`` file and specify the 
+user can create a ``parameters_interpolation_off.yaml`` file and specify the 
 parameter names in the file:
 
 .. code-block::

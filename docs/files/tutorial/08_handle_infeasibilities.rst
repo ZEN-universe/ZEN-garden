@@ -65,7 +65,7 @@ This can be due to `bad numerics <https://gurobi.com/documentation/current/refma
 
 To find out whether your problem is actually infeasible or has bad numerics and 
 **you are using Gurobi**, you can disable the 
-`DualReductions <https://www.gurobi.com/documentation/8.1/refman/dualreductions.html#parameter:DualReductions>`_ parameter. Just add this line to the ``config.json``:
+`DualReductions <https://www.gurobi.com/documentation/8.1/refman/dualreductions.html#parameter:DualReductions>`_ parameter. Just add this line to the ``config.yaml``:
 
 .. code-block::
 

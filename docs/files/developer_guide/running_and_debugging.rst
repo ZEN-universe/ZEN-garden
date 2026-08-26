@@ -107,7 +107,7 @@ you like. The important settings are:
   This setup will only work for Conda environments that were also declared as 
   such in PyCharm; to set the path to the Python executable, you will have to 
   create a new PyCharm   interpreter first.
-- Set the "Working directory" to the path that contains the ``config.json``. 
+- Set the "Working directory" to the path that contains the ``config.yaml``. 
   This directory will also be used to save the results.
 
 In the end, your configuration to run ZEN-garden as a module should look similar 

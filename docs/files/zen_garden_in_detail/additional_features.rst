@@ -98,12 +98,12 @@ modeling inter-annual variability. For instance, years with high natural gas
 supply can be followed by years with low availability, where a storage can be 
 filled in the high supply years and used in the low supply years.
 To use this feature, the user has to set ``multiyear_periodicity`` to ``TRUE`` 
-in the ``system.json`` file (see :ref:`configuration.system`). The multiyear periodicity 
+in the ``system.yaml`` file (see :ref:`configuration.system`). The multiyear periodicity 
 enforces the storage level at the beginning of the planning horizon to be equal 
 to the storage level at the end of the planning horizon. Note that as of now the 
 multi-year periodicity is only usable if the interval between years of the 
 planning horizon is one year, i.e. the parameter ``interval_between_years`` in 
-``system.json`` is set to 1.
+``system.yaml`` is set to 1.
 
 
 .. _additional_features.distance_dependent_transport_capex:
@@ -274,7 +274,7 @@ The user can also set annual carbon emission limits by specifying the parameter
 
 A cumulative carbon budget can be set by specifying the parameter ``carbon_emissions_budget`` (:ref:`notation.notation`). Note that the budget
 is for the entire planning horizon, not per year, so it is sufficient to specify a single value in the
-``attributes.json`` file of the energy system.
+``attributes.yaml`` file of the energy system.
 The budget can be overshot, if ``price_carbon_emissions_budget_overshoot != inf`` (:ref:`notation.notation`).
 Using a carbon budget instead of annual limits allows the optimizer to allocate the optimal annual emission
 levels over the planning horizon.
