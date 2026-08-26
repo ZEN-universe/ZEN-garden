@@ -1,7 +1,7 @@
 .. _t_infeasibilities.t_infeasibilities:
 
 ###########################
-Tutorial 9: Infeasibilities
+Tutorial 8: Infeasibilities
 ###########################
 
 Here, we briefly want to introduce several important concepts around 
