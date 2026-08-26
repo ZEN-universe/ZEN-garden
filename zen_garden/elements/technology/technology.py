@@ -8,7 +8,9 @@ import pandas as pd
 
 from zen_garden.elements.element import Element
 from zen_garden.elements.technology.parameters import TECHNOLOGY_PARAMETERS
+from zen_garden.elements.technology.sets import TECHNOLOGY_SETS
 from zen_garden.topology.generic_parameter import GenericParameter
+from zen_garden.topology.generic_set import GenericSet
 
 logger = logging.getLogger(__name__)
 
@@ -23,6 +25,7 @@ class Technology(Element):
     lifetime: pd.Series
     lifetime_existing: pd.Series
     own_parameters: ClassVar[list[type[GenericParameter]]] = TECHNOLOGY_PARAMETERS
+    own_sets: ClassVar[list[type[GenericSet]]] = TECHNOLOGY_SETS
 
     def initialize_reference_carrier(self):
         """Retrieves and stores information on reference."""

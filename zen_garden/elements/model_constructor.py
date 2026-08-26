@@ -14,6 +14,7 @@ import pandas as pd
 from zen_garden.elements.element import Element
 from zen_garden.services.service_container import ServiceContainer
 from zen_garden.topology.generic_constraint import GenericConstraint
+from zen_garden.topology.generic_set import GenericSet
 
 if TYPE_CHECKING:
     from zen_garden.elements.energy_system import EnergySystem
@@ -28,6 +29,7 @@ logger = logging.getLogger(__name__)
 class ModelConstructor(ABC):
     element_class: ClassVar[type["Element"] | type["EnergySystem"]] = Element
     constraints: list[type[GenericConstraint]] = []
+    sets: list[type[GenericSet]] = []
 
     def __init__(
         self,
@@ -53,10 +55,11 @@ class ModelConstructor(ABC):
         """
         pass
 
-    @abstractmethod
     def construct_sets(self):
         """Constructs the Sets of this class."""
-        pass
+        logger.info(f"Constructing sets for {self.element_class.__name__}")
+        for model_set in self.sets:
+            model_set.build(self)
 
     def construct_params(self):
         logger.info(f"Constructing parameters for {self.element_class.name}")

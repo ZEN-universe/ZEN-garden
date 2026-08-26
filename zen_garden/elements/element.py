@@ -17,6 +17,7 @@ if TYPE_CHECKING:
     from zen_garden.services.dataset_path_resolver import DatasetPathResolver
     from zen_garden.services.element_registry import ElementRegistry
     from zen_garden.services.scenario_dict import ScenarioDict
+    from zen_garden.topology.generic_set import GenericSet
     from zen_garden.types import YearSpecificTs
     from zen_garden.utils.input_data_checks import InputDataChecks
 
@@ -30,6 +31,8 @@ class Element:
     raw_time_series: dict[str, pd.Series | pd.DataFrame | None]
     own_parameters: ClassVar[list[type["GenericParameter"]]] = []
     parameters: ClassVar[list[type["GenericParameter"]]] = []
+    own_sets: ClassVar[list[type["GenericSet"]]] = []
+    sets: ClassVar[list[type["GenericSet"]]] = []
 
     def __init_subclass__(cls, **kwargs):
         """Compose parameter declarations inherited from element base classes."""
@@ -39,6 +42,12 @@ class Element:
             inherited.extend(getattr(base, "parameters", ()))
         own = cls.__dict__.get("own_parameters", ())
         cls.parameters = list(dict.fromkeys([*inherited, *own]))
+
+        inherited_sets: list[type["GenericSet"]] = []
+        for base in cls.__bases__:
+            inherited_sets.extend(getattr(base, "sets", ()))
+        own_sets = cls.__dict__.get("own_sets", ())
+        cls.sets = list(dict.fromkeys([*inherited_sets, *own_sets]))
 
     def __init__(
         self,

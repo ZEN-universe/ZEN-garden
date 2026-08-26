@@ -21,6 +21,7 @@ class EnergySystemConstructor(ModelConstructor):
     element_class = EnergySystem
     constraints = ENERGY_SYSTEM_CONSTRAINTS
     parameters = EnergySystem.parameters
+    sets = EnergySystem.own_sets
 
     @override
     def has_elements(self) -> bool:
@@ -30,79 +31,7 @@ class EnergySystemConstructor(ModelConstructor):
     @override
     def construct_sets(self):
         """Constructs the pe.Sets of the class <EnergySystem>."""
-        logger.info("Constructing sets for EnergySystem")
-
-        # construct pe.Sets of the class <EnergySystem>
-        # nodes
-        self.zen_model.add_set(
-            name="set_nodes",
-            data=self.energy_system.set_nodes,
-            doc="Set of nodes",
-        )
-        # edges
-        self.zen_model.add_set(
-            name="set_edges",
-            data=self.energy_system.set_edges,
-            doc="Set of edges",
-        )
-        # nodes on edges
-        self.zen_model.add_set(
-            name="set_nodes_on_edges",
-            data=self.energy_system.set_nodes_on_edges,
-            doc="Set of nodes that constitute an edge. "
-            "Edge connects first node with second node.",
-            index_set="set_edges",
-        )
-        # carriers
-        self.zen_model.add_set(
-            name="set_carriers",
-            data=self.energy_system.set_carriers,
-            doc="Set of carriers",
-        )
-        # technologies
-        self.zen_model.add_set(
-            name="set_technologies",
-            data=self.energy_system.set_technologies,
-            doc="set_technologies",
-        )
-        # all elements
-        data = list(
-            set(self.zen_model.sets["set_technologies"])
-            | set(self.zen_model.sets["set_carriers"])
-        )
-        self.zen_model.add_set(name="set_elements", data=data, doc="Set of elements")
-        # set set_elements to indexing_sets
-        self.zen_model.indexing_sets.append("set_elements")
-        # time-steps
-        self.zen_model.add_set(
-            name="set_hours_all_years",
-            data=self.energy_system.set_hours_all_years,
-            doc="Set of base time-steps",
-        )
-        # yearly time steps
-        self.zen_model.add_set(
-            name="set_years",
-            data=self.energy_system.set_years,
-            doc="Set of yearly time-steps",
-        )
-        # yearly time steps of entire optimization horizon
-        self.zen_model.add_set(
-            name="set_years_entire_horizon",
-            data=self.energy_system.set_years_entire_horizon,
-            doc="Set of yearly time-steps of entire optimization horizon",
-        )
-        # operational time steps
-        self.zen_model.add_set(
-            name="set_time_steps_operation",
-            data=self.energy_system.time_steps.time_steps_operation,
-            doc="Set of operational time steps",
-        )
-        # storage time steps
-        self.zen_model.add_set(
-            name="set_time_steps_storage",
-            data=self.energy_system.time_steps.time_steps_storage,
-            doc="Set of storage level time steps",
-        )
+        super().construct_sets()
 
     @override
     def construct_vars(self):

@@ -21,6 +21,7 @@ logger = logging.getLogger(__name__)
 class TechnologyConstructor(ModelConstructor):
     element_class = Technology
     parameters = Technology.own_parameters
+    sets = Technology.own_sets
 
     @override
     def has_elements(self) -> bool:
@@ -35,51 +36,7 @@ class TechnologyConstructor(ModelConstructor):
     # that correspond to Technology --- ###
     @override
     def construct_sets(self):
-        logger.info("Constructing sets for Technology")
-
-        # conversion technologies
-        self.zen_model.add_set(
-            name="set_conversion_technologies",
-            data=self.energy_system.set_conversion_technologies,
-            doc="Set of conversion technologies",
-        )
-        # retrofitting technologies
-        self.zen_model.add_set(
-            name="set_retrofitting_technologies",
-            data=self.energy_system.set_retrofitting_technologies,
-            doc="Set of retrofitting technologies",
-        )
-        # transport technologies
-        self.zen_model.add_set(
-            name="set_transport_technologies",
-            data=self.energy_system.set_transport_technologies,
-            doc="Set of transport technologies",
-        )
-        # storage technologies
-        self.zen_model.add_set(
-            name="set_storage_technologies",
-            data=self.energy_system.set_storage_technologies,
-            doc="Set of storage technologies",
-        )
-        # existing installed technologies
-        self.zen_model.add_set(
-            name="set_technologies_existing",
-            data=self.element_registry.get_attribute_of_all_elements(
-                self.element_class, "set_technologies_existing"
-            ),
-            doc="Set of existing technologies",
-            index_set="set_technologies",
-        )
-        # reference carriers
-        self.zen_model.add_set(
-            name="set_reference_carriers",
-            data=self.element_registry.get_attribute_of_all_elements(
-                self.element_class, "reference_carrier"
-            ),
-            doc="set of all reference carriers correspondent to a technology. "
-            "Indexed by set_technologies",
-            index_set="set_technologies",
-        )
+        super().construct_sets()
 
     @override
     def construct_params(self):

@@ -8,11 +8,13 @@ import numpy as np
 import pandas as pd
 
 from zen_garden.elements.energy_system.parameters import ENERGY_SYSTEM_PARAMETERS
+from zen_garden.elements.energy_system.sets import ENERGY_SYSTEM_SETS
 from zen_garden.model.config import Config
 from zen_garden.model.time_steps import TimeStepsDicts
 from zen_garden.preprocess.data_input import DataInput
 from zen_garden.services.network_topology import NetworkTopology
 from zen_garden.topology.generic_parameter import GenericParameter
+from zen_garden.topology.generic_set import GenericSet
 from zen_garden.types import YearSpecificTs
 
 if TYPE_CHECKING:
@@ -30,6 +32,8 @@ class EnergySystem:
 
     name: str = "EnergySystem"
     parameters: ClassVar[list[type[GenericParameter]]] = ENERGY_SYSTEM_PARAMETERS
+    own_sets: ClassVar[list[type[GenericSet]]] = ENERGY_SYSTEM_SETS
+    sets = own_sets
     carbon_emissions_annual_limit: pd.Series
 
     def __init__(

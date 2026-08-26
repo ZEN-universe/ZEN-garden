@@ -8,8 +8,12 @@ from typing_extensions import override
 from zen_garden.elements.conversion_technology.parameters import (
     CONVERSION_TECHNOLOGY_PARAMETERS,
 )
+from zen_garden.elements.conversion_technology.sets import (
+    CONVERSION_TECHNOLOGY_SETS,
+)
 from zen_garden.elements.technology import Technology
 from zen_garden.topology.generic_parameter import GenericParameter
+from zen_garden.topology.generic_set import GenericSet
 
 logger = logging.getLogger(__name__)
 
@@ -23,6 +27,7 @@ class ConversionTechnology(Technology):
     own_parameters: ClassVar[list[type[GenericParameter]]] = (
         CONVERSION_TECHNOLOGY_PARAMETERS
     )
+    own_sets: ClassVar[list[type[GenericSet]]] = CONVERSION_TECHNOLOGY_SETS
 
     @override
     def _initialize(self):

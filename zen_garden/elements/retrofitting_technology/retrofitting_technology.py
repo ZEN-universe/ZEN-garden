@@ -7,7 +7,11 @@ from zen_garden.elements.conversion_technology import ConversionTechnology
 from zen_garden.elements.retrofitting_technology.parameters import (
     RETROFITTING_TECHNOLOGY_PARAMETERS,
 )
+from zen_garden.elements.retrofitting_technology.sets import (
+    RETROFITTING_TECHNOLOGY_SETS,
+)
 from zen_garden.topology.generic_parameter import GenericParameter
+from zen_garden.topology.generic_set import GenericSet
 
 logger = logging.getLogger(__name__)
 
@@ -21,6 +25,7 @@ class RetrofittingTechnology(ConversionTechnology):
     own_parameters: ClassVar[list[type[GenericParameter]]] = (
         RETROFITTING_TECHNOLOGY_PARAMETERS
     )
+    own_sets: ClassVar[list[type[GenericSet]]] = RETROFITTING_TECHNOLOGY_SETS
 
     def prepare_input_data(self) -> None:
         """Load the retrofit relationship before generic parameter loading."""

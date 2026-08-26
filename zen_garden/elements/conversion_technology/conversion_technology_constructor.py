@@ -21,6 +21,7 @@ logger = logging.getLogger(__name__)
 class ConversionTechnologyConstructor(ModelConstructor):
     element_class = ConversionTechnology
     parameters = ConversionTechnology.own_parameters
+    sets = ConversionTechnology.own_sets
 
     @override
     def has_elements(self) -> bool:
@@ -33,45 +34,7 @@ class ConversionTechnologyConstructor(ModelConstructor):
 
     @override
     def construct_sets(self):
-        logger.info("Constructing sets for ConversionTechnology")
-        # get input carriers
-        input_carriers = self.element_registry.get_attribute_of_all_elements(
-            self.element_class, "input_carrier"
-        )
-        output_carriers = self.element_registry.get_attribute_of_all_elements(
-            self.element_class, "output_carrier"
-        )
-        reference_carrier = self.element_registry.get_attribute_of_all_elements(
-            self.element_class, "reference_carrier"
-        )
-        dependent_carriers = {}
-        for tech in input_carriers:
-            dependent_carriers[tech] = input_carriers[tech] + output_carriers[tech]
-            dependent_carriers[tech].remove(reference_carrier[tech][0])
-        # input carriers of technology
-        self.zen_model.add_set(
-            name="set_input_carriers",
-            data=input_carriers,
-            doc="set of carriers that are an input to a specific conversion "
-            "technology. Indexed by set_conversion_technologies",
-            index_set="set_conversion_technologies",
-        )
-        # output carriers of technology
-        self.zen_model.add_set(
-            name="set_output_carriers",
-            data=output_carriers,
-            doc="set of carriers that are an output to a specific conversion "
-            "technology. Indexed by set_conversion_technologies",
-            index_set="set_conversion_technologies",
-        )
-        # dependent carriers of technology
-        self.zen_model.add_set(
-            name="set_dependent_carriers",
-            data=dependent_carriers,
-            doc="set of carriers that are an output to a specific conversion "
-            "technology. Indexed by set_conversion_technologies",
-            index_set="set_conversion_technologies",
-        )
+        super().construct_sets()
 
     @override
     def construct_vars(self):

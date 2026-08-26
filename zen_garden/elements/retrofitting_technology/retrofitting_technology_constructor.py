@@ -20,6 +20,7 @@ class RetrofittingTechnologyConstructor(ModelConstructor):
     element_class = RetrofittingTechnology
     constraints = RETROFITTING_TECHNOLOGY_CONSTRAINTS
     parameters = RetrofittingTechnology.own_parameters
+    sets = RetrofittingTechnology.own_sets
 
     @override
     def has_elements(self) -> bool:
@@ -32,20 +33,7 @@ class RetrofittingTechnologyConstructor(ModelConstructor):
 
     @override
     def construct_sets(self):
-        logger.info("Constructing sets for RetrofittingTechnology")
-        # get base technologies
-        retrofit_base_technology = self.element_registry.get_attribute_of_all_elements(
-            self.element_class, "retrofit_base_technology"
-        )
-
-        # retrofitting base technologies
-        self.zen_model.add_set(
-            name="set_retrofitting_base_technologies",
-            data=retrofit_base_technology,
-            doc="set of base technologies for a specific retrofitting technology. "
-            "Indexed by set_retrofitting_technologies",
-            index_set="set_retrofitting_technologies",
-        )
+        super().construct_sets()
 
     @override
     def construct_vars(self):
