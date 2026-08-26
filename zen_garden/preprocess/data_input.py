@@ -108,18 +108,23 @@ class DataInput:
         unit_category,
         subelement=None
     ):
-        """Reads input data and restructures the dataframe to return
-        (multi)indexed dict.
+        """Loads and restructures input data for the current scenario.
+
+        Defaults and units are taken from the attributes file, then values from the
+        selected parameter CSV and any scenario-specific CSV are applied, converted
+        to base units, and scaled by the scenario factor.
 
         Args:
             file_name: name of selected file.
-            index_sets: index sets of attribute. Creates (multi)index.
-                Corresponds to order in pe.Set/pe.Param
+            index_sets: ordered configured model sets defining the output index,
+                e.g., location, year, or hour sets. An empty
+                list denotes a scalar parameter.
             unit_category: dict defining the dimensions of the parameter's unit
             subelement: string specifying dependent element
 
         Returns:
-            dictionary with attribute values
+            numeric values as a pandas Series with a MultiIndex in ``index_sets``
+            order, or index ``[0]`` for a scalar parameter.
         """
         # generic time steps
         yearly_variation = False
