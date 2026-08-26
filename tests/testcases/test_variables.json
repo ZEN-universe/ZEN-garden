@@ -1980,56 +1980,104 @@
                     "value": 0.0
                 }
             ],
-            "flow_conversion_output": [
+            "capacity_addition": [
                 {
-                    "index": ["natural_gas_boiler", "heat", "CH", 0],
-                    "value": 10.0
+                    "index": ["natural_gas_boiler", "power", "CH", 0],
+                    "value": 0.0
                 },
                 {
-                    "index": ["natural_gas_boiler", "heat", "CH", 1],
-                    "value": 10.0
+                    "index": ["natural_gas_boiler", "power", "CH", 1],
+                    "value": 0.0
                 },
                 {
-                    "index": ["natural_gas_boiler", "heat", "CH", 2],
-                    "value": 15.0
+                    "index": ["natural_gas_boiler", "power", "CH", 2],
+                    "value": 0.0
                 },
                 {
-                    "index": ["natural_gas_boiler", "heat", "DE", 0],
-                    "value": 100.0
+                    "index": ["natural_gas_boiler", "power", "DE", 0],
+                    "value": 0.0
                 },
                 {
-                    "index": ["natural_gas_boiler", "heat", "DE", 1],
-                    "value": 100.0
+                    "index": ["natural_gas_boiler", "power", "DE", 1],
+                    "value": 0.0
                 },
                 {
-                    "index": ["natural_gas_boiler", "heat", "DE", 2],
-                    "value": 150.0
+                    "index": ["natural_gas_boiler", "power", "DE", 2],
+                    "value": 0.0
+                },
+                {
+                    "index": ["high_efficiency_ng_boiler", "power", "CH", 0],
+                    "value": 0.0
+                },
+                {
+                    "index": ["high_efficiency_ng_boiler", "power", "CH", 1],
+                    "value": 0.0
+                },
+                {
+                    "index": ["high_efficiency_ng_boiler", "power", "CH", 2],
+                    "value": 0.0
+                },
+                {
+                    "index": ["high_efficiency_ng_boiler", "power", "DE", 0],
+                    "value": 11.224411
+                },
+                {
+                    "index": ["high_efficiency_ng_boiler", "power", "DE", 1],
+                    "value": 15.963702
+                },
+                {
+                    "index": ["high_efficiency_ng_boiler", "power", "DE", 2],
+                    "value": 17.811887
                 }
             ],
             "capacity": [
                 {
                     "index": ["natural_gas_boiler", "power", "CH", 0],
-                    "value": 15.0
+                    "value": 7.5
                 },
                 {
                     "index": ["natural_gas_boiler", "power", "CH", 1],
-                    "value": 15.0
+                    "value": 7.5
                 },
                 {
                     "index": ["natural_gas_boiler", "power", "CH", 2],
-                    "value": 15.0
+                    "value": 7.5
                 },
                 {
                     "index": ["natural_gas_boiler", "power", "DE", 0],
-                    "value": 108.309
+                    "value": 52.5
                 },
                 {
                     "index": ["natural_gas_boiler", "power", "DE", 1],
-                    "value": 127.196
+                    "value": 52.5
                 },
                 {
                     "index": ["natural_gas_boiler", "power", "DE", 2],
-                    "value": 150.0
+                    "value": 52.5
+                },
+                {
+                    "index": ["high_efficiency_ng_boiler", "power", "CH", 0],
+                    "value": 7.5
+                },
+                {
+                    "index": ["high_efficiency_ng_boiler", "power", "CH", 1],
+                    "value": 7.5
+                },
+                {
+                    "index": ["high_efficiency_ng_boiler", "power", "CH", 2],
+                    "value": 7.5
+                },
+                {
+                    "index": ["high_efficiency_ng_boiler", "power", "DE", 0],
+                    "value": 63.724411
+                },
+                {
+                    "index": ["high_efficiency_ng_boiler", "power", "DE", 1],
+                    "value": 79.688113
+                },
+                {
+                    "index": ["high_efficiency_ng_boiler", "power", "DE", 2],
+                    "value": 97.5
                 },
                 {
                     "index": ["natural_gas_pipeline", "power", "CH-DE", 0],
@@ -2071,15 +2119,39 @@
                 },
                 {
                     "index": ["natural_gas_boiler", "power", "DE", 0],
-                    "value": 0.33091
+                    "value": 0.0
                 },
                 {
                     "index": ["natural_gas_boiler", "power", "DE", 1],
-                    "value": 1.88874
+                    "value": 0.0
                 },
                 {
                     "index": ["natural_gas_boiler", "power", "DE", 2],
-                    "value": 2.28035
+                    "value": 0.0
+                },
+                {
+                    "index": ["high_efficiency_ng_boiler", "power", "CH", 0],
+                    "value": 0.0
+                },
+                {
+                    "index": ["high_efficiency_ng_boiler", "power", "CH", 1],
+                    "value": 0.0
+                },
+                {
+                    "index": ["high_efficiency_ng_boiler", "power", "CH", 2],
+                    "value": 0.0
+                },
+                {
+                    "index": ["high_efficiency_ng_boiler", "power", "DE", 0],
+                    "value": 1.122441
+                },
+                {
+                    "index": ["high_efficiency_ng_boiler", "power", "DE", 1],
+                    "value": 1.596370
+                },
+                {
+                    "index": ["high_efficiency_ng_boiler", "power", "DE", 2],
+                    "value": 1.781189
                 }
             ],
             "cost_opex_variable": [
@@ -2105,6 +2177,30 @@
                 },
                 {
                     "index": ["natural_gas_boiler", "DE", 2],
+                    "value": 0.0
+                },
+                {
+                    "index": ["high_efficiency_ng_boiler", "CH", 0],
+                    "value": 0.0
+                },
+                {
+                    "index": ["high_efficiency_ng_boiler", "CH", 1],
+                    "value": 0.0
+                },
+                {
+                    "index": ["high_efficiency_ng_boiler", "CH", 2],
+                    "value": 0.0
+                },
+                {
+                    "index": ["high_efficiency_ng_boiler", "DE", 0],
+                    "value": 0.0
+                },
+                {
+                    "index": ["high_efficiency_ng_boiler", "DE", 1],
+                    "value": 0.0
+                },
+                {
+                    "index": ["high_efficiency_ng_boiler", "DE", 2],
                     "value": 0.0
                 }
             ]
