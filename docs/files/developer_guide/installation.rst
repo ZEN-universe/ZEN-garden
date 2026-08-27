@@ -66,10 +66,15 @@ Now you can install the conda environment for zen-garden with the following
 command::
 
   conda env create -f zen_garden_env.yml
+  conda activate zen-garden-env
 
 The installation may take a couple of minutes. If the installation was
 successful, you can see the environment at
 ``C:\Users\<username>\anaconda3\envs`` or wherever Anaconda is installed.
+
+Next, install all project dependencies using uv::
+
+    uv sync --extra dev,docs,vis,gurobipy
 
 In the new environment, setup the pre-commit hooks by running the following command in the Anaconda Prompt::
 
@@ -90,4 +95,8 @@ In the new environment, setup the pre-commit hooks by running the following comm
 You have now successfully installed ZEN-garden as a developer. To familiarize
 yourself with the model, you may now follow the quick start guide on
 :ref:`building a model <building.building>` and :ref:`running a model
-<running.running>`.
+<running.running>`. Since you have used uv to install the dependencies,
+prepend `uv run` to the commands in the quick start guide. For example, to run a
+model, you would type::
+
+    uv run zen-example --config="config.json" --dataset="1_base_case"
