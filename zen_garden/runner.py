@@ -20,6 +20,7 @@ logger = logging.getLogger(__name__)
 def adjust_config_paths(
     config: Config, dataset, folder_output: str | None, config_path: str
 ) -> None:
+    """Resolve configured input and output paths relative to the config file."""
     # overwrite the path if necessary
     if dataset is not None:
         # logging.info(f"Overwriting dataset to: {dataset_path}")
@@ -48,6 +49,7 @@ def adjust_config_paths(
 
 
 def prepare_scenarios(config: Config, job_index: list[int] | None):
+    """Prepare selected scenarios and return their iterator and model name."""
     scenarios, elements = ScenarioUtils.get_scenarios(config, job_index)
     model_name, out_folder = StringUtils.setup_model_folder(
         config.analysis, config.system

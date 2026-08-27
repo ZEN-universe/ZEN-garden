@@ -308,13 +308,6 @@ class SetRegistry(Component):
                     self._handle_set_location_index(element, list_sets)
                     continue
 
-                # if set is built for pwa capex:
-                if "set_capex" in index:
-                    append_element = self._append_set_capex_index(
-                        element, index, element_class
-                    )
-                    continue
-
                 # if set is used to determine if on-off behavior is modeled
                 # exclude technologies which have no min_load
                 if "on_off" in index:

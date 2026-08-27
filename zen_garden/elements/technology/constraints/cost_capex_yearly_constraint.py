@@ -22,6 +22,18 @@ class CostCapexYearlyConstraint(TechnologyConstraint):
             C^{\\mathrm{cap,overnight}}_{h,p,\\tilde y} +
             \\kappa^{\\mathrm{cap,ex}}_{h,p,y}\\right)
 
+        The annuity factor is
+
+        .. math::
+            a^{\\mathrm{ann}}_h =
+            \\begin{cases}
+            \\dfrac{(1+r^{\\mathrm{disc}})^{L_h^{\\mathrm{dep}}}
+            r^{\\mathrm{disc}}}
+            {(1+r^{\\mathrm{disc}})^{L_h^{\\mathrm{dep}}}-1},
+            & r^{\\mathrm{disc}} \\ne 0, \\\\
+            \\dfrac{1}{L_h^{\\mathrm{dep}}}, & r^{\\mathrm{disc}} = 0.
+            \\end{cases}
+
         Storage power- and energy-capacity CAPEX are stored separately and the
         equation is applied to both terms before aggregation.
 
