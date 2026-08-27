@@ -7,19 +7,16 @@ from typing import Literal, cast, overload
 
 import pandas as pd
 from pandas import Series
-from pint import UnitRegistry
 from typing_extensions import override
 
 from zen_garden.default_config import Analysis, Solver, System
-from zen_garden.postprocess.results.scenario import Scenario
-from zen_garden.postprocess.results.solution_loader import SolutionLoader
 from zen_garden.postprocess.results.cost_emission_calculation import (
-    CostEmissionCalculation)
+    CostEmissionCalculation,
+)
+from zen_garden.postprocess.results.scenario import Index, Scenario
+from zen_garden.postprocess.results.solution_loader import SolutionLoader
 
 logger = logging.getLogger(__name__)
-
-NestedTuple = tuple[list[str], ...] | tuple[str, ...]
-NestedDict = dict[str, str | list[str]]
 
 # used for the cost and emission calculation to specify the mode of calculation
 CostEmissionMode = Literal["final_demand", "total_production", "relative"]
@@ -46,17 +43,17 @@ class Results:
                 f"The output folder {path.absolute()} does not contain any files."
             )
 
-        self.solution_loader: SolutionLoader = SolutionLoader(path)
-        self.has_scenarios: bool = len(self.solution_loader.scenarios) > 1
-        self.name: str = self.solution_loader.name
-        self.ureg: UnitRegistry = self.solution_loader.ureg
-        self.cost_emission_calculation: CostEmissionCalculation = (
+        self._solution_loader: SolutionLoader = SolutionLoader(path)
+        self.name: str = self._solution_loader.name
+        self.path: Path = path
+        self.has_scenarios: bool = len(self._solution_loader.scenarios) > 1
+        self._cost_emission_calculation: CostEmissionCalculation = (
             CostEmissionCalculation(self))
 
     @override
     def __str__(self) -> str:
         return (
-            f"Results of '{self.solution_loader.name}' "
+            f"Results of '{self._solution_loader.name}' "
             f"with scenarios: {list(self.scenarios.keys())}"
         )
 
@@ -66,7 +63,7 @@ class Results:
 
         :return: Dictionary of scenarios
         """
-        return self.solution_loader.scenarios
+        return self._solution_loader.scenarios
 
     @property
     def first_scenario(self) -> Scenario:
@@ -74,132 +71,22 @@ class Results:
 
         :return: First scenario
         """
-        return self.solution_loader.first_scenario
+        return self._solution_loader.first_scenario
 
-    def __getitem__(self, key: str) -> Scenario:
-        """Returns the scenario with the given key.
+    def __getitem__(self, scenario_name: str) -> Scenario:
+        """Returns the scenario with the given scenario_name.
+
+        Args:
+            scenario_name (str): The scenario_name of the scenario to retrieve.
 
         Example:
             This syntax allows for easy access to specific scenarios and their data::
 
                 res = Results("<result_folder>")
-                res["scenario_1"].get_unprocessed_result("capacity")
+                res["scenario_1"].get_total("capacity")
 
         """
-        return self.solution_loader.scenarios[key]
-
-    @overload
-    def get_unprocessed_result(
-        self,
-        component_name: str,
-        scenario_name: str,
-        index: dict[str, str] | None = None,
-    ) -> pd.Series: ...
-
-    @overload
-    def get_unprocessed_result(
-        self,
-        component_name: str,
-        scenario_name: None = None,
-        index: dict[str, str] | None = None,
-    ) -> pd.Series | dict[str, pd.Series]: ...
-
-    def get_unprocessed_result(
-        self,
-        component_name: str,
-        scenario_name: str | None = None,
-        index: dict[str, str] | None = None,
-    ) -> pd.Series | dict[str, pd.Series]:
-        """Returns the raw results without any further processing.
-
-        Transforms a parameter or variable dataframe string into
-        an actual pandas dataframe.
-
-        Args:
-            component_name (string): The string to decode
-            scenario_name: Which scenario to take. If none is specified, all are
-                returned.
-            data_type: The type of data to extract. Either 'dataframe' or 'units'
-            index: slicing index of the resulting dataframe
-
-        Returns:
-            DataFrame: The corresponding dataframe
-
-        Examples:
-            Basic usage example:
-
-            >>> from zen_garden.postprocess.results.results import Results
-            >>> r = Results(path='<result_folder>')
-            >>> r.get_unprocessed_result('<component_name>') # dataframe of "<component_name>"
-            >>> r.get_unprocessed_result('<component_name>', '<scenario_name>') # dataframe of
-                "<component_name>" in "<scenario_name>"
-            >>> r.get_unprocessed_result('<component_name>', index={'<index_name>': '<index_value>'})
-                # dataframe of "<component_name>" for a specific index value to slice the
-                dataframe
-
-        """
-        if scenario_name is not None or len(self.scenarios) == 1:
-            scenario = (
-                self.solution_loader.find_scenario(scenario_name)
-                if scenario_name is not None
-                else self.first_scenario
-            )
-            return scenario.get_values(component_name, index)
-
-        return {
-            name: scenario.get_values(component_name, index)
-            for name, scenario in self.scenarios.items()
-        }
-
-    def get_full_ts(
-        self,
-        component_name: str,
-        scenario_name: str | None = None,
-        discount_to_first_step: bool = True,
-        year: int | None = None,
-        keep_raw: bool = False,
-        index: dict[str, str] | None = None,
-    ) -> pd.DataFrame | pd.Series:
-        """Calculates the full timeseries.
-
-        Args:
-            component_name: Name of the component
-            scenario_name: The scenario for with the component should be
-                extracted (only if needed)
-            discount_to_first_step: apply annuity to first year of interval or
-                entire interval
-            year: year of which full time series is selected
-            keep_raw: Keep the raw values of the rolling horizon optimization
-            index: slicing index of the resulting dataframe
-
-        Returns:
-           Full timeseries
-        """
-        if scenario_name is not None or len(self.scenarios) == 1:
-            scenario = (
-                self.solution_loader.find_scenario(scenario_name)
-                if scenario_name is not None
-                else self.first_scenario
-            )
-            return scenario.get_full_ts(
-                component_name,
-                discount_to_first_step=discount_to_first_step,
-                year=year,
-                keep_raw=keep_raw,
-                index=index,
-            )
-
-        df_dict = {
-            name: scenario.get_full_ts(
-                component_name,
-                discount_to_first_step=discount_to_first_step,
-                year=year,
-                keep_raw=keep_raw,
-                index=index,
-            )
-            for name, scenario in self.scenarios.items()
-        }
-        return self._concatenate_scenarios(df_dict)
+        return self._solution_loader.scenarios[scenario_name]
 
     def get_total(
         self,
@@ -207,7 +94,7 @@ class Results:
         year: int | None = None,
         scenario_name: str | None = None,
         keep_raw: bool = False,
-        index: dict[str, str] | None = None,
+        index: Index | None = None,
     ) -> pd.DataFrame | pd.Series:
         """Calculates the total values of a component for a all scenarios.
 
@@ -250,7 +137,7 @@ class Results:
 
         if scenario_name is not None or len(self.scenarios) == 1:
             scenario = (
-                self.solution_loader.find_scenario(scenario_name)
+                self._solution_loader.find_scenario(scenario_name)
                 if scenario_name is not None
                 else self.first_scenario
             )
@@ -262,6 +149,119 @@ class Results:
         }
         return self._concatenate_scenarios(df_dict)
 
+    def get_full_ts(
+        self,
+        component_name: str,
+        scenario_name: str | None = None,
+        discount_to_first_step: bool = True,
+        year: int | None = None,
+        keep_raw: bool = False,
+        index: Index | None = None,
+    ) -> pd.DataFrame | pd.Series:
+        """Calculates the full timeseries.
+
+        Args:
+            component_name: Name of the component
+            scenario_name: The scenario for with the component should be
+                extracted (only if needed)
+            discount_to_first_step: apply annuity to first year of interval or
+                entire interval
+            year: year of which full time series is selected
+            keep_raw: Keep the raw values of the rolling horizon optimization
+            index: slicing index of the resulting dataframe
+
+        Returns:
+           Full timeseries
+        """
+        if scenario_name is not None or len(self.scenarios) == 1:
+            scenario = (
+                self._solution_loader.find_scenario(scenario_name)
+                if scenario_name is not None
+                else self.first_scenario
+            )
+            return scenario.get_full_ts(
+                component_name,
+                discount_to_first_step=discount_to_first_step,
+                year=year,
+                keep_raw=keep_raw,
+                index=index,
+            )
+
+        df_dict = {
+            name: scenario.get_full_ts(
+                component_name,
+                discount_to_first_step=discount_to_first_step,
+                year=year,
+                keep_raw=keep_raw,
+                index=index,
+            )
+            for name, scenario in self.scenarios.items()
+        }
+        return self._concatenate_scenarios(df_dict)
+    
+    @overload
+    def get_unprocessed_result(
+        self,
+        component_name: str,
+        scenario_name: str,
+        index: Index | None = None,
+    ) -> pd.Series: ...
+
+    @overload
+    def get_unprocessed_result(
+        self,
+        component_name: str,
+        scenario_name: None = None,
+        index: Index | None = None,
+    ) -> pd.Series | dict[str, pd.Series]: ...
+
+    def get_unprocessed_result(
+        self,
+        component_name: str,
+        scenario_name: str | None = None,
+        index: Index | None = None,
+    ) -> pd.Series | dict[str, pd.Series]:
+        """Returns the raw results without any further processing.
+
+        Transforms a parameter or variable dataframe string into
+        an actual pandas dataframe.
+
+        Args:
+            component_name (string): The string to decode
+            scenario_name: Which scenario to take. If none is specified, all are
+                returned.
+            data_type: The type of data to extract. Either 'dataframe' or 'units'
+            index: slicing index of the resulting dataframe
+
+        Returns:
+            DataFrame: The corresponding dataframe
+
+        Examples:
+            Basic usage example:
+
+            >>> from zen_garden.postprocess.results.results import Results
+            >>> r = Results(path='<result_folder>')
+            >>> r.get_unprocessed_result('<component_name>') # dataframe of "<component_name>"
+            >>> r.get_unprocessed_result('<component_name>', '<scenario_name>') # dataframe of
+                "<component_name>" in "<scenario_name>"
+            >>> r.get_unprocessed_result('<component_name>', index={'<index_name>': '<index_value>'})
+                # dataframe of "<component_name>" for a specific index value to slice the
+                dataframe
+
+        """
+        if scenario_name is not None or len(self.scenarios) == 1:
+            scenario = (
+                self._solution_loader.find_scenario(scenario_name)
+                if scenario_name is not None
+                else self.first_scenario
+            )
+            return scenario.get_values(component_name, index)
+
+        return {
+            name: scenario.get_values(component_name, index)
+            for name, scenario in self.scenarios.items()
+        }
+
     def get_dual(
         self,
         component_name: str,
@@ -269,7 +269,7 @@ class Results:
         year: int | None = None,
         discount_to_first_step: bool = True,
         keep_raw: bool = False,
-        index: dict[str, str] | None = None,
+        index: Index | None = None,
     ) -> pd.DataFrame | pd.Series | None:
         """Extracts the dual variables of a component.
 
@@ -353,7 +353,7 @@ class Results:
                 an operational time step type, the unit is multiplied by hours.
              
         """
-        scenario = self.solution_loader.find_scenario(scenario_name)
+        scenario = self._solution_loader.find_scenario(scenario_name)
         return scenario.get_unit(component_name, convert_to_yearly_unit)
 
     def get_system(self, scenario_name: str | None = None) -> System:
@@ -380,7 +380,7 @@ class Results:
             >>> r.get_system('<scenario_name>') # system configuration of "scenario_name"
 
         """
-        scenario = self.solution_loader.find_scenario(scenario_name)
+        scenario = self._solution_loader.find_scenario(scenario_name)
         return scenario.system
 
     def get_analysis(self, scenario_name: str | None = None) -> Analysis:
@@ -408,7 +408,7 @@ class Results:
             >>> r.get_analysis('<scenario_name>') # analysis config of "scenario_name"
 
         """
-        scenario = self.solution_loader.find_scenario(scenario_name)
+        scenario = self._solution_loader.find_scenario(scenario_name)
         return scenario.analysis
 
     def get_solver(self, scenario_name: str | None = None) -> Solver:
@@ -436,7 +436,7 @@ class Results:
             >>> r.get_solver('<scenario_name>') # solver configuration of "scenario_name"
 
         """
-        scenario = self.solution_loader.find_scenario(scenario_name)
+        scenario = self._solution_loader.find_scenario(scenario_name)
         return scenario.solver
 
     def get_doc(
@@ -457,7 +457,7 @@ class Results:
             >>> r = Results(path='<result_folder>')
             >>> r.get_doc('<component_name>') # documentation of "<component_name>"
         """
-        scenario = self.solution_loader.find_scenario(scenario_name)
+        scenario = self._solution_loader.find_scenario(scenario_name)
         return scenario.get_doc(component_name)
 
     def get_index_names(
@@ -483,7 +483,7 @@ class Results:
             >>> r.get_index_names('<component_name>') # index names of "<component_name>"
             >>> r.get_index_names('<component_name>', '<scenario_name>') # index names of "<component_name>" in "<scenario_name>"
         """
-        scenario = self.solution_loader.find_scenario(scenario_name)
+        scenario = self._solution_loader.find_scenario(scenario_name)
         return scenario.get_index_names(component_name)
 
     def get_years(self, scenario_name: str | None = None) -> list[int]:
@@ -498,14 +498,14 @@ class Results:
         Returns:
             list[int]: A list of years for the specified scenario.
         """
-        scenario = self.solution_loader.find_scenario(scenario_name)
+        scenario = self._solution_loader.find_scenario(scenario_name)
         ref_year = scenario.system.reference_year
         interval_between_years = scenario.system.interval_between_years
         return [
             ref_year + i * interval_between_years 
             for i in range(scenario.system.optimized_years)]
 
-    def has_MF(self, scenario_name: str | None = None) -> bool:
+    def has_RH(self, scenario_name: str | None = None) -> bool:
         """Whether the given scenario uses rolling horizon optimization.
         If no scenario is given, the first one is taken.
 
@@ -514,57 +514,8 @@ class Results:
         :return: Boolean indicating whether the scenario
             uses rolling horizon optimization.
         """
-        scenario = self.solution_loader.find_scenario(scenario_name)
+        scenario = self._solution_loader.find_scenario(scenario_name)
         return scenario.has_rh
-
-    def get_coords(self, scenario_name: str | None = None) -> pd.DataFrame | None:
-        """Extracts the coordinates of the nodes of a given Scenario. If no
-        scenario is given, a random one is taken.
-
-        Args:
-            scenario_name (str, optional): The name of the scenario for which
-                to extract the coordinates. If no value is given, then the first
-                scenario is used. Default value: ``None``.
-
-        Returns:
-            pd.DataFrame: The corresponding coordinates.
-        """
-        scenario = self.solution_loader.find_scenario(scenario_name)
-        coords = pd.DataFrame(scenario.system.coords).T
-        if coords.empty:
-            logger.warning(
-                (
-                    f"Coordinates of nodes are not saved for version "
-                    f"{scenario.analysis.zen_garden_version}."
-                )
-            )
-            return None
-        return pd.DataFrame(scenario.system.coords).T
-
-    def extract_carrier(
-        self, series: pd.Series, carrier: str, scenario_name: str
-    ) -> pd.Series:
-        """Returns a dataframe that only contains the desired carrier.
-        If carrier is not contained in the dataframe, the technologies that
-        have the provided reference carrier are returned.
-
-        :param dataframe: pd.Dataframe containing the base data
-        :param carrier: name of the carrier
-        :param scenario_name: name of the scenario
-        :return: filtered pd.Dataframe containing only the provided carrier
-        """
-        if "carrier" in series.index.names:
-            return series.xs(carrier, level="carrier", drop_level=False)
-
-        reference_carriers = self.get_unprocessed_result("set_reference_carriers", scenario_name)
-        assert isinstance(reference_carriers, pd.Series)
-
-        technologies_with_carrier = reference_carriers[reference_carriers == carrier]
-        return series[
-            series.index.get_level_values("technology").isin(
-                technologies_with_carrier.index
-            )
-        ]
 
     def get_component_names(
         self,
@@ -592,7 +543,7 @@ class Results:
             >>> r.get_component_names('variable') # list of variable component names
             >>> r.get_component_names('dual') # list of dual component names
         """
-        scenario = self.solution_loader.find_scenario(scenario_name)
+        scenario = self._solution_loader.find_scenario(scenario_name)
         if component_type is None:
             return scenario.component_map.all_components
         return cast(list[str], getattr(scenario.component_map, component_type))
@@ -678,9 +629,9 @@ class Results:
                 # relative production costs of each sector in "<scenario_name>"
         """
         if scenario_name is None:
-            scenario_name = next(iter(self.solution_loader.scenarios.keys()))
+            scenario_name = next(iter(self._solution_loader.scenarios.keys()))
         sectoral_costs, direct_costs = (
-            self.cost_emission_calculation.calculate_leontief_data(
+            self._cost_emission_calculation.calculate_leontief_data(
                 scenario_name=scenario_name,
                 carrier=carrier,
                 spatially_resolved=spatially_resolved,
@@ -754,9 +705,9 @@ class Results:
                 # relative production emissions of each sector in "<scenario_name>"
         """
         if scenario_name is None:
-            scenario_name = next(iter(self.solution_loader.scenarios.keys()))
+            scenario_name = next(iter(self._solution_loader.scenarios.keys()))
         sectoral_emissions, direct_emissions = (
-            self.cost_emission_calculation.calculate_leontief_data(
+            self._cost_emission_calculation.calculate_leontief_data(
                 scenario_name=scenario_name,
                 carrier=carrier,
                 spatially_resolved=spatially_resolved,

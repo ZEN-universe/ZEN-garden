@@ -34,12 +34,14 @@ You can reduce the number of nodes by selecting a subset of nodes in your
 interyearly resolution (``interval_between_years``) in the ``system.json``.
 
 Per default, each year is represented by 8760 timesteps of length 1h.
-You can change the interyearly resolution by modifying the
+You can change the intrayearly resolution by modifying
 ``unaggregated_time_steps_per_year``. To reduce the complexity, timeseries
-aggregation can be used (``conduct_time_series_aggregation``) to reduce the
-number of time steps. Per default, the number of timesteps is reduced to 10
-(``aggregated_time_steps_per_year``). :ref:`t_tsa.t_tsa` and :ref:`t_tsa.time_parameters` provide a detailed description of
-the time representation and the time parameters.
+aggregation can be used (``conduct_time_series_aggregation``), which
+aggregates the operational time steps to
+``aggregated_time_steps_per_year`` representative time steps.
+:ref:`t_tsa.t_tsa` shows how to use it, and
+:ref:`time_representation.time_representation` describes the time
+representation and the time parameters in detail.
 
 
 .. _configuration.config:
@@ -124,9 +126,11 @@ lists, respectively. The name of the duals corresponds to the name of the constr
 
 You can analyze the numerics of your optimization problem via
 ``analyze_numerics``. In addition, a scaling algorithm is available. Per
-default, four iterations of the scaling algorithm are conducted without
-including the values of the right-hand-side. :ref:`t_scaling.t_scaling` provides a detailed
-description of the scaling algorithm.
+default, three iterations of the geometric mean scaling algorithm are
+conducted, including the values of the right-hand side
+(``"scaling_algorithm": ["geom", "geom", "geom"]``,
+``"scaling_include_rhs": true``). :ref:`t_scaling.t_scaling` provides a
+detailed description of the scaling algorithm.
 
 .. _configuration.plugins:
 

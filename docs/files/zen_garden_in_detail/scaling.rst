@@ -1,8 +1,16 @@
 .. _t_scaling.t_scaling:
 
-###################
-Tutorial 7: Scaling
-###################
+#######
+Scaling
+#######
+
+Scaling improves the numerical properties of the optimization problem so that
+solvers can solve it faster and more reliably. This page explains what the
+scaling algorithms do, how to configure them, and what a benchmarking study
+says about which configuration to choose.
+
+If you only want to switch scaling on, go straight to
+:ref:`t_scaling.how_to_scale`.
 
 What is scaling and when to use it?
 -----------------------------------
@@ -83,14 +91,14 @@ How to use scaling in ZEN-garden?
 ---------------------------------
 
 As described in, :ref:`configuration.configuration` in the :ref:`configuration.solver` section, scaling can 
-be activated by adjusting the ``analysis.json`` file. The scaling configuration 
+be activated by adjusting the ``solver`` section of the ``config.json`` file. The scaling configuration 
 can be chosen through the following three settings:
 
 1. ``use_scaling``: Boolean, whether scaling should be used or not.
 2. ``scaling_algorithm``: List of strings, the scaling algorithms to be used. 
    Possible entries are: ``"geom"``, ``"arithm"``, ``"infnorm"``. The length of 
    the list determines the number of iterations.
-3. ``include_rhs``: Boolean, whether the right-hand side vector should be 
+3. ``scaling_include_rhs``: Boolean, whether the right-hand side vector should be 
    included for determining the row scaling vector or not.
 
 For example, the following configuration would use a combination of two 
@@ -106,8 +114,10 @@ vector:
     "scaling_include_rhs": true
   }
 
-The default configuration are three iterations of the geometric mean scaling 
-algorithm with right-hand-side scaling.
+The default configuration is three iterations of the geometric mean scaling
+algorithm with right-hand-side scaling included, i.e.
+``"scaling_algorithm": ["geom", "geom", "geom"]`` and
+``"scaling_include_rhs": true``.
 
 
 .. _t_scaling.scaling_recommendations:
@@ -306,7 +316,7 @@ Based on the collected data from the benchmarking runs for the models
 ``PI_small``, ``WES_nofe``, ``WES_nofe_PI``, and ``WES_nofe_PC``, a regression 
 is run with the net-solving time (solving time + scaling time) as the dependent 
 variable. The explanatory variables are the models, the ``use_scaling`` boolean, 
-the ``include_rhs`` boolean, the ``NumericFcous`` (:math:`0` or :math:`1`) 
+the ``scaling_include_rhs`` boolean, the ``NumericFcous`` (:math:`0` or :math:`1`) 
 setting of Gurobi as well as an interaction term between ZEN-garden scaling and 
 Gurobi's ``ScaleFlag``. The results of the regression analysis are the 
 following:
@@ -327,8 +337,3 @@ The key takeaways from the regression analysis are:
 Please note, that these results can not be generalized. They only represent the 
 average effect observed for the models considered here and might vary from case 
 to case.
-
-
-
-
-

@@ -1,0 +1,5 @@
+natural_gas:
+  - availability_import
+set_technologies:
+  - max_load
+natural_gas_boiler: null

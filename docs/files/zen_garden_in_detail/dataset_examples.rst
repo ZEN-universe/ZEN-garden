@@ -4,39 +4,43 @@
 Dataset Examples
 ################
 
-ZEN-garden provides a number of small datasets to demonstrate the 
-functionalities of ZEN-garden and to understand the data structure. The datasets 
-are stored in the ``datasets`` directory of the ZEN-garden repository. If you 
-forked the ZEN-garden repository, you can find the datasets in the 
-``documentation/dataset_examples`` directory. If you installed ZEN-garden using 
-pip, you can download and execute the datasets with the ``--downlaod-example`` 
-flag (see :ref:`building.examples`).
+ZEN-garden provides a number of small datasets to demonstrate the
+functionalities of ZEN-garden and to understand the data structure. If you
+cloned the ZEN-garden repository, the datasets are in the
+``docs/dataset_examples`` directory. Otherwise, download any of them with
+``zen-example --dataset="<name>"`` (see :ref:`building.examples`).
 
 The following datasets are available:
 
-1. ``1_base_case``
-2. ``2_multi_year_optimization``
-3. ``3_reduced_import_availability``
-4. ``4_multiple_time_steps_per_year``
-5. ``5_reduced_import_availability_yearly``
-6. ``6_time_series_aggregation``
-7. ``7_yearly_variation``
-8. ``8_myopic_foresight``
-9. ``9_brown_field``
-10. ``10_multi_scenario``
-11. ``11_multiple_in_output_carriers_conversion``
-12. ``12_yearly_interpolation``
-13. ``13_retrofitting_and_fuel_substitution``
-14. ``14_unit_consistency_expected_error``
+* ``1_base_case``
+* ``2_multi_year_optimization``
+* ``3_reduced_import_availability``
+* ``5_multiple_time_steps_per_year``
+* ``6_reduced_import_availability_yearly``
+* ``7_time_series_aggregation``
+* ``8_yearly_variation``
+* ``9_myopic_foresight``
+* ``10_brown_field``
+* ``11_multi_scenario``
+* ``12_multiple_in_output_carriers_conversion``
+* ``13_yearly_interpolation``
+* ``14_retrofitting_and_fuel_substitution``
+* ``15_unit_consistency_expected_error``
 
-All datasets build upon the dataset ``1_base_case`` and extend it with 
-additional features. In the following we describe the datasets and highlight the 
-differences to the previous dataset.
+.. note::
+    There is no dataset 4. It demonstrated a piecewise-affine capex
+    approximation, which has been removed from the model. The remaining
+    datasets keep their names so that existing ``zen-example`` commands and
+    references continue to work.
+
+All datasets build upon ``1_base_case`` and extend it with additional
+features. Each description below highlights the difference to the previous
+dataset.
 
 .. _dataset_examples.1_base_case:
 
 1_base_case
--------------
+-----------
 The base case includes a simple energy system consisting of two nodes: 
 Switzerland (CH) and Germany (DE). Although more nodes are defined in the 
 ``set_nodes.csv`` file, only ``CH`` and ``DE`` are selected in ``system.json``.
@@ -72,7 +76,7 @@ electricity. Natural gas pipeline and storage are not installed as the natural
 gas can be imported in both nodes without limits.
 
 2_multi_year_optimization
----------------------------
+-------------------------
 The model builds upon the base case by extending the optimization over multiple 
 years. The parameter ``optimized_years`` in the ``system.json`` file defines the 
 number of years to optimize. Additionally, the optimization only runs for every 
@@ -83,7 +87,7 @@ and the optimization model must fulfil them in all years. The adjusted heat
 demand is specified in the ``demand.csv`` file of the ``heat`` folder.
 
 3_reduced_import_availability
--------------------------------
+-----------------------------
 The example is identical to ``2_multi_year_optimization``, but with reduced 
 import availability of natural gas in DE (see the file 
 ``availability_import.csv``). The reduced import availability forces the model 
@@ -101,8 +105,8 @@ the model is a mixed integer linear program. This method for calculating the
 costs of transport modes needs to be activated in the ``system.json`` file by 
 setting the parameter ``double_capex_transport`` to ``true``.
 
-4_multiple_time_steps_per_year
---------------------------------
+5_multiple_time_steps_per_year
+------------------------------
 Now the model includes time steps within a year and optimizes the operation of
 the energy system. In the ``system.json`` file the parameters
 ``aggregated_time_steps_per_year`` and ``unaggregated_time_steps_per_year`` are
@@ -111,8 +115,8 @@ include variation between the time steps, the electricity and heat demands are
 hourly resolved in the ``demand.csv`` file.
 
 
-5_reduced_import_availability_yearly
---------------------------------------
+6_reduced_import_availability_yearly
+------------------------------------
 With the file ``availability_import_yearly.csv`` the import availability of
 natural gas in CH is step-wise reduced for each year. In contrast to
 the ``availability_import.csv`` file, the ``availability_import_yearly.csv``
@@ -122,19 +126,19 @@ storage and pipelines to store natural gas for the years with a smaller import
 limit.
 
 
-6_time_series_aggregation
----------------------------
+7_time_series_aggregation
+-------------------------
 Now the time series aggregation is switched on in the ``system.json`` file by
 setting the parameter ``conduct_time_series_aggregation`` to ``true``.
 Additionally, the parameter ``aggregated_time_steps_per_year`` needs to be
 smaller than the ``unaggregated_time_steps_per_year``. In this example, 96 time
 steps are aggregated to 10 representative time steps. For illustration purposes,
 the ``availability_import_yearly.csv`` file of natural gas is structured
-differently to the previous examples:
+differently from the previous examples:
 
 .. csv-table:: Yearly import availability of natural gas in CH
     :header-rows: 1
-    :file: ../../dataset_examples/6_time_series_aggregation/set_carriers/
+    :file: ../../dataset_examples/7_time_series_aggregation/set_carriers/
            natural_gas/availability_import_yearly.csv
     :widths: 15 15 15 15
     :delim: ,
@@ -143,8 +147,8 @@ The years are now set as the columns of the file and the nodes as the rows.
 Both structures are supported in ZEN-garden and depending on the input data,
 one might be easier to handle than the other.
 
-7_yearly_variation
----------------------
+8_yearly_variation
+------------------
 In addition to the variation within a year, ZEN-garden's input data can also
 handle variation between years. The yearly variation multiplies a parameter with
 a constant factor for the entire year. Consequently, the shape of the input data
@@ -162,8 +166,8 @@ parameter ``unaggregated_time_steps_per_year`` is set to 8760 in the
 the optimization uses 10 representative time steps for the entire year.
 
 
-8_myopic_foresight
----------------------
+9_myopic_foresight
+------------------
 All the previous datasets are optimized using so-called perfect foresight, i.e.,
 all years are optimized at once with the assumption that all the future
 parameter data are known at the time the optimization is conducted. In this
@@ -185,8 +189,8 @@ horizon are visualized:
           years. After one year is optimized, the horizon shifts to the next
           year.
 
-9_brown_field
-----------------
+10_brown_field
+--------------
 Up to this model, all examples have assumed so-called ``green field`` capacity
 expansion. The assumption is that all capacities are newly built and no
 capacities are existing on nodes or edges, i.e., the whole system is built
@@ -197,16 +201,16 @@ that are built in the past, i.e., can be used immediately and have a reduced
 lifetime left. Additionally, capacities that will be built in the future, i.e.
 within the optimization horizon, can be considered. For example, this may cover
 installations for which the decision to build them has already been made, but
-the construction has not yet started. The model ``9_brown_field`` builds upon
-the example ``7_yearly_variation``, i.e., with perfect foresight optimization.
-For photovoltaic systems, the file ``existing_capacities.csv`` is added which
+the construction has not yet started. The model ``10_brown_field`` builds upon
+the example ``8_yearly_variation``, i.e., with perfect foresight optimization.
+For photovoltaic systems, the file ``capacity_existing.csv`` is added which
 specifies the capacities that exist in the nodes and the year in which they
 were or will be built.
 
 
-10_multi_scenario
--------------------
-The model ``10_multi_scenario`` showcases the scenario analysis feature of
+11_multi_scenario
+-----------------
+The model ``11_multi_scenario`` showcases the scenario analysis feature of
 ZEN-garden. The parameter ``conduct_scenario_analysis`` in the ``system.json``
 file is set to ``true`` and a new file, ``scenarios.json``, is added to the
 dataset. The file ``scenarios.json`` contains the different scenarios that are
@@ -220,11 +224,11 @@ them from the standard input data files. The ending is specified in the
 electricity is named ``attributes_low_carbon.json``.
 
 
-11_multiple_in_output_carriers_conversion
---------------------------------------------
+12_multiple_in_output_carriers_conversion
+-----------------------------------------
 This model introduces conversion technologies which work with more than one in-
 or output carrier. For this purpose, the model from example
-``7_yearly_variation`` is extended with a combined heat and power (CHP)
+``8_yearly_variation`` is extended with a combined heat and power (CHP)
 technology. The CHP technology replaces the natural gas boiler and works with
 natural gas and biogas as input carriers. The carrier biogas is newly introduced
 as well. The output carriers of the CHP plant are heat and electricity. The
@@ -248,8 +252,8 @@ plant is specified as::
         }
     }
 
-12_yearly_interpolation
------------------------------
+13_yearly_interpolation
+-----------------------
 This example showcases how missing values in input data can be interpolated and
 how the interpolation can be switched off. Compared to the previous example, an
 annual limit of carbon emissions is introduced (file
@@ -262,9 +266,9 @@ names can be added to the file ``parameters_interpolation_off.json`` inside the
 interpolation of missing values is switched off. In this case, the default value
 from the ``attributes.json`` file is used for the missing values.
 
-.. _dataset_examples.13_retrofitting_and_fuel_substitution:
+.. _dataset_examples.14_retrofitting_and_fuel_substitution:
 
-13_retrofitting_and_fuel_substitution
+14_retrofitting_and_fuel_substitution
 -------------------------------------
 
 In this example, the concept of ``retrofit technologies`` is introduced. Retrofit
@@ -276,7 +280,7 @@ e-fuel instead of natural gas. This is done with the newly added technology
 ``e_fuel_production`` which takes electricity as input and produces natural gas.
 Another retrofit technology is the ``carbon_capture`` technology which can be
 added to the CHP plant to capture the carbon emissions. It requires electricity
-as input and produces carbon which is then stored permanents with another added
+as input and produces carbon which is then stored permanently with another added
 technology: ``carbon_storage``.
 
 Since the retrofit technology can only be added to a specific conversion
@@ -300,8 +304,8 @@ require carbon as an input/output carrier, ``carbon`` is included in the
 dataset.
 
 
-14_unit_consistency_expected_error
-------------------------------------
+15_unit_consistency_expected_error
+----------------------------------
 
 The example should illustrate the ZEN-garden response in case the input data is 
 faulty. Specifically, ZEN-garden checks whether the units of the input data are 

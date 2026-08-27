@@ -37,7 +37,7 @@ REQUIRED_STORAGE_COMPONENTS = ["flow_storage_charge", "flow_storage_discharge"]
 class CostEmissionCalculation:
     def __init__(self, r: Results):
         self.r = r
-        self.path = Path(r.solution_loader.path)
+        self.path = Path(r.path)
         self._leontief_cache = {"cost": {}, "emissions": {}}
         self.conversion_technologies = self.r.get_system().set_conversion_technologies
         self.transport_technologies = self.r.get_system().set_transport_technologies
@@ -1005,7 +1005,7 @@ class CostEmissionCalculation:
                 "spatially resolved. Please set `spatially_resolved = True`."
             )
         if scenario_name is None:
-            scenario_name = next(iter(self.r.solution_loader.scenarios))
+            scenario_name = next(iter(self.r.scenarios))
         if mode not in ["final_demand", "total_production", "relative"]:
             raise ValueError(
                 f"Invalid mode {mode}. "

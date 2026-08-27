@@ -1,15 +1,15 @@
 {
   "carbon_emissions_annual_limit": {
     "default_value": "inf",
-    "unit": "gigatons"
+    "unit": "megatons"
   },
   "carbon_emissions_budget": {
-    "default_value": 4.2749370139006455,
-    "unit": "gigatons"
+    "default_value": "inf",
+    "unit": "megatons"
   },
   "carbon_emissions_cumulative_existing": {
     "default_value": 0.0,
-    "unit": "gigatons"
+    "unit": "megatons"
   },
   "price_carbon_emissions": {
     "default_value": 0.0,

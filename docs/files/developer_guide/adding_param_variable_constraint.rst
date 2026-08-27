@@ -1,4 +1,4 @@
-﻿.. _adding_elements.structure:
+.. _adding_elements.structure:
 
 ###################################################
 Adding Sets, Parameters, Variables, and Constraints

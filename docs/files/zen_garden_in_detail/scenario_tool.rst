@@ -1,20 +1,22 @@
 .. _t_scenario.t_scenario:
 
-############################
-Tutorial 4: Create Scenarios
-############################
+#################
+The scenario tool
+#################
 
-
-The scenario tool allows the user to overwrite parameter values and run a given 
-model multiple times with slight variations to the input data, the system or 
-analysis settings. In the following we discuss the features of the scenario 
-tool. Specifically, 
+The scenario tool overwrites parameter values so that a model can be run many
+times with variations to the input data, the system settings or the analysis
+settings. This page is the reference for the ``scenarios.json`` file format:
 
 * How to define scenarios
-* Hierarchical expansion of sets to quickly define parameter changes for 
+* Hierarchical expansion of sets to quickly define parameter changes for
   multiple elements
 * Defining parameter values in lists to avoid lengthy manual definitions
 * How to overwrite system and analysis settings
+
+For a worked, hands-on introduction, see the tutorial on
+:ref:`scenario analysis <t_scenario_tutorial.t_scenario_tutorial>`. To run
+scenarios in parallel on a cluster, see :ref:`t_euler.t_euler`.
 
 
 .. _scenario_analysis.scenario_setup:
@@ -230,7 +232,7 @@ Per default, the names for the generated scenarios are ``p{i:02d}_{j:03d}``,
 where ``i`` is an int referring to the expanded parameter name (e.g. 
 ``natural_gas``, ``import_price``, ``file``, ``default_op``) and ``j`` to its 
 value in the list (e.g. ``[0.25, 0.3, 0.35]``). The mappings of ``i`` and ``j`` 
-to the parameter names and values are written to  ``param_map.json`` in the $
+to the parameter names and values are written to ``param_map.yml`` in the
 root directory of the corresponding scenario (see below). It is possible to 
 overwrite this default naming with a formatting key::
 
@@ -260,12 +262,12 @@ subfolder, for example, the output structure could look something like this::
             scenario_p00_000_p001_000/
             scenario_p01_000_p001_000/
             ...
-            param_map.json
+            param_map.yml
         scenario_3/
     ...
 
 Here, ``scenario_2`` was defined via lists and its sub-scenarios are now in 
-subfolders with the definitions of the parameters in the ``param_map.json``. 
+subfolders with the definitions of the parameters in the ``param_map.yml``. 
 
 .. _t_scenario.sets_and_lists:
 
@@ -342,14 +344,5 @@ For example::
 will run scenarios 1,4,7, where the number is the index of the key (starting 
 with 0), not the key itself (no explicit scenario names).
 
-.. note::
-
-    When submitting a job on a high performance cluster, per default all 
-    scenarios are run sequentially. However, you can also run jobs in parallel 
-    by specifying the scenarios via the ``--array=start-stop:step%Nmax`` 
-    argument (for slurm systems, start and stop are inclusive, Nmax is the max 
-    number of concurrent jobs). Other ``--array`` options are e.g. 
-    ``--array=1,4,7``, which will run only the specified jobs. Note that the 
-    indices start with 0, so running the first four scenarios would be 
-    ``--array=0-3`` (per default the step is 1 and Nmax default to the 
-    number of submitted jobs).
+To run the scenarios in parallel on a high-performance cluster rather than
+sequentially, see :ref:`t_euler.t_euler`.

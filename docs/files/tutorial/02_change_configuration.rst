@@ -1,38 +1,23 @@
 .. _t_configuration.t_configuration:
 
-#################################
-Tutorial 2: Change Configurations
-#################################
+######################
+Change configurations
+######################
 
+.. admonition:: At a glance
+   :class: note
 
-This tutorial describes how to change the default configurations of ZEN-garden.
-Configurations allow the user to control various aspects of model behavior.
-For example, they include options for: (a) which solver to use; (b) what
-variables to save; (c) how aggregate time steps; (d) whether to scale the model
-coefficients for enhanced numerical stability; (d) what technologies and regions
-to include; (e) what objective function to use; and (f) whether to use a 
-rolling foresight horizon. A complete list of all configurations can be found 
-in the :ref:`configurations <configuration.configuration>`.
+   | **You will** change ZEN-garden's behaviour by editing ``config.json`` and ``system.json``.
+   | **You need** the setup from :ref:`tutorials_intro.setup`.
 
+Configurations control how the model is solved and what it represents. They
+live in two files:
 
-This tutorial assumes that you have installed and run the example dataset 
-``5_multiple_time_steps_per_year`` as described in the tutorial :ref:`setup 
-instructions <tutorials_intro.setup>`. 
-
-
-Configuration files
-===================
-
-The configurations are set in two input files: ``config.json`` and
-``system.json``. The ``config.json`` file sets all configurations which
-relate to how the model should be processed, solved, and saved. For example,
-it allows users to select: which solver to use, what variables to save, how
-to aggregate time steps, and whether to scale the model. In contrast, the 
-``system.json`` file includes all configurations which relate to the physical
-energy system being simulated. These include: what technologies and regions to
-include, what objective function to use, and whether to use a rolling foresight
-horizon. The location of these files in the ZEN-garden input data is shown below:
-
+* ``config.json`` — how the model is **processed, solved and saved**: which
+  solver to use, what to save, how to aggregate time steps, whether to scale.
+* ``system.json`` — the **physical energy system**: which technologies and
+  nodes to include, how many years, the objective function, whether to use a
+  rolling foresight horizon.
 
 .. code-block:: text
 
@@ -45,49 +30,33 @@ horizon. The location of these files in the ZEN-garden input data is shown below
     |
     `--config.json
 
+Note that ``config.json`` sits next to the dataset folder, not inside it: one
+``config.json`` can serve several datasets.
 
-The configuration files are formatted in JavaScript Object Notation (JSON),
-an easy-to-read-and-interpret file format for representing objects and data 
-structures. The following `video <https://www.youtube.com/watch?v=iiADhChRriM>`_
-provides a introduction to JSON files. Users are recommended to familiarize 
-themselves with the JSON files structure before continuing with this tutorial.
+The complete list of available settings, with types and defaults, is in
+:ref:`configuration.configuration`. This tutorial shows how to change them.
 
-.. tip::
+.. warning::
 
-    A common mistake when writing JSON files is to put a comma at the end of a 
-    list in json. For example, `"list": [1, 2, 3,]`` is wrong, it should be 
-    ``"list": [1, 2, 3]``. The cryptic error message which results is:
-    ``json.decoder.JSONDecodeError: Expecting value: [...]``. If you recieve
-    this message, check the ''`system.json``, ``config.json``, and 
-    ``attributes.json`` for commas at the end of lists. When you scroll up in 
-    the error message, it will tell you which file caused the error.
+    A common mistake is a trailing comma at the end of a JSON list:
+    ``"list": [1, 2, 3,]`` is invalid, it should be ``"list": [1, 2, 3]``.
+    JSON also does not allow comments. Both produce the error
+    ``json.decoder.JSONDecodeError: Expecting value: [...]``. See
+    :ref:`troubleshooting.troubleshooting`.
 
+
+.. _t_configuration.config:
 
 Modifying config.json
 =====================
 
-The ``config.json`` file includes creates a dictionary with two entries:
-``analysis`` and ``solver``. Each of these is, in turn, a dictionary containing
-configurations and their values. A full set of options which can be specified in
-the ``config.json`` file are found in :ref:`analysis settings 
-<configuration.analysis>` and :ref:`solver settings <configuration.solver>`.
+``config.json`` contains two dictionaries, ``analysis`` and ``solver``. To
+change a setting, add ``"<configuration_name>": <value>`` to the appropriate
+dictionary. Anything you do not specify keeps its default.
 
+The example below is not exhaustive; it shows the shape of the file.
 
-The following steps can be used to change the ``config.json`` file:
-
-1. Identify which configurations you would like to change. To do so, see
-   the complete list of :ref:`config.json configurations 
-   <configuration.config>`.
-2. Set the desired configuration in the ``conf.json`` file. An example 
-   ``conf.json`` file, in which multiple configurations are specified, is shown 
-   below. The example file is not exhaustive of all of the available 
-   configurations. Instead, it is intended to give users an intuition for how 
-   configurations can be specified. To add configurations which are not 
-   already listed, simply add the desired ``<configuration_name>: <value>`` to 
-   the appropriate dictionary (``analysis`` or ``solver``).
-
-
-.. code:: JSON
+.. code:: json
 
     {
       "analysis": {
@@ -97,42 +66,40 @@ The following steps can be used to change the ``config.json`` file:
         "name": "gurobi",
         "solver_options": {
           "Method": 2,
-          "NodeMethod": 2,
           "BarHomogeneous": 1,
           "DualReductions": 0,
           "Threads": 128,
-          "Crossover": 0,
-          "ScaleFlag": 2,
-          "BarOrder": 0
+          "Crossover": 0
         },
         "save_duals": false,
-        "use_scaling": false,
+        "use_scaling": true,
         "run_diagnostics": true,
         "scaling_include_rhs": true
       }
     }
 
+The available settings are listed in :ref:`configuration.analysis` and
+:ref:`configuration.solver`.
 
-Example Exercise
-----------------
-
-
-1. **Modify the default ``conf.py`` file from the dataset example
-   ``5_multiple_time_steps_per_year`` in order to save the dual variables
-   to the outputs. Note: by default, dual variables are not saved to reduce
-   the memory requirement of the solution**
+.. warning::
+    Settings are validated against a schema. A misspelled key is rejected with
+    a validation error rather than silently ignored — which is useful, but it
+    means you cannot leave notes to yourself as unused keys.
 
 
-   a. Identify the appropriate setting which needs to be changed by reading
-      through the options in the :ref:`configurations 
-      <configuration.configuration>`. The option for saving duals is located in
-      the solver settings and called ``save_duals``. It takes a boolean value 
-      as input.
+Exercise
+--------
 
-   b. Add the ``save_duals`` to the ``config.json`` file. The new file should
-      look like this:
+1. **Save the dual variables to the outputs.** By default, duals are not saved,
+   which keeps the result files small.
 
-      .. code:: JSON
+   a. Find the setting. Duals are a solver concern, so look in
+      :ref:`configuration.solver`. The setting is ``save_duals`` and it takes
+      a boolean.
+
+   b. Add it to ``config.json``:
+
+      .. code:: json
 
          {
            "analysis": {
@@ -143,25 +110,29 @@ Example Exercise
            }
          }
 
-   c. You can verify that the dual variables were saved running the model and
-      using the results codebase described in the tutorial on :ref:`analyzing 
-      outputs <t_analyze.t_analyze>`. The list of components should now
-      include duals variables, whose name begins with ``constraint_<...>``.
+   c. Re-run the model and load the results as in
+      :ref:`t_analyze.t_analyze`. ``r.get_component_names('dual')`` now returns
+      a non-empty list, and every name begins with ``constraint_``.
+
+   *Expected result: the dual of the nodal energy balance,
+   ``constraint_nodal_energy_balance``, is now available. It is the marginal
+   price of a carrier at a node and time step — the value the visualization
+   platform shows alongside the energy balance.*
+
+   To save duals for selected constraints only, see :ref:`t_output.t_output`.
+
+
+.. _t_configuration.system:
 
 Modifying system.json
 =====================
 
-The ``system.json`` file contains a single dictionary of all the system 
-configurations of ZEN-garden. Similar to the ``conf.json``, these configurations 
-can be adjusted to match user preferences. Importantly, the ``system.json`` file 
-lists which technologies and regions are to be included in the model. It also 
-controls the temporal resolution of the model and sets parameters for spatial 
-aggregation. The ``system.json`` file which comes with the dataset example
-``5_multiple_time_steps_per_year`` is shown below:
+``system.json`` is a single dictionary describing the energy system. It lists
+the technologies and nodes to include, and controls the temporal resolution.
+The file shipped with ``5_multiple_time_steps_per_year`` is:
 
+.. code:: json
 
-.. code:: JSON
-    
     {
         "set_conversion_technologies": [
             "natural_gas_boiler",
@@ -188,56 +159,43 @@ aggregation. The ``system.json`` file which comes with the dataset example
         "years_in_rolling_horizon": 1
     }
 
+Only technologies listed here enter the optimization, even if more are defined
+in ``set_technologies``. The same is true for nodes. The full list of settings
+is in :ref:`configuration.system`.
 
-To modify the system configurations, use the following steps:
 
-1. Identify which configurations you would like to change. To do so, see
-   the complete list of :ref:`system.json configurations 
-   <configuration.system>`.
+Exercises
+---------
 
-2. Set the desired configuration in the ``system.json`` file. To add 
-   configurations which are not already listed, simply add the desired 
-   ``<configuration_name>: <value>`` to the JSON file.
+The two exercises below are cumulative: the second continues from the dataset
+you changed in the first.
 
-Example Exercise
-----------------
+1. **Remove the natural gas boiler from the system. What heat pump capacity is
+   then installed in Switzerland in 2023?**
 
-1. **Remove the natural gas boiler from the system. What heat pump capacity
-   is installed in Switzerland in 2023 to meet the heat demand?**
+   a. In ``system.json``, delete ``"natural_gas_boiler"`` from
+      ``set_conversion_technologies``. Save the file.
+   b. Run the model (:ref:`running.run_model`).
+   c. Read the heat pump capacity, either in the visualization platform or with
+      the ``Results`` class (:ref:`t_analyze.t_analyze`).
 
-   a. Open the ``system.json`` file for the ``5_multiple_time_steps_per_year``
-      dataset. Under the option ``set_conversion_technologies``, delete the 
-      line containing the ``natural_gas_boiler``. Save the file.
+   *Solution: 31.0 GW. With the boiler gone, the heat pump is the only way to
+   supply heat, and it takes over exactly the capacity the boiler had.*
 
-   b. Run ZEN-garden by following the instructions on :ref:`running a model 
-      <running.running>`
-   c. View the heat pump capacity using the ZEN-garden visualization platform,
-      as described in the tutorial on :ref:`analyzing outputs 
-      <t_analyze.t_analyze>`.
+2. **Continuing from exercise 1, represent the system with only 10
+   representative time steps. What is the new heat pump capacity in
+   Switzerland in 2023, and how did the heat demand profile change?**
 
-   `Solution: 31.0 GW`
+   a. In ``system.json``, set ``"conduct_time_series_aggregation": true`` and
+      ``"aggregated_time_steps_per_year": 10``. Save the file.
+   b. Run the model.
+   c. Read the heat pump capacity, and look at the hourly energy balance to see
+      the demand profile.
 
-1. **Using the above model (without natural gas boilers), invoke time-series 
-   aggregation to represent the system in only 10 representative hours. What
-   is the new heat pump capacity installed in Switzerland in 2023? How did 
-   the heat demand profile change?**
+   *Solution: 30.0 GW. The demand profile is less smooth — blocks of hours now
+   share the same demand value, because the whole profile is represented by ten
+   distinct steps. The capacity is slightly lower because clustering has
+   smoothed away part of the peak.*
 
-   a. Open the ``system.json`` file for the ``5_multiple_time_steps_per_year``
-      dataset. Change the configuration of ``conduct_time_series_aggregation``
-      to ``true``. This tells ZEN-garden to use time series aggregation. Then,
-      change the configuration of ``aggregated_time_steps_per_year`` to 10. This
-      specifies the number of representative hours used. Save the file. For 
-      more detailed information on time series aggregation and available options,
-      see the documentation on :ref:`time series aggregation <t_tsa.t_tsa>`.
-
-   b. Run ZEN-garden by following the instructions on :ref:`running a model 
-      <running.running>`
-
-   c. View the heat pump capacity using the ZEN-garden visualization platform,
-      as described in the tutorial on :ref:`analyzing outputs 
-      <t_analyze.t_analyze>`. Similarly, you can also view the heat demand 
-      profile by looking at the hourly energy balance.
-
-   `Solution: 30.0 GW. The new heat demand profile is less smooth. Blocks of
-   multiple hours often have the same heat demand. This is because the entire 
-   demand profile can now only be represented by ten different demand steps.`
+   This is the central trade-off of time series aggregation, and
+   :ref:`t_tsa.t_tsa` explores it properly.

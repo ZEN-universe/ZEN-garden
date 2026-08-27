@@ -141,8 +141,8 @@ contains a new dataset. The version of ZEN-garden required to run this model
 is indicated in the README file of that branch. The ZEN-models page, for instance, 
 contains a fully functional model of the European energy system. 
 
-To use models from the ZEN-models repository, simply select the desired branch 
-and download the `data`` folder from the repository.
+To use models from the ZEN-models repository, simply select the desired branch
+and download the ``data`` folder from the repository.
 
 
 .. _building.from_scratch:

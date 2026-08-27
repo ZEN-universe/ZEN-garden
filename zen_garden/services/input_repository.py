@@ -5,6 +5,7 @@ import warnings
 from pathlib import Path
 
 import pandas as pd
+import yaml
 
 
 class InputRepository:
@@ -80,6 +81,38 @@ class InputRepository:
             return None
         with open(file_path, "r") as file:
             return json.load(file)
+
+    def read_yaml(self, input_file_name: str) -> dict | None:
+        """Reads a YAML file and returns a dictionary with its content.
+
+        Accepts either a ``.yaml`` or ``.yml`` extension; ``.yaml`` is
+        preferred if both are present.
+
+        Args:
+            input_file_name (str): The name of the input file (without extension).
+
+        Returns:
+            dict | None: The dictionary containing the YAML data,
+                or None if the file does not exist.
+
+        Raises:
+            ValueError: If the YAML file cannot be parsed.
+        """
+        file_path = None
+        for extension in (".yaml", ".yml"):
+            candidate = self.folder_path / f"{input_file_name}{extension}"
+            if candidate.exists():
+                file_path = candidate
+                break
+        if file_path is None:
+            return None
+        with open(file_path, "r") as file:
+            try:
+                return yaml.safe_load(file)
+            except yaml.YAMLError as exc:
+                raise ValueError(
+                    f"Failed to parse YAML file {file_path.resolve()}: {exc}"
+                ) from exc
 
     def load_attribute_file(self, filename="attributes"):
         """Loads the attribute file, preferring JSON format over CSV.

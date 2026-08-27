@@ -20,7 +20,7 @@ The core features are:
 8. :ref:`Scenario creation tool <features.scenario>`
 9. :ref:`Unit transformations and consistency checks <features.units>`
 10. :ref:`Multiple supported solvers <features.solvers>` 
-11. :ref:`input_handling.scaling algorithms for enhanced numerical stability <features.scaling>`
+11. :ref:`Scaling algorithms for enhanced numerical stability <features.scaling>`
 12. :ref:`Analysis and visualization tools <features.analysis>`
 
 

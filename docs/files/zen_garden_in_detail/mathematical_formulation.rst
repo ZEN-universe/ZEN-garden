@@ -142,11 +142,6 @@ investment :math:`\kappa^{\mathrm{cap}}_{h,y}` and the capacity addition
 
     C^{\mathrm{cap,overnight}}_{h,n,y} = \kappa^{\mathrm{cap}}_{h,y} \Delta K_{h,n,y}
 
-.. note::
-    The capex of conversion technologies can also be approximated by a piecewise
-    linear approximation as described in :ref:`input_structure.pwa` and
-    :ref:`math_formulation.pwa_constraints`.
-
 For existing conversion technology capacities :math:`s_{h,n,y}^{ex}` that were
 installed before :math:`y_0`, we apply the unit cost of the first investment
 period :math:`\kappa^{\mathrm{cap}}_{h,y_0}`:
@@ -632,25 +627,14 @@ by the loss function :math:`\lambda^{\mathrm{loss}}_{h,e}` and the transported q
 
     F^{\mathrm{loss}}_{h,e,t} = \lambda^{\mathrm{loss}}_{h,e} d^{\mathrm{dist}}_{h,e} F^{\mathrm{trans}}_{h,e,t}.
 
-The loss function is described through a linear or an exponential loss factor,
-:math:`\lambda^{\mathrm{lin}}_h` and :math:`\lambda^{\mathrm{exp}}_h`, respectively.
-The loss factor is applied to the transport distance :math:`d^{\mathrm{dist}}_{h,e}`. For
-transport technologies where transport flow losses are approximated by a linear
-loss factor it follows:
+The loss function is described through a linear loss factor
+:math:`\lambda^{\mathrm{lin}}_h`, applied to the transport distance
+:math:`d^{\mathrm{dist}}_{h,e}`:
 
 .. math::
     :label: transport_flow_loss_linear
 
     \lambda^{\mathrm{loss}}_{h,e} = d^{\mathrm{dist}}_{h,e} \lambda^{\mathrm{lin}}_h
-
-For transport technologies where transport flow losses are approximated by an
-exponential loss factor following `Gabrielli et al. (2020)
-<https://doi.org/10.1016/j.apenergy.2020.115245>`_:
-
-.. math::
-    :label: transport_flow_loss_exponential
-
-    \lambda^{\mathrm{loss}}_{h,e} =  1-e^{-d^{\mathrm{dist}}_{h,e} \lambda^{\mathrm{exp}}_h}
 
 The flow of the reference carrier :math:`c_h^{\mathrm{ref}}` of all technologies
 :math:`h\in\mathcal{H}` is constrained by the maximum load
@@ -1133,72 +1117,3 @@ Eq. :eq:`min_capacity_constraint_bigM` ensure that
 capacity is expanded (i.e., :math:`z^{\mathrm{install}}_{h,p,y}=1`) and equals
 zero otherwise. The big-M value is represented by the maximum capacity addition
 for each technology :math:`\overline{\Delta k}_{h,p,y}`.
-
-
-.. _math_formulation.pwa_constraints:
-
-Piecewise affine approximation of capital expenditures
-------------------------------------------------------
-
-
-.. note:: Please note that the following introduces the mathematical formulation
-    of piecewise affine linearizations, which deviates slightly from the general
-    formulation in ZEN-garden.
-
-The capital expenditures of the conversion technologies can be approximated by a
-piecewise affine (PWA) function to account for non-linearities and e.g.,
-represent economies of scale. To this end, the capital investment unit costs are
-approximated by linear functions that are connected by breakpoints
-(:ref:`math_formulation.pwa_constraints`). The breakpoints are summarized in
-:math:`m\in\mathcal{M}`. The binary variable :math:`z^{\mathrm{pwa}}_{h,n,y,m}` is introduced
-to model the capacity selection, where it equals one if breakpoint :math:`m`
-is active, otherwise it equals zero.
-Furthermore, at most one breakpoint can be active at a time:
-
-.. math::
-
-    \sum_{m\in\mathcal{M}} z^{\mathrm{pwa}}_{h,n,y,m} \leq 1
-
-If breakpoint :math:`m` is active, the capacity addition must be within the
-capacity of the active breakpoint :math:`\Delta k^{\mathrm{pwa}}_{h,n,y,m}` and
-the subsequent breakpoint :math:`\Delta k^{\mathrm{pwa}}_{h,n,y,m+1}`. To avoid
-bilinearities, the capacity addition is approximated
-:math:`\Delta\widehat{K}_{h,p,y,m}`. For breakpoints
-:math:`m \in [0, ..., |\mathcal{M}|-1]` it follows:
-
-.. math::
-    :label: pwa_capacity_approximation_1
-
-    z^{\mathrm{pwa}}_{h,n,y,m} \Delta k^{\mathrm{pwa}}_{h,n,y,m} \leq
-    \Delta\widehat{K}_{h,n,y,m} \leq z^{\mathrm{pwa}}_{h,n,y,m} \Delta
-    k^{\mathrm{pwa}}_{h,n,y,m+1}
-
-while for the last breakpoint :math:`m=|\mathcal{M}|` it follows:
-
-.. math::
-    :label: pwa_capacity_approximation_2
-
-    z^{\mathrm{pwa}}_{h,n,y,m} \Delta k^{\mathrm{pwa}}_{h,n,y,m} \leq
-    \Delta\widehat{K}_{h,n,y,m} \leq z^{\mathrm{pwa}}_{h,n,y,m} \Delta
-    k^{\mathrm{pwa}}_{h,n,y,m}
-
-Thus, Eq. :eq:`pwa_capacity_approximation_1` and Eq.
-:eq:`pwa_capacity_approximation_2` ensure that only if a breakpoint is active
-(i.e., :math:`z^{\mathrm{pwa}}_{h,n,y,m}=1`) :math:`\Delta\widehat{K}_{h,n,y,m}\geq0`,
-otherwise :math:`\Delta\widehat{K}_{h,n,y,m}=0`. The approximation of the
-capacity addition variable :math:`\Delta\widehat{K}_{h,n,y,m}` and the
-capacity addition variable :math:`\Delta K_{h,n,y}` are linked:
-
-.. math::
-
-    \sum_{m\in\mathcal{M}} \Delta\widehat{K}_{h,n,y,m} = \Delta K_{h,n,y}
-
-The capital expenditures are computed by the multiplication of the unit capital
-investment cost :math:`\kappa^{\mathrm{cap,pwa}}_{h,y,m}` for each section and the approximation of
-the capacity addition variable :math:`\Delta\widehat{K}_{h,n,y,m}`:
-
-.. math::
-
-    \widehat{C}^{\mathrm{cap}}_{h,n,y} =
-    \sum_{m\in\mathcal{M}} \kappa^{\mathrm{cap,pwa}}_{h,y,m}
-    \Delta\widehat{K}_{h,n,y,m}

@@ -36,7 +36,7 @@ def compare_model_values(
 
     logger.info(
         "Comparing the model parameters of "
-        f"{results[0].solution_loader.name, results[1].solution_loader.name} "
+        f"{results[0].name, results[1].name} "
         f"and scenarios {scenarios[0], scenarios[1]}"
     )
 
@@ -79,10 +79,10 @@ def compare_configs(
     scenarios = check_and_fill_scenario_list(results, scenarios)
 
     for i in range(2):
-        if scenarios[i] not in results[i].solution_loader.scenarios:
-            random_scenario = next(iter(results[i].solution_loader.scenarios.keys()))
+        if scenarios[i] not in results[i].scenarios:
+            random_scenario = next(iter(results[i].scenarios.keys()))
             logger.info(
-                f"{scenarios[i]} not in {results[i].solution_loader.name}, "
+                f"{scenarios[i]} not in {results[i].name}, "
                 f"choosing {random_scenario}."
             )
             scenarios[i] = random_scenario
@@ -90,10 +90,10 @@ def compare_configs(
     results_1, results_2 = results
     scenario_name_1, scenario_name_2 = scenarios
 
-    scenario_1 = results_1.solution_loader.scenarios[scenario_name_1]
-    scenario_2 = results_2.solution_loader.scenarios[scenario_name_2]
+    scenario_1 = results_1.scenarios[scenario_name_1]
+    scenario_2 = results_2.scenarios[scenario_name_2]
 
-    names = [results_1.solution_loader.name, results_2.solution_loader.name]
+    names = [results_1.name, results_2.name]
 
     analysis_diff = compare_dicts(
         scenario_1.analysis.model_dump(), scenario_2.analysis.model_dump(), names
@@ -131,7 +131,7 @@ def get_component_diff(
     assert len(results) == 2, "Please give exactly two components"
 
     results_0, results_1 = results
-    component_map_0 = results_0.solution_loader.scenarios[scenarios[0]].component_map
+    component_map_0 = results_0.scenarios[scenarios[0]].component_map
     component_names_0 = set(
         [
             name
@@ -141,7 +141,7 @@ def get_component_diff(
         ]
     )
 
-    component_map_1 = results_1.solution_loader.scenarios[scenarios[1]].component_map
+    component_map_1 = results_1.scenarios[scenarios[1]].component_map
     component_names_1 = set(
         [
             name
@@ -158,12 +158,12 @@ def get_component_diff(
     if only_in_0:
         logger.info(
             f"Components {only_in_1} are missing from "
-            f"{results_1.solution_loader.name}"
+            f"{results_1.name}"
         )
     elif only_in_1:
         logger.info(
             f"Components {only_in_1} are missing from "
-            f"{results_0.solution_loader.name}"
+            f"{results_0.name}"
         )
     return [i for i in common_component]
 
@@ -226,23 +226,23 @@ def check_and_fill_scenario_list(
             "No common scenario found. Selecting random scenario for each " "result."
         )
         scenarios = [
-            next(iter(results[0].solution_loader.scenarios.keys())),
-            next(iter(results[1].solution_loader.scenarios.keys())),
+            next(iter(results[0].scenarios.keys())),
+            next(iter(results[1].scenarios.keys())),
         ]
 
     if len(scenarios) == 0:
         scenarios.append(common_scenario)
 
     if len(scenarios) == 1:
-        if scenarios[0] in results[1].solution_loader.scenarios:
+        if scenarios[0] in results[1].scenarios:
             scenarios.append(scenarios[0])
         else:
-            scenarios.append(next(iter(results[1].solution_loader.scenarios.keys())))
+            scenarios.append(next(iter(results[1].scenarios.keys())))
 
     for i in range(2):
         assert (
-            scenarios[i] in results[i].solution_loader.scenarios
-        ), f"{scenarios[i]} not in {results[i].solution_loader.scenarios.keys()}"
+            scenarios[i] in results[i].scenarios
+        ), f"{scenarios[i]} not in {results[i].scenarios.keys()}"
 
     return scenarios
 
@@ -254,8 +254,8 @@ def get_common_scenario(results_1: Results, results_2: Results) -> str:
     :param results_2: Results 2
     :return: Name of common scenario
     """
-    common_scenarios = set(results_1.solution_loader.scenarios.keys()).intersection(
-        results_2.solution_loader.scenarios.keys()
+    common_scenarios = set(results_1.scenarios.keys()).intersection(
+        results_2.scenarios.keys()
     )
     assert len(common_scenarios) > 0, (
         "No common scenarios between " "provided scenarios."
@@ -284,7 +284,7 @@ def compare_component_values(
         scenarios = []
     scenarios = check_and_fill_scenario_list(results, scenarios)
 
-    result_names = [result.solution_loader.name for result in results]
+    result_names = [result.name for result in results]
 
     results_0, results_1 = results
     scenario_0, scenario_1 = scenarios

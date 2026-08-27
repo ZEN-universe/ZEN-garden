@@ -60,3 +60,22 @@ analyze. Additionally, several parameters control the output:
 * ``output_file`` - specifies the output file name where to save the call graph.
   By default, the file gets saved to the current working directory.
 
+
+.. _dev_guide.sequence_time_steps:
+
+The sequence of time steps
+==========================
+
+When time series aggregation is active, the base time steps are substituted by
+aggregated time steps. This substitution yields ``sequence_time_steps``, an
+array with ``len(set_hours)`` entries that encodes the order in which the
+aggregated time steps appear in the representation of the base time steps.
+
+``sequence_time_steps`` shows up throughout the codebase because it is what
+converts one time step type into another. For example, it is used to find the
+yearly time step associated with a given operational time step, or the year a
+given operational time step belongs to.
+
+See :ref:`time_representation.time_representation` for the user-facing
+description of the time indices.
+

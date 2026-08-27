@@ -21,8 +21,8 @@ can be used to enhance the user experience:
 Additional mixed-integer constraints
 ------------------------------------
 
-Besides, PWA representation of the CAPEX (see :ref:`input_structure.pwa`), ZEN-garden allows the 
-use of three additional mixed-integer linear constraints:
+ZEN-garden allows the use of three additional mixed-integer linear
+constraints:
 
 
 .. _additional_features.min_load:

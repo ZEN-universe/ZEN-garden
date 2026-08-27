@@ -49,18 +49,17 @@ class SolutionLoader:
 
         for id, config in scenario_configs.items():
             path = self.path / f"scenario_{config['base_scenario']}"
+            # For list-expansion scenarios, we store the results in a subfolder of the base scenario.
+            scenario_subfolder = config["sub_folder"]
+            if scenario_subfolder != "":
+                path = path / f"scenario_{scenario_subfolder}"
+
             if not (path / "analysis.json").exists():
                 logger.warning(f"Scenario `scenario_{id}` does not exist. Skipping it.")
                 continue
 
             name = f"scenario_{id}"
             base_scenario: str = config["base_scenario"]
-
-            # Some scenarios have additional parameter definitions that are
-            # stored in subfolders.
-            scenario_subfolder = config["sub_folder"]
-            if scenario_subfolder != "":
-                path = path / f"scenario_{scenario_subfolder}"
 
             scenarios[name] = Scenario(path, name, base_scenario)
 

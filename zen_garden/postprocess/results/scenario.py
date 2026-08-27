@@ -11,6 +11,7 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 from pint import UnitRegistry
+from xarray.backends.netCDF4_ import NetCDF4DataStore
 
 from zen_garden.default_config import Analysis, Solver, System
 from zen_garden.postprocess.results.component_map import ComponentMap
@@ -35,6 +36,144 @@ DOCS_FILENAME_MAP = {
 }
 
 T = TypeVar("T")
+
+IndexValue = str | int | float
+IndexElement = IndexValue | list[IndexValue] | None
+Index = IndexElement | tuple[IndexElement, ...] | dict[str, IndexElement]
+
+
+def _format_query_expr(raw_dim: str, values: IndexElement) -> str | None:
+    """Builds the boolean expression that selects ``values`` along
+    ``raw_dim`` for ``DataArray.query``. Returns ``None`` if there is
+    nothing to filter (``values`` is ``None`` or an empty list).
+    """
+    if values is None:
+        return None
+    if isinstance(values, list):
+        if not values:
+            return None
+        return " | ".join(f"({raw_dim} == {v!r})" for v in values)
+    return f"{raw_dim} == {values!r}"
+
+
+def _build_query(
+    raw_dims: tuple[str, ...],
+    header_map: dict[str, str],
+    index: Index | None,
+) -> dict[str, str]:
+    """Converts a user-facing ``index`` filter into the raw dimension-name
+    -> boolean-expression dict expected by ``DataArray.query``.
+
+    ``index`` can be:
+
+    - a single value (str/int/float): filters the first dimension.
+    - a list of values: filters the first dimension to any of these values.
+    - a tuple, positional across the component's dimensions (in the order
+      returned by ``get_index_names``): each entry is a single value, a
+      list of values, or ``None`` to leave that dimension unfiltered.
+    - a dict, keyed by either the friendly name (e.g. ``"technology"``,
+      ``"node"``, from :class:`HeaderDataInputs`) or the internal
+      dimension name (e.g. ``"set_technologies"``): values as above.
+      Order does not matter.
+
+    :param raw_dims: The component's dimensions, in their internal order
+        (as returned by ``DataArray.dims``/``get_index_names``).
+    :param header_map: Maps internal dimension names to friendly names,
+        i.e. ``self.analysis.header_data_inputs`` as a dict.
+    :param index: The user-facing index filter, or ``None``.
+    :return: A dict mapping raw dimension names to boolean expressions,
+        suitable for ``DataArray.query``.
+    """
+    if index is None:
+        return {}
+
+    if isinstance(index, dict):
+        friendly_to_raw: dict[str, list[str]] = {}
+        for raw_dim in raw_dims:
+            friendly_to_raw.setdefault(header_map.get(raw_dim, raw_dim), []).append(
+                raw_dim
+            )
+
+        query: dict[str, str] = {}
+        for key, values in index.items():
+            if key in raw_dims:
+                raw_dim = key
+            elif key in friendly_to_raw and len(friendly_to_raw[key]) == 1:
+                raw_dim = friendly_to_raw[key][0]
+            elif key in friendly_to_raw:
+                raise ValueError(
+                    f"'{key}' matches multiple dimensions of this component "
+                    f"({friendly_to_raw[key]}). Use the internal dimension "
+                    f"name directly, e.g. "
+                    f"index={{'{friendly_to_raw[key][0]}': ...}}."
+                )
+            else:
+                raise ValueError(
+                    f"'{key}' is not a dimension of this component. "
+                    f"Available: {[header_map.get(d, d) for d in raw_dims]} "
+                    f"(internal names: {list(raw_dims)})."
+                )
+            expr = _format_query_expr(raw_dim, values)
+            if expr is not None:
+                query[raw_dim] = expr
+        return query
+
+    if isinstance(index, tuple):
+        if len(index) > len(raw_dims):
+            raise ValueError(
+                f"Index tuple has {len(index)} entries, but this component "
+                f"only has {len(raw_dims)} dimensions: {list(raw_dims)}."
+            )
+        query = {}
+        for raw_dim, values in zip(raw_dims, index, strict=False):
+            expr = _format_query_expr(raw_dim, values)
+            if expr is not None:
+                query[raw_dim] = expr
+        return query
+
+    if not isinstance(index, (str, int, float, list)):
+        raise TypeError(
+            f"index must be a string, number, list, tuple, dict, or None. "
+            f"Got {type(index)}: {index!r}."
+        )
+
+    # a bare value or list of values filters the first dimension
+    expr = _format_query_expr(raw_dims[0], index)
+    return {raw_dims[0]: expr} if expr is not None else {}
+
+
+def _open_component_variable(file_path: Path, component_name: str) -> xr.DataArray:
+    """Opens a single netCDF variable and its dimension coordinates.
+
+    A ``variables.nc``/``parameters.nc``/``duals.nc`` file bundles every
+    component of a scenario. ``xr.open_dataset`` builds a metadata wrapper
+    (chunking, compression filters, attrs) for every variable in the file,
+    which costs ~15-25ms per variable regardless of that variable's size.
+    With dozens of components in one file, that dominates read time
+    independent of how much data is actually being read. Opening only the
+    requested variable and its dimension coordinates via the lower-level
+    netCDF4 store avoids that per-file cost.
+
+    :param file_path: Path to the netCDF file.
+    :param component_name: The name of the component/variable to open.
+    :return: A lazy DataArray for the requested component.
+    """
+    store = NetCDF4DataStore.open(str(file_path), mode="r")
+    try:
+        raw_var = store.ds.variables[component_name]
+        var = store.open_store_variable(component_name, raw_var)
+
+        coord_vars = {}
+        for dim in var.dims:
+            if dim != component_name and dim in store.ds.variables:
+                coord_vars[dim] = store.open_store_variable(
+                    dim, store.ds.variables[dim]
+                )
+
+        ds = xr.Dataset({component_name: var, **coord_vars})
+        return ds[component_name]
+    finally:
+        store.close()
 
 
 class Scenario:
@@ -161,7 +300,7 @@ class Scenario:
     def get_values(
         self,
         component_name: str,
-        index: dict[str, str] | None = None,
+        index: Index | None = None,
         keep_raw: bool = False,
         rename_index: bool = True,
     ):
@@ -182,7 +321,7 @@ class Scenario:
     def get_raw_values(
         self,
         component_name: str,
-        index: dict[str, str] | None = None,
+        index: Index | None = None,
         rename_index: bool = True,
         mf_folder: str | None = None,
     ) -> pd.Series:
@@ -210,8 +349,12 @@ class Scenario:
             )
             return series
 
-        ds = xr.open_dataset(file_path)
-        ans = ds[component_name].query(index).to_series().dropna()
+        # da = xr.open_dataset(file_path)[component_name]
+        da = _open_component_variable(file_path, component_name)
+        header_map = self.analysis.header_data_inputs.model_dump()
+        raw_dims = tuple(str(dim) for dim in da.dims)
+        query = _build_query(raw_dims, header_map, index)
+        ans = da.query(query).to_series().dropna()
         if rename_index:
             ans = self._rename_index(ans)
         return ans
@@ -219,7 +362,7 @@ class Scenario:
     def get_values_of_rolling_horizon(
         self,
         component_name: str,
-        index: dict[str, str] | None,
+        index: Index | None,
         keep_raw: bool = False,
         rename_index: bool = True,
     ) -> pd.Series:
@@ -276,7 +419,7 @@ class Scenario:
         year: int | None = None,
         discount_to_first_step: bool = True,
         keep_raw: bool = False,
-        index: dict[str, str] | None = None,
+        index: Index | None = None,
     ) -> pd.DataFrame:
         """Calculates the full timeseries per scenario.
 
@@ -311,16 +454,20 @@ class Scenario:
             year = self._convert_year2ts(year)
             years = [year]
 
-        # slice index with time steps of year
+        # slice index with time steps of year, unless the caller already
+        # filtered the timestep dimension explicitly via `index`
         select_year_time_steps = False
         time_steps: set[int] = set()
-        if (timestep_type in [TimestepType.operational, TimestepType.storage]) and (
-            index is not None and not any(str(timestep_type.value) in i for i in index)
+        index_has_timestep_filter = isinstance(index, dict) and any(
+            str(timestep_type.value) in str(key) for key in index
+        )
+        if (
+            timestep_type in [TimestepType.operational, TimestepType.storage]
+            and (index is None
+            or not index_has_timestep_filter)
         ):
             assert timestep_column is not None
             time_steps = self._get_timesteps_of_years(timestep_type, tuple(years))
-            steps = ",".join(str(ts) for ts in time_steps)
-            index.update({timestep_column: (f"{timestep_column} in [{steps}]")})
             select_year_time_steps = True
 
         if isinstance(values.index, pd.MultiIndex):
@@ -353,8 +500,8 @@ class Scenario:
             values = values.div(timestep_duration, axis=1)
 
             for year_temp in annuity.index:
-                time_steps_year = self._get_timesteps_of_years(
-                    timestep_type, (year_temp,)
+                time_steps_year = list(
+                    self._get_timesteps_of_years(timestep_type, (year_temp,))
                 )
                 values[time_steps_year] = values[time_steps_year] / annuity[year_temp]
 
@@ -385,17 +532,6 @@ class Scenario:
                 last_occurrences.index.intersection(values.columns)
             ]
             output_df = values[last_occurrences.index].rename(last_occurrences, axis=1)
-            output_df = output_df.apply(
-                lambda row: np.interp(
-                    sequence_timesteps.index,
-                    row.index,
-                    row.values,
-                    left=np.nan,
-                    right=np.nan,
-                ),
-                axis=1,
-                result_type="expand",
-            )
 
             # fill missing ts with nan
             time_steps_start_end = self._get_time_steps_storage_level_startend_year()
@@ -406,7 +542,7 @@ class Scenario:
             }
             for tstart, tend in time_steps_start_end.items():
                 tstart_reconstructed = first_occurrences[tstart]
-                _output_df_recon = output_df.iloc[0][tstart_reconstructed:]
+                _output_df_recon = output_df.iloc[0][tstart:]
                 first_valid_timestep = _output_df_recon.index[
                     np.isnan(_output_df_recon).argmin()
                 ]
@@ -424,6 +560,17 @@ class Scenario:
                     :, first_occurrences[tstart] : last_occurrences[tstart]
                 ] = df_temp.loc[:, tstart_reconstructed:first_valid_timestep]
 
+            output_df = output_df.apply(
+                lambda row: np.interp(
+                    sequence_timesteps.index,
+                    row.index,
+                    row.values,
+                    left=np.nan,
+                    right=np.nan,
+                ),
+                axis=1,
+                result_type="expand",
+            )
             if select_year_time_steps:
                 sequence_timesteps = sequence_timesteps[
                     sequence_timesteps.isin(time_steps)
@@ -441,7 +588,7 @@ class Scenario:
         component_name: str,
         year: int | None = None,
         keep_raw: bool = False,
-        index: dict[str, str] | None = None,
+        index: Index | None = None,
     ) -> pd.DataFrame | pd.Series:
         """Calculates the total values of a component for a specific scenario.
 
@@ -505,7 +652,7 @@ class Scenario:
         year: int | None = None,
         discount_to_first_step: bool = True,
         keep_raw: bool = False,
-        index: dict[str, str] | None = None,
+        index: Index | None = None,
     ) -> pd.DataFrame | pd.Series | None:
         """Calculates the dual values of a component for a specific scenario.
 
@@ -597,8 +744,11 @@ class Scenario:
         """Method that returns the index names of a component given its name."""
         component_type = self.component_map.find_type(component_name)
         file_path = self.component_path / component_type.get_file_name()
-        ds = xr.open_dataset(file_path)
-        return [str(dim) for dim in ds[component_name].dims]
+        store = NetCDF4DataStore.open(str(file_path), mode="r")
+        try:
+            return [str(dim) for dim in store.ds.variables[component_name].dimensions]
+        finally:
+            store.close()
 
     def _read_json_file(self, file_name: Path, obj_constr: type[T]) -> T:
         """Reads a JSON file and returns an object of the specified type.
