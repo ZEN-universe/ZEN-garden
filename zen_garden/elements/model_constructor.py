@@ -39,11 +39,11 @@ class ModelConstructor(ABC):
     There is one constructor instance per element *type*, whereas there is one
     :class:`~zen_garden.elements.element.Element` instance per concrete element
     (each carrier, each technology). The element class is the single source of
-    truth for which parameters, variables and sets belong to the type;
-    :meth:`__init_subclass__` copies those declarations onto the constructor so
-    subclasses only carry build *behavior*. A subclass may still set any of
-    ``parameters``/``variables``/``sets`` explicitly to override the derived
-    value.
+    truth for which parameters, variables, sets and constraints belong to the
+    type; :meth:`__init_subclass__` copies those declarations onto the
+    constructor so subclasses only carry build *behavior*. A subclass may still
+    set any of ``parameters``/``variables``/``sets``/``constraints`` explicitly
+    to override the derived value.
     """
 
     element_class: ClassVar[type["Element"] | type["EnergySystem"]] = Element
@@ -66,6 +66,8 @@ class ModelConstructor(ABC):
             cls.variables = element_class.__dict__.get("variables", [])
         if "sets" not in cls.__dict__:
             cls.sets = element_class.__dict__.get("own_sets", [])
+        if "constraints" not in cls.__dict__:
+            cls.constraints = element_class.__dict__.get("constraints", [])
 
     def __init__(
         self,

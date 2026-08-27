@@ -8,16 +8,12 @@ from zen_garden.elements.model_constructor import ModelConstructor
 from zen_garden.elements.retrofitting_technology import (
     RetrofittingTechnology,
 )
-from zen_garden.elements.retrofitting_technology.constraints import (
-    RETROFITTING_TECHNOLOGY_CONSTRAINTS,
-)
 
 logger = logging.getLogger(__name__)
 
 
 class RetrofittingTechnologyConstructor(ModelConstructor):
     element_class = RetrofittingTechnology
-    constraints = RETROFITTING_TECHNOLOGY_CONSTRAINTS
     # Optional, self-contained type: only build when retrofitting technologies
     # are configured.
     always_construct = False

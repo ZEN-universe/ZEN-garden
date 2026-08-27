@@ -5,6 +5,9 @@ from typing import ClassVar, cast
 
 from typing_extensions import override
 
+from zen_garden.elements.conversion_technology.constraints import (
+    CONVERSION_TECHNOLOGY_CONSTRAINTS,
+)
 from zen_garden.elements.conversion_technology.parameters import (
     CONVERSION_TECHNOLOGY_PARAMETERS,
 )
@@ -15,6 +18,7 @@ from zen_garden.elements.conversion_technology.variables import (
     CONVERSION_TECHNOLOGY_VARIABLES,
 )
 from zen_garden.elements.technology import Technology
+from zen_garden.topology.generic_constraint import GenericConstraint
 from zen_garden.topology.generic_parameter import GenericParameter
 from zen_garden.topology.generic_set import GenericSet
 from zen_garden.topology.generic_variable import GenericVariable
@@ -28,12 +32,14 @@ class ConversionTechnology(Technology):
     # set label
     label = "set_conversion_technologies"
     location_type = "set_nodes"
-    # Todo: Add the constraints here?
     own_parameters: ClassVar[list[type[GenericParameter]]] = (
         CONVERSION_TECHNOLOGY_PARAMETERS
     )
     variables: ClassVar[list[type[GenericVariable]]] = CONVERSION_TECHNOLOGY_VARIABLES
     own_sets: ClassVar[list[type[GenericSet]]] = CONVERSION_TECHNOLOGY_SETS
+    constraints: ClassVar[list[type[GenericConstraint]]] = (
+        CONVERSION_TECHNOLOGY_CONSTRAINTS
+    )
 
     @override
     def _initialize(self):

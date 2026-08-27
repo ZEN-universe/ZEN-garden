@@ -8,10 +8,7 @@ from typing_extensions import override
 
 from zen_garden.elements.model_constructor import ModelConstructor
 from zen_garden.elements.technology import Technology
-from zen_garden.elements.technology.constraints import (
-    TECHNOLOGY_CONSTRAINTS,
-    TechnologyOnOffConstraint,
-)
+from zen_garden.elements.technology.constraints import TechnologyOnOffConstraint
 from zen_garden.model.components.multi_index_helper import MultiIndexHelper
 from zen_garden.model.components.set_registry import SetRegistry
 
@@ -180,10 +177,10 @@ class TechnologyConstructor(ModelConstructor):
     def construct_constraints(self):
         logger.info("Constructing constraints for Technology")
 
-        for TechnologyConstraint in TECHNOLOGY_CONSTRAINTS:
+        for TechnologyConstraint in self.constraints:
             self.service_container.build(TechnologyConstraint).build()
 
-        # min load constraints
+        # min load constraints (built last, with special-case cleanup)
         n_cons = len(self.zen_model.lp_model.constraints.items())
         self.service_container.build(TechnologyOnOffConstraint).build()
         # if nothing was added we can remove the tech vars again

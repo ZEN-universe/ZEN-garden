@@ -7,7 +7,6 @@ import pandas as pd
 from typing_extensions import override
 
 from zen_garden.elements.energy_system import EnergySystem
-from zen_garden.elements.energy_system.constraints import ENERGY_SYSTEM_CONSTRAINTS
 from zen_garden.elements.model_constructor import ModelConstructor
 
 if TYPE_CHECKING:
@@ -18,8 +17,6 @@ logger = logging.getLogger(__name__)
 
 class EnergySystemConstructor(ModelConstructor):
     element_class = EnergySystem
-    constraints = ENERGY_SYSTEM_CONSTRAINTS
-
 
     @override
     def construct_vars(self):

@@ -8,16 +8,12 @@ from typing_extensions import override
 
 from zen_garden.elements.model_constructor import ModelConstructor
 from zen_garden.elements.storage_technology import StorageTechnology
-from zen_garden.elements.storage_technology.constraints import (
-    STORAGE_TECHNOLOGY_CONSTRAINTS,
-)
 
 logger = logging.getLogger(__name__)
 
 
 class StorageTechnologyConstructor(ModelConstructor):
     element_class = StorageTechnology
-    constraints = STORAGE_TECHNOLOGY_CONSTRAINTS
 
     @override
     def construct_vars(self):
