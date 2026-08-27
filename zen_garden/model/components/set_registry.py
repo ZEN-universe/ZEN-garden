@@ -14,8 +14,8 @@ from zen_garden.model.components.zen_set import BaseSet, IndexedSet, SimpleSet
 
 if TYPE_CHECKING:
     from zen_garden.elements.element import Element
-    from zen_garden.model.config import Config
     from zen_garden.services.element_registry import ElementRegistry
+    from zen_garden.topology.model_schema import ModelSchema
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +26,7 @@ class SetRegistry(Component):
 
     def __init__(
         self,
-        config: "Config",
+        model_schema: "ModelSchema",
         element_registry: "ElementRegistry",
         indexing_sets: list[str],
     ):
@@ -34,7 +34,7 @@ class SetRegistry(Component):
         # base class init
         super().__init__()
 
-        self.config = config
+        self.model_schema = model_schema
         self.element_registry = element_registry
         self.indexing_sets = indexing_sets
 
@@ -44,6 +44,11 @@ class SetRegistry(Component):
 
         # this is the Dataset with the coords
         self.coords_dataset = xr.Dataset()
+
+    @property
+    def config(self):
+        """Return the canonical configuration from the model schema."""
+        return self.model_schema.config
 
     def add_set(self, name, data, doc, index_set: str | None = None):
         """Adds a set to the SetRegistry (this set it not indexed).

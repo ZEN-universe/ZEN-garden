@@ -15,9 +15,9 @@ if TYPE_CHECKING:
     from linopy import Model as LinopyModel
 
     from zen_garden.model.components.set_registry import SetRegistry
-    from zen_garden.model.config import Config
     from zen_garden.preprocess.unit_handling import UnitHandling
     from zen_garden.services.element_registry import ElementRegistry
+    from zen_garden.topology.model_schema import ModelSchema
 
 logger = logging.getLogger(__name__)
 
@@ -28,7 +28,7 @@ class Variable(Component):
         unit_handling: "UnitHandling",
         sets: "SetRegistry",
         lp_model: "LinopyModel",
-        config: "Config",
+        model_schema: "ModelSchema",
         element_registry: "ElementRegistry",
     ):
         """Initialization of a variable.
@@ -36,7 +36,7 @@ class Variable(Component):
         :param unit_handling: UnitHandling object
         :param sets: SetRegistry object
         :param lp_model: LinopyModel object
-        :param config: Config object
+        :param model_schema: global model schema
         :param element_registry: ElementRegistry object
         """
         super().__init__()
@@ -44,10 +44,15 @@ class Variable(Component):
         self.unit_handling = unit_handling
         self.sets = sets
         self.lp_model = lp_model
-        self.config = config
+        self.model_schema = model_schema
         self.element_registry = element_registry
 
         self.units: dict[str, Any] = {}
+
+    @property
+    def config(self):
+        """Return the canonical configuration from the model schema."""
+        return self.model_schema.config
 
     def add_variable(
         self,

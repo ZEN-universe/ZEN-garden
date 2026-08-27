@@ -75,9 +75,8 @@ def run(
     setup_logger(log_level)
 
     # Load configurations
-    config_path = config
-    config = Config.from_file(
-        config_path, dataset_path=dataset, folder_output=folder_output
+    config_obj = Config.from_file(
+        config, dataset_path=dataset, folder_output=folder_output
     )
 
     # Initialize the model schema. The schema is a blueprint of the
@@ -85,12 +84,12 @@ def run(
     # variables, and constraints. The schema is entirely conceptual,
     # nothing has been instantiated yet. Plugins can modify the schema to add new
     # elements, parameters, variables, and constraints.
-    model_schema = ModelSchema(config)
+    model_schema = ModelSchema(config_obj)
 
     # Register plugins. Plugins can modify the model schema and add new elements,
     # parameters, variables, and constraints
-    register_plugins(config.plugins)
-    logging.info(f"Optimizing for dataset {config.analysis.dataset}")
+    register_plugins(config_obj.plugins)
+    logging.info(f"Optimizing for dataset {config_obj.analysis.dataset}")
 
     ### SYSTEM CONFIGURATION
     input_data_checks = InputDataChecks(model_schema=model_schema)
@@ -99,7 +98,7 @@ def run(
     input_data_checks.check_year_definitions()
 
     ## ITERATE THROUGH SCENARIOS
-    scenarios, model_name = prepare_scenarios(config, job_index)
+    scenarios, model_name = prepare_scenarios(config_obj, job_index)
     optimization_workflow = None
     for scenario, scenario_dict in scenarios:
         # FORMULATE THE OPTIMIZATION PROBLEM

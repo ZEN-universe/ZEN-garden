@@ -43,7 +43,6 @@ class ElementRegistry:
         self.time_steps = time_steps
         self.year_specific_ts = year_specific_ts
 
-
     def register_elements(self):
         """Set up the parameters, variables and constraints of the carriers."""
         logger.info("\n--- Add elements to model--- \n")

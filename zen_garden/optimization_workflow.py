@@ -68,7 +68,6 @@ class OptimizationWorkflow:
         """
         self.service_container = ServiceContainer("service_container")
         self.model_schema = copy.deepcopy(model_schema)
-        self.service_container.register("config", self.model_schema.config)
         self.service_container.register("model_schema", self.model_schema)
 
         self.dataset_path_resolver = self.service_container.build_and_register(
