@@ -50,9 +50,9 @@ class TransportTechnologyLossesFlowConstraint(GenericConstraint):
             xr.DataArray, ~np.isinf(self.zen_model.parameters.distance)
         )
         mask = distance_isfinite.broadcast_like(flow_transport.lower)
-        loss_factor = self.zen_model.expressions[
-            "transport_loss_factor_effective"
-        ].broadcast_like(flow_transport.lower)
+        loss_factor = self.zen_model.parameters.transport_loss_factor.broadcast_like(
+            flow_transport.lower
+        )
         lhs = (flow_transport_loss - loss_factor * flow_transport).where(mask, 0)
         rhs = 0
         constraints = lhs == rhs

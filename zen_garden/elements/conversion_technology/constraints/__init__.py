@@ -23,6 +23,10 @@ CONVERSION_TECHNOLOGY_CONSTRAINTS: list[type[GenericConstraint]] = [
     OpexEmissionsTechnologyConversionConstraint,
     CarrierConversionConstraint,
     MinimumFullLoadHoursConstraint,
+    # LinearCapexConstraint reads only variables/parameters (capacity_addition,
+    # cost_capex_overnight, capex_specific_conversion), never state produced by
+    # the constraints above, so its position in this list is not load-bearing.
+    LinearCapexConstraint,
 ]
 
 __all__ = [

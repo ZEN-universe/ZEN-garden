@@ -1,15 +1,17 @@
-"""Abstract constructor for elements.
+"""Constructor for elements.
 
-Each subclass builds the sets, parameters, variables and constraints for one
-element type. It declares its :attr:`~ModelConstructor.element_class` (and, when
-needed, ``constraints``); the parameter/variable/set declarations are derived
-from that element class in :meth:`~ModelConstructor.__init_subclass__`. Only
-All ``construct_*`` hooks have sensible defaults; variable-specific behavior
-is implemented by the variable classes themselves.
+One :class:`ModelConstructor` instance is created per element *type*, given the
+element class as a constructor argument. The element class is the single source
+of truth for the sets, parameters, variables and constraints of that type; they
+are read off it in :meth:`~ModelConstructor.__init__`. All ``construct_*`` hooks
+have sensible defaults, and component-specific behavior is implemented by the
+set/parameter/variable/constraint classes themselves. A subclass is only needed
+for a type that also carries genuine build *behavior* (e.g. the energy-system
+objective).
 """
 
 import logging
-from typing import TYPE_CHECKING, ClassVar
+from typing import TYPE_CHECKING
 
 import numpy as np
 import pandas as pd
@@ -37,36 +39,19 @@ class ModelConstructor:
 
     There is one constructor instance per element *type*, whereas there is one
     :class:`~zen_garden.elements.element.Element` instance per concrete element
-    (each carrier, each technology). The element class is the single source of
-    truth for which parameters, variables, sets and constraints belong to the
-    type; :meth:`__init_subclass__` copies those declarations onto the
-    constructor so subclasses only carry build *behavior*. A subclass may still
-    set any of ``parameters``/``variables``/``sets``/``constraints`` explicitly
-    to override the derived value.
+    (each carrier, each technology). The element class is passed to
+    :meth:`__init__` and is the single source of truth for which parameters,
+    variables, sets and constraints belong to the type.
     """
 
-    element_class: ClassVar[type["Element"] | type["EnergySystem"]] = Element
+    # Default element class; the real one is passed to __init__. Not a ClassVar
+    # so that __init__ can bind it per instance.
+    element_class: "type[Element] | type[EnergySystem]" = Element
     constraints: list[type[GenericConstraint]] = []
     parameters: list[type[GenericParameter]] = []
     variables: list[type[GenericVariable]] = []
     sets: list[type[GenericSet]] = []
-    # If True, the components are always built, even when no element of this type
-    # is configured (other constructors, e.g. the carrier energy balance, refer
-    # to them unconditionally). Set to False for self-contained, optional types.
-    always_construct: ClassVar[bool] = True
-
-    def __init_subclass__(cls, **kwargs):
-        """Derive component declarations from :attr:`element_class`."""
-        super().__init_subclass__(**kwargs)
-        element_class = cls.__dict__.get("element_class", cls.element_class)
-        if "parameters" not in cls.__dict__:
-            cls.parameters = element_class.__dict__.get("own_parameters", [])
-        if "variables" not in cls.__dict__:
-            cls.variables = element_class.__dict__.get("variables", [])
-        if "sets" not in cls.__dict__:
-            cls.sets = element_class.__dict__.get("own_sets", [])
-        if "constraints" not in cls.__dict__:
-            cls.constraints = element_class.__dict__.get("constraints", [])
+    always_construct: bool = True
 
     def __init__(
         self,
@@ -76,6 +61,7 @@ class ModelConstructor:
         model_schema: "ModelSchema",
         network_topology: "NetworkTopology",
         time_steps: "TimeStepsDicts",
+        element_class: "type[Element] | type[EnergySystem] | None" = None,
     ):
         self.service_container = service_container
         self.element_registry = element_registry
@@ -83,6 +69,20 @@ class ModelConstructor:
         self.model_schema = model_schema
         self.network_topology = network_topology
         self.time_steps = time_steps
+
+        if element_class is not None:
+            self.element_class = element_class
+        element_class = self.element_class
+        # The element class is the single source of truth for the components of
+        # this type. ``own_*`` are the declarations defined at that class level
+        # (not inherited); ``variables``/``constraints`` are per-class lists.
+        self.parameters = element_class.__dict__.get("own_parameters", [])
+        self.variables = element_class.__dict__.get("variables", [])
+        self.sets = element_class.__dict__.get("own_sets", [])
+        self.constraints = element_class.__dict__.get("constraints", [])
+        # A type may declare itself optional; then it is only built when at least
+        # one element of it is configured (see :meth:`has_elements`).
+        self.always_construct = getattr(element_class, "always_construct", True)
 
     @property
     def config(self):

@@ -52,8 +52,8 @@ class ModelConstructionService:
     def construct_model(self):
         """Logic to construct a model based on the provided name and parameters."""
         self._model_constructors = [
-            self.service_container.build(ModelConstructor)
-            for ModelConstructor in MODEL_CONSTRUCTORS
+            self.service_container.build(constructor_cls, element_class=element_cls)
+            for constructor_cls, element_cls in MODEL_CONSTRUCTORS
         ]
         # Filter out model constructors that do not have any elements to construct
         self._model_constructors = [

@@ -30,6 +30,9 @@ class RetrofittingTechnology(ConversionTechnology):
     # set label
     label = "set_retrofitting_technologies"
     location_type = "set_nodes"
+    # Optional, self-contained type: only built when retrofitting technologies
+    # are configured.
+    always_construct: ClassVar[bool] = False
     own_parameters: ClassVar[list[type[GenericParameter]]] = (
         RETROFITTING_TECHNOLOGY_PARAMETERS
     )

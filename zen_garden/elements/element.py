@@ -33,6 +33,10 @@ class Element:
     parameters: ClassVar[list[type["GenericParameter"]]] = []
     own_sets: ClassVar[list[type["GenericSet"]]] = []
     sets: ClassVar[list[type["GenericSet"]]] = []
+    # If False, this type's model components are only built when at least one
+    # element of it is configured (see ModelConstructor.has_elements). Mandatory
+    # types are referenced unconditionally by others (e.g. the carrier balance).
+    always_construct: ClassVar[bool] = True
 
     @property
     def config(self):
