@@ -36,10 +36,10 @@ from collections.abc import ItemsView, KeysView, ValuesView
 from importlib.metadata import version
 from pathlib import Path
 from typing import Any, Literal, Optional, Union
-from typing_extensions import override
 
 import yaml
 from pydantic import BaseModel, ConfigDict, ValidationError
+from typing_extensions import override
 
 
 class ConfigBase(BaseModel):
@@ -306,9 +306,9 @@ class Config(ConfigBase):
     @override
     def from_file(
         cls,
-        path: str | Path,
-        dataset: str | None = None,
-        folder_output: str | None = None,
+        config_path: str | Path,
+        dataset_path: str | Path | None = None,
+        folder_output: str | Path | None = None,
     ) -> "Config":
         """Load analysis, solver, and dataset system configuration.
 
@@ -316,16 +316,16 @@ class Config(ConfigBase):
         supplied dataset or output folder overrides the corresponding analysis
         setting before paths and the dataset's system file are loaded.
         """
-        config = super().from_file(path)
+        config = super().from_file(config_path)
         assert isinstance(config, cls)
-        config_path = Path(path)
+        config_path = Path(config_path)
         config_dir = config_path.parent
 
-        if dataset is not None:
-            config.analysis.dataset = dataset
+        if dataset_path is not None:
+            config.analysis.dataset = str(dataset_path)
         if folder_output is not None:
-            config.analysis.folder_output = folder_output
-            config.solver.solver_dir = folder_output
+            config.analysis.folder_output = str(folder_output)
+            config.solver.solver_dir = str(folder_output)
 
         dataset_path = Path(config.analysis.dataset)
         if not dataset_path.is_absolute():
@@ -346,9 +346,7 @@ class Config(ConfigBase):
                     "Expected one of: system.yaml, system.yml, system.json."
                 )
             loaded_system = System.from_file(system_path)
-            config.system = config.system.model_copy(
-                update=loaded_system.model_dump()
-            )
+            config.system = config.system.model_copy(update=loaded_system.model_dump())
 
         output_path = Path(config.analysis.folder_output)
         if not output_path.is_absolute():

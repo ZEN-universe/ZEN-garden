@@ -14,7 +14,6 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 
-from zen_garden.default_config import Config as DefaultConfig
 from zen_garden.elements.technology import Technology
 from zen_garden.model.zen_model import ZenModel
 from zen_garden.postprocess.postprocess import Postprocess
@@ -23,8 +22,6 @@ from zen_garden.services.model_construction_service import ModelConstructionServ
 from zen_garden.utils import IISConstraintParser, StringUtils
 
 if TYPE_CHECKING:
-    from zen_garden.elements.energy_system import EnergySystem
-    from zen_garden.model.config import Config
     from zen_garden.model.time_steps import TimeStepsDicts
     from zen_garden.preprocess.unit_handling import UnitHandling
     from zen_garden.services.element_registry import ElementRegistry
@@ -51,8 +48,6 @@ class OptimizationStep:
     def __init__(
         self,
         service_container: "ServiceContainer",
-        config: "Config",
-        energy_system: "EnergySystem",
         model_schema: "ModelSchema",
         element_registry: "ElementRegistry",
         unit_handling: "UnitHandling",
@@ -76,8 +71,6 @@ class OptimizationStep:
 
         """
         self.service_container = service_container
-        self.config = config
-        self.energy_system = energy_system
         self.model_schema = model_schema
         self.element_registry = element_registry
         self.unit_handling = unit_handling
@@ -91,12 +84,21 @@ class OptimizationStep:
             "zen_model", ZenModel
         )
 
+    @property
+    def config(self):
+        """Return the canonical configuration from the model schema."""
+        return self.model_schema.config
+
+    @property
+    def energy_system(self):
+        """Return the canonical energy-system element from the schema."""
+        return self.model_schema.energy_system
+
     def run_step(
         self,
         scenario: str,
         step: int,
         model_name: str,
-        config: "DefaultConfig",
         steps_horizon_keys: list[int],
         no_solve: bool = False,
     ) -> bool:
@@ -143,14 +145,14 @@ class OptimizationStep:
 
         # EVALUATE RESULTS
         scenario_name, subfolder, param_map = StringUtils.generate_folder_path(
-            config=config,
+            config=self.model_schema.config,
             scenario=scenario,
             scenario_dict=self.scenario_dict,
             steps_horizon=steps_horizon_keys,
             step=step,
         )
         self.write_results(
-            scenarios=config.scenarios,
+            scenarios=self.model_schema.config.scenarios,
             subfolder=subfolder,
             model_name=model_name,
             scenario_name=scenario_name,
@@ -434,10 +436,9 @@ class OptimizationStep:
             param_map (dict): A dictionary mapping parameter names to their values.
         """
         Postprocess(
-            self.config,
+            self.model_schema,
             self.unit_handling,
             self.zen_model,
-            self.energy_system,
             self.scaling,
             self.time_steps,
             optimized_time_steps=self.optimized_time_steps,

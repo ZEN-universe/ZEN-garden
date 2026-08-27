@@ -1,6 +1,7 @@
 """Configuration-only blueprint for a ZEN-garden optimization model."""
 
-from typing import Any
+from collections import defaultdict
+from typing import Any, TypeVar, cast
 
 import numpy as np
 
@@ -8,13 +9,14 @@ from zen_garden.default_config import Config as DefaultConfig
 from zen_garden.elements import ELEMENT_TYPE_CLASSES
 from zen_garden.elements.element import Element
 from zen_garden.elements.energy_system import EnergySystem
-from zen_garden.model.config import Config as RuntimeConfig
+
+T = TypeVar("T", bound=Element)
 
 
 class ModelSchema:
     """Describe the complete element and index structure of a model."""
 
-    def __init__(self, config: DefaultConfig | RuntimeConfig):
+    def __init__(self, config: DefaultConfig):
         """Construct a model blueprint using configuration only."""
         self.config = config
         self.element_classes: tuple[type[Element], ...] = (
@@ -27,6 +29,40 @@ class ModelSchema:
         self.set_carriers: list[str] = []
         self._set_hours_all_years: list[int] | None = None
         self._set_years: list[int] | None = None
+        self._elements: defaultdict[str, list[Element]] = defaultdict(list)
+
+    def register_element(self, element: Element) -> None:
+        """Register an element under every element type in its inheritance tree."""
+        for element_class in type(element).__mro__:
+            if issubclass(element_class, Element):
+                self._elements[element_class.__name__].append(element)
+
+    def all_elements(self) -> list[Element]:
+        """Return all registered model elements."""
+        return list(self._elements[Element.__name__])
+
+    def all_elements_of_type(self, element_class: type[T]) -> list[T]:
+        """Return registered elements of a particular type."""
+        return cast(list[T], self._elements[element_class.__name__])
+
+    def get_element(self, element_class: type[T], name: str) -> T | None:
+        """Return one named element of a particular type."""
+        return next(
+            (
+                element
+                for element in self.all_elements_of_type(element_class)
+                if element.name == name
+            ),
+            None,
+        )
+
+    @property
+    def energy_system(self) -> EnergySystem:
+        """Return the singleton energy-system element."""
+        energy_systems = self.all_elements_of_type(EnergySystem)
+        if len(energy_systems) != 1:
+            raise RuntimeError("ModelSchema requires exactly one EnergySystem")
+        return energy_systems[0]
 
     @property
     def set_technologies(self) -> list[str]:

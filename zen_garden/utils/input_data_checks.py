@@ -1,15 +1,11 @@
 import logging
 import os
 import warnings
-from typing import TYPE_CHECKING
 
 import numpy as np
 
 from zen_garden.default_config import System
 from zen_garden.services.dataset_path_resolver import DatasetPathResolver
-
-if TYPE_CHECKING:
-    from zen_garden.model.config import Config
 
 logger = logging.getLogger(__name__)
 
@@ -51,18 +47,36 @@ class InputDataChecks:
     element definitions, etc.) is defined correctly.
     """
 
-    config: "Config | None" = None
     dataset_path_resolver: "DatasetPathResolver | None" = None
 
-    def __init__(self, config):
+    def __init__(self, model_schema):
         """Initialize the class.
 
         Args:
             config: config object used to extract the analysis, system and solver
                 dictionaries
         """
-        self.system = config.system
-        self.analysis = config.analysis
+        self.model_schema = model_schema
+
+    @property
+    def config(self):
+        return self.model_schema.config
+
+    @property
+    def system(self):
+        return self.model_schema.config.system
+
+    @system.setter
+    def system(self, value):
+        self.model_schema.config.system = value
+
+    @property
+    def analysis(self):
+        return self.model_schema.config.analysis
+
+    @analysis.setter
+    def analysis(self, value):
+        self.model_schema.config.analysis = value
 
     def check_technology_selections(self):
         """Checks selection of different technologies in system.py file."""

@@ -18,7 +18,6 @@ from zen_garden.topology.generic_set import GenericSet
 
 if TYPE_CHECKING:
     from zen_garden.elements.energy_system import EnergySystem
-    from zen_garden.model.config import Config
     from zen_garden.model.time_steps import TimeStepsDicts
     from zen_garden.model.zen_model import ZenModel
     from zen_garden.services.element_registry import ElementRegistry
@@ -36,22 +35,28 @@ class ModelConstructor(ABC):
     def __init__(
         self,
         service_container: "ServiceContainer",
-        config: "Config",
         element_registry: "ElementRegistry",
         zen_model: "ZenModel",
-        energy_system: "EnergySystem",
         model_schema: "ModelSchema",
         network_topology: "NetworkTopology",
         time_steps: "TimeStepsDicts",
     ):
         self.service_container = service_container
-        self.config = config
         self.element_registry = element_registry
         self.zen_model = zen_model
-        self.energy_system = energy_system
         self.model_schema = model_schema
         self.network_topology = network_topology
         self.time_steps = time_steps
+
+    @property
+    def config(self):
+        """Return the canonical configuration from the model schema."""
+        return self.model_schema.config
+
+    @property
+    def energy_system(self):
+        """Return the canonical energy-system element from the schema."""
+        return self.model_schema.energy_system
 
     @abstractmethod
     def has_elements(self) -> bool:

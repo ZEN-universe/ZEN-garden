@@ -9,7 +9,6 @@ from linopy import Variable, merge
 from linopy.expressions import LinearExpression
 
 if TYPE_CHECKING:
-    from zen_garden.model.config import Config
     from zen_garden.model.time_steps import TimeStepsDicts
     from zen_garden.model.zen_model import ZenModel
     from zen_garden.services.network_topology import NetworkTopology
@@ -19,7 +18,6 @@ if TYPE_CHECKING:
 class GenericConstraint(ABC):
     def __init__(
         self,
-        config: "Config",
         zen_model: "ZenModel",
         model_schema: "ModelSchema",
         network_topology: "NetworkTopology",
@@ -31,11 +29,15 @@ class GenericConstraint(ABC):
         :param zen_model: ZenModel object
         :param model_schema: global model schema
         """
-        self.config = config
         self.zen_model = zen_model
         self.model_schema = model_schema
         self.network_topology = network_topology
         self.time_steps = time_steps
+
+    @property
+    def config(self):
+        """Return the canonical configuration from the model schema."""
+        return self.model_schema.config
 
     @abstractmethod
     def build(self):

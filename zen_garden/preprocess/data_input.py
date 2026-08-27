@@ -12,7 +12,6 @@ import pandas as pd
 
 if TYPE_CHECKING:
     from zen_garden.elements.element import Element
-    from zen_garden.model.config import Config
     from zen_garden.preprocess.unit_handling import UnitHandling
     from zen_garden.services.input_repository import InputRepository
     from zen_garden.services.network_topology import NetworkTopology
@@ -72,7 +71,6 @@ class DataInput:
         model_schema: "ModelSchema",
         network_topology: "NetworkTopology",
         unit_handling: "UnitHandling",
-        config: "Config",
         scenario_dict: "ScenarioDict",
         input_data_checks: "InputDataChecks",
         year_specific_ts: "YearSpecificTs",
@@ -92,7 +90,6 @@ class DataInput:
         self.model_schema = model_schema
         self.network_topology = network_topology
         self.unit_handling = unit_handling
-        self.config = config
         self.scenario_dict = scenario_dict
         self.input_data_checks = input_data_checks
         self.year_specific_ts = year_specific_ts
@@ -100,7 +97,7 @@ class DataInput:
         self.folder_path = folder_path
         self.input_repository = input_repository
         # get names of indices
-        self.index_names = self.config.analysis.header_data_inputs
+        self.index_names = self.model_schema.config.analysis.header_data_inputs
         # load attributes file
         self.attribute_dict = self.input_repository.load_attribute_file()
 
@@ -132,7 +129,7 @@ class DataInput:
         # if existing capacities and existing capacities not used
         if (
             file_name in ["capacity_existing", "capacity_existing_energy"]
-        ) and not self.config.system.use_capacities_existing:
+        ) and not self.model_schema.config.system.use_capacities_existing:
             df_output, *_ = self.create_default_output(
                 index_sets,
                 unit_category,
@@ -633,7 +630,7 @@ class DataInput:
         """
         # TODO merge changes in extract input data and optimization setup
         set_technologies_existing = np.array([0])
-        if self.config.system.use_capacities_existing:
+        if self.model_schema.config.system.use_capacities_existing:
             if storage_energy:
                 _energy_string = "_energy"
             else:
@@ -646,7 +643,10 @@ class DataInput:
             df_input = self.input_repository.read_csv(f_name)
             if df_input is None:
                 return [0]
-            if self.element.name in self.config.system.set_transport_technologies:
+            if (
+                self.element.name
+                in self.model_schema.config.system.set_transport_technologies
+            ):
                 location = "edge"
             else:
                 location = "node"
@@ -671,7 +671,7 @@ class DataInput:
         multi_idx = pd.MultiIndex.from_product(index_list, names=index_name_list)
         df_output = pd.Series(index=multi_idx, data=0, dtype=int)
         # if no existing capacities
-        if not self.config.system.use_capacities_existing:
+        if not self.model_schema.config.system.use_capacities_existing:
             return df_output
         f_name, scenario_factor = self.scenario_dict.get_param_file(
             self.element.name, file_name
@@ -688,7 +688,7 @@ class DataInput:
                 index_sets=index_sets,
             )
             # get reference year
-            reference_year = self.config.system.reference_year
+            reference_year = self.model_schema.config.system.reference_year
             if not hasattr(self.element, "lifetime"):
                 raise TypeError("Construction years require a technology element")
             # calculate remaining lifetime
@@ -776,8 +776,8 @@ class DataInput:
                 self.element, "set_technologies_existing"
             ):
                 index_list.append(self.element.set_technologies_existing)  # type: ignore[attr-defined]
-            elif index in type(self.config.system).model_fields:
-                index_list.append(self.config.system[index])
+            elif index in type(self.model_schema.config.system).model_fields:
+                index_list.append(self.model_schema.config.system[index])
             elif hasattr(self.model_schema, index):
                 index_list.append(getattr(self.model_schema, index))
             elif hasattr(self.network_topology, index):
@@ -856,7 +856,7 @@ class DataInput:
             temporal_header = self.index_names["set_years"]
             if (
                 max(df_input.loc[:, temporal_header])
-                < self.config.analysis.earliest_year_of_data
+                < self.model_schema.config.analysis.earliest_year_of_data
             ):
                 warnings.warn(
                     f"Generic time indices (used in {file_name}) will not be "

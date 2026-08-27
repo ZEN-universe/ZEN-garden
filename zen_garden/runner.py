@@ -3,6 +3,7 @@ Compilation  of the optimization problem.
 """
 
 import logging
+from pathlib import Path
 
 from zen_garden.default_config import Config
 from zen_garden.optimization_workflow import OptimizationWorkflow
@@ -27,10 +28,10 @@ def prepare_scenarios(config: Config, job_index: list[int] | None):
 
 
 def run(
-    config="./config.json",
-    dataset=None,
-    job_index=None,
-    folder_output: str | None = None,
+    config: str | Path = "./config.json",
+    dataset: str | Path | None = None,
+    job_index: list[int] | None = None,
+    folder_output: str | Path | None = None,
     no_solve: bool = False,
     log_level: str | int = logging.INFO,
 ):
@@ -42,14 +43,16 @@ def run(
     the results.
 
     Args:
-        config (str): Path to the configuration file (e.g. ``config.json``).
+        config_obj (str | Path): Path to the configuration file
+            (e.g. ``config.json``).
             If the file is located in the current working directory, the
             filename alone may be specified. Defaults to ``"./config.json"``.
-        dataset (str): Path to the folder containing the input dataset
+        dataset (str | Path | None): Path to the folder containing the input dataset
             (e.g. ``"./1_base_case"``). If located in the current working
             directory, the folder name alone may be used. Defaults to the
             ``dataset`` value specified in the configuration file.
-        folder_output (str): Path to the folder where outputs will be saved.
+        folder_output (str | Path | None): Path to the folder where outputs will be
+            saved.
             Defaults to ``"./outputs"``.
         job_index (list[int] | None): Indices of jobs (scenarios) to run.
             For example, ``job_index=[1]`` runs only the first scenario.
@@ -71,16 +74,26 @@ def run(
     """
     setup_logger(log_level)
 
+    # Load configurations
     config_path = config
     config = Config.from_file(
-        config_path, dataset=dataset, folder_output=folder_output
+        config_path, dataset_path=dataset, folder_output=folder_output
     )
+
+    # Initialize the model schema. The schema is a blueprint of the
+    # optimization problem, including a list of all elements and their parameters,
+    # variables, and constraints. The schema is entirely conceptual,
+    # nothing has been instantiated yet. Plugins can modify the schema to add new
+    # elements, parameters, variables, and constraints.
     model_schema = ModelSchema(config)
+
+    # Register plugins. Plugins can modify the model schema and add new elements,
+    # parameters, variables, and constraints
     register_plugins(config.plugins)
     logging.info(f"Optimizing for dataset {config.analysis.dataset}")
 
     ### SYSTEM CONFIGURATION
-    input_data_checks = InputDataChecks(config=config)
+    input_data_checks = InputDataChecks(model_schema=model_schema)
     input_data_checks.check_dataset()
     input_data_checks.check_technology_selections()
     input_data_checks.check_year_definitions()
@@ -94,7 +107,7 @@ def run(
         optimization_workflow = OptimizationWorkflow(
             model_schema, scenario_dict, input_data_checks
         )
-        optimization_workflow.run_steps(scenario, model_name, config, no_solve)
+        optimization_workflow.run_steps(scenario, model_name, no_solve)
 
     logger.info("\n--- Optimization finished ---")
     return optimization_workflow

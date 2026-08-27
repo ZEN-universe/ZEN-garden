@@ -1,7 +1,6 @@
 """Dependency-ordered parameter loading across the model schema."""
 
 from zen_garden.elements.energy_system import EnergySystem
-from zen_garden.services.element_registry import ElementRegistry
 from zen_garden.topology.generic_parameter import GenericParameter
 from zen_garden.topology.model_schema import ModelSchema
 
@@ -9,20 +8,15 @@ from zen_garden.topology.model_schema import ModelSchema
 class ParameterLoadingService:
     """Prepare elements and load their parameters in dependency order."""
 
-    def __init__(
-        self, model_schema: ModelSchema, element_registry: ElementRegistry
-    ):
+    def __init__(self, model_schema: ModelSchema):
         """Initialize the service for a fully registered model schema."""
         self.model_schema = model_schema
-        self.element_registry = element_registry
 
     def load_parameters(self) -> None:
         """Prepare, load, and finalize every element in the schema."""
-        elements = self.element_registry.all_elements()
-        energy_systems = self.element_registry.all_elements_of_type(EnergySystem)
-        assert len(energy_systems) == 1
+        elements = self.model_schema.all_elements()
         self.model_schema.parameters_interpolation_off = (
-            energy_systems[0].input_repository.read_mapping_file(
+            self.model_schema.energy_system.input_repository.read_mapping_file(
                 "parameters_interpolation_off"
             )
         )

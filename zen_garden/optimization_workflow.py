@@ -12,8 +12,6 @@ import logging
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from zen_garden.elements.energy_system import EnergySystem
-from zen_garden.model.config import Config
 from zen_garden.model.time_steps import TimeStepsDicts
 from zen_garden.model.zen_model import ZenModel
 from zen_garden.optimization_step import OptimizationStep
@@ -30,7 +28,6 @@ from zen_garden.topology.model_schema import ModelSchema
 from zen_garden.types import YearSpecificTs
 
 if TYPE_CHECKING:
-    from zen_garden.default_config import Config as DefaultConfig
     from zen_garden.utils import InputDataChecks
 
 logger = logging.getLogger(__name__)
@@ -71,17 +68,7 @@ class OptimizationWorkflow:
         """
         self.service_container = ServiceContainer("service_container")
         self.model_schema = copy.deepcopy(model_schema)
-        raw_config = self.model_schema.config
-
-        # Copying is necessary, because the config object is modified,
-        # e.g., in add_elements of ElementRegistry
-        self.config = Config.from_setup(
-            copy.deepcopy(raw_config.analysis),
-            copy.deepcopy(raw_config.system),
-            copy.deepcopy(raw_config.solver),
-        )
-        self.model_schema.config = self.config
-        self.service_container.register("config", self.config)
+        self.service_container.register("config", self.model_schema.config)
         self.service_container.register("model_schema", self.model_schema)
 
         self.dataset_path_resolver = self.service_container.build_and_register(
@@ -94,12 +81,11 @@ class OptimizationWorkflow:
         scenario_dict = ScenarioDict(
             init_scenario_dict,
             self.dataset_path_resolver,
-            self.config,
-            self.model_schema.element_type_classes,
+            self.model_schema,
         )
         self.service_container.register("scenario_dict", scenario_dict)
 
-        input_data_checks.config = self.config
+        input_data_checks.model_schema = self.model_schema
         input_data_checks.dataset_path_resolver = self.dataset_path_resolver
         # check if input data exists
         input_data_checks.check_primary_folder_structure()
@@ -137,10 +123,6 @@ class OptimizationWorkflow:
             "element_registry", ElementRegistry
         )
         element_registry.register_elements()
-        energy_systems = element_registry.all_elements_of_type(EnergySystem)
-        assert len(energy_systems) == 1
-        self.energy_system = energy_systems[0]
-        self.service_container.register("energy_system", self.energy_system)
 
         # check if all elements from the scenario_dict are in the model
         scenario_dict.check_if_all_elements_in_model(element_registry)
@@ -152,20 +134,27 @@ class OptimizationWorkflow:
         parameter_loading_service.load_parameters()
 
         # conduct consistency checks of input units
-        unit_handling.consistency_checks_input_units(
-            self.config, element_registry
-        )
+        unit_handling.consistency_checks_input_units(self.config, element_registry)
 
         # conduct time series aggregation
         self.service_container.build_and_register(
             "time_series_aggregation", TimeSeriesAggregation
         )
 
+    @property
+    def config(self):
+        """Return the canonical configuration from the model schema."""
+        return self.model_schema.config
+
+    @property
+    def energy_system(self):
+        """Return the canonical energy-system element from the schema."""
+        return self.model_schema.energy_system
+
     def run_steps(
         self,
         scenario: str,
         model_name: str,
-        config: "DefaultConfig",
         no_solve: bool = False,
     ):
         """Run the optimization steps for the given scenario.
@@ -188,7 +177,7 @@ class OptimizationWorkflow:
                 steps_horizon=steps_horizon,
             )
             if not optimization_step.run_step(
-                scenario, step, model_name, config, steps_horizon_keys, no_solve
+                scenario, step, model_name, steps_horizon_keys, no_solve
             ):
                 break
 

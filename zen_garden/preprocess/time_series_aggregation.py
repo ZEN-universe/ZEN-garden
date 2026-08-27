@@ -12,8 +12,6 @@ from tsam import ClusterConfig, ExtremeConfig
 from zen_garden.elements.element import Element
 
 if TYPE_CHECKING:
-    from zen_garden.elements.energy_system import EnergySystem
-    from zen_garden.model.config import Config
     from zen_garden.model.time_steps import TimeStepsDicts
     from zen_garden.services.element_registry import ElementRegistry
     from zen_garden.services.input_repository import InputRepository
@@ -29,8 +27,6 @@ class TimeSeriesAggregation(object):
     def __init__(
         self,
         model_schema: "ModelSchema",
-        energy_system: "EnergySystem",
-        config: "Config",
         element_registry: "ElementRegistry",
         time_steps: "TimeStepsDicts",
         year_specific_ts: "YearSpecificTs",
@@ -45,9 +41,7 @@ class TimeSeriesAggregation(object):
         # initiate dictionary for saving year specific TSA results
         self.year_specific_tsa: dict[int, dict[tuple[str, str], Any]] = {}
         self.model_schema = model_schema
-        self.energy_system = energy_system
         self.time_steps = time_steps
-        self.config = config
         self.element_registry = element_registry
         self.year_specific_ts = year_specific_ts
         self.input_repository = input_repository
@@ -112,6 +106,16 @@ class TimeSeriesAggregation(object):
         self.energy_system.time_steps_storage_duration = pd.Series(
             self.time_steps.time_steps_storage_duration
         )
+
+    @property
+    def config(self):
+        """Return the canonical configuration from the model schema."""
+        return self.model_schema.config
+
+    @property
+    def energy_system(self):
+        """Return the canonical energy-system element from the schema."""
+        return self.model_schema.energy_system
 
     def select_ts_of_all_elements(self):
         """This method retrieves the raw time series for the aggregation of all
@@ -732,9 +736,7 @@ class TimeSeriesAggregation(object):
         # set the dict time_steps_energy2power
         self.time_steps.time_steps_energy2power = time_steps_energy2power
         # set the first and last time step of each year
-        self.time_steps.set_time_steps_storage_startend(
-            self.model_schema.config.system
-        )
+        self.time_steps.set_time_steps_storage_startend(self.model_schema.config.system)
 
     def unique_time_steps_multiple_indices(self, list_sequence_time_steps):
         """Returns the unique time steps of multiple time grids.

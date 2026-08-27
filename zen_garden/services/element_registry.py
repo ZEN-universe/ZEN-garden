@@ -1,7 +1,6 @@
 import copy
 import logging
-from collections import defaultdict
-from typing import TYPE_CHECKING, Any, TypeVar, cast
+from typing import TYPE_CHECKING, Any, TypeVar
 
 import pandas as pd
 
@@ -10,7 +9,6 @@ from zen_garden.elements.energy_system import EnergySystem
 from zen_garden.services.service_container import ServiceContainer
 
 if TYPE_CHECKING:
-    from zen_garden.model.config import Config
     from zen_garden.model.time_steps import TimeStepsDicts
     from zen_garden.preprocess.unit_handling import UnitHandling
     from zen_garden.services.dataset_path_resolver import DatasetPathResolver
@@ -28,7 +26,6 @@ class ElementRegistry:
     def __init__(
         self,
         service_container: "ServiceContainer",
-        config: "Config",
         model_schema: "ModelSchema",
         input_data_checks: "InputDataChecks",
         unit_handling: "UnitHandling",
@@ -38,7 +35,6 @@ class ElementRegistry:
         year_specific_ts: "YearSpecificTs",
     ):
         self.service_container = service_container
-        self.config = config
         self.model_schema = model_schema
         self.input_data_checks = input_data_checks
         self.unit_handling = unit_handling
@@ -47,7 +43,6 @@ class ElementRegistry:
         self.time_steps = time_steps
         self.year_specific_ts = year_specific_ts
 
-        self.dict_elements: defaultdict[str, list[Element]] = defaultdict(list)
 
     def register_elements(self):
         """Set up the parameters, variables and constraints of the carriers."""
@@ -57,7 +52,7 @@ class ElementRegistry:
                 self._register_element(EnergySystem, EnergySystem.name)
                 continue
             element_name = element_class.label
-            element_set = self.config.system[element_name]
+            element_set = self.model_schema.config.system[element_name]
 
             # before adding the carriers, get set_carriers
             # check if carrier data exists
@@ -67,11 +62,19 @@ class ElementRegistry:
 
             # check if element_set has a subset and remove subset from element_set
             element_subset: list[str] = []
-            if element_name in self.config.analysis.subsets.keys():
-                if isinstance(self.config.analysis.subsets[element_name], list):
-                    subset_names = self.config.analysis.subsets[element_name]
-                elif isinstance(self.config.analysis.subsets[element_name], dict):
-                    subset_names = self.config.analysis.subsets[element_name].keys()
+            if element_name in self.model_schema.config.analysis.subsets.keys():
+                if isinstance(
+                    self.model_schema.config.analysis.subsets[element_name], list
+                ):
+                    subset_names = self.model_schema.config.analysis.subsets[
+                        element_name
+                    ]
+                elif isinstance(
+                    self.model_schema.config.analysis.subsets[element_name], dict
+                ):
+                    subset_names = self.model_schema.config.analysis.subsets[
+                        element_name
+                    ].keys()
                 else:
                     raise ValueError(
                         f"Subset {element_name} has to be either a list or a dict"
@@ -79,12 +82,14 @@ class ElementRegistry:
                 element_subset = [
                     item
                     for subset in subset_names
-                    for item in self.config.system[subset]
+                    for item in self.model_schema.config.system[subset]
                 ]
             else:
                 stack = [
                     _dict
-                    for _dict in copy.deepcopy(self.config.analysis.subsets).values()
+                    for _dict in copy.deepcopy(
+                        self.model_schema.config.analysis.subsets
+                    ).values()
                     if isinstance(_dict, dict)
                 ]
                 while stack:  # check if element_set is a subset of a subset
@@ -96,7 +101,9 @@ class ElementRegistry:
                                 element_subset += [
                                     item
                                     for subset_name in subsets
-                                    for item in self.config.system[subset_name]
+                                    for item in self.model_schema.config.system[
+                                        subset_name
+                                    ]
                                 ]
                         if isinstance(subsets, dict):
                             stack.append(subsets)
@@ -119,16 +126,15 @@ class ElementRegistry:
         # Add instance to all classes that element_class inherits from, including itself
         # MRO (Method Resolution Order) gives the order in which base classes
         # are searched when looking for a method.
-        for class_name in element_class.__mro__:
-            self.dict_elements[class_name.__name__].append(instance)
+        self.model_schema.register_element(instance)
 
     def all_elements_of_type(self, class_name: type[T]) -> list[T]:
         """Get all elements of the class in the energy system."""
-        return cast(list[T], self.dict_elements[class_name.__name__])
+        return self.model_schema.all_elements_of_type(class_name)
 
     def all_elements(self) -> list[Element]:
         """Get all elements in the energy system."""
-        return list(self.dict_elements[Element.__name__])
+        return self.model_schema.all_elements()
 
     def all_names_of_elements(self, class_name: type[Element]) -> list[str]:
         """Get all names of elements in class.
@@ -191,11 +197,13 @@ class ElementRegistry:
                     attribute_is_series = attribute_is_series_temp
             # if extracted for both capacity types
             else:
-                for capacity_type in self.config.system.set_capacity_types:
+                for capacity_type in self.model_schema.config.system.set_capacity_types:
                     # append energy only for storage technologies
                     if (
-                        capacity_type == self.config.system.set_capacity_types[0]
-                        or element.name in self.config.system.set_storage_technologies
+                        capacity_type
+                        == self.model_schema.config.system.set_capacity_types[0]
+                        or element.name
+                        in self.model_schema.config.system.set_storage_technologies
                     ):
                         dict_of_attributes, attribute_is_series_temp, dict_of_units = (
                             self.append_attribute_of_element_to_dict(
@@ -242,9 +250,11 @@ class ElementRegistry:
             capacity_type: capacity type for which attribute extracted. If None,
                 not listed in key
         """
-        if capacity_type == self.config.system.set_capacity_types[1]:
+        attribute_is_series = False
+        # add Energy for energy capacity type
+        if capacity_type == self.model_schema.config.system.set_capacity_types[1]:
             attribute_name = f"{attribute_name}_energy"
-
+        # if element does not have attribute
         if not hasattr(element, attribute_name):
             is_missing_time_series = (
                 attribute_name in element.raw_time_series

@@ -21,12 +21,11 @@ from pydantic import BaseModel
 from tables import NaturalNameWarning
 
 if TYPE_CHECKING:
-    from zen_garden.elements.energy_system import EnergySystem
-    from zen_garden.model.config import Config
     from zen_garden.model.time_steps import TimeStepsDicts
     from zen_garden.model.zen_model import ZenModel
     from zen_garden.preprocess.scaling import Scaling
     from zen_garden.preprocess.unit_handling import UnitHandling
+    from zen_garden.topology.model_schema import ModelSchema
 
 HDFCompLib: TypeAlias = Literal["zlib", "lzo", "bzip2", "blosc"]
 
@@ -41,10 +40,9 @@ class Postprocess:
 
     def __init__(
         self,
-        config: "Config",
+        model_schema: "ModelSchema",
         unit_handling: "UnitHandling",
         zen_model: "ZenModel",
-        energy_system: "EnergySystem",
         scaling: "Scaling",
         time_steps: "TimeStepsDicts",
         optimized_time_steps: list[int],
@@ -64,10 +62,10 @@ class Postprocess:
         """
         logger.info("\n--- Postprocess results ---\n")
         # get the necessary stuff from the model
-        self.config = config
+        self.model_schema = model_schema
         self.unit_handling = unit_handling
         self.zen_model = zen_model
-        self.energy_system = energy_system
+        self.energy_system = model_schema.energy_system
 
         self.lp_model = zen_model.lp_model
 
@@ -119,6 +117,11 @@ class Postprocess:
         self.save_param_map()
         if self.config.solver.run_diagnostics:
             self.save_benchmarking_data()
+
+    @property
+    def config(self):
+        """Return the canonical configuration from the model schema."""
+        return self.model_schema.config
 
     def write_file(self, name, dictionary, format=None, mode="w"):
         """Writes the dictionary to file as json, if compression attribute is
