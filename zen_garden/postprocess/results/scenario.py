@@ -1214,7 +1214,8 @@ class Scenario:
             time_steps_file_name = list(
                 self.path.glob("dict_all_sequence_time_steps*.json")
             )
-            assert len(time_steps_file_name) == 1
+            assert len(time_steps_file_name) == 1, (f"Expected exactly one time steps "
+                                            f"file, found {len(time_steps_file_name)}")
             self._time_steps = self._read_json_file(
                 time_steps_file_name[0], TimestepMap
             )

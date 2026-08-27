@@ -137,14 +137,7 @@ class SolutionLoader:
     @property
     def first_scenario(self) -> Scenario:
         """Returns the first scenario of the dictionary of scenarios.
-    #### Helper functions
-    @property
-    def first_scenario(self) -> Scenario:
-        """Returns the first scenario of the dictionary of scenarios.
 
-        :return: The first scenario of the dictionary.
-        """
-        return self._scenarios[next(iter(self._scenarios.keys()))]
         :return: The first scenario of the dictionary.
         """
         return self._scenarios[next(iter(self._scenarios.keys()))]

@@ -25,7 +25,6 @@ class Results:
     """The Results class is used to extract and process the results of a model run."""
 
     def __init__(self, path: Path | str):
-    def __init__(self, path: Path | str):
         """Initializes the Results class.
 
         :param path: Path to the results folder
@@ -154,9 +153,7 @@ class Results:
         self,
         component_name: str,
         scenario_name: str | None = None,
-        scenario_name: str | None = None,
         discount_to_first_step: bool = True,
-        year: int | None = None,
         year: int | None = None,
         keep_raw: bool = False,
         index: Index | None = None,
@@ -270,8 +267,6 @@ class Results:
         component_name: str,
         scenario_name: str | None = None,
         year: int | None = None,
-        scenario_name: str | None = None,
-        year: int | None = None,
         discount_to_first_step: bool = True,
         keep_raw: bool = False,
         index: Index | None = None,
@@ -315,14 +310,7 @@ class Results:
             discount_to_first_step,
             year,
             keep_raw,
-            index,
-        return self.get_full_ts(
-            component_name,
-            scenario_name,
-            discount_to_first_step,
-            year,
-            keep_raw,
-            index,
+            index
         )
 
     def get_unit(
@@ -454,9 +442,6 @@ class Results:
     def get_doc(
         self, component_name: str, scenario_name: str | None = None
     ) -> str | None:
-    def get_doc(
-        self, component_name: str, scenario_name: str | None = None
-    ) -> str | None:
         """Extracts the documentation of a given Component.
 
         Args:
@@ -476,7 +461,6 @@ class Results:
         return scenario.get_doc(component_name)
 
     def get_index_names(
-        self, component_name: str, scenario_name: str | None = None
         self, component_name: str, scenario_name: str | None = None
     ) -> list[str]:
         """Docstring for get_index_names.
@@ -502,7 +486,6 @@ class Results:
         scenario = self._solution_loader.find_scenario(scenario_name)
         return scenario.get_index_names(component_name)
 
-    def get_years(self, scenario_name: str | None = None) -> list[int]:
     def get_years(self, scenario_name: str | None = None) -> list[int]:
         """Extracts the years of a given Scenario. If no scenario is given, a
         random one is taken.

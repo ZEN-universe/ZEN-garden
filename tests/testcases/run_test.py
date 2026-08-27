@@ -47,8 +47,8 @@ def compare_variables_results(test_model: str, results: Results, folder_path: st
     # iterate through dataframe rows
     if test_model in test_variables:
         for s in test_variables[test_model]:
-            if s in results.solution_loader.scenarios:
-                scenario = results.solution_loader.scenarios[s]
+            if s in results.scenarios:
+                scenario = results.scenarios[s]
                 test_values = test_variables[test_model][s]
                 for c in test_values:
                     if c in scenario.components:
@@ -118,7 +118,7 @@ def check_get_total_get_full_ts(
     test_variables = ["demand", "capacity", "storage_level", "capacity_limit"]
     scenario = None
     if specific_scenario:
-        scenario = next(iter(results.solution_loader.scenarios.keys()))
+        scenario = next(iter(results.scenarios.keys()))
     for test_variable in test_variables:
         results.get_total(test_variable, scenario_name=scenario, year=year)
         if test_variable != "capacity_limit":
@@ -326,11 +326,11 @@ def test_1i(folder_path):
     res = Results(os.path.join(folder_path, "outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
 
-def test_1k(folder_path):
+def test_1j(folder_path):
     # run the test
-    data_set_name = "test_1k"
+    data_set_name = "test_1j"
     run(
-        config=os.path.join(folder_path, "config.json"),
+        config=os.path.join(folder_path, "config.yaml"),
         dataset=os.path.join(folder_path, data_set_name),
         folder_output=os.path.join(folder_path, "outputs"),
     )
@@ -533,8 +533,8 @@ def test_4a(folder_path):
     # test comparison functions
     res_0 = res
     res_1 = res
-    scen_0 = list(res_0.solution_loader.scenarios.keys())[0]
-    scen_1 = list(res_0.solution_loader.scenarios.keys())[1]
+    scen_0 = list(res_0.scenarios.keys())[0]
+    scen_1 = list(res_0.scenarios.keys())[1]
     check_comparison_functions([res_0, res_1], [scen_0, scen_1])
 
 
@@ -728,4 +728,4 @@ def test_11a(folder_path):
 
 if __name__ == "__main__":
     testcase_folder = os.path.dirname(__file__)
-    test_1a(testcase_folder)
+    test_4a(testcase_folder)
