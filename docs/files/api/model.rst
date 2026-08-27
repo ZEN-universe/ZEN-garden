@@ -7,12 +7,13 @@ General
 .. autosummary::
    :toctree: generated
 
-   zen_garden.optimization_setup
+   zen_garden.optimization_workflow
+   zen_garden.optimization_step
 
-.. autosummary::
-   :toctree: modules
+.. toctree::
+   :maxdepth: 1
 
-   zen_garden.default_config
+   modules/zen_garden.default_config
 
 
 Elements
@@ -51,14 +52,14 @@ Constraints
 .. autosummary::
     :toctree: generated
 
-    zen_garden.constraints.generic_constraint
-    zen_garden.constraints.carrier
-    zen_garden.constraints.conversion_technology
-    zen_garden.constraints.energy_system
-    zen_garden.constraints.retrofitting_technology
-    zen_garden.constraints.storage_technology
-    zen_garden.constraints.technology
-    zen_garden.constraints.transport_technology
+    zen_garden.topology.generic_constraint
+    zen_garden.elements.carrier.constraints
+    zen_garden.elements.conversion_technology.constraints
+    zen_garden.elements.energy_system.constraints
+    zen_garden.elements.retrofitting_technology.constraints
+    zen_garden.elements.storage_technology.constraints
+    zen_garden.elements.technology.constraints
+    zen_garden.elements.transport_technology.constraints
 
 
 

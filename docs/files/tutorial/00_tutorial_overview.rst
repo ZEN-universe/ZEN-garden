@@ -42,14 +42,14 @@ To begin each tutorial:
 1. Install ZEN-garden by following the instructions in the :ref:`installation 
    guide <installation.installation>`. 
 
-2. Download the example dataset ``5_multiple_time_steps_per_year`` by following 
+2. Download the example dataset ``4_multiple_time_steps_per_year`` by following
    the instructions for :ref:`using dataset examples <building.examples>`. When 
    following these instructions, replace  ``<example name>`` with 
-   ``5_multiple_time_steps_per_year`` to download the appropriate data set.
+   ``4_multiple_time_steps_per_year`` to download the appropriate data set.
 
 3. Run the dataset example using the instructions for :ref:`running a model 
    <running.run_model>`. When following the instructions, replace 
-   ``<dataset_name>`` with ``5_multiple_time_steps_per_year``.
+   ``<dataset_name>`` with ``4_multiple_time_steps_per_year``.
 
 Once run, ZEN-garden will begin printing output into the command window. Upon
 successful completion, the following line will be printed:  
@@ -61,7 +61,7 @@ successful completion, the following line will be printed:
 A new directory called ``output``, which contains the ZEN-garden output files,
 will be added in the current ``data`` directory.
 
-The dataset ``5_multiple_time_steps_per_year`` simulates electricity and heat 
+The dataset ``4_multiple_time_steps_per_year`` simulates electricity and heat
 supply for a two-node system. The two nodes are Germany (DE) and Switzerland 
 (CH). Electricity can only be supplied by solar photovoltaics, while heat can 
 only be supplied by a natural gas boiler. Natural gas can be freely imported at 

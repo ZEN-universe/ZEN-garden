@@ -9,22 +9,26 @@ class OpexEmissionsTechnologyStorageConstraint(GenericConstraint):
         Formulation:
 
         .. math::
-            C^{\\mathrm{op,var}}_{h,n,t} = \\kappa^{\\mathrm{op,var}}_{h,y}
-            (F^{\\mathrm{ch}}_{h,n,t} + F^{\\mathrm{dis}}_{h,n,t})
-            M^{\\mathrm{tech}}_{h,n,t} = \\varepsilon^{\\mathrm{op}}_h
-            (F^{\\mathrm{ch}}_{h,n,t} + F^{\\mathrm{dis}}_{h,n,t})
+            \\begin{aligned}
+            C^{\\mathrm{op,var}}_{h,n,t}
+            &= \\kappa^{\\mathrm{op,var}}_{h,n,t}
+            (F^{\\mathrm{ch}}_{h,n,t} + F^{\\mathrm{dis}}_{h,n,t}),\\\\
+            M^{\\mathrm{tech}}_{h,n,t}
+            &= \\varepsilon^{\\mathrm{op}}_{h,n}
+            (F^{\\mathrm{ch}}_{h,n,t} + F^{\\mathrm{dis}}_{h,n,t}).
+            \\end{aligned}
 
         Notation:
 
         :math:`C^{\\mathrm{op,var}}_{h,n,t}`: variable OPEX of storage technology
         :math:`h` at node :math:`n` in time step :math:`t` of year :math:`y`
-        :math:`\\kappa^{\\mathrm{op,var}}_{h,y}`: specific variable OPEX
+        :math:`\\kappa^{\\mathrm{op,var}}_{h,n,t}`: specific variable OPEX
         :math:`F^{\\mathrm{ch}}_{h,n,t}`: carrier flow into storage technology
         :math:`h`
         :math:`F^{\\mathrm{dis}}_{h,n,t}`: carrier flow out of storage technology
         :math:`h`
         :math:`M^{\\mathrm{tech}}_{h,n,t}`: operating carbon emissions
-        :math:`\\varepsilon^{\\mathrm{op}}_h`: carbon intensity of the storage
+        :math:`\\varepsilon^{\\mathrm{op}}_{h,n}`: carbon intensity of the storage
         technology
         """
         techs = self.zen_model.sets["set_storage_technologies"]

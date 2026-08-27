@@ -21,15 +21,15 @@ class RetrofitFlowCouplingConstraint(GenericConstraint):
         .. math::
             F^{\\mathrm{ref}}_{h^{\\mathrm{retro}},n,t} \\leq
             \\eta^{\\mathrm{retro}}_{h^{\\mathrm{retro}},n,t}
-            F^{\\mathrm{ref}}_{h^{\mathrm{base}},n,t}
+            F^{\\mathrm{ref}}_{h^{\\mathrm{base}},n,t}
 
         Notation:
 
         :math:`F^{\\mathrm{ref}}_{h^{\\mathrm{retro}},n,t}`: reference flow of retrofit
         technology :math:`h^{\\mathrm{retro}}`
-        :math:`F^{\\mathrm{ref}}_{h^{\mathrm{base}},n,t}`: reference flow of its
+        :math:`F^{\\mathrm{ref}}_{h^{\\mathrm{base}},n,t}`: reference flow of its
         associated base
-        technology :math:`h^{\mathrm{base}}`
+        technology :math:`h^{\\mathrm{base}}`
         :math:`\\eta^{\\mathrm{retro}}_{h^{\\mathrm{retro}},n,t}`: retrofit
         flow-coupling factor.
         Reference flow is selected from the input or output flow according to each

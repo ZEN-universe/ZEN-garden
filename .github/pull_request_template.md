@@ -38,7 +38,7 @@ Please check all items that apply. If an item is not applicable, please remove i
 - [ ] Code is typed and ``mypy .`` passes all tests.
 - [ ] Tests for new features were added:
   - [ ] The test is added to `run_tests.py` and `docu_test_cases.md`.
-  - [ ] The tested variables are added to `test_variables.json`.
+  - [ ] The tested variables are added to `test_variables.yaml`.
 
 
 ### Code changes

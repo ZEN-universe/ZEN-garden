@@ -144,7 +144,7 @@ investment :math:`\kappa^{\mathrm{cap}}_{h,y}` and the capacity addition
 
 .. note::
     The capex of conversion technologies can also be approximated by a piecewise
-    linear approximation as described in :ref:`input_structure.pwa` and
+    linear approximation as described in
     :ref:`math_formulation.pwa_constraints`.
 
 For existing conversion technology capacities :math:`s_{h,n,y}^{ex}` that were
@@ -192,7 +192,7 @@ investment :math:`\kappa^{\mathrm{cap}}_{h,y}` multiplied by the capacity additi
 
 It is also possible, to apply both, a distance independent and a distance
 dependent cost term by setting ``double_capex_transport=True`` in your
-``system.json``. Please note that using ``double_capex_transport=True``
+``system.yaml``. Please note that using ``double_capex_transport=True``
 introduces binary variables. For more information on the distance dependent unit
 cost of capital investment refer to :ref:`additional_features.distance_dependent_transport_capex`.
 
@@ -1094,7 +1094,7 @@ technology is not constrained by the capacity limit (Big-M parameter).
 Minimum full-load hours
 -----------------------
 
-.. docstring_method:: zen_garden.constraints.conversion_technology.MinimumFullLoadHoursConstraint.build
+.. docstring_method:: zen_garden.elements.conversion_technology.constraints.MinimumFullLoadHoursConstraint.build
 
 This constraint is currently only available for conversion technologies.
 

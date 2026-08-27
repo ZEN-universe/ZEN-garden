@@ -39,7 +39,7 @@ differences to the previous dataset.
 -------------
 The base case includes a simple energy system consisting of two nodes: 
 Switzerland (CH) and Germany (DE). Although more nodes are defined in the 
-``set_nodes.csv`` file, only ``CH`` and ``DE`` are selected in ``system.json``.
+``set_nodes.csv`` file, only ``CH`` and ``DE`` are selected in ``system.yaml``.
 A single year optimization fulfils the heat and electricity demands in both 
 nodes. To fulfil the demands, the energy system can install and use the 
 following technologies:
@@ -74,11 +74,11 @@ gas can be imported in both nodes without limits.
 2_multi_year_optimization
 ---------------------------
 The model builds upon the base case by extending the optimization over multiple 
-years. The parameter ``optimized_years`` in the ``system.json`` file defines the 
+years. The parameter ``optimized_years`` in the ``system.yaml`` file defines the 
 number of years to optimize. Additionally, the optimization only runs for every 
 second year, thus, aggregating two years in each optimized year. This setting 
 can be controlled with the ``interval_between_years`` parameter in the 
-``system.json`` file. The heat demand in both nodes is variable over the years 
+``system.yaml`` file. The heat demand in both nodes is variable over the years 
 and the optimization model must fulfil them in all years. The adjusted heat 
 demand is specified in the ``demand.csv`` file of the ``heat`` folder.
 
@@ -92,19 +92,19 @@ DE. Additionally in this model, natural gas pipeline capital expenditures
 consist of two parts, which are independent: distance dependent costs 
 (``capex_per_distance_transport``) and capacity dependent costs 
 (``capex_specific_transport``). These costs are specified independently from 
-each other in the ``attributes.json`` file. Note that the units of 
+each other in the ``attributes.yaml`` file. Note that the units of 
 ``capex_per_distance_transport`` need to be specified as costs per distance 
 without taking into account the capacity. The distance dependent costs depend on 
 a binary decision whether the connection is installed or not, while the capacity 
 dependent costs are linearly dependent on the installed capacity. Consequently, 
 the model is a mixed integer linear program. This method for calculating the 
-costs of transport modes needs to be activated in the ``system.json`` file by 
+costs of transport modes needs to be activated in the ``system.yaml`` file by 
 setting the parameter ``double_capex_transport`` to ``true``.
 
 4_multiple_time_steps_per_year
---------------------------------
+------------------------------
 Now the model includes time steps within a year and optimizes the operation of
-the energy system. In the ``system.json`` file the parameters
+the energy system. In the ``system.yaml`` file the parameters
 ``aggregated_time_steps_per_year`` and ``unaggregated_time_steps_per_year`` are
 set to 96. This equals looking at the first 96 hours of the year. In order to
 include variation between the time steps, the electricity and heat demands are
@@ -112,7 +112,7 @@ hourly resolved in the ``demand.csv`` file.
 
 
 5_reduced_import_availability_yearly
---------------------------------------
+------------------------------------
 With the file ``availability_import_yearly.csv`` the import availability of
 natural gas in CH is step-wise reduced for each year. In contrast to
 the ``availability_import.csv`` file, the ``availability_import_yearly.csv``
@@ -124,7 +124,7 @@ limit.
 
 6_time_series_aggregation
 ---------------------------
-Now the time series aggregation is switched on in the ``system.json`` file by
+Now the time series aggregation is switched on in the ``system.yaml`` file by
 setting the parameter ``conduct_time_series_aggregation`` to ``true``.
 Additionally, the parameter ``aggregated_time_steps_per_year`` needs to be
 smaller than the ``unaggregated_time_steps_per_year``. In this example, 96 time
@@ -132,19 +132,18 @@ steps are aggregated to 10 representative time steps. For illustration purposes,
 the ``availability_import_yearly.csv`` file of natural gas is structured
 differently to the previous examples:
 
-.. csv-table:: Yearly import availability of natural gas in CH
-    :header-rows: 1
-    :file: ../../dataset_examples/6_time_series_aggregation/set_carriers/
-           natural_gas/availability_import_yearly.csv
-    :widths: 15 15 15 15
-    :delim: ,
+.. code-block:: text
+
+    node,2023,2024,2025
+    CH,<value>,<value>,<value>
+    DE,<value>,<value>,<value>
 
 The years are now set as the columns of the file and the nodes as the rows.
 Both structures are supported in ZEN-garden and depending on the input data,
 one might be easier to handle than the other.
 
 7_yearly_variation
----------------------
+------------------
 In addition to the variation within a year, ZEN-garden's input data can also
 handle variation between years. The yearly variation multiplies a parameter with
 a constant factor for the entire year. Consequently, the shape of the input data
@@ -158,18 +157,18 @@ hour is, therefore, multiplied with the factor 1.2 for the entire year 2029
 leading to a proportional increase of the electricity demand. Additionally, the
 example optimizes the full year instead of only the first 96 hours. The
 parameter ``unaggregated_time_steps_per_year`` is set to 8760 in the
-``system.json`` file. However, the time series aggregation is still active and
+``system.yaml`` file. However, the time series aggregation is still active and
 the optimization uses 10 representative time steps for the entire year.
 
 
 8_myopic_foresight
----------------------
+------------------
 All the previous datasets are optimized using so-called perfect foresight, i.e.,
 all years are optimized at once with the assumption that all the future
 parameter data are known at the time the optimization is conducted. In this
 example, however, ``myopic foresight`` is demonstrated, where the knowledge of
 future parameter data, the foresight horizon, is limited. To activate this
-feature, the parameter ``use_rolling_horizon`` in the ``system.json`` file is
+feature, the parameter ``use_rolling_horizon`` in the ``system.yaml`` file is
 set to ``true``. Simultaneously, the ``years_in_rolling_horizon`` parameter
 needs to be specified to set the length of the foresight horizon. In this
 example, the foresight horizon is set to 1.
@@ -186,7 +185,7 @@ horizon are visualized:
           year.
 
 9_brown_field
-----------------
+--------------
 Up to this model, all examples have assumed so-called ``green field`` capacity
 expansion. The assumption is that all capacities are newly built and no
 capacities are existing on nodes or edges, i.e., the whole system is built
@@ -205,23 +204,23 @@ were or will be built.
 
 
 10_multi_scenario
--------------------
+-----------------
 The model ``10_multi_scenario`` showcases the scenario analysis feature of
-ZEN-garden. The parameter ``conduct_scenario_analysis`` in the ``system.json``
-file is set to ``true`` and a new file, ``scenarios.json``, is added to the
-dataset. The file ``scenarios.json`` contains the different scenarios that are
+ZEN-garden. The parameter ``conduct_scenario_analysis`` in the ``system.yaml``
+file is set to ``true`` and a new file, ``scenarios.yaml``, is added to the
+dataset. The file ``scenarios.yaml`` contains the different scenarios that are
 considered in the optimization. In the example, all supported ways of
 manipulating the input data are demonstrated. Additional files are added to the
 dataset which are used by the different scenarios: different carbon prices and
 a new attributes file for electricity. The files which are to be used by the
 scenario analysis must have an additional ending in the file name to distinguish
 them from the standard input data files. The ending is specified in the
-``scenarios.json`` file. For example, the alternative attributes file for
-electricity is named ``attributes_low_carbon.json``.
+``scenarios.yaml`` file. For example, the alternative attributes file for
+electricity is named ``attributes_low_carbon.yaml``.
 
 
 11_multiple_in_output_carriers_conversion
---------------------------------------------
+-----------------------------------------
 This model introduces conversion technologies which work with more than one in-
 or output carrier. For this purpose, the model from example
 ``7_yearly_variation`` is extended with a combined heat and power (CHP)
@@ -230,26 +229,22 @@ natural gas and biogas as input carriers. The carrier biogas is newly introduced
 as well. The output carriers of the CHP plant are heat and electricity. The
 ratio in which the CHP plant uses natural gas/biogas and produces
 heat/electricity is specified with the ``conversion_factor`` parameter of the
-CHP plant. The respective parameter in the  ``attributes.json`` file of the CHP
+CHP plant. The respective parameter in the  ``attributes.yaml`` file of the CHP
 plant is specified as::
 
-    "conversion_factor": {
-        "heat": {
-            "default_value": 1.257,
-            "unit": "GWh/GWh"
-        },
-        "natural_gas": {
-            "default_value": 1.427,
-            "unit": "GWh/GWh"
-        },
-        "bio_gas": {
-            "default_value": 1.427,
-            "unit": "GWh/GWh"
-        }
-    }
+    conversion_factor:
+      heat:
+        default_value: 1.257
+        unit: GWh/GWh
+      natural_gas:
+        default_value: 1.427
+        unit: GWh/GWh
+      bio_gas:
+        default_value: 1.427
+        unit: GWh/GWh
 
 12_yearly_interpolation
------------------------------
+-----------------------
 This example showcases how missing values in input data can be interpolated and
 how the interpolation can be switched off. Compared to the previous example, an
 annual limit of carbon emissions is introduced (file
@@ -257,10 +252,10 @@ annual limit of carbon emissions is introduced (file
 ``carbon_emissions_annual_limit`` and ``price_carbon_emissions`` have yearly
 values missing. Per default, ZEN-garden interpolates the missing values linearly
 between the two closest known values. If this behaviour is not wanted, parameter
-names can be added to the file ``parameters_interpolation_off.json`` inside the
+names can be added to the file ``parameters_interpolation_off.yaml`` inside the
 ``energy_system`` folder. For the parameter names in this file, the
 interpolation of missing values is switched off. In this case, the default value
-from the ``attributes.json`` file is used for the missing values.
+from the ``attributes.yaml`` file is used for the missing values.
 
 .. _dataset_examples.13_retrofitting_and_fuel_substitution:
 
@@ -280,19 +275,18 @@ as input and produces carbon which is then stored permanents with another added
 technology: ``carbon_storage``.
 
 Since the retrofit technology can only be added to a specific conversion
-technology, it requires an additional parameter in the ``attributes.json`` file::
+technology, it requires an additional parameter in the ``attributes.yaml`` file::
 
-    "retrofit_flow_coupling_factor": {
-        "base_technology": "CHP_plant",
-        "default_value": 0.18,
-        "unit": "kilotons/GWh"
-    }
+    retrofit_flow_coupling_factor:
+      base_technology: CHP_plant
+      default_value: 0.18
+      unit: kilotons/GWh
 
 The ``retrofit_flow_coupling_factor`` specifies to which technology the retrofit
 technology can be added and the coupling factor between the retrofit and the
 base technology. The retrofit technologies belong to a new technology set:
 ``set_retrofitting_technologies``, which must be specified in the
-``system.json`` file. The set retrofitting technologies is a child of the
+``system.yaml`` file. The set retrofitting technologies is a child of the
 conversion technologies and, therefore, the folder for ``carbon_capture`` and
 ``e_fuel_production`` must be places inside the folder
 ``set_conversion_technologies``. Since ``carbon_capture`` and ``carbon_storage``
@@ -301,7 +295,7 @@ dataset.
 
 
 14_unit_consistency_expected_error
-------------------------------------
+----------------------------------
 
 The example should illustrate the ZEN-garden response in case the input data is 
 faulty. Specifically, ZEN-garden checks whether the units of the input data are 

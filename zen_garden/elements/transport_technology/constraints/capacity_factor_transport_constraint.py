@@ -11,11 +11,11 @@ class CapacityFactorTransportConstraint(GenericConstraint):
         Formulation:
 
         .. math::
-            F^{\mathrm{trans}}_{h,e,t} \\leq \\ell^{\\mathrm{max}}_{h,e,t}K_{h,e,y}
+            F^{\\mathrm{trans}}_{h,e,t} \\leq \\ell^{\\mathrm{max}}_{h,e,t}K_{h,e,y}
 
         Notation:
 
-        :math:`F^{\mathrm{trans}}_{h,e,t}`: carrier flow through transport
+        :math:`F^{\\mathrm{trans}}_{h,e,t}`: carrier flow through transport
         technology :math:`h`
         on edge :math:`e` in time step :math:`t` of year :math:`y`
         :math:`\\ell^{\\mathrm{max}}_{h,e,t}`: Maximum load factor of transport

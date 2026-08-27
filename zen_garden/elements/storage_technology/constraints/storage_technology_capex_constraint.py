@@ -13,8 +13,8 @@ class StorageTechnologyCapexConstraint(GenericConstraint):
 
         .. math::
             C^{\\mathrm{cap,overnight}}_{h,n,y} =
-            \\kappa^{\\mathrm{cap,power}}_{h,y}\\Delta K_{h,n,y}
-            + \\kappa^{\\mathrm{cap,energy}}_{h,y}\\Delta K^{\\mathrm{energy}}_{h,n,y}
+            \\kappa^{\\mathrm{cap,power}}_{h,n,y}\\Delta K_{h,n,y}
+            + \\kappa^{\\mathrm{cap,energy}}_{h,n,y}\\Delta K^{\\mathrm{energy}}_{h,n,y}
 
         The implementation stores the two terms separately along its capacity-type
         dimension; their sum is :math:`C^{\\mathrm{cap,overnight}}_{h,n,y}`.
@@ -25,8 +25,9 @@ class StorageTechnologyCapexConstraint(GenericConstraint):
         technology :math:`h` at node :math:`n` in year :math:`y`
         :math:`\\Delta K_{h,n,y}` and :math:`\\Delta K^{\\mathrm{energy}}_{h,n,y}`:
         power- and energy-capacity additions
-        :math:`\\kappa^{\\mathrm{cap,power}}_{h,y}` and :math:
-        `\\kappa^{\\mathrm{cap,energy}}_{h,y}`: specific power- and energy-capacity
+        :math:`\\kappa^{\\mathrm{cap,power}}_{h,n,y}` and
+        :math:`\\kappa^{\\mathrm{cap,energy}}_{h,n,y}`: specific power- and
+        energy-capacity
         CAPEX
         """
         index_values, index_names = self.zen_model.create_custom_set(

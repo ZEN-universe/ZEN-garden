@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING, Any
 import numpy as np
 import pandas as pd
 import scipy as sp
+import yaml
 from pint import UnitRegistry
 from pint.util import column_echelon_form
 
@@ -57,7 +58,7 @@ class UnitHandling:
                 optimization, including unit consistency checks and rounding
                 tolerances.
             folder_path (str or Path): The path to the folder containing system
-                specifications (e.g., "unit_definitions.txt", "base_units.csv").
+                specifications (e.g., "unit_definitions.txt", "base_units.yaml").
         """
         self.folder_path = folder_path
         self.rounding_decimal_points_units = rounding_decimal_points_units
@@ -166,41 +167,63 @@ class UnitHandling:
             "can be directly constructed from the others"
         )
 
-    def extract_base_units(self):
-        """Extracts the base units from either a CSV or JSON file.
+    def extract_base_units(self) -> list[str]:
+        """Extract base units from YAML or deprecated JSON.
 
-        If the CSV file (``base_units.csv``) is not found, the method will
-        fall back on a JSON file (``base_units.json``) to load the base units.
-        If ``hour`` is not found in the list of base units, a warning will
-        be raised. This method provides the list of all base units that will be
-        used for further calculations and unit consistency checks.
+        YAML is preferred. JSON remains supported as a deprecated fallback.
 
         Returns:
-            list:
-                A list of base units defined in the system.
+            The base units defined in the system.
 
         Raises:
+            FileNotFoundError: If no supported base-unit file exists.
+            ValueError: If the file does not contain a list under ``unit``.
             UserWarning: If the hour unit is not found in the base unit
-            definitions.
+                definitions.
         """
-        if os.path.exists(os.path.join(self.folder_path / "base_units.csv")):
-            list_base_units = (
-                pd.read_csv(self.folder_path / "base_units.csv")
-                .squeeze()
-                .values.tolist()
+        file_path = next(
+            (
+                self.folder_path / filename
+                for filename in (
+                    "base_units.yaml",
+                    "base_units.yml",
+                    "base_units.json",
+                )
+                if (self.folder_path / filename).exists()
+            ),
+            None,
+        )
+        if file_path is None:
+            raise FileNotFoundError(
+                f"No base-unit file exists in '{self.folder_path}'. Expected one "
+                "of: base_units.yaml, base_units.yml, base_units.json."
             )
-            logger.warning(
-                "DeprecationWarning: Specifying the base units in .csv file "
-                "format is deprecated. Use the .json file format instead."
+
+        with open(file_path, "r", encoding="utf-8") as file:
+            if file_path.suffix == ".json":
+                warnings.warn(
+                    f"Loading JSON from '{file_path}' is deprecated. Convert the file "
+                    "to YAML.",
+                    DeprecationWarning,
+                    stacklevel=2,
+                )
+                data = json.load(file)
+            else:
+                data = yaml.safe_load(file)
+
+        list_base_units = data.get("unit") if isinstance(data, dict) else None
+        if not isinstance(list_base_units, list) or not all(
+            isinstance(unit, str) for unit in list_base_units
+        ):
+            raise ValueError(
+                f"The base-unit file '{file_path}' must contain a list of strings "
+                "under the 'unit' key."
             )
-        else:
-            with open(os.path.join(self.folder_path, "base_units.json"), "r") as f:
-                data = json.load(f)
-            list_base_units = data["unit"]
+
         if "hour" not in list_base_units:
             warnings.warn(
                 "The base unit for time is intended to be `hour` but is not "
-                "found in the base_units file."
+                "found in the base_units file. "
                 "If this is intentional, make sure that your settings and "
                 "input data are aligned with this change.",
                 UserWarning,

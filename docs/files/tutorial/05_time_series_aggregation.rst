@@ -61,11 +61,11 @@ The time parameters in ZEN-garden
 
 Example I, no rolling horizon:
 
-.. code-block::
+.. code-block:: yaml
 
-    "reference_year": 2020,
-    "optimized_years": 4,
-    "interval_between_years": 10
+    reference_year: 2020
+    optimized_years: 4
+    interval_between_years: 10
 
 The resulting investigated years are
 
@@ -75,14 +75,14 @@ The resulting investigated years are
 
 Example II, rolling horizon:
 
-.. code-block::
+.. code-block:: yaml
 
-    "reference_year": 2020,
-    "optimized_years": 4,
-    "interval_between_years": 10,
-    "use_rolling_horizon": True,
-    "years_in_rolling_horizon": 2,
-    "interval_between_optimizations": 1
+    reference_year: 2020
+    optimized_years: 4
+    interval_between_years: 10
+    use_rolling_horizon: true
+    years_in_rolling_horizon: 2
+    interval_between_optimizations: 1
 
 The resulting sequence of investigated years are:
 
@@ -108,7 +108,7 @@ representative time steps, e.g., 200.
 Disabling the time series aggregation
 -------------------------------------------------------------------------------------------
 
-Open the ``system.json`` file and set ``"conduct_time_series_aggregation"=False``. 
+Open the ``system.yaml`` file and set ``"conduct_time_series_aggregation"=False``. 
 This disables the time series aggregation. If you do not want to investigate a 
 full year, set ``"unaggregated_time_steps_per_year"<8760``
 
@@ -118,7 +118,7 @@ full year, set ``"unaggregated_time_steps_per_year"<8760``
 Using time series aggregation
 -------------------------------------------------------
 
-Open the ``system.json`` file and set ``"aggregated_time_steps_per_year"`` 
+Open the ``system.yaml`` file and set ``"aggregated_time_steps_per_year"`` 
 smaller than ``"unaggregated_time_steps_per_year"``. You are then aggregating 
 ``"unaggregated_time_steps_per_year"`` (e.g., 8760 base time steps) to 
 ``"aggregated_time_steps_per_year"`` (e.g., 200 representative time steps). If

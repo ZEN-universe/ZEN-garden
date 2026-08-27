@@ -51,7 +51,7 @@ How the loader uses your plugin
 
 The loader function `zen_garden.plugins.loader.register_plugins`
 imports `zen_garden.plugins.<name>.plugin` and updates the plugin module's
-`config` dict with the configuration provided in `config.json`. The loader
+`config` dict with the configuration provided in `config.yaml`. The loader
 registers the plugin's callbacks to the events they are decorated with, so
 that are executed during runtime when the respective event is triggered.
 

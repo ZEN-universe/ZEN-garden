@@ -65,8 +65,8 @@ def build_parser() -> argparse.ArgumentParser:
         "--config",
         type=str,
         required=False,
-        default="./config.json",
-        help="Path to a Python or JSON config file.",
+        default="./config.yaml",
+        help="Path to a Python or YAML config file.",
     )
     parser.add_argument(
         "--dataset",

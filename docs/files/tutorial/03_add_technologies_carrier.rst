@@ -11,15 +11,15 @@ In general, adding new technologies and carriers involves the following steps:
 2.  Copy-paste an existing technology or carrier and rename it.
 3.  Modify the parameters of the new technology or carrier as desired.
 4.  Add new ``.csv`` files if necessary.
-5.  Add the new technology to the appropriate sets in ``system.json``. Carriers are
+5.  Add the new technology to the appropriate sets in ``system.yaml``. Carriers are
     automatically detected from the technologies.
 6.  Run the model with the new dataset.
 
 This tutorial assumes that you have installed and run the example dataset
-``5_multiple_time_steps_per_year`` as described in the tutorial :ref:`setup
+``4_multiple_time_steps_per_year`` as described in the tutorial :ref:`setup
 instructions <tutorials_intro.setup>`.
 
-Practically, we want to extend the example dataset ``5_multiple_time_steps_per_year`` by a new technology
+Practically, we want to extend the example dataset ``4_multiple_time_steps_per_year`` by a new technology
 called ``biomass_boiler`` which uses the carrier ``biomass`` to produce heat.
 Therefore, we need to add the new technology ``biomass_boiler`` and the new carrier ``biomass`` to the dataset.
 
@@ -28,7 +28,7 @@ Therefore, we need to add the new technology ``biomass_boiler`` and the new carr
 Step 1: Copy the existing dataset
 =================================
 
-Copy-paste the entire folder of the dataset example ``5_multiple_time_steps_per_year`` to a new folder
+Copy-paste the entire folder of the dataset example ``4_multiple_time_steps_per_year`` to a new folder
 called ``tutorial_3_add_technologies_carrier``.
 
 .. _t_add_techs_carriers.copy_tech_carrier:
@@ -37,7 +37,7 @@ Step 2: Copy-paste an existing technology and carrier and rename it
 ===================================================================
 
 It is easiest to copy an existing technology and modify it to create a new technology.
-Of course, you can also create a new technology from scratch by creating a new ``attributes.json`` file
+Of course, you can also create a new technology from scratch by creating a new ``attributes.yaml`` file
 (:ref:`input_structure.attribute_files`).
 
 In this case, we copy-paste the existing technology ``natural_gas_boiler`` to a new folder
@@ -57,7 +57,7 @@ The ``biomass_boiler`` folder is very similar to the ``natural_gas_boiler`` tech
 the name of the technology and the input carrier from ``natural_gas`` to ``biomass``. Furthermore, we want to
 change the efficiency of the biomass boiler to 0.8. Since the ``conversion_factor`` is expressed as
 ``dependent_carrier/reference_carrier=[biomass]/[heat]``, we set the ``conversion_factor`` to 1/0.8=1.25.
-Make sure to change the name of the ``dependent_carrier`` in the ``attributes.json`` file from
+Make sure to change the name of the ``dependent_carrier`` in the ``attributes.yaml`` file from
 ``natural_gas`` to ``biomass``.
 
 We also want to increase the capex of the biomass boiler to 1500 Euro/kW.
@@ -89,10 +89,10 @@ However, we want to make ``biomass`` cheaper than ``natural_gas`` in CH, so we c
 
 .. _t_add_techs_carriers.modify_system:
 
-Step 5: Add the new technology to system.json
+Step 5: Add the new technology to system.yaml
 =============================================
 
-Finally, we need to add the new technology ``biomass_boiler`` to the ``set_conversion_technologies`` in ``system.json``.
+Finally, we need to add the new technology ``biomass_boiler`` to the ``set_conversion_technologies`` in ``system.yaml``.
 We do not need to add the new carrier ``biomass`` explicitly,
 since carriers are automatically detected from the technologies.
 
@@ -102,7 +102,7 @@ Step 6: Run the model with the new dataset
 ==========================================
 
 Lastly, we can run the model with the new dataset ``tutorial_3_add_technologies_carrier``
-(assuming that you are in the folder where the ``config.json`` file and the new folder are located):
+(assuming that you are in the folder where the ``config.yaml`` file and the new folder are located):
 
 .. code:: bash
 
@@ -136,10 +136,10 @@ Example Exercise
        of processed wood.
        Set the ``conversion_factor`` of the ``wood_mill`` accordingly.
     f. We assume a cheap ``wood_mill`` with capex of 10 Euro/(ton/h) and a ``opex_specific_fixed=0``
-    g. Prohibit the import of ``biomass`` by setting ``availability_import`` to 0 in the ``attributes.json`` file.
-    h. Change the default ``price_import`` of ``wood`` to 20 Euro/ton in the ``attributes.json`` file and the price for
+    g. Prohibit the import of ``biomass`` by setting ``availability_import`` to 0 in the ``attributes.yaml`` file.
+    h. Change the default ``price_import`` of ``wood`` to 20 Euro/ton in the ``attributes.yaml`` file and the price for
        ``CH`` to 2 Euro/ton in a the ``price_import.csv`` file.
-    i. Finally, add the new technology ``wood_mill`` to the ``set_conversion_technologies`` in ``system.json`` and
+    i. Finally, add the new technology ``wood_mill`` to the ``set_conversion_technologies`` in ``system.yaml`` and
        run the model. If you get any unit errors, check that all units are consistently changed.
     j. How much wood is consumed in both CH and DE in 2023?
 
