@@ -133,7 +133,7 @@ jobs:
       - name: Run Tests
         if: ${{ env.SKIPTESTS == 'false' }}
         shell: bash -l {0}
-        run: uv run --active pytest --cov="zen_garden" -n auto tests/ -v
+        run: uv run --extra dev pytest --cov="zen_garden" -n auto tests/ -v
 #          uv run coverage report -m
 
       - name: Extract Coverage
