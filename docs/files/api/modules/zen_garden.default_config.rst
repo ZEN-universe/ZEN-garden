@@ -1,9 +1,4 @@
 ﻿zen\_garden.default\_config
-===========================
-
-.. automodule:: zen_garden.default_config
-   :no-members:
-   :no-special-members:
 
 
 .. autoclass:: zen_garden.default_config.ConfigBase
@@ -29,5 +24,3 @@
 
 .. autoclass:: zen_garden.default_config.TimeSeriesAggregation
    :exclude-members: model_config
-   
-

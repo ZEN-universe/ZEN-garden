@@ -6,7 +6,7 @@ on:
     - cron:  '30 4 1 * *'
 
   pull_request:
-    branches: 
+    branches:
       - main
       - v3
     types: [opened, edited, synchronize]
@@ -22,8 +22,8 @@ env:
 # Jobs
 jobs:
 
-  # check whether #skiptests is in pull request message or commmit message: 
-  # The option #skiptests skips the tests   
+  # check whether #skiptests is in pull request message or commmit message:
+  # The option #skiptests skips the tests
   check_skiptests:
     runs-on: ubuntu-latest
     outputs:
@@ -50,7 +50,7 @@ jobs:
           echo "PR Title: $TITLE"
           echo "PR Body: $BODY"
           echo "skiptests=$skip"
-          
+
 
   matrix_prep:
     if: ${{ github.repository == 'ZEN-universe/ZEN-garden' }}
@@ -93,11 +93,11 @@ jobs:
     env:
       SKIPTESTS: ${{ needs.check_skiptests.outputs.skiptests }}
     steps:
-      
+
       - name: Check the value of SKIPTESTS
         run: |
           echo "skiptests output: ${{ env.SKIPTESTS }}"
-      
+
       # checkout PR commit
       - uses: actions/checkout@v4
         if: ${{ env.SKIPTESTS == 'false' }}
@@ -130,17 +130,11 @@ jobs:
         if: ${{ env.SKIPTESTS == 'false' && steps.cache.outputs.cache-hit != 'true'}}
         run: mamba env update -f zen_garden_env.yml
 
-      - name: Install package
-        if: ${{ env.SKIPTESTS == 'false' }}
-        shell: bash -l {0}
-        run: pip install -e .
-
       - name: Run Tests
         if: ${{ env.SKIPTESTS == 'false' }}
         shell: bash -l {0}
-        run: |
-          pytest --cov="zen_garden" -n auto tests/ -v
-#          coverage report -m
+        run: uv run --extra dev pytest --cov="zen_garden" -n auto tests/ -v
+#          uv run coverage report -m
 
       - name: Extract Coverage
         if: ${{ always() && matrix.label == 'linux-64' && env.SKIPTESTS == 'false' && github.event_name == 'push'}} # include always to overwrite cancel on failure of previous step
