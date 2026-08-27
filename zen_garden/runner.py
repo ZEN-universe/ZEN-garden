@@ -3,8 +3,6 @@ Compilation  of the optimization problem.
 """
 
 import logging
-from importlib.metadata import version
-from pathlib import Path
 
 from zen_garden.default_config import Config
 from zen_garden.optimization_workflow import OptimizationWorkflow
@@ -16,37 +14,6 @@ from zen_garden.utils.string_utils import StringUtils
 from zen_garden.utils.utils import setup_logger
 
 logger = logging.getLogger(__name__)
-
-
-def adjust_config_paths(
-    config: Config, dataset, folder_output: str | None, config_path: str
-) -> None:
-    """Resolve configured input and output paths relative to the config file."""
-    # overwrite the path if necessary
-    if dataset is not None:
-        # logging.info(f"Overwriting dataset to: {dataset_path}")
-        config.analysis.dataset = dataset
-
-    config_dir = Path(config_path).parent
-
-    if folder_output is not None:
-        if not Path(folder_output).is_absolute():
-            folder_output = str((config_dir / folder_output).resolve())
-        config.analysis.folder_output = folder_output
-        config.solver.solver_dir = folder_output
-    logging.info(f"Optimizing for dataset {config.analysis.dataset}")
-    # make all paths absolute to the config file path
-    if not Path(config.analysis.dataset).is_absolute():
-        config.analysis.dataset = str((config_dir / config.analysis.dataset).resolve())
-    if not Path(config.analysis.folder_output).is_absolute():
-        config.analysis.folder_output = str(
-            (config_dir / config.analysis.folder_output).resolve()
-        )
-    if not Path(config.solver.solver_dir).is_absolute():
-        config.solver.solver_dir = str(
-            Path(config_dir / config.solver.solver_dir).resolve()
-        )
-    config.analysis.zen_garden_version = version("zen-garden")
 
 
 def prepare_scenarios(config: Config, job_index: list[int] | None):
@@ -105,15 +72,16 @@ def run(
     setup_logger(log_level)
 
     config_path = config
-    config = Config.from_file(config_path)
+    config = Config.from_file(
+        config_path, dataset=dataset, folder_output=folder_output
+    )
     model_schema = ModelSchema(config)
     register_plugins(config.plugins)
-    adjust_config_paths(config, dataset, folder_output, config_path)
+    logging.info(f"Optimizing for dataset {config.analysis.dataset}")
 
     ### SYSTEM CONFIGURATION
     input_data_checks = InputDataChecks(config=config)
     input_data_checks.check_dataset()
-    input_data_checks.read_system_file(config)
     input_data_checks.check_technology_selections()
     input_data_checks.check_year_definitions()
 

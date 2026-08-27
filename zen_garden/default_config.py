@@ -33,8 +33,10 @@ Default values are overwritten by any changes specified in the input files
 import json
 import warnings
 from collections.abc import ItemsView, KeysView, ValuesView
+from importlib.metadata import version
 from pathlib import Path
 from typing import Any, Literal, Optional, Union
+from typing_extensions import override
 
 import yaml
 from pydantic import BaseModel, ConfigDict, ValidationError
@@ -299,3 +301,63 @@ class Config(ConfigBase):
     plugins: dict[str, Any] = {}
 
     scenarios: dict[str, Any] = {"": {}}
+
+    @classmethod
+    @override
+    def from_file(
+        cls,
+        path: str | Path,
+        dataset: str | None = None,
+        folder_output: str | None = None,
+    ) -> "Config":
+        """Load analysis, solver, and dataset system configuration.
+
+        Relative paths are resolved against the main configuration file. A
+        supplied dataset or output folder overrides the corresponding analysis
+        setting before paths and the dataset's system file are loaded.
+        """
+        config = super().from_file(path)
+        assert isinstance(config, cls)
+        config_path = Path(path)
+        config_dir = config_path.parent
+
+        if dataset is not None:
+            config.analysis.dataset = dataset
+        if folder_output is not None:
+            config.analysis.folder_output = folder_output
+            config.solver.solver_dir = folder_output
+
+        dataset_path = Path(config.analysis.dataset)
+        if not dataset_path.is_absolute():
+            dataset_path = (config_dir / dataset_path).resolve()
+        if dataset_path.exists():
+            config.analysis.dataset = str(dataset_path)
+            system_path = next(
+                (
+                    dataset_path / name
+                    for name in ("system.yaml", "system.yml", "system.json")
+                    if (dataset_path / name).exists()
+                ),
+                None,
+            )
+            if system_path is None:
+                raise FileNotFoundError(
+                    f"No system definition file found in dataset '{dataset_path}'. "
+                    "Expected one of: system.yaml, system.yml, system.json."
+                )
+            loaded_system = System.from_file(system_path)
+            config.system = config.system.model_copy(
+                update=loaded_system.model_dump()
+            )
+
+        output_path = Path(config.analysis.folder_output)
+        if not output_path.is_absolute():
+            output_path = (config_dir / output_path).resolve()
+        config.analysis.folder_output = str(output_path)
+
+        solver_path = Path(config.solver.solver_dir)
+        if not solver_path.is_absolute():
+            solver_path = (config_dir / solver_path).resolve()
+        config.solver.solver_dir = str(solver_path)
+        config.analysis.zen_garden_version = version("zen-garden")
+        return config
