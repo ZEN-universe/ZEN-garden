@@ -4,7 +4,7 @@
 Building a model
 ################
 
-A model in ZEN-garden consists entirely of input data files in the ``.json`` and 
+A model in ZEN-garden consists entirely of input data files in the ``.yaml`` and 
 ``.csv`` file formats. Building a model therefore refers to creating the input 
 files, in the proper input format, for ZEN-garden to read. The code uses these 
 input files to construct, solve, and analyze the desired model. You can build a 
@@ -14,7 +14,7 @@ necessary files in the correct format.
 
 At the highest level, two components are necessary in a ZEN-garden model:
 
-1. A 'config.json' file which names dataset to be used, specifies solver 
+1. A 'config.yaml' file which names dataset to be used, specifies solver 
    configuration, and sets high-level analysis options. 
 2. A folder (henceforth referred to as the ``<dataset>``) which contains detailed 
    information about the desired model's network topology, conversion 
@@ -31,16 +31,16 @@ At the highest level, two components are necessary in a ZEN-garden model:
     |   |--energy_system/...
     |   |--set_carriers/...
     |   |--set_technologies/...
-    |   `--system.json
+    |   `--system.yaml
     |
-    `--config.json
+    `--config.yaml
 
 The required file setup is shown on a high-level by the image above. The 
 ``<data>`` folder for ZEN-Garden contains the two core elements described 
-above: a `config.json` file and a ``<dataset>`` folder. The dataset folder 
+above: a `config.yaml` file and a ``<dataset>`` folder. The dataset folder 
 contains further files and subdirectories which specify model details. The 
 detailed structure of this dataset is described in :ref:`input_structure.input_structure`. 
-Broadly speaking, ``.json`` files within the dataset define the default values 
+Broadly speaking, ``.yaml`` files within the dataset define the default values 
 of an element, which can be overwritten by the ``.csv`` files to specify data in 
 more detail. The ``.csv`` files are optional and can be omitted if the default 
 values are sufficient. More detail on the use of default values and overwriting 
@@ -154,7 +154,7 @@ Building entirely new models from scratch is more work than using an existing
 model. The existing model examples can be used as a template for the new model.
 The following sections describe the necessary steps to build a new model.
 
-1. Create a  ``config.json`` file. 
+1. Create a  ``config.yaml`` file. 
 2. Create a dataset folder with the structure as shown above.
    
    - Define the technology and carrier sets (:ref:`input_structure.technologies` and 
@@ -163,10 +163,10 @@ The following sections describe the necessary steps to build a new model.
      and ``set_carriers`` folders (:ref:`input_structure.input_structure`)
    - Fill the energy system folder (`Energy System 
      <https://zen-garden.readthedocs.io/en/latest/files/zen_garden_in_detail/input_structure.html#energy-system>`_)
-   - Create the ``attributes.json`` file for each element (energy system, 
-     technology, carrier; :ref:`input_structure.attribute_files`). The ``attributes.json`` 
+   - Create the ``attributes.yaml`` file for each element (energy system, 
+     technology, carrier; :ref:`input_structure.attribute_files`). The ``attributes.yaml`` 
      files must contain a default value for all parameters of this element type 
      (:ref:`notation.notation`)
    - If necessary, create the ``.csv`` files to specify the data in more detail 
      (:ref:`input_structure.overwrite_defaults`)
-   - Create the ``system.json`` files (:ref:`configuration.configuration`)
+   - Create the ``system.yaml`` files (:ref:`configuration.configuration`)

@@ -8,14 +8,24 @@ from typing import Any
 from pint import UnitRegistry
 
 from zen_garden.postprocess.results.scenario import Scenario
+from pathlib import Path
+from typing import Any
+
+from pint import UnitRegistry
+
+from zen_garden.postprocess.results.scenario import Scenario
 
 logger = logging.getLogger(__name__)
 
+CURRENT_OUTPUT_VERSION = 4
 CURRENT_OUTPUT_VERSION = 4
 
 
 class SolutionLoader:
     """Implementation of a SolutionLoader."""
+
+    def __init__(self, path: Path) -> None:
+        self.path: Path = path
 
     def __init__(self, path: Path) -> None:
         self.path: Path = path
@@ -76,9 +86,15 @@ class SolutionLoader:
     @property
     def ureg(self) -> UnitRegistry:
         return self._ureg
+        return self.first_scenario.analysis.dataset.split("/")[-1]
+
+    @property
+    def ureg(self) -> UnitRegistry:
+        return self._ureg
 
     @property
     def has_duals(self) -> bool:
+        return self.first_scenario.solver.save_duals
         return self.first_scenario.solver.save_duals
 
     @property
@@ -98,14 +114,37 @@ class SolutionLoader:
             return self.first_scenario
         elif scenario_name in self.scenarios:
             return self.scenarios[scenario_name]
+        return (
+            not hasattr(self.first_scenario.solver, "save_parameters")
+            or self.first_scenario.solver.save_parameters
+        )
+
+    def find_scenario(self, scenario_name: str | None) -> Scenario:
+        """Find the scenario with the given name or raise exception.
+
+        :param scenario_name: Name of the scenario
+        :return: Scenario instance for the given name
+        """
+        if scenario_name is None:
+            return self.first_scenario
+        elif scenario_name in self.scenarios:
+            return self.scenarios[scenario_name]
         else:
+            raise ValueError(f"Scenario `{scenario_name}` not found.")
             raise ValueError(f"Scenario `{scenario_name}` not found.")
 
     #### Helper functions
     @property
     def first_scenario(self) -> Scenario:
         """Returns the first scenario of the dictionary of scenarios.
+    #### Helper functions
+    @property
+    def first_scenario(self) -> Scenario:
+        """Returns the first scenario of the dictionary of scenarios.
 
+        :return: The first scenario of the dictionary.
+        """
+        return self._scenarios[next(iter(self._scenarios.keys()))]
         :return: The first scenario of the dictionary.
         """
         return self._scenarios[next(iter(self._scenarios.keys()))]

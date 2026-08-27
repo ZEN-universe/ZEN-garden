@@ -11,14 +11,15 @@ class TechnologyMaxCapacityAdditionConstraint(GenericConstraint):
         Formulation:
 
         .. math::
-            \\overline{\\Delta k}_{h,p,y} g_{h,p,y}
+            \\overline{\\Delta k}_{h} g_{h,p,y}
             \\geq \\Delta K_{h,p,y}
 
         The constraint is omitted for zero, missing, or infinite maximum additions.
 
         Notation:
 
-        :math:`\\overline{\\Delta k}_{h,p,y}`: maximum capacity addition
+        :math:`\\overline{\\Delta k}_{h}`: maximum capacity addition for technology
+        :math:`h` (with capacity type implicit)
         :math:`g_{h,p,y}`: binary variable which equals 1 if technology is installed
         at location :math:`p` in year :math:`y`
         :math:`\\Delta K_{h,p,y}`: capacity addition

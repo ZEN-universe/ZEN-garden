@@ -9,6 +9,7 @@ from tqdm import tqdm
 
 from zen_garden.postprocess.results import Results
 from zen_garden.postprocess.results.component_type import ComponentType
+from zen_garden.postprocess.results.component_type import ComponentType
 
 logger = logging.getLogger(__name__)
 
@@ -131,6 +132,7 @@ def get_component_diff(
     assert len(results) == 2, "Please give exactly two components"
 
     results_0, results_1 = results
+    component_map_0 = results_0.solution_loader.scenarios[scenarios[0]].component_map
     component_map_0 = results_0.scenarios[scenarios[0]].component_map
     component_names_0 = set(
         [
@@ -141,6 +143,7 @@ def get_component_diff(
         ]
     )
 
+    component_map_1 = results_1.solution_loader.scenarios[scenarios[1]].component_map
     component_map_1 = results_1.scenarios[scenarios[1]].component_map
     component_names_1 = set(
         [

@@ -10,7 +10,7 @@ Configurations
 System Configurations
 =====================
 
-The ``system.json`` defines the structure of the energy system. The following
+The ``system.yaml`` defines the structure of the energy system. The following
 table summarizes the available system settings and their default values.
 
 .. csv-table:: System Settings
@@ -22,16 +22,16 @@ table summarizes the available system settings and their default values.
 
 Per default, the technology selection is empty. You must define the set of
 technologies you want to investigate in your system. Only technologies selected
-in ``system.json`` are added to the optimization problem. You can flexibly
+in ``system.yaml`` are added to the optimization problem. You can flexibly
 select any subset of the technologies available in your ``set_technologies``
 folder. Selecting a technology that is not defined in your input data will raise
 an error.
 
 Per default, all nodes defined in ``energy_system/set_nodes.csv`` are added.
 You can reduce the number of nodes by selecting a subset of nodes in your
-``system.json``. In addition, you can specify the starting year
+``system.yaml``. In addition, you can specify the starting year
 (``reference_year``), the time horizon (``optimized_years``), and the
-interyearly resolution (``interval_between_years``) in the ``system.json``.
+interyearly resolution (``interval_between_years``) in the ``system.yaml``.
 
 Per default, each year is represented by 8760 timesteps of length 1h.
 You can change the intrayearly resolution by modifying
@@ -50,7 +50,7 @@ Config Configurations
 =====================
 
 This section describes all configurations which can be set in the
-``config.json`` file. The ``config.json`` file generally contains a list
+``config.yaml`` file. The ``config.yaml`` file generally contains a list
 of two dictionaries: ``analysis`` and ``solver``. Each of these dictionaries
 contains configurations which the user can specify. The lists below contain
 a complete list of configurations for each dictionary.
@@ -61,7 +61,7 @@ Analysis
 --------
 
 The dataset, the objective function and the solver are selected in the
-``analysis`` dictionary of ``config.json``. The following table summarizes the
+``analysis`` dictionary of ``config.yaml``. The following table summarizes the
 available ``analysis`` settings and their default values:
 
 .. csv-table:: Analysis Settings
@@ -90,7 +90,7 @@ in ZEN-garden.
 Solver
 ------
 
-Solver settings are also specified in the ``config.json``. The following table
+Solver settings are also specified in the ``config.yaml``. The following table
 summarizes the available solver settings and their default values.
 
 .. csv-table:: Solver Settings
@@ -138,5 +138,5 @@ Plugins
 ---------
 
 Activating plugins and passing configurations to plugins is done by modifying the ``plugins`` key
-in the ``config.json``. The key name corresponds to the plugin name to be activated.
+in the ``config.yaml``. The key name corresponds to the plugin name to be activated.
 the dictonary under this key defines the configuration for the plugin.

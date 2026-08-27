@@ -38,7 +38,7 @@ class TransportTechnologyLossesFlowConstraint(GenericConstraint):
         :math:`\\lambda^{\\mathrm{loss}}_{h,e}`: effective loss factor,
         calculated during preprocessing
         from either a linear or exponential loss-rate input
-        :math:`F^{\mathrm{trans}}_{h,e,t}`: carrier flow through transport
+        :math:`F^{\\mathrm{trans}}_{h,e,t}`: carrier flow through transport
         technology :math:`h` on edge :math:`e` in time step :math:`t` of year :math:`y`
         """
         if len(self.zen_model.sets["set_transport_technologies"]) == 0:
@@ -50,9 +50,9 @@ class TransportTechnologyLossesFlowConstraint(GenericConstraint):
             xr.DataArray, ~np.isinf(self.zen_model.parameters.distance)
         )
         mask = distance_isfinite.broadcast_like(flow_transport.lower)
-        loss_factor = self.zen_model.parameters.transport_loss_factor.broadcast_like(
-            flow_transport.lower
-        )
+        loss_factor = self.zen_model.expressions[
+            "transport_loss_factor_effective"
+        ].broadcast_like(flow_transport.lower)
         lhs = (flow_transport_loss - loss_factor * flow_transport).where(mask, 0)
         rhs = 0
         constraints = lhs == rhs

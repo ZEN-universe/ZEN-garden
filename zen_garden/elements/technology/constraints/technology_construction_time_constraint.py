@@ -17,22 +17,26 @@ class TechnologyConstructionTimeConstraint(GenericConstraint):
         Formulation:
 
         .. math::
-            \\text{if start time step is modeled: } \\Delta K_{h,p,y} =
-            \\Delta K_{h,p,(y-\\Delta y^{\\mathrm{construction}})}^\\mathrm{invest}
-        .. math::
-            \\text{elif start time step is before the modeled horizon:}
-            \\Delta K_{h,p,y} =
-            k^{\\mathrm{ex,inv}}_{h,p,
-            (y-\\Delta y^{\\mathrm{construction}})}
-        .. math::
-            \\text{else: } \\Delta K_{h,p,y} = 0
+            \\begin{aligned}
+            \\Delta K_{h,p,y}
+            &=\\Delta K^{\\mathrm{invest}}_{h,p,
+            (y-\\Delta y^{\\mathrm{construction}}_h)}
+            &&\\text{if the start time step is modeled},\\\\
+            \\Delta K_{h,p,y}
+            &=k^{\\mathrm{ex,inv}}_{h,p,
+            (y-\\Delta y^{\\mathrm{construction}}_h)}
+            &&\\text{if the start time step is before the modeled horizon},\\\\
+            \\Delta K_{h,p,y}
+            &=0
+            &&\\text{otherwise}.
+            \\end{aligned}
 
         Investments whose completion would occur after the modeled horizon are
         fixed to zero:
 
         .. math::
             \\Delta K^{\\mathrm{inv}}_{h,p,y}=0
-            \\quad\\text{if }y+\\Delta y^\\mathrm{construction}
+            \\quad\\text{if }y+\\Delta y^{\\mathrm{construction}}_h
             \\notin\\mathcal{Y}.
 
         For storage technologies, each equation is applied independently to power
@@ -46,8 +50,8 @@ class TechnologyConstructionTimeConstraint(GenericConstraint):
         location :math:`p` in year :math:`y`
         :math:`k^{\\mathrm{ex,inv}}_{h,p,y}`: size of the previously invested
         capacities at location :math:`p` in year :math:`y`
-        :math:`\\Delta y^\\mathrm{construction}`: construction time rounded up to an
-        integer number of planning intervals
+        :math:`\\Delta y^{\\mathrm{construction}}_h`: construction time of technology
+        :math:`h`, rounded up to an integer number of planning intervals
         """
         # get investment time step
         investment_time = pd.Series(

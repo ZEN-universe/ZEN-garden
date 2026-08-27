@@ -187,7 +187,7 @@ investment :math:`\kappa^{\mathrm{cap}}_{h,y}` multiplied by the capacity additi
 
 It is also possible, to apply both, a distance independent and a distance
 dependent cost term by setting ``double_capex_transport=True`` in your
-``system.json``. Please note that using ``double_capex_transport=True``
+``system.yaml``. Please note that using ``double_capex_transport=True``
 introduces binary variables. For more information on the distance dependent unit
 cost of capital investment refer to :ref:`additional_features.distance_dependent_transport_capex`.
 

@@ -7,13 +7,13 @@ General
 .. autosummary::
    :toctree: generated
 
-   zen_garden.optimization_step
    zen_garden.optimization_workflow
+   zen_garden.optimization_step
 
-.. autosummary::
-   :toctree: modules
+.. toctree::
+   :maxdepth: 1
 
-   zen_garden.default_config
+   modules/zen_garden.default_config
 
 
 Elements

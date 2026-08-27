@@ -91,8 +91,8 @@ How to use scaling in ZEN-garden?
 ---------------------------------
 
 As described in, :ref:`configuration.configuration` in the :ref:`configuration.solver` section, scaling can 
-be activated by adjusting the ``solver`` section of the ``config.json`` file. The scaling configuration 
-can be chosen through the following three settings:
+be activated by adjusting the ``solver`` section of the ``config.yaml`` file. 
+The scaling configuration can be chosen through the following three settings:
 
 1. ``use_scaling``: Boolean, whether scaling should be used or not.
 2. ``scaling_algorithm``: List of strings, the scaling algorithms to be used. 
@@ -106,13 +106,12 @@ iterations of the geometric mean scaling followed by one iteration of the
 infinity norm algorithm as well as taking into account the right-hand side 
 vector:
 
-.. code-block::
+.. code-block:: yaml
 
-  "solver": {
-    "use_scaling": true,
-    "scaling_algorithm": ["geom", "geom","infnorm"],
-    "scaling_include_rhs": true
-  }
+  solver:
+    use_scaling: true
+    scaling_algorithm: [geom, geom, infnorm]
+    scaling_include_rhs: true
 
 The default configuration is three iterations of the geometric mean scaling
 algorithm with right-hand-side scaling included, i.e.

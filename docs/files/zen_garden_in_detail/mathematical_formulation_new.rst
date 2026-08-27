@@ -18,6 +18,8 @@ problem. For a complete list of symbols, see :ref:`notation.notation`.
    * constraint ``build`` docstrings are the source of truth for equations and
      implementation-specific conditions. Do not write equations into this file.
      If an equation changes, its docstring should be updated in the same change.
+   * The objective function definitions are documented here because they are implemented
+     as objective methods rather than constraint ``build`` methods.
    * :ref:`notation.notation` is the source of truth for sets, parameters,
      variables, symbols, time-step types, descriptions, and units. If a
      symbol or component description changes, its entry in the notation tables
@@ -31,6 +33,29 @@ Two objective functions are available:
 
 1. minimize cumulative net present cost
 2. minimize cumulative emissions
+
+
+Minimizing net present cost
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The net present cost of the energy system is minimized over the planning
+horizon:
+
+.. math::
+    :label: min_cost_new
+
+    \mathrm{min} \quad \sum_{y\in\mathcal{Y}} C^{\mathrm{NPC}}_y
+
+Minimizing total emissions
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The cumulative carbon emissions at the end of the planning horizon are
+minimized:
+
+.. math::
+    :label: min_emissions_new
+
+    \mathrm{min} \quad M^{\mathrm{cum}}_Y
 
 
 
@@ -347,6 +372,38 @@ Construction time
 
 Technology diffusion
 ^^^^^^^^^^^^^^^^^^^^
+
+The diffusion limit controls how quickly a technology can be deployed. It links
+the permitted capacity addition to the accumulated installation knowledge from
+earlier additions and existing capacity. Older knowledge is depreciated over
+time. It is active when the configured maximum diffusion rate is finite. This
+approach is based on
+`Leibowicz et al. (2016)
+<https://www.sciencedirect.com/science/article/pii/S0040162515001675>`_.
+
+The unbounded market share (``market_share_unbounded``), denoted by
+:math:`\chi` in the equations, is a separate mechanism. It provides an
+additional capacity-addition allowance based on the capacity available before
+the current addition for other technologies in the same technology class
+(excluding the target technology) with the same reference carrier. The
+allowance is calculated at the same location as the target technology. It is
+not knowledge spillover and does not use :math:`\omega`.
+
+Knowledge spillover means that experience gained by installing a technology at
+one location can also support its deployment at other locations. For finite
+spillover :math:`\omega`, a location-wise limit is imposed at every applicable
+location. Its permitted addition is based on the knowledge at that location
+plus :math:`\omega` times the knowledge at the other nodes. This limits the
+pace of deployment at each location. Transport technologies are indexed by
+edges and are excluded from node-to-node spillover.
+
+A global limit is imposed in addition. It constrains total additions using the
+no-spillover knowledge stock summed over all locations, while allowing those
+additions to be distributed across locations. If spillover is infinite
+(:math:`\omega=\infty`), only this global limit is created, corresponding to
+knowledge being freely transferable between locations. For storage
+technologies, the diffusion limits are applied independently to power and
+energy capacity.
 
 .. docstring_method:: zen_garden.elements.technology.constraints.TechnologyDiffusionLimitConstraint.build
    :sections: summary, formulation

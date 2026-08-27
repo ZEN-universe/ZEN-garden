@@ -26,9 +26,9 @@ live in two files:
     |   |--energy_system/...
     |   |--set_carriers/...
     |   |--set_technologies/...
-    |   `--system.json
+    |   `--system.yaml
     |
-    `--config.json
+    `--config.yaml
 
 Note that ``config.json`` sits next to the dataset folder, not inside it: one
 ``config.json`` can serve several datasets.
@@ -47,7 +47,7 @@ The complete list of available settings, with types and defaults, is in
 
 .. _t_configuration.config:
 
-Modifying config.json
+Modifying config.yaml
 =====================
 
 ``config.json`` contains two dictionaries, ``analysis`` and ``solver``. To

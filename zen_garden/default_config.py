@@ -31,6 +31,7 @@ Default values are overwritten by any changes specified in the input files
 """
 
 import json
+import warnings
 from collections.abc import ItemsView, KeysView, ValuesView
 from pathlib import Path
 from typing import Any, Literal, Optional, Union
@@ -86,6 +87,12 @@ class ConfigBase(BaseModel):
                 if path.suffix.lower() in {".yaml", ".yml"}:
                     data = yaml.safe_load(file)
                 else:
+                    warnings.warn(
+                        f"Loading JSON from '{path}' is deprecated. Convert the "
+                        "file to YAML.",
+                        DeprecationWarning,
+                        stacklevel=2,
+                    )
                     data = json.load(file)
         except (json.JSONDecodeError, yaml.YAMLError) as exc:
             raise ValueError(

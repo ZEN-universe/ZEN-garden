@@ -21,7 +21,7 @@ In general, adding new technologies and carriers involves the following steps:
 2.  Copy-paste an existing technology or carrier and rename it.
 3.  Modify the parameters of the new technology or carrier as desired.
 4.  Add new ``.csv`` files if necessary.
-5.  Add the new technology to the appropriate sets in ``system.json``. Carriers are
+5.  Add the new technology to the appropriate sets in ``system.yaml``. Carriers are
     automatically detected from the technologies.
 6.  Run the model with the new dataset.
 
@@ -104,7 +104,7 @@ following content:
 
 .. _t_add_techs_carriers.modify_system:
 
-Step 5: Add the new technology to system.json
+Step 5: Add the new technology to system.yaml
 =============================================
 
 Finally, we need to add the new technology ``biomass_boiler`` to the 

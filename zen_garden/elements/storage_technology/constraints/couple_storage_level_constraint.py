@@ -9,30 +9,33 @@ class CoupleStorageLevelConstraint(GenericConstraint):
         Formulation:
 
         .. math::
-            S^{\\mathrm{level}}_{h,n,\\tilde{t}} =
-            S^{\\mathrm{level}}_{h,n,\\tilde{t}-1,y}
-            (1-\\lambda^{\\mathrm{self}}_h)^{\\Delta \\tilde{t}_{\\tilde{t}}} +
-            (\\eta^{\\mathrm{ch}}_h F^{\\mathrm{ch}}_{h,n,\\sigma(\\tilde{t})} -
-            \\frac{F^{\\mathrm{dis}}_{h,n,\\sigma(\\tilde{t})}}
-            {\\eta^{\\mathrm{dis}}_h}
-            + q^{\\mathrm{in}}_{h,n,\\sigma(\\tilde{t})}
-            - F^{\\mathrm{spill}}_{h,n,\\sigma(\\tilde{t})})
-            \\sum^{\\Delta \\tilde{t}_{\\tilde{t}}-1}_{\\tilde{t}'=0}
-            (1-\\lambda^{\\mathrm{self}}_h)^{\\tilde{t}'}
+            \\begin{aligned}
+            S^{\\mathrm{level}}_{h,n,\\tilde{t}}
+            ={}&S^{\\mathrm{level}}_{h,n,\\tilde{t}-1}
+            (1-\\lambda^{\\mathrm{self}}_{h,n})^{\\Delta \\tilde{t}_{\\tilde{t}}} \\\\
+            &+\\left(\\eta^{\\mathrm{ch}}_{h,n,y}
+            F^{\\mathrm{ch}}_{h,n,\\sigma(\\tilde{t})}
+            -\\frac{F^{\\mathrm{dis}}_{h,n,\\sigma(\\tilde{t})}}
+            {\\eta^{\\mathrm{dis}}_{h,n,y}}
+            +q^{\\mathrm{in}}_{h,n,\\sigma(\\tilde{t})}
+            -F^{\\mathrm{spill}}_{h,n,\\sigma(\\tilde{t})}\\right)
+            \\sum_{\\tilde{t}'=0}^{\\Delta \\tilde{t}_{\\tilde{t}}-1}
+            (1-\\lambda^{\\mathrm{self}}_{h,n})^{\\tilde{t}'}.
+            \\end{aligned}
 
         Notation:
 
         :math:`S^{\\mathrm{level}}_{h,n,\\tilde{t}}`: storage level of storage
         technology :math:`h` at node :math:`n` in storage time step :math:`\\tilde{t}`
         of year :math:`y`
-        :math:`\\lambda^{\\mathrm{self}}_h`: self-discharge rate of storage
-        technology :math:`h`
+        :math:`\\lambda^{\\mathrm{self}}_{h,n}`: self-discharge rate of storage
+        technology :math:`h` at node :math:`n`
         :math:`\\Delta \\tilde{t}_{\\tilde{t}}`: duration of storage time step of
         technology :math:`h`
-        :math:`\\eta^{\\mathrm{ch}}_h`: efficiency during charging of storage
-        technology :math:`h`
-        :math:`\\eta^{\\mathrm{dis}}_h`: efficiency during discharging of storage
-        technology :math:`h`
+        :math:`\\eta^{\\mathrm{ch}}_{h,n,y}`: efficiency during charging of storage
+        technology :math:`h` at node :math:`n` in year :math:`y`
+        :math:`\\eta^{\\mathrm{dis}}_{h,n,y}`: efficiency during discharging of storage
+        technology :math:`h` at node :math:`n` in year :math:`y`
         :math:`F^{\\mathrm{ch}}_{h,n,\\sigma(\\tilde{t})}`: charge flow into storage
         technology :math:`h` at node :math:`n` and time
         :math:`\\sigma(\\tilde{t})` in year :math:`y`

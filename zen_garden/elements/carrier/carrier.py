@@ -1,8 +1,13 @@
 """Class defining a generic energy carrier."""
 
 import logging
+from typing import ClassVar
 
+from zen_garden.elements.carrier.parameters import CARRIER_PARAMETERS
+from zen_garden.elements.carrier.variables import CARRIER_VARIABLES
 from zen_garden.elements.element import Element
+from zen_garden.topology.generic_parameter import GenericParameter
+from zen_garden.topology.generic_variable import GenericVariable
 
 logger = logging.getLogger(__name__)
 
@@ -11,68 +16,11 @@ class Carrier(Element):
     """Class defining a generic energy carrier."""
 
     # set label
+    name = "Carrier"
     label = "set_carriers"
     # empty list of elements
     list_of_elements: list[str] = []
-
-    def store_input_data(self):
-        """Retrieves and stores input data for element as attributes. Each Child class
-        overwrites method to store different attributes.
-        """
-        # set attributes of carrier
-        # raw import
-        self.raw_time_series["demand"] = self.data_input.extract_input_data(
-            "demand",
-            index_sets=["set_nodes", "set_hours"],
-            unit_category={"energy_quantity": 1, "time": -1},
-        )
-        self.raw_time_series["availability_import"] = (
-            self.data_input.extract_input_data(
-                "availability_import",
-                index_sets=["set_nodes", "set_hours"],
-                unit_category={"energy_quantity": 1, "time": -1},
-            )
-        )
-        self.raw_time_series["availability_export"] = (
-            self.data_input.extract_input_data(
-                "availability_export",
-                index_sets=["set_nodes", "set_hours"],
-                unit_category={"energy_quantity": 1, "time": -1},
-            )
-        )
-        self.raw_time_series["price_export"] = self.data_input.extract_input_data(
-            "price_export",
-            index_sets=["set_nodes", "set_hours"],
-            unit_category={"money": 1, "energy_quantity": -1},
-        )
-        self.raw_time_series["price_import"] = self.data_input.extract_input_data(
-            "price_import",
-            index_sets=["set_nodes", "set_hours"],
-            unit_category={"money": 1, "energy_quantity": -1},
-        )
-        # non-time series input data
-        self.availability_import_yearly = self.data_input.extract_input_data(
-            "availability_import_yearly",
-            index_sets=["set_nodes", "set_years"],
-            unit_category={"energy_quantity": 1},
-        )
-        self.availability_export_yearly = self.data_input.extract_input_data(
-            "availability_export_yearly",
-            index_sets=["set_nodes", "set_years"],
-            unit_category={"energy_quantity": 1},
-        )
-        self.carbon_intensity_carrier_import = self.data_input.extract_input_data(
-            "carbon_intensity_carrier_import",
-            index_sets=["set_nodes", "set_years"],
-            unit_category={"emissions": 1, "energy_quantity": -1},
-        )
-        self.carbon_intensity_carrier_export = self.data_input.extract_input_data(
-            "carbon_intensity_carrier_export",
-            index_sets=["set_nodes", "set_years"],
-            unit_category={"emissions": 1, "energy_quantity": -1},
-        )
-        self.price_shed_demand = self.data_input.extract_input_data(
-            "price_shed_demand",
-            index_sets=[],
-            unit_category={"money": 1, "energy_quantity": -1},
-        )
+    own_parameters: ClassVar[list[type[GenericParameter]]] = CARRIER_PARAMETERS
+    # Todo: Add the constraints here?
+    parameters: ClassVar[list[type[GenericParameter]]] = CARRIER_PARAMETERS
+    variables: ClassVar[list[type[GenericVariable]]] = CARRIER_VARIABLES

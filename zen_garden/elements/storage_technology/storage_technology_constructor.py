@@ -18,6 +18,8 @@ logger = logging.getLogger(__name__)
 class StorageTechnologyConstructor(ModelConstructor):
     element_class = StorageTechnology
     constraints = STORAGE_TECHNOLOGY_CONSTRAINTS
+    parameters = StorageTechnology.own_parameters
+    variables = StorageTechnology.variables
 
     @override
     def has_elements(self) -> bool:
@@ -27,73 +29,6 @@ class StorageTechnologyConstructor(ModelConstructor):
         :return: True if there are elements, False otherwise
         """
         return True
-
-    @override
-    def construct_sets(self):
-        logger.info("Constructing sets for StorageTechnology")
-
-    @override
-    def construct_params(self):
-        logger.info("Constructing parameters for StorageTechnology")
-        # energy to power ratio
-        self.add_parameter(
-            name="energy_to_power_ratio_min",
-            index_names=["set_storage_technologies"],
-            doc="power to energy ratio for storage technologies - lower bound",
-        )
-        self.add_parameter(
-            name="energy_to_power_ratio_max",
-            index_names=["set_storage_technologies"],
-            doc="power to energy ratio for storage technologies - upper bound",
-        )
-        # efficiency charge
-        self.add_parameter(
-            name="efficiency_charge",
-            index_names=[
-                "set_storage_technologies",
-                "set_nodes",
-                "set_years",
-            ],
-            doc="efficiency during charging for storage technologies",
-        )
-        # efficiency discharge
-        self.add_parameter(
-            name="efficiency_discharge",
-            index_names=[
-                "set_storage_technologies",
-                "set_nodes",
-                "set_years",
-            ],
-            doc="efficiency during discharging for storage technologies",
-        )
-        #  flow_storage_inflow
-        self.add_parameter(
-            name="flow_storage_inflow",
-            index_names=[
-                "set_storage_technologies",
-                "set_nodes",
-                "set_time_steps_operation",
-            ],
-            doc="energy inflow in storage technologies",
-        )
-        # self discharge
-        self.add_parameter(
-            name="self_discharge",
-            index_names=["set_storage_technologies", "set_nodes"],
-            doc="self discharge of storage technologies",
-        )
-        # capex specific
-        self.add_parameter(
-            name="capex_specific_storage",
-            index_names=[
-                "set_storage_technologies",
-                "set_capacity_types",
-                "set_nodes",
-                "set_years",
-            ],
-            capacity_types=True,
-            doc="specific capex of storage technologies",
-        )
 
     @override
     def construct_vars(self):
@@ -130,51 +65,34 @@ class StorageTechnologyConstructor(ModelConstructor):
             )
             return np.stack([lower, upper], axis=-1)
 
-        # flow of carrier on node into storage
-        index_values, index_names = self.create_custom_set(
-            ["set_storage_technologies", "set_nodes", "set_time_steps_operation"],
-        )
-        bounds = flow_storage_bounds(index_values, index_names)
-        self.zen_model.add_variable(
-            name="flow_storage_charge",
-            index_sets=(index_values, index_names),
-            bounds=bounds,
-            doc="carrier flow into storage technology on node i and time t",
-            unit_category={"energy_quantity": 1, "time": -1},
-        )
-        # flow of carrier on node out of storage
-        self.zen_model.add_variable(
-            name="flow_storage_discharge",
-            index_sets=(index_values, index_names),
-            bounds=bounds,
-            doc="carrier flow out of storage technology on node i and time t",
-            unit_category={"energy_quantity": 1, "time": -1},
-        )
-        # storage level
-        self.zen_model.add_variable(
-            name="storage_level",
-            index_sets=self.create_custom_set(
-                ["set_storage_technologies", "set_nodes", "set_time_steps_storage"],
-            ),
-            bounds=(0, np.inf),
-            doc="storage level of storage technology on node in each storage time step",
-            unit_category={"energy_quantity": 1},
-        )
-        # energy spillage
-        self.zen_model.add_variable(
-            name="flow_storage_spillage",
-            index_sets=(index_values, index_names),
-            bounds=(0, np.inf),
-            doc="storage spillage of storage technology on node i in each "
-            "storage time step",
-            unit_category={"energy_quantity": 1, "time": -1},
-        )
-        # charge discharge binary
-        if self.config.system.storage_charge_discharge_binary:
+        for variable in self.variables:
+            if (
+                variable.name == "charge_storage_binary"
+                and not self.config.system.storage_charge_discharge_binary
+            ):
+                continue
+
+            if variable.name in ["flow_storage_charge", "flow_storage_discharge"]:
+                # Exceptional bounds, masks or indices
+                index_values, index_names = self.create_custom_set(
+                    [
+                        "set_storage_technologies",
+                        "set_nodes",
+                        "set_time_steps_operation",
+                    ],
+                )
+                index_sets = index_values, index_names
+                bounds = flow_storage_bounds(index_values, index_names)
+            else:
+                # Standard behavior
+                index_sets = self.create_custom_set(variable.indices)
+                bounds = variable.get_bounds()
+
             self.zen_model.add_variable(
-                name="charge_storage_binary",
-                index_sets=(index_values, index_names),
-                binary=True,
-                doc="charge binary for storage technology",
-                unit_category=None,
+                name=variable.name,
+                index_sets=index_sets,
+                binary=variable.binary,
+                bounds=bounds,
+                doc=variable.doc,
+                unit_category=variable.unit_category,
             )

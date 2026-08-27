@@ -23,6 +23,7 @@ from zen_garden.preprocess.unit_handling import UnitHandling
 from zen_garden.services.dataset_path_resolver import DatasetPathResolver
 from zen_garden.services.element_registry import ElementRegistry
 from zen_garden.services.input_repository import InputRepository
+from zen_garden.services.parameter_loading_service import ParameterLoadingService
 from zen_garden.services.scenario_dict import ScenarioDict
 from zen_garden.services.service_container import ServiceContainer
 from zen_garden.types import YearSpecificTs
@@ -133,8 +134,11 @@ class OptimizationWorkflow:
         # check if all elements from the scenario_dict are in the model
         scenario_dict.check_if_all_elements_in_model(element_registry)
 
-        # store input data into elements
-        self._store_input_data(self.energy_system, element_registry)
+        # Store all input parameters using one schema-wide dependency graph.
+        parameter_loading_service = self.service_container.build_and_register(
+            "parameter_loading_service", ParameterLoadingService
+        )
+        parameter_loading_service.load_parameters()
 
         # conduct consistency checks of input units
         unit_handling.consistency_checks_input_units(
@@ -145,19 +149,6 @@ class OptimizationWorkflow:
         self.service_container.build_and_register(
             "time_series_aggregation", TimeSeriesAggregation
         )
-
-    def _store_input_data(
-        self, energy_system: "EnergySystem", element_registry: "ElementRegistry"
-    ):
-        """Read the input and conducts the time series aggregation."""
-        logger.info("\n--- Read input data of elements --- \n")
-        energy_system.store_input_data()
-        for element in element_registry.all_elements():
-            element_class = [
-                k for k, v in ELEMENT_TYPE_CLASSES.items() if v == element.__class__
-            ][0]
-            logger.info(f"Create {element_class} {element.name}")
-            element.store_input_data()
 
     def run_steps(
         self,

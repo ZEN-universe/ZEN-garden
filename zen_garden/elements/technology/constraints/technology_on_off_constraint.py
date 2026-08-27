@@ -20,12 +20,15 @@ class TechnologyOnOffConstraint(GenericConstraint):
         Formulation:
 
         .. math::
-             \\ell^{\\mathrm{min}}_{h,p,t}\\widehat{K}_{h,p,t}\\leq
-             F^{\\mathrm{act}}_{h,p,t} \\leq \\widehat{K}_{h,p,t}
-             0 \\leq \\widehat{K}_{h,p,t}
-             \\leq \\overline{k}_{h,p,y} z^{\\mathrm{on}}_{h,p,t}
-             K_{h,p,y} - \\overline{k}_{h,p,y}(1-z^{\\mathrm{on}}_{h,p,t})
-             \\leq \\widehat{K}_{h,p,t} \\leq K_{h,p,y}
+            \\begin{aligned}
+            \\ell^{\\mathrm{min}}_{h,p,t}\\widehat{K}_{h,p,t}
+            &\\leq F^{\\mathrm{act}}_{h,p,t}
+            \\leq \\widehat{K}_{h,p,t},\\\\
+            0 &\\leq \\widehat{K}_{h,p,t}
+            \\leq \\overline{k}_{h,p,y}z^{\\mathrm{on}}_{h,p,t},\\\\
+            K_{h,p,y}-\\overline{k}_{h,p,y}(1-z^{\\mathrm{on}}_{h,p,t})
+            &\\leq \\widehat{K}_{h,p,t}\\leq K_{h,p,y}.
+            \\end{aligned}
 
         Notation:
 

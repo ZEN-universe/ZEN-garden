@@ -78,7 +78,6 @@ For example, if you want to add a parameter for the yearly import availability o
     self.availability_import_yearly = self.data_input.extract_input_data(
         "availability_import_yearly",
         index_sets=["set_nodes", "set_years"],
-        time_steps="set_years",
         unit_category={"energy_quantity": 1}
     )
 
@@ -92,8 +91,6 @@ First, the name of the parameter is defined, in this case ``availability_import_
 Then, the ``index_sets``, i.e., the sets that the parameter is indexed by, are defined.
 In this case, the parameter is indexed by ``set_nodes`` and ``set_years``
 (which are the years of the optimization problem).
-If a time step type is specified, the ``time_steps`` parameter is set
-to the set of time steps that the parameter is defined for.
 
 Finally, the ``unit_category`` parameter is set to the unit category of the parameter,
 which is used for unit conversion and validation.

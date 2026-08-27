@@ -1,12 +1,23 @@
 """Class defining conversion technologies."""
 
 import logging
-from typing import cast
+from typing import ClassVar, cast
 
-import pandas as pd
 from typing_extensions import override
 
+from zen_garden.elements.conversion_technology.parameters import (
+    CONVERSION_TECHNOLOGY_PARAMETERS,
+)
+from zen_garden.elements.conversion_technology.sets import (
+    CONVERSION_TECHNOLOGY_SETS,
+)
+from zen_garden.elements.conversion_technology.variables import (
+    CONVERSION_TECHNOLOGY_VARIABLES,
+)
 from zen_garden.elements.technology import Technology
+from zen_garden.topology.generic_parameter import GenericParameter
+from zen_garden.topology.generic_set import GenericSet
+from zen_garden.topology.generic_variable import GenericVariable
 
 logger = logging.getLogger(__name__)
 
@@ -17,6 +28,12 @@ class ConversionTechnology(Technology):
     # set label
     label = "set_conversion_technologies"
     location_type = "set_nodes"
+    # Todo: Add the constraints here?
+    own_parameters: ClassVar[list[type[GenericParameter]]] = (
+        CONVERSION_TECHNOLOGY_PARAMETERS
+    )
+    variables: ClassVar[list[type[GenericVariable]]] = CONVERSION_TECHNOLOGY_VARIABLES
+    own_sets: ClassVar[list[type[GenericSet]]] = CONVERSION_TECHNOLOGY_SETS
 
     @override
     def _initialize(self):
@@ -41,77 +58,6 @@ class ConversionTechnology(Technology):
             reference_carrier=self.reference_carrier,
             name=self.name,
         )
-
-    def store_input_data(self):
-        """Retrieves and stores input data for element as attributes.
-
-        Each Child class overwrites method to store different attributes.
-        """
-        # get attributes from class <Technology>
-        super().store_input_data()
-        # get conversion efficiency and capex
-        self.get_conversion_factor()
-        self.capex_specific_conversion = self.data_input.extract_input_data(
-            "capex_specific_conversion",
-            index_sets=["set_nodes", "set_years"],
-            unit_category={"money": 1, "energy_quantity": -1, "time": 1},
-        )
-        self.opex_specific_fixed = self.data_input.extract_input_data(
-            "opex_specific_fixed",
-            index_sets=["set_nodes", "set_years"],
-            unit_category={"money": 1, "energy_quantity": -1, "time": 1},
-        )
-        self.min_full_load_hours_fraction = self.data_input.extract_input_data(
-            "min_full_load_hours_fraction",
-            index_sets=["set_nodes", "set_years"],
-            unit_category={},
-        )
-
-        self.convert_to_fraction_of_capex()
-
-    def get_conversion_factor(self):
-        """Retrieves and stores conversion_factor."""
-        dependent_carrier = list(
-            set(self.input_carrier + self.output_carrier).difference(
-                self.reference_carrier
-            )
-        )
-        if not dependent_carrier:
-            self.raw_time_series["conversion_factor"] = None
-        else:
-            index_sets = ["set_nodes", "set_hours"]
-            cf_dict = {}
-            for carrier in dependent_carrier:
-                cf_dict[carrier] = self.data_input.extract_input_data(
-                    "conversion_factor",
-                    index_sets=index_sets,
-                    unit_category=None,
-                    subelement=carrier,
-                )
-            cf_dict = pd.DataFrame.from_dict(cf_dict)
-            cf_dict.columns.name = "carrier"
-            cf_dict = cf_dict.stack()
-            conversion_factor_levels = [cf_dict.index.names[-1]] + cf_dict.index.names[
-                :-1
-            ]
-            level_positions = [
-                cf_dict.index.names.index(level_name)
-                for level_name in conversion_factor_levels
-            ]
-            cf_dict = cf_dict.reorder_levels(level_positions)
-            # extract yearly variation
-            self.data_input.extract_yearly_variation("conversion_factor", index_sets)
-            self.raw_time_series["conversion_factor"] = cf_dict
-
-    def convert_to_fraction_of_capex(self):
-        """This method retrieves the total capex and converts it to annualized capex."""
-
-        # annualize cost_capex_overnight
-        fraction_year = self.calculate_fraction_of_year()
-        self.opex_specific_fixed = self.opex_specific_fixed * fraction_year
-        self.capex_specific_conversion = self.capex_specific_conversion * fraction_year
-        # calculate capex of existing capacity
-        self.capex_capacity_existing = self.calculate_capex_of_capacities_existing()
 
     def calculate_capex_of_single_capacity(self, capacity, index, **kwargs):
         """This method calculates the annualized capex of a single existing capacity.

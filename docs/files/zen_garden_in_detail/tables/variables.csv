@@ -13,7 +13,6 @@ Variable Name;Symbol;Time Step Type;Description;Unit Category
 ``cost_total``;:math:`C^{\mathrm{total}}_{y}`;``set_years``;total cost of energy system; {"money": 1}
 ``capacity_addition``;:math:`\Delta K_{h,p,y}`;``set_years``;size of built technology h (invested capacity after construction) at location p and period y;"{""energy_quantity"": 1, ""time"": -1}"
 ``capacity_investment``;:math:`\Delta K^{\mathrm{inv}}_{h,p,y}`;``set_years``;size of invested technology h at location p and period y;"{""energy_quantity"": 1, ""time"": -1}"
-``capacity_approximation``;:math:`\Delta \widehat{K}_{h,p,y}`;``set_years``;auxiliary capacity-addition variable used by the minimum capacity addition constraint;{"energy_quantity": 1, "time": -1}
 ``flow_storage_charge``;:math:`F^{\mathrm{ch}}_{h,n,t}`;``set_time_steps_operation``;carrier flow into a storage technology;{"energy_quantity": 1, "time": -1}
 ``flow_conversion_input``;:math:`F^{\mathrm{conv,in}}_{h,c^{\mathrm{in}},n,t}`;``set_time_steps_operation``;Carrier input of conversion technologies;{"energy_quantity": 1, "time": -1}
 ``flow_conversion_output``;:math:`F^{\mathrm{conv,out}}_{h,c^{\mathrm{out}},n,t}`;``set_time_steps_operation``;Carrier output of conversion technologies;{"energy_quantity": 1, "time": -1}

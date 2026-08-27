@@ -8,7 +8,7 @@ import xarray as xr
 
 from zen_garden.model.components.component import Component
 from zen_garden.model.components.set_registry import SetRegistry
-from zen_garden.model.components.zen_set import ZenSet
+from zen_garden.model.components.zen_set import BaseSet
 
 
 class DictParameter(object):
@@ -47,7 +47,7 @@ class Parameter(Component):
         self,
         name: str,
         doc: str,
-        data: ZenSet | tuple | list | xr.DataArray,
+        data: BaseSet | tuple | list | xr.DataArray,
         dict_of_units: dict | None = None,
     ):
         """Initialization of a parameter.

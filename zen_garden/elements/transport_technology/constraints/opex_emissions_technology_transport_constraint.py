@@ -9,25 +9,26 @@ class OpexEmissionsTechnologyTransportConstraint(GenericConstraint):
         Formulation:
 
         .. math::
-            C^{\\mathrm{op,var}}_{h,e,t} = \\kappa^{\\mathrm{op,var}}_{h,y}
-            F^{\mathrm{trans}}_{h,e,t}
-
-        .. math::
-            M^{\\mathrm{tech}}_{h,e,t} =
-            \\varepsilon^{\\mathrm{op}}_hF^{\\mathrm{trans}}_{h,e,t}
+            \\begin{aligned}
+            C^{\\mathrm{op,var}}_{h,e,t}
+            &= \\kappa^{\\mathrm{op,var}}_{h,e,t}F^{\\\\mathrm{trans}}_{h,e,t},\\\\
+            M^{\\mathrm{tech}}_{h,e,t}
+            &= \\varepsilon^{\\mathrm{op}}_{h,e}F^{\\\\mathrm{trans}}_{h,e,t}.
+            \\end{aligned}
 
         Notation:
 
         :math:`C^{\\mathrm{op,var}}_{h,e,t}`: variable OPEX of transport
         technology :math:`h` on edge :math:`e` at time :math:`t` in year :math:`y`
-        :math:`\\kappa^{\\mathrm{op,var}}_{h,y}`: specific variable OPEX of
+        :math:`\\kappa^{\\mathrm{op,var}}_{h,e,t}`: specific variable OPEX of
         transport technology
         :math:`h` in year :math:`y`
-        :math:`F^{\mathrm{trans}}_{h,e,t}`: carrier flow through transport
+        :math:`F^{\\mathrm{trans}}_{h,e,t}`: carrier flow through transport
         technology :math:`h` on edge :math:`e` at time :math:`t` in year :math:`y`
         :math:`M^{\\mathrm{tech}}_{h,e,t}`: carbon emissions from transport
         technology :math:`h` on edge :math:`e` at time :math:`t` in year :math:`y`
-        :math:`\\varepsilon^{\\mathrm{op}}_h`: carbon intensity of transport technology
+        :math:`\\varepsilon^{\\mathrm{op}}_{h,e}`: carbon intensity of transport
+        technology
         """
         techs = self.zen_model.sets["set_transport_technologies"]
         if len(techs) == 0:
@@ -49,7 +50,7 @@ class OpexEmissionsTechnologyTransportConstraint(GenericConstraint):
         lhs_emissions = self.zen_model.variables["carbon_emissions_technology"].loc[
             techs, edges, :
         ] - (
-            self.zen_model.parameters.carbon_intensity_technology
+            self.zen_model.expressions["transport_carbon_intensity_effective"]
             * self.zen_model.variables["flow_transport"].rename(
                 {
                     "set_transport_technologies": "set_technologies",
