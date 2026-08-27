@@ -34,7 +34,7 @@ class TestVariableInheritance:
 
     def test_all_variables_are_subclasses_of_generic_variable(self):
         """Test that all variables inherit from GenericVariable."""
-        for element_name, var_list in ALL_VARIABLE_LISTS.items():
+        for var_list in ALL_VARIABLE_LISTS.values():
             for variable_class in var_list:
                 assert issubclass(
                     variable_class, GenericVariable

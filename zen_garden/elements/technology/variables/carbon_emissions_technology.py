@@ -6,7 +6,10 @@ class CarbonEmissionsTechnology(GenericVariable):
 
     name = "carbon_emissions_technology"
     indices = ["set_technologies", "set_location", "set_time_steps_operation"]
-    doc = "Variable for carbon emissions for operating technology at location l and time t"
+    doc = (
+        "Variable for carbon emissions for operating technology at location l and "
+        "time t"
+    )
     unit_category = {"emissions": 1, "time": -1}
 
     @classmethod

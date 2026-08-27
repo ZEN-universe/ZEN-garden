@@ -6,7 +6,10 @@ class CarbonEmissionsCumulative(GenericVariable):
 
     name = "carbon_emissions_cumulative"
     indices = ["set_years"]
-    doc = "Variable for cumulative carbon emissions of energy system over time for each year"
+    doc = (
+        "Variable for cumulative carbon emissions of energy system over time for each "
+        "year"
+    )
     unit_category = {"emissions": 1}
 
     @classmethod

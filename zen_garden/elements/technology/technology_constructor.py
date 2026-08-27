@@ -162,12 +162,13 @@ class TechnologyConstructor(ModelConstructor):
                 bounds = capacity_bounds
                 mask = None
             elif variable.name in ["technology_installation"]:
-                # Note: binary variables are written into the lp file by linopy even if they
-                # are not relevant for the optimization, which makes all problems MIPs.
-                # Therefore, we only add binary variables, if really necessary. Gurobi can
-                # handle this by noting that the binary variables are not part of the model,
-                # however, only if there are no binary variables at all, it is possible to get
-                # the dual values of the constraints.
+                # Note: binary variables are written into the lp file by linopy even
+                # if they are not relevant for the optimization, which makes all
+                # problems MIPs. Therefore, we only add binary variables if really
+                # necessary. Gurobi can handle this by noting that the binary
+                # variables are not part of the model. However, only if there are no
+                # binary variables at all is it possible to get the dual values of
+                # the constraints.
                 index_sets = self.create_custom_set(variable.indices)
                 bounds = variable.get_bounds()
                 mask = self._technology_installation_mask()

@@ -8,7 +8,10 @@ class CostCapexYearlyTotal(GenericVariable):
 
     name = "cost_capex_yearly_total"
     indices = ["set_years"]
-    doc = "Variable for total capex for installing all technologies in all locations at all times"
+    doc = (
+        "Variable for total capex for installing all technologies in all locations at "
+        "all times"
+    )
     unit_category = {"money": 1}
 
     @classmethod

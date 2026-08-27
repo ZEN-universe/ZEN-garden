@@ -8,7 +8,10 @@ class FlowStorageSpillage(GenericVariable):
 
     name = "flow_storage_spillage"
     indices = ["set_storage_technologies", "set_nodes", "set_time_steps_operation"]
-    doc = "Variable for storage spillage of storage technology on node i in each storage time step"
+    doc = (
+        "Variable for storage spillage of storage technology on node i in each "
+        "storage time step"
+    )
     unit_category = {"energy_quantity": 1, "time": -1}
 
     @classmethod

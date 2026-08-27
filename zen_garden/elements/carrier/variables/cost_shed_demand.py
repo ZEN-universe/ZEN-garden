@@ -4,7 +4,7 @@ from zen_garden.topology.generic_variable import GenericVariable
 
 
 class CostShedDemand(GenericVariable):
-    """Variable for cost of shedding demand of carrier"""
+    """Variable for cost of shedding demand of carrier."""
 
     name = "cost_shed_demand"
     indices = ["set_carriers", "set_nodes", "set_time_steps_operation"]
