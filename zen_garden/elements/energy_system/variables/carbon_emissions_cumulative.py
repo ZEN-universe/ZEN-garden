@@ -13,5 +13,5 @@ class CarbonEmissionsCumulative(GenericVariable):
     unit_category = {"emissions": 1}
 
     @classmethod
-    def get_bounds(cls):
+    def get_bounds(cls, model_constructor, index_sets):
         return None

@@ -12,5 +12,5 @@ class CostCapexOvernight(GenericVariable):
     unit_category = {"money": 1}
 
     @classmethod
-    def get_bounds(cls):
+    def get_bounds(cls, model_constructor, index_sets):
         return 0, np.inf

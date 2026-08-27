@@ -4,12 +4,11 @@ Each subclass builds the sets, parameters, variables and constraints for one
 element type. It declares its :attr:`~ModelConstructor.element_class` (and, when
 needed, ``constraints``); the parameter/variable/set declarations are derived
 from that element class in :meth:`~ModelConstructor.__init_subclass__`. Only
-``construct_vars`` is abstract; the other ``construct_*`` hooks have sensible
-defaults.
+All ``construct_*`` hooks have sensible defaults; variable-specific behavior
+is implemented by the variable classes themselves.
 """
 
 import logging
-from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, ClassVar
 
 import numpy as np
@@ -33,7 +32,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class ModelConstructor(ABC):
+class ModelConstructor:
     """Builds the model components (sets, parameters, variables, constraints).
 
     There is one constructor instance per element *type*, whereas there is one
@@ -131,10 +130,27 @@ class ModelConstructor(ABC):
                 set_time_steps=parameter.set_time_steps,
             )
 
-    @abstractmethod
     def construct_vars(self):
         """Constructs the Vars of this class."""
-        pass
+        logger.info(f"Constructing variables for {self.element_class.__name__}")
+
+        for variable in self.variables:
+            if not variable.should_construct(self):
+                continue
+            index_sets = variable.get_index_sets(self)
+            mask = variable.get_mask(self, index_sets)
+            if mask is not None and not mask.any():
+                continue
+            self.zen_model.add_variable(
+                name=variable.name,
+                index_sets=index_sets,
+                integer=variable.integer,
+                binary=variable.binary,
+                bounds=variable.get_bounds(self, index_sets),
+                mask=mask,
+                doc=variable.doc,
+                unit_category=variable.unit_category,
+            )
 
     def construct_expressions(self):  # noqa: B027
         """Construct reusable expressions from parameters and variables."""

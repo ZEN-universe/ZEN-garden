@@ -1,7 +1,9 @@
-from zen_garden.topology.generic_variable import GenericVariable
+from zen_garden.elements.conversion_technology.variables.flow_conversion_input import (
+    FlowConversionInput,
+)
 
 
-class FlowConversionOutput(GenericVariable):
+class FlowConversionOutput(FlowConversionInput):
     """Variable for carrier output of conversion technologies."""
 
     name = "flow_conversion_output"

@@ -1,7 +1,9 @@
-from zen_garden.topology.generic_variable import GenericVariable
+from zen_garden.elements.storage_technology.variables.flow_storage_charge import (
+    FlowStorageCharge,
+)
 
 
-class FlowStorageDischarge(GenericVariable):
+class FlowStorageDischarge(FlowStorageCharge):
     """Variable for carrier flow out of storage technology."""
 
     name = "flow_storage_discharge"

@@ -15,5 +15,5 @@ class FlowStorageSpillage(GenericVariable):
     unit_category = {"energy_quantity": 1, "time": -1}
 
     @classmethod
-    def get_bounds(cls):
+    def get_bounds(cls, model_constructor, index_sets):
         return 0, np.inf

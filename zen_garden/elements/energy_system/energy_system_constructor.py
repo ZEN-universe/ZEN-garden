@@ -19,39 +19,6 @@ class EnergySystemConstructor(ModelConstructor):
     element_class = EnergySystem
 
     @override
-    def construct_vars(self):
-        """Constructs the pe.Vars of the class <EnergySystem>."""
-        logger.info("Constructing variables for EnergySystem")
-
-        for variable in self.variables:
-
-            if variable.name in [
-                "carbon_emissions_annual",
-                "carbon_emissions_cumulative",
-                "carbon_emissions_budget_overshoot",
-                "carbon_emissions_annual_overshoot",
-                "cost_carbon_emissions_total",
-                "cost_total",
-                "net_present_cost",
-            ]:
-                # Exceptional bounds, masks or indices
-                index_sets = self.zen_model.sets["set_years"]
-                bounds = variable.get_bounds()
-            else:
-                # Standard behavior
-                index_sets = self.create_custom_set(variable.indices)
-                bounds = variable.get_bounds()
-
-            self.zen_model.add_variable(
-                name=variable.name,
-                index_sets=index_sets,
-                binary=variable.binary,
-                bounds=bounds,
-                doc=variable.doc,
-                unit_category=variable.unit_category,
-            )
-
-    @override
     def construct_objective(self):
         """Constructs the pe.Objective of the class <EnergySystem>."""
         logger.info("Constructing objective for EnergySystem")
