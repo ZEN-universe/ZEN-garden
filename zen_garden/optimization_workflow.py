@@ -10,7 +10,6 @@ solve the optimization problem.
 import copy
 import logging
 from pathlib import Path
-from typing import TYPE_CHECKING
 
 from zen_garden.model.time_steps import TimeStepsDicts
 from zen_garden.model.zen_model import ZenModel
@@ -26,9 +25,7 @@ from zen_garden.services.scenario_dict import ScenarioDict
 from zen_garden.services.service_container import ServiceContainer
 from zen_garden.topology.model_schema import ModelSchema
 from zen_garden.types import YearSpecificTs
-
-if TYPE_CHECKING:
-    from zen_garden.utils import InputDataChecks
+from zen_garden.utils.input_data_checks import InputDataChecks
 
 logger = logging.getLogger(__name__)
 
@@ -50,20 +47,17 @@ class OptimizationWorkflow:
         self,
         model_schema: ModelSchema,
         init_scenario_dict: dict,
-        input_data_checks: "InputDataChecks",
     ):
         """Setup optimization of the energy system.
 
         This function sets up the optimization process for the energy system
-        using the provided configuration, scenario data, and input data checks.
+        using the provided model schema and scenario data.
 
         Args:
-            config (Config): Config object used to extract the analysis, system,
-                and solver dictionaries.
-            scenario_dict (dict): Dictionary defining the scenario, including
+            model_schema (ModelSchema): Schema describing the optimization
+                problem, exposing the canonical configuration.
+            init_scenario_dict (dict): Dictionary defining the scenario, including
                 data such as resources, demand, etc.
-            input_data_checks (InputDataChecks): Input data checks object to
-                verify the integrity of the input data.
 
         """
         self.service_container = ServiceContainer("service_container")
@@ -84,7 +78,11 @@ class OptimizationWorkflow:
         )
         self.service_container.register("scenario_dict", scenario_dict)
 
-        input_data_checks.model_schema = self.model_schema
+        # Input data checks validate the dataset's folder structure and technology
+        # data, and are registered for later injection into elements.
+        # NOTE: created here (rather than passed in) because they depend on the
+        # deep-copied model schema and the dataset path resolver built above.
+        input_data_checks = InputDataChecks(model_schema=self.model_schema)
         input_data_checks.dataset_path_resolver = self.dataset_path_resolver
         # check if input data exists
         input_data_checks.check_primary_folder_structure()

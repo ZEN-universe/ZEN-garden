@@ -9,7 +9,6 @@ from zen_garden.default_config import Config
 from zen_garden.optimization_workflow import OptimizationWorkflow
 from zen_garden.plugin_system.loader import register_plugins
 from zen_garden.topology.model_schema import ModelSchema
-from zen_garden.utils.input_data_checks import InputDataChecks
 from zen_garden.utils.scenario_utils import ScenarioUtils
 from zen_garden.utils.string_utils import StringUtils
 from zen_garden.utils.utils import setup_logger
@@ -78,6 +77,7 @@ def run(
     config_obj = Config.from_file(
         config, dataset_path=dataset, folder_output=folder_output
     )
+    config_obj.validate_configurations()
 
     # Initialize the model schema. The schema is a blueprint of the
     # optimization problem, including a list of all elements and their parameters,
@@ -91,21 +91,13 @@ def run(
     register_plugins(config_obj.plugins)
     logging.info(f"Optimizing for dataset {config_obj.analysis.dataset}")
 
-    ### SYSTEM CONFIGURATION
-    input_data_checks = InputDataChecks(model_schema=model_schema)
-    input_data_checks.check_dataset()
-    input_data_checks.check_technology_selections()
-    input_data_checks.check_year_definitions()
-
     ## ITERATE THROUGH SCENARIOS
     scenarios, model_name = prepare_scenarios(config_obj, job_index)
     optimization_workflow = None
     for scenario, scenario_dict in scenarios:
         # FORMULATE THE OPTIMIZATION PROBLEM
         # add the scenario_dict and read input data
-        optimization_workflow = OptimizationWorkflow(
-            model_schema, scenario_dict, input_data_checks
-        )
+        optimization_workflow = OptimizationWorkflow(model_schema, scenario_dict)
         optimization_workflow.run_steps(scenario, model_name, no_solve)
 
     logger.info("\n--- Optimization finished ---")
