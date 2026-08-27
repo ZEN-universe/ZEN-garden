@@ -33,7 +33,8 @@ investments with separate capacity- and distance-dependent cost terms.
 If the user sets the parameter ``min_load`` to anything other than zero, 
 ZEN-garden will add a mixed-integer linear constraint that ensures that the 
 output of a technology is above minimum load when turned on, otherwise it is 
-zero. The constraints are described in :ref:`math_formulation.min_load_constraints`.
+zero. The constraints are described in
+:ref:`mathematical_formulation.technology_on_off`.
 
 
 .. _additional_features.min_capacity_addition:
@@ -45,7 +46,7 @@ zero, ZEN-garden will add a mixed-integer linear constraint that ensures that
 the capacity addition of a technology is above the minimum capacity addition, 
 otherwise it is zero. The associated binary variable ``technology_installation`` 
 is 1 if the technology is installed and 0 otherwise. The constraints are 
-described in :ref:`math_formulation.min_capacity_installation`.
+described in :ref:`mathematical_formulation.minimum_capacity_addition`.
 
 ``technology_installation`` is also used in determining the CAPEX of transport 
 technologies, which depend both on the distance between nodes and the quantity 
@@ -133,7 +134,7 @@ Construction times
 ---------------------------------
 
 The user can specify construction times for technologies in ZEN-garden
-(:math:`dy^\mathrm{construction}` :eq:`construction_time`). The construction time is the time between the investment
+(:math:`dy^\mathrm{construction}`, :ref:`mathematical_formulation.construction_time`). The construction time is the time between the investment
 decision and the availability of the new capacity.
 
 Note that as of now, no costs are incurred during the construction time.
@@ -147,8 +148,8 @@ ZEN-garden allows for endogenously constraining the annual capacity as a functio
 The capacity additions are depreciated over time to reflect knowledge depreciation.
 An example for knowledge depreciation is the loss of skilled personnel and engineering firms
 over time if a technology is not continuously deployed.
-The equations are detailed in :eq:`constrained_technology_deployment_i`, :eq:`constrained_technology_deployment_k`,
-and :eq:`constrained_technology_deployment_j`.
+The equations are detailed in
+:ref:`mathematical_formulation.technology_diffusion`.
 
 The user can set five parameters:
 
@@ -291,7 +292,8 @@ Demand shedding
 ---------------------------------
 
 ZEN-garden allows for demand shedding by specifying the parameter ``price_shed_demand`` (:ref:`notation.notation`).
-The shed demand acts as an additional source in the energy balance (:eq:`energy_balance`); hence, demand can be
+The shed demand acts as an additional source in the energy balance
+(:ref:`mathematical_formulation.nodal_carrier_balance`); hence, demand can be
 supplied either by actual supply or by shedding demand. Shedding demand incurs a cost in the objective function
 based on the ``price_shed_demand``. If ``price_shed_demand=inf``, demand shedding is disabled.
 

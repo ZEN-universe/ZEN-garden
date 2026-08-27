@@ -178,8 +178,7 @@ class UnitHandling:
         Raises:
             FileNotFoundError: If no supported base-unit file exists.
             ValueError: If the file does not contain a list under ``unit``.
-            UserWarning: If the hour unit is not found in the base unit
-                definitions.
+            UserWarning: If the hour unit is not found in the base unit definitions.
         """
         file_path = next(
             (

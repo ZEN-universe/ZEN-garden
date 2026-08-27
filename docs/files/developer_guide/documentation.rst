@@ -419,3 +419,10 @@ tables:
 
     .. docstring_method:: zen_garden.elements.conversion_technology.constraints.CapacityFactorConversionConstraint.build
        :sections: summary, formulation
+
+Equations inserted with ``docstring_method`` are numbered automatically. The
+extension gives each unlabeled ``math`` directive an internal label based on
+the current documentation page, the fully qualified method name, and the
+equation's position within that method. This keeps labels unique when the same
+docstring is rendered on multiple pages while equation numbers remain local to
+each page. Explicit labels, if present, are preserved.

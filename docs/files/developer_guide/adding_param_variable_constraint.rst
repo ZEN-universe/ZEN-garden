@@ -20,7 +20,7 @@ you would add it to the ``Carrier`` class.
 .. tip::
 
     This guide assumes you have a good understanding of Python and the ZEN-garden framework.
-    ZEN-garden already has plenty of functionalities, so check out the :ref:`math_formulation.math_formulation` and
+    ZEN-garden already has plenty of functionalities, so check out the :ref:`mathematical_formulation.mathematical_formulation` and
     :ref:`notation.notation` for more information on how to use the existing functionalities.
 
 .. _adding_elements.adding_sets:
