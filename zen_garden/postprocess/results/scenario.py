@@ -327,7 +327,7 @@ class Scenario:
             assert timestep_column is not None
             time_steps = self._get_timesteps_of_years(timestep_type, tuple(years))
             steps = ",".join(str(ts) for ts in time_steps)
-            index.update({timestep_column: (f"{timestep_column} in [{steps}]")})
+            index = index | {timestep_column: (f"{timestep_column} in [{steps}]")}
             select_year_time_steps = True
 
         if isinstance(values.index, pd.MultiIndex):
@@ -360,10 +360,13 @@ class Scenario:
             values = values.div(timestep_duration, axis=1)
 
             for year_temp in annuity.index:
-                time_steps_year = self._get_timesteps_of_years(
-                    timestep_type, (year_temp,)
+                time_steps_year = list(
+                    self._get_timesteps_of_years(timestep_type, (year_temp,))
                 )
                 values[time_steps_year] = values[time_steps_year] / annuity[year_temp]
+
+        if values.empty:
+            return pd.DataFrame()
 
         # try:
         output_df = None
