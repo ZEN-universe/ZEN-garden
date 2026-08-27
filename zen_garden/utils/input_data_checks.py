@@ -13,6 +13,8 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
+ATTRIBUTE_FILENAMES = ("attributes.json", "attributes.yaml", "attributes.yml")
+
 PROHIBITED_DATASET_CHARACTERS = [
     " ",
     ".",
@@ -143,17 +145,34 @@ class InputDataChecks:
                                 f"Folder {subset_name} does not exist!"
                             )
 
+        energy_system_files = os.listdir(
+            os.path.join(self.analysis.dataset, "energy_system")
+        )
+        if not any(name in energy_system_files for name in ATTRIBUTE_FILENAMES):
+            raise FileNotFoundError(
+                "An attributes file is missing in the energy_system directory. "
+                f"Expected one of: {', '.join(ATTRIBUTE_FILENAMES)}"
+            )
+
+        base_unit_filenames = (
+            "base_units.yaml",
+            "base_units.yml",
+            "base_units.json",
+        )
+        if not any(name in energy_system_files for name in base_unit_filenames):
+            raise FileNotFoundError(
+                "A base-units file is missing in the energy_system directory. "
+                f"Expected one of: {', '.join(base_unit_filenames)}"
+            )
+
         for file_name in [
-            "attributes.json",
-            "base_units.csv",
             "set_edges.csv",
             "set_nodes.csv",
             "unit_definitions.txt",
         ]:
-            if file_name not in os.listdir(
-                os.path.join(self.analysis.dataset, "energy_system")
-            ) and file_name.replace(".csv", ".json") not in os.listdir(
-                os.path.join(self.analysis.dataset, "energy_system")
+            if (
+                file_name not in energy_system_files
+                and file_name.replace(".csv", ".json") not in energy_system_files
             ):
                 raise FileNotFoundError(
                     f"File {file_name} is missing in the energy_system directory"
@@ -161,8 +180,7 @@ class InputDataChecks:
 
     def check_existing_technology_data(self):
         """This method checks the existing technology input data and only regards
-        those technology elements for which folders containing the attributes.json
-        file exist.
+        those technology elements whose folders contain a supported attributes file.
         """
         assert (
             self.config is not None and self.dataset_path_resolver is not None
@@ -181,14 +199,9 @@ class InputDataChecks:
                         f"Technology {technology} selected in config does not "
                         "exist in input data"
                     )
-                elif (
-                    "attributes.json"
-                    not in self.dataset_path_resolver.paths_of_element(
-                        set_name, technology
-                    )
-                ):
+                elif not self._has_attribute_file(set_name, technology):
                     raise FileNotFoundError(
-                        "The file attributes.json does not exist for the "
+                        "No supported attributes file exists for the "
                         f"technology {technology}"
                     )
             self.config.system.set_technologies.extend(self.config.system[set_name])
@@ -206,15 +219,10 @@ class InputDataChecks:
                             f"Technology {technology} selected in config does "
                             "not exist in input data"
                         )
-                    elif (
-                        "attributes.json"
-                        not in self.dataset_path_resolver.paths_of_element(
-                            subset, technology
-                        )
-                    ):
+                    elif not self._has_attribute_file(subset, technology):
                         raise FileNotFoundError(
-                            "The file attributes.json does not exist for the "
-                            "technology {technology}"
+                            "No supported attributes file exists for the "
+                            f"technology {technology}"
                         )
                     self.config.system[set_name].extend(self.config.system[subset])
                     self.config.system.set_technologies.extend(
@@ -235,12 +243,16 @@ class InputDataChecks:
                 raise FileNotFoundError(
                     f"Carrier {carrier} selected in config does not exist ininput data"
                 )
-            elif "attributes.json" not in self.dataset_path_resolver.paths_of_element(
-                "set_carriers", carrier
-            ):
+            elif not self._has_attribute_file("set_carriers", carrier):
                 raise FileNotFoundError(
-                    f"The file attributes.json does not exist for the carrier {carrier}"
+                    f"No supported attributes file exists for the carrier {carrier}"
                 )
+
+    def _has_attribute_file(self, set_name: str, element: str) -> bool:
+        """Return whether an element has a supported attributes file."""
+        assert self.dataset_path_resolver is not None
+        paths = self.dataset_path_resolver.paths_of_element(set_name, element)
+        return any(filename in paths for filename in ATTRIBUTE_FILENAMES)
 
     def check_dataset(self):
         """Ensures that the dataset chosen in the config does exist and contains a

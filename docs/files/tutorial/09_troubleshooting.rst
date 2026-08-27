@@ -14,15 +14,12 @@ in other packages.
 
 Here are some common mistakes that can lead to errors:
 
-Comma at the end of a list in json
-----------------------------------
+Invalid YAML indentation
+------------------------
 
- ``"list": [1, 2, 3,]`` is wrong, it should be ``"list": [1, 2, 3]``. This is a 
- common mistake because Python allows it, but JSON does not. The cryptic error 
- message is ``json.decoder.JSONDecodeError: Expecting value: [...]``. Fix: check 
- ``system.json``, ``config.json``, and ``attributes.json`` for commas at the end 
- of lists. When you scroll up in the error message, you can guess what file 
- caused the error.
+YAML uses indentation to define nested mappings and lists. Tabs or incorrectly
+aligned keys can cause a parser error. Check ``system.yaml``, ``config.yaml``,
+and ``attributes.yaml`` near the line and column reported in the error message.
 
 
 Unit consistency errors
@@ -31,7 +28,7 @@ Unit consistency errors
 The dataset example ``14_unit_consistency_expected_error`` intentionally
 contains inconsistent units. Run it following the instructions for
 :ref:`using dataset examples <building.examples>` and use the error message to
-locate the inconsistent ``unit`` entries in the ``attributes.json`` files.
+locate the inconsistent ``unit`` entries in the ``attributes.yaml`` files.
 See :ref:`t_units.t_units` and :ref:`input_structure.attribute_files` for the
 unit conventions.
 

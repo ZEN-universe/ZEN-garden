@@ -1,4 +1,2 @@
-# A test comment
-# The solver settings go here
 solver:
   keep_files: false

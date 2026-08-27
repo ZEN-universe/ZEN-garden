@@ -119,7 +119,7 @@ class EnergySystem:
         )
         # parameters whose time-dependant data should not be interpolated
         # (for years without data) in DataInput._convert_real_to_generic_time_indices()
-        self.parameters_interpolation_off = self.input_repository.read_json(
+        self.parameters_interpolation_off = self.input_repository.read_mapping_file(
             "parameters_interpolation_off"
         )
         # technology-specific

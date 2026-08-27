@@ -2,6 +2,7 @@ import json
 import logging
 import os
 import shutil
+import warnings
 from collections import defaultdict
 
 import yaml
@@ -102,6 +103,12 @@ class ScenarioUtils:
                     if scenarios_path.endswith((".yaml", ".yml")):
                         scenarios = yaml.safe_load(file)
                     else:
+                        warnings.warn(
+                            f"Loading JSON from '{scenarios_path}' is deprecated. "
+                            "Convert the file to YAML.",
+                            DeprecationWarning,
+                            stacklevel=2,
+                        )
                         scenarios = json.load(file)
             except (json.JSONDecodeError, yaml.YAMLError) as exc:
                 raise ValueError(
