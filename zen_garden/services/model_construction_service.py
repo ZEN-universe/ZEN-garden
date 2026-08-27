@@ -60,6 +60,7 @@ class ModelConstructionService:
         self._construct_sets()
         self._construct_params()
         self._construct_vars()
+        self._construct_expressions()
         self._construct_constraints()
         self._construct_objective()
 
@@ -77,6 +78,11 @@ class ModelConstructionService:
     def _construct_vars(self):
         for model_constructor in self._model_constructors:
             model_constructor.construct_vars()
+
+    @measure_run_time
+    def _construct_expressions(self):
+        for model_constructor in self._model_constructors:
+            model_constructor.construct_expressions()
 
     @measure_run_time
     def _construct_constraints(self):

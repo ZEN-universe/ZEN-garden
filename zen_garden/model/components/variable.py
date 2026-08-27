@@ -9,7 +9,7 @@ import xarray as xr
 
 from zen_garden.elements.technology import Technology
 from zen_garden.model.components.component import Component
-from zen_garden.model.components.zen_set import ZenSet
+from zen_garden.model.components.zen_set import BaseSet
 
 if TYPE_CHECKING:
     from linopy import Model as LinopyModel
@@ -54,7 +54,7 @@ class Variable(Component):
         name: str,
         # TODO: Find smaller set of types for index_sets
         index_sets: (
-            ZenSet | tuple[list | pd.Series, list[str]] | list[list] | xr.DataArray
+            BaseSet | tuple[list | pd.Series, list[str]] | list[list] | xr.DataArray
         ),
         unit_category,
         integer: bool = False,

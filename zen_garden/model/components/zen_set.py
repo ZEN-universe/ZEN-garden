@@ -1,77 +1,117 @@
-"""A set class that is similar to pyomo.Set."""
+"""Set representations used by ZEN-garden model components."""
 
+from abc import ABC, abstractmethod
+from collections.abc import Iterable, Iterator, Mapping
 from typing import Any
 
 from ordered_set import OrderedSet
-from typing_extensions import override
 
 
-class ZenSet(OrderedSet):
-    """Similiar to pyomo.Set."""
+class BaseSet(ABC):
+    """Common interface for simple and indexed model sets."""
 
-    def __init__(self, data, name="", doc="", index_set: str | None = None):
-        """Initialize the set.
-
-        :param data: The data of the set, either an iterable or a dictionary for
-            an indexed set
-        :param name: The name of the set
-        :param doc: The corresponding docstring
-        :param index_set: The name of the index set
-        """
-        # set attributes
-        self.data = data
+    def __init__(self, name: str = "", doc: str = "") -> None:
         self.name = name
         self.doc = doc
-        self.superset: OrderedSet[Any] = OrderedSet()
-        self.index_set: str | None
 
-        if isinstance(data, dict):
-            # init the children
-            self.ordered_data = {
-                k: ZenSet(v, name=f"{name}[{k}]") for k, v in data.items()
-            }
+    @property
+    @abstractmethod
+    def coordinate_values(self) -> OrderedSet[Any]:
+        """Return all values used for this set's shared model coordinate."""
 
-            # we set all the supersets
-            for child in self.ordered_data.values():
-                self.superset.update(child)
-            for child in self.ordered_data.values():
-                child.superset.update(self.superset)
+    @abstractmethod
+    def __iter__(self) -> Iterator[Any]:
+        """Iterate over members or index keys."""
 
-            # for an indexed sets the init data are the keys
-            data = data.keys()
-            self.indexed = True
-            self.index_set = index_set or "UnnamedIndex"
+    @abstractmethod
+    def __len__(self) -> int:
+        """Return the number of members or index keys."""
 
-        else:
-            self.indexed = False
-            # index set it None
-            self.index_set = None
-            # the superset is just the set itself
-            self.superset.update(data)
+    @abstractmethod
+    def __contains__(self, item: object) -> bool:
+        """Test membership among members or index keys."""
 
-        # proper init
-        super().__init__(data)
+    @abstractmethod
+    def is_indexed(self) -> bool:
+        """Return whether this is a mapping of child sets."""
 
-    def is_indexed(self):
-        """Check if the set is indexed, just here because pyomo has it."""
-        return self.indexed
 
-    def get_index_name(self):
-        """Returns the index name if indexed."""
+class SimpleSet(BaseSet):
+    """An ordered collection of model-set members."""
+
+    def __init__(self, data: Iterable[Any], name: str = "", doc: str = "") -> None:
+        super().__init__(name=name, doc=doc)
+        self.members: OrderedSet[Any] = OrderedSet(data)
+        self.data = self.members
+
+    @property
+    def coordinate_values(self) -> OrderedSet[Any]:
+        return self.members
+
+    def __iter__(self) -> Iterator[Any]:
+        return iter(self.members)
+
+    def __len__(self) -> int:
+        return len(self.members)
+
+    def __contains__(self, item: object) -> bool:
+        return item in self.members
+
+    def __getitem__(self, item: int | slice):
+        return self.members[item]
+
+    def is_indexed(self) -> bool:
+        return False
+
+    def get_index_name(self) -> None:
+        return None
+
+    def __repr__(self) -> str:
+        return f"SimpleSet({list(self.members)!r})"
+
+
+class IndexedSet(BaseSet):
+    """A mapping from index keys to ordered child sets."""
+
+    def __init__(
+        self,
+        data: Mapping[Any, Iterable[Any]],
+        name: str = "",
+        doc: str = "",
+        index_set: str | None = None,
+    ) -> None:
+        super().__init__(name=name, doc=doc)
+        self.data = data
+        self.index_set = index_set or "UnnamedIndex"
+        self.children = {
+            key: SimpleSet(values, name=f"{name}[{key}]")
+            for key, values in data.items()
+        }
+        self._coordinate_values: OrderedSet[Any] = OrderedSet()
+        for child in self.children.values():
+            self._coordinate_values.update(child.members)
+
+    @property
+    def coordinate_values(self) -> OrderedSet[Any]:
+        return self._coordinate_values
+
+    def __iter__(self) -> Iterator[Any]:
+        return iter(self.children)
+
+    def __len__(self) -> int:
+        return len(self.children)
+
+    def __contains__(self, item: object) -> bool:
+        return item in self.children
+
+    def __getitem__(self, item: Any) -> SimpleSet:
+        return self.children[item]
+
+    def is_indexed(self) -> bool:
+        return True
+
+    def get_index_name(self) -> str:
         return self.index_set
 
-    def __repr__(self):
-        """Return a string representation of the set."""
-        return f"{super().__repr__()} indexed={self.indexed}"
-
-    @override
-    def __getitem__(self, item):
-        """Get an item from the set, if it is indexed.
-
-        :param item: The item to retrieve
-        :return: The item
-        """
-        if self.indexed:
-            return self.ordered_data[item]
-        else:
-            return super().__getitem__(item)
+    def __repr__(self) -> str:
+        return f"IndexedSet(keys={list(self.children)!r})"

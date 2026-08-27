@@ -50,7 +50,7 @@ class OpexEmissionsTechnologyTransportConstraint(GenericConstraint):
         lhs_emissions = self.zen_model.variables["carbon_emissions_technology"].loc[
             techs, edges, :
         ] - (
-            self.zen_model.parameters.carbon_intensity_technology
+            self.zen_model.expressions["transport_carbon_intensity_effective"]
             * self.zen_model.variables["flow_transport"].rename(
                 {
                     "set_transport_technologies": "set_technologies",

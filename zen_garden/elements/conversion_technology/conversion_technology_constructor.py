@@ -20,6 +20,9 @@ logger = logging.getLogger(__name__)
 
 class ConversionTechnologyConstructor(ModelConstructor):
     element_class = ConversionTechnology
+    parameters = ConversionTechnology.own_parameters
+    sets = ConversionTechnology.own_sets
+    variables = ConversionTechnology.variables
 
     @override
     def has_elements(self) -> bool:
@@ -29,84 +32,6 @@ class ConversionTechnologyConstructor(ModelConstructor):
         :return: True if there are elements, False otherwise
         """
         return True
-
-    @override
-    def construct_sets(self):
-        logger.info("Constructing sets for ConversionTechnology")
-        # get input carriers
-        input_carriers = self.element_registry.get_attribute_of_all_elements(
-            self.element_class, "input_carrier"
-        )
-        output_carriers = self.element_registry.get_attribute_of_all_elements(
-            self.element_class, "output_carrier"
-        )
-        reference_carrier = self.element_registry.get_attribute_of_all_elements(
-            self.element_class, "reference_carrier"
-        )
-        dependent_carriers = {}
-        for tech in input_carriers:
-            dependent_carriers[tech] = input_carriers[tech] + output_carriers[tech]
-            dependent_carriers[tech].remove(reference_carrier[tech][0])
-        # input carriers of technology
-        self.zen_model.add_set(
-            name="set_input_carriers",
-            data=input_carriers,
-            doc="set of carriers that are an input to a specific conversion "
-            "technology. Indexed by set_conversion_technologies",
-            index_set="set_conversion_technologies",
-        )
-        # output carriers of technology
-        self.zen_model.add_set(
-            name="set_output_carriers",
-            data=output_carriers,
-            doc="set of carriers that are an output to a specific conversion "
-            "technology. Indexed by set_conversion_technologies",
-            index_set="set_conversion_technologies",
-        )
-        # dependent carriers of technology
-        self.zen_model.add_set(
-            name="set_dependent_carriers",
-            data=dependent_carriers,
-            doc="set of carriers that are an output to a specific conversion "
-            "technology. Indexed by set_conversion_technologies",
-            index_set="set_conversion_technologies",
-        )
-
-    @override
-    def construct_params(self):
-        logger.info("Constructing parameters for ConversionTechnology")
-        # slope of linearly modeled capex
-        self.add_parameter(
-            name="capex_specific_conversion",
-            index_names=[
-                "set_conversion_technologies",
-                "set_nodes",
-                "set_years",
-            ],
-            doc="Parameter specifying the slope of the linear capex",
-        )
-        # slope of linearly modeled conversion efficiencies
-        self.add_parameter(
-            name="conversion_factor",
-            index_names=[
-                "set_conversion_technologies",
-                "set_dependent_carriers",
-                "set_nodes",
-                "set_time_steps_operation",
-            ],
-            doc="Parameter which specifies the conversion factor",
-        )
-        # minimum annual average capacity factor
-        self.add_parameter(
-            name="min_full_load_hours_fraction",
-            index_names=[
-                "set_conversion_technologies",
-                "set_nodes",
-                "set_years",
-            ],
-            doc="Minimum full load hours as a fraction of the total hours "
-            "per planning period",
-        )
 
     @override
     def construct_vars(self):
@@ -187,39 +112,25 @@ class ConversionTechnologyConstructor(ModelConstructor):
             # make sure lower is never below 0
             return lower, upper
 
-        ## Flow variables
-        # input flow of carrier into technology
-        index_values, index_names = self.create_custom_set(
-            [
-                "set_conversion_technologies",
-                "set_input_carriers",
-                "set_nodes",
-                "set_time_steps_operation",
-            ],
-        )
-        self.zen_model.add_variable(
-            name="flow_conversion_input",
-            index_sets=(index_values, index_names),
-            bounds=flow_conversion_bounds(index_values, index_names),
-            doc="Carrier input of conversion technologies",
-            unit_category={"energy_quantity": 1, "time": -1},
-        )
-        # output flow of carrier into technology
-        index_values, index_names = self.create_custom_set(
-            [
-                "set_conversion_technologies",
-                "set_output_carriers",
-                "set_nodes",
-                "set_time_steps_operation",
-            ],
-        )
-        self.zen_model.add_variable(
-            name="flow_conversion_output",
-            index_sets=(index_values, index_names),
-            bounds=flow_conversion_bounds(index_values, index_names),
-            doc="Carrier output of conversion technologies",
-            unit_category={"energy_quantity": 1, "time": -1},
-        )
+        for variable in self.variables:
+            if variable.name in ["flow_conversion_input", "flow_conversion_output"]:
+                # Exceptional bounds, masks or indices
+                index_values, index_names = self.create_custom_set(variable.indices)
+                index_sets = (index_values, index_names)
+                bounds = flow_conversion_bounds(index_values, index_names)
+            else:
+                # Standard behavior
+                index_sets = self.create_custom_set(variable.indices)
+                bounds = variable.get_bounds()
+
+            self.zen_model.add_variable(
+                name=variable.name,
+                index_sets=index_sets,
+                binary=variable.binary,
+                bounds=bounds,
+                doc=variable.doc,
+                unit_category=variable.unit_category,
+            )
 
     @override
     def construct_constraints(self):

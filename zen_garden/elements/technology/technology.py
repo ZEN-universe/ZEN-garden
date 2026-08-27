@@ -1,12 +1,18 @@
 """Class defining technologies."""
 
 import logging
-from typing import cast
+from typing import ClassVar, cast
 
 import numpy as np
 import pandas as pd
 
 from zen_garden.elements.element import Element
+from zen_garden.elements.technology.parameters import TECHNOLOGY_PARAMETERS
+from zen_garden.elements.technology.sets import TECHNOLOGY_SETS
+from zen_garden.elements.technology.variables import TECHNOLOGY_VARIABLES
+from zen_garden.topology.generic_parameter import GenericParameter
+from zen_garden.topology.generic_set import GenericSet
+from zen_garden.topology.generic_variable import GenericVariable
 
 logger = logging.getLogger(__name__)
 
@@ -18,6 +24,12 @@ class Technology(Element):
     label = "set_technologies"
     location_type: str | None = None
     reference_carrier: list[str]
+    # Todo: Add the constraints here?
+    lifetime: pd.Series
+    lifetime_existing: pd.Series
+    own_parameters: ClassVar[list[type[GenericParameter]]] = TECHNOLOGY_PARAMETERS
+    variables: ClassVar[list[type[GenericVariable]]] = TECHNOLOGY_VARIABLES
+    own_sets: ClassVar[list[type[GenericSet]]] = TECHNOLOGY_SETS
 
     def initialize_reference_carrier(self):
         """Retrieves and stores information on reference."""
@@ -27,106 +39,10 @@ class Technology(Element):
         )
         self.energy_system.set_technology_of_carrier(self.name, self.reference_carrier)
 
-    def store_input_data(self):
-        """Retrieves and stores input data for element as attributes.
-
-        Each Child class overwrites method to store different attributes.
-        """
-        # set attributes of technology
-        set_location = self.location_type
-        self.capacity_addition_min = self.data_input.extract_input_data(
-            "capacity_addition_min",
-            index_sets=[],
-            unit_category={"energy_quantity": 1, "time": -1},
-        )
-        self.capacity_addition_max = self.data_input.extract_input_data(
-            "capacity_addition_max",
-            index_sets=[],
-            unit_category={"energy_quantity": 1, "time": -1},
-        )
-        self.capacity_addition_unbounded = self.data_input.extract_input_data(
-            "capacity_addition_unbounded",
-            index_sets=[],
-            unit_category={"energy_quantity": 1, "time": -1},
-        )
-        self.lifetime = self.data_input.extract_input_data(
-            "lifetime", index_sets=[], unit_category={}
-        )
-        if "depreciation_time" in self.data_input.attribute_dict:
-            self.depreciation_time = self.data_input.extract_input_data(
-                "depreciation_time", index_sets=[], unit_category={}
-            )
-            self.depreciation_time[0] = np.max(
-                (
-                    self.config.system.interval_between_years,
-                    self.depreciation_time[0],
-                )
-            )
-        else:
-            self.depreciation_time = self.lifetime.copy()
-        self.construction_time = self.data_input.extract_input_data(
-            "construction_time", index_sets=[], unit_category={}
-        )
-        # maximum diffusion rate
-        self.max_diffusion_rate = self.data_input.extract_input_data(
-            "max_diffusion_rate",
-            index_sets=["set_years"],
-            unit_category={},
-        )
-
-        # add all raw time series to dict
-        self.raw_time_series["min_load"] = self.data_input.extract_input_data(
-            "min_load",
-            index_sets=[set_location, "set_hours"],
-            unit_category={},
-        )
-        self.raw_time_series["max_load"] = self.data_input.extract_input_data(
-            "max_load",
-            index_sets=[set_location, "set_hours"],
-            unit_category={},
-        )
-        self.raw_time_series["opex_specific_variable"] = (
-            self.data_input.extract_input_data(
-                "opex_specific_variable",
-                index_sets=[set_location, "set_hours"],
-                unit_category={"money": 1, "energy_quantity": -1},
-            )
-        )
-        # non-time series input data
-        self.capacity_limit = self.data_input.extract_input_data(
-            "capacity_limit",
-            index_sets=[set_location, "set_years"],
-            unit_category={"energy_quantity": 1, "time": -1},
-        )
-
-        # lower capacity limit
-        self.capacity_lower_limit = self.data_input.extract_input_data(
-            "capacity_lower_limit",
-            index_sets=[set_location, "set_years"],
-            unit_category={"energy_quantity": 1, "time": -1},
-        )
-
-        self.carbon_intensity_technology = self.data_input.extract_input_data(
-            "carbon_intensity_technology",
-            index_sets=[set_location],
-            unit_category={"emissions": 1, "energy_quantity": -1},
-        )
-        # extract existing capacity
+    def prepare_input_data(self) -> None:
+        """Load the vintage set needed by existing-capacity parameters."""
         self.set_technologies_existing = (
             self.data_input.extract_set_technologies_existing()
-        )
-        self.capacity_existing = self.data_input.extract_input_data(
-            "capacity_existing",
-            index_sets=[set_location, "set_technologies_existing"],
-            unit_category={"energy_quantity": 1, "time": -1},
-        )
-        self.capacity_investment_existing = self.data_input.extract_input_data(
-            "capacity_investment_existing",
-            index_sets=[set_location, "set_years"],
-            unit_category={"energy_quantity": 1, "time": -1},
-        )
-        self.lifetime_existing = self.data_input.extract_lifetime_existing(
-            "capacity_existing", index_sets=[set_location, "set_technologies_existing"]
         )
 
     def calculate_capex_of_capacities_existing(self):

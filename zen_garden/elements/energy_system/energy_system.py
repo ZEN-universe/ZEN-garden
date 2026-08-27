@@ -2,15 +2,21 @@
 
 import copy
 import logging
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, ClassVar
 
 import numpy as np
 import pandas as pd
 
+from zen_garden.elements.energy_system.parameters import ENERGY_SYSTEM_PARAMETERS
+from zen_garden.elements.energy_system.sets import ENERGY_SYSTEM_SETS
+from zen_garden.elements.energy_system.variables import ENERGY_SYSTEM_VARIABLES
 from zen_garden.model.config import Config
 from zen_garden.model.time_steps import TimeStepsDicts
 from zen_garden.preprocess.data_input import DataInput
 from zen_garden.services.network_topology import NetworkTopology
+from zen_garden.topology.generic_parameter import GenericParameter
+from zen_garden.topology.generic_set import GenericSet
+from zen_garden.topology.generic_variable import GenericVariable
 from zen_garden.types import YearSpecificTs
 
 if TYPE_CHECKING:
@@ -27,6 +33,12 @@ class EnergySystem:
     """Class defining a standard energy system."""
 
     name: str = "EnergySystem"
+    # Todo: Add the constraints here?
+    parameters: ClassVar[list[type[GenericParameter]]] = ENERGY_SYSTEM_PARAMETERS
+    own_sets: ClassVar[list[type[GenericSet]]] = ENERGY_SYSTEM_SETS
+    sets = own_sets
+    carbon_emissions_annual_limit: pd.Series
+    variables: ClassVar[list[type[GenericVariable]]] = ENERGY_SYSTEM_VARIABLES
 
     def __init__(
         self,
@@ -74,11 +86,12 @@ class EnergySystem:
         self.set_carriers: list[str] = []
         # dict to save the parameter units (and save them in the results later on)
         self.units: dict[str, Any] = {}
+        self.raw_time_series: dict[str, pd.Series | pd.DataFrame | None] = {}
         self.time_steps_operation_duration: pd.Series | None = None
         self.time_steps_storage_duration: pd.Series | None = None
 
-    def store_input_data(self):
-        """Retrieves and stores input data for EnergySystem as attributes."""
+    def prepare_input_data(self) -> None:
+        """Prepare structural energy-system data required by parameter loading."""
         # in class <EnergySystem>, all sets are constructed
         self.set_technologies = self.config.system.set_technologies
         # base time steps
@@ -131,61 +144,16 @@ class EnergySystem:
         self.set_retrofitting_technologies = (
             self.config.system.set_retrofitting_technologies
         )
-        # discount rate
-        self.discount_rate = self.data_input.extract_input_data(
-            "discount_rate", index_sets=[], unit_category={}
-        )
-        # carbon emissions limit
-        self.carbon_emissions_annual_limit = self.data_input.extract_input_data(
-            "carbon_emissions_annual_limit",
-            index_sets=["set_years"],
-            unit_category={"emissions": 1},
-        )
+
+    def finalize_input_data(self) -> None:
+        """Apply transformations that require all parameters to be loaded."""
+        # Limits are expressed for a full year in the input data.
         _fraction_year = (
             self.config.system.unaggregated_time_steps_per_year
             / self.config.system.total_hours_per_year
         )
         self.carbon_emissions_annual_limit = (
             self.carbon_emissions_annual_limit * _fraction_year
-        )  # reduce to fraction of year
-        self.carbon_emissions_budget = self.data_input.extract_input_data(
-            "carbon_emissions_budget", index_sets=[], unit_category={"emissions": 1}
-        )
-        self.carbon_emissions_cumulative_existing = self.data_input.extract_input_data(
-            "carbon_emissions_cumulative_existing",
-            index_sets=[],
-            unit_category={"emissions": 1},
-        )
-        # price carbon emissions
-        self.price_carbon_emissions = self.data_input.extract_input_data(
-            "price_carbon_emissions",
-            index_sets=["set_years"],
-            unit_category={"money": 1, "emissions": -1},
-        )
-        self.price_carbon_emissions_budget_overshoot = (
-            self.data_input.extract_input_data(
-                "price_carbon_emissions_budget_overshoot",
-                index_sets=[],
-                unit_category={"money": 1, "emissions": -1},
-            )
-        )
-        self.price_carbon_emissions_annual_overshoot = (
-            self.data_input.extract_input_data(
-                "price_carbon_emissions_annual_overshoot",
-                index_sets=[],
-                unit_category={"money": 1, "emissions": -1},
-            )
-        )
-        # market share unbounded
-        self.market_share_unbounded = self.data_input.extract_input_data(
-            "market_share_unbounded", index_sets=[], unit_category={}
-        )
-        # knowledge_spillover_rate
-        self.knowledge_depreciation_rate = self.data_input.extract_input_data(
-            "knowledge_depreciation_rate", index_sets=[], unit_category={}
-        )
-        self.knowledge_spillover_rate = self.data_input.extract_input_data(
-            "knowledge_spillover_rate", index_sets=[], unit_category={}
         )
 
     def set_technology_of_carrier(self, technology, list_technology_of_carrier):

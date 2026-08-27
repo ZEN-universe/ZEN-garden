@@ -8,7 +8,7 @@ from typing import Sequence
 import pandas as pd
 import xarray as xr
 
-from zen_garden.model.components.zen_set import ZenSet
+from zen_garden.model.components.zen_set import BaseSet
 
 logger = logging.getLogger(__name__)
 
@@ -58,7 +58,7 @@ class Component:
     @staticmethod
     def get_index_names_data(
         index_list: (
-            ZenSet | tuple[list | pd.Series, list[str]] | list[list] | xr.DataArray
+            BaseSet | tuple[list | pd.Series, list[str]] | list[list] | xr.DataArray
         ),
     ) -> tuple[list | pd.Series, list[str]]:
         """Splits index_list in data and index names.
@@ -67,7 +67,7 @@ class Component:
         :return index_values: names of indices
         :return index_names:  values of indices
         """
-        if isinstance(index_list, ZenSet):
+        if isinstance(index_list, BaseSet):
             index_values = list(index_list)
             index_names = [index_list.name]
         elif isinstance(index_list, tuple):

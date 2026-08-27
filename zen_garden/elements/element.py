@@ -1,13 +1,13 @@
 """Abstract class defining a standard Element."""
 
-from abc import abstractmethod
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, ClassVar
 
 import pandas as pd
 
 from zen_garden.preprocess.data_input import DataInput
 from zen_garden.services.input_repository import InputRepository
+from zen_garden.topology.generic_parameter import GenericParameter
 
 if TYPE_CHECKING:
     from zen_garden.elements.energy_system import EnergySystem
@@ -17,6 +17,7 @@ if TYPE_CHECKING:
     from zen_garden.services.dataset_path_resolver import DatasetPathResolver
     from zen_garden.services.element_registry import ElementRegistry
     from zen_garden.services.scenario_dict import ScenarioDict
+    from zen_garden.topology.generic_set import GenericSet
     from zen_garden.types import YearSpecificTs
     from zen_garden.utils.input_data_checks import InputDataChecks
 
@@ -25,8 +26,28 @@ class Element:
     """Class defining a standard Element."""
 
     # set label
+    name: str = "Element"
     label: str = "set_elements"
     raw_time_series: dict[str, pd.Series | pd.DataFrame | None]
+    own_parameters: ClassVar[list[type["GenericParameter"]]] = []
+    parameters: ClassVar[list[type["GenericParameter"]]] = []
+    own_sets: ClassVar[list[type["GenericSet"]]] = []
+    sets: ClassVar[list[type["GenericSet"]]] = []
+
+    def __init_subclass__(cls, **kwargs):
+        """Compose parameter declarations inherited from element base classes."""
+        super().__init_subclass__(**kwargs)
+        inherited: list[type["GenericParameter"]] = []
+        for base in cls.__bases__:
+            inherited.extend(getattr(base, "parameters", ()))
+        own = cls.__dict__.get("own_parameters", ())
+        cls.parameters = list(dict.fromkeys([*inherited, *own]))
+
+        inherited_sets: list[type["GenericSet"]] = []
+        for base in cls.__bases__:
+            inherited_sets.extend(getattr(base, "sets", ()))
+        own_sets = cls.__dict__.get("own_sets", ())
+        cls.sets = list(dict.fromkeys([*inherited_sets, *own_sets]))
 
     def __init__(
         self,
@@ -89,12 +110,8 @@ class Element:
         """Initialize the element."""
         pass
 
-    @abstractmethod
-    def store_input_data(self):
-        """Retrieves and stores input data for element as attributes. Each Child class
-        overwrites method to store different attributes.
-        """
-        pass
+    def prepare_input_data(self) -> None:
+        """Prepare structural information required to load parameters."""
 
     def _get_input_path(self):
         """Get input path where input data is stored input_path."""
