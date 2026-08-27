@@ -374,9 +374,12 @@ class Scenario:
                     sequence_timesteps.isin(time_steps)
                 ]
                 assert isinstance(sequence_timesteps, pd.Series)
-            assert isinstance(values, pd.DataFrame)
-            output_array = values.to_numpy()[:, sequence_timesteps.to_numpy()]
-            output_df = pd.DataFrame(output_array, index=values.index, copy=False)
+            if isinstance(values, pd.DataFrame):
+                output_array = values.to_numpy()[:, sequence_timesteps.to_numpy()]
+                output_df = pd.DataFrame(output_array, index=values.index, copy=False)
+                output_df.sort_index(inplace=True)
+            else:
+                output_df = values[sequence_timesteps].reset_index(drop=True)
         elif timestep_type is TimestepType.storage:
             # for storage components, the last timestep is the final state,
             # linear interpolation is used
@@ -442,10 +445,10 @@ class Scenario:
                 output_df = output_df[sequence_timesteps.index]
             else:
                 output_df = values
+            assert isinstance(output_df, pd.DataFrame)
             output_df = output_df.set_axis(range(output_df.shape[1]), axis=1)
+            output_df.sort_index(inplace=True)
 
-        assert isinstance(output_df, pd.DataFrame)
-        output_df.sort_index(inplace=True)
         output_df = self._rename_index(output_df)
         return output_df
 
