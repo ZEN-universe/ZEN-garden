@@ -1,138 +1,90 @@
-"""Global model schema and orchestration context."""
+"""Configuration-only blueprint for a ZEN-garden optimization model."""
 
-import copy
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 import numpy as np
 
+from zen_garden.default_config import Config as DefaultConfig
+from zen_garden.elements import ELEMENT_TYPE_CLASSES
+from zen_garden.elements.element import Element
 from zen_garden.elements.energy_system import EnergySystem
-from zen_garden.services.network_topology import NetworkTopology
-
-if TYPE_CHECKING:
-    from zen_garden.elements.element import Element
-    from zen_garden.model.config import Config
-    from zen_garden.model.time_steps import TimeStepsDicts
-    from zen_garden.preprocess.unit_handling import UnitHandling
-    from zen_garden.services.element_registry import ElementRegistry
-    from zen_garden.services.input_repository import InputRepository
-    from zen_garden.types import YearSpecificTs
-    from zen_garden.utils.input_data_checks import InputDataChecks
+from zen_garden.model.config import Config as RuntimeConfig
 
 
 class ModelSchema:
-    """Own global model structure and coordinate all model elements."""
+    """Describe the complete element and index structure of a model."""
 
-    def __init__(
-        self,
-        config: "Config",
-        unit_handling: "UnitHandling",
-        input_data_checks: "InputDataChecks",
-        time_steps: "TimeStepsDicts",
-        year_specific_ts: "YearSpecificTs",
-        input_repository: "InputRepository",
-    ):
-        """Initialize global model state before any elements are created."""
+    def __init__(self, config: DefaultConfig | RuntimeConfig):
+        """Construct a model blueprint using configuration only."""
         self.config = config
-        self.unit_handling = unit_handling
-        self.input_data_checks = input_data_checks
-        self.time_steps = time_steps
-        self.year_specific_ts = year_specific_ts
-        self.input_repository = input_repository
-        self.element_registry: ElementRegistry | None = None
+        self.element_classes: tuple[type[Element], ...] = (
+            EnergySystem,
+            *ELEMENT_TYPE_CLASSES.values(),
+        )
+        self.element_type_classes = dict(ELEMENT_TYPE_CLASSES)
+        self.parameters_interpolation_off: dict[str, Any] | None = None
         self.dict_technology_of_carrier: dict[str, list[str]] = {}
         self.set_carriers: list[str] = []
-        self.parameters_interpolation_off: dict[str, Any] | None = None
-        self.sequence_time_steps_yearly: np.ndarray
-        self.set_conversion_technologies: list[str]
-        self.set_hours: list[int]
-        self.set_hours_all_years: list[int]
-        self.set_retrofitting_technologies: list[str]
-        self.set_storage_technologies: list[str]
-        self.set_technologies: list[str]
-        self.set_time_steps_years: list[int]
-        self.set_transport_technologies: list[str]
-        self.set_years: list[int]
-        self.set_years_entire_horizon: list[int]
-        self.network_topology = NetworkTopology(
-            config=config,
-            input_repository=input_repository,
-            input_data_checks=input_data_checks,
-            unit_handling=unit_handling,
+        self._set_hours_all_years: list[int] | None = None
+        self._set_years: list[int] | None = None
+
+    @property
+    def set_technologies(self) -> list[str]:
+        return self.config.system.set_technologies
+
+    @property
+    def set_conversion_technologies(self) -> list[str]:
+        return self.config.system.set_conversion_technologies
+
+    @property
+    def set_transport_technologies(self) -> list[str]:
+        return self.config.system.set_transport_technologies
+
+    @property
+    def set_storage_technologies(self) -> list[str]:
+        return self.config.system.set_storage_technologies
+
+    @property
+    def set_retrofitting_technologies(self) -> list[str]:
+        return self.config.system.set_retrofitting_technologies
+
+    @property
+    def set_hours(self) -> list[int]:
+        return list(range(self.config.system.unaggregated_time_steps_per_year))
+
+    @property
+    def set_hours_all_years(self) -> list[int]:
+        if self._set_hours_all_years is not None:
+            return self._set_hours_all_years
+        return list(
+            range(
+                self.config.system.unaggregated_time_steps_per_year
+                * self.config.system.optimized_years
+            )
         )
-        self._prepare_structure()
 
-    def register_element_registry(self, element_registry: "ElementRegistry") -> None:
-        """Attach the registry after it has been initialized."""
-        self.element_registry = element_registry
-
-    @property
-    def elements(self) -> list["Element"]:
-        """Return every element participating in the model schema."""
-        if self.element_registry is None:
-            return []
-        return self.element_registry.all_elements()
+    @set_hours_all_years.setter
+    def set_hours_all_years(self, value: list[int]) -> None:
+        self._set_hours_all_years = value
 
     @property
-    def energy_system(self) -> EnergySystem:
-        """Return the singleton energy-system element."""
-        if self.element_registry is None:
-            raise RuntimeError("The element registry has not been attached")
-        energy_systems = self.element_registry.all_elements_of_type(EnergySystem)
-        if len(energy_systems) != 1:
-            raise RuntimeError("The model schema requires one EnergySystem element")
-        return energy_systems[0]
+    def set_years(self) -> list[int]:
+        if self._set_years is not None:
+            return self._set_years
+        return list(range(self.config.system.optimized_years))
 
-    def set_technology_of_carrier(self, technology: str, carriers: list[str]) -> None:
-        """Associate a technology with its input and output carriers."""
-        for carrier in carriers:
-            if carrier not in self.dict_technology_of_carrier:
-                self.dict_technology_of_carrier[carrier] = [technology]
-                self.set_carriers.append(carrier)
-            elif technology not in self.dict_technology_of_carrier[carrier]:
-                self.dict_technology_of_carrier[carrier].append(technology)
-
-    def calculate_connected_edges(self, *args: Any):
-        """Calculate connected edges using the global network topology."""
-        return self.network_topology.calculate_connected_edges(*args)
+    @set_years.setter
+    def set_years(self, value: list[int]) -> None:
+        self._set_years = value
 
     @property
-    def set_nodes(self):
-        """Return nodes from the global network topology."""
-        return self.network_topology.set_nodes
+    def set_years_entire_horizon(self) -> list[int]:
+        return list(range(self.config.system.optimized_years))
 
     @property
-    def set_edges(self):
-        """Return edges from the global network topology."""
-        return self.network_topology.set_edges
-
-    @property
-    def set_nodes_on_edges(self):
-        """Return nodes on edges from the global network topology."""
-        return self.network_topology.set_nodes_on_edges
-
-    @property
-    def set_haversine_distances_edges(self):
-        """Return edge distances from the global network topology."""
-        return self.network_topology.set_haversine_distances_edges
-
-    def _prepare_structure(self) -> None:
-        """Initialize global time and technology sets from configuration."""
+    def set_time_steps_years(self) -> list[int]:
         system = self.config.system
-        self.set_technologies = system.set_technologies
-        self.set_hours_all_years = list(
-            range(system.unaggregated_time_steps_per_year * system.optimized_years)
-        )
-        self.set_hours = list(range(system.unaggregated_time_steps_per_year))
-        self.set_years = list(range(system.optimized_years))
-        self.set_years_entire_horizon = copy.deepcopy(self.set_years)
-        yearly_duration = self.time_steps.calculate_time_step_duration(
-            self.set_years, self.set_hours_all_years
-        )
-        self.sequence_time_steps_yearly = np.concatenate(
-            [[step] * yearly_duration[step] for step in yearly_duration]
-        )
-        self.time_steps.sequence_time_steps_yearly = self.sequence_time_steps_yearly
-        self.set_time_steps_years = list(
+        return list(
             range(
                 system.reference_year,
                 system.reference_year
@@ -140,10 +92,25 @@ class ModelSchema:
                 system.interval_between_years,
             )
         )
-        self.parameters_interpolation_off = self.input_repository.read_mapping_file(
-            "parameters_interpolation_off"
+
+    @property
+    def sequence_time_steps_yearly(self) -> np.ndarray:
+        """Map every unaggregated time step to its modeled year."""
+        duration = len(self.set_hours_all_years) / len(self.set_years_entire_horizon)
+        durations = {year: int(duration) for year in self.set_years_entire_horizon}
+        if not duration.is_integer():
+            durations[self.set_years_entire_horizon[-1]] = len(
+                self.set_hours_all_years
+            ) - sum(list(durations.values())[:-1])
+        return np.concatenate(
+            [[year] * durations[year] for year in self.set_years_entire_horizon]
         )
-        self.set_conversion_technologies = system.set_conversion_technologies
-        self.set_transport_technologies = system.set_transport_technologies
-        self.set_storage_technologies = system.set_storage_technologies
-        self.set_retrofitting_technologies = system.set_retrofitting_technologies
+
+    def set_technology_of_carrier(self, technology: str, carriers: list[str]) -> None:
+        """Record carrier relationships declared by technology elements."""
+        for carrier in carriers:
+            if carrier not in self.dict_technology_of_carrier:
+                self.dict_technology_of_carrier[carrier] = [technology]
+                self.set_carriers.append(carrier)
+            elif technology not in self.dict_technology_of_carrier[carrier]:
+                self.dict_technology_of_carrier[carrier].append(technology)

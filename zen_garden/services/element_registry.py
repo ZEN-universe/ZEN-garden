@@ -5,7 +5,6 @@ from typing import TYPE_CHECKING, Any, TypeVar, cast
 
 import pandas as pd
 
-from zen_garden.elements import ELEMENT_TYPE_CLASSES
 from zen_garden.elements.element import Element
 from zen_garden.elements.energy_system import EnergySystem
 from zen_garden.services.service_container import ServiceContainer
@@ -53,9 +52,10 @@ class ElementRegistry:
     def register_elements(self):
         """Set up the parameters, variables and constraints of the carriers."""
         logger.info("\n--- Add elements to model--- \n")
-        self._register_element(EnergySystem, EnergySystem.name)
-        for element_id in ELEMENT_TYPE_CLASSES.keys():
-            element_class = ELEMENT_TYPE_CLASSES[element_id]
+        for element_class in self.model_schema.element_classes:
+            if element_class is EnergySystem:
+                self._register_element(EnergySystem, EnergySystem.name)
+                continue
             element_name = element_class.label
             element_set = self.config.system[element_name]
 
@@ -156,9 +156,9 @@ class ElementRegistry:
         :param name: name of element class
         :return: element_class: return element whose name is matched
         """
-        for class_name in ELEMENT_TYPE_CLASSES:
-            if ELEMENT_TYPE_CLASSES[class_name].label == name:
-                return ELEMENT_TYPE_CLASSES[class_name]
+        for element_class in self.model_schema.element_classes:
+            if element_class.label == name:
+                return element_class
         return None
 
     def get_attribute_of_all_elements_with_units(

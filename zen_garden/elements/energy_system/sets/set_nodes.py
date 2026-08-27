@@ -6,4 +6,4 @@ class SetNodes(GenericSet):
 
     @classmethod
     def get_data(cls, constructor):
-        return constructor.model_schema.set_nodes
+        return constructor.network_topology.set_nodes

@@ -15,6 +15,7 @@ if TYPE_CHECKING:
     from zen_garden.model.config import Config
     from zen_garden.preprocess.unit_handling import UnitHandling
     from zen_garden.services.input_repository import InputRepository
+    from zen_garden.services.network_topology import NetworkTopology
     from zen_garden.services.scenario_dict import ScenarioDict
     from zen_garden.topology.model_schema import ModelSchema
     from zen_garden.types import YearSpecificTs
@@ -69,6 +70,7 @@ class DataInput:
         self,
         element: "Element",
         model_schema: "ModelSchema",
+        network_topology: "NetworkTopology",
         unit_handling: "UnitHandling",
         config: "Config",
         scenario_dict: "ScenarioDict",
@@ -88,6 +90,7 @@ class DataInput:
         """
         self.element = element
         self.model_schema = model_schema
+        self.network_topology = network_topology
         self.unit_handling = unit_handling
         self.config = config
         self.scenario_dict = scenario_dict
@@ -143,7 +146,7 @@ class DataInput:
                 index_sets,
                 unit_category,
                 file_name=file_name,
-                manual_default_value=self.model_schema.set_haversine_distances_edges,
+                manual_default_value=self.network_topology.set_haversine_distances_edges,
             )
         else:
             df_output, default_value, index_name_list = self.create_default_output(
@@ -777,6 +780,8 @@ class DataInput:
                 index_list.append(self.config.system[index])
             elif hasattr(self.model_schema, index):
                 index_list.append(getattr(self.model_schema, index))
+            elif hasattr(self.network_topology, index):
+                index_list.append(getattr(self.network_topology, index))
             else:
                 raise AttributeError(f"Index '{index}' cannot be found.")
         return index_list, index_name_list

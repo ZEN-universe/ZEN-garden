@@ -9,6 +9,7 @@ from pathlib import Path
 from zen_garden.default_config import Config
 from zen_garden.optimization_workflow import OptimizationWorkflow
 from zen_garden.plugin_system.loader import register_plugins
+from zen_garden.topology.model_schema import ModelSchema
 from zen_garden.utils.input_data_checks import InputDataChecks
 from zen_garden.utils.scenario_utils import ScenarioUtils
 from zen_garden.utils.string_utils import StringUtils
@@ -105,6 +106,7 @@ def run(
 
     config_path = config
     config = Config.from_file(config_path)
+    model_schema = ModelSchema(config)
     register_plugins(config.plugins)
     adjust_config_paths(config, dataset, folder_output, config_path)
 
@@ -122,7 +124,7 @@ def run(
         # FORMULATE THE OPTIMIZATION PROBLEM
         # add the scenario_dict and read input data
         optimization_workflow = OptimizationWorkflow(
-            config, scenario_dict, input_data_checks
+            model_schema, scenario_dict, input_data_checks
         )
         optimization_workflow.run_steps(scenario, model_name, config, no_solve)
 

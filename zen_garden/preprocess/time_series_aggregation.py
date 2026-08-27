@@ -12,6 +12,7 @@ from tsam import ClusterConfig, ExtremeConfig
 from zen_garden.elements.element import Element
 
 if TYPE_CHECKING:
+    from zen_garden.elements.energy_system import EnergySystem
     from zen_garden.model.config import Config
     from zen_garden.model.time_steps import TimeStepsDicts
     from zen_garden.services.element_registry import ElementRegistry
@@ -28,6 +29,7 @@ class TimeSeriesAggregation(object):
     def __init__(
         self,
         model_schema: "ModelSchema",
+        energy_system: "EnergySystem",
         config: "Config",
         element_registry: "ElementRegistry",
         time_steps: "TimeStepsDicts",
@@ -43,6 +45,7 @@ class TimeSeriesAggregation(object):
         # initiate dictionary for saving year specific TSA results
         self.year_specific_tsa: dict[int, dict[tuple[str, str], Any]] = {}
         self.model_schema = model_schema
+        self.energy_system = energy_system
         self.time_steps = time_steps
         self.config = config
         self.element_registry = element_registry
@@ -103,10 +106,10 @@ class TimeSeriesAggregation(object):
         self.calculate_time_steps_storage_level()
         # overwrite duration of operational and storage time steps in energy
         # system
-        self.model_schema.energy_system.time_steps_operation_duration = pd.Series(
+        self.energy_system.time_steps_operation_duration = pd.Series(
             self.time_steps.time_steps_operation_duration
         )
-        self.model_schema.energy_system.time_steps_storage_duration = pd.Series(
+        self.energy_system.time_steps_storage_duration = pd.Series(
             self.time_steps.time_steps_storage_duration
         )
 

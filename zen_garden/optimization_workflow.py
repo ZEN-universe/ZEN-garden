@@ -12,7 +12,7 @@ import logging
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from zen_garden.elements import ELEMENT_TYPE_CLASSES
+from zen_garden.elements.energy_system import EnergySystem
 from zen_garden.model.config import Config
 from zen_garden.model.time_steps import TimeStepsDicts
 from zen_garden.model.zen_model import ZenModel
@@ -22,6 +22,7 @@ from zen_garden.preprocess.unit_handling import UnitHandling
 from zen_garden.services.dataset_path_resolver import DatasetPathResolver
 from zen_garden.services.element_registry import ElementRegistry
 from zen_garden.services.input_repository import InputRepository
+from zen_garden.services.network_topology import NetworkTopology
 from zen_garden.services.parameter_loading_service import ParameterLoadingService
 from zen_garden.services.scenario_dict import ScenarioDict
 from zen_garden.services.service_container import ServiceContainer
@@ -50,7 +51,7 @@ class OptimizationWorkflow:
 
     def __init__(
         self,
-        raw_config: "DefaultConfig",
+        model_schema: ModelSchema,
         init_scenario_dict: dict,
         input_data_checks: "InputDataChecks",
     ):
@@ -69,6 +70,8 @@ class OptimizationWorkflow:
 
         """
         self.service_container = ServiceContainer("service_container")
+        self.model_schema = copy.deepcopy(model_schema)
+        raw_config = self.model_schema.config
 
         # Copying is necessary, because the config object is modified,
         # e.g., in add_elements of ElementRegistry
@@ -77,7 +80,9 @@ class OptimizationWorkflow:
             copy.deepcopy(raw_config.system),
             copy.deepcopy(raw_config.solver),
         )
+        self.model_schema.config = self.config
         self.service_container.register("config", self.config)
+        self.service_container.register("model_schema", self.model_schema)
 
         self.dataset_path_resolver = self.service_container.build_and_register(
             "dataset_path_resolver", DatasetPathResolver
@@ -90,7 +95,7 @@ class OptimizationWorkflow:
             init_scenario_dict,
             self.dataset_path_resolver,
             self.config,
-            ELEMENT_TYPE_CLASSES,
+            self.model_schema.element_type_classes,
         )
         self.service_container.register("scenario_dict", scenario_dict)
 
@@ -108,7 +113,12 @@ class OptimizationWorkflow:
         self.service_container.register("year_specific_ts", YearSpecificTs())
 
         # initiate dictionary for storing time steps
-        self.service_container.build_and_register("time_steps", TimeStepsDicts)
+        time_steps = self.service_container.build_and_register(
+            "time_steps", TimeStepsDicts
+        )
+        time_steps.sequence_time_steps_yearly = (
+            self.model_schema.sequence_time_steps_yearly
+        )
 
         # Initialize the global schema before creating any elements.
         energy_system_folder_path = Path(
@@ -122,16 +132,14 @@ class OptimizationWorkflow:
         self.service_container.build_and_register(
             "input_repository", InputRepository, folder_path=energy_system_folder_path
         )
-        self.model_schema = self.service_container.build_and_register(
-            "model_schema", ModelSchema
-        )
-
+        self.service_container.build_and_register("network_topology", NetworkTopology)
         element_registry = self.service_container.build_and_register(
             "element_registry", ElementRegistry
         )
-        self.model_schema.register_element_registry(element_registry)
         element_registry.register_elements()
-        self.energy_system = self.model_schema.energy_system
+        energy_systems = element_registry.all_elements_of_type(EnergySystem)
+        assert len(energy_systems) == 1
+        self.energy_system = energy_systems[0]
         self.service_container.register("energy_system", self.energy_system)
 
         # check if all elements from the scenario_dict are in the model

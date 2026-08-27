@@ -15,6 +15,7 @@ if TYPE_CHECKING:
     from zen_garden.preprocess.unit_handling import UnitHandling
     from zen_garden.services.dataset_path_resolver import DatasetPathResolver
     from zen_garden.services.element_registry import ElementRegistry
+    from zen_garden.services.network_topology import NetworkTopology
     from zen_garden.services.scenario_dict import ScenarioDict
     from zen_garden.topology.generic_set import GenericSet
     from zen_garden.topology.model_schema import ModelSchema
@@ -54,6 +55,7 @@ class Element:
         element_name: str,
         config: "Config",
         model_schema: "ModelSchema",
+        network_topology: "NetworkTopology",
         element_registry: "ElementRegistry",
         unit_handling: "UnitHandling",
         dataset_path_resolver: "DatasetPathResolver",
@@ -78,6 +80,7 @@ class Element:
         # optimization setup
         self.config = config
         self.model_schema = model_schema
+        self.network_topology = network_topology
         self.element_registry = element_registry
         self.unit_handling = unit_handling
         self.dataset_path_resolver = dataset_path_resolver
@@ -91,6 +94,7 @@ class Element:
         self.data_input = DataInput(
             element=self,
             model_schema=self.model_schema,
+            network_topology=self.network_topology,
             unit_handling=self.unit_handling,
             config=self.config,
             scenario_dict=scenario_dict,

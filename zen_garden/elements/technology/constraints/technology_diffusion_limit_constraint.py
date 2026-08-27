@@ -17,6 +17,7 @@ if TYPE_CHECKING:
     from zen_garden.model.time_steps import TimeStepsDicts
     from zen_garden.model.zen_model import ZenModel
     from zen_garden.services.element_registry import ElementRegistry
+    from zen_garden.services.network_topology import NetworkTopology
     from zen_garden.topology.model_schema import ModelSchema
 
 
@@ -26,10 +27,13 @@ class TechnologyDiffusionLimitConstraint(GenericConstraint):
         config: "Config",
         zen_model: "ZenModel",
         model_schema: "ModelSchema",
+        network_topology: "NetworkTopology",
         time_steps: "TimeStepsDicts",
         element_registry: "ElementRegistry",
     ):
-        super().__init__(config, zen_model, model_schema, time_steps)
+        super().__init__(
+            config, zen_model, model_schema, network_topology, time_steps
+        )
         self.element_registry = element_registry
 
     def build(self):
