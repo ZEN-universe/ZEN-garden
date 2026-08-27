@@ -1,131 +1,31 @@
-import copy
-import logging
 from typing import TYPE_CHECKING, Any, TypeVar
 
 import pandas as pd
 
 from zen_garden.elements.element import Element
-from zen_garden.elements.energy_system import EnergySystem
-from zen_garden.services.service_container import ServiceContainer
 
 if TYPE_CHECKING:
-    from zen_garden.model.time_steps import TimeStepsDicts
     from zen_garden.preprocess.unit_handling import UnitHandling
-    from zen_garden.services.dataset_path_resolver import DatasetPathResolver
-    from zen_garden.services.scenario_dict import ScenarioDict
     from zen_garden.topology.model_schema import ModelSchema
-    from zen_garden.types import YearSpecificTs
-    from zen_garden.utils.input_data_checks import InputDataChecks
-
-logger = logging.getLogger(__name__)
 
 T = TypeVar("T", bound=Element)
 
 
 class ElementRegistry:
+    """Read-only accessor over the elements registered in the model schema.
+
+    Provides lookups by type or name and bulk extraction of element attributes
+    together with their units. Elements are put into the schema by
+    :class:`ElementFactory`.
+    """
+
     def __init__(
         self,
-        service_container: "ServiceContainer",
         model_schema: "ModelSchema",
-        input_data_checks: "InputDataChecks",
         unit_handling: "UnitHandling",
-        dataset_path_resolver: "DatasetPathResolver",
-        scenario_dict: "ScenarioDict",
-        time_steps: "TimeStepsDicts",
-        year_specific_ts: "YearSpecificTs",
     ):
-        self.service_container = service_container
         self.model_schema = model_schema
-        self.input_data_checks = input_data_checks
         self.unit_handling = unit_handling
-        self.dataset_path_resolver = dataset_path_resolver
-        self.scenario_dict = scenario_dict
-        self.time_steps = time_steps
-        self.year_specific_ts = year_specific_ts
-
-    def register_elements(self):
-        """Set up the parameters, variables and constraints of the carriers."""
-        logger.info("\n--- Add elements to model--- \n")
-        for element_class in self.model_schema.element_classes:
-            if element_class is EnergySystem:
-                self._register_element(EnergySystem, EnergySystem.name)
-                continue
-            element_name = element_class.label
-            element_set = self.model_schema.config.system[element_name]
-
-            # before adding the carriers, get set_carriers
-            # check if carrier data exists
-            if element_name == "set_carriers":
-                element_set: list[str] = self.model_schema.set_carriers
-                self.input_data_checks.check_existing_carrier_data(element_set)
-
-            # check if element_set has a subset and remove subset from element_set
-            element_subset: list[str] = []
-            if element_name in self.model_schema.config.analysis.subsets.keys():
-                if isinstance(
-                    self.model_schema.config.analysis.subsets[element_name], list
-                ):
-                    subset_names = self.model_schema.config.analysis.subsets[
-                        element_name
-                    ]
-                elif isinstance(
-                    self.model_schema.config.analysis.subsets[element_name], dict
-                ):
-                    subset_names = self.model_schema.config.analysis.subsets[
-                        element_name
-                    ].keys()
-                else:
-                    raise ValueError(
-                        f"Subset {element_name} has to be either a list or a dict"
-                    )
-                element_subset = [
-                    item
-                    for subset in subset_names
-                    for item in self.model_schema.config.system[subset]
-                ]
-            else:
-                stack = [
-                    _dict
-                    for _dict in copy.deepcopy(
-                        self.model_schema.config.analysis.subsets
-                    ).values()
-                    if isinstance(_dict, dict)
-                ]
-                while stack:  # check if element_set is a subset of a subset
-                    cur_dict = stack.pop()
-                    element_subset = []
-                    for set_name, subsets in cur_dict.items():
-                        if element_name == set_name:
-                            if isinstance(subsets, list):
-                                element_subset += [
-                                    item
-                                    for subset_name in subsets
-                                    for item in self.model_schema.config.system[
-                                        subset_name
-                                    ]
-                                ]
-                        if isinstance(subsets, dict):
-                            stack.append(subsets)
-
-            # add element class
-            element_names = list(set(element_set) - set(element_subset))
-            for element_name in sorted(element_names):
-                self._register_element(element_class, element_name)
-
-    def _register_element(self, element_class: type[Element], element_name: str):
-        """Add an element to the element_dict with the class labels as key.
-
-        Args:
-            element_class: Class of the element
-            name: Name of the element
-        """
-        instance = self.service_container.build(
-            element_class, element_name=element_name
-        )
-        # Add instance to all classes that element_class inherits from, including itself
-        # MRO (Method Resolution Order) gives the order in which base classes
-        # are searched when looking for a method.
-        self.model_schema.register_element(instance)
 
     def all_elements_of_type(self, class_name: type[T]) -> list[T]:
         """Get all elements of the class in the energy system."""

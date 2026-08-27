@@ -17,6 +17,7 @@ from zen_garden.optimization_step import OptimizationStep
 from zen_garden.preprocess.time_series_aggregation import TimeSeriesAggregation
 from zen_garden.preprocess.unit_handling import UnitHandling
 from zen_garden.services.dataset_path_resolver import DatasetPathResolver
+from zen_garden.services.element_factory import ElementFactory
 from zen_garden.services.element_registry import ElementRegistry
 from zen_garden.services.input_repository import InputRepository
 from zen_garden.services.network_topology import NetworkTopology
@@ -131,7 +132,8 @@ class OptimizationWorkflow:
         element_registry = self.service_container.build_and_register(
             "element_registry", ElementRegistry
         )
-        element_registry.register_elements()
+        # instantiate every configured element and register it in the schema
+        self.service_container.build(ElementFactory).register_elements()
 
         # check if all elements from the scenario_dict are in the model
         scenario_dict.check_if_all_elements_in_model(element_registry)
