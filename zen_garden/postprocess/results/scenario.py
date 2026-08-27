@@ -312,7 +312,6 @@ class Scenario:
         if timestep_type is None:
             raise ValueError(f"Component {component_name} has no timestep type.")
 
-        sequence_timesteps = self._get_sequence_time_steps(timestep_type)
         if year is None:
             years = [i for i in range(0, self.system.optimized_years)]
         else:
@@ -367,15 +366,17 @@ class Scenario:
                 values[time_steps_year] = values[time_steps_year] / annuity[year_temp]
 
         # try:
+        output_df = None
+        sequence_timesteps = pd.Series(self._get_sequence_time_steps(timestep_type))
         if timestep_type is TimestepType.operational:
             if select_year_time_steps:
                 sequence_timesteps = sequence_timesteps[
                     sequence_timesteps.isin(time_steps)
                 ]
-            try:
-                output_df = values[sequence_timesteps]
-            except KeyError:
-                output_df = values
+                assert isinstance(sequence_timesteps, pd.Series)
+            assert isinstance(values, pd.DataFrame)
+            output_array = values.to_numpy()[:, sequence_timesteps.to_numpy()]
+            output_df = pd.DataFrame(output_array, index=values.index, copy=False)
         elif timestep_type is TimestepType.storage:
             # for storage components, the last timestep is the final state,
             # linear interpolation is used
@@ -441,8 +442,12 @@ class Scenario:
                 output_df = output_df[sequence_timesteps.index]
             else:
                 output_df = values
+            output_df = output_df.set_axis(range(output_df.shape[1]), axis=1)
 
-        return self._rename_index(output_df.T.reset_index(drop=True).T.sort_index())
+        assert isinstance(output_df, pd.DataFrame)
+        output_df.sort_index(inplace=True)
+        output_df = self._rename_index(output_df)
+        return output_df
 
     def get_total(
         self,
@@ -764,7 +769,6 @@ class Scenario:
         if isinstance(df, pd.Series) and df.index.name == "scalar":
             return df.reset_index(drop=True)
         map = self.analysis.header_data_inputs
-        df = df.copy()
         renamed_index = [
             map[str(idx)] if idx in map.keys() else idx for idx in df.index.names
         ]
@@ -927,20 +931,22 @@ class Scenario:
             itertools.chain.from_iterable(time_step_yearly[str(year)] for year in years)
         )
 
-    def _get_sequence_time_steps(self, timestep_type: TimestepType) -> pd.Series:
+    def _get_sequence_time_steps(self, timestep_type: TimestepType) -> list[int]:
         """Method that returns the sequence time steps of a scenario.
 
         Args:
-            scenario
-            timestep_type
+            timestep_type: The type of the timestep.
+
+        Returns:
+            A list of sequence time steps from `time_steps.json`
+                for the given timestep_type.
         """
         if timestep_type is TimestepType.operational:
-            ans = self.time_steps.operation
+            return self.time_steps.operation
         elif timestep_type is TimestepType.storage:
-            ans = self.time_steps.storage
+            return self.time_steps.storage
         elif timestep_type is TimestepType.yearly:
-            ans = self.time_steps.yearly
-        return pd.Series(ans)
+            return self.time_steps.yearly
 
     def _get_optimized_years(self) -> list[int]:
         """Method that returns the years for which the solution was optimized.
