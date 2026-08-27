@@ -3,7 +3,6 @@ import numpy as np
 import xarray as xr
 from linopy.expressions import LinearExpression
 
-from zen_garden.elements.carrier import Carrier
 from zen_garden.model.components.multi_index_helper import MultiIndexHelper
 from zen_garden.topology.generic_constraint import GenericConstraint
 
@@ -68,7 +67,7 @@ class NodalEnergyBalanceConstraint(GenericConstraint):
         :math:`F^{\\mathrm{exp}}_{c,n,t}`: exported carrier flow
         """
         index_values, index_names = self.zen_model.create_custom_set(
-            ["set_carriers", "set_nodes", "set_time_steps_operation"], Carrier
+            ["set_carriers", "set_nodes", "set_time_steps_operation"]
         )
         index = MultiIndexHelper(index_values, index_names)
         first_index_name = index_names[:1]

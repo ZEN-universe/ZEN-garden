@@ -20,6 +20,7 @@ class EnergySystemConstructor(ModelConstructor):
     element_class = EnergySystem
     constraints = ENERGY_SYSTEM_CONSTRAINTS
 
+
     @override
     def construct_vars(self):
         """Constructs the pe.Vars of the class <EnergySystem>."""

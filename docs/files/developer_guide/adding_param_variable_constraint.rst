@@ -180,7 +180,7 @@ The ``add_variable`` method is called in the following way:
 
     self.zen_model.add_variable(
         name="flow_import",
-        index_sets=self.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_operation"], optimization_setup),
+        index_sets=self.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_operation"]),
         bounds=(0,np.inf),
         doc="node- and time-dependent carrier import from the grid",
         unit_category={"energy_quantity": 1, "time": -1},

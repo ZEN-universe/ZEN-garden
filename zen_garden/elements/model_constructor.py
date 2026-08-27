@@ -157,7 +157,7 @@ class ModelConstructor(ABC):
         :param list_index: list of names of indices
         :return: list_index: list of names of indices
         """
-        return self.zen_model.create_custom_set(list_index, self.element_class)
+        return self.zen_model.create_custom_set(list_index)
 
     def add_parameter(
         self,

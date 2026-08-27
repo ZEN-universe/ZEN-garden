@@ -7,8 +7,6 @@ import pandas as pd
 import xarray as xr
 from linopy.expressions import LinearExpression
 
-from zen_garden.elements.element import Element
-from zen_garden.elements.technology import Technology
 from zen_garden.model.components.zen_set import BaseSet
 from zen_garden.topology.generic_constraint import GenericConstraint
 
@@ -235,7 +233,7 @@ class TechnologyDiffusionLimitConstraint(GenericConstraint):
                 else 0
             )
             for t in self.zen_model.sets["set_technologies"]
-            for ot in self._get_class_set_of_element(t, Technology)
+            for ot in self._get_class_set_of_element(t)
         }
         market_share_unbounded = pd.Series(market_share_unbounded)
         market_share_unbounded.index.names = [
@@ -336,16 +334,13 @@ class TechnologyDiffusionLimitConstraint(GenericConstraint):
                 "constraint_technology_diffusion_limit", constraints_an
             )
 
-    def _get_class_set_of_element(
-        self, element_name: str, class_name: type[Element]
-    ) -> BaseSet:
-        """Returns the set of all elements in the class of the element.
+    def _get_class_set_of_element(self, element_name: str) -> BaseSet:
+        """Returns the model set that the given element belongs to.
 
         :param element_name: name of element
-        :param klass: class of the elements to return
-        :return: class_set: set of all elements in the class of the element
+        :return: the set (e.g. ``set_conversion_technologies``) containing the element
         """
-        element = self.element_registry.get_element(class_name, element_name)
+        element = self.element_registry.get_element_by_name(element_name)
         if element is None:
-            raise ValueError(f"Element {element_name} not found in class {class_name}")
+            raise ValueError(f"Element {element_name} not found")
         return self.zen_model.sets[element.label]

@@ -13,7 +13,6 @@ from zen_garden.model.components.component import Component
 from zen_garden.model.components.zen_set import BaseSet, IndexedSet, SimpleSet
 
 if TYPE_CHECKING:
-    from zen_garden.elements.element import Element
     from zen_garden.services.element_registry import ElementRegistry
     from zen_garden.topology.model_schema import ModelSchema
 
@@ -265,11 +264,10 @@ class SetRegistry(Component):
         """
         return iter(self.sets.values())
 
-    def create_custom_set(self, list_index: list[str], element_class: "type[Element]"):
+    def create_custom_set(self, list_index: list[str]):
         """Creates custom set for model component.
 
         :param list_index: list of names of indices
-        :param element_class: class of the element to get attributes from
         :return: list_index: list of names of indices
         """
         list_index = list(list_index)  # make a copy of the list to avoid side effects
@@ -316,9 +314,7 @@ class SetRegistry(Component):
                 # if set is used to determine if on-off behavior is modeled
                 # exclude technologies which have no min_load
                 if "on_off" in index:
-                    append_element = self._append_on_off_modeled(
-                        element, index, element_class
-                    )
+                    append_element = self._append_on_off_modeled(element, index)
                     continue
 
                 # split in capacity types of power and energy
@@ -356,16 +352,14 @@ class SetRegistry(Component):
             return True
         return False
 
-    def _append_on_off_modeled(
-        self, element: str, index: str, element_class: "type[Element]"
-    ) -> bool:
+    def _append_on_off_modeled(self, element: str, index: str) -> bool:
         """Checks if the on-off-behavior (min-load) of a technology needs to be modeled.
 
         :param element: technology in model
         :param index: index to check
         :return model_on_off: Bool indicating if on-off-behavior needs to be modeled
         """
-        model_on_off = self._check_on_off_modeled(element, element_class)
+        model_on_off = self._check_on_off_modeled(element)
         return not (("set_no_on_off" in index and model_on_off) or (not model_on_off))
 
     def _handle_set_location_index(self, element: str, list_sets: list[Any]):
@@ -396,8 +390,8 @@ class SetRegistry(Component):
         else:
             list_sets.append([self.config.system.set_capacity_types[0]])
 
-    def _check_on_off_modeled(self, tech: str, element_class: "type[Element]"):
-        """Classmethod checks if on-off-behavior of a technology needs to be modeled.
+    def _check_on_off_modeled(self, tech: str):
+        """Checks if on-off-behavior of a technology needs to be modeled.
 
         If the technology has a minimum load of 0 for all nodes and time steps, and all
         dependent carriers have a lower bound of 0 (only for conversion technologies
@@ -406,13 +400,11 @@ class SetRegistry(Component):
         :param tech: technology in model
         :return model_on_off: Bool indicating if on-off-behaviour needs to be modeled
         """
-        # check if any min load
-        unique_min_load = list(
-            set(
-                self.element_registry.get_attribute_of_specific_element(
-                    element_class, tech, "min_load"
-                ).values
-            )
-        )
+        element = self.element_registry.get_element_by_name(tech)
+        assert element is not None, f"Technology {tech} is not registered"
+        assert hasattr(element, "min_load"), f"Technology {tech} has no min_load"
+        # 'min_load' is a parameter set dynamically on the element instance
+        element_attrs: Any = element
+        unique_min_load = list(set(element_attrs.min_load.values))
         # disable if only one unique min_load which is zero
         return not (len(unique_min_load) == 1 and unique_min_load[0] == 0)

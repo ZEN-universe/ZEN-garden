@@ -1,7 +1,6 @@
 import numpy as np
 import xarray as xr
 
-from zen_garden.elements.transport_technology import TransportTechnology
 from zen_garden.model.components.set_registry import SetRegistry
 from zen_garden.topology.generic_constraint import GenericConstraint
 
@@ -38,8 +37,7 @@ class TransportTechnologyCapexConstraint(GenericConstraint):
         :math:`h` on edge :math:`e`
         """
         index_values, index_list = self.zen_model.create_custom_set(
-            ["set_transport_technologies", "set_edges", "set_years"],
-            TransportTechnology,
+            ["set_transport_technologies", "set_edges", "set_years"]
         )
 
         # check if we even need to continue

@@ -55,6 +55,17 @@ class ElementRegistry:
                 return element
         return None
 
+    def get_element_by_name(self, element_name: str) -> Element | None:
+        """Get a single element by name, regardless of its class.
+
+        :param element_name: name of the element
+        :return: the element whose name matches, or None if there is none
+        """
+        for element in self.all_elements():
+            if element.name == element_name:
+                return element
+        return None
+
     def get_element_class(self, name: str) -> type[Element] | None:
         """Get element class by name. If not an element class, return None.
 
@@ -231,23 +242,3 @@ class ElementRegistry:
             )
 
         return dict_of_attributes, attribute_is_series, dict_of_units
-
-    def get_attribute_of_specific_element(
-        self, cls, element_name: str, attribute_name: str
-    ):
-        """Get attribute of specific element in class.
-
-        :param cls: class of the elements to return
-        :param element_name: str name of element
-        :param attribute_name: str name of attribute
-        :return: attribute_value: value of attribute
-        """
-        # get element
-        element = self.get_element(cls, element_name)
-        # assert that _element exists and has attribute
-        assert element, f"Element {element_name} not in class {cls.__name__}"
-        assert hasattr(
-            element, attribute_name
-        ), f"Element {element_name} does not have attribute {attribute_name}"
-        attribute_value = getattr(element, attribute_name)
-        return attribute_value
