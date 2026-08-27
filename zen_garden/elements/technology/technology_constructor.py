@@ -20,24 +20,6 @@ logger = logging.getLogger(__name__)
 
 class TechnologyConstructor(ModelConstructor):
     element_class = Technology
-    parameters = Technology.own_parameters
-    variables = Technology.variables
-    sets = Technology.own_sets
-
-    @override
-    def has_elements(self) -> bool:
-        """Checks if there are any elements of the class
-        :class:`zen_garden.elements.technology.Technology`.
-
-        :return: True if there are elements, False otherwise
-        """
-        return True
-
-    ### --- classmethods to construct sets, parameters, variables, and constraints,
-    # that correspond to Technology --- ###
-    @override
-    def construct_sets(self):
-        super().construct_sets()
 
     @override
     def construct_params(self):

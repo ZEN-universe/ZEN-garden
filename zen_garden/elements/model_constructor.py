@@ -1,7 +1,11 @@
 """Abstract constructor for elements.
 
-All subclasses of ModelConstructor must implement the abstract methods to construct
-the sets, parameters, variables, and constraints for their respective elements.
+Each subclass builds the sets, parameters, variables and constraints for one
+element type. It declares its :attr:`~ModelConstructor.element_class` (and, when
+needed, ``constraints``); the parameter/variable/set declarations are derived
+from that element class in :meth:`~ModelConstructor.__init_subclass__`. Only
+``construct_vars`` is abstract; the other ``construct_*`` hooks have sensible
+defaults.
 """
 
 import logging
@@ -14,7 +18,9 @@ import pandas as pd
 from zen_garden.elements.element import Element
 from zen_garden.services.service_container import ServiceContainer
 from zen_garden.topology.generic_constraint import GenericConstraint
+from zen_garden.topology.generic_parameter import GenericParameter
 from zen_garden.topology.generic_set import GenericSet
+from zen_garden.topology.generic_variable import GenericVariable
 
 if TYPE_CHECKING:
     from zen_garden.elements.energy_system import EnergySystem
@@ -28,9 +34,38 @@ logger = logging.getLogger(__name__)
 
 
 class ModelConstructor(ABC):
+    """Builds the model components (sets, parameters, variables, constraints).
+
+    There is one constructor instance per element *type*, whereas there is one
+    :class:`~zen_garden.elements.element.Element` instance per concrete element
+    (each carrier, each technology). The element class is the single source of
+    truth for which parameters, variables and sets belong to the type;
+    :meth:`__init_subclass__` copies those declarations onto the constructor so
+    subclasses only carry build *behavior*. A subclass may still set any of
+    ``parameters``/``variables``/``sets`` explicitly to override the derived
+    value.
+    """
+
     element_class: ClassVar[type["Element"] | type["EnergySystem"]] = Element
     constraints: list[type[GenericConstraint]] = []
+    parameters: list[type[GenericParameter]] = []
+    variables: list[type[GenericVariable]] = []
     sets: list[type[GenericSet]] = []
+    # If True, the components are always built, even when no element of this type
+    # is configured (other constructors, e.g. the carrier energy balance, refer
+    # to them unconditionally). Set to False for self-contained, optional types.
+    always_construct: ClassVar[bool] = True
+
+    def __init_subclass__(cls, **kwargs):
+        """Derive component declarations from :attr:`element_class`."""
+        super().__init_subclass__(**kwargs)
+        element_class = cls.__dict__.get("element_class", cls.element_class)
+        if "parameters" not in cls.__dict__:
+            cls.parameters = element_class.__dict__.get("own_parameters", [])
+        if "variables" not in cls.__dict__:
+            cls.variables = element_class.__dict__.get("variables", [])
+        if "sets" not in cls.__dict__:
+            cls.sets = element_class.__dict__.get("own_sets", [])
 
     def __init__(
         self,
@@ -58,13 +93,18 @@ class ModelConstructor(ABC):
         """Return the canonical energy-system element from the schema."""
         return self.model_schema.energy_system
 
-    @abstractmethod
     def has_elements(self) -> bool:
-        """Checks if the element has any elements to construct.
+        """Check whether this constructor should run.
 
-        :return: True if the element has elements, False otherwise
+        Constructors are skipped entirely when this returns False (see
+        :meth:`~zen_garden.services.model_construction_service.ModelConstructionService.construct_model`).
+        Mandatory types (:attr:`always_construct`) always run; optional types
+        run only when at least one element of :attr:`element_class` is
+        registered.
         """
-        pass
+        if self.always_construct:
+            return True
+        return bool(self.element_registry.all_names_of_elements(self.element_class))
 
     def construct_sets(self):
         """Constructs the Sets of this class."""

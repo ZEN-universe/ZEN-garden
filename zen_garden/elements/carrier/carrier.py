@@ -21,6 +21,4 @@ class Carrier(Element):
     # empty list of elements
     list_of_elements: list[str] = []
     own_parameters: ClassVar[list[type[GenericParameter]]] = CARRIER_PARAMETERS
-    # Todo: Add the constraints here?
-    parameters: ClassVar[list[type[GenericParameter]]] = CARRIER_PARAMETERS
     variables: ClassVar[list[type[GenericVariable]]] = CARRIER_VARIABLES

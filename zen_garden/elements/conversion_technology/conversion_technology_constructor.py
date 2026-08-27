@@ -20,18 +20,6 @@ logger = logging.getLogger(__name__)
 
 class ConversionTechnologyConstructor(ModelConstructor):
     element_class = ConversionTechnology
-    parameters = ConversionTechnology.own_parameters
-    sets = ConversionTechnology.own_sets
-    variables = ConversionTechnology.variables
-
-    @override
-    def has_elements(self) -> bool:
-        """Checks if there are any elements of the class
-        :class:`zen_garden.elements.conversion_technology.ConversionTechnology`.
-
-        :return: True if there are elements, False otherwise
-        """
-        return True
 
     @override
     def construct_vars(self):

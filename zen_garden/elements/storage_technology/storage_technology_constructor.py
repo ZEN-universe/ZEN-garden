@@ -18,17 +18,6 @@ logger = logging.getLogger(__name__)
 class StorageTechnologyConstructor(ModelConstructor):
     element_class = StorageTechnology
     constraints = STORAGE_TECHNOLOGY_CONSTRAINTS
-    parameters = StorageTechnology.own_parameters
-    variables = StorageTechnology.variables
-
-    @override
-    def has_elements(self) -> bool:
-        """Checks if there are any elements of the class
-        :class:`zen_garden.elements.storage_technology.StorageTechnology`.
-
-        :return: True if there are elements, False otherwise
-        """
-        return True
 
     @override
     def construct_vars(self):

@@ -18,21 +18,6 @@ logger = logging.getLogger(__name__)
 class TransportTechnologyConstructor(ModelConstructor):
     element_class = TransportTechnology
     constraints = TRANSPORT_TECHNOLOGY_CONSTRAINTS
-    parameters = TransportTechnology.own_parameters
-    variables = TransportTechnology.variables
-
-    @override
-    def has_elements(self) -> bool:
-        """Checks if there are any elements of the class
-        :class:`zen_garden.elements.transport_technology.TransportTechnology`.
-
-        :return: True if there are elements, False otherwise
-        """
-        return True
-
-    @override
-    def construct_sets(self):
-        logger.info("Constructing sets for TransportTechnology")
 
     @override
     def construct_vars(self):

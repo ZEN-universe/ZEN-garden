@@ -19,14 +19,6 @@ logger = logging.getLogger(__name__)
 class EnergySystemConstructor(ModelConstructor):
     element_class = EnergySystem
     constraints = ENERGY_SYSTEM_CONSTRAINTS
-    parameters = EnergySystem.parameters
-    variables = EnergySystem.variables
-    sets = EnergySystem.own_sets
-
-    @override
-    def has_elements(self) -> bool:
-        """Check if the energy system has elements."""
-        return True
 
     @override
     def construct_vars(self):
