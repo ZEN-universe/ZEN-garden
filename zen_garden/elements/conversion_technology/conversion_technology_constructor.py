@@ -22,6 +22,7 @@ class ConversionTechnologyConstructor(ModelConstructor):
     element_class = ConversionTechnology
     parameters = ConversionTechnology.own_parameters
     sets = ConversionTechnology.own_sets
+    variables = ConversionTechnology.variables
 
     @override
     def has_elements(self) -> bool:
@@ -111,39 +112,25 @@ class ConversionTechnologyConstructor(ModelConstructor):
             # make sure lower is never below 0
             return lower, upper
 
-        ## Flow variables
-        # input flow of carrier into technology
-        index_values, index_names = self.create_custom_set(
-            [
-                "set_conversion_technologies",
-                "set_input_carriers",
-                "set_nodes",
-                "set_time_steps_operation",
-            ],
-        )
-        self.zen_model.add_variable(
-            name="flow_conversion_input",
-            index_sets=(index_values, index_names),
-            bounds=flow_conversion_bounds(index_values, index_names),
-            doc="Carrier input of conversion technologies",
-            unit_category={"energy_quantity": 1, "time": -1},
-        )
-        # output flow of carrier into technology
-        index_values, index_names = self.create_custom_set(
-            [
-                "set_conversion_technologies",
-                "set_output_carriers",
-                "set_nodes",
-                "set_time_steps_operation",
-            ],
-        )
-        self.zen_model.add_variable(
-            name="flow_conversion_output",
-            index_sets=(index_values, index_names),
-            bounds=flow_conversion_bounds(index_values, index_names),
-            doc="Carrier output of conversion technologies",
-            unit_category={"energy_quantity": 1, "time": -1},
-        )
+        for variable in self.variables:
+            if variable.name in ["flow_conversion_input", "flow_conversion_output"]:
+                # Exceptional bounds, masks or indices
+                index_values, index_names = self.create_custom_set(variable.indices)
+                index_sets = (index_values, index_names)
+                bounds = flow_conversion_bounds(index_values, index_names)
+            else:
+                # Standard behavior
+                index_sets = self.create_custom_set(variable.indices)
+                bounds = variable.get_bounds()
+
+            self.zen_model.add_variable(
+                name=variable.name,
+                index_sets=index_sets,
+                binary=variable.binary,
+                bounds=bounds,
+                doc=variable.doc,
+                unit_category=variable.unit_category,
+            )
 
     @override
     def construct_constraints(self):

@@ -19,6 +19,7 @@ class TransportTechnologyConstructor(ModelConstructor):
     element_class = TransportTechnology
     constraints = TRANSPORT_TECHNOLOGY_CONSTRAINTS
     parameters = TransportTechnology.own_parameters
+    variables = TransportTechnology.variables
 
     @override
     def has_elements(self) -> bool:
@@ -69,27 +70,47 @@ class TransportTechnologyConstructor(ModelConstructor):
             )
             return np.stack([lower, upper], axis=-1)
 
-        # flow of carrier on edge
-        index_values, index_names = self.create_custom_set(
-            ["set_transport_technologies", "set_edges", "set_time_steps_operation"]
-        )
-        bounds = flow_transport_bounds(index_values, index_names)
-        self.zen_model.add_variable(
-            name="flow_transport",
-            index_sets=(index_values, index_names),
-            bounds=bounds,
-            doc="carrier flow through transport technology on edge i and time t",
-            unit_category={"energy_quantity": 1, "time": -1},
-        )
+        # # flow of carrier on edge
+        # index_values, index_names = self.create_custom_set(
+        #     ["set_transport_technologies", "set_edges", "set_time_steps_operation"]
+        # )
+        # bounds = flow_transport_bounds(index_values, index_names)
+        # self.zen_model.add_variable(
+        #     name="flow_transport",
+        #     index_sets=(index_values, index_names),
+        #     bounds=bounds,
+        #     doc="carrier flow through transport technology on edge i and time t",
+        #     unit_category={"energy_quantity": 1, "time": -1},
+        # )
         # loss of carrier on edge
-        self.zen_model.add_variable(
-            name="flow_transport_loss",
-            index_sets=(index_values, index_names),
-            bounds=(0, np.inf),
-            doc="carrier flow lost due to resistances etc. by transporting carrier "
-            "through transport technology on edge i and time t",
-            unit_category={"energy_quantity": 1, "time": -1},
-        )
+        # self.zen_model.add_variable(
+        #     name="flow_transport_loss",
+        #     index_sets=(index_values, index_names),
+        #     bounds=(0, np.inf),
+        #     doc="carrier flow lost due to resistances etc. by transporting carrier "
+        #     "through transport technology on edge i and time t",
+        #     unit_category={"energy_quantity": 1, "time": -1},
+        # )
+
+        for variable in self.variables:
+            if variable.name in ["flow_transport"]:
+                # Exceptional bounds, masks or indices
+                index_values, index_names = self.create_custom_set(variable.indices)
+                index_sets = index_values, index_names
+                bounds = flow_transport_bounds(index_values, index_names)
+            else:
+                # Standard behavior
+                index_sets = self.create_custom_set(variable.indices)
+                bounds = variable.get_bounds()
+
+            self.zen_model.add_variable(
+                name=variable.name,
+                index_sets=index_sets,
+                binary=variable.binary,
+                bounds=bounds,
+                doc=variable.doc,
+                unit_category=variable.unit_category,
+            )
 
     @override
     def construct_expressions(self):

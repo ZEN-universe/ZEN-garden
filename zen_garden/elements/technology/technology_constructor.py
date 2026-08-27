@@ -21,6 +21,7 @@ logger = logging.getLogger(__name__)
 class TechnologyConstructor(ModelConstructor):
     element_class = Technology
     parameters = Technology.own_parameters
+    variables = Technology.variables
     sets = Technology.own_sets
 
     @override
@@ -69,7 +70,7 @@ class TechnologyConstructor(ModelConstructor):
             """
             # bounds only needed for Big-M formulation,
             #   thus if any technology is modeled with on-off behavior
-            if tech in techs_on_off:
+            if tech in techs_on_off_flag:
                 params = self.zen_model.parameters.dict_parameters
                 capacity_existing = params.capacity_existing
                 capacity_addition_max = params.capacity_addition_max
@@ -114,182 +115,6 @@ class TechnologyConstructor(ModelConstructor):
             else:
                 return 0, np.inf
 
-        # bounds only needed for Big-M formulation,
-        #   thus if any technology is modeled with on-off behavior
-        techs_on_off = self.create_custom_set(["set_technologies", "set_on_off"])[0]
-        # construct pe.Vars of the class <Technology>
-        # capacity technology
-        self.zen_model.add_variable(
-            name="capacity",
-            index_sets=self.create_custom_set(
-                [
-                    "set_technologies",
-                    "set_capacity_types",
-                    "set_location",
-                    "set_years",
-                ],
-            ),
-            bounds=capacity_bounds,
-            doc="size of installed technology at location l and time t",
-            unit_category={"energy_quantity": 1, "time": -1},
-        )
-        # capacity technology before current year
-        self.zen_model.add_variable(
-            name="capacity_previous",
-            index_sets=self.create_custom_set(
-                [
-                    "set_technologies",
-                    "set_capacity_types",
-                    "set_location",
-                    "set_years",
-                ],
-            ),
-            bounds=(0, np.inf),
-            doc="size of installed technology at location l and BEFORE time t",
-            unit_category={"energy_quantity": 1, "time": -1},
-        )
-        # built_capacity technology
-        self.zen_model.add_variable(
-            name="capacity_addition",
-            index_sets=self.create_custom_set(
-                [
-                    "set_technologies",
-                    "set_capacity_types",
-                    "set_location",
-                    "set_years",
-                ],
-            ),
-            bounds=(0, np.inf),
-            doc="size of built technology (invested capacity after construction) "
-            "at location l and time t",
-            unit_category={"energy_quantity": 1, "time": -1},
-        )
-        # invested_capacity technology
-        self.zen_model.add_variable(
-            name="capacity_investment",
-            index_sets=self.create_custom_set(
-                [
-                    "set_technologies",
-                    "set_capacity_types",
-                    "set_location",
-                    "set_years",
-                ],
-            ),
-            bounds=(0, np.inf),
-            doc="size of invested technology at location l and time t",
-            unit_category={"energy_quantity": 1, "time": -1},
-        )
-        # capex of building capacity overnight
-        self.zen_model.add_variable(
-            name="cost_capex_overnight",
-            index_sets=self.create_custom_set(
-                [
-                    "set_technologies",
-                    "set_capacity_types",
-                    "set_location",
-                    "set_years",
-                ],
-            ),
-            bounds=(0, np.inf),
-            doc="capex for building technology at location l and time t",
-            unit_category={"money": 1},
-        )
-        # annual capex of having capacity
-        self.zen_model.add_variable(
-            name="cost_capex_yearly",
-            index_sets=self.create_custom_set(
-                [
-                    "set_technologies",
-                    "set_capacity_types",
-                    "set_location",
-                    "set_years",
-                ],
-            ),
-            bounds=(0, np.inf),
-            doc="annual capex for having technology at location l",
-            unit_category={"money": 1},
-        )
-        # total capex
-        self.zen_model.add_variable(
-            name="cost_capex_yearly_total",
-            index_sets=self.zen_model.sets["set_years"],
-            bounds=(0, np.inf),
-            doc="total capex for installing all technologies in all locations "
-            "at all times",
-            unit_category={"money": 1},
-        )
-        # opex
-        self.zen_model.add_variable(
-            name="cost_opex_variable",
-            index_sets=self.create_custom_set(
-                ["set_technologies", "set_location", "set_time_steps_operation"],
-            ),
-            bounds=(0, np.inf),
-            doc="opex for operating technology at location l and time t",
-            unit_category={"money": 1, "time": -1},
-        )
-        # total opex
-        self.zen_model.add_variable(
-            name="cost_opex_yearly_total",
-            index_sets=self.zen_model.sets["set_years"],
-            bounds=(0, np.inf),
-            doc="total opex all technologies and locations in year y",
-            unit_category={"money": 1},
-        )
-        # yearly opex
-        self.zen_model.add_variable(
-            name="cost_opex_yearly",
-            index_sets=self.create_custom_set(
-                ["set_technologies", "set_location", "set_years"],
-            ),
-            bounds=(0, np.inf),
-            doc="yearly opex for operating technology at location l and year y",
-            unit_category={"money": 1},
-        )
-        # carbon emissions
-        self.zen_model.add_variable(
-            name="carbon_emissions_technology",
-            index_sets=self.create_custom_set(
-                ["set_technologies", "set_location", "set_time_steps_operation"],
-            ),
-            doc="carbon emissions for operating technology at location l and time t",
-            unit_category={"emissions": 1, "time": -1},
-        )
-        # total carbon emissions technology
-        self.zen_model.add_variable(
-            name="carbon_emissions_technology_total",
-            index_sets=self.zen_model.sets["set_years"],
-            doc="total carbon emissions for operating technology",
-            unit_category={"emissions": 1},
-        )
-
-        # install technology
-        # Note: binary variables are written into the lp file by linopy even if they
-        # are not relevant for the optimization, which makes all problems MIPs.
-        # Therefore, we only add binary variables, if really necessary. Gurobi can
-        # handle this by noting that the binary variables are not part of the model,
-        # however, only if there are no binary variables at all, it is possible to get
-        # the dual values of the constraints.
-        mask = self._technology_installation_mask()
-        if mask.any():
-            self.zen_model.add_variable(
-                name="technology_installation",
-                index_sets=self.create_custom_set(
-                    [
-                        "set_technologies",
-                        "set_capacity_types",
-                        "set_location",
-                        "set_years",
-                    ],
-                ),
-                binary=True,
-                doc="installment of a technology at location l and time t",
-                mask=mask,
-                unit_category=None,
-            )
-
-        # on-off variables
-        # We remove the binary variables if there are any no constraints that use them
         techs_on_off, index_list = self.create_custom_set(
             [
                 "set_technologies",
@@ -317,27 +142,56 @@ class TechnologyConstructor(ModelConstructor):
         mask_on_off = mask_on_off & mask_nonzero_cap_limit.drop_vars(
             "set_capacity_types"
         )
-        self.zen_model.add_variable(
-            name="tech_on_var",
-            index_sets=self.create_custom_set(
-                ["set_technologies", "set_location", "set_time_steps_operation"],
-            ),
-            mask=mask_on_off,
-            doc="Binary variable which equals 1 when technology is switched on at "
-            "location l and time t",
-            binary=True,
-            unit_category=None,
-        )
-        self.zen_model.add_variable(
-            name="capacity_on_off_helper_var",
-            index_sets=self.create_custom_set(
-                ["set_technologies", "set_location", "set_time_steps_operation"],
-            ),
-            bounds=(0, np.inf),
-            mask=mask_on_off,
-            doc="Helper variable substituting the product of capacity and tech_on_var",
-            unit_category={"energy_quantity": 1, "time": -1},
-        )
+
+        for variable in self.variables:
+            if variable.name in [
+                "carbon_emissions_technology_total",
+                "cost_opex_yearly_total",
+                "cost_capex_yearly_total",
+            ]:
+                # Exceptional bounds, masks or indices
+                index_sets = self.zen_model.sets["set_years"]
+                bounds = variable.get_bounds()
+                mask = None
+
+            elif variable.name in ["capacity"]:
+                techs_on_off_flag = self.create_custom_set(
+                    ["set_technologies", "set_on_off"]
+                )[0]
+                index_sets = self.create_custom_set(variable.indices)
+                bounds = capacity_bounds
+                mask = None
+            elif variable.name in ["technology_installation"]:
+                # Note: binary variables are written into the lp file by linopy even if they
+                # are not relevant for the optimization, which makes all problems MIPs.
+                # Therefore, we only add binary variables, if really necessary. Gurobi can
+                # handle this by noting that the binary variables are not part of the model,
+                # however, only if there are no binary variables at all, it is possible to get
+                # the dual values of the constraints.
+                index_sets = self.create_custom_set(variable.indices)
+                bounds = variable.get_bounds()
+                mask = self._technology_installation_mask()
+                if not mask.any():
+                    continue
+            elif variable.name in ["capacity_on_off_helper_var", "tech_on_var"]:
+                index_sets = self.create_custom_set(variable.indices)
+                bounds = variable.get_bounds()
+                mask = mask_on_off
+            else:
+                # Standard behavior
+                index_sets = self.create_custom_set(variable.indices)
+                bounds = variable.get_bounds()
+                mask = None
+
+            self.zen_model.add_variable(
+                name=variable.name,
+                index_sets=index_sets,
+                binary=variable.binary,
+                bounds=bounds,
+                mask=mask,
+                doc=variable.doc,
+                unit_category=variable.unit_category,
+            )
 
     @override
     def construct_constraints(self):

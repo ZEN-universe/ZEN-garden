@@ -20,6 +20,7 @@ class RetrofittingTechnologyConstructor(ModelConstructor):
     element_class = RetrofittingTechnology
     constraints = RETROFITTING_TECHNOLOGY_CONSTRAINTS
     parameters = RetrofittingTechnology.own_parameters
+    variables = RetrofittingTechnology.variables
     sets = RetrofittingTechnology.own_sets
 
     @override
@@ -34,3 +35,22 @@ class RetrofittingTechnologyConstructor(ModelConstructor):
     @override
     def construct_vars(self):
         logger.info("Constructing variables for RetrofittingTechnology")
+
+        for variable in self.variables:
+            if variable.name in []:
+                # Exceptional bounds, masks or indices
+                index_sets = None
+                bounds = None
+            else:
+                # Standard behavior
+                index_sets = self.create_custom_set(variable.indices)
+                bounds = variable.get_bounds()
+
+            self.zen_model.add_variable(
+                name=variable.name,
+                index_sets=index_sets,
+                binary=variable.binary,
+                bounds=bounds,
+                doc=variable.doc,
+                unit_category=variable.unit_category,
+            )

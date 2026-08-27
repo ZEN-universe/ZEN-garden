@@ -10,8 +10,12 @@ from zen_garden.elements.retrofitting_technology.parameters import (
 from zen_garden.elements.retrofitting_technology.sets import (
     RETROFITTING_TECHNOLOGY_SETS,
 )
+from zen_garden.elements.retrofitting_technology.variables import (
+    RETROFITTING_TECHNOLOGY_VARIABLES,
+)
 from zen_garden.topology.generic_parameter import GenericParameter
 from zen_garden.topology.generic_set import GenericSet
+from zen_garden.topology.generic_variable import GenericVariable
 
 logger = logging.getLogger(__name__)
 
@@ -22,9 +26,11 @@ class RetrofittingTechnology(ConversionTechnology):
     # set label
     label = "set_retrofitting_technologies"
     location_type = "set_nodes"
+    # Todo: Add the constraints here?
     own_parameters: ClassVar[list[type[GenericParameter]]] = (
         RETROFITTING_TECHNOLOGY_PARAMETERS
     )
+    variables: ClassVar[list[type[GenericVariable]]] = RETROFITTING_TECHNOLOGY_VARIABLES
     own_sets: ClassVar[list[type[GenericSet]]] = RETROFITTING_TECHNOLOGY_SETS
 
     def prepare_input_data(self) -> None:
