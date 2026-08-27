@@ -33,11 +33,10 @@ logger = logging.getLogger(__name__)
 class OptimizationWorkflow:
     """Class defining the optimization model.
 
-    The class takes as inputs the properties of the optimization problem. The
-    properties are saved in the dictionaries analysis and system which are
-    passed to the class. After initializing the model, the class adds carriers
-    and technologies to the model and returns it. The class also includes a \
-    method to solve the optimization problem.
+    The constructor only stores its inputs. The workflow then runs in explicit
+    stages: :meth:`load_data` builds the services and loads all input data,
+    :meth:`aggregate_time_series` conducts the time series aggregation, and
+    :meth:`run_steps` builds and solves the optimization problem.
     """
 
     zen_model: ZenModel
@@ -48,10 +47,11 @@ class OptimizationWorkflow:
         model_schema: ModelSchema,
         init_scenario_dict: dict,
     ):
-        """Setup optimization of the energy system.
+        """Store the inputs for the optimization of the energy system.
 
-        This function sets up the optimization process for the energy system
-        using the provided model schema and scenario data.
+        The constructor only records its arguments. Call :meth:`load_data` and
+        :meth:`aggregate_time_series` (in that order) to build the services and
+        load the input data before running :meth:`run_steps`.
 
         Args:
             model_schema (ModelSchema): Schema describing the optimization
@@ -60,8 +60,20 @@ class OptimizationWorkflow:
                 data such as resources, demand, etc.
 
         """
+        self.model_schema = model_schema
+        self.init_scenario_dict = init_scenario_dict
         self.service_container = ServiceContainer("service_container")
-        self.model_schema = copy.deepcopy(model_schema)
+
+    def load_data(self) -> None:
+        """Build the services and load all input data for the optimization.
+
+        Sets up the service container, resolves dataset paths, applies the
+        scenario, validates the input data, registers all elements and loads
+        every input parameter. Must be called before
+        :meth:`aggregate_time_series` and :meth:`run_steps`.
+        """
+        # work on a private copy so the shared input schema is left untouched
+        self.model_schema = copy.deepcopy(self.model_schema)
         self.service_container.register("model_schema", self.model_schema)
 
         self.dataset_path_resolver = self.service_container.build_and_register(
@@ -72,7 +84,7 @@ class OptimizationWorkflow:
         # WARNING: ScenarioDict::__init__ updates the config object!
         # Hence, input_data_checks must be initialized after ScenarioDict
         scenario_dict = ScenarioDict(
-            init_scenario_dict,
+            self.init_scenario_dict,
             self.dataset_path_resolver,
             self.model_schema,
         )
@@ -133,7 +145,11 @@ class OptimizationWorkflow:
         # conduct consistency checks of input units
         unit_handling.consistency_checks_input_units(self.config, element_registry)
 
-        # conduct time series aggregation
+    def aggregate_time_series(self) -> None:
+        """Conduct the time series aggregation.
+
+        Requires :meth:`load_data` to have been called first.
+        """
         self.service_container.build_and_register(
             "time_series_aggregation", TimeSeriesAggregation
         )

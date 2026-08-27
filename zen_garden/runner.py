@@ -98,6 +98,8 @@ def run(
         # FORMULATE THE OPTIMIZATION PROBLEM
         # add the scenario_dict and read input data
         optimization_workflow = OptimizationWorkflow(model_schema, scenario_dict)
+        optimization_workflow.load_data()
+        optimization_workflow.aggregate_time_series()
         optimization_workflow.run_steps(scenario, model_name, no_solve)
 
     logger.info("\n--- Optimization finished ---")
