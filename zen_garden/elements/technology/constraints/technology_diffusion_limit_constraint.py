@@ -13,11 +13,11 @@ from zen_garden.model.components.zen_set import BaseSet
 from zen_garden.topology.generic_constraint import GenericConstraint
 
 if TYPE_CHECKING:
-    from zen_garden.elements.energy_system import EnergySystem
     from zen_garden.model.config import Config
     from zen_garden.model.time_steps import TimeStepsDicts
     from zen_garden.model.zen_model import ZenModel
     from zen_garden.services.element_registry import ElementRegistry
+    from zen_garden.topology.model_schema import ModelSchema
 
 
 class TechnologyDiffusionLimitConstraint(GenericConstraint):
@@ -25,11 +25,11 @@ class TechnologyDiffusionLimitConstraint(GenericConstraint):
         self,
         config: "Config",
         zen_model: "ZenModel",
-        energy_system: "EnergySystem",
+        model_schema: "ModelSchema",
         time_steps: "TimeStepsDicts",
         element_registry: "ElementRegistry",
     ):
-        super().__init__(config, zen_model, energy_system, time_steps)
+        super().__init__(config, zen_model, model_schema, time_steps)
         self.element_registry = element_registry
 
     def build(self):
@@ -260,7 +260,7 @@ class TechnologyDiffusionLimitConstraint(GenericConstraint):
         )
         # existing capacities
         delta_years = interval_between_years * (
-            capacity_addition.coords["set_years"] - 1 - self.energy_system.set_years[0]
+            capacity_addition.coords["set_years"] - 1 - self.model_schema.set_years[0]
         )
         lifetime_existing = self.zen_model.parameters.lifetime_existing
         lifetime = self.zen_model.parameters.lifetime

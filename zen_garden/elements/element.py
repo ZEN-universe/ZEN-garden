@@ -10,7 +10,6 @@ from zen_garden.services.input_repository import InputRepository
 from zen_garden.topology.generic_parameter import GenericParameter
 
 if TYPE_CHECKING:
-    from zen_garden.elements.energy_system import EnergySystem
     from zen_garden.model.config import Config
     from zen_garden.model.time_steps import TimeStepsDicts
     from zen_garden.preprocess.unit_handling import UnitHandling
@@ -18,6 +17,7 @@ if TYPE_CHECKING:
     from zen_garden.services.element_registry import ElementRegistry
     from zen_garden.services.scenario_dict import ScenarioDict
     from zen_garden.topology.generic_set import GenericSet
+    from zen_garden.topology.model_schema import ModelSchema
     from zen_garden.types import YearSpecificTs
     from zen_garden.utils.input_data_checks import InputDataChecks
 
@@ -53,7 +53,7 @@ class Element:
         self,
         element_name: str,
         config: "Config",
-        energy_system: "EnergySystem",
+        model_schema: "ModelSchema",
         element_registry: "ElementRegistry",
         unit_handling: "UnitHandling",
         dataset_path_resolver: "DatasetPathResolver",
@@ -66,7 +66,7 @@ class Element:
 
         :param element_name: Name of the element
         :param config: Config object
-        :param energy_system: EnergySystem object
+        :param model_schema: Global model schema
         :param element_registry: ElementRegistry object
         :param unit_handling: UnitHandling object
         :param dataset_path_resolver: DatasetPathResolver object
@@ -77,8 +77,7 @@ class Element:
         self.name = element_name
         # optimization setup
         self.config = config
-        # energy system
-        self.energy_system = energy_system
+        self.model_schema = model_schema
         self.element_registry = element_registry
         self.unit_handling = unit_handling
         self.dataset_path_resolver = dataset_path_resolver
@@ -91,7 +90,7 @@ class Element:
         self.input_repository = InputRepository(folder_path)
         self.data_input = DataInput(
             element=self,
-            energy_system=self.energy_system,
+            model_schema=self.model_schema,
             unit_handling=self.unit_handling,
             config=self.config,
             scenario_dict=scenario_dict,
@@ -112,6 +111,9 @@ class Element:
 
     def prepare_input_data(self) -> None:
         """Prepare structural information required to load parameters."""
+
+    def finalize_input_data(self) -> None:
+        """Apply transformations that require all parameters to be loaded."""
 
     def _get_input_path(self):
         """Get input path where input data is stored input_path."""

@@ -37,7 +37,7 @@ class Technology(Element):
             list[str],
             self.data_input.extract_carriers(carrier_type="reference_carrier"),
         )
-        self.energy_system.set_technology_of_carrier(self.name, self.reference_carrier)
+        self.model_schema.set_technology_of_carrier(self.name, self.reference_carrier)
 
     def prepare_input_data(self) -> None:
         """Load the vintage set needed by existing-capacity parameters."""

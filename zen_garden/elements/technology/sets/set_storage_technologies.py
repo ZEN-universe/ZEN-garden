@@ -6,4 +6,4 @@ class SetStorageTechnologies(GenericSet):
 
     @classmethod
     def get_data(cls, constructor):
-        return constructor.energy_system.set_storage_technologies
+        return constructor.model_schema.set_storage_technologies

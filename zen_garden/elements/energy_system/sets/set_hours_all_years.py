@@ -6,4 +6,4 @@ class SetHoursAllYears(GenericSet):
 
     @classmethod
     def get_data(cls, constructor):
-        return constructor.energy_system.set_hours_all_years
+        return constructor.model_schema.set_hours_all_years

@@ -30,6 +30,7 @@ if TYPE_CHECKING:
     from zen_garden.services.element_registry import ElementRegistry
     from zen_garden.services.scenario_dict import ScenarioDict
     from zen_garden.services.service_container import ServiceContainer
+    from zen_garden.topology.model_schema import ModelSchema
 
 logger = logging.getLogger(__name__)
 
@@ -52,6 +53,7 @@ class OptimizationStep:
         service_container: "ServiceContainer",
         config: "Config",
         energy_system: "EnergySystem",
+        model_schema: "ModelSchema",
         element_registry: "ElementRegistry",
         unit_handling: "UnitHandling",
         scenario_dict: "ScenarioDict",
@@ -76,6 +78,7 @@ class OptimizationStep:
         self.service_container = service_container
         self.config = config
         self.energy_system = energy_system
+        self.model_schema = model_schema
         self.element_registry = element_registry
         self.unit_handling = unit_handling
         self.scenario_dict = scenario_dict
@@ -228,8 +231,8 @@ class OptimizationStep:
         new_base_time_steps_horizon = base_time_steps_horizon.squeeze().tolist()
         if not isinstance(new_base_time_steps_horizon, list):
             new_base_time_steps_horizon = [new_base_time_steps_horizon]
-        self.energy_system.set_hours_all_years = new_base_time_steps_horizon
-        self.energy_system.set_years = time_steps_yearly_horizon
+        self.model_schema.set_hours_all_years = new_base_time_steps_horizon
+        self.model_schema.set_years = time_steps_yearly_horizon
 
     def prepare_scaling(self):
         """Prepare scaling of the optimization problem."""

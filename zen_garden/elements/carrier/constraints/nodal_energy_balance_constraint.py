@@ -85,11 +85,11 @@ class NodalEnergyBalanceConstraint(GenericConstraint):
         if self.zen_model.variables["flow_transport"].size > 0:
             # recalculate all the edges
             edges_in = {
-                node: self.energy_system.calculate_connected_edges(node, "in")
+                node: self.model_schema.calculate_connected_edges(node, "in")
                 for node in self.zen_model.sets["set_nodes"]
             }
             edges_out = {
-                node: self.energy_system.calculate_connected_edges(node, "out")
+                node: self.model_schema.calculate_connected_edges(node, "out")
                 for node in self.zen_model.sets["set_nodes"]
             }
             max_edges = max(
@@ -126,8 +126,8 @@ class NodalEnergyBalanceConstraint(GenericConstraint):
                     for tech in self.zen_model.sets["set_transport_technologies"]
                     if carrier in self.zen_model.sets["set_reference_carriers"][tech]
                 ]
-                edges_in = self.energy_system.calculate_connected_edges(node, "in")
-                edges_out = self.energy_system.calculate_connected_edges(node, "out")
+                edges_in = self.model_schema.calculate_connected_edges(node, "in")
+                edges_out = self.model_schema.calculate_connected_edges(node, "out")
 
                 # get the variables for the in flow
                 in_vars_plus = (

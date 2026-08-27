@@ -25,8 +25,8 @@ class CarbonEmissionsCumulativeConstraint(GenericConstraint):
         :math:`m_0^{\\mathrm{cum}}`: cumulative emissions before the modeled horizon
         """
         m = [
-            True if year == self.energy_system.set_years[0] else False
-            for year in self.energy_system.set_years
+            True if year == self.model_schema.set_years[0] else False
+            for year in self.model_schema.set_years
         ]
 
         lhs = (

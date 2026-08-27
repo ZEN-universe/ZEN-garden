@@ -13,7 +13,6 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 from zen_garden.elements import ELEMENT_TYPE_CLASSES
-from zen_garden.elements.energy_system import EnergySystem
 from zen_garden.model.config import Config
 from zen_garden.model.time_steps import TimeStepsDicts
 from zen_garden.model.zen_model import ZenModel
@@ -26,6 +25,7 @@ from zen_garden.services.input_repository import InputRepository
 from zen_garden.services.parameter_loading_service import ParameterLoadingService
 from zen_garden.services.scenario_dict import ScenarioDict
 from zen_garden.services.service_container import ServiceContainer
+from zen_garden.topology.model_schema import ModelSchema
 from zen_garden.types import YearSpecificTs
 
 if TYPE_CHECKING:
@@ -110,7 +110,7 @@ class OptimizationWorkflow:
         # initiate dictionary for storing time steps
         self.service_container.build_and_register("time_steps", TimeStepsDicts)
 
-        # Init the energy system
+        # Initialize the global schema before creating any elements.
         energy_system_folder_path = Path(
             self.dataset_path_resolver.folder_of_set("energy_system")
         )
@@ -122,14 +122,17 @@ class OptimizationWorkflow:
         self.service_container.build_and_register(
             "input_repository", InputRepository, folder_path=energy_system_folder_path
         )
-        self.energy_system = self.service_container.build_and_register(
-            "energy_system", EnergySystem
+        self.model_schema = self.service_container.build_and_register(
+            "model_schema", ModelSchema
         )
 
         element_registry = self.service_container.build_and_register(
             "element_registry", ElementRegistry
         )
+        self.model_schema.register_element_registry(element_registry)
         element_registry.register_elements()
+        self.energy_system = self.model_schema.energy_system
+        self.service_container.register("energy_system", self.energy_system)
 
         # check if all elements from the scenario_dict are in the model
         scenario_dict.check_if_all_elements_in_model(element_registry)
@@ -142,7 +145,7 @@ class OptimizationWorkflow:
 
         # conduct consistency checks of input units
         unit_handling.consistency_checks_input_units(
-            self.config, self.energy_system, element_registry
+            self.config, element_registry
         )
 
         # conduct time series aggregation
@@ -187,7 +190,7 @@ class OptimizationWorkflow:
             # if not using rolling horizon, the optimization horizon
             # is the entire time series
             optimized_time_steps = [0]
-            steps_horizon = {0: self.energy_system.set_years}
+            steps_horizon = {0: self.model_schema.set_years}
             return optimized_time_steps, steps_horizon
 
         assert (
@@ -201,7 +204,7 @@ class OptimizationWorkflow:
             f"({self.config.system.years_in_decision_horizon})"
         )
         years_in_horizon = self.config.system.years_in_rolling_horizon
-        time_steps_yearly = self.energy_system.set_years
+        time_steps_yearly = self.model_schema.set_years
         # skip years_in_decision_horizon years
         optimized_time_steps = [
             year

@@ -28,8 +28,8 @@ class CarbonEmissionsBudgetConstraint(GenericConstraint):
         extrapolation term is omitted there because no intermediate years remain.
         """
         m = [
-            year != self.energy_system.set_years_entire_horizon[-1]
-            for year in self.energy_system.set_years
+            year != self.model_schema.set_years_entire_horizon[-1]
+            for year in self.model_schema.set_years
         ]
 
         lhs = (

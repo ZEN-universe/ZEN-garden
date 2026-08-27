@@ -9,10 +9,10 @@ from linopy import Variable, merge
 from linopy.expressions import LinearExpression
 
 if TYPE_CHECKING:
-    from zen_garden.elements.energy_system import EnergySystem
     from zen_garden.model.config import Config
     from zen_garden.model.time_steps import TimeStepsDicts
     from zen_garden.model.zen_model import ZenModel
+    from zen_garden.topology.model_schema import ModelSchema
 
 
 class GenericConstraint(ABC):
@@ -20,18 +20,18 @@ class GenericConstraint(ABC):
         self,
         config: "Config",
         zen_model: "ZenModel",
-        energy_system: "EnergySystem",
+        model_schema: "ModelSchema",
         time_steps: "TimeStepsDicts",
     ):
         """Constructor for generic rule.
 
         :param config: Config object
         :param zen_model: ZenModel object
-        :param energy_system: EnergySystem object
+        :param model_schema: global model schema
         """
         self.config = config
         self.zen_model = zen_model
-        self.energy_system = energy_system
+        self.model_schema = model_schema
         self.time_steps = time_steps
 
     @abstractmethod

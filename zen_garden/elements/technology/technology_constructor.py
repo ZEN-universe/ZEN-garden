@@ -356,7 +356,7 @@ class TechnologyConstructor(ModelConstructor):
         lifetime = params.lifetime[tech]
         delta_lifetime = lifetime_existing - lifetime
         # reference year of current optimization horizon
-        current_year_horizon = self.energy_system.set_years[0]
+        current_year_horizon = self.model_schema.set_years[0]
         if delta_lifetime >= 0:
             cutoff_year = (
                 year - current_year_horizon

@@ -7,9 +7,8 @@ from zen_garden.elements.storage_technology import StorageTechnology
 from zen_garden.elements.technology import Technology
 from zen_garden.elements.transport_technology import TransportTechnology
 
-# The order matters because ConversionTechnology calls
-# EnergySystem.set_technology_of_carrier, which in turn modifies
-# EnergySystem.set_carrier, which is read in ElementRegistry.add_elements
+# The order matters because technologies populate ModelSchema.set_carriers,
+# which is read before carrier elements are registered.
 # for the carrier class
 ELEMENT_TYPE_CLASSES: dict[str, type[Element]] = {
     "Technology": Technology,

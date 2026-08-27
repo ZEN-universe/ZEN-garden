@@ -22,6 +22,7 @@ if TYPE_CHECKING:
     from zen_garden.model.time_steps import TimeStepsDicts
     from zen_garden.model.zen_model import ZenModel
     from zen_garden.services.element_registry import ElementRegistry
+    from zen_garden.topology.model_schema import ModelSchema
 
 logger = logging.getLogger(__name__)
 
@@ -38,6 +39,7 @@ class ModelConstructor(ABC):
         element_registry: "ElementRegistry",
         zen_model: "ZenModel",
         energy_system: "EnergySystem",
+        model_schema: "ModelSchema",
         time_steps: "TimeStepsDicts",
     ):
         self.service_container = service_container
@@ -45,6 +47,7 @@ class ModelConstructor(ABC):
         self.element_registry = element_registry
         self.zen_model = zen_model
         self.energy_system = energy_system
+        self.model_schema = model_schema
         self.time_steps = time_steps
 
     @abstractmethod

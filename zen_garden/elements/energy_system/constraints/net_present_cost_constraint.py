@@ -27,10 +27,10 @@ class NetPresentCostConstraint(GenericConstraint):
         :math:`r^{\\mathrm{disc}}`: discount rate
         :math:`\\Delta y`: interval between planning periods
         """
-        factor = pd.Series(index=self.energy_system.set_years)
-        for year in self.energy_system.set_years:
+        factor = pd.Series(index=self.model_schema.set_years)
+        for year in self.model_schema.set_years:
             ### auxiliary calculations
-            if year == self.energy_system.set_years_entire_horizon[-1]:
+            if year == self.model_schema.set_years_entire_horizon[-1]:
                 interval_between_years = 1
             else:
                 interval_between_years = self.config.system.interval_between_years
@@ -40,7 +40,7 @@ class NetPresentCostConstraint(GenericConstraint):
                     (1 / (1 + self.zen_model.parameters.discount_rate))
                     ** (
                         self.config.system.interval_between_years
-                        * (year - self.energy_system.set_years[0])
+                        * (year - self.model_schema.set_years[0])
                         + _intermediate_time_step
                     )
                 )
