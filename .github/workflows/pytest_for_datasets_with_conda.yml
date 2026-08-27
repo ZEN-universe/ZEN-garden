@@ -64,12 +64,8 @@ jobs:
         run: mamba env update -f zen_garden_env.yml
         if: steps.cache.outputs.cache-hit != 'true'
 
-      - name: Install package
-        shell: bash -l {0}
-        run: pip install -e .
-
       - name: Run Tests
         shell: bash -l {0}
         run: |
-          coverage run --source="zen_garden" -m pytest -v docs/dataset_examples/run_datasets.py
-          coverage report -m
+          uv run coverage run --source="zen_garden" -m pytest -v docs/dataset_examples/run_datasets.py
+          uv run coverage report -m
