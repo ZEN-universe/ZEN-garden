@@ -81,12 +81,11 @@ class SolutionLoader:
 
     @property
     def name(self) -> str:
-        return self.first_scenario.analysis.dataset.split("/")[-1]
+        return Path(self.first_scenario.analysis.dataset).name
 
     @property
     def ureg(self) -> UnitRegistry:
         return self._ureg
-        return self.first_scenario.analysis.dataset.split("/")[-1]
 
     @property
     def ureg(self) -> UnitRegistry:

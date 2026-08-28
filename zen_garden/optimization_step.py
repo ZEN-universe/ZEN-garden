@@ -174,6 +174,7 @@ class OptimizationStep:
         self.scaling = self.service_container.build_and_register(
             "scaling",
             Scaling,
+            config=self.config,
             lp_model=self.zen_model.lp_model,
             algorithm=self.config.solver.scaling_algorithm,
             include_rhs=self.config.solver.scaling_include_rhs,
