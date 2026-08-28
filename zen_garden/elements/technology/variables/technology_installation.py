@@ -47,9 +47,8 @@ class TechnologyInstallation(GenericVariable):
             )
             mask.loc[:, technologies, :, edges] |= sub_mask
 
-        mask |= (
-            zen_model.parameters.capacity_addition_min.notnull()
-            & (zen_model.parameters.capacity_addition_min != 0)
+        mask |= zen_model.parameters.capacity_addition_min.notnull() & (
+            zen_model.parameters.capacity_addition_min != 0
         )
         index_values, index_names = index_sets
         index = MultiIndexHelper(index_values, index_names)

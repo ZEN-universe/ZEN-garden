@@ -353,9 +353,9 @@ class ElementDataLoader:
             attribute_name, attribute_dict
         )
         if subelement is not None:
-            assert subelement in attribute_value.keys(), (
-                f"{subelement} not in {attribute_name} of {self.element.name}"
-            )
+            assert (
+                subelement in attribute_value.keys()
+            ), f"{subelement} not in {attribute_name} of {self.element.name}"
             attribute_unit = attribute_value[subelement]["unit"]
             attribute_value = attribute_value[subelement]["default_value"]
         if return_unit:

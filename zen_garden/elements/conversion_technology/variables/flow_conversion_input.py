@@ -61,15 +61,11 @@ class FlowConversionInput(GenericVariable):
 
                 capacity = model_constructor.zen_model.variables["capacity"]
                 lower.loc[tech, carrier, ...] = (
-                    capacity.lower.loc[
-                        tech, "power", node_set, time_step_year
-                    ].data
+                    capacity.lower.loc[tech, "power", node_set, time_step_year].data
                     * conversion_factor_lower
                 )
                 upper.loc[tech, carrier, ...] = (
-                    capacity.upper.loc[
-                        tech, "power", node_set, time_step_year
-                    ].data
+                    capacity.upper.loc[tech, "power", node_set, time_step_year].data
                     * conversion_factor_upper
                 )
         return lower, upper

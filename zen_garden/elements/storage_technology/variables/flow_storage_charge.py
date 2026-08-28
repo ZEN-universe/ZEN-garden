@@ -25,10 +25,6 @@ class FlowStorageCharge(GenericVariable):
             ]
         )
         capacity = model_constructor.zen_model.variables["capacity"]
-        lower = capacity.lower.loc[
-            tech_arr, "power", node_arr, time_step_year
-        ].data
-        upper = capacity.upper.loc[
-            tech_arr, "power", node_arr, time_step_year
-        ].data
+        lower = capacity.lower.loc[tech_arr, "power", node_arr, time_step_year].data
+        upper = capacity.upper.loc[tech_arr, "power", node_arr, time_step_year].data
         return np.stack([lower, upper], axis=-1)
