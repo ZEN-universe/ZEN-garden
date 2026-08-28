@@ -116,7 +116,14 @@ class ModelConstructor:
     def construct_params(self):
         logger.info(f"Constructing parameters for {self.element_class.name}")
 
-        for parameter in self.parameters:
+        # Build in dependency order so that derived parameters (which read other
+        # already-registered model parameters in their build()) see their inputs.
+        # ignore_missing: cross-type dependencies (e.g. on "distance") are only
+        # relevant to the store_input_data pass and may not be in this list.
+        ordered = GenericParameter.construction_order(
+            self.parameters, ignore_missing=True
+        )
+        for parameter in ordered:
             parameter.build(self)
 
     def construct_vars(self):
