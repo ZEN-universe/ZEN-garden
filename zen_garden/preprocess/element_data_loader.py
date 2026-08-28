@@ -1,4 +1,4 @@
-﻿"""Functions to extract the input data from the provided input files."""
+"""Functions to extract the input data from the provided input files."""
 
 import copy
 import logging
@@ -12,7 +12,7 @@ import pandas as pd
 
 if TYPE_CHECKING:
     from zen_garden.elements.element import Element
-    from zen_garden.preprocess.unit_handling import UnitHandling
+    from zen_garden.preprocess.unit_converter import UnitConverter
     from zen_garden.services.attribute_data_loader import AttributeDataLoader
     from zen_garden.services.network_topology import NetworkTopology
     from zen_garden.services.scenario_dict import ScenarioDict
@@ -70,7 +70,7 @@ class ElementDataLoader:
         element: "Element",
         model_schema: "ModelSchema",
         network_topology: "NetworkTopology",
-        unit_handling: "UnitHandling",
+        unit_converter: "UnitConverter",
         scenario_dict: "ScenarioDict",
         input_data_checks: "InputDataChecks",
         year_specific_ts: "YearSpecificTs",
@@ -84,12 +84,12 @@ class ElementDataLoader:
         :param analysis: dictionary defining the analysis framework
         :param solver: dictionary defining the solver
         :param model_schema: global model schema
-        :param unit_handling: instance of class <UnitHandling> to convert units
+        :param unit_converter: instance of class <UnitConverter> to convert units
         """
         self.element = element
         self.model_schema = model_schema
         self.network_topology = network_topology
-        self.unit_handling = unit_handling
+        self.unit_converter = unit_converter
         self.scenario_dict = scenario_dict
         self.input_data_checks = input_data_checks
         self.year_specific_ts = year_specific_ts
@@ -262,7 +262,11 @@ class ElementDataLoader:
             if "technology_existing" in missing_index:
                 df_output = (
                     ElementDataLoader.extract_from_input_for_capacities_existing(
-                    df_input, df_output_copy, index_name_list, file_name, missing_index
+                        df_input,
+                        df_output_copy,
+                        index_name_list,
+                        file_name,
+                        missing_index,
                     )
                 )
                 if isinstance(default_value, dict):
@@ -349,9 +353,9 @@ class ElementDataLoader:
             attribute_name, attribute_dict
         )
         if subelement is not None:
-            assert (
-                subelement in attribute_value.keys()
-            ), f"{subelement} not in {attribute_name} of {self.element.name}"
+            assert subelement in attribute_value.keys(), (
+                f"{subelement} not in {attribute_name} of {self.element.name}"
+            )
             attribute_unit = attribute_value[subelement]["unit"]
             attribute_value = attribute_value[subelement]["default_value"]
         if return_unit:
@@ -360,7 +364,7 @@ class ElementDataLoader:
             return attribute_value
         if attribute_value is not None:
             multiplier, attribute_unit_in_base_units = (
-                self.unit_handling.convert_unit_into_base_units(
+                self.unit_converter.convert_unit_into_base_units(
                     attribute_unit,
                     get_multiplier=True,
                     attribute_name=attribute_name,

@@ -5,7 +5,7 @@ import pandas as pd
 from zen_garden.elements.element import Element
 
 if TYPE_CHECKING:
-    from zen_garden.preprocess.unit_handling import UnitHandling
+    from zen_garden.preprocess.unit_converter import UnitConverter
     from zen_garden.topology.model_schema import ModelSchema
 
 T = TypeVar("T", bound=Element)
@@ -22,10 +22,10 @@ class ElementRegistry:
     def __init__(
         self,
         model_schema: "ModelSchema",
-        unit_handling: "UnitHandling",
+        unit_converter: "UnitConverter",
     ):
         self.model_schema = model_schema
-        self.unit_handling = unit_handling
+        self.unit_converter = unit_converter
 
     def all_elements_of_type(self, class_name: type[T]) -> list[T]:
         """Get all elements of the class in the energy system."""
@@ -223,10 +223,10 @@ class ElementRegistry:
                 if divisor_dimension is not None:
                     base_unit = next(
                         key
-                        for key, dimension in self.unit_handling.base_units.items()
+                        for key, dimension in self.unit_converter.base_units.items()
                         if dimension == divisor_dimension
                     )
-                    unit = unit / self.unit_handling.ureg(base_unit)
+                    unit = unit / self.unit_converter.ureg(base_unit)
                 dict_of_units[element_key] = unit
 
             # Preserve non-default indices, such as single-directed transport edges,

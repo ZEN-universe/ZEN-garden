@@ -15,7 +15,7 @@ if TYPE_CHECKING:
     from linopy import Model as LinopyModel
 
     from zen_garden.model.components.set_registry import SetRegistry
-    from zen_garden.preprocess.unit_handling import UnitHandling
+    from zen_garden.preprocess.unit_converter import UnitConverter
     from zen_garden.services.element_registry import ElementRegistry
     from zen_garden.topology.model_schema import ModelSchema
 
@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 class Variable(Component):
     def __init__(
         self,
-        unit_handling: "UnitHandling",
+        unit_converter: "UnitConverter",
         sets: "SetRegistry",
         lp_model: "LinopyModel",
         model_schema: "ModelSchema",
@@ -33,7 +33,7 @@ class Variable(Component):
     ):
         """Initialization of a variable.
 
-        :param unit_handling: UnitHandling object
+        :param unit_converter: UnitConverter object
         :param sets: SetRegistry object
         :param lp_model: LinopyModel object
         :param model_schema: global model schema
@@ -41,7 +41,7 @@ class Variable(Component):
         """
         super().__init__()
 
-        self.unit_handling = unit_handling
+        self.unit_converter = unit_converter
         self.sets = sets
         self.lp_model = lp_model
         self.model_schema = model_schema
@@ -147,7 +147,7 @@ class Variable(Component):
             index = pd.MultiIndex.from_tuples(var_index_values, names=index_list)
         else:
             index = pd.Index(var_index_values)
-        unit = self.unit_handling.ureg("dimensionless")
+        unit = self.unit_converter.ureg("dimensionless")
         distinct_dims = {
             "money": "[currency]",
             "distance": "[length]",
@@ -159,10 +159,10 @@ class Variable(Component):
                 continue
             dim_unit = [
                 key
-                for key, value in (self.unit_handling.base_units.items())
+                for key, value in (self.unit_converter.base_units.items())
                 if value == dim_name
             ][0]
-            unit = unit * self.unit_handling.ureg(dim_unit) ** unit_category[dim]
+            unit = unit * self.unit_converter.ureg(dim_unit) ** unit_category[dim]
         var_units = pd.Series(index=index, dtype=str)
 
         if "energy_quantity" not in unit_category:
@@ -181,7 +181,7 @@ class Variable(Component):
                 for level in var_units.index.names
                 if level and "carrier" in str(level)
             ][0]
-            energy_quantities = self.unit_handling.carrier_energy_quantities
+            energy_quantities = self.unit_converter.carrier_energy_quantities
             for (
                 carrier,
                 energy_quantity,
@@ -199,7 +199,7 @@ class Variable(Component):
             ][0]
             for technology in self.element_registry.all_elements_of_type(Technology):
                 reference_carrier = technology.reference_carrier[0]
-                energy_quantities = self.unit_handling.carrier_energy_quantities
+                energy_quantities = self.unit_converter.carrier_energy_quantities
                 energy_quantity = [
                     energy_quantity
                     for carrier, energy_quantity in energy_quantities.items()
@@ -216,7 +216,7 @@ class Variable(Component):
                     var_units.index.get_level_values("set_capacity_types") == "energy"
                 )
                 var_units[energy_idx] = var_units[energy_idx].apply(
-                    lambda u: str(self.unit_handling.ureg(u + "*hour").units)
+                    lambda u: str(self.unit_converter.ureg(u + "*hour").units)
                 )
 
         return var_units[mask.to_series()]

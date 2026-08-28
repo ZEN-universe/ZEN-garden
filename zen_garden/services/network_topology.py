@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 
 if TYPE_CHECKING:
-    from zen_garden.preprocess.unit_handling import UnitHandling
+    from zen_garden.preprocess.unit_converter import UnitConverter
     from zen_garden.services.attribute_data_loader import AttributeDataLoader
     from zen_garden.topology.model_schema import ModelSchema
     from zen_garden.utils.input_data_checks import InputDataChecks
@@ -16,12 +16,12 @@ class NetworkTopology:
         model_schema: "ModelSchema",
         attribute_data_loader: "AttributeDataLoader",
         input_data_checks: "InputDataChecks",
-        unit_handling: "UnitHandling",
+        unit_converter: "UnitConverter",
     ):
         self.model_schema = model_schema
         self.attribute_data_loader = attribute_data_loader
         self.input_data_checks = input_data_checks
-        self.unit_handling = unit_handling
+        self.unit_converter = unit_converter
 
         self.set_nodes = self._extract_nodes(False)
         self.set_nodes_on_edges = self._calculate_edges_from_nodes()
@@ -141,7 +141,7 @@ class NetworkTopology:
             c = 2 * np.arctan2(np.sqrt(a), np.sqrt(1 - a))
             distance = radius * c
             set_haversine_distances_of_edges[edge] = distance
-        multiplier = self.unit_handling.get_unit_multiplier(
+        multiplier = self.unit_converter.get_unit_multiplier(
             "km", attribute_name="distance"
         )
         return {

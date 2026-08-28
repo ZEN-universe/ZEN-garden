@@ -15,13 +15,13 @@ from zen_garden.model.time_steps import TimeStepsDicts
 from zen_garden.model.zen_model import ZenModel
 from zen_garden.optimization_step import OptimizationStep
 from zen_garden.preprocess.time_series_aggregation import TimeSeriesAggregation
-from zen_garden.preprocess.unit_handling import UnitHandling
+from zen_garden.preprocess.unit_converter import UnitConverter
 from zen_garden.services.attribute_data_loader import AttributeDataLoader
+from zen_garden.services.data_loading_service import DataLoadingService
 from zen_garden.services.dataset_path_resolver import DatasetPathResolver
 from zen_garden.services.element_factory import ElementFactory
 from zen_garden.services.element_registry import ElementRegistry
 from zen_garden.services.network_topology import NetworkTopology
-from zen_garden.services.parameter_loading_service import ParameterLoadingService
 from zen_garden.services.scenario_dict import ScenarioDict
 from zen_garden.services.service_container import ServiceContainer
 from zen_garden.topology.model_schema import ModelSchema
@@ -128,11 +128,11 @@ class OptimizationWorkflow:
         energy_system_folder_path = Path(
             self.dataset_path_resolver.folder_of_set("energy_system")
         )
-        unit_handling = UnitHandling(
+        unit_converter = UnitConverter(
             energy_system_folder_path, self.config.solver.rounding_decimal_points_units
         )
-        # Register service: unit_handling; instance: the dataset-specific unit handler.
-        self.service_container.register("unit_handling", unit_handling)
+        # Register service: unit_converter; instance: the dataset-specific unit handler.
+        self.service_container.register("unit_converter", unit_converter)
 
         # Injected services: none; explicit argument: folder_path.
         # Register the resulting AttributeDataLoader as attribute_data_loader.
@@ -142,9 +142,9 @@ class OptimizationWorkflow:
             folder_path=energy_system_folder_path,
         )
         # Injected services: model_schema, attribute_data_loader, input_data_checks,
-        # unit_handling; explicit arguments: none. Register as network_topology.
+        # unit_converter; explicit arguments: none. Register as network_topology.
         self.service_container.build_and_register("network_topology", NetworkTopology)
-        # Injected services: model_schema, unit_handling; explicit arguments: none.
+        # Injected services: model_schema, unit_converter; explicit arguments: none.
         # Register the resulting ElementRegistry as element_registry.
         element_registry = self.service_container.build_and_register(
             "element_registry", ElementRegistry
@@ -159,14 +159,14 @@ class OptimizationWorkflow:
 
         # Store all input parameters using one schema-wide dependency graph.
         # Injected service: model_schema; explicit arguments: none.
-        # Register the resulting service as parameter_loading_service.
-        parameter_loading_service = self.service_container.build_and_register(
-            "parameter_loading_service", ParameterLoadingService
+        # Register the resulting service as data_loading_service.
+        data_loading_service = self.service_container.build_and_register(
+            "data_loading_service", DataLoadingService
         )
-        parameter_loading_service.load_parameters()
+        data_loading_service.load_parameters()
 
         # conduct consistency checks of input units
-        unit_handling.consistency_checks_input_units(self.config, element_registry)
+        unit_converter.consistency_checks_input_units(self.config, element_registry)
 
     def aggregate_time_series(self) -> None:
         """Conduct the time series aggregation.
@@ -211,7 +211,7 @@ class OptimizationWorkflow:
         # iterate through horizon steps
         for step in steps_horizon_keys:
             # Injected services: service_container, model_schema, element_registry,
-            # unit_handling, scenario_dict, time_steps; explicit arguments:
+            # unit_converter, scenario_dict, time_steps; explicit arguments:
             # optimized_time_steps and steps_horizon.
             optimization_step = self.service_container.build(
                 OptimizationStep,

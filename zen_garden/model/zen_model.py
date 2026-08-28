@@ -32,7 +32,7 @@ class ZenModel:
         self.sets = service_container.build(
             SetRegistry, indexing_sets=self.indexing_sets
         )
-        # Injected services: unit_handling, model_schema, element_registry;
+        # Injected services: unit_converter, model_schema, element_registry;
         # explicit arguments: lp_model and sets.
         self.variables = service_container.build(
             Variable, lp_model=self.lp_model, sets=self.sets

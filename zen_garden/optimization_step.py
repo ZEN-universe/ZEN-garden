@@ -1,4 +1,4 @@
-﻿"""Class defining the optimization model.
+"""Class defining the optimization model.
 
 The class takes as inputs the properties of the optimization problem. The
 properties are saved in the dictionaries analysis and system which are passed
@@ -23,7 +23,7 @@ from zen_garden.utils import IISConstraintParser, StringUtils
 
 if TYPE_CHECKING:
     from zen_garden.model.time_steps import TimeStepsDicts
-    from zen_garden.preprocess.unit_handling import UnitHandling
+    from zen_garden.preprocess.unit_converter import UnitConverter
     from zen_garden.services.element_registry import ElementRegistry
     from zen_garden.services.scenario_dict import ScenarioDict
     from zen_garden.services.service_container import ServiceContainer
@@ -50,7 +50,7 @@ class OptimizationStep:
         service_container: "ServiceContainer",
         model_schema: "ModelSchema",
         element_registry: "ElementRegistry",
-        unit_handling: "UnitHandling",
+        unit_converter: "UnitConverter",
         scenario_dict: "ScenarioDict",
         time_steps: "TimeStepsDicts",
         optimized_time_steps: list[int],
@@ -73,7 +73,7 @@ class OptimizationStep:
         self.service_container = service_container
         self.model_schema = model_schema
         self.element_registry = element_registry
-        self.unit_handling = unit_handling
+        self.unit_converter = unit_converter
         self.scenario_dict = scenario_dict
         self.time_steps = time_steps
 
@@ -138,7 +138,7 @@ class OptimizationStep:
             self.write_IIS(scenario)
             assert self.zen_model is not None
             logger.warning(
-                f"Optimization: " f"{self.zen_model.lp_model.termination_condition}"
+                f"Optimization: {self.zen_model.lp_model.termination_condition}"
             )
             return False
 
@@ -442,7 +442,7 @@ class OptimizationStep:
         """
         Postprocess(
             self.model_schema,
-            self.unit_handling,
+            self.unit_converter,
             self.zen_model,
             self.scaling,
             self.time_steps,

@@ -1,7 +1,7 @@
 .. _t_units.t_units:
 
 #############################
-Unit handling and consistency
+Unit conversion and consistency
 #############################
 
 ZEN-garden models describe physical processes, where numerical values are

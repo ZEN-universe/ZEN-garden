@@ -58,7 +58,7 @@ Documentation
    :caption: ZEN-garden in detail
 
    files/zen_garden_in_detail/input_structure
-   files/zen_garden_in_detail/unit_handling
+   files/zen_garden_in_detail/unit_converter
    files/zen_garden_in_detail/configurations
    files/zen_garden_in_detail/sets_params_constraints
    files/zen_garden_in_detail/mathematical_formulation
@@ -106,6 +106,5 @@ Documentation
    :caption: Support
 
    files/support/get_help
-
 
 

@@ -24,7 +24,7 @@ if TYPE_CHECKING:
     from zen_garden.model.time_steps import TimeStepsDicts
     from zen_garden.model.zen_model import ZenModel
     from zen_garden.preprocess.scaling import Scaling
-    from zen_garden.preprocess.unit_handling import UnitHandling
+    from zen_garden.preprocess.unit_converter import UnitConverter
     from zen_garden.topology.model_schema import ModelSchema
 
 HDFCompLib: TypeAlias = Literal["zlib", "lzo", "bzip2", "blosc"]
@@ -41,7 +41,7 @@ class Postprocess:
     def __init__(
         self,
         model_schema: "ModelSchema",
-        unit_handling: "UnitHandling",
+        unit_converter: "UnitConverter",
         zen_model: "ZenModel",
         scaling: "Scaling",
         time_steps: "TimeStepsDicts",
@@ -63,7 +63,7 @@ class Postprocess:
         logger.info("\n--- Postprocess results ---\n")
         # get the necessary stuff from the model
         self.model_schema = model_schema
-        self.unit_handling = unit_handling
+        self.unit_converter = unit_converter
         self.zen_model = zen_model
         self.energy_system = model_schema.energy_system
 
@@ -560,7 +560,7 @@ class Postprocess:
             fname = self.name_dir.joinpath("unit_definitions")
 
         lines = []
-        ureg = self.unit_handling.ureg
+        ureg = self.unit_converter.ureg
         # Only save user-defined units (skip base units like 'meter')
         all_units = ureg._units
         default_units = pint.UnitRegistry()._units
@@ -829,13 +829,13 @@ class Postprocess:
             docstring = None
         if "units" in input_dict:
             units = input_dict["units"]
-            assert isinstance(
-                units, pd.Series
-            ), f"Units must be a pandas Series, but is {type(units)}"
+            assert isinstance(units, pd.Series), (
+                f"Units must be a pandas Series, but is {type(units)}"
+            )
             df = input_dict["dataframe"]
-            assert units.index.intersection(df.index).equals(
-                units.index
-            ), f"Units index {units.index} does not match dataframe index {df.index}"
+            assert units.index.intersection(df.index).equals(units.index), (
+                f"Units index {units.index} does not match dataframe index {df.index}"
+            )
             units.name = "units"
             has_units = True
         else:

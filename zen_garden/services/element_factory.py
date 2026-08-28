@@ -113,7 +113,7 @@ class ElementFactory:
             name: Name of the element
         """
         # Injected services: model_schema, network_topology, element_registry,
-        # unit_handling, dataset_path_resolver, scenario_dict, input_data_checks,
+        # unit_converter, dataset_path_resolver, scenario_dict, input_data_checks,
         # time_steps, year_specific_ts; explicit argument: element_name.
         instance = self.service_container.build(
             element_class, element_name=element_name

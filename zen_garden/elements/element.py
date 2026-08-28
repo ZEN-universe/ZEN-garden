@@ -11,7 +11,7 @@ from zen_garden.topology.generic_parameter import GenericParameter
 
 if TYPE_CHECKING:
     from zen_garden.model.time_steps import TimeStepsDicts
-    from zen_garden.preprocess.unit_handling import UnitHandling
+    from zen_garden.preprocess.unit_converter import UnitConverter
     from zen_garden.services.dataset_path_resolver import DatasetPathResolver
     from zen_garden.services.element_registry import ElementRegistry
     from zen_garden.services.network_topology import NetworkTopology
@@ -64,7 +64,7 @@ class Element:
         model_schema: "ModelSchema",
         network_topology: "NetworkTopology",
         element_registry: "ElementRegistry",
-        unit_handling: "UnitHandling",
+        unit_converter: "UnitConverter",
         dataset_path_resolver: "DatasetPathResolver",
         scenario_dict: "ScenarioDict",
         input_data_checks: "InputDataChecks",
@@ -76,7 +76,7 @@ class Element:
         :param element_name: Name of the element
         :param model_schema: Global model schema
         :param element_registry: ElementRegistry object
-        :param unit_handling: UnitHandling object
+        :param unit_converter: UnitConverter object
         :param dataset_path_resolver: DatasetPathResolver object
         :param scenario_dict: ScenarioDict object
         :param input_data_checks: InputDataChecks object
@@ -86,7 +86,7 @@ class Element:
         self.model_schema = model_schema
         self.network_topology = network_topology
         self.element_registry = element_registry
-        self.unit_handling = unit_handling
+        self.unit_converter = unit_converter
         self.dataset_path_resolver = dataset_path_resolver
         self.input_data_checks = input_data_checks
         self.time_steps = time_steps
@@ -99,7 +99,7 @@ class Element:
             element=self,
             model_schema=self.model_schema,
             network_topology=self.network_topology,
-            unit_handling=self.unit_handling,
+            unit_converter=self.unit_converter,
             scenario_dict=scenario_dict,
             input_data_checks=self.input_data_checks,
             year_specific_ts=year_specific_ts,

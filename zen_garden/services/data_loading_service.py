@@ -5,7 +5,7 @@ from zen_garden.topology.generic_parameter import GenericParameter
 from zen_garden.topology.model_schema import ModelSchema
 
 
-class ParameterLoadingService:
+class DataLoadingService:
     """Prepare elements and load their parameters in dependency order."""
 
     def __init__(self, model_schema: ModelSchema):

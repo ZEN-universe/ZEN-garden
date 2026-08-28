@@ -135,7 +135,7 @@ Class Structure
        class TimeSeriesAggregation
        class TimeSteps
        class EnergySystem
-       class UnitHandling
+       class UnitConverter
        class Scaling
        class ZenModel
        class DatasetPathResolver

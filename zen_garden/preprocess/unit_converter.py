@@ -27,7 +27,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class UnitHandling:
+class UnitConverter:
     """A class for managing and converting units in an energy system model.
 
     This class facilitates unit consistency checks, dimensionality analysis, and
@@ -47,7 +47,7 @@ class UnitHandling:
     """
 
     def __init__(self, folder_path: Path, rounding_decimal_points_units: int):
-        """Initializes an instance of the UnitHandling class.
+        """Initializes an instance of the UnitConverter class.
 
         This constructor processes and stores the system's base unit definitions
         and other configurations. It also defines the rounding tolerance for
@@ -162,7 +162,7 @@ class UnitHandling:
         self.dim_analysis["dependent_dims"] = dependent_dims
         # check that no base unit can be directly constructed from the others
         # (e.g., GJ from GW and hour)
-        assert not UnitHandling.check_pos_neg_boolean(dependent_dims, axis=1), (
+        assert not UnitConverter.check_pos_neg_boolean(dependent_dims, axis=1), (
             f"At least one of the base units {list(self.base_units.keys())} "
             "can be directly constructed from the others"
         )
@@ -295,7 +295,7 @@ class UnitHandling:
             # solve system of linear equations
             combination_solution = np.linalg.solve(dim_matrix_reduced, dim_vector)
             # check if only -1, 0, 1
-            if UnitHandling.check_pos_neg_boolean(combination_solution):
+            if UnitConverter.check_pos_neg_boolean(combination_solution):
                 base_combination = pd.Series(index=self.dim_matrix.columns, data=0)
                 base_combination[dim_matrix_reduced.columns] = combination_solution
                 # compose relevant units to dimensionless combined unit
@@ -384,7 +384,7 @@ class UnitHandling:
                     # dimensionality
                     else:
                         continue
-                if UnitHandling.check_pos_neg_boolean(combination_solution_temp):
+                if UnitConverter.check_pos_neg_boolean(combination_solution_temp):
                     # compose relevant units to dimensionless combined unit
                     base_combination[dim_matrix_reduced_temp.columns] = (
                         combination_solution_temp
