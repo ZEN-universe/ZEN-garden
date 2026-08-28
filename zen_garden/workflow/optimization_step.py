@@ -22,12 +22,12 @@ from zen_garden.utils import IISConstraintParser, StringUtils
 from zen_garden.workflow.scaling import Scaling
 
 if TYPE_CHECKING:
-    from zen_garden.di import ServiceContainer
     from zen_garden.input.scenario_dict import ScenarioDict
     from zen_garden.input.unit_converter import UnitConverter
     from zen_garden.model.element_registry import ElementRegistry
     from zen_garden.model.schema import ModelSchema
     from zen_garden.model.time_steps import TimeStepsDicts
+    from zen_garden.service_container import ServiceContainer
 
 logger = logging.getLogger(__name__)
 

@@ -13,13 +13,13 @@ is set by ``ModelConstructionService`` instead.
 import logging
 from typing import TYPE_CHECKING
 
-from zen_garden.di import ServiceContainer
 from zen_garden.model.component_types.constraint import GenericConstraint
 from zen_garden.model.component_types.expression import GenericExpression
 from zen_garden.model.component_types.parameter import GenericParameter
 from zen_garden.model.component_types.set import GenericSet
 from zen_garden.model.component_types.variable import GenericVariable
 from zen_garden.model.element import Element
+from zen_garden.service_container import ServiceContainer
 
 if TYPE_CHECKING:
     from zen_garden.elements.energy_system import EnergySystem

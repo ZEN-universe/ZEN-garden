@@ -11,8 +11,8 @@ from zen_garden.model.registries.set_registry import SetRegistry
 from zen_garden.model.registries.variable import VariableRegistry
 
 if TYPE_CHECKING:
-    from zen_garden.di import ServiceContainer
     from zen_garden.model.schema import ModelSchema
+    from zen_garden.service_container import ServiceContainer
 
 
 class OptimizationModel:
