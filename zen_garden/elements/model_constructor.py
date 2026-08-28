@@ -3,11 +3,11 @@
 One :class:`ModelConstructor` instance is created per element *type*, given the
 element class as a constructor argument. The element class is the single source
 of truth for the sets, parameters, variables, expressions and constraints of
-that type; they are read off it in :meth:`~ModelConstructor.__init__`. All
-``construct_*`` hooks have sensible defaults, and component-specific behavior is
-implemented by the set/parameter/variable/expression/constraint classes
-themselves. A subclass is only needed for a type that also carries genuine build
-*behavior* (e.g. the energy-system objective).
+that type; they are read off it in :meth:`~ModelConstructor.__init__`.
+Component-specific behavior is implemented by the
+set/parameter/variable/expression/constraint classes themselves, so no
+subclassing is needed. The optimization objective is a whole-model concern and
+is set by ``ModelConstructionService`` instead.
 """
 
 import logging
@@ -138,11 +138,6 @@ class ModelConstructor:
 
         for constraint in self.constraints:
             constraint.build(self)
-
-    def construct_objective(self):  # noqa: B027
-        """Constructs the Objective of this class."""
-        # do nothing by default, only overriden by EnergySystemConstructor
-        pass
 
     def create_custom_set(self, list_index: list[str]):
         """Creates custom set for model component. See

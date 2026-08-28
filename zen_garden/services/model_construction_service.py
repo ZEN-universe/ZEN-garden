@@ -6,10 +6,11 @@ from typing import TYPE_CHECKING, Callable
 
 import psutil
 
-from zen_garden.elements.model_constructors import MODEL_CONSTRUCTORS
+from zen_garden.elements.model_constructor import ModelConstructor
 from zen_garden.services.service_container import ServiceContainer
 
 if TYPE_CHECKING:
+    from zen_garden.model.zen_model import ZenModel
     from zen_garden.topology.model_schema import ModelSchema
 
 logger = logging.getLogger(__name__)
@@ -40,9 +41,11 @@ class ModelConstructionService:
         self,
         service_container: "ServiceContainer",
         model_schema: "ModelSchema",
+        zen_model: "ZenModel",
     ):
         self.service_container = service_container
         self.model_schema = model_schema
+        self.zen_model = zen_model
 
     @property
     def config(self):
@@ -51,12 +54,15 @@ class ModelConstructionService:
 
     def construct_model(self):
         """Logic to construct a model based on the provided name and parameters."""
+        # model_schema.element_classes is the ordered list of every element type
+        # (EnergySystem first, then ELEMENT_TYPE_CLASSES). One generic
+        # ModelConstructor is built per type.
         self._model_constructors = [
             # Injected services: service_container, element_registry, zen_model,
             # model_schema, network_topology, time_steps; explicit argument:
             # element_class.
-            self.service_container.build(constructor_cls, element_class=element_cls)
-            for constructor_cls, element_cls in MODEL_CONSTRUCTORS
+            self.service_container.build(ModelConstructor, element_class=element_class)
+            for element_class in self.model_schema.element_classes
         ]
         # Filter out model constructors that do not have any elements to construct
         self._model_constructors = [
@@ -98,5 +104,21 @@ class ModelConstructionService:
             model_constructor.construct_constraints()
 
     def _construct_objective(self):
-        for model_constructor in self._model_constructors:
-            model_constructor.construct_objective()
+        """Select the optimization objective from a registered expression.
+
+        Objective candidates are built as energy-system expressions (see
+        ``zen_garden.elements.energy_system.expressions``); ``config.analysis``
+        picks which one to use and with which sense.
+        """
+        logger.info("Constructing objective")
+
+        objective_name = self.config.analysis.objective
+        if objective_name not in self.zen_model.expressions:
+            raise KeyError(f"Objective type {objective_name} not known")
+
+        sense = self.config.analysis.sense
+        assert sense in ("min", "max"), f"Objective sense {sense} not known"
+
+        self.zen_model.lp_model.add_objective(
+            self.zen_model.expressions[objective_name], sense=sense
+        )
