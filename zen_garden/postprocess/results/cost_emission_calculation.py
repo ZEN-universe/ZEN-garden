@@ -8,14 +8,14 @@ if TYPE_CHECKING:
 import os
 import pickle
 from pathlib import Path
-from typing import Optional
+from typing import Any, Literal, Optional, cast
 
 import numpy as np
 import pandas as pd
 from scipy.sparse import coo_matrix, identity
 from scipy.sparse.linalg import splu
 
-REQUIRED_COMPONENTS = {
+REQUIRED_COMPONENTS: dict[Literal["parameter", "variable"], list[str]] = {
     "parameter": ["demand", "carbon_intensity_technology"],
     "variable": [
         "cost_capex_yearly",
@@ -39,7 +39,7 @@ class CostEmissionCalculation:
     def __init__(self, r: Results):
         self.r = r
         self.path = Path(r.path)
-        self._leontief_cache = {"cost": {}, "emissions": {}}
+        self._leontief_cache: dict[str, dict[str, Any]] = {"cost": {}, "emissions": {}}
         self.conversion_technologies = self.r.get_system().set_conversion_technologies
         self.transport_technologies = self.r.get_system().set_transport_technologies
         self.storage_technologies = self.r.get_system().set_storage_technologies
@@ -190,32 +190,37 @@ class CostEmissionCalculation:
             flow_storage_discharge = pd.DataFrame(
                 index=empty_index, columns=self.r.get_years(scenario_name=scenario_name)
             )
-        return {
-            "capex": capex,
-            "opex": opex,
-            "flow_in_conversion": flow_in_conversion,
-            "flow_out_conversion": flow_out_conversion,
-            "demand": demand,
-            "shed_demand": shed_demand,
-            "flow_import": flow_import,
-            "flow_export": flow_export,
-            "cost_carrier": cost_carrier,
-            "cost_shed_demand": cost_shed_demand,
-            "carbon_emissions_technology": carbon_emissions_technology,
-            "carbon_intensity_technology": carbon_intensity_technology,
-            "carbon_emissions_carrier": carbon_emissions_carrier,
-            "flow_transport": flow_transport,
-            "flow_transport_loss": flow_transport_loss,
-            "flow_storage_charge": flow_storage_charge,
-            "flow_storage_discharge": flow_storage_discharge,
-        }
+        # ``get_total`` is typed ``DataFrame | Series``; with no ``year`` argument
+        # every total here is an all-years DataFrame.
+        return cast(
+            "dict[str, pd.DataFrame]",
+            {
+                "capex": capex,
+                "opex": opex,
+                "flow_in_conversion": flow_in_conversion,
+                "flow_out_conversion": flow_out_conversion,
+                "demand": demand,
+                "shed_demand": shed_demand,
+                "flow_import": flow_import,
+                "flow_export": flow_export,
+                "cost_carrier": cost_carrier,
+                "cost_shed_demand": cost_shed_demand,
+                "carbon_emissions_technology": carbon_emissions_technology,
+                "carbon_intensity_technology": carbon_intensity_technology,
+                "carbon_emissions_carrier": carbon_emissions_carrier,
+                "flow_transport": flow_transport,
+                "flow_transport_loss": flow_transport_loss,
+                "flow_storage_charge": flow_storage_charge,
+                "flow_storage_discharge": flow_storage_discharge,
+            },
+        )
 
     def _build_leontief_X(
         self,
         raw: dict[str, pd.DataFrame],
         sector_index: pd.MultiIndex,
-        nodes_on_edges: list[str],
-        ref_carrier: str,
+        nodes_on_edges: pd.DataFrame,
+        ref_carrier: pd.Series,
         rtol: float = 1e-4,
         atol: float = 1e-3,
     ) -> tuple[pd.DataFrame, pd.DataFrame]:
@@ -344,7 +349,7 @@ class CostEmissionCalculation:
 
     def _get_or_build_leontief_systems(
         self, scenario_name: str, overwrite: bool = False, is_cost: bool = True
-    ) -> dict[int, dict[str, any]]:
+    ) -> dict[int, dict[str, Any]]:
         """builds or loads the Leontief system for every year of a scenario.
 
         Args:
@@ -375,20 +380,23 @@ class CostEmissionCalculation:
             )
         if cache_file is not None and os.path.exists(cache_file) and not overwrite:
             with open(cache_file, "rb") as f:
-                picklable_state = pickle.load(f)
-            systems = {}
-            for step, state in picklable_state.items():
+                cached_state = pickle.load(f)
+            cached_systems: dict[int, dict[str, Any]] = {}
+            for step, state in cached_state.items():
                 lu = splu(identity(state["A"].shape[0], format="csc") - state["A"])
-                systems[step] = {**state, "lu": lu}
+                cached_systems[step] = {**state, "lu": lu}
             if is_cost:
-                self._leontief_cache["cost"][cache_key] = systems
+                self._leontief_cache["cost"][cache_key] = cached_systems
             else:
-                self._leontief_cache["emissions"][cache_key] = systems
-            return systems
+                self._leontief_cache["emissions"][cache_key] = cached_systems
+            return cached_systems
 
-        ref_carrier = self.r.get_unprocessed_result(
-            "set_reference_carriers", scenario_name=scenario_name
-        ).squeeze()
+        ref_carrier = cast(
+            pd.Series,
+            self.r.get_unprocessed_result(
+                "set_reference_carriers", scenario_name=scenario_name
+            ).squeeze(),
+        )
         nodes_on_edges = self.r.get_unprocessed_result(
             "set_nodes_on_edges", scenario_name=scenario_name
         ).str.split(",", expand=True)
@@ -405,7 +413,8 @@ class CostEmissionCalculation:
             "set_output_carriers", scenario_name=scenario_name
         )
         set_nodes = self.r.get_system(scenario_name=scenario_name).set_nodes
-        systems, picklable_state = {}, {}
+        systems: dict[int, dict[str, Any]] = {}
+        picklable_state: dict[int, dict[str, Any]] = {}
         for year in self.r.get_years(scenario_name=scenario_name):
             sys_step = self._build_leontief_year_system(
                 year,
@@ -504,14 +513,17 @@ class CostEmissionCalculation:
         comp_index = comp_index[comp_order]
         columns = pd.MultiIndex.from_tuples(target_sectors, names=["carrier", "node"])
         out = pd.DataFrame(contrib, index=comp_index, columns=columns)
+        # ``stack`` collapses the column MultiIndex, so it returns a Series here;
+        # every downstream op (reorder_levels by name, groupby, boolean mask) is
+        # valid on both and ``pd.concat`` re-widens it in the caller.
         if spatially_resolved:
-            out = out.stack(["carrier", "node"], future_stack=True)
+            out = cast(pd.DataFrame, out.stack(["carrier", "node"], future_stack=True))
             out = out.reorder_levels(
                 ["carrier", "node", "component", value_type_name, "origin_node"]
             ).sort_index()
         else:
             out = out.T.groupby(level="carrier").sum().T
-            out = out.stack("carrier", future_stack=True)
+            out = cast(pd.DataFrame, out.stack("carrier", future_stack=True))
             out = out.reorder_levels(
                 ["carrier", "component", value_type_name, "origin_node"]
             ).sort_index()
@@ -524,16 +536,16 @@ class CostEmissionCalculation:
         step: int,
         raw: dict[str, pd.DataFrame],
         ref_carrier: pd.Series,
-        input_carriers: list[str],
-        output_carriers: list[str],
+        input_carriers: pd.Series,
+        output_carriers: pd.Series,
         set_nodes: list[str],
         nodes_on_edges: pd.DataFrame,
-        sector_index: list[str],
+        sector_index: pd.MultiIndex,
         X_year: pd.Series,
         demand_served_year: pd.Series,
         is_cost: bool,
         eps: float = 1e-6,
-    ) -> dict[str, any]:
+    ) -> dict[str, Any]:
         """builds the sparse technical-coefficient matrix A, the component-by-sector
         direct-value matrix, and the LU factorization of (I - A), for a single
         optimization year (a single column `step` of the totals in `raw`). Shared
@@ -574,7 +586,7 @@ class CostEmissionCalculation:
 
         A_rows, A_cols, A_vals = [], [], []
         M_rows, M_cols, M_vals = [], [], []
-        comp_to_pos = {}
+        comp_to_pos: dict[tuple[Any, ...], int] = {}
         tech_flow_in_conversion = {}
 
         def add_direct(component, value_type, sector, value):
@@ -601,15 +613,16 @@ class CostEmissionCalculation:
         for tech in self.conversion_technologies:
             if tech not in ref_carrier.index:
                 continue
-            c_out = self._get_carriers_of_tech(output_carriers, tech)
-            c_ref = ref_carrier.loc[tech]
-            sector_out_preset = None
-            if len(c_out) == 1:
-                c_out = c_out[0]
-            elif c_ref in c_out:
+            out_carriers = self._get_carriers_of_tech(output_carriers, tech)
+            c_ref = cast(str, ref_carrier.loc[tech])
+            sector_out_preset: tuple[str, str] | None = None
+            c_out: str = ""
+            if len(out_carriers) == 1:
+                c_out = out_carriers[0]
+            elif c_ref in out_carriers:
                 c_out = c_ref
             elif (
-                len(c_out) == 0
+                len(out_carriers) == 0
                 and raw["carbon_intensity_technology"].loc[tech].sum() < 0
             ):
                 sector_out_preset = ("emissions", "global")
@@ -617,8 +630,9 @@ class CostEmissionCalculation:
                 kind = "cost" if is_cost else "emissions"
                 raise NotImplementedError(
                     f"Leontief {kind} calculation not implemented for technology "
-                    f"{tech} with multiple output carriers {c_out} that does not "
-                    f"include its reference carrier {c_ref} or that is a carbon sink."
+                    f"{tech} with multiple output carriers {out_carriers} that does "
+                    f"not include its reference carrier {c_ref} or that is a carbon "
+                    f"sink."
                 )
             in_cs = self._get_carriers_of_tech(input_carriers, tech)
             for node in set_nodes:
@@ -641,12 +655,12 @@ class CostEmissionCalculation:
                         sector_out,
                         raw["carbon_emissions_technology"].loc[key, step],
                     )
-                x_out = X_active.loc[sector_out]
+                x_out = cast(float, X_active.loc[sector_out])
                 for c_in in in_cs:
                     fi_key = (tech, c_in, node)
                     if fi_key not in raw["flow_in_conversion"].index:
                         continue
-                    flow_val = raw["flow_in_conversion"].loc[fi_key, step]
+                    flow_val = cast(float, raw["flow_in_conversion"].loc[fi_key, step])
                     if flow_val == 0:
                         continue
                     tech_flow_in_conversion[(tech, c_in, node)] = flow_val
@@ -657,13 +671,12 @@ class CostEmissionCalculation:
                     add_a(sector_in, sector_out, flow_val / x_out)
                 # emissions (priced pass-through edge, shared by both systems)
                 if key in raw["carbon_emissions_technology"].index:
-                    if raw["carbon_emissions_technology"].loc[key, step] < 0:
-                        continue
-                    add_a(
-                        ("emissions", "global"),
-                        sector_out,
-                        raw["carbon_emissions_technology"].loc[key, step] / x_out,
+                    tech_emissions = cast(
+                        float, raw["carbon_emissions_technology"].loc[key, step]
                     )
+                    if tech_emissions < 0:
+                        continue
+                    add_a(("emissions", "global"), sector_out, tech_emissions / x_out)
         # --- storage technologies: direct capex/opex (cost) or process emissions
         # --- (emissions); add A entries for charge flow, which is the only flow
         # --- that creates a cross-node dependency ---
@@ -930,7 +943,7 @@ class CostEmissionCalculation:
             [("emissions", "global")], names=["carrier", "node"]
         )
         idx = idx.union(emissions_idx)
-        return idx.set_names(["carrier", "node"]).sort_values()
+        return cast(pd.MultiIndex, idx.set_names(["carrier", "node"]).sort_values())
 
     @staticmethod
     def _get_carriers_of_tech(carrier_mapping: pd.Series, tech: str) -> list[str]:
@@ -1015,7 +1028,8 @@ class CostEmissionCalculation:
             scenario_name, overwrite=overwrite, is_cost=is_cost
         )
 
-        year_series, direct_year_series = {}, {}
+        year_series: dict[int, pd.DataFrame | pd.Series] = {}
+        direct_year_series: dict[int, pd.DataFrame | pd.Series] = {}
         for year in self.r.get_years(scenario_name=scenario_name):
             sys_step = systems[year]
             if mode == "final_demand":

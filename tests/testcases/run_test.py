@@ -147,8 +147,8 @@ def check_comparison_functions(results: list[Results], scenarios: list[str]):
     )
 
 def check_sectoral_costs_emissions(
-        results: Results, 
-        scenario_name: str = None,
+        results: Results,
+        scenario_name: str | None = None,
         spatially_resolved: bool = False,
         ):
     """

@@ -69,6 +69,8 @@ class Component:
         :return index_values: names of indices
         :return index_names:  values of indices
         """
+        index_values: list | pd.Series
+        index_names: list[str]
         if isinstance(index_list, BaseSet):
             index_values = list(index_list)
             index_names = [index_list.name]
