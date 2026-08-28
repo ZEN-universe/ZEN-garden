@@ -728,4 +728,4 @@ def test_11a(folder_path):
 
 if __name__ == "__main__":
     testcase_folder = os.path.dirname(__file__)
-    test_1j(testcase_folder)
+    test_1a(testcase_folder)

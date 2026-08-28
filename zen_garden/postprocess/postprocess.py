@@ -24,6 +24,7 @@ if TYPE_CHECKING:
     from zen_garden.model.zen_model import ZenModel
     from zen_garden.preprocess.scaling import Scaling
     from zen_garden.preprocess.unit_handling import UnitHandling
+    from zen_garden.topology.model_schema import ModelSchema
 
 logger = logging.getLogger(__name__)
 

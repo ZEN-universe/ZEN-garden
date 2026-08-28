@@ -8,24 +8,14 @@ from typing import Any
 from pint import UnitRegistry
 
 from zen_garden.postprocess.results.scenario import Scenario
-from pathlib import Path
-from typing import Any
-
-from pint import UnitRegistry
-
-from zen_garden.postprocess.results.scenario import Scenario
 
 logger = logging.getLogger(__name__)
 
-CURRENT_OUTPUT_VERSION = 4
 CURRENT_OUTPUT_VERSION = 4
 
 
 class SolutionLoader:
     """Implementation of a SolutionLoader."""
-
-    def __init__(self, path: Path) -> None:
-        self.path: Path = path
 
     def __init__(self, path: Path) -> None:
         self.path: Path = path
@@ -59,7 +49,8 @@ class SolutionLoader:
 
         for id, config in scenario_configs.items():
             path = self.path / f"scenario_{config['base_scenario']}"
-            # For list-expansion scenarios, we store the results in a subfolder of the base scenario.
+            # For list-expansion scenarios, we store the results in a subfolder
+            # of the base scenario.
             scenario_subfolder = config["sub_folder"]
             if scenario_subfolder != "":
                 path = path / f"scenario_{scenario_subfolder}"
@@ -88,12 +79,7 @@ class SolutionLoader:
         return self._ureg
 
     @property
-    def ureg(self) -> UnitRegistry:
-        return self._ureg
-
-    @property
     def has_duals(self) -> bool:
-        return self.first_scenario.solver.save_duals
         return self.first_scenario.solver.save_duals
 
     @property
@@ -113,23 +99,7 @@ class SolutionLoader:
             return self.first_scenario
         elif scenario_name in self.scenarios:
             return self.scenarios[scenario_name]
-        return (
-            not hasattr(self.first_scenario.solver, "save_parameters")
-            or self.first_scenario.solver.save_parameters
-        )
-
-    def find_scenario(self, scenario_name: str | None) -> Scenario:
-        """Find the scenario with the given name or raise exception.
-
-        :param scenario_name: Name of the scenario
-        :return: Scenario instance for the given name
-        """
-        if scenario_name is None:
-            return self.first_scenario
-        elif scenario_name in self.scenarios:
-            return self.scenarios[scenario_name]
         else:
-            raise ValueError(f"Scenario `{scenario_name}` not found.")
             raise ValueError(f"Scenario `{scenario_name}` not found.")
 
     #### Helper functions

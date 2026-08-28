@@ -9,7 +9,6 @@ from tqdm import tqdm
 
 from zen_garden.postprocess.results import Results
 from zen_garden.postprocess.results.component_type import ComponentType
-from zen_garden.postprocess.results.component_type import ComponentType
 
 logger = logging.getLogger(__name__)
 
@@ -159,15 +158,9 @@ def get_component_diff(
     common_component = component_names_0.intersection(component_names_1)
 
     if only_in_0:
-        logger.info(
-            f"Components {only_in_1} are missing from "
-            f"{results_1.name}"
-        )
+        logger.info(f"Components {only_in_1} are missing from " f"{results_1.name}")
     elif only_in_1:
-        logger.info(
-            f"Components {only_in_1} are missing from "
-            f"{results_0.name}"
-        )
+        logger.info(f"Components {only_in_1} are missing from " f"{results_0.name}")
     return [i for i in common_component]
 
 

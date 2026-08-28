@@ -1,6 +1,7 @@
 """This module contains the Results class, which is used to extract and process
 the results of a model run.
 """
+
 import logging
 from pathlib import Path
 from typing import Literal, cast, overload
@@ -20,6 +21,7 @@ logger = logging.getLogger(__name__)
 
 # used for the cost and emission calculation to specify the mode of calculation
 CostEmissionMode = Literal["final_demand", "total_production", "relative"]
+
 
 class Results:
     """The Results class is used to extract and process the results of a model run."""
@@ -48,7 +50,8 @@ class Results:
         self.path: Path = path
         self.has_scenarios: bool = len(self._solution_loader.scenarios) > 1
         self._cost_emission_calculation: CostEmissionCalculation = (
-            CostEmissionCalculation(self))
+            CostEmissionCalculation(self)
+        )
 
     @override
     def __str__(self) -> str:
@@ -122,8 +125,8 @@ class Results:
             >>> r.get_total('<component_name>', index={'<index_name>': '<index_value>'})
                 # total values of "<component_name>" for a specific index value to slice
                 the dataframe
-            >>> r.get_total('<component_name>', keep_raw=True) # total values for the 
-                following years in one rolling horizon step are kept, instead of only 
+            >>> r.get_total('<component_name>', keep_raw=True) # total values for the
+                following years in one rolling horizon step are kept, instead of only
                 the first year of the rolling horizon step
         """
         if component_name in self.get_component_names("dual"):
@@ -198,7 +201,7 @@ class Results:
             for name, scenario in self.scenarios.items()
         }
         return self._concatenate_scenarios(df_dict)
-    
+
     @overload
     def get_unprocessed_result(
         self,
@@ -241,12 +244,15 @@ class Results:
 
             >>> from zen_garden.postprocess.results.results import Results
             >>> r = Results(path='<result_folder>')
-            >>> r.get_unprocessed_result('<component_name>') # dataframe of "<component_name>"
-            >>> r.get_unprocessed_result('<component_name>', '<scenario_name>') # dataframe of
-                "<component_name>" in "<scenario_name>"
-            >>> r.get_unprocessed_result('<component_name>', index={'<index_name>': '<index_value>'})
-                # dataframe of "<component_name>" for a specific index value to slice the
-                dataframe
+            >>> r.get_unprocessed_result('<component_name>')
+                # dataframe of "<component_name>"
+            >>> r.get_unprocessed_result('<component_name>', '<scenario_name>')
+                # dataframe of "<component_name>" in "<scenario_name>"
+            >>> r.get_unprocessed_result(
+            ...     '<component_name>', index={'<index_name>': '<index_value>'}
+            ... )
+                # dataframe of "<component_name>" for a specific index value to
+                slice the dataframe
 
         """
         if scenario_name is not None or len(self.scenarios) == 1:
@@ -287,17 +293,17 @@ class Results:
             >>> from zen_garden.postprocess.results.results import Results
             >>> r = Results(path='<result_folder>')
             >>> r.get_dual('<component_name>') # duals of "<component_name>"
-            >>> r.get_dual('<component_name>', '<scenario_name>') # duals of 
+            >>> r.get_dual('<component_name>', '<scenario_name>') # duals of
                 "<component_name>" in "<scenario_name>"
             >>> r.get_dual('<component_name>', <year>) # duals of
                 "<component_name>" for a specific year
-            >>> r.get_dual('<component_name>', index={'<index_name>': '<index_value>'}) 
+            >>> r.get_dual('<component_name>', index={'<index_name>': '<index_value>'})
                 # duals of "<component_name>" for a specific index value to slice the
                 dataframe
             >>> r.get_dual('<component_name>', discount_to_first_step=False) # duals of
                 "<component_name>" without discounting to the first step
             >>> r.get_dual('<component_name>', keep_raw=True) # duals for the following
-                years in one rolling horizon step are kept, instead of only the first 
+                years in one rolling horizon step are kept, instead of only the first
                 year of the rolling horizon step
         """
         if not self.get_solver(scenario_name).save_duals:
@@ -305,12 +311,7 @@ class Results:
             return None
 
         return self.get_full_ts(
-            component_name,
-            scenario_name,
-            discount_to_first_step,
-            year,
-            keep_raw,
-            index
+            component_name, scenario_name, discount_to_first_step, year, keep_raw, index
         )
 
     def get_unit(
@@ -340,18 +341,18 @@ class Results:
             >>> from zen_garden.postprocess.results.results import Results
             >>> r = Results(path='<result_folder>')
             >>> r.get_unit('<component_name>') # unit of "<component_name>"
-            >>> r.get_unit('<component_name>', '<scenario_name>') # unit of 
+            >>> r.get_unit('<component_name>', '<scenario_name>') # unit of
                 "<component_name>" in "<scenario_name>"
-            >>> r.get_unit('<component_name>', index={'<index_name>': '<index_value>'}) 
-                # unit of "<component_name>" for a specific index value to slice the 
+            >>> r.get_unit('<component_name>', index={'<index_name>': '<index_value>'})
+                # unit of "<component_name>" for a specific index value to slice the
                 dataframe
             >>> r.get_unit('<component_name>', droplevel=False) # unit of
-                "<component_name>" without dropping the location and 
+                "<component_name>" without dropping the location and
                 time levels of the multiindex
             >>> r.get_unit('<component_name>', convert_to_yearly_unit=True) # unit of
-                "<component_name>" converted to a yearly unit, i.e., for components with 
+                "<component_name>" converted to a yearly unit, i.e., for components with
                 an operational time step type, the unit is multiplied by hours.
-             
+
         """
         scenario = self._solution_loader.find_scenario(scenario_name)
         return scenario.get_unit(component_name, convert_to_yearly_unit)
@@ -377,7 +378,8 @@ class Results:
             >>> from zen_garden.postprocess.results.results import Results
             >>> r = Results(path='<result_folder>')
             >>> r.get_system() # system configurations of first scenario
-            >>> r.get_system('<scenario_name>') # system configuration of "scenario_name"
+            >>> r.get_system('<scenario_name>')
+                # system configuration of "scenario_name"
 
         """
         scenario = self._solution_loader.find_scenario(scenario_name)
@@ -433,7 +435,8 @@ class Results:
             >>> from zen_garden.postprocess.results.results import Results
             >>> r = Results(path='<result_folder>')
             >>> r.get_solver() # solver configurations of first scenario
-            >>> r.get_solver('<scenario_name>') # solver configuration of "scenario_name"
+            >>> r.get_solver('<scenario_name>')
+                # solver configuration of "scenario_name"
 
         """
         scenario = self._solution_loader.find_scenario(scenario_name)
@@ -466,7 +469,7 @@ class Results:
         """Docstring for get_index_names.
 
         Args:
-            component_name (str): The name of the component for which to 
+            component_name (str): The name of the component for which to
                 extract the index names.
             scenario_name (Optional[str]): The name of the scenario for which
                 to extract the index names. If no value is given, then the first
@@ -474,14 +477,16 @@ class Results:
         Returns:
             list[str]: A list of index names for the specified component.
 
-            
+
         Examples:
             Basic usage example:
 
             >>> from zen_garden.postprocess.results.results import Results
             >>> r = Results(path='<result_folder>')
-            >>> r.get_index_names('<component_name>') # index names of "<component_name>"
-            >>> r.get_index_names('<component_name>', '<scenario_name>') # index names of "<component_name>" in "<scenario_name>"
+            >>> r.get_index_names('<component_name>')
+                # index names of "<component_name>"
+            >>> r.get_index_names('<component_name>', '<scenario_name>')
+                # index names of "<component_name>" in "<scenario_name>"
         """
         scenario = self._solution_loader.find_scenario(scenario_name)
         return scenario.get_index_names(component_name)
@@ -502,8 +507,9 @@ class Results:
         ref_year = scenario.system.reference_year
         interval_between_years = scenario.system.interval_between_years
         return [
-            ref_year + i * interval_between_years 
-            for i in range(scenario.system.optimized_years)]
+            ref_year + i * interval_between_years
+            for i in range(scenario.system.optimized_years)
+        ]
 
     def has_RH(self, scenario_name: str | None = None) -> bool:
         """Whether the given scenario uses rolling horizon optimization.
@@ -525,7 +531,7 @@ class Results:
         scenario_name: str | None = None,
     ) -> list[str]:
         """Returns the names of all components of a given type.
-        
+
         Args:
             component_type (str): Type of the component. Must be one of the
                 valid component types defined in ComponentType:
@@ -575,20 +581,20 @@ class Results:
         mode: CostEmissionMode = "final_demand",
         overwrite: bool = False,
     ) -> tuple[pd.DataFrame, pd.DataFrame]:
-        """Calculates the sectoral costs of a scenario through 
-        Leontief Input-Output tables. The capital and operational expenditures of each 
-        technology and the fuel cost of each carrier are allocated to the sectors 
-        that use them. 
+        """Calculates the sectoral costs of a scenario through
+        Leontief Input-Output tables. The capital and operational expenditures of each
+        technology and the fuel cost of each carrier are allocated to the sectors
+        that use them.
 
         When specifying a carrier, only the cost of producing that carrier is returned.
         Note that the tables are formulated for all sectors, so returning the costs for
         all sectors does not add any overhead.
         The sectoral costs are either returned aggregated over all locations or
-        spatially resolved for each location (`spatially_resolved = True`). 
+        spatially resolved for each location (`spatially_resolved = True`).
         The cost of transport technologies are 50/50 allocated to the connecting nodes.
         By default, the costs to produce the final demand of each sector are returned
         (`mode = "final_demand"`), but the costs of the total production of each carrier
-        can also be returned (`mode = "total_production"`). Finally, the relative 
+        can also be returned (`mode = "total_production"`). Finally, the relative
         production costs of each sector can be returned (`mode = "relative"`).
 
         Args:
@@ -598,32 +604,33 @@ class Results:
                 None, the costs of all carriers are returned.
             spatially_resolved: Whether the sectoral costs should be returned
                 spatially resolved for each node or aggregated over all nodes.
-            mode: The mode of calculation for the sectoral costs 
+            mode: The mode of calculation for the sectoral costs
                 ("final_demand", "total_production", or "relative").
-            overwrite: Whether to rebuild the leontief input-output tables even if 
+            overwrite: Whether to rebuild the leontief input-output tables even if
                 they have already been built and saved.
 
         Returns:
             Tuple of two DataFrames:
-                - The first DataFrame contains the total upstream/downstream costs 
+                - The first DataFrame contains the total upstream/downstream costs
                   of each sector.
-                - The second DataFrame contains the direct costs of each sector. 
-                  These are the costs that are directly associated with 
-                  the sector itself, without considering the upstream/downstream effects.
+                - The second DataFrame contains the direct costs of each sector.
+                  These are the costs that are directly associated with the
+                  sector itself, without considering the upstream/downstream
+                  effects.
 
         Examples:
             Basic usage example:
 
             >>> from zen_garden.postprocess.results.results import Results
             >>> r = Results(path='<result_folder>')
-            >>> r.get_sectoral_costs('<scenario_name>') 
+            >>> r.get_sectoral_costs('<scenario_name>')
                 # sectoral costs of "<scenario_name>"
-            >>> r.get_sectoral_costs('<scenario_name>', carrier='<carrier_name>') 
+            >>> r.get_sectoral_costs('<scenario_name>', carrier='<carrier_name>')
                 # sectoral costs of "<carrier_name>" in "<scenario_name>"
             >>> r.get_sectoral_costs('<scenario_name>', spatially_resolved=True)
                 # spatially resolved sectoral costs of "<scenario_name>"
             >>> r.get_sectoral_costs('<scenario_name>', mode='total_production')
-                # sectoral costs of the total production of each carrier in 
+                # sectoral costs of the total production of each carrier in
                 "<scenario_name>"
             >>> r.get_sectoral_costs('<scenario_name>', mode='relative')
                 # relative production costs of each sector in "<scenario_name>"
@@ -637,11 +644,11 @@ class Results:
                 spatially_resolved=spatially_resolved,
                 mode=mode,
                 overwrite=overwrite,
-                is_cost=True
+                is_cost=True,
             )
         )
         return sectoral_costs, direct_costs
-    
+
     def get_sectoral_emissions(
         self,
         scenario_name: str | None = None,
@@ -650,56 +657,58 @@ class Results:
         mode: CostEmissionMode = "final_demand",
         overwrite: bool = False,
     ) -> tuple[pd.DataFrame, pd.DataFrame]:
-        """Calculates the sectoral emissions of a scenario through 
-        Leontief Input-Output tables. The capital and operational expenditures of each 
-        technology and the fuel cost of each carrier are allocated to the sectors 
-        that use them. 
+        """Calculates the sectoral emissions of a scenario through
+        Leontief Input-Output tables. The capital and operational expenditures of each
+        technology and the fuel cost of each carrier are allocated to the sectors
+        that use them.
 
-        When specifying a carrier, only the emissions of producing that carrier is returned.
-        Note that the tables are formulated for all sectors, so returning the emissions for
-        all sectors does not add any overhead.
+        When specifying a carrier, only the emissions of producing that carrier
+        is returned. Note that the tables are formulated for all sectors, so
+        returning the emissions for all sectors does not add any overhead.
         The sectoral emissions are either returned aggregated over all locations or
-        spatially resolved for each location (`spatially_resolved = True`). 
-        The emissions of transport technologies are 50/50 allocated to the connecting nodes.
-        By default, the emissions to produce the final demand of each sector are returned
-        (`mode = "final_demand"`), but the emissions of the total production of each carrier
-        can also be returned (`mode = "total_production"`). Finally, the relative 
+        spatially resolved for each location (`spatially_resolved = True`).
+        The emissions of transport technologies are 50/50 allocated to the
+        connecting nodes. By default, the emissions to produce the final demand of
+        each sector are returned (`mode = "final_demand"`), but the emissions of
+        the total production of each carrier can also be returned
+        (`mode = "total_production"`). Finally, the relative
         production emissions of each sector can be returned (`mode = "relative"`).
 
         Args:
             scenario_name: The scenario for which the sectoral emissions should be
                 calculated; if None, the emissions of the first scenario are returned.
-            carrier: The carrier for which the sectoral emissions should be calculated. If
-                None, the emissions of all carriers are returned.
+            carrier: The carrier for which the sectoral emissions should be
+                calculated. If None, the emissions of all carriers are returned.
             spatially_resolved: Whether the sectoral emissions should be returned
                 spatially resolved for each node or aggregated over all nodes.
             mode: The mode of calculation for the sectoral emissions
                 ("final_demand", "total_production", or "relative").
-            overwrite: Whether to rebuild the leontief input-output tables even if 
+            overwrite: Whether to rebuild the leontief input-output tables even if
                 they have already been built and saved.
 
-        
+
         Returns:
             Tuple of two DataFrames:
-                - The first DataFrame contains the total upstream/downstream emissions 
+                - The first DataFrame contains the total upstream/downstream emissions
                   of each sector.
-                - The second DataFrame contains the direct emissions of each sector. 
-                  These are the emissions that are directly associated with 
-                  the sector itself, without considering the upstream/downstream effects.
+                - The second DataFrame contains the direct emissions of each
+                  sector. These are the emissions that are directly associated
+                  with the sector itself, without considering the
+                  upstream/downstream effects.
 
         Examples:
             Basic usage example:
 
             >>> from zen_garden.postprocess.results.results import Results
             >>> r = Results(path='<result_folder>')
-            >>> r.get_sectoral_emissions('<scenario_name>') 
+            >>> r.get_sectoral_emissions('<scenario_name>')
                 # sectoral emissions of "<scenario_name>"
-            >>> r.get_sectoral_emissions('<scenario_name>', carrier='<carrier_name>') 
+            >>> r.get_sectoral_emissions('<scenario_name>', carrier='<carrier_name>')
                 # sectoral emissions of "<carrier_name>" in "<scenario_name>"
             >>> r.get_sectoral_emissions('<scenario_name>', spatially_resolved=True)
                 # spatially resolved sectoral emissions of "<scenario_name>"
             >>> r.get_sectoral_emissions('<scenario_name>', mode='total_production')
-                # sectoral emissions of the total production of each carrier in 
+                # sectoral emissions of the total production of each carrier in
                 "<scenario_name>"
             >>> r.get_sectoral_emissions('<scenario_name>', mode='relative')
                 # relative production emissions of each sector in "<scenario_name>"
@@ -713,7 +722,7 @@ class Results:
                 spatially_resolved=spatially_resolved,
                 mode=mode,
                 overwrite=overwrite,
-                is_cost=False
+                is_cost=False,
             )
         )
         return sectoral_emissions, direct_emissions

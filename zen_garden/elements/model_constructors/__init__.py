@@ -36,9 +36,9 @@ MODEL_CONSTRUCTORS: list[type[ModelConstructor]] = [
 # every element type must have exactly one constructor and vice versa.
 _expected_element_classes: set[type] = {EnergySystem, *ELEMENT_TYPE_CLASSES.values()}
 _actual_element_classes: list[type] = [c.element_class for c in MODEL_CONSTRUCTORS]
-assert len(_actual_element_classes) == len(set(_actual_element_classes)), (
-    "MODEL_CONSTRUCTORS contains duplicate element classes"
-)
+assert len(_actual_element_classes) == len(
+    set(_actual_element_classes)
+), "MODEL_CONSTRUCTORS contains duplicate element classes"
 assert set(_actual_element_classes) == _expected_element_classes, (
     "MODEL_CONSTRUCTORS is out of sync with the element classes: "
     f"missing {_expected_element_classes.difference(_actual_element_classes)}, "

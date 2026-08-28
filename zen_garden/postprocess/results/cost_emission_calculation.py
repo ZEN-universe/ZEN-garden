@@ -3,16 +3,17 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from zen_garden.postprocess.results.results import Results, CostEmissionMode
+    from zen_garden.postprocess.results.results import CostEmissionMode, Results
 
-import pandas as pd
-import numpy as np
-from scipy.sparse import coo_matrix, identity
-from scipy.sparse.linalg import splu
 import os
-from typing import Optional
 import pickle
 from pathlib import Path
+from typing import Optional
+
+import numpy as np
+import pandas as pd
+from scipy.sparse import coo_matrix, identity
+from scipy.sparse.linalg import splu
 
 REQUIRED_COMPONENTS = {
     "parameter": ["demand", "carbon_intensity_technology"],
@@ -574,9 +575,7 @@ class CostEmissionCalculation:
         A_rows, A_cols, A_vals = [], [], []
         M_rows, M_cols, M_vals = [], [], []
         comp_to_pos = {}
-        tech_flow_in_conversion = (
-            {}
-        )  
+        tech_flow_in_conversion = {}
 
         def add_direct(component, value_type, sector, value):
             if value == 0 or sector not in sector_to_pos:
@@ -935,7 +934,7 @@ class CostEmissionCalculation:
 
     @staticmethod
     def _get_carriers_of_tech(carrier_mapping: pd.Series, tech: str) -> list[str]:
-        """returns the list of carriers associated with a given technology
+        """Return the list of carriers associated with a given technology.
 
         Args:
             carrier_mapping: A Series mapping each technology to its associated

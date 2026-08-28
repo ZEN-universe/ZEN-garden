@@ -293,16 +293,20 @@ class OptimizationStep:
         """Write an ILP file to print the IIS if infeasible and using Gurobi."""
         if not self.config.solver.name == "gurobi":
             return
-        if (self.zen_model.lp_model.termination_condition == "infeasible_or_unbounded"
-            and ("solver_options" not in self.config.solver or
-                 "DualReductions" not in self.config.solver.solver_options)):
+        if (
+            self.zen_model.lp_model.termination_condition == "infeasible_or_unbounded"
+            and (
+                "solver_options" not in self.config.solver
+                or "DualReductions" not in self.config.solver.solver_options
+            )
+        ):
             logger.warning(
                 "The optimization problem is infeasible or unbounded. "
                 "When using Gurobi, consider setting the solver option "
                 "'DualReductions' to 0 to get a more informative termination condition"
                 "and."
             )
-        if (self.zen_model.lp_model.termination_condition == "infeasible"):
+        if self.zen_model.lp_model.termination_condition == "infeasible":
             output_folder = StringUtils.get_output_folder(self.config.analysis)
             ilp_file = os.path.join(
                 output_folder,
