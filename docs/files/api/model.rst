@@ -71,17 +71,17 @@ Constraints
 
 
 
-ZEN Model
-=========
+Optimization model
+==================
 .. autosummary::
     :toctree: generated
 
-    zen_garden.model.zen_model
+    zen_garden.model.optimization_model
     zen_garden.model.registries.base
     zen_garden.model.registries.constraint
     zen_garden.model.registries.multi_index_helper
     zen_garden.model.registries.parameter
+    zen_garden.model.registries.set
     zen_garden.model.registries.set_registry
     zen_garden.model.registries.variable
-    zen_garden.model.zen_set
     zen_garden.model.time_steps

@@ -7,7 +7,7 @@ import xarray as xr
 from linopy.expressions import LinearExpression
 
 from zen_garden.model.component_types.constraint import GenericConstraint
-from zen_garden.model.zen_set import BaseSet
+from zen_garden.model.registries.set import BaseSet
 
 
 class TechnologyDiffusionLimitConstraint(GenericConstraint):
@@ -99,17 +99,18 @@ class TechnologyDiffusionLimitConstraint(GenericConstraint):
         :math:`\\Delta y`: interval between planning periods
         :math:`\\omega`: parameter which specifies the knowledge spillover rate
         """
+        optimization_model = model_constructor.optimization_model
         # load variables and parameters
-        capacity_addition = model_constructor.zen_model.variables["capacity_addition"]
-        capacity_existing = model_constructor.zen_model.parameters.capacity_existing
+        capacity_addition = optimization_model.variables["capacity_addition"]
+        capacity_existing = optimization_model.parameters.capacity_existing
         knowledge_depreciation_rate = (
-            model_constructor.zen_model.parameters.knowledge_depreciation_rate
+            optimization_model.parameters.knowledge_depreciation_rate
         )
         interval_between_years = model_constructor.config.system.interval_between_years
-        spillover_rate = model_constructor.zen_model.parameters.knowledge_spillover_rate
+        spillover_rate = optimization_model.parameters.knowledge_spillover_rate
         # technology diffusion rate per investment period
         tdr = (
-            1 + model_constructor.zen_model.parameters.max_diffusion_rate
+            1 + optimization_model.parameters.max_diffusion_rate
         ) ** interval_between_years - 1
         tdr = tdr.broadcast_like(capacity_addition.lower)
         tdr_sum = tdr.sum("set_location")
@@ -120,12 +121,13 @@ class TechnologyDiffusionLimitConstraint(GenericConstraint):
             return
         # mask for knowledge spillover rate (sr) to exclude transport technologies
         mask_technology_type = pd.Series(
-            index=pd.Index(model_constructor.zen_model.sets["set_technologies"]), data=1
+            index=pd.Index(optimization_model.sets["set_technologies"]),
+            data=1,
         )
         mask_technology_type.index.name = "set_technologies"
         mask_technology_type[
             mask_technology_type.index.isin(
-                model_constructor.zen_model.sets["set_transport_technologies"]
+                optimization_model.sets["set_transport_technologies"]
             )
         ] = 0
         mask_technology_type = mask_technology_type.to_xarray()
@@ -135,7 +137,7 @@ class TechnologyDiffusionLimitConstraint(GenericConstraint):
         )
         mask_location.index.name = "set_location"
         mask_location[
-            mask_location.index.isin(model_constructor.zen_model.sets["set_edges"])
+            mask_location.index.isin(optimization_model.sets["set_edges"])
         ] = 0
         mask_location = mask_location.to_xarray()
         # mask match technology type and location
@@ -147,8 +149,8 @@ class TechnologyDiffusionLimitConstraint(GenericConstraint):
             [
                 (y, py)
                 for y, py in itertools.product(
-                    model_constructor.zen_model.sets["set_years"],
-                    model_constructor.zen_model.sets["set_years"],
+                    optimization_model.sets["set_years"],
+                    optimization_model.sets["set_years"],
                 )
                 if py < y
             ],
@@ -196,13 +198,7 @@ class TechnologyDiffusionLimitConstraint(GenericConstraint):
                         {"set_location": "set_location_temp"}
                     )
                     .broadcast_like(location_index)
-                    .sel(
-                        {
-                            "set_location_temp": model_constructor.zen_model.sets[
-                                "set_nodes"
-                            ]
-                        }
-                    )
+                    .sel({"set_location_temp": optimization_model.sets["set_nodes"]})
                     .sum("set_location_temp")
                 )
                 # calculate term spillover
@@ -213,16 +209,16 @@ class TechnologyDiffusionLimitConstraint(GenericConstraint):
                 term_knowledge = capacity_addition_years + sr * term_spillover
                 term_knowledge = tdr * (term_knowledge * kdr).sum("set_years_prev")
         # unbounded market share --> only for same technology class
-        capacity_previous = model_constructor.zen_model.variables["capacity_previous"]
+        capacity_previous = optimization_model.variables["capacity_previous"]
         market_share_unbounded = {
             (t, ot): (
-                model_constructor.zen_model.parameters.market_share_unbounded
+                optimization_model.parameters.market_share_unbounded
                 if ot != t
-                and model_constructor.zen_model.sets["set_reference_carriers"][t][0]
-                == model_constructor.zen_model.sets["set_reference_carriers"][ot][0]
+                and optimization_model.sets["set_reference_carriers"][t][0]
+                == optimization_model.sets["set_reference_carriers"][ot][0]
                 else 0
             )
-            for t in model_constructor.zen_model.sets["set_technologies"]
+            for t in optimization_model.sets["set_technologies"]
             for ot in cls._get_class_set_of_element(model_constructor, t)
         }
         market_share_unbounded = pd.Series(market_share_unbounded)
@@ -252,15 +248,15 @@ class TechnologyDiffusionLimitConstraint(GenericConstraint):
             - 1
             - model_constructor.model_schema.set_years[0]
         )
-        lifetime_existing = model_constructor.zen_model.parameters.lifetime_existing
-        lifetime = model_constructor.zen_model.parameters.lifetime
+        lifetime_existing = optimization_model.parameters.lifetime_existing
+        lifetime = optimization_model.parameters.lifetime
         kdr_existing = (1 - knowledge_depreciation_rate) ** (
             delta_years + lifetime - lifetime_existing
         )
         capacity_existing_total_nosr = capacity_existing
         # capacity addition unbounded
         capacity_addition_unbounded = (
-            model_constructor.zen_model.parameters.capacity_addition_unbounded
+            optimization_model.parameters.capacity_addition_unbounded
         )
         capacity_addition_unbounded = capacity_addition_unbounded.broadcast_like(tdr)
         capacity_addition_unbounded = capacity_addition_unbounded.where(
@@ -290,7 +286,7 @@ class TechnologyDiffusionLimitConstraint(GenericConstraint):
         rhs_sn = cls.align_and_mask(rhs_sn, mask_inf_tdr_sum)
         # combine constraint
         constraints_sn = lhs_sn <= rhs_sn
-        model_constructor.zen_model.add_constraint(
+        optimization_model.add_constraint(
             "constraint_technology_diffusion_limit_total", constraints_sn
         )
         # build constraints for all nodes ("an") if spillover rate is not inf
@@ -322,7 +318,7 @@ class TechnologyDiffusionLimitConstraint(GenericConstraint):
             rhs_an = cls.align_and_mask(rhs_an, mask_inf_tdr)
             # combine constraint
             constraints_an = lhs_an <= rhs_an
-            model_constructor.zen_model.add_constraint(
+            optimization_model.add_constraint(
                 "constraint_technology_diffusion_limit", constraints_an
             )
 
@@ -336,4 +332,4 @@ class TechnologyDiffusionLimitConstraint(GenericConstraint):
         element = model_constructor.element_registry.get_element_by_name(element_name)
         if element is None:
             raise ValueError(f"Element {element_name} not found")
-        return model_constructor.zen_model.sets[element.label]
+        return model_constructor.optimization_model.sets[element.label]

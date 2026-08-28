@@ -36,13 +36,13 @@ class ChargeDischargeBinaryConstraint(GenericConstraint):
         if not model_constructor.config.system.storage_charge_discharge_binary:
             return
 
-        techs = model_constructor.zen_model.sets["set_storage_technologies"]
-        nodes = model_constructor.zen_model.sets["set_nodes"]
+        techs = model_constructor.optimization_model.sets["set_storage_technologies"]
+        nodes = model_constructor.optimization_model.sets["set_nodes"]
         if len(techs) == 0:
             return
         # capacity limit as upper bound
         times = cls.get_storage2year_time_step_array(model_constructor)
-        capacity_limit = model_constructor.zen_model.parameters.capacity_limit
+        capacity_limit = model_constructor.optimization_model.parameters.capacity_limit
         capacity_limit = cls.map_and_expand(capacity_limit, times)
         capacity_limit = capacity_limit.rename(
             {
@@ -62,24 +62,24 @@ class ChargeDischargeBinaryConstraint(GenericConstraint):
         )
 
         lhs = (
-            model_constructor.zen_model.variables["flow_storage_charge"]
-            - model_constructor.zen_model.variables["charge_storage_binary"]
+            model_constructor.optimization_model.variables["flow_storage_charge"]
+            - model_constructor.optimization_model.variables["charge_storage_binary"]
             * capacity_limit
         )
         rhs = 0
         constraint_charge = lhs <= rhs
 
         lhs = (
-            model_constructor.zen_model.variables["flow_storage_discharge"]
-            + model_constructor.zen_model.variables["charge_storage_binary"]
+            model_constructor.optimization_model.variables["flow_storage_discharge"]
+            + model_constructor.optimization_model.variables["charge_storage_binary"]
             * capacity_limit
         )
         rhs = capacity_limit
         constraint_discharge = lhs <= rhs
 
-        model_constructor.zen_model.add_constraint(
+        model_constructor.optimization_model.add_constraint(
             "constraint_charge_storage_binary", constraint_charge
         )
-        model_constructor.zen_model.add_constraint(
+        model_constructor.optimization_model.add_constraint(
             "constraint_discharge_storage_binary", constraint_discharge
         )

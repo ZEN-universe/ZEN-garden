@@ -8,7 +8,7 @@ import pandas as pd
 import xarray as xr
 
 from zen_garden.model.registries.base import Registry
-from zen_garden.model.zen_set import BaseSet
+from zen_garden.model.registries.set import BaseSet
 
 if TYPE_CHECKING:
     from linopy import Model as LinopyModel

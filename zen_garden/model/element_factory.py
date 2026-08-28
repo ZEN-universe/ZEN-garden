@@ -8,9 +8,9 @@ from zen_garden.elements.energy_system import EnergySystem
 from zen_garden.model.element import Element
 
 if TYPE_CHECKING:
-    from zen_garden.di import ServiceContainer
     from zen_garden.input.input_data_checks import InputDataChecks
     from zen_garden.model.schema import ModelSchema
+    from zen_garden.service_container import ServiceContainer
 
 logger = logging.getLogger(__name__)
 

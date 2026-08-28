@@ -6,12 +6,12 @@ from typing import TYPE_CHECKING, Callable
 
 import psutil
 
-from zen_garden.di import ServiceContainer
 from zen_garden.model.constructor import ModelConstructor
+from zen_garden.service_container import ServiceContainer
 
 if TYPE_CHECKING:
+    from zen_garden.model.optimization_model import OptimizationModel
     from zen_garden.model.schema import ModelSchema
-    from zen_garden.model.zen_model import ZenModel
 
 logger = logging.getLogger(__name__)
 
@@ -41,11 +41,11 @@ class ModelConstructionService:
         self,
         service_container: "ServiceContainer",
         model_schema: "ModelSchema",
-        zen_model: "ZenModel",
+        optimization_model: "OptimizationModel",
     ):
         self.service_container = service_container
         self.model_schema = model_schema
-        self.zen_model = zen_model
+        self.optimization_model = optimization_model
 
     @property
     def config(self):
@@ -58,9 +58,9 @@ class ModelConstructionService:
         # (EnergySystem first, then ELEMENT_TYPE_CLASSES). One generic
         # ModelConstructor is built per type.
         self._model_constructors = [
-            # Injected services: service_container, element_registry, zen_model,
-            # model_schema, network_topology, time_steps; explicit argument:
-            # element_class.
+            # Injected services: service_container, element_registry,
+            # optimization_model, model_schema, network_topology, time_steps;
+            # explicit argument: element_class.
             self.service_container.build(ModelConstructor, element_class=element_class)
             for element_class in self.model_schema.element_classes
         ]
@@ -113,12 +113,12 @@ class ModelConstructionService:
         logger.info("Constructing objective")
 
         objective_name = self.config.analysis.objective
-        if objective_name not in self.zen_model.expressions:
+        if objective_name not in self.optimization_model.expressions:
             raise KeyError(f"Objective type {objective_name} not known")
 
         sense = self.config.analysis.sense
         assert sense in ("min", "max"), f"Objective sense {sense} not known"
 
-        self.zen_model.lp_model.add_objective(
-            self.zen_model.expressions[objective_name], sense=sense
+        self.optimization_model.lp_model.add_objective(
+            self.optimization_model.expressions[objective_name], sense=sense
         )

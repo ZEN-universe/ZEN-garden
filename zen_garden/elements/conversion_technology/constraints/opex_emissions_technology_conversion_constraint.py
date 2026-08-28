@@ -29,15 +29,15 @@ class OpexEmissionsTechnologyConversionConstraint(GenericConstraint):
         :math:`\\varepsilon^{\\mathrm{op}}_{h,n}`: carbon intensity of the
         conversion technology
         """
-        techs = model_constructor.zen_model.sets["set_conversion_technologies"]
+        techs = model_constructor.optimization_model.sets["set_conversion_technologies"]
         if len(techs) == 0:
             return
-        nodes = model_constructor.zen_model.sets["set_nodes"]
+        nodes = model_constructor.optimization_model.sets["set_nodes"]
         term_reference_flow_opex = cls.get_flow_expression_conversion(
             model_constructor,
             techs,
             nodes,
-            factor=model_constructor.zen_model.parameters.opex_specific_variable.rename(
+            factor=model_constructor.optimization_model.parameters.opex_specific_variable.rename(
                 {
                     "set_technologies": "set_conversion_technologies",
                     "set_location": "set_nodes",
@@ -48,7 +48,7 @@ class OpexEmissionsTechnologyConversionConstraint(GenericConstraint):
             model_constructor,
             techs,
             nodes,
-            factor=model_constructor.zen_model.parameters.carbon_intensity_technology.rename(
+            factor=model_constructor.optimization_model.parameters.carbon_intensity_technology.rename(
                 {
                     "set_technologies": "set_conversion_technologies",
                     "set_location": "set_nodes",
@@ -57,7 +57,7 @@ class OpexEmissionsTechnologyConversionConstraint(GenericConstraint):
         )
         lhs_opex = (
             1
-            * model_constructor.zen_model.variables["cost_opex_variable"].loc[
+            * model_constructor.optimization_model.variables["cost_opex_variable"].loc[
                 techs, nodes, :
             ]
         ).rename(
@@ -68,9 +68,9 @@ class OpexEmissionsTechnologyConversionConstraint(GenericConstraint):
         ) - term_reference_flow_opex
         lhs_emissions = (
             1
-            * model_constructor.zen_model.variables["carbon_emissions_technology"].loc[
-                techs, nodes, :
-            ]
+            * model_constructor.optimization_model.variables[
+                "carbon_emissions_technology"
+            ].loc[techs, nodes, :]
         ).rename(
             {
                 "set_technologies": "set_conversion_technologies",
@@ -81,9 +81,9 @@ class OpexEmissionsTechnologyConversionConstraint(GenericConstraint):
         constraints_opex = lhs_opex == rhs
         constraints_emissions = lhs_emissions == rhs
 
-        model_constructor.zen_model.add_constraint(
+        model_constructor.optimization_model.add_constraint(
             "constraint_opex_technology_conversion", constraints_opex
         )
-        model_constructor.zen_model.add_constraint(
+        model_constructor.optimization_model.add_constraint(
             "constraint_carbon_emissions_technology_conversion", constraints_emissions
         )

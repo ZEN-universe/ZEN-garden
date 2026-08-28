@@ -21,8 +21,8 @@ class Capacity(GenericVariable):
             if tech not in techs_on_off:
                 return 0, np.inf
 
-            sets = model_constructor.zen_model.sets
-            params = model_constructor.zen_model.parameters.dict_parameters
+            sets = model_constructor.optimization_model.sets
+            params = model_constructor.optimization_model.parameters.dict_parameters
             capacities_existing = 0
             for existing_id in sets["set_technologies_existing"][tech]:
                 lifetime_existing = params.lifetime_existing[tech, loc, existing_id]

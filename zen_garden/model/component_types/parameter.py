@@ -65,7 +65,7 @@ class GenericParameter(ABC):
             model_constructor, index_names
         )
         component_data = cls._ensure_multi_index(component_data)
-        model_constructor.zen_model.add_parameter(
+        model_constructor.optimization_model.add_parameter(
             cls.name,
             cls.doc,
             (component_data, index_list),
@@ -82,7 +82,7 @@ class GenericParameter(ABC):
             index_list = index_names
             if cls.set_time_steps is not None:
                 component_data = component_data[
-                    model_constructor.zen_model.sets[cls.set_time_steps]
+                    model_constructor.optimization_model.sets[cls.set_time_steps]
                 ]
             else:
                 if not isinstance(component_data, float):
@@ -207,9 +207,18 @@ class GenericParameter(ABC):
 
     @classmethod
     def construction_order(
-        cls, parameters: list[type[GenericParameter]]
+        cls,
+        parameters: list[type[GenericParameter]],
+        *,
+        ignore_missing: bool = False,
     ) -> list[type[GenericParameter]]:
-        """Return all parameter specifications in global dependency order."""
+        """Return the given parameter specifications in dependency order.
+
+        :param ignore_missing: when ``True``, a dependency on a parameter that is
+            not in ``parameters`` is treated as already satisfied instead of
+            raising. Used when ordering the ``build`` pass for a subset of the
+            model's element types (a filtered-out type's parameters are absent).
+        """
         parameters_by_name: dict[str, type[GenericParameter]] = {}
         for parameter in parameters:
             existing = parameters_by_name.get(parameter.name)
@@ -221,13 +230,15 @@ class GenericParameter(ABC):
             parameters_by_name[parameter.name] = parameter
 
         all_names = set(parameters_by_name)
-        for parameter in parameters_by_name.values():
-            missing = set(parameter.dependencies).difference(all_names)
-            if missing:
-                names = ", ".join(sorted(missing))
-                raise ValueError(
-                    f"Parameter {parameter.name!r} has unknown dependencies: {names}"
-                )
+        if not ignore_missing:
+            for parameter in parameters_by_name.values():
+                missing = set(parameter.dependencies).difference(all_names)
+                if missing:
+                    names = ", ".join(sorted(missing))
+                    raise ValueError(
+                        f"Parameter {parameter.name!r} has unknown "
+                        f"dependencies: {names}"
+                    )
 
         remaining = list(parameters_by_name.values())
         completed: set[str] = set()
@@ -236,7 +247,7 @@ class GenericParameter(ABC):
             ready = [
                 parameter
                 for parameter in remaining
-                if set(parameter.dependencies).issubset(completed)
+                if (set(parameter.dependencies) & all_names).issubset(completed)
             ]
             if not ready:
                 cycle = ", ".join(parameter.name for parameter in remaining)

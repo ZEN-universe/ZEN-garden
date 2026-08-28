@@ -48,16 +48,18 @@ class CoupleStorageLevelConstraint(GenericConstraint):
         storage
         :math:`F^{\\mathrm{spill}}_{h,n,\\sigma(\\tilde{t})}`: storage spillage
         """
-        techs = model_constructor.zen_model.sets["set_storage_technologies"]
+        techs = model_constructor.optimization_model.sets["set_storage_technologies"]
         if len(techs) == 0:
             return
-        self_discharge = model_constructor.zen_model.parameters.self_discharge
-        flow_storage_inflow = model_constructor.zen_model.parameters.flow_storage_inflow
+        self_discharge = model_constructor.optimization_model.parameters.self_discharge
+        flow_storage_inflow = (
+            model_constructor.optimization_model.parameters.flow_storage_inflow
+        )
         flow_storage_spillage = (
-            model_constructor.zen_model.lp_model.variables.flow_storage_spillage
+            model_constructor.optimization_model.lp_model.variables.flow_storage_spillage
         )
         time_steps_storage_duration = (
-            model_constructor.zen_model.parameters.time_steps_storage_duration
+            model_constructor.optimization_model.parameters.time_steps_storage_duration
         )
         # reformulate self discharge multiplier as partial geometric series
         multiplier_w_discharge = (
@@ -73,9 +75,9 @@ class CoupleStorageLevelConstraint(GenericConstraint):
         )
         self_discharge_previous = (1 - self_discharge) ** time_steps_storage_duration
         self_discharge_previous["set_time_steps_storage"] = times_coupling
-        term_delta_storage_level = model_constructor.zen_model.variables[
+        term_delta_storage_level = model_constructor.optimization_model.variables[
             "storage_level"
-        ] - self_discharge_previous * model_constructor.zen_model.variables[
+        ] - self_discharge_previous * model_constructor.optimization_model.variables[
             "storage_level"
         ].sel(
             {"set_time_steps_storage": times_coupling}
@@ -83,23 +85,23 @@ class CoupleStorageLevelConstraint(GenericConstraint):
         # charge and discharge flow
         times_year_time_step = cls.get_year_time_step_array(model_constructor)
         efficiency_charge = (
-            model_constructor.zen_model.parameters.efficiency_charge.broadcast_like(
+            model_constructor.optimization_model.parameters.efficiency_charge.broadcast_like(
                 times_year_time_step
             )
             .where(times_year_time_step, 0.0)
             .sum("set_years")
         )
         efficiency_discharge = (
-            model_constructor.zen_model.parameters.efficiency_discharge.broadcast_like(
+            model_constructor.optimization_model.parameters.efficiency_discharge.broadcast_like(
                 times_year_time_step
             )
             .where(times_year_time_step, 0.0)
             .sum("set_years")
         )
         term_flow_charge_discharge = (
-            model_constructor.zen_model.variables["flow_storage_charge"]
+            model_constructor.optimization_model.variables["flow_storage_charge"]
             * efficiency_charge
-            - model_constructor.zen_model.variables[
+            - model_constructor.optimization_model.variables[
                 "flow_storage_discharge"
             ].to_linexpr()
             / efficiency_discharge
@@ -118,6 +120,6 @@ class CoupleStorageLevelConstraint(GenericConstraint):
         rhs = 0
         constraints = lhs == rhs
 
-        model_constructor.zen_model.add_constraint(
+        model_constructor.optimization_model.add_constraint(
             "constraint_couple_storage_level", constraints
         )

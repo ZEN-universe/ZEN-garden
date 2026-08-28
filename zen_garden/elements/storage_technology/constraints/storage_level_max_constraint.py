@@ -20,14 +20,14 @@ class StorageLevelMaxConstraint(GenericConstraint):
         :math:`K^{\\mathrm{energy}}_{h,n,y}`: energy capacity of storage technology
         :math:`h` on node :math:`n` in year :math:`y`
         """
-        techs = model_constructor.zen_model.sets["set_storage_technologies"]
-        nodes = model_constructor.zen_model.sets["set_nodes"]
+        techs = model_constructor.optimization_model.sets["set_storage_technologies"]
+        nodes = model_constructor.optimization_model.sets["set_nodes"]
         if len(techs) == 0:
             return
         # mask for energy capacity and storage time steps
         times = cls.get_storage2year_time_step_array(model_constructor)
         capacity = cls.map_and_expand(
-            model_constructor.zen_model.variables["capacity"], times
+            model_constructor.optimization_model.variables["capacity"], times
         )
         capacity = capacity.rename(
             {
@@ -36,9 +36,9 @@ class StorageLevelMaxConstraint(GenericConstraint):
             }
         )
         capacity = capacity.sel({"set_nodes": nodes, "set_storage_technologies": techs})
-        storage_level = model_constructor.zen_model.variables["storage_level"]
+        storage_level = model_constructor.optimization_model.variables["storage_level"]
         mask_capacity_type = (
-            model_constructor.zen_model.variables["capacity"].coords[
+            model_constructor.optimization_model.variables["capacity"].coords[
                 "set_capacity_types"
             ]
             == "energy"
@@ -47,6 +47,6 @@ class StorageLevelMaxConstraint(GenericConstraint):
         rhs = 0
         constraints = lhs <= rhs
 
-        model_constructor.zen_model.add_constraint(
+        model_constructor.optimization_model.add_constraint(
             "constraint_storage_level_max", constraints
         )

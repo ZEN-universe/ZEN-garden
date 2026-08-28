@@ -33,26 +33,27 @@ class CostOpexYearlyConstraint(GenericConstraint):
         :math:`K_{h,p,y}`: installed capacity of technology :math:`h` at location
         :math:`p` in year :math:`y`
         """
+        optimization_model = model_constructor.optimization_model
         times_dict: dict[str, pd.Series] = {
-            y: model_constructor.zen_model.parameters.time_steps_operation_duration.loc[
+            y: optimization_model.parameters.time_steps_operation_duration.loc[
                 model_constructor.time_steps.get_time_steps_year2operation(y)
             ].to_series()
-            for y in model_constructor.zen_model.sets["set_years"]
+            for y in optimization_model.sets["set_years"]
         }
         times = pd.concat(times_dict, keys=times_dict.keys())
         times.index.names = ["set_years", "set_time_steps_operation"]
         times = times.to_xarray().broadcast_like(
-            model_constructor.zen_model.variables["cost_opex_variable"].mask
+            optimization_model.variables["cost_opex_variable"].mask
         )
         term_opex_variable = (
-            model_constructor.zen_model.variables["cost_opex_variable"] * times
+            optimization_model.variables["cost_opex_variable"] * times
         ).sum("set_time_steps_operation")
         term_opex_fixed = (
-            model_constructor.zen_model.parameters.opex_specific_fixed
-            * model_constructor.zen_model.variables["capacity"]
+            optimization_model.parameters.opex_specific_fixed
+            * optimization_model.variables["capacity"]
         ).sum("set_capacity_types")
         lhs = (
-            model_constructor.zen_model.variables["cost_opex_yearly"]
+            optimization_model.variables["cost_opex_yearly"]
             - term_opex_variable
             - term_opex_fixed
         )
@@ -60,6 +61,4 @@ class CostOpexYearlyConstraint(GenericConstraint):
         constraints = lhs == rhs
 
         ### return
-        model_constructor.zen_model.add_constraint(
-            "constraint_cost_opex_yearly", constraints
-        )
+        optimization_model.add_constraint("constraint_cost_opex_yearly", constraints)

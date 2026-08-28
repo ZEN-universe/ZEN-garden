@@ -20,13 +20,17 @@ class CarbonEmissionsAnnualConstraint(GenericConstraint):
         :math:`y`
         """
         lhs = (
-            model_constructor.zen_model.variables["carbon_emissions_annual"]
-            - model_constructor.zen_model.variables["carbon_emissions_technology_total"]
-            - model_constructor.zen_model.variables["carbon_emissions_carrier_total"]
+            model_constructor.optimization_model.variables["carbon_emissions_annual"]
+            - model_constructor.optimization_model.variables[
+                "carbon_emissions_technology_total"
+            ]
+            - model_constructor.optimization_model.variables[
+                "carbon_emissions_carrier_total"
+            ]
         )
         rhs = 0
         constraints = lhs == rhs
 
-        model_constructor.zen_model.add_constraint(
+        model_constructor.optimization_model.add_constraint(
             "constraint_carbon_emissions_annual", constraints
         )

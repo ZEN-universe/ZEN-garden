@@ -30,13 +30,15 @@ class StorageTechnologyCapexConstraint(GenericConstraint):
         energy-capacity
         CAPEX
         """
-        index_values, index_names = model_constructor.zen_model.create_custom_set(
-            [
-                "set_storage_technologies",
-                "set_capacity_types",
-                "set_nodes",
-                "set_years",
-            ]
+        index_values, index_names = (
+            model_constructor.optimization_model.create_custom_set(
+                [
+                    "set_storage_technologies",
+                    "set_capacity_types",
+                    "set_nodes",
+                    "set_years",
+                ]
+            )
         )
 
         # check if we need to continue
@@ -55,12 +57,14 @@ class StorageTechnologyCapexConstraint(GenericConstraint):
             index_values, index_names, unique=True
         )
         coords = [
-            model_constructor.zen_model.lp_model.variables.coords[
+            model_constructor.optimization_model.lp_model.variables.coords[
                 "set_storage_technologies"
             ],
-            model_constructor.zen_model.lp_model.variables.coords["set_capacity_types"],
-            model_constructor.zen_model.lp_model.variables.coords["set_nodes"],
-            model_constructor.zen_model.lp_model.variables.coords["set_years"],
+            model_constructor.optimization_model.lp_model.variables.coords[
+                "set_capacity_types"
+            ],
+            model_constructor.optimization_model.lp_model.variables.coords["set_nodes"],
+            model_constructor.optimization_model.lp_model.variables.coords["set_years"],
         ]
 
         ### formulate constraint
@@ -68,25 +72,25 @@ class StorageTechnologyCapexConstraint(GenericConstraint):
             [
                 (
                     1.0,
-                    model_constructor.zen_model.variables["cost_capex_overnight"].loc[
-                        techs, capacity_types, nodes, times
-                    ],
+                    model_constructor.optimization_model.variables[
+                        "cost_capex_overnight"
+                    ].loc[techs, capacity_types, nodes, times],
                 ),
                 (
-                    -model_constructor.zen_model.parameters.capex_specific_storage.loc[
+                    -model_constructor.optimization_model.parameters.capex_specific_storage.loc[
                         techs, capacity_types, nodes, times
                     ],
-                    model_constructor.zen_model.variables["capacity_addition"].loc[
-                        techs, capacity_types, nodes, times
-                    ],
+                    model_constructor.optimization_model.variables[
+                        "capacity_addition"
+                    ].loc[techs, capacity_types, nodes, times],
                 ),
             ],
             coords,
-            model_constructor.zen_model.lp_model,
+            model_constructor.optimization_model.lp_model,
         )
         rhs = 0
         constraints = lhs == rhs
 
-        model_constructor.zen_model.add_constraint(
+        model_constructor.optimization_model.add_constraint(
             "constraint_storage_technology_capex", constraints
         )

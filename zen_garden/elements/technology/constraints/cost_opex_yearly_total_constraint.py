@@ -18,14 +18,14 @@ class CostOpexYearlyTotalConstraint(GenericConstraint):
         :math:`C^{\\mathrm{op,ann}}_{h,p,y}`: OPEX of operating technology :math:`h` at
         location :math:`p` in year :math:`y`
         """
-        lhs = model_constructor.zen_model.variables[
+        lhs = model_constructor.optimization_model.variables[
             "cost_opex_yearly_total"
-        ] - model_constructor.zen_model.variables["cost_opex_yearly"].sum(
+        ] - model_constructor.optimization_model.variables["cost_opex_yearly"].sum(
             ["set_technologies", "set_location"]
         )
         rhs = 0
         constraints = lhs == rhs
 
-        model_constructor.zen_model.add_constraint(
+        model_constructor.optimization_model.add_constraint(
             "constraint_cost_opex_yearly_total", constraints
         )

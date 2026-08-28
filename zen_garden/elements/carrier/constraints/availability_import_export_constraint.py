@@ -27,17 +27,17 @@ class AvailabilityImportExportConstraint(GenericConstraint):
         :math:`a^{\\mathrm{exp}}_{c,n,t}`: availability of carrier :math:`c` to export
         at node :math:`n` in time step :math:`t` of year :math:`y`
         """
-        lhs_imp = model_constructor.zen_model.variables["flow_import"]
-        rhs_imp = model_constructor.zen_model.parameters.availability_import
+        lhs_imp = model_constructor.optimization_model.variables["flow_import"]
+        rhs_imp = model_constructor.optimization_model.parameters.availability_import
         constraints_imp = lhs_imp <= rhs_imp
 
-        lhs_exp = model_constructor.zen_model.variables["flow_export"]
-        rhs_exp = model_constructor.zen_model.parameters.availability_export
+        lhs_exp = model_constructor.optimization_model.variables["flow_export"]
+        rhs_exp = model_constructor.optimization_model.parameters.availability_export
         constraints_exp = lhs_exp <= rhs_exp
 
-        model_constructor.zen_model.add_constraint(
+        model_constructor.optimization_model.add_constraint(
             "constraint_availability_import", constraints_imp
         )
-        model_constructor.zen_model.add_constraint(
+        model_constructor.optimization_model.add_constraint(
             "constraint_availability_export", constraints_exp
         )

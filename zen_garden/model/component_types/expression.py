@@ -1,4 +1,4 @@
-"""Generic linear-expression class for ZenModel."""
+"""Generic linear-expression class for OptimizationModel."""
 
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, ClassVar
@@ -14,8 +14,8 @@ class GenericExpression(ABC):
     ``LinearExpression`` (or ``xarray.DataArray``) built from variables and
     parameters during model construction, after the variables and before the
     constraints. :meth:`build` registers it on the optimization model via
-    ``zen_model.add_expression``; it is then reused elsewhere through
-    ``zen_model.expressions[<name>]``.
+    ``optimization_model.add_expression``; it is then reused elsewhere through
+    ``optimization_model.expressions[<name>]``.
     """
 
     name: ClassVar[str]
@@ -31,7 +31,7 @@ class GenericExpression(ABC):
         """Compute the expression and register it on the optimization model."""
         if not cls.should_construct(model_constructor):
             return
-        model_constructor.zen_model.add_expression(
+        model_constructor.optimization_model.add_expression(
             cls.name, cls.get_expression(model_constructor)
         )
 

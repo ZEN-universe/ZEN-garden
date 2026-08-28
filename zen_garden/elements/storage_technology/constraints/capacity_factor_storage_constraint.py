@@ -26,11 +26,11 @@ class CapacityFactorStorageConstraint(GenericConstraint):
         :math:`K_{h,n,y}`: storage capacity of storage technology :math:`h` on
         node :math:`n` in year :math:`y`
         """
-        techs = model_constructor.zen_model.sets["set_storage_technologies"]
+        techs = model_constructor.optimization_model.sets["set_storage_technologies"]
         if len(techs) == 0:
             return
-        nodes = model_constructor.zen_model.sets["set_nodes"]
-        times = model_constructor.zen_model.lp_model.variables.coords[
+        nodes = model_constructor.optimization_model.sets["set_nodes"]
+        times = model_constructor.optimization_model.lp_model.variables.coords[
             "set_time_steps_operation"
         ]
         time_step_year = xr.DataArray(
@@ -41,8 +41,10 @@ class CapacityFactorStorageConstraint(GenericConstraint):
             coords=[times],
         )
         term_capacity = (
-            model_constructor.zen_model.parameters.max_load.loc[techs, nodes, :]
-            * model_constructor.zen_model.variables["capacity"].loc[
+            model_constructor.optimization_model.parameters.max_load.loc[
+                techs, nodes, :
+            ]
+            * model_constructor.optimization_model.variables["capacity"].loc[
                 techs, "power", nodes, time_step_year
             ]
         ).rename(
@@ -59,6 +61,6 @@ class CapacityFactorStorageConstraint(GenericConstraint):
         rhs = 0
         constraints = lhs >= rhs
         ### return
-        model_constructor.zen_model.add_constraint(
+        model_constructor.optimization_model.add_constraint(
             "constraint_capacity_factor_storage", constraints
         )

@@ -26,7 +26,7 @@ class TechnologyMaxCapacityAdditionConstraint(GenericConstraint):
         :math:`\\Delta K_{h,p,y}`: capacity addition
         """
         capacity_addition_max = (
-            model_constructor.zen_model.parameters.capacity_addition_max
+            model_constructor.optimization_model.parameters.capacity_addition_max
         )
         mask = (
             (capacity_addition_max != np.inf)
@@ -39,12 +39,12 @@ class TechnologyMaxCapacityAdditionConstraint(GenericConstraint):
             return None
         lhs = mask * (
             capacity_addition_max
-            * model_constructor.zen_model.variables["technology_installation"]
-            - model_constructor.zen_model.variables["capacity_addition"]
+            * model_constructor.optimization_model.variables["technology_installation"]
+            - model_constructor.optimization_model.variables["capacity_addition"]
         )
         rhs = 0
         constraints = lhs >= rhs
 
-        model_constructor.zen_model.add_constraint(
+        model_constructor.optimization_model.add_constraint(
             "constraint_technology_max_capacity_addition", constraints
         )

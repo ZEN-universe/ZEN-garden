@@ -37,10 +37,10 @@ class CarrierConversionConstraint(GenericConstraint):
         :math:`y`
         """
         # dependent carriers
-        flow_conversion_input_dep = model_constructor.zen_model.variables[
+        flow_conversion_input_dep = model_constructor.optimization_model.variables[
             "flow_conversion_input"
         ].rename({"set_input_carriers": "set_dependent_carriers"})
-        flow_conversion_output_dep = model_constructor.zen_model.variables[
+        flow_conversion_output_dep = model_constructor.optimization_model.variables[
             "flow_conversion_output"
         ].rename({"set_output_carriers": "set_dependent_carriers"})
         dc_in = pd.Series(
@@ -48,12 +48,16 @@ class CarrierConversionConstraint(GenericConstraint):
                 (t, c): (
                     True
                     if c
-                    in model_constructor.zen_model.sets["set_dependent_carriers"][t]
+                    in model_constructor.optimization_model.sets[
+                        "set_dependent_carriers"
+                    ][t]
                     else False
                 )
                 for t, c in itertools.product(
-                    model_constructor.zen_model.sets["set_conversion_technologies"],
-                    model_constructor.zen_model.sets[
+                    model_constructor.optimization_model.sets[
+                        "set_conversion_technologies"
+                    ],
+                    model_constructor.optimization_model.sets[
                         "set_input_carriers"
                     ].coordinate_values,
                 )
@@ -64,12 +68,16 @@ class CarrierConversionConstraint(GenericConstraint):
                 (t, c): (
                     True
                     if c
-                    in model_constructor.zen_model.sets["set_dependent_carriers"][t]
+                    in model_constructor.optimization_model.sets[
+                        "set_dependent_carriers"
+                    ][t]
                     else False
                 )
                 for t, c in itertools.product(
-                    model_constructor.zen_model.sets["set_conversion_technologies"],
-                    model_constructor.zen_model.sets[
+                    model_constructor.optimization_model.sets[
+                        "set_conversion_technologies"
+                    ],
+                    model_constructor.optimization_model.sets[
                         "set_output_carriers"
                     ].coordinate_values,
                 )
@@ -92,14 +100,14 @@ class CarrierConversionConstraint(GenericConstraint):
             cls=LinearExpression,
         ).where(dc)
         conversion_factor = align_like(
-            model_constructor.zen_model.parameters.conversion_factor,
+            model_constructor.optimization_model.parameters.conversion_factor,
             term_flow_dependent,
         )
         # reference carriers
-        flow_conversion_input = model_constructor.zen_model.variables[
+        flow_conversion_input = model_constructor.optimization_model.variables[
             "flow_conversion_input"
         ].broadcast_like(conversion_factor)
-        flow_conversion_output = model_constructor.zen_model.variables[
+        flow_conversion_output = model_constructor.optimization_model.variables[
             "flow_conversion_output"
         ].broadcast_like(conversion_factor)
         rc_in = pd.Series(
@@ -107,12 +115,16 @@ class CarrierConversionConstraint(GenericConstraint):
                 (t, c): (
                     True
                     if c
-                    in model_constructor.zen_model.sets["set_reference_carriers"][t]
+                    in model_constructor.optimization_model.sets[
+                        "set_reference_carriers"
+                    ][t]
                     else False
                 )
                 for t, c in itertools.product(
-                    model_constructor.zen_model.sets["set_conversion_technologies"],
-                    model_constructor.zen_model.sets[
+                    model_constructor.optimization_model.sets[
+                        "set_conversion_technologies"
+                    ],
+                    model_constructor.optimization_model.sets[
                         "set_input_carriers"
                     ].coordinate_values,
                 )
@@ -123,12 +135,16 @@ class CarrierConversionConstraint(GenericConstraint):
                 (t, c): (
                     True
                     if c
-                    in model_constructor.zen_model.sets["set_reference_carriers"][t]
+                    in model_constructor.optimization_model.sets[
+                        "set_reference_carriers"
+                    ][t]
                     else False
                 )
                 for t, c in itertools.product(
-                    model_constructor.zen_model.sets["set_conversion_technologies"],
-                    model_constructor.zen_model.sets[
+                    model_constructor.optimization_model.sets[
+                        "set_conversion_technologies"
+                    ],
+                    model_constructor.optimization_model.sets[
                         "set_output_carriers"
                     ].coordinate_values,
                 )
@@ -146,6 +162,6 @@ class CarrierConversionConstraint(GenericConstraint):
         rhs = 0
         constraints = lhs == rhs
 
-        model_constructor.zen_model.add_constraint(
+        model_constructor.optimization_model.add_constraint(
             "constraint_carrier_conversion", constraints
         )

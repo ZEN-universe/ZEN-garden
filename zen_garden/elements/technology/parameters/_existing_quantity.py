@@ -34,7 +34,7 @@ def compute_existing_quantity(
     :return: the aggregated quantity over ``_QUANTITY_INDEX``; positions outside
         the technology index are NaN and dropped on registration
     """
-    parameters = model_constructor.zen_model.parameters
+    parameters = model_constructor.optimization_model.parameters
     source = getattr(parameters, source_parameter)
     still_active = _still_active_vintages(
         model_constructor, parameters.lifetime_existing, parameters.lifetime
@@ -71,11 +71,11 @@ def _restrict_to_technology_index(
 ) -> xr.DataArray:
     """Keep only (technology, capacity_type, location, year) tuples in the index."""
     index_values, index_names = model_constructor.create_custom_set(_QUANTITY_INDEX)
-    index_arrays = model_constructor.zen_model.sets.tuple_to_arr(
+    index_arrays = model_constructor.optimization_model.sets.tuple_to_arr(
         index_values, index_names
     )
     coords = [
-        model_constructor.zen_model.sets.get_coord(values, name)
+        model_constructor.optimization_model.sets.get_coord(values, name)
         for values, name in zip(index_arrays, index_names, strict=False)
     ]
     in_index = xr.DataArray(False, coords=coords, dims=index_names)

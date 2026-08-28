@@ -31,22 +31,24 @@ class CarbonEmissionsCumulativeConstraint(GenericConstraint):
         ]
 
         lhs = (
-            model_constructor.zen_model.variables["carbon_emissions_cumulative"]
-            - model_constructor.zen_model.variables[
+            model_constructor.optimization_model.variables[
+                "carbon_emissions_cumulative"
+            ]
+            - model_constructor.optimization_model.variables[
                 "carbon_emissions_cumulative"
             ].shift(set_years=1)
-            - model_constructor.zen_model.variables["carbon_emissions_annual"].shift(
-                set_years=1
-            )
+            - model_constructor.optimization_model.variables[
+                "carbon_emissions_annual"
+            ].shift(set_years=1)
             * (model_constructor.config.system.interval_between_years - 1)
-            - model_constructor.zen_model.variables["carbon_emissions_annual"]
+            - model_constructor.optimization_model.variables["carbon_emissions_annual"]
         )
         cumulative_existing = (
-            model_constructor.zen_model.parameters.carbon_emissions_cumulative_existing
+            model_constructor.optimization_model.parameters.carbon_emissions_cumulative_existing
         )
         rhs = (
             xr.ones_like(
-                model_constructor.zen_model.variables[
+                model_constructor.optimization_model.variables[
                     "carbon_emissions_cumulative"
                 ].mask
             )
@@ -54,6 +56,6 @@ class CarbonEmissionsCumulativeConstraint(GenericConstraint):
         ).where(m, 0)
         constraints = lhs == rhs
 
-        model_constructor.zen_model.add_constraint(
+        model_constructor.optimization_model.add_constraint(
             "constraint_carbon_emissions_cumulative", constraints
         )

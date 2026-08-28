@@ -47,6 +47,14 @@ def test_all_parameters_are_globally_ordered():
     ]
 
 
+def test_ignore_missing_treats_absent_dependency_as_satisfied():
+    # FirstComputed depends on "input", which is not in the list. With
+    # ignore_missing the sort still succeeds and orders the present parameters.
+    assert GenericParameter.construction_order(
+        [SecondComputed, FirstComputed], ignore_missing=True
+    ) == [FirstComputed, SecondComputed]
+
+
 def test_unknown_dependency_is_rejected():
     class UnknownDependency(GenericParameter):
         name = "unknown_dependency"

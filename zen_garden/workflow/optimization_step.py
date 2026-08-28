@@ -16,18 +16,18 @@ import numpy as np
 
 from zen_garden.elements.technology import Technology
 from zen_garden.model.construction_service import ModelConstructionService
-from zen_garden.model.zen_model import ZenModel
+from zen_garden.model.optimization_model import OptimizationModel
 from zen_garden.postprocess.postprocess import Postprocess
 from zen_garden.utils import IISConstraintParser, StringUtils
 from zen_garden.workflow.scaling import Scaling
 
 if TYPE_CHECKING:
-    from zen_garden.di import ServiceContainer
     from zen_garden.input.scenario_dict import ScenarioDict
     from zen_garden.input.unit_converter import UnitConverter
     from zen_garden.model.element_registry import ElementRegistry
     from zen_garden.model.schema import ModelSchema
     from zen_garden.model.time_steps import TimeStepsDicts
+    from zen_garden.service_container import ServiceContainer
 
 logger = logging.getLogger(__name__)
 
@@ -42,7 +42,7 @@ class OptimizationStep:
     method to solve the optimization problem.
     """
 
-    zen_model: "ZenModel"
+    optimization_model: "OptimizationModel"
     service_container: "ServiceContainer"
 
     def __init__(
@@ -81,9 +81,9 @@ class OptimizationStep:
         self.steps_horizon = steps_horizon
 
         # Injected services: service_container, model_schema; explicit arguments: none.
-        # Register the resulting ZenModel as zen_model.
-        self.zen_model = self.service_container.build_and_register(
-            "zen_model", ZenModel
+        # Register the resulting OptimizationModel as optimization_model.
+        self.optimization_model = self.service_container.build_and_register(
+            "optimization_model", OptimizationModel
         )
 
     @property
@@ -136,10 +136,9 @@ class OptimizationStep:
         if not self.optimality:
             # write IIS
             self.write_IIS(scenario)
-            assert self.zen_model is not None
-            logger.warning(
-                f"Optimization: {self.zen_model.lp_model.termination_condition}"
-            )
+            assert self.optimization_model is not None
+            condition = self.optimization_model.lp_model.termination_condition
+            logger.warning(f"Optimization: {condition}")
             return False
 
         self.re_scale()
@@ -163,7 +162,7 @@ class OptimizationStep:
 
         return True
 
-    def construct_optimization_problem(self) -> ZenModel:
+    def construct_optimization_problem(self) -> OptimizationModel:
         """Constructs the optimization problem."""
         # create empty ConcreteModel
         if self.config.solver.solver_dir is not None and not os.path.exists(
@@ -180,12 +179,12 @@ class OptimizationStep:
             "scaling",
             Scaling,
             config=self.config,
-            lp_model=self.zen_model.lp_model,
+            lp_model=self.optimization_model.lp_model,
             algorithm=self.config.solver.scaling_algorithm,
             include_rhs=self.config.solver.scaling_include_rhs,
         )
 
-        return self.zen_model
+        return self.optimization_model
 
     def get_decision_horizon(self, step_horizon):
         """Return the decision horizon.
@@ -269,7 +268,7 @@ class OptimizationStep:
         logging.disable(logging.WARNING)
 
         if solver_name == "gurobi":
-            self.zen_model.lp_model.solve(
+            self.optimization_model.lp_model.solve(
                 solver_name=solver_name,
                 io_api=self.config.solver.io_api,
                 keep_files=self.config.solver.keep_files,
@@ -278,7 +277,7 @@ class OptimizationStep:
                 **solver_options,
             )
         else:
-            self.zen_model.lp_model.solve(
+            self.optimization_model.lp_model.solve(
                 solver_name=solver_name,
                 io_api=self.config.solver.io_api,
                 keep_files=self.config.solver.keep_files,
@@ -286,9 +285,9 @@ class OptimizationStep:
             )
         # enable logger
         logging.disable(logging.NOTSET)
-        if self.zen_model.lp_model.termination_condition == "optimal":
+        if self.optimization_model.lp_model.termination_condition == "optimal":
             self.optimality = True
-        elif self.zen_model.lp_model.termination_condition == "suboptimal":
+        elif self.optimization_model.lp_model.termination_condition == "suboptimal":
             logger.warning("The optimization is suboptimal")
             self.optimality = True
         else:
@@ -299,7 +298,8 @@ class OptimizationStep:
         if not self.config.solver.name == "gurobi":
             return
         if (
-            self.zen_model.lp_model.termination_condition == "infeasible_or_unbounded"
+            self.optimization_model.lp_model.termination_condition
+            == "infeasible_or_unbounded"
             and (
                 "solver_options" not in self.config.solver
                 or "DualReductions" not in self.config.solver.solver_options
@@ -311,14 +311,14 @@ class OptimizationStep:
                 "'DualReductions' to 0 to get a more informative termination condition"
                 "and."
             )
-        if self.zen_model.lp_model.termination_condition == "infeasible":
+        if self.optimization_model.lp_model.termination_condition == "infeasible":
             output_folder = StringUtils.get_output_folder(self.config.analysis)
             ilp_file = os.path.join(
                 output_folder,
                 f"infeasible_model_IIS{f'_{scenario}' if scenario else ''}.ilp",
             )
             logger.info(f"Writing parsed IIS to {ilp_file}")
-            parser = IISConstraintParser(ilp_file, self.zen_model.lp_model)
+            parser = IISConstraintParser(ilp_file, self.optimization_model.lp_model)
             parser.write_parsed_output()
 
     def add_results_of_optimization_step(self, step_horizon):
@@ -366,13 +366,17 @@ class OptimizationStep:
 
         """
         capacity_addition = (
-            self.zen_model.lp_model.solution["capacity_addition"].to_series().dropna()
+            self.optimization_model.lp_model.solution["capacity_addition"]
+            .to_series()
+            .dropna()
         )
         invest_capacity = (
-            self.zen_model.lp_model.solution["capacity_investment"].to_series().dropna()
+            self.optimization_model.lp_model.solution["capacity_investment"]
+            .to_series()
+            .dropna()
         )
         cost_capex_overnight = (
-            self.zen_model.lp_model.solution["cost_capex_overnight"]
+            self.optimization_model.lp_model.solution["cost_capex_overnight"]
             .to_series()
             .dropna()
         )
@@ -419,12 +423,12 @@ class OptimizationStep:
         interval_between_years = self.config.system.interval_between_years
         last_year = decision_horizon[-1]
         carbon_emissions_cumulative = (
-            self.zen_model.lp_model.solution["carbon_emissions_cumulative"]
+            self.optimization_model.lp_model.solution["carbon_emissions_cumulative"]
             .loc[last_year]
             .item()
         )
         carbon_emissions_annual = (
-            self.zen_model.lp_model.solution["carbon_emissions_annual"]
+            self.optimization_model.lp_model.solution["carbon_emissions_annual"]
             .loc[last_year]
             .item()
         )
@@ -456,7 +460,7 @@ class OptimizationStep:
         Postprocess(
             self.model_schema,
             self.unit_converter,
-            self.zen_model,
+            self.optimization_model,
             self.scaling,
             self.time_steps,
             optimized_time_steps=self.optimized_time_steps,

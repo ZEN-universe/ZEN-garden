@@ -33,34 +33,38 @@ class TechnologyCapacityLimitConstraint(GenericConstraint):
         # the capacity is constrained by the capacity limit.
         # if the capacity limit is reached, the capacity addition is 0.
         capacity_limit_not_reached = (
-            model_constructor.zen_model.parameters.existing_capacities
-            < model_constructor.zen_model.parameters.capacity_limit
+            model_constructor.optimization_model.parameters.existing_capacities
+            < model_constructor.optimization_model.parameters.capacity_limit
         )
         # create mask so that skipped if capacity_limit is inf
-        m = model_constructor.zen_model.parameters.capacity_limit != np.inf
+        m = model_constructor.optimization_model.parameters.capacity_limit != np.inf
 
         lhs_not_reached = (
-            model_constructor.zen_model.variables["capacity"]
+            model_constructor.optimization_model.variables["capacity"]
             .where(m)
             .where(capacity_limit_not_reached)
         )
-        rhs_not_reached = model_constructor.zen_model.parameters.capacity_limit.where(
-            m, 0.0
-        ).where(capacity_limit_not_reached, 0.0)
+        rhs_not_reached = (
+            model_constructor.optimization_model.parameters.capacity_limit.where(
+                m, 0.0
+            ).where(capacity_limit_not_reached, 0.0)
+        )
         constraints_not_reached = lhs_not_reached <= rhs_not_reached
         lhs_reached = (
-            model_constructor.zen_model.variables["capacity_addition"]
+            model_constructor.optimization_model.variables["capacity_addition"]
             .where(m)
             .where(~capacity_limit_not_reached)
         )
         rhs_reached = 0
         if not model_constructor.config.system.allow_investment:
-            lhs_reached = model_constructor.zen_model.variables["capacity_addition"]
+            lhs_reached = model_constructor.optimization_model.variables[
+                "capacity_addition"
+            ]
         constraints_reached = lhs_reached == rhs_reached
 
-        model_constructor.zen_model.add_constraint(
+        model_constructor.optimization_model.add_constraint(
             "constraint_technology_capacity_limit_not_reached", constraints_not_reached
         )
-        model_constructor.zen_model.add_constraint(
+        model_constructor.optimization_model.add_constraint(
             "constraint_technology_capacity_limit_reached", constraints_reached
         )

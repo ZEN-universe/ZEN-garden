@@ -13,21 +13,21 @@ is set by ``ModelConstructionService`` instead.
 import logging
 from typing import TYPE_CHECKING
 
-from zen_garden.di import ServiceContainer
 from zen_garden.model.component_types.constraint import GenericConstraint
 from zen_garden.model.component_types.expression import GenericExpression
 from zen_garden.model.component_types.parameter import GenericParameter
 from zen_garden.model.component_types.set import GenericSet
 from zen_garden.model.component_types.variable import GenericVariable
 from zen_garden.model.element import Element
+from zen_garden.service_container import ServiceContainer
 
 if TYPE_CHECKING:
     from zen_garden.elements.energy_system import EnergySystem
     from zen_garden.input.network_topology import NetworkTopology
     from zen_garden.model.element_registry import ElementRegistry
+    from zen_garden.model.optimization_model import OptimizationModel
     from zen_garden.model.schema import ModelSchema
     from zen_garden.model.time_steps import TimeStepsDicts
-    from zen_garden.model.zen_model import ZenModel
 
 logger = logging.getLogger(__name__)
 
@@ -56,7 +56,7 @@ class ModelConstructor:
         self,
         service_container: "ServiceContainer",
         element_registry: "ElementRegistry",
-        zen_model: "ZenModel",
+        optimization_model: "OptimizationModel",
         model_schema: "ModelSchema",
         network_topology: "NetworkTopology",
         time_steps: "TimeStepsDicts",
@@ -64,7 +64,7 @@ class ModelConstructor:
     ):
         self.service_container = service_container
         self.element_registry = element_registry
-        self.zen_model = zen_model
+        self.optimization_model = optimization_model
         self.model_schema = model_schema
         self.network_topology = network_topology
         self.time_steps = time_steps
@@ -116,7 +116,14 @@ class ModelConstructor:
     def construct_params(self):
         logger.info(f"Constructing parameters for {self.element_class.name}")
 
-        for parameter in self.parameters:
+        # Build in dependency order so that derived parameters (which read other
+        # already-registered model parameters in their build()) see their inputs.
+        # ignore_missing: cross-type dependencies (e.g. on "distance") are only
+        # relevant to the store_input_data pass and may not be in this list.
+        ordered = GenericParameter.construction_order(
+            self.parameters, ignore_missing=True
+        )
+        for parameter in ordered:
             parameter.build(self)
 
     def construct_vars(self):
@@ -146,4 +153,4 @@ class ModelConstructor:
         :param list_index: list of names of indices
         :return: list_index: list of names of indices
         """
-        return self.zen_model.create_custom_set(list_index)
+        return self.optimization_model.create_custom_set(list_index)

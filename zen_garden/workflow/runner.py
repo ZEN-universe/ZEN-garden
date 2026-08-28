@@ -6,8 +6,9 @@ import logging
 from pathlib import Path
 
 from zen_garden.config import Config
-from zen_garden.input.scenario_expansion import ScenarioUtils
+from zen_garden.input.scenario_utils import ScenarioUtils
 from zen_garden.model.schema import ModelSchema
+from zen_garden.plugin_system.events import Event, EventPublisher
 from zen_garden.plugin_system.loader import register_plugins
 from zen_garden.utils.string_utils import StringUtils
 from zen_garden.utils.utils import setup_logger
@@ -89,6 +90,11 @@ def run(
     # Register plugins. Plugins can modify the model schema and add new elements,
     # parameters, variables, and constraints
     register_plugins(config_obj.plugins)
+
+    # Give plugins a hook to inspect or modify the freshly created schema before
+    # any scenario is run.
+    EventPublisher.trigger(Event.after_model_schema_creation, model_schema)
+
     logging.info(f"Optimizing for dataset {config_obj.analysis.dataset}")
 
     ## ITERATE THROUGH SCENARIOS

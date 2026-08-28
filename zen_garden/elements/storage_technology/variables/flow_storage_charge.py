@@ -15,8 +15,10 @@ class FlowStorageCharge(GenericVariable):
     @classmethod
     def get_bounds(cls, model_constructor, index_sets):
         index_values, index_names = index_sets
-        tech_arr, node_arr, time_arr = model_constructor.zen_model.sets.tuple_to_arr(
-            index_values, index_names
+        tech_arr, node_arr, time_arr = (
+            model_constructor.optimization_model.sets.tuple_to_arr(
+                index_values, index_names
+            )
         )
         time_step_year = xr.DataArray(
             [
@@ -24,7 +26,7 @@ class FlowStorageCharge(GenericVariable):
                 for time in time_arr.data
             ]
         )
-        capacity = model_constructor.zen_model.variables["capacity"]
+        capacity = model_constructor.optimization_model.variables["capacity"]
         lower = capacity.lower.loc[tech_arr, "power", node_arr, time_step_year].data
         upper = capacity.upper.loc[tech_arr, "power", node_arr, time_step_year].data
         return np.stack([lower, upper], axis=-1)
