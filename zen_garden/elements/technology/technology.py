@@ -6,15 +6,17 @@ from typing import ClassVar, cast
 import numpy as np
 import pandas as pd
 
-from zen_garden.elements.element import Element
 from zen_garden.elements.technology.constraints import TECHNOLOGY_CONSTRAINTS
+from zen_garden.elements.technology.expressions import TECHNOLOGY_EXPRESSIONS
 from zen_garden.elements.technology.parameters import TECHNOLOGY_PARAMETERS
 from zen_garden.elements.technology.sets import TECHNOLOGY_SETS
 from zen_garden.elements.technology.variables import TECHNOLOGY_VARIABLES
-from zen_garden.topology.generic_constraint import GenericConstraint
-from zen_garden.topology.generic_parameter import GenericParameter
-from zen_garden.topology.generic_set import GenericSet
-from zen_garden.topology.generic_variable import GenericVariable
+from zen_garden.model.component_types.constraint import GenericConstraint
+from zen_garden.model.component_types.expression import GenericExpression
+from zen_garden.model.component_types.parameter import GenericParameter
+from zen_garden.model.component_types.set import GenericSet
+from zen_garden.model.component_types.variable import GenericVariable
+from zen_garden.model.element import Element
 
 logger = logging.getLogger(__name__)
 
@@ -31,20 +33,21 @@ class Technology(Element):
     own_parameters: ClassVar[list[type[GenericParameter]]] = TECHNOLOGY_PARAMETERS
     variables: ClassVar[list[type[GenericVariable]]] = TECHNOLOGY_VARIABLES
     own_sets: ClassVar[list[type[GenericSet]]] = TECHNOLOGY_SETS
+    expressions: ClassVar[list[type[GenericExpression]]] = TECHNOLOGY_EXPRESSIONS
     constraints: ClassVar[list[type[GenericConstraint]]] = TECHNOLOGY_CONSTRAINTS
 
     def initialize_reference_carrier(self):
         """Retrieves and stores information on reference."""
         self.reference_carrier = cast(
             list[str],
-            self.data_input.extract_carriers(carrier_type="reference_carrier"),
+            self.element_data_loader.extract_carriers(carrier_type="reference_carrier"),
         )
         self.model_schema.set_technology_of_carrier(self.name, self.reference_carrier)
 
     def prepare_input_data(self) -> None:
         """Load the vintage set needed by existing-capacity parameters."""
         self.set_technologies_existing = (
-            self.data_input.extract_set_technologies_existing()
+            self.element_data_loader.extract_set_technologies_existing()
         )
 
     def calculate_capex_of_capacities_existing(self):

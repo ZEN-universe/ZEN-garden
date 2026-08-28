@@ -1,6 +1,6 @@
 import numpy as np
 
-from zen_garden.topology.generic_parameter import GenericParameter
+from zen_garden.model.component_types.parameter import GenericParameter
 
 
 class TransportLossFactor(GenericParameter):
@@ -15,7 +15,7 @@ class TransportLossFactor(GenericParameter):
     @classmethod
     def store_input_data(cls, element):
         """Calculate transport loss from its linear or exponential input."""
-        attributes = element.data_input.attribute_dict
+        attributes = element.element_data_loader.attribute_dict
         has_linear = "transport_loss_factor_linear" in attributes
         has_exponential = "transport_loss_factor_exponential" in attributes
         if has_linear and has_exponential:
@@ -32,7 +32,7 @@ class TransportLossFactor(GenericParameter):
             if has_linear
             else "transport_loss_factor_exponential"
         )
-        factor = element.data_input.extract_input_data(
+        factor = element.element_data_loader.extract_input_data(
             input_name, index_sets=[], unit_category={"distance": -1}
         )[0]
         if has_linear:

@@ -131,11 +131,11 @@ Class Structure
        class StringUtils
        class ScenarioUtils
        class OptimizationError
-       class DataInput
+       class ElementDataLoader
        class TimeSeriesAggregation
        class TimeSteps
        class EnergySystem
-       class UnitHandling
+       class UnitConverter
        class Scaling
        class ZenModel
        class DatasetPathResolver

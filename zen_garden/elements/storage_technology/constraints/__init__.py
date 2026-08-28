@@ -1,6 +1,6 @@
 """Storage technology constraints."""
 
-from zen_garden.topology.generic_constraint import GenericConstraint
+from zen_garden.model.component_types.constraint import GenericConstraint
 
 from .capacity_energy_to_power_ratio_constraint import (
     CapacityEnergyToPowerRatioConstraint,

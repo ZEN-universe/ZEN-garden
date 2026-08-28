@@ -7,13 +7,13 @@ General
 .. autosummary::
    :toctree: generated
 
-   zen_garden.optimization_workflow
-   zen_garden.optimization_step
+   zen_garden.workflow.optimization_workflow
+   zen_garden.workflow.optimization_step
 
 .. toctree::
    :maxdepth: 1
 
-   modules/zen_garden.default_config
+   modules/zen_garden.config
 
 
 Elements
@@ -21,7 +21,7 @@ Elements
 .. autosummary::
     :toctree: generated
 
-    zen_garden.elements.element
+    zen_garden.model.element
     zen_garden.elements.energy_system
     zen_garden.elements.carrier
     zen_garden.elements.technology
@@ -31,20 +31,28 @@ Elements
     zen_garden.elements.retrofitting_technology
 
 
-Constructors
-============
+Model construction
+==================
 .. autosummary::
     :toctree: generated
 
-    zen_garden.elements.model_constructor
-    zen_garden.elements.energy_system.energy_system_constructor
-    zen_garden.elements.carrier.carrier_constructor
-    zen_garden.elements.technology.technology_constructor
-    zen_garden.elements.conversion_technology.conversion_technology_constructor
-    zen_garden.elements.storage_technology.storage_technology_constructor
-    zen_garden.elements.transport_technology.transport_technology_constructor
-    zen_garden.elements.retrofitting_technology.retrofitting_technology_constructor
+    zen_garden.model.schema
+    zen_garden.model.constructor
+    zen_garden.model.construction_service
+    zen_garden.model.element_factory
+    zen_garden.model.element_registry
 
+
+Component types
+===============
+.. autosummary::
+    :toctree: generated
+
+    zen_garden.model.component_types.set
+    zen_garden.model.component_types.parameter
+    zen_garden.model.component_types.variable
+    zen_garden.model.component_types.expression
+    zen_garden.model.component_types.constraint
 
 
 Constraints
@@ -52,7 +60,6 @@ Constraints
 .. autosummary::
     :toctree: generated
 
-    zen_garden.topology.generic_constraint
     zen_garden.elements.carrier.constraints
     zen_garden.elements.conversion_technology.constraints
     zen_garden.elements.energy_system.constraints
@@ -70,11 +77,11 @@ ZEN Model
     :toctree: generated
 
     zen_garden.model.zen_model
-    zen_garden.model.components.component
-    zen_garden.model.components.constraint
-    zen_garden.model.components.multi_index_helper
-    zen_garden.model.components.parameter
-    zen_garden.model.components.set_registry
-    zen_garden.model.components.variable
-    zen_garden.model.components.zen_set
+    zen_garden.model.registries.base
+    zen_garden.model.registries.constraint
+    zen_garden.model.registries.multi_index_helper
+    zen_garden.model.registries.parameter
+    zen_garden.model.registries.set_registry
+    zen_garden.model.registries.variable
+    zen_garden.model.zen_set
     zen_garden.model.time_steps

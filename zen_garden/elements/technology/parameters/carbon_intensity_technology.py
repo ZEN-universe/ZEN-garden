@@ -1,4 +1,4 @@
-from zen_garden.topology.generic_parameter import GenericParameter
+from zen_garden.model.component_types.parameter import GenericParameter
 
 
 class CarbonIntensityTechnology(GenericParameter):
@@ -18,7 +18,7 @@ class CarbonIntensityTechnology(GenericParameter):
         if getattr(element, "location_type", None) == "set_edges" and (
             "/ kilometer" in str(unit)
         ):
-            value = element.data_input.extract_input_data(
+            value = element.element_data_loader.extract_input_data(
                 cls.name,
                 index_sets=["set_edges"],
                 unit_category={

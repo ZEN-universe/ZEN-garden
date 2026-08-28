@@ -5,7 +5,7 @@ import json
 import logging
 import warnings
 from pathlib import Path
-from typing import Any, Callable, TypeVar, cast, overload
+from typing import Any, Callable, TypeVar, cast
 
 import numpy as np
 import pandas as pd
@@ -13,7 +13,7 @@ import xarray as xr
 from pint import UnitRegistry
 from xarray.backends.netCDF4_ import NetCDF4DataStore
 
-from zen_garden.default_config import Analysis, Solver, System
+from zen_garden.config import Analysis, Solver, System
 from zen_garden.postprocess.results.component_map import ComponentMap
 from zen_garden.postprocess.results.component_type import ComponentType
 from zen_garden.postprocess.results.timestep_map import TimestepMap
@@ -36,6 +36,7 @@ DOCS_FILENAME_MAP = {
 }
 
 T = TypeVar("T")
+FrameOrSeries = TypeVar("FrameOrSeries", pd.DataFrame, pd.Series)
 
 IndexValue = str | int | float
 IndexElement = IndexValue | list[IndexValue] | None
@@ -843,15 +844,7 @@ class Scenario:
                 return -1
         return 0
 
-    @overload
-    def _convert_ts2year(self, df: pd.DataFrame) -> pd.DataFrame: ...
-
-    @overload
-    def _convert_ts2year(self, df: pd.Series) -> pd.Series: ...
-
-    def _convert_ts2year(
-        self, df: pd.DataFrame | pd.Series
-    ) -> pd.DataFrame | pd.Series:
+    def _convert_ts2year(self, df: FrameOrSeries) -> FrameOrSeries:
         """Converts the yearly ts column to the corresponding year."""
         df = df.copy()
         if isinstance(df, pd.Series):
@@ -896,13 +889,7 @@ class Scenario:
             raise KeyError(f"Year {year} not in optimized years {all_years}.")
         return ts
 
-    @overload
-    def _rename_index(self, df: pd.DataFrame) -> pd.DataFrame: ...
-
-    @overload
-    def _rename_index(self, df: pd.Series) -> pd.Series: ...
-
-    def _rename_index(self, df: pd.DataFrame | pd.Series) -> pd.DataFrame | pd.Series:
+    def _rename_index(self, df: FrameOrSeries) -> FrameOrSeries:
         """Renames the index of the dataframe."""
         if isinstance(df, pd.Series) and df.index.name == "scalar":
             return df.reset_index(drop=True)

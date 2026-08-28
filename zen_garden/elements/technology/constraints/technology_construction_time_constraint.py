@@ -6,11 +6,12 @@ import pandas as pd
 import xarray as xr
 from linopy.expressions import LinearExpression
 
-from zen_garden.topology.generic_constraint import GenericConstraint
+from zen_garden.model.component_types.constraint import GenericConstraint
 
 
 class TechnologyConstructionTimeConstraint(GenericConstraint):
-    def build(self):
+    @classmethod
+    def build(cls, model_constructor):
         """Summary:
         Construction time of technology: time between investment and availability.
 
@@ -59,11 +60,11 @@ class TechnologyConstructionTimeConstraint(GenericConstraint):
                 (
                     t,
                     y,
-                    self._get_investment_time_step(t, y),
+                    cls._get_investment_time_step(model_constructor, t, y),
                 ): 1
                 for t, y in itertools.product(
-                    self.zen_model.sets["set_technologies"],
-                    self.zen_model.sets["set_years"],
+                    model_constructor.zen_model.sets["set_technologies"],
+                    model_constructor.zen_model.sets["set_years"],
                 )
             }
         )
@@ -76,13 +77,17 @@ class TechnologyConstructionTimeConstraint(GenericConstraint):
         # select masks
         mask_current_time_steps = investment_time.index.get_level_values(
             "set_time_steps_construction"
-        ).isin(self.zen_model.sets["set_years"])
+        ).isin(model_constructor.zen_model.sets["set_years"])
         mask_existing_time_steps = (
-            investment_time.isin(self.zen_model.sets["set_years_entire_horizon"])
+            investment_time.isin(
+                model_constructor.zen_model.sets["set_years_entire_horizon"]
+            )
             & ~mask_current_time_steps
         )
         # broadcast capacity investment and capacity investment existing
-        capacity_investment = self.zen_model.variables["capacity_investment"]
+        capacity_investment = model_constructor.zen_model.variables[
+            "capacity_investment"
+        ]
         investment_time_current = (
             investment_time[mask_current_time_steps]
             .dropna()
@@ -108,7 +113,7 @@ class TechnologyConstructionTimeConstraint(GenericConstraint):
             investment_time_current
         )
         capacity_investment_existing = (
-            self.zen_model.parameters.capacity_investment_existing
+            model_constructor.zen_model.parameters.capacity_investment_existing
         )
         capacity_investment_existing = capacity_investment_existing.rename(
             {"set_years_entire_horizon": "set_time_steps_construction"}
@@ -117,7 +122,7 @@ class TechnologyConstructionTimeConstraint(GenericConstraint):
         ### formulate constraint
         lhs = lp.merge(
             [
-                1 * self.zen_model.variables["capacity_addition"],
+                1 * model_constructor.zen_model.variables["capacity_addition"],
                 -(investment_time_current * capacity_investment_addition).sum(
                     "set_time_steps_construction"
                 ),
@@ -133,34 +138,32 @@ class TechnologyConstructionTimeConstraint(GenericConstraint):
         constraints = lhs == rhs
         # constrain capacity_investment where no investment can be made
         #   without the addition exceeding the horizon
-        lhs_outside = self.align_and_mask(capacity_investment, investment_time_outside)
+        lhs_outside = cls.align_and_mask(capacity_investment, investment_time_outside)
         rhs_outside = 0
         constraints_outside = lhs_outside == rhs_outside
 
-        self.zen_model.add_constraint(
+        model_constructor.zen_model.add_constraint(
             "constraint_technology_construction_time", constraints
         )
-        self.zen_model.add_constraint(
+        model_constructor.zen_model.add_constraint(
             "constraint_technology_construction_time_outside", constraints_outside
         )
 
-    def _get_investment_time_step(self, tech, year):
+    @staticmethod
+    def _get_investment_time_step(model_constructor, tech, year):
         """Returns investment time step of technology, considering construction time.
 
         returns investment time step of technology, i.e., the time step in which the
         technology is invested considering the construction time.
 
-        :param params: parameters of the model
         :param tech: name of technology
         :param year: yearly time step
         :return: investment time step
         """
         # get params and system
-        construction_time = self.zen_model.parameters.dict_parameters.construction_time[
-            tech
-        ]
+        parameters = model_constructor.zen_model.parameters.dict_parameters
+        construction_time = parameters.construction_time[tech]
+        interval = model_constructor.config.system.interval_between_years
         # conservative estimate of construction time (ceil)
-        del_construction_time = int(
-            np.ceil(construction_time / self.config.system.interval_between_years)
-        )
+        del_construction_time = int(np.ceil(construction_time / interval))
         return year - del_construction_time

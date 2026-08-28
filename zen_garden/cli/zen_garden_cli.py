@@ -1,7 +1,7 @@
 import argparse
 import os
 
-from zen_garden.runner import run
+from zen_garden.workflow.runner import run
 
 
 # ---------------------------------------------------------------------------

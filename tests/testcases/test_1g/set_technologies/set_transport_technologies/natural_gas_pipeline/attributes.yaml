@@ -23,7 +23,7 @@ lifetime:
   default_value: 50.0
   unit: '1'
 opex_specific_variable:
-  default_value: 0.0
+  default_value: 1.0
   unit: kiloEuro/GWh
 reference_carrier:
   default_value:

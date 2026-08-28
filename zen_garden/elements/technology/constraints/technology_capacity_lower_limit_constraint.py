@@ -1,8 +1,9 @@
-from zen_garden.topology.generic_constraint import GenericConstraint
+from zen_garden.model.component_types.constraint import GenericConstraint
 
 
 class TechnologyCapacityLowerLimitConstraint(GenericConstraint):
-    def build(self):
+    @classmethod
+    def build(cls, model_constructor):
         """Summary:
         Constrain installed capacity by each positive lower limit.
 
@@ -23,8 +24,10 @@ class TechnologyCapacityLowerLimitConstraint(GenericConstraint):
         """
 
         # In TechnologyRules, we access variables and parameters directly via self
-        capacity = self.zen_model.variables["capacity"]
-        capacity_lower_limit = self.zen_model.parameters.capacity_lower_limit
+        capacity = model_constructor.zen_model.variables["capacity"]
+        capacity_lower_limit = (
+            model_constructor.zen_model.parameters.capacity_lower_limit
+        )
 
         # Create a mask so we only build constraints
         # where the user actually provided a number
@@ -38,6 +41,6 @@ class TechnologyCapacityLowerLimitConstraint(GenericConstraint):
         constraint = lhs >= rhs
 
         # Add the constraint to the model
-        self.zen_model.add_constraint(
+        model_constructor.zen_model.add_constraint(
             "constraint_technology_capacity_lower_limit", constraint
         )

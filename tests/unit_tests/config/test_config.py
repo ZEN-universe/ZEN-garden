@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from zen_garden.default_config import Config
+from zen_garden.config import Config
 
 
 @pytest.fixture

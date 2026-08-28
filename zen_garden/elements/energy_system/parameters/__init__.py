@@ -1,6 +1,6 @@
 """energy system parameters."""
 
-from zen_garden.topology.generic_parameter import GenericParameter
+from zen_garden.model.component_types.parameter import GenericParameter
 
 from .carbon_emissions_annual_limit import CarbonEmissionsAnnualLimit
 from .carbon_emissions_budget import CarbonEmissionsBudget

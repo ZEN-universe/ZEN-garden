@@ -1,6 +1,6 @@
 """Conversion technology constraints."""
 
-from zen_garden.topology.generic_constraint import GenericConstraint
+from zen_garden.model.component_types.constraint import GenericConstraint
 
 from .capacity_factor_conversion_constraint import (
     CapacityFactorConversionConstraint,
@@ -23,6 +23,10 @@ CONVERSION_TECHNOLOGY_CONSTRAINTS: list[type[GenericConstraint]] = [
     OpexEmissionsTechnologyConversionConstraint,
     CarrierConversionConstraint,
     MinimumFullLoadHoursConstraint,
+    # LinearCapexConstraint reads only variables/parameters (capacity_addition,
+    # cost_capex_overnight, capex_specific_conversion), never state produced by
+    # the constraints above, so its position in this list is not load-bearing.
+    LinearCapexConstraint,
 ]
 
 __all__ = [

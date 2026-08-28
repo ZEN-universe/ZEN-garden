@@ -1,8 +1,9 @@
-from zen_garden.topology.generic_constraint import GenericConstraint
+from zen_garden.model.component_types.constraint import GenericConstraint
 
 
 class ChargeDischargeBinaryConstraint(GenericConstraint):
-    def build(self):
+    @classmethod
+    def build(cls, model_constructor):
         """Summary:
         Avoid simultaneous charge and discharge of storage technologies.
 
@@ -32,17 +33,17 @@ class ChargeDischargeBinaryConstraint(GenericConstraint):
         storage technology :math:`h` is in charging mode (1) or discharging mode (0) at
         location :math:`n` at time step :math:`t` in year :math:`y`
         """
-        if not self.config.system.storage_charge_discharge_binary:
+        if not model_constructor.config.system.storage_charge_discharge_binary:
             return
 
-        techs = self.zen_model.sets["set_storage_technologies"]
-        nodes = self.zen_model.sets["set_nodes"]
+        techs = model_constructor.zen_model.sets["set_storage_technologies"]
+        nodes = model_constructor.zen_model.sets["set_nodes"]
         if len(techs) == 0:
             return
         # capacity limit as upper bound
-        times = self.get_storage2year_time_step_array()
-        capacity_limit = self.zen_model.parameters.capacity_limit
-        capacity_limit = self.map_and_expand(capacity_limit, times)
+        times = cls.get_storage2year_time_step_array(model_constructor)
+        capacity_limit = model_constructor.zen_model.parameters.capacity_limit
+        capacity_limit = cls.map_and_expand(capacity_limit, times)
         capacity_limit = capacity_limit.rename(
             {
                 "set_technologies": "set_storage_technologies",
@@ -61,22 +62,24 @@ class ChargeDischargeBinaryConstraint(GenericConstraint):
         )
 
         lhs = (
-            self.zen_model.variables["flow_storage_charge"]
-            - self.zen_model.variables["charge_storage_binary"] * capacity_limit
+            model_constructor.zen_model.variables["flow_storage_charge"]
+            - model_constructor.zen_model.variables["charge_storage_binary"]
+            * capacity_limit
         )
         rhs = 0
         constraint_charge = lhs <= rhs
 
         lhs = (
-            self.zen_model.variables["flow_storage_discharge"]
-            + self.zen_model.variables["charge_storage_binary"] * capacity_limit
+            model_constructor.zen_model.variables["flow_storage_discharge"]
+            + model_constructor.zen_model.variables["charge_storage_binary"]
+            * capacity_limit
         )
         rhs = capacity_limit
         constraint_discharge = lhs <= rhs
 
-        self.zen_model.add_constraint(
+        model_constructor.zen_model.add_constraint(
             "constraint_charge_storage_binary", constraint_charge
         )
-        self.zen_model.add_constraint(
+        model_constructor.zen_model.add_constraint(
             "constraint_discharge_storage_binary", constraint_discharge
         )

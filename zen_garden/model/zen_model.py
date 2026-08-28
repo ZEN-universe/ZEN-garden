@@ -5,14 +5,14 @@ from typing import TYPE_CHECKING, Any
 
 from linopy import Model as LinopyModel
 
-from zen_garden.model.components.constraint import Constraint
-from zen_garden.model.components.parameter import Parameter
-from zen_garden.model.components.set_registry import SetRegistry
-from zen_garden.model.components.variable import Variable
+from zen_garden.model.registries.constraint import ConstraintRegistry
+from zen_garden.model.registries.parameter import ParameterRegistry
+from zen_garden.model.registries.set_registry import SetRegistry
+from zen_garden.model.registries.variable import VariableRegistry
 
 if TYPE_CHECKING:
-    from zen_garden.services.service_container import ServiceContainer
-    from zen_garden.topology.model_schema import ModelSchema
+    from zen_garden.di import ServiceContainer
+    from zen_garden.model.schema import ModelSchema
 
 
 class ZenModel:
@@ -27,16 +27,20 @@ class ZenModel:
         self.indexing_sets = [key for key in self.config.system.keys() if "set" in key]
 
         self.lp_model = LinopyModel(solver_dir=self.config.solver.solver_dir)
+        # Injected services: model_schema, element_registry; explicit argument:
+        # indexing_sets.
         self.sets = service_container.build(
             SetRegistry, indexing_sets=self.indexing_sets
         )
+        # Injected services: unit_converter, model_schema, element_registry;
+        # explicit arguments: lp_model and sets.
         self.variables = service_container.build(
-            Variable, lp_model=self.lp_model, sets=self.sets
+            VariableRegistry, lp_model=self.lp_model, sets=self.sets
         )
-        self.parameters = Parameter(sets=self.sets)
+        self.parameters = ParameterRegistry(sets=self.sets)
         # Expressions are model-construction artifacts rather than input data.
         self.expressions: dict[str, Any] = {}
-        self.constraints = Constraint(lp_model=self.lp_model)
+        self.constraints = ConstraintRegistry(lp_model=self.lp_model)
 
     @property
     def config(self):
@@ -45,26 +49,26 @@ class ZenModel:
 
     def add_set(self, *args, **kwargs):
         """Add sets to the model.
-        See :meth:`zen_garden.model.components.set_registry.SetRegistry.add_set`.
+        See :meth:`zen_garden.model.registries.set_registry.SetRegistry.add_set`.
         """
         self.sets.add_set(*args, **kwargs)
 
     def create_custom_set(self, *args, **kwargs):
         """Create custom sets in the model.
         See
-        :meth:`zen_garden.model.components.set_registry.SetRegistry.create_custom_set`.
+        :meth:`zen_garden.model.registries.set_registry.SetRegistry.create_custom_set`.
         """
         return self.sets.create_custom_set(*args, **kwargs)
 
     def add_variable(self, *args, **kwargs):
         """Add variables to the model.
-        See :meth:`zen_garden.model.components.variable.Variable.add_variable`.
+        See :meth:`zen_garden.model.registries.variable.VariableRegistry.add_variable`.
         """
         self.variables.add_variable(*args, **kwargs)
 
     def add_parameter(self, *args, **kwargs):
         """Add parameters to the model.
-        See :meth:`zen_garden.model.components.parameter.Parameter.add_parameter`.
+        See :meth:`~zen_garden.model.registries.parameter.ParameterRegistry`.
         """
         self.parameters.add_parameter(*args, **kwargs)
 
@@ -76,6 +80,6 @@ class ZenModel:
 
     def add_constraint(self, *args, **kwargs):
         """Add constraints to the model.
-        See :meth:`zen_garden.model.components.constraint.Constraint.add_constraint`.
+        See :meth:`~zen_garden.model.registries.constraint.ConstraintRegistry`.
         """
         self.constraints.add_constraint(*args, **kwargs)

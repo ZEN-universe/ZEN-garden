@@ -64,7 +64,7 @@ Documentation
    :caption: ZEN-garden in detail
 
    files/zen_garden_in_detail/input_structure
-   files/zen_garden_in_detail/unit_handling
+   files/zen_garden_in_detail/unit_converter
    files/zen_garden_in_detail/configurations
    files/zen_garden_in_detail/time_representation
    files/zen_garden_in_detail/scenario_tool

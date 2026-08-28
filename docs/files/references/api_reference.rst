@@ -19,9 +19,9 @@ ZEN-garden
    :maxdepth: 1
 
    ../api/general
+   ../api/input
    ../api/model
    ../api/postprocess
-   ../api/preprocess
    ../api/plugin_system
 
 

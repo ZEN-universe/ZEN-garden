@@ -1,8 +1,9 @@
-from zen_garden.topology.generic_constraint import GenericConstraint
+from zen_garden.model.component_types.constraint import GenericConstraint
 
 
 class OpexEmissionsTechnologyStorageConstraint(GenericConstraint):
-    def build(self):
+    @classmethod
+    def build(cls, model_constructor):
         """Summary:
         Calculate variable OPEX and carbon emissions of each storage technology.
 
@@ -31,21 +32,21 @@ class OpexEmissionsTechnologyStorageConstraint(GenericConstraint):
         :math:`\\varepsilon^{\\mathrm{op}}_{h,n}`: carbon intensity of the storage
         technology
         """
-        techs = self.zen_model.sets["set_storage_technologies"]
+        techs = model_constructor.zen_model.sets["set_storage_technologies"]
         if len(techs) == 0:
             return
-        nodes = self.zen_model.sets["set_nodes"]
-        lhs_opex = self.zen_model.variables["cost_opex_variable"].sel(
+        nodes = model_constructor.zen_model.sets["set_nodes"]
+        lhs_opex = model_constructor.zen_model.variables["cost_opex_variable"].sel(
             {"set_technologies": techs, "set_location": nodes}
         ) - (
-            self.zen_model.parameters.opex_specific_variable
-            * self.get_flow_expression_storage()
+            model_constructor.zen_model.parameters.opex_specific_variable
+            * cls.get_flow_expression_storage(model_constructor)
         )
-        lhs_emissions = self.zen_model.variables["carbon_emissions_technology"].sel(
-            {"set_technologies": techs, "set_location": nodes}
-        ) - (
-            self.zen_model.parameters.carbon_intensity_technology
-            * self.get_flow_expression_storage()
+        lhs_emissions = model_constructor.zen_model.variables[
+            "carbon_emissions_technology"
+        ].sel({"set_technologies": techs, "set_location": nodes}) - (
+            model_constructor.zen_model.parameters.carbon_intensity_technology
+            * cls.get_flow_expression_storage(model_constructor)
         )
         lhs_opex = lhs_opex.rename(
             {
@@ -63,9 +64,9 @@ class OpexEmissionsTechnologyStorageConstraint(GenericConstraint):
         constraints_opex = lhs_opex == rhs
         constraints_emissions = lhs_emissions == rhs
 
-        self.zen_model.add_constraint(
+        model_constructor.zen_model.add_constraint(
             "constraint_opex_technology_storage", constraints_opex
         )
-        self.zen_model.add_constraint(
+        model_constructor.zen_model.add_constraint(
             "constraint_carbon_emissions_technology_storage", constraints_emissions
         )

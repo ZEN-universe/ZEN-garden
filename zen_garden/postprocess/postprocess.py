@@ -20,11 +20,11 @@ from filelock import FileLock
 from tables import NaturalNameWarning
 
 if TYPE_CHECKING:
+    from zen_garden.input.unit_converter import UnitConverter
+    from zen_garden.model.schema import ModelSchema
     from zen_garden.model.time_steps import TimeStepsDicts
     from zen_garden.model.zen_model import ZenModel
-    from zen_garden.preprocess.scaling import Scaling
-    from zen_garden.preprocess.unit_handling import UnitHandling
-    from zen_garden.topology.model_schema import ModelSchema
+    from zen_garden.workflow.scaling import Scaling
 
 logger = logging.getLogger(__name__)
 
@@ -46,13 +46,28 @@ UNRELATED_INDEXES_FOR_UNITS = set(
 )
 
 
+def _append_suffix(file_name: Path, suffix: str) -> Path:
+    """Append ``suffix`` to ``file_name`` unless it is already present.
+
+    Unlike ``Path.with_suffix``, this does not strip a trailing ``.<x>`` that
+    is part of the stem (e.g. a scenario name like ``price_import_1.3``).
+
+    :param file_name: The target path, with or without the final suffix
+    :param suffix: The suffix to ensure, including the leading dot
+    :return: ``file_name`` guaranteed to end in ``suffix``
+    """
+    if file_name.suffix == suffix:
+        return file_name
+    return file_name.with_name(file_name.name + suffix)
+
+
 class Postprocess:
     """Class is defining the postprocessing of the results."""
 
     def __init__(
         self,
         model_schema: "ModelSchema",
-        unit_handling: "UnitHandling",
+        unit_converter: "UnitConverter",
         zen_model: "ZenModel",
         scaling: "Scaling",
         time_steps: "TimeStepsDicts",
@@ -73,7 +88,7 @@ class Postprocess:
         logger.info("\n--- Postprocess results ---\n")
         # get the necessary stuff from the model
         self.model_schema = model_schema
-        self.unit_handling = unit_handling
+        self.unit_converter = unit_converter
         self.zen_model = zen_model
         self.energy_system = model_schema.energy_system
 
@@ -390,7 +405,7 @@ class Postprocess:
             dirname = self.name_dir
 
         # Only save user-defined units (skip base units like 'meter')
-        all_units = self.unit_handling.ureg._units
+        all_units = self.unit_converter.ureg._units
         default_units = pint.UnitRegistry()._units
         user_units = list(set(all_units.items()).difference(default_units.items()))
         lines = list(set(unit.raw for _, unit in user_units if hasattr(unit, "raw")))  # type: ignore[attr-defined]
@@ -468,7 +483,6 @@ class Postprocess:
             else:
                 NotImplementedError(f"Type {type(v)} not supported for key {k}")
 
-        fname = Path(fname).with_suffix(".json")
         self._write_json_file(fname, dict_formatted)
 
     def flatten_dict(self, dictionary):
@@ -551,7 +565,7 @@ class Postprocess:
         :param file_name: The name of the file
         :param dict: The dictionary to save
         """
-        file_name = file_name.with_suffix(".json")
+        file_name = _append_suffix(file_name, ".json")
         if file_name.exists() and not self.overwrite:
             return
 
@@ -565,7 +579,7 @@ class Postprocess:
         :param file_name: The name of the file
         :param dict: The dictionary to save
         """
-        file_name = file_name.with_suffix(".yml")
+        file_name = _append_suffix(file_name, ".yml")
         if file_name.exists() and not self.overwrite:
             return
 
@@ -579,7 +593,7 @@ class Postprocess:
         :param file_name: The name of the file
         :param txt: The text to save
         """
-        file_name = file_name.with_suffix(".txt")
+        file_name = _append_suffix(file_name, ".txt")
         if file_name.exists() and not self.overwrite:
             return
 
@@ -601,7 +615,7 @@ class Postprocess:
             'a'. The former create a new file while the latter will append to an
             existing file.
         """
-        file_name = file_name.with_suffix(".h5")
+        file_name = _append_suffix(file_name, ".h5")
         if file_name.exists() and mode == "w" and not self.overwrite:
             raise FileExistsError(
                 "File already exists. Please set overwrite=True to overwrite the file."
@@ -627,7 +641,7 @@ class Postprocess:
         :param file_name: The name of the file
         :param dataset: The dataset to save
         """
-        file_name = file_name.with_suffix(".nc")
+        file_name = _append_suffix(file_name, ".nc")
         if file_name.exists() and not self.overwrite:
             return
 

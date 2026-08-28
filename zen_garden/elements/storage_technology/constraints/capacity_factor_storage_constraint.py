@@ -1,10 +1,11 @@
 import xarray as xr
 
-from zen_garden.topology.generic_constraint import GenericConstraint
+from zen_garden.model.component_types.constraint import GenericConstraint
 
 
 class CapacityFactorStorageConstraint(GenericConstraint):
-    def build(self):
+    @classmethod
+    def build(cls, model_constructor):
         """Summary:
         Limits load of storage technologies by capacity and maximum load factor.
 
@@ -25,18 +26,23 @@ class CapacityFactorStorageConstraint(GenericConstraint):
         :math:`K_{h,n,y}`: storage capacity of storage technology :math:`h` on
         node :math:`n` in year :math:`y`
         """
-        techs = self.zen_model.sets["set_storage_technologies"]
+        techs = model_constructor.zen_model.sets["set_storage_technologies"]
         if len(techs) == 0:
             return
-        nodes = self.zen_model.sets["set_nodes"]
-        times = self.zen_model.lp_model.variables.coords["set_time_steps_operation"]
+        nodes = model_constructor.zen_model.sets["set_nodes"]
+        times = model_constructor.zen_model.lp_model.variables.coords[
+            "set_time_steps_operation"
+        ]
         time_step_year = xr.DataArray(
-            [self.time_steps.convert_time_step_operation2year(t) for t in times.data],
+            [
+                model_constructor.time_steps.convert_time_step_operation2year(t)
+                for t in times.data
+            ],
             coords=[times],
         )
         term_capacity = (
-            self.zen_model.parameters.max_load.loc[techs, nodes, :]
-            * self.zen_model.variables["capacity"].loc[
+            model_constructor.zen_model.parameters.max_load.loc[techs, nodes, :]
+            * model_constructor.zen_model.variables["capacity"].loc[
                 techs, "power", nodes, time_step_year
             ]
         ).rename(
@@ -47,8 +53,12 @@ class CapacityFactorStorageConstraint(GenericConstraint):
         )
 
         # TODO integrate level storage here as well
-        lhs = term_capacity - self.get_flow_expression_storage(rename=False)
+        lhs = term_capacity - cls.get_flow_expression_storage(
+            model_constructor, rename=False
+        )
         rhs = 0
         constraints = lhs >= rhs
         ### return
-        self.zen_model.add_constraint("constraint_capacity_factor_storage", constraints)
+        model_constructor.zen_model.add_constraint(
+            "constraint_capacity_factor_storage", constraints
+        )

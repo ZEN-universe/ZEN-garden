@@ -1,6 +1,6 @@
 """storage technology parameters."""
 
-from zen_garden.topology.generic_parameter import GenericParameter
+from zen_garden.model.component_types.parameter import GenericParameter
 
 from .capex_specific_storage import CapexSpecificStorage
 from .efficiency_charge import EfficiencyCharge

@@ -1,6 +1,6 @@
 """Transport technology variables."""
 
-from zen_garden.topology.generic_variable import GenericVariable
+from zen_garden.model.component_types.variable import GenericVariable
 
 from .flow_transport import FlowTransport
 from .flow_transport_loss import FlowTransportLoss

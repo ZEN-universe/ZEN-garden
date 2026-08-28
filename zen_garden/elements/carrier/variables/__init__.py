@@ -1,6 +1,6 @@
 """Carrier variables."""
 
-from zen_garden.topology.generic_variable import GenericVariable
+from zen_garden.model.component_types.variable import GenericVariable
 
 from .carbon_emissions_carrier import CarbonEmissionsCarrier
 from .carbon_emissions_carrier_total import CarbonEmissionsCarrierTotal

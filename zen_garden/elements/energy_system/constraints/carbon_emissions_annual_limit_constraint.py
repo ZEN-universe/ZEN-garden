@@ -1,8 +1,9 @@
-from zen_garden.topology.generic_constraint import GenericConstraint
+from zen_garden.model.component_types.constraint import GenericConstraint
 
 
 class CarbonEmissionsAnnualLimitConstraint(GenericConstraint):
-    def build(self):
+    @classmethod
+    def build(cls, model_constructor):
         """Summary:
         Time dependent carbon emissions limit from technologies and carriers.
 
@@ -17,12 +18,12 @@ class CarbonEmissionsAnnualLimitConstraint(GenericConstraint):
         limit
         """
         lhs = (
-            self.zen_model.variables["carbon_emissions_annual"]
-            - self.zen_model.variables["carbon_emissions_annual_overshoot"]
+            model_constructor.zen_model.variables["carbon_emissions_annual"]
+            - model_constructor.zen_model.variables["carbon_emissions_annual_overshoot"]
         )
-        rhs = self.zen_model.parameters.carbon_emissions_annual_limit
+        rhs = model_constructor.zen_model.parameters.carbon_emissions_annual_limit
         constraints = lhs <= rhs
 
-        self.zen_model.add_constraint(
+        model_constructor.zen_model.add_constraint(
             "constraint_carbon_emissions_annual_limit", constraints
         )

@@ -1,4 +1,4 @@
-from zen_garden.topology.generic_parameter import GenericParameter
+from zen_garden.model.component_types.parameter import GenericParameter
 
 
 class CapexSpecificStorage(GenericParameter):
@@ -22,7 +22,7 @@ class CapexSpecificStorage(GenericParameter):
         cls._store_value(
             element,
             cls.name,
-            element.data_input.extract_input_data(
+            element.element_data_loader.extract_input_data(
                 cls.name,
                 indices,
                 {"money": 1, "energy_quantity": -1, "time": -1},
@@ -31,7 +31,7 @@ class CapexSpecificStorage(GenericParameter):
         cls._store_value(
             element,
             f"{cls.name}_energy",
-            element.data_input.extract_input_data(
+            element.element_data_loader.extract_input_data(
                 f"{cls.name}_energy",
                 indices,
                 {"money": 1, "energy_quantity": -1},

@@ -1,10 +1,11 @@
 import numpy as np
 
-from zen_garden.topology.generic_constraint import GenericConstraint
+from zen_garden.model.component_types.constraint import GenericConstraint
 
 
 class AvailabilityImportExportYearlyConstraint(GenericConstraint):
-    def build(self):
+    @classmethod
+    def build(cls, model_constructor):
         """Summary:
         node- and year-dependent carrier availability to import/export from outside
         the system boundaries.
@@ -32,36 +33,48 @@ class AvailabilityImportExportYearlyConstraint(GenericConstraint):
         node :math:`n` in time step :math:`t` of year :math:`y`
         """
         # The constraint is only constrained if the availability is finite
-        mask_imp = self.zen_model.parameters.availability_import_yearly != np.inf
-        mask_exp = self.zen_model.parameters.availability_export_yearly != np.inf
+        mask_imp = (
+            model_constructor.zen_model.parameters.availability_import_yearly != np.inf
+        )
+        mask_exp = (
+            model_constructor.zen_model.parameters.availability_export_yearly != np.inf
+        )
 
         # import
         lhs_imp = (
             (
-                self.zen_model.variables["flow_import"]
-                * self.get_year_time_step_duration_array()
+                model_constructor.zen_model.variables["flow_import"]
+                * cls.get_year_time_step_duration_array(model_constructor)
             )
             .sum("set_time_steps_operation")
             .where(mask_imp)
         )
-        rhs_imp = self.zen_model.parameters.availability_import_yearly.where(mask_imp)
+        rhs_imp = (
+            model_constructor.zen_model.parameters.availability_import_yearly.where(
+                mask_imp
+            )
+        )
         constraints_imp = lhs_imp <= rhs_imp
 
         # export
         lhs_exp = (
             (
-                self.zen_model.variables["flow_export"]
-                * self.get_year_time_step_duration_array()
+                model_constructor.zen_model.variables["flow_export"]
+                * cls.get_year_time_step_duration_array(model_constructor)
             )
             .sum("set_time_steps_operation")
             .where(mask_exp)
         )
-        rhs_exp = self.zen_model.parameters.availability_export_yearly.where(mask_exp)
+        rhs_exp = (
+            model_constructor.zen_model.parameters.availability_export_yearly.where(
+                mask_exp
+            )
+        )
         constraints_exp = lhs_exp <= rhs_exp
 
-        self.zen_model.add_constraint(
+        model_constructor.zen_model.add_constraint(
             "constraint_availability_import_yearly", constraints_imp
         )
-        self.zen_model.add_constraint(
+        model_constructor.zen_model.add_constraint(
             "constraint_availability_export_yearly", constraints_exp
         )

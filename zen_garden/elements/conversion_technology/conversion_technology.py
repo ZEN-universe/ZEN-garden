@@ -8,6 +8,9 @@ from typing_extensions import override
 from zen_garden.elements.conversion_technology.constraints import (
     CONVERSION_TECHNOLOGY_CONSTRAINTS,
 )
+from zen_garden.elements.conversion_technology.expressions import (
+    CONVERSION_TECHNOLOGY_EXPRESSIONS,
+)
 from zen_garden.elements.conversion_technology.parameters import (
     CONVERSION_TECHNOLOGY_PARAMETERS,
 )
@@ -18,10 +21,11 @@ from zen_garden.elements.conversion_technology.variables import (
     CONVERSION_TECHNOLOGY_VARIABLES,
 )
 from zen_garden.elements.technology import Technology
-from zen_garden.topology.generic_constraint import GenericConstraint
-from zen_garden.topology.generic_parameter import GenericParameter
-from zen_garden.topology.generic_set import GenericSet
-from zen_garden.topology.generic_variable import GenericVariable
+from zen_garden.model.component_types.constraint import GenericConstraint
+from zen_garden.model.component_types.expression import GenericExpression
+from zen_garden.model.component_types.parameter import GenericParameter
+from zen_garden.model.component_types.set import GenericSet
+from zen_garden.model.component_types.variable import GenericVariable
 
 logger = logging.getLogger(__name__)
 
@@ -37,6 +41,9 @@ class ConversionTechnology(Technology):
     )
     variables: ClassVar[list[type[GenericVariable]]] = CONVERSION_TECHNOLOGY_VARIABLES
     own_sets: ClassVar[list[type[GenericSet]]] = CONVERSION_TECHNOLOGY_SETS
+    expressions: ClassVar[list[type[GenericExpression]]] = (
+        CONVERSION_TECHNOLOGY_EXPRESSIONS
+    )
     constraints: ClassVar[list[type[GenericConstraint]]] = (
         CONVERSION_TECHNOLOGY_CONSTRAINTS
     )
@@ -48,10 +55,12 @@ class ConversionTechnology(Technology):
         super().initialize_reference_carrier()
         # define input and output carrier
         self.input_carrier = cast(
-            list[str], self.data_input.extract_carriers(carrier_type="input_carrier")
+            list[str],
+            self.element_data_loader.extract_carriers(carrier_type="input_carrier"),
         )
         self.output_carrier = cast(
-            list[str], self.data_input.extract_carriers(carrier_type="output_carrier")
+            list[str],
+            self.element_data_loader.extract_carriers(carrier_type="output_carrier"),
         )
         self.model_schema.set_technology_of_carrier(
             self.name, self.input_carrier + self.output_carrier

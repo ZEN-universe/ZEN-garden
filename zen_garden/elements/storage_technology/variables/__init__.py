@@ -1,6 +1,6 @@
 """Storage technology variables."""
 
-from zen_garden.topology.generic_variable import GenericVariable
+from zen_garden.model.component_types.variable import GenericVariable
 
 from .charge_storage_binary import ChargeStorageBinary
 from .flow_storage_charge import FlowStorageCharge

@@ -1,12 +1,13 @@
 import numpy as np
 import xarray as xr
 
-from zen_garden.model.components.set_registry import SetRegistry
-from zen_garden.topology.generic_constraint import GenericConstraint
+from zen_garden.model.component_types.constraint import GenericConstraint
+from zen_garden.model.registries.set_registry import SetRegistry
 
 
 class TransportTechnologyCapexConstraint(GenericConstraint):
-    def build(self):
+    @classmethod
+    def build(cls, model_constructor):
         """Summary:
         Definition of the capital expenditures for the transport technology.
 
@@ -36,7 +37,7 @@ class TransportTechnologyCapexConstraint(GenericConstraint):
         :math:`d^{\\mathrm{dist}}_{h,e}`: Transport distance for transport technology
         :math:`h` on edge :math:`e`
         """
-        index_values, index_list = self.zen_model.create_custom_set(
+        index_values, index_list = model_constructor.zen_model.create_custom_set(
             ["set_transport_technologies", "set_edges", "set_years"]
         )
 
@@ -45,16 +46,20 @@ class TransportTechnologyCapexConstraint(GenericConstraint):
             return
         # get the coords
         coords = [
-            self.zen_model.parameters.capex_per_distance_transport.coords[
+            model_constructor.zen_model.parameters.capex_per_distance_transport.coords[
                 "set_transport_technologies"
             ],
-            self.zen_model.parameters.capex_per_distance_transport.coords["set_edges"],
-            self.zen_model.parameters.capex_per_distance_transport.coords["set_years"],
+            model_constructor.zen_model.parameters.capex_per_distance_transport.coords[
+                "set_edges"
+            ],
+            model_constructor.zen_model.parameters.capex_per_distance_transport.coords[
+                "set_years"
+            ],
         ]
 
         ### masks
         # This mask checks the distance between nodes for the condition
-        mask = np.isinf(self.zen_model.parameters.distance).astype(float)
+        mask = np.isinf(model_constructor.zen_model.parameters.distance).astype(float)
 
         # This mask ensure we only get constraints where we want them
         index_arrs = SetRegistry.tuple_to_arr(index_values, index_list)
@@ -64,35 +69,35 @@ class TransportTechnologyCapexConstraint(GenericConstraint):
         ### auxiliary calculations TODO improve
         term_distance_inf = (
             mask
-            * self.zen_model.variables["capacity_addition"].loc[
+            * model_constructor.zen_model.variables["capacity_addition"].loc[
                 coords[0], "power", coords[1], coords[2]
             ]
         )
         term_distance_not_inf = (1 - mask) * (
-            self.zen_model.variables["cost_capex_overnight"].loc[
+            model_constructor.zen_model.variables["cost_capex_overnight"].loc[
                 coords[0], "power", coords[1], coords[2]
             ]
-            - self.zen_model.variables["capacity_addition"].loc[
+            - model_constructor.zen_model.variables["capacity_addition"].loc[
                 coords[0], "power", coords[1], coords[2]
             ]
-            * self.zen_model.parameters.capex_specific_transport.loc[
+            * model_constructor.zen_model.parameters.capex_specific_transport.loc[
                 coords[0], coords[1]
             ]
         )
         # Additional check to avoid binary variables when their coefficient is 0
         if np.any(
-            self.zen_model.expressions["transport_capex_distance"].loc[
+            model_constructor.zen_model.parameters.transport_capex_distance.loc[
                 coords[0], coords[1]
             ]
             != 0
         ):
             term_distance_not_inf -= (
                 (1 - mask)
-                * self.zen_model.variables["technology_installation"].loc[
+                * model_constructor.zen_model.variables["technology_installation"].loc[
                     coords[0], "power", coords[1], coords[2]
                 ]
                 * (
-                    self.zen_model.expressions["transport_capex_distance"].loc[
+                    model_constructor.zen_model.parameters.transport_capex_distance.loc[
                         coords[0], coords[1]
                     ]
                 )
@@ -103,6 +108,6 @@ class TransportTechnologyCapexConstraint(GenericConstraint):
         lhs = lhs.where(global_mask)
         rhs = 0
         constraints = lhs == rhs
-        self.zen_model.add_constraint(
+        model_constructor.zen_model.add_constraint(
             "constraint_transport_technology_capex", constraints
         )

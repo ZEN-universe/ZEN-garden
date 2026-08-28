@@ -1,8 +1,9 @@
-from zen_garden.topology.generic_constraint import GenericConstraint
+from zen_garden.model.component_types.constraint import GenericConstraint
 
 
 class CarbonEmissionsCarrierConstraint(GenericConstraint):
-    def build(self):
+    @classmethod
+    def build(cls, model_constructor):
         """Summary:
         Carbon emissions of importing and exporting carrier.
 
@@ -28,30 +29,32 @@ class CarbonEmissionsCarrierConstraint(GenericConstraint):
         node :math:`n` in time step :math:`t` of year :math:`y`
         """
         # create times xarray with 1 where the operation time step is in the year
-        times = self.get_year_time_step_array()
+        times = cls.get_year_time_step_array(model_constructor)
         # convert the carbon intensity carrier from yearly to operation time steps
         # TODO map and expand
         carbon_intensity_carrier_import = (
-            self.zen_model.parameters.carbon_intensity_carrier_import.broadcast_like(
+            model_constructor.zen_model.parameters.carbon_intensity_carrier_import.broadcast_like(
                 times
             )
             * times
         ).sum("set_years")
         carbon_intensity_carrier_export = (
-            self.zen_model.parameters.carbon_intensity_carrier_export.broadcast_like(
+            model_constructor.zen_model.parameters.carbon_intensity_carrier_export.broadcast_like(
                 times
             )
             * times
         ).sum("set_years")
-        lhs = self.zen_model.variables["carbon_emissions_carrier"] - (
-            self.zen_model.variables["flow_import"] * carbon_intensity_carrier_import
-            - self.zen_model.variables["flow_export"] * carbon_intensity_carrier_export
+        lhs = model_constructor.zen_model.variables["carbon_emissions_carrier"] - (
+            model_constructor.zen_model.variables["flow_import"]
+            * carbon_intensity_carrier_import
+            - model_constructor.zen_model.variables["flow_export"]
+            * carbon_intensity_carrier_export
         )
 
         rhs = 0
 
         constraints = lhs == rhs
 
-        self.zen_model.add_constraint(
+        model_constructor.zen_model.add_constraint(
             "constraint_carbon_emissions_carrier", constraints
         )

@@ -1,4 +1,4 @@
-from zen_garden.topology.generic_set import GenericSet
+from zen_garden.model.component_types.set import GenericSet
 
 
 class SetNodesOnEdges(GenericSet):
@@ -9,5 +9,5 @@ class SetNodesOnEdges(GenericSet):
     )
 
     @classmethod
-    def get_data(cls, constructor):
-        return constructor.network_topology.set_nodes_on_edges
+    def get_data(cls, model_constructor):
+        return model_constructor.network_topology.set_nodes_on_edges

@@ -1,23 +1,23 @@
 """Explicit model package imports."""
 
-from zen_garden.model.components.constraint import Constraint
-from zen_garden.model.components.multi_index_helper import MultiIndexHelper
-from zen_garden.model.components.parameter import DictParameter, Parameter
-from zen_garden.model.components.set_registry import SetRegistry
-from zen_garden.model.components.variable import Variable
-from zen_garden.model.components.zen_set import BaseSet, IndexedSet, SimpleSet
-from zen_garden.model.config import Config
+from zen_garden.config import Config
+from zen_garden.model.registries.constraint import ConstraintRegistry
+from zen_garden.model.registries.multi_index_helper import MultiIndexHelper
+from zen_garden.model.registries.parameter import DictParameter, ParameterRegistry
+from zen_garden.model.registries.set_registry import SetRegistry
+from zen_garden.model.registries.variable import VariableRegistry
 from zen_garden.model.time_steps import TimeStepsDicts
 from zen_garden.model.zen_model import ZenModel
+from zen_garden.model.zen_set import BaseSet, IndexedSet, SimpleSet
 
 __all__ = [
     "Config",
-    "Constraint",
+    "ConstraintRegistry",
     "DictParameter",
     "SetRegistry",
-    "Parameter",
+    "ParameterRegistry",
     "TimeStepsDicts",
-    "Variable",
+    "VariableRegistry",
     "MultiIndexHelper",
     "BaseSet",
     "SimpleSet",

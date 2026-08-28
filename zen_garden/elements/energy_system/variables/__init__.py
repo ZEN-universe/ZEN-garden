@@ -1,6 +1,6 @@
 """Energy system variables."""
 
-from zen_garden.topology.generic_variable import GenericVariable
+from zen_garden.model.component_types.variable import GenericVariable
 
 from .carbon_emissions_annual import CarbonEmissionsAnnual
 from .carbon_emissions_annual_overshoot import CarbonEmissionsAnnualOvershoot

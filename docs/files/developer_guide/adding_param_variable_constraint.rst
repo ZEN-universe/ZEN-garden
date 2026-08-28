@@ -34,7 +34,7 @@ e.g., :py:class:`EnergySystemConstructor <zen_garden.elements.energy_system.ener
 or :py:class:`TechnologyConstructor <zen_garden.elements.technology.technology_constructor.TechnologyConstructor>`.
 The new set is added to ``self.zen_model.sets`` through the method ``self.zen_model.add_set()``.
 
-The :py:meth:`add_set <zen_garden.model.components.set_registry.SetRegistry.add_set>` method takes the following parameters:
+The :py:meth:`add_set <zen_garden.model.registries.set_registry.SetRegistry.add_set>` method takes the following parameters:
 
 - ``name``: The name of the set, which should be unique.
 - ``data``: The data for the set, which can be a list or a dictionary.
@@ -70,12 +70,12 @@ Adding Parameters
 Parameters can be added in the ``construct_params`` method of the element constructor class.
 But first, the data has to be imported in the ``store_input_data`` method of the corresponding element classes
 or the energy system class with the ``extract_input_data`` method of the
-:py:class:``DataInput <zen_garden.preprocess.data_input.DataInput>`` class.
+:py:class:``ElementDataLoader <zen_garden.input.element_data_loader.ElementDataLoader>`` class.
 For example, if you want to add a parameter for the yearly import availability of a carrier, the code looks like this:
 
 .. code-block:: python
 
-    self.availability_import_yearly = self.data_input.extract_input_data(
+    self.availability_import_yearly = self.element_data_loader.extract_input_data(
         "availability_import_yearly",
         index_sets=["set_nodes", "set_years"],
         unit_category={"energy_quantity": 1}
@@ -133,7 +133,7 @@ Logging new and changed parameters
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 If you add a new parameter or change the name of an existing one, please document that in
-:py:data:`PARAMETER_CHANGE_LOG <zen_garden.preprocess.data_input.PARAMETER_CHANGE_LOG>`.
+:py:data:`PARAMETER_CHANGE_LOG <zen_garden.input.element_data_loader.PARAMETER_CHANGE_LOG>`.
 The reason to add the name is that the new or changed parameters will be searched for in the input data,
 but are not available in the datasets of others. To avoid breaking changes, the new or changed parameters
 are documented in the log file and then equivalent parameters are found without breaking the code.

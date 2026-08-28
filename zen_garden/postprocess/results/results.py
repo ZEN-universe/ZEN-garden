@@ -10,7 +10,7 @@ import pandas as pd
 from pandas import Series
 from typing_extensions import override
 
-from zen_garden.default_config import Analysis, Solver, System
+from zen_garden.config import Analysis, Solver, System
 from zen_garden.postprocess.results.cost_emission_calculation import (
     CostEmissionCalculation,
 )

@@ -1,6 +1,6 @@
 """technology parameters."""
 
-from zen_garden.topology.generic_parameter import GenericParameter
+from zen_garden.model.component_types.parameter import GenericParameter
 
 from .capacity_addition_max import CapacityAdditionMax
 from .capacity_addition_min import CapacityAdditionMin
@@ -13,6 +13,8 @@ from .capex_capacity_existing import CapexCapacityExisting
 from .carbon_intensity_technology import CarbonIntensityTechnology
 from .construction_time import ConstructionTime
 from .depreciation_time import DepreciationTime
+from .existing_capacities import ExistingCapacities
+from .existing_capex import ExistingCapex
 from .lifetime import Lifetime
 from .lifetime_existing import LifetimeExisting
 from .max_diffusion_rate import MaxDiffusionRate
@@ -40,6 +42,9 @@ TECHNOLOGY_PARAMETERS: list[type[GenericParameter]] = [
     MinLoad,
     MaxLoad,
     CarbonIntensityTechnology,
+    # Computed from the parameters above; must stay last.
+    ExistingCapacities,
+    ExistingCapex,
 ]
 
 __all__ = [
@@ -61,5 +66,7 @@ __all__ = [
     "MinLoad",
     "MaxLoad",
     "CarbonIntensityTechnology",
+    "ExistingCapacities",
+    "ExistingCapex",
     "TECHNOLOGY_PARAMETERS",
 ]

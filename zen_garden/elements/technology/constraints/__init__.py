@@ -1,6 +1,6 @@
 """Technology constraints."""
 
-from zen_garden.topology.generic_constraint import GenericConstraint
+from zen_garden.model.component_types.constraint import GenericConstraint
 
 from .carbon_emissions_technology_total_constraint import (
     CarbonEmissionsTechnologyTotalConstraint,
@@ -39,6 +39,10 @@ TECHNOLOGY_CONSTRAINTS: list[type[GenericConstraint]] = [
     CostOpexYearlyConstraint,
     CostOpexYearlyTotalConstraint,
     CarbonEmissionsTechnologyTotalConstraint,
+    # Built last: only adds constraints for technologies whose min_load data
+    # requires on/off modelling; a no-op (and cleans up its helper variables)
+    # otherwise.
+    TechnologyOnOffConstraint,
 ]
 
 __all__ = [
