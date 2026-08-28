@@ -37,14 +37,14 @@ class Technology(Element):
         """Retrieves and stores information on reference."""
         self.reference_carrier = cast(
             list[str],
-            self.data_input.extract_carriers(carrier_type="reference_carrier"),
+            self.element_data_loader.extract_carriers(carrier_type="reference_carrier"),
         )
         self.model_schema.set_technology_of_carrier(self.name, self.reference_carrier)
 
     def prepare_input_data(self) -> None:
         """Load the vintage set needed by existing-capacity parameters."""
         self.set_technologies_existing = (
-            self.data_input.extract_set_technologies_existing()
+            self.element_data_loader.extract_set_technologies_existing()
         )
 
     def calculate_capex_of_capacities_existing(self):

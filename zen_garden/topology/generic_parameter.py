@@ -71,7 +71,7 @@ class GenericParameter(ABC):
         """Load and store a parameter using the standard input layout."""
         name = cls.input_name or cls.name
         indices = cls._input_indices(element)
-        value = element.data_input.extract_input_data(
+        value = element.element_data_loader.extract_input_data(
             name,
             index_sets=indices,
             unit_category=cls.unit_category,
@@ -81,7 +81,7 @@ class GenericParameter(ABC):
         if cls.capacity_types and cls._has_energy_capacity(element):
             energy_units = dict(cls.unit_category)
             energy_units.pop("time", None)
-            energy_value = element.data_input.extract_input_data(
+            energy_value = element.element_data_loader.extract_input_data(
                 f"{name}_energy",
                 index_sets=indices,
                 unit_category=energy_units,

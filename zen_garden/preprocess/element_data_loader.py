@@ -13,7 +13,7 @@ import pandas as pd
 if TYPE_CHECKING:
     from zen_garden.elements.element import Element
     from zen_garden.preprocess.unit_handling import UnitHandling
-    from zen_garden.services.input_repository import InputRepository
+    from zen_garden.services.attribute_data_loader import AttributeDataLoader
     from zen_garden.services.network_topology import NetworkTopology
     from zen_garden.services.scenario_dict import ScenarioDict
     from zen_garden.topology.model_schema import ModelSchema
@@ -62,7 +62,7 @@ Example
 """
 
 
-class DataInput:
+class ElementDataLoader:
     """Class to extract input data."""
 
     def __init__(
@@ -75,7 +75,7 @@ class DataInput:
         input_data_checks: "InputDataChecks",
         year_specific_ts: "YearSpecificTs",
         folder_path: Path,
-        input_repository: "InputRepository",
+        attribute_data_loader: "AttributeDataLoader",
     ):
         """Data input object to extract input data.
 
@@ -95,11 +95,11 @@ class DataInput:
         self.year_specific_ts = year_specific_ts
         # extract folder path
         self.folder_path = folder_path
-        self.input_repository = input_repository
+        self.attribute_data_loader = attribute_data_loader
         # get names of indices
         self.index_names = self.model_schema.config.analysis.header_data_inputs
         # load attributes file
-        self.attribute_dict = self.input_repository.load_attribute_file()
+        self.attribute_dict = self.attribute_data_loader.load_attribute_file()
 
     def extract_input_data(self, file_name, index_sets, unit_category, subelement=None):
         """Loads and restructures input data for the current scenario.
@@ -156,13 +156,13 @@ class DataInput:
         f_name, scenario_factor = self.scenario_dict.get_param_file(
             self.element.name, file_name
         )
-        df_input = self.input_repository.read_csv(f_name)
+        df_input = self.attribute_data_loader.read_csv(f_name)
         if f_name != file_name and yearly_variation and df_input is None:
             logger.info(
                 f"{f_name} for current scenario is missing from "
                 f"{self.folder_path}. {file_name} is used as input file"
             )
-            df_input = self.input_repository.read_csv(file_name)
+            df_input = self.attribute_data_loader.read_csv(file_name)
 
         assert df_input is not None or default_value is not None, (
             f"input file for attribute {file_name} could not be imported and no "
@@ -187,7 +187,7 @@ class DataInput:
                 self.element.name, file_name
             )
             if part_file_name is not None:
-                df_input_part = self.input_repository.read_csv(part_file_name)
+                df_input_part = self.attribute_data_loader.read_csv(part_file_name)
                 if df_input_part is None:
                     logger.info(
                         f"{part_file_name} for current scenario is missing "
@@ -253,22 +253,24 @@ class DataInput:
 
         # no indices missing
         if len(missing_index) == 0:
-            df_input = DataInput.extract_from_input_without_missing_index(
+            df_input = ElementDataLoader.extract_from_input_without_missing_index(
                 df_input, index_name_list, file_name
             )
         else:
             missing_index = missing_index[0]
             # check if special case of existing Technology
             if "technology_existing" in missing_index:
-                df_output = DataInput.extract_from_input_for_capacities_existing(
+                df_output = (
+                    ElementDataLoader.extract_from_input_for_capacities_existing(
                     df_input, df_output_copy, index_name_list, file_name, missing_index
+                    )
                 )
                 if isinstance(default_value, dict):
                     df_output_copy = df_output_copy * default_value["multiplier"]
                 return df_output_copy
             # index missing
             else:
-                df_input = DataInput.extract_from_input_with_missing_index(
+                df_input = ElementDataLoader.extract_from_input_with_missing_index(
                     df_input,
                     df_output_copy,
                     copy.deepcopy(index_name_list),
@@ -326,7 +328,7 @@ class DataInput:
         if filename == "attributes":
             return self.attribute_dict, factor
 
-        attribute_dict = self.input_repository.load_attribute_file(filename)
+        attribute_dict = self.attribute_data_loader.load_attribute_file(filename)
         return attribute_dict, factor
 
     def extract_attribute(
@@ -511,7 +513,7 @@ class DataInput:
                 f_name, scenario_factor = self.scenario_dict.get_param_file(
                     self.element.name, filename
                 )
-                df_input = self.input_repository.read_csv(f_name)
+                df_input = self.attribute_data_loader.read_csv(f_name)
                 if df_input is not None and not df_input.empty:
                     # get subelement dataframe
                     if subelement is not None and subelement in df_input.columns:
@@ -552,13 +554,13 @@ class DataInput:
         f_name, scenario_factor = self.scenario_dict.get_param_file(
             self.element.name, file_name
         )
-        df_input = self.input_repository.read_csv(f_name)
+        df_input = self.attribute_data_loader.read_csv(f_name)
         if f_name != file_name and df_input is None:
             logger.info(
                 f"{f_name} is missing from {self.folder_path}. {file_name} is "
                 "used as input file"
             )
-            df_input = self.input_repository.read_csv(file_name)
+            df_input = self.attribute_data_loader.read_csv(file_name)
         if df_input is not None:
             df_output, default_value, index_name_list = self.create_default_output(
                 index_sets,
@@ -640,7 +642,7 @@ class DataInput:
             f_name, _ = self.scenario_dict.get_param_file(
                 self.element.name, f"capacity_existing{_energy_string}"
             )
-            df_input = self.input_repository.read_csv(f_name)
+            df_input = self.attribute_data_loader.read_csv(f_name)
             if df_input is None:
                 return [0]
             if (
@@ -677,7 +679,7 @@ class DataInput:
             self.element.name, file_name
         )
         if f"{f_name}.csv" in os.listdir(self.folder_path):
-            df_input = self.input_repository.read_csv(f_name)
+            df_input = self.attribute_data_loader.read_csv(f_name)
             # fill output dataframe
             df_output = self._extract_general_input_data(
                 df_input,

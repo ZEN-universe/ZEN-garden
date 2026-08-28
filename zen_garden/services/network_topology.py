@@ -5,7 +5,7 @@ import pandas as pd
 
 if TYPE_CHECKING:
     from zen_garden.preprocess.unit_handling import UnitHandling
-    from zen_garden.services.input_repository import InputRepository
+    from zen_garden.services.attribute_data_loader import AttributeDataLoader
     from zen_garden.topology.model_schema import ModelSchema
     from zen_garden.utils.input_data_checks import InputDataChecks
 
@@ -14,12 +14,12 @@ class NetworkTopology:
     def __init__(
         self,
         model_schema: "ModelSchema",
-        input_repository: "InputRepository",
+        attribute_data_loader: "AttributeDataLoader",
         input_data_checks: "InputDataChecks",
         unit_handling: "UnitHandling",
     ):
         self.model_schema = model_schema
-        self.input_repository = input_repository
+        self.attribute_data_loader = attribute_data_loader
         self.input_data_checks = input_data_checks
         self.unit_handling = unit_handling
 
@@ -37,7 +37,7 @@ class NetworkTopology:
 
     def _extract_nodes(self, extract_coordinates: bool):
         set_nodes_config = self.config.system.set_nodes
-        df_nodes_w_coords = self.input_repository.read_csv_safe("set_nodes")
+        df_nodes_w_coords = self.attribute_data_loader.read_csv_safe("set_nodes")
         if extract_coordinates:
             if len(set_nodes_config) != 0:
                 df_nodes_w_coords = df_nodes_w_coords[
@@ -72,7 +72,7 @@ class NetworkTopology:
         return set_nodes_config
 
     def _extract_edges(self):
-        set_edges_input = self.input_repository.read_csv_safe("set_edges")
+        set_edges_input = self.attribute_data_loader.read_csv_safe("set_edges")
         self.input_data_checks.check_single_directed_edges(set_edges_input)
         if set_edges_input is not None:
             set_edges = set_edges_input[

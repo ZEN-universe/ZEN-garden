@@ -131,7 +131,7 @@ Class Structure
        class StringUtils
        class ScenarioUtils
        class OptimizationError
-       class DataInput
+       class ElementDataLoader
        class TimeSeriesAggregation
        class TimeSteps
        class EnergySystem

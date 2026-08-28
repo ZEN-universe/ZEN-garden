@@ -13,7 +13,7 @@ class LifetimeExisting(GenericParameter):
     @classmethod
     def store_input_data(cls, element):
         """Extract remaining lifetime for existing capacity vintages."""
-        value = element.data_input.extract_lifetime_existing(
+        value = element.element_data_loader.extract_lifetime_existing(
             "capacity_existing", index_sets=cls._input_indices(element)
         )
         cls._store_value(element, cls.name, value)

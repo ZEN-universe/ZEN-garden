@@ -13,8 +13,8 @@ class DepreciationTime(GenericParameter):
     @classmethod
     def store_input_data(cls, element):
         """Load depreciation time or default it to technology lifetime."""
-        if cls.name in element.data_input.attribute_dict:
-            value = element.data_input.extract_input_data(
+        if cls.name in element.element_data_loader.attribute_dict:
+            value = element.element_data_loader.extract_input_data(
                 cls.name, index_sets=[], unit_category={}
             )
             value[0] = max(element.config.system.interval_between_years, value[0])

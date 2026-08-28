@@ -5,8 +5,8 @@ from typing import TYPE_CHECKING, Any, ClassVar
 
 import pandas as pd
 
-from zen_garden.preprocess.data_input import DataInput
-from zen_garden.services.input_repository import InputRepository
+from zen_garden.preprocess.element_data_loader import ElementDataLoader
+from zen_garden.services.attribute_data_loader import AttributeDataLoader
 from zen_garden.topology.generic_parameter import GenericParameter
 
 if TYPE_CHECKING:
@@ -92,10 +92,10 @@ class Element:
         self.time_steps = time_steps
         # set if aggregated
         self.aggregated = False
-        # create DataInput object
+        # create ElementDataLoader object
         folder_path = self._get_input_path()
-        self.input_repository = InputRepository(folder_path)
-        self.data_input = DataInput(
+        self.attribute_data_loader = AttributeDataLoader(folder_path)
+        self.element_data_loader = ElementDataLoader(
             element=self,
             model_schema=self.model_schema,
             network_topology=self.network_topology,
@@ -104,7 +104,7 @@ class Element:
             input_data_checks=self.input_data_checks,
             year_specific_ts=year_specific_ts,
             folder_path=folder_path,
-            input_repository=self.input_repository,
+            attribute_data_loader=self.attribute_data_loader,
         )
         # dict to save the parameter units element-wise and to save them in the results
         self.units: dict[str, Any] = {}

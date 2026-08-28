@@ -16,10 +16,10 @@ from zen_garden.model.zen_model import ZenModel
 from zen_garden.optimization_step import OptimizationStep
 from zen_garden.preprocess.time_series_aggregation import TimeSeriesAggregation
 from zen_garden.preprocess.unit_handling import UnitHandling
+from zen_garden.services.attribute_data_loader import AttributeDataLoader
 from zen_garden.services.dataset_path_resolver import DatasetPathResolver
 from zen_garden.services.element_factory import ElementFactory
 from zen_garden.services.element_registry import ElementRegistry
-from zen_garden.services.input_repository import InputRepository
 from zen_garden.services.network_topology import NetworkTopology
 from zen_garden.services.parameter_loading_service import ParameterLoadingService
 from zen_garden.services.scenario_dict import ScenarioDict
@@ -135,11 +135,13 @@ class OptimizationWorkflow:
         self.service_container.register("unit_handling", unit_handling)
 
         # Injected services: none; explicit argument: folder_path.
-        # Register the resulting InputRepository as input_repository.
+        # Register the resulting AttributeDataLoader as attribute_data_loader.
         self.service_container.build_and_register(
-            "input_repository", InputRepository, folder_path=energy_system_folder_path
+            "attribute_data_loader",
+            AttributeDataLoader,
+            folder_path=energy_system_folder_path,
         )
-        # Injected services: model_schema, input_repository, input_data_checks,
+        # Injected services: model_schema, attribute_data_loader, input_data_checks,
         # unit_handling; explicit arguments: none. Register as network_topology.
         self.service_container.build_and_register("network_topology", NetworkTopology)
         # Injected services: model_schema, unit_handling; explicit arguments: none.
@@ -172,7 +174,7 @@ class OptimizationWorkflow:
         Requires :meth:`load_data` to have been called first.
         """
         # Injected services: model_schema, element_registry, time_steps,
-        # year_specific_ts, input_repository; explicit arguments: none.
+        # year_specific_ts, attribute_data_loader; explicit arguments: none.
         # Register the resulting service as time_series_aggregation.
         self.service_container.build_and_register(
             "time_series_aggregation", TimeSeriesAggregation

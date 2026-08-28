@@ -46,5 +46,5 @@ class RetrofittingTechnology(ConversionTechnology):
         """Load the retrofit relationship before generic parameter loading."""
         super().prepare_input_data()
         self.retrofit_base_technology = (
-            self.data_input.extract_retrofit_base_technology()
+            self.element_data_loader.extract_retrofit_base_technology()
         )

@@ -48,10 +48,12 @@ class ConversionTechnology(Technology):
         super().initialize_reference_carrier()
         # define input and output carrier
         self.input_carrier = cast(
-            list[str], self.data_input.extract_carriers(carrier_type="input_carrier")
+            list[str],
+            self.element_data_loader.extract_carriers(carrier_type="input_carrier"),
         )
         self.output_carrier = cast(
-            list[str], self.data_input.extract_carriers(carrier_type="output_carrier")
+            list[str],
+            self.element_data_loader.extract_carriers(carrier_type="output_carrier"),
         )
         self.model_schema.set_technology_of_carrier(
             self.name, self.input_carrier + self.output_carrier

@@ -8,7 +8,7 @@ import pandas as pd
 import yaml
 
 
-class InputRepository:
+class AttributeDataLoader:
     """Handles reading raw input files and attribute definitions."""
 
     def __init__(self, folder_path: Path | str):

@@ -13,20 +13,20 @@ class CapexSpecificTransport(GenericParameter):
     @classmethod
     def store_input_data(cls, element):
         """Load either specific or distance-based transport capex."""
-        attributes = element.data_input.attribute_dict
+        attributes = element.element_data_loader.attribute_dict
         indices = ["set_edges", "set_years"]
         specific_units = {"money": 1, "energy_quantity": -1, "time": 1}
         distance_units = {"money": 1, "distance": -1}
 
         if element.config.system.double_capex_transport:
-            specific = element.data_input.extract_input_data(
+            specific = element.element_data_loader.extract_input_data(
                 "capex_specific_transport", indices, specific_units
             )
-            per_distance = element.data_input.extract_input_data(
+            per_distance = element.element_data_loader.extract_input_data(
                 "capex_per_distance_transport", indices, distance_units
             )
         elif "capex_per_distance_transport" in attributes:
-            per_distance_input = element.data_input.extract_input_data(
+            per_distance_input = element.element_data_loader.extract_input_data(
                 "capex_per_distance_transport",
                 indices,
                 {
@@ -39,7 +39,7 @@ class CapexSpecificTransport(GenericParameter):
             specific = per_distance_input * element.distance
             per_distance = specific * 0.0
         elif "capex_specific_transport" in attributes:
-            specific = element.data_input.extract_input_data(
+            specific = element.element_data_loader.extract_input_data(
                 "capex_specific_transport", indices, specific_units
             )
             per_distance = specific * 0.0

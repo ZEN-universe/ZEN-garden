@@ -31,7 +31,7 @@ class ConversionFactor(GenericParameter):
             return
 
         values = {
-            carrier: element.data_input.extract_input_data(
+            carrier: element.element_data_loader.extract_input_data(
                 cls.input_name or cls.name,
                 index_sets=cls._input_indices(element),
                 unit_category=cls.unit_category,

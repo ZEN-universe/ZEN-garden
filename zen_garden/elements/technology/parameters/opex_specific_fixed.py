@@ -18,10 +18,10 @@ class OpexSpecificFixed(GenericParameter):
             super().store_input_data(element)
             return
 
-        attributes = element.data_input.attribute_dict
+        attributes = element.element_data_loader.attribute_dict
         indices = ["set_edges", "set_years"]
         if "opex_specific_fixed_per_distance" in attributes:
-            per_distance = element.data_input.extract_input_data(
+            per_distance = element.element_data_loader.extract_input_data(
                 "opex_specific_fixed_per_distance",
                 indices,
                 {
@@ -33,7 +33,7 @@ class OpexSpecificFixed(GenericParameter):
             )
             value = per_distance * element.distance
         elif cls.name in attributes:
-            value = element.data_input.extract_input_data(
+            value = element.element_data_loader.extract_input_data(
                 cls.name, indices, cls.unit_category
             )
         else:

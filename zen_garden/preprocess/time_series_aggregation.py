@@ -1,4 +1,4 @@
-﻿"""Functions to apply time series aggregation to time series."""
+"""Functions to apply time series aggregation to time series."""
 
 import copy
 import logging
@@ -13,8 +13,8 @@ from zen_garden.elements.element import Element
 
 if TYPE_CHECKING:
     from zen_garden.model.time_steps import TimeStepsDicts
+    from zen_garden.services.attribute_data_loader import AttributeDataLoader
     from zen_garden.services.element_registry import ElementRegistry
-    from zen_garden.services.input_repository import InputRepository
     from zen_garden.topology.model_schema import ModelSchema
     from zen_garden.types import YearSpecificTs
 
@@ -30,7 +30,7 @@ class TimeSeriesAggregation(object):
         element_registry: "ElementRegistry",
         time_steps: "TimeStepsDicts",
         year_specific_ts: "YearSpecificTs",
-        input_repository: "InputRepository",
+        attribute_data_loader: "AttributeDataLoader",
     ):
         """Initializes the time series aggregation. The data is aggregated
         for a single year and then concatenated.
@@ -44,7 +44,7 @@ class TimeSeriesAggregation(object):
         self.time_steps = time_steps
         self.element_registry = element_registry
         self.year_specific_ts = year_specific_ts
-        self.input_repository = input_repository
+        self.attribute_data_loader = attribute_data_loader
 
         self.header_set_time_steps = self.config.analysis.header_data_inputs.set_hours
         # if set_hours as input (because already aggregated), use this as
@@ -257,7 +257,7 @@ class TimeSeriesAggregation(object):
         """
         self.excluded_ts = []
         if self.config.system.exclude_parameters_from_TSA:
-            excluded_parameters = self.input_repository.read_csv(
+            excluded_parameters = self.attribute_data_loader.read_csv(
                 "exclude_parameter_from_TSA"
             )
             # exclude file exists
@@ -572,9 +572,9 @@ class TimeSeriesAggregation(object):
         :param ts: time series
         :return: multipliedTimeSeries: ts multiplied with yearly variation
         """
-        if hasattr(element.data_input, ts_name + "_yearly_variation"):
+        if hasattr(element.element_data_loader, ts_name + "_yearly_variation"):
             yearly_variation = getattr(
-                element.data_input, ts_name + "_yearly_variation"
+                element.element_data_loader, ts_name + "_yearly_variation"
             )
             header_set_time_steps = self.config.analysis.header_data_inputs.set_hours
             header_set_years = self.config.analysis.header_data_inputs.set_years

@@ -16,7 +16,7 @@ class ParameterLoadingService:
         """Prepare, load, and finalize every element in the schema."""
         elements = self.model_schema.all_elements()
         self.model_schema.parameters_interpolation_off = (
-            self.model_schema.energy_system.input_repository.read_mapping_file(
+            self.model_schema.energy_system.attribute_data_loader.read_mapping_file(
                 "parameters_interpolation_off"
             )
         )
