@@ -75,8 +75,11 @@ class OptimizationWorkflow:
         """
         # work on a private copy so the shared input schema is left untouched
         self.model_schema = copy.deepcopy(self.model_schema)
+        # Register service: model_schema; instance: the workflow's private schema copy.
         self.service_container.register("model_schema", self.model_schema)
 
+        # Injected service: model_schema; explicit arguments: none.
+        # Register the resulting DatasetPathResolver as dataset_path_resolver.
         self.dataset_path_resolver = self.service_container.build_and_register(
             "dataset_path_resolver", DatasetPathResolver
         )
@@ -89,6 +92,7 @@ class OptimizationWorkflow:
             self.dataset_path_resolver,
             self.model_schema,
         )
+        # Register service: scenario_dict; instance: the initialized scenario mapping.
         self.service_container.register("scenario_dict", scenario_dict)
 
         # Input data checks validate the dataset's folder structure and technology
@@ -103,12 +107,16 @@ class OptimizationWorkflow:
         # remove non-existent inputs
         # WARNING: This function modifies the config object!
         input_data_checks.check_existing_technology_data()
+        # Register service: input_data_checks; instance: the validated data checker.
         self.service_container.register("input_data_checks", input_data_checks)
 
         # initiate dictionary for storing extra year data
+        # Register service: year_specific_ts; instance: a new empty YearSpecificTs.
         self.service_container.register("year_specific_ts", YearSpecificTs())
 
         # initiate dictionary for storing time steps
+        # Injected services and explicit arguments: none.
+        # Register the resulting TimeStepsDicts as time_steps.
         time_steps = self.service_container.build_and_register(
             "time_steps", TimeStepsDicts
         )
@@ -123,22 +131,33 @@ class OptimizationWorkflow:
         unit_handling = UnitHandling(
             energy_system_folder_path, self.config.solver.rounding_decimal_points_units
         )
+        # Register service: unit_handling; instance: the dataset-specific unit handler.
         self.service_container.register("unit_handling", unit_handling)
 
+        # Injected services: none; explicit argument: folder_path.
+        # Register the resulting InputRepository as input_repository.
         self.service_container.build_and_register(
             "input_repository", InputRepository, folder_path=energy_system_folder_path
         )
+        # Injected services: model_schema, input_repository, input_data_checks,
+        # unit_handling; explicit arguments: none. Register as network_topology.
         self.service_container.build_and_register("network_topology", NetworkTopology)
+        # Injected services: model_schema, unit_handling; explicit arguments: none.
+        # Register the resulting ElementRegistry as element_registry.
         element_registry = self.service_container.build_and_register(
             "element_registry", ElementRegistry
         )
         # instantiate every configured element and register it in the schema
+        # Injected services: service_container, model_schema, input_data_checks;
+        # explicit arguments: none.
         self.service_container.build(ElementFactory).register_elements()
 
         # check if all elements from the scenario_dict are in the model
         scenario_dict.check_if_all_elements_in_model(element_registry)
 
         # Store all input parameters using one schema-wide dependency graph.
+        # Injected service: model_schema; explicit arguments: none.
+        # Register the resulting service as parameter_loading_service.
         parameter_loading_service = self.service_container.build_and_register(
             "parameter_loading_service", ParameterLoadingService
         )
@@ -152,6 +171,9 @@ class OptimizationWorkflow:
 
         Requires :meth:`load_data` to have been called first.
         """
+        # Injected services: model_schema, element_registry, time_steps,
+        # year_specific_ts, input_repository; explicit arguments: none.
+        # Register the resulting service as time_series_aggregation.
         self.service_container.build_and_register(
             "time_series_aggregation", TimeSeriesAggregation
         )
@@ -186,6 +208,9 @@ class OptimizationWorkflow:
 
         # iterate through horizon steps
         for step in steps_horizon_keys:
+            # Injected services: service_container, model_schema, element_registry,
+            # unit_handling, scenario_dict, time_steps; explicit arguments:
+            # optimized_time_steps and steps_horizon.
             optimization_step = self.service_container.build(
                 OptimizationStep,
                 optimized_time_steps=optimized_time_steps,

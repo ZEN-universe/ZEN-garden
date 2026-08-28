@@ -80,6 +80,8 @@ class OptimizationStep:
         self.optimized_time_steps = optimized_time_steps
         self.steps_horizon = steps_horizon
 
+        # Injected services: service_container, model_schema; explicit arguments: none.
+        # Register the resulting ZenModel as zen_model.
         self.zen_model = self.service_container.build_and_register(
             "zen_model", ZenModel
         )
@@ -169,8 +171,11 @@ class OptimizationStep:
         ):
             os.makedirs(self.config.solver.solver_dir)
 
+        # Injected services: service_container, model_schema; explicit arguments: none.
         self.service_container.build(ModelConstructionService).construct_model()
 
+        # Injected services: none; explicit arguments: lp_model, algorithm,
+        # include_rhs. Register the resulting Scaling instance as scaling.
         self.scaling = self.service_container.build_and_register(
             "scaling",
             Scaling,

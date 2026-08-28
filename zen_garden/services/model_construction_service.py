@@ -52,6 +52,9 @@ class ModelConstructionService:
     def construct_model(self):
         """Logic to construct a model based on the provided name and parameters."""
         self._model_constructors = [
+            # Injected services: service_container, element_registry, zen_model,
+            # model_schema, network_topology, time_steps; explicit argument:
+            # element_class.
             self.service_container.build(constructor_cls, element_class=element_cls)
             for constructor_cls, element_cls in MODEL_CONSTRUCTORS
         ]
