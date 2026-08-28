@@ -10,7 +10,7 @@ import numpy as np
 import xarray as xr
 
 from zen_garden.model.registries.base import Registry
-from zen_garden.model.zen_set import BaseSet, IndexedSet, SimpleSet
+from zen_garden.model.registries.set import BaseSet, IndexedSet, SimpleSet
 
 if TYPE_CHECKING:
     from zen_garden.model.element_registry import ElementRegistry
