@@ -8,7 +8,7 @@ from typing import Sequence
 import pandas as pd
 import xarray as xr
 
-from zen_garden.model.zen_set import BaseSet
+from zen_garden.model.registries.set import BaseSet
 
 logger = logging.getLogger(__name__)
 

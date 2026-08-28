@@ -1,6 +1,6 @@
 """Tests for simple and indexed ZEN set representations."""
 
-from zen_garden.model.zen_set import IndexedSet, SimpleSet
+from zen_garden.model.registries.set import IndexedSet, SimpleSet
 
 
 def test_simple_zen_set_exposes_ordered_members_as_coordinate_values():

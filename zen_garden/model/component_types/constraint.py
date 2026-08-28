@@ -8,7 +8,7 @@ import xarray as xr
 from linopy import Variable, merge
 from linopy.expressions import LinearExpression
 
-from zen_garden.model.zen_set import IndexedSet
+from zen_garden.model.registries.set import IndexedSet
 
 if TYPE_CHECKING:
     from zen_garden.model.constructor import ModelConstructor

@@ -1,4 +1,4 @@
-"""Set representations used by ZEN-garden model components."""
+"""Built representations of a model set, as stored by the SetRegistry."""
 
 from abc import ABC, abstractmethod
 from collections.abc import Iterable, Iterator, Mapping
