@@ -1,14 +1,13 @@
 {
     "set_conversion_technologies": [
-        "natural_gas_boiler"
+        "natural_gas_boiler",
+        "carbon_storage"
     ],
-    "set_transport_technologies": [
-        "heat_pipeline"
-    ],
+    "set_storage_technologies": [],
+    "set_transport_technologies": [],
     "set_nodes": [
         "DE",
-        "CH",
-        "FR"
+        "CH"
     ],
     "reference_year": 2022,
     "unaggregated_time_steps_per_year": 1,

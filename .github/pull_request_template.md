@@ -35,14 +35,15 @@ Please check all items that apply. If an item is not applicable, please remove i
 - [ ] Code changes have been tested locally and all tests pass.
 - [ ] Code has been formatted via ``black .`` in a terminal window.
 - [ ] Linter ``ruff check .`` passes all checks.
+- [ ] Code is typed and ``mypy .`` passes all tests.
 - [ ] Tests for new features were added:
   - [ ] The test is added to `run_tests.py` and `docu_test_cases.md`.
-  - [ ] The tested variables are added to `test_variables.json`.
+  - [ ] The tested variables are added to `test_variables.yaml`.
 
 
 ### Code changes
-- [ ] If the name of an existing parameter is changed, both the new and old names are added to `zen_garden/preprocess/parameter_change_log.py`.
-- [ ] If a new parameter is added, the default value (0, 1, or `np.inf` allowed) and a parameter with the same unit are added to `zen_garden/preprocess/parameter_change_log.py`.
+- [ ] If the name of an existing parameter is changed, both the new and old names are added to `PARAMETER_CHANGE_LOG` in `zen_garden/preprocess/data_input.py`.
+- [ ] If a new parameter is added, the default value (0, 1, or `np.inf` allowed) and a parameter with the same unit are added to `PARAMETER_CHANGE_LOG` in `zen_garden/preprocess/data_input.py`.
 - [ ] If the name of an existing variable is changed and the variable is used in the visualization platform, the name change is added to `variable_versions` in the [ZEN-temple code](https://github.com/ZEN-universe/ZEN-temple/blob/main/src/zen_temple/utils.py).
 
 

@@ -5,5 +5,5 @@ Key;Type;Default Value;Description
 ``hoursPerPeriod``;``int``;``1``;specify the length of a period in hours. ZEN-garden clusters representative time steps, so do not change the value unless you know what you are doing
 ``extremePeriodMethod``;``Optional[str]``;``None``;select the extreme period method
 ``rescaleClusterPeriods``;``bool``;``False``;rescale cluster periods
-``representationMethod``;``str``;``meanRepresentation``;select the representation method
+``representationMethod``;``str``;``mean``;select the representation method
 ``resolution``;``int``;``1``;select the resolution. Do not change this value unless you know what you are doing

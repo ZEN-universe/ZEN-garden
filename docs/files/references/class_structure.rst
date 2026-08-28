@@ -47,23 +47,24 @@ Class Structure
    :zoom:
 
    ---
-   title: Rules
+   title: Model Constructors
    ---
    classDiagram
-       class GenericRule
-       class CarrierRules
-       class TechnologyRules
-       class ConversionTechnologyRules
-       class StorageTechnologyRules
-       class RetrofittingTechnologyRules
-       class TransportTechnologyRules
+       class ModelConstructor
+       class CarrierConstructor
+       class TechnologyConstructor
+       class ConversionTechnologyConstructor
+       class StorageTechnologyConstructor
+       class RetrofittingTechnologyConstructor
+       class TransportTechnologyConstructor
 
-       GenericRule <|-- CarrierRules
-       GenericRule <|-- TechnologyRules
-       GenericRule <|-- ConversionTechnologyRules
-       GenericRule <|-- StorageTechnologyRules
-       GenericRule <|-- TransportTechnologyRules
-       GenericRule <|-- RetrofittingTechnologyRules
+       ModelConstructor <|-- CarrierConstructor
+       ModelConstructor <|-- TechnologyConstructor
+       ModelConstructor <|-- ConversionTechnologyConstructor
+       ModelConstructor <|-- StorageTechnologyConstructor
+       ModelConstructor <|-- TransportTechnologyConstructor
+       ModelConstructor <|-- RetrofittingTechnologyConstructor
+
 
 .. mermaid::
    :zoom:
@@ -72,10 +73,10 @@ Class Structure
    title: Default Config
    ---
    classDiagram
-   
+
        class Subscriptable
        class Config
-       class System 
+       class System
        class Solver
        class Analysis
        class Subsets
@@ -84,8 +85,8 @@ Class Structure
 
        Subscriptable <|-- Config
        Config *-- Analysis
-       Config *-- Solver 
-       Config *-- System 
+       Config *-- Solver
+       Config *-- System
        Subscriptable <|-- Analysis
        Subscriptable <|-- TimeSeriesAggregation
        Subscriptable <|-- Solver
@@ -102,21 +103,21 @@ Class Structure
    ---
    classDiagram
        class Component
-       class ZenIndex
+       class MultiIndexHelper
        class ZenSet
-       class IndexSet
+       class SetRegistry
        class DictParameter
-       class Parameter 
-       class Variable 
+       class Parameter
+       class Variable
        class Constraint
 
-       Component <|-- IndexSet
+       Component <|-- SetRegistry
        Component <|-- Parameter
        Component <|-- Variable
        Component <|-- Constraint
 
 
-.. 
+..
    :zoom:
 
 
@@ -130,9 +131,15 @@ Class Structure
        class StringUtils
        class ScenarioUtils
        class OptimizationError
-       class DataInput
+       class ElementDataLoader
        class TimeSeriesAggregation
        class TimeSteps
        class EnergySystem
-       class UnitHandling 
+       class UnitConverter
        class Scaling
+       class OptimizationModel
+       class DatasetPathResolver
+       class ModelConstructionService
+       class ElementFactory
+       class ElementRegistry
+       class YearSpecificTs

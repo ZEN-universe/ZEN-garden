@@ -5,6 +5,8 @@ import logging
 import numpy as np
 import pandas as pd
 
+logger = logging.getLogger(__name__)
+
 
 class TimeStepsDicts(object):
     """Helper class to deal with time steps of the optimization setup.
@@ -13,6 +15,20 @@ class TimeStepsDicts(object):
     steps of the optimization setup. It is very similar to EnergySystem functions and
     is meant to avoid the import of packages that can cause conflicts.
     """
+
+    time_steps_operation: list | None
+    time_steps_storage: list | None
+    sequence_time_steps_operation: np.ndarray | None
+    sequence_time_steps_storage: np.ndarray | None
+    sequence_time_steps_yearly: np.ndarray | None
+    time_steps_operation_duration: dict | None
+    time_steps_storage_duration: dict | None
+    time_steps_operation2year: dict | None
+    time_steps_year2operation: dict | None
+    time_steps_storage2year: dict | None
+    time_steps_year2storage: dict | None
+    time_steps_energy2power: dict | None
+    time_steps_storage_level_startend_year: dict | None
 
     def __init__(self, dict_all_sequence_time_steps=None):
         """Sets all dicts of sequences of time steps.
@@ -70,7 +86,7 @@ class TimeStepsDicts(object):
         self.time_steps_operation_duration = tsa.time_steps_duration
         self.sequence_time_steps_operation = tsa.sequence_time_steps
 
-    def get_sequence_time_steps(self, time_step_type="operation"):
+    def get_sequence_time_steps(self, time_step_type: str = "operation"):
         """Get sequence ot time steps of element.
 
         :param time_step_type: type of time step (operation, storage or yearly)
@@ -97,7 +113,9 @@ class TimeStepsDicts(object):
         }
         return dict_all_sequence_time_steps
 
-    def encode_time_step(self, base_time_steps: int, time_step_type: str = None):
+    def encode_time_step(
+        self, base_time_steps: int | np.ndarray, time_step_type: str = "operation"
+    ):
         """Encodes baseTimeStep to timeStep of element.
 
         Encodes baseTimeStep, i.e., retrieves the time step of an element corresponding
@@ -111,12 +129,15 @@ class TimeStepsDicts(object):
         sequence_time_steps = self.get_sequence_time_steps(time_step_type)
         # get time step duration
         if np.all(base_time_steps >= 0):
+            assert sequence_time_steps is not None
             element_time_step = np.unique(sequence_time_steps[base_time_steps])
         else:
-            element_time_step = [-1]
+            element_time_step = np.array([-1])
         return element_time_step
 
-    def decode_time_step(self, element_time_step: int, time_step_type: str = None):
+    def decode_time_step(
+        self, element_time_step: int, time_step_type: str = "operation"
+    ):
         """Decodes timeStep to baseTimeStep of model.
 
         Decodes timeStep, i.e., retrieves the baseTimeStep corresponding to the
@@ -144,7 +165,7 @@ class TimeStepsDicts(object):
             time_step: int(duration_input_time_steps) for time_step in input_time_steps
         }
         if not duration_input_time_steps.is_integer():
-            logging.warning(
+            logger.warning(
                 f"The duration of each time step {duration_input_time_steps} of input "
                 f"time steps {input_time_steps} does not evaluate to an integer. \n"
                 f"The duration of the last time step is set to compensate for "
@@ -217,6 +238,7 @@ class TimeStepsDicts(object):
 
         :param system: dictionary defining the system
         """
+        assert self.sequence_time_steps_storage is not None
         unaggregated_time_steps = system.unaggregated_time_steps_per_year
         sequence_time_steps = self.sequence_time_steps_storage
         counter = 0
@@ -247,6 +269,9 @@ class TimeStepsDicts(object):
         :param year: year of interest
         :return: time_steps_year2operation of the specified element (at specified year)
         """
+        assert (
+            self.time_steps_year2operation is not None
+        ), "The time_steps_year2operation dict is not set."
         if year is None:
             return self.time_steps_year2operation
         else:
@@ -265,6 +290,9 @@ class TimeStepsDicts(object):
         :param year: year of interest
         :return: time_steps_year2storage of the specified element (at specified year)
         """
+        assert (
+            self.time_steps_year2storage is not None
+        ), "The time_steps_year2storage dict is not set."
         if year is None:
             return self.time_steps_year2storage
         else:
@@ -276,6 +304,7 @@ class TimeStepsDicts(object):
         :param time_step: #TODO describe parameter/return
         :return: #TODO describe parameter/return
         """
+        assert self.time_steps_storage_level_startend_year is not None
         if time_step in self.time_steps_storage_level_startend_year.keys():
             return self.time_steps_storage_level_startend_year[time_step]
         else:
@@ -287,6 +316,7 @@ class TimeStepsDicts(object):
         :param time_step: current time step
         :return: previous_time_step: previous time step
         """
+        assert self.sequence_time_steps_storage is not None
         sequence = self.sequence_time_steps_storage
         previous_time_step = sequence[np.where(sequence == time_step)[0] - 1][0]
         return previous_time_step
@@ -312,6 +342,7 @@ class TimeStepsDicts(object):
         :param time_step_energy: time step of energy quantities
         :return: time step of power quantities
         """
+        assert self.time_steps_energy2power is not None
         time_steps_energy2power = self.time_steps_energy2power
         return time_steps_energy2power[time_step_energy]
 
@@ -321,5 +352,6 @@ class TimeStepsDicts(object):
         :param time_step_operation: time step of operational time steps
         :return: time step of invest time steps
         """
+        assert self.time_steps_operation2year is not None
         time_steps_operation2year = self.time_steps_operation2year
         return time_steps_operation2year[time_step_operation]

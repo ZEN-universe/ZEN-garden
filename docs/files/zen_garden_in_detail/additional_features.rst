@@ -21,8 +21,9 @@ can be used to enhance the user experience:
 Additional mixed-integer constraints
 ------------------------------------
 
-Besides, PWA representation of the CAPEX (see :ref:`input_structure.pwa`), ZEN-garden allows the 
-use of three additional mixed-integer linear constraints:
+ZEN-garden includes optional mixed-integer constraints, which are described below.
+They cover minimum technology loads, minimum capacity additions, and transport
+investments with separate capacity- and distance-dependent cost terms.
 
 
 .. _additional_features.min_load:
@@ -32,7 +33,8 @@ use of three additional mixed-integer linear constraints:
 If the user sets the parameter ``min_load`` to anything other than zero, 
 ZEN-garden will add a mixed-integer linear constraint that ensures that the 
 output of a technology is above minimum load when turned on, otherwise it is 
-zero. The constraints are described in :ref:`math_formulation.min_load_constraints`.
+zero. The constraints are described in
+:ref:`mathematical_formulation.technology_on_off`.
 
 
 .. _additional_features.min_capacity_addition:
@@ -44,7 +46,7 @@ zero, ZEN-garden will add a mixed-integer linear constraint that ensures that
 the capacity addition of a technology is above the minimum capacity addition, 
 otherwise it is zero. The associated binary variable ``technology_installation`` 
 is 1 if the technology is installed and 0 otherwise. The constraints are 
-described in :ref:`math_formulation.min_capacity_installation`.
+described in :ref:`mathematical_formulation.minimum_capacity_addition`.
 
 ``technology_installation`` is also used in determining the CAPEX of transport 
 technologies, which depend both on the distance between nodes and the quantity 
@@ -60,17 +62,6 @@ length of an edge. In particular, if the user only specifies
 per unit of transported good. This is the most commonly used case, but it does 
 not account for the fact that there might be an initial investment purely from 
 the installation before adding the cost for the size of the capacity.
-
-
-.. _additional_features.pwa_conversion_technologies:
-
-**Piecewise affine linearization of the CAPEX of conversion technologies**
-
-The user can specify a ``nonlinear_capex.csv`` file to approximate the CAPEX 
-values of a conversion technology by a set of linear functions. :ref:`input_structure.pwa` 
-provides detailed description on how to use the piecewise affine representation.
-Moreover, :ref:`math_formulation.pwa_constraints` outlines the mathematical constraints that 
-are added.
 
 
 .. _additional_features.year_specific_input_data:
@@ -108,12 +99,12 @@ modeling inter-annual variability. For instance, years with high natural gas
 supply can be followed by years with low availability, where a storage can be 
 filled in the high supply years and used in the low supply years.
 To use this feature, the user has to set ``multiyear_periodicity`` to ``TRUE`` 
-in the ``system.json`` file (see :ref:`configuration.system`). The multiyear periodicity 
+in the ``system.yaml`` file (see :ref:`configuration.system`). The multiyear periodicity 
 enforces the storage level at the beginning of the planning horizon to be equal 
 to the storage level at the end of the planning horizon. Note that as of now the 
 multi-year periodicity is only usable if the interval between years of the 
 planning horizon is one year, i.e. the parameter ``interval_between_years`` in 
-``system.json`` is set to 1.
+``system.yaml`` is set to 1.
 
 
 .. _additional_features.distance_dependent_transport_capex:
@@ -143,7 +134,7 @@ Construction times
 ---------------------------------
 
 The user can specify construction times for technologies in ZEN-garden
-(:math:`dy^\mathrm{construction}` :eq:`construction_time`). The construction time is the time between the investment
+(:math:`dy^\mathrm{construction}`, :ref:`mathematical_formulation.construction_time`). The construction time is the time between the investment
 decision and the availability of the new capacity.
 
 Note that as of now, no costs are incurred during the construction time.
@@ -157,13 +148,13 @@ ZEN-garden allows for endogenously constraining the annual capacity as a functio
 The capacity additions are depreciated over time to reflect knowledge depreciation.
 An example for knowledge depreciation is the loss of skilled personnel and engineering firms
 over time if a technology is not continuously deployed.
-The equations are detailed in :eq:`constrained_technology_deployment_i`, :eq:`constrained_technology_deployment_k`,
-and :eq:`constrained_technology_deployment_j`.
+The equations are detailed in
+:ref:`mathematical_formulation.technology_diffusion`.
 
 The user can set five parameters:
 
-1. The ``max_diffusion_rate`` (:math:`\vartheta_i`, indexed by each technology):
-The ``max_diffusion_rate`` limits the maximum annual capacity addition as a fraction of the existing knowledge.
+1. The ``max_diffusion_rate`` (:math:`r^{\mathrm{diff}}_{h,y}`, indexed by technology and year):
+The ``max_diffusion_rate`` limits the capacity addition rate as a fraction of the existing knowledge.
 Since the maximum capacity addition is proportional to the existing capacity, this constraint is linear
 in the capacity but results in an exponential capacity growth. Therefore, it describes the exponential growth phase
 of the logistic S-curve of technology diffusion.
@@ -173,17 +164,16 @@ The knowledge spillover rate allows for learning effects from other nodes. A val
 5% of the knowledge from other nodes is added to the local knowledge stock. If setting the spillover rate to ``inf``,
 perfect spillover is assumed and only the global capacity additions are constrained by the global knowledge stock.
 
-3. The ``market_share_unbounded`` (:math:`\xi`):
-The unbounded market share allows for a small (we have found values of 1%-2% to be realistic)
-contribution of the existing capacity of all technologies in the same sector (i.e., technologies
-with the same reference carrier) to the capacity addition limit of a technology.
-For example, a value of 0.01 means that every year, 1% of the existing capacity of all technologies in the same sector
-can be added, even if no capacity of the considered technology exists.
-(If no capacity of the considered technology exists, the knowledge stock is zero,
-and thus no capacity addition would be possible otherwise.)
+3. The ``market_share_unbounded`` (:math:`\chi`):
+The unbounded market share provides an additional capacity-addition allowance
+based on the capacity available before the current addition for technologies in
+the same technology class (excluding the considered technology) with the same
+reference carrier. For example, a value of 0.01 allows an addition equal to 1%
+of that capacity, even if the considered technology has no previous capacity
+of its own.
 
-4. The ``capacity_addition_unbounded`` (:math:`\zeta_i`, indexed by each technology):
-The unbounded capacity addition allows for a fixed amount of capacity addition each year,
+4. The ``capacity_addition_unbounded`` (:math:`k^{\mathrm{add,free}}_h`, indexed by each technology):
+The unbounded capacity addition allows for a fixed amount of capacity addition each investment step,
 regardless of the existing knowledge stock of the considered technology and all other technologies in the same sector.
 This should only be used when there is no existing capacity of any technology in the same sector,
 An example would be an emerging sector like carbon capture and storage.
@@ -218,7 +208,8 @@ the reference flow of another conversion technology. Specifically, the reference
 must be lower or equal to the reference flow of the converted technology times the ``retrofit_flow_coupling_factor``.
 The lower-or-equal sign allows for partial retrofitting of the converted technology.
 
-Check out the dataset example :ref:`dataset_examples.14_retrofitting_and_fuel_substitution`.
+Check out the dataset example
+:ref:`dataset_examples.13_retrofitting_and_fuel_substitution`.
 
 Retrofitting technologies are useful for two main applications:
 
@@ -276,23 +267,23 @@ The three options can be used individually or in combination.
 **Annual carbon emission limits**
 
 The user can also set annual carbon emission limits by specifying the parameter
-``carbon_emissions_annual_limit`` (:ref:`notation.energy_system`). The parameter is indexed by year, so a separate limit can be set for each year in
+``carbon_emissions_annual_limit`` (:ref:`notation.notation`). The parameter is indexed by year, so a separate limit can be set for each year in
 ``carbon_emissions_annual_limit.csv``. The annual limits can be overshot, if
-``price_carbon_emissions_annual_overshoot != inf`` (:ref:`notation.energy_system`).
+``price_carbon_emissions_annual_overshoot != inf`` (:ref:`notation.notation`).
 
 **Cumulative carbon budget**
 
-A cumulative carbon budget can be set by specifying the parameter ``carbon_emissions_budget`` (:ref:`notation.energy_system`). Note that the budget
+A cumulative carbon budget can be set by specifying the parameter ``carbon_emissions_budget`` (:ref:`notation.notation`). Note that the budget
 is for the entire planning horizon, not per year, so it is sufficient to specify a single value in the
-``attributes.json`` file of the energy system.
-The budget can be overshot, if ``price_carbon_emissions_budget_overshoot != inf`` (:ref:`notation.energy_system`).
+``attributes.yaml`` file of the energy system.
+The budget can be overshot, if ``price_carbon_emissions_budget_overshoot != inf`` (:ref:`notation.notation`).
 Using a carbon budget instead of annual limits allows the optimizer to allocate the optimal annual emission
 levels over the planning horizon.
 
 **Carbon price**
 
 Instead of setting hard limits on carbon emissions, the user can also set a carbon price by specifying the parameter
-``price_carbon_emissions`` (:ref:`notation.energy_system`). The carbon price is indexed by year, so a separate price can be set for each year in
+``price_carbon_emissions`` (:ref:`notation.notation`). The carbon price is indexed by year, so a separate price can be set for each year in
 ``price_carbon_emissions.csv``. The carbon price penalizes all carbon emissions in the objective function.
 
 .. _additional_features.demand_shedding:
@@ -300,8 +291,9 @@ Instead of setting hard limits on carbon emissions, the user can also set a carb
 Demand shedding
 ---------------------------------
 
-ZEN-garden allows for demand shedding by specifying the parameter ``price_shed_demand`` (:ref:`notation.carrier`).
-The shed demand acts as an additional source in the energy balance (:eq:`energy_balance`); hence, demand can be
+ZEN-garden allows for demand shedding by specifying the parameter ``price_shed_demand`` (:ref:`notation.notation`).
+The shed demand acts as an additional source in the energy balance
+(:ref:`mathematical_formulation.nodal_carrier_balance`); hence, demand can be
 supplied either by actual supply or by shedding demand. Shedding demand incurs a cost in the objective function
 based on the ``price_shed_demand``. If ``price_shed_demand=inf``, demand shedding is disabled.
 

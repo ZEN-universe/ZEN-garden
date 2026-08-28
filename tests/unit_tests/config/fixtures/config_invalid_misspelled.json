@@ -1,0 +1,27 @@
+{
+  "analysis": {
+    "dataset": "Test",
+    "time_series_aggregation": {
+      "solver": "gurobi"
+    }
+  },
+  "solver": {
+    "name": "gurobi",
+    "solver_options": {
+      "Method": 2,
+      "NodeMethod": 2,
+      "BarHomogeneous": 1,
+      "DualReductions": 0,
+      "Threads": 128,
+      "Crossover": 0,
+      "ScaleFlag": 2,
+      "BarOrder": 0,
+      "BarConvTol": 1e-6
+    },
+    "save_dualz": true,
+    "use_scaling": true,
+    "run_diagnostics": true,
+    "scaling_include_rhs": true,
+    "selected_saved_duals": []
+  }
+}

@@ -32,7 +32,7 @@ command-line interface.
     zen-garden --dataset="1_base_case"
     zen-visualization
 
-The first line downloads the example dataset `1_base_cae` to the current 
+The first line downloads the example dataset ``1_base_case`` to the current 
 working directory. The second line then runs ZEN-garden on this dataset.
 Finally, the third line opens the visualization platform, which allows users
 to explore the results of the model. If the visualization platform does not 

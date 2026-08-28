@@ -4,7 +4,7 @@
     "unit": "gigatons"
   },
   "carbon_emissions_budget": {
-    "default_value": "inf",
+    "default_value": 4.2749370139006455,
     "unit": "gigatons"
   },
   "carbon_emissions_cumulative_existing": {

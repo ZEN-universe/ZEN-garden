@@ -1,14 +1,14 @@
-import json
+import yaml
 import os
 import warnings
 from collections import defaultdict
+from typing import Any
 
 import numpy as np
+import pandas as pd
 import pytest
 
-from zen_garden import Results, run, compare_configs, compare_model_values
-from zen_garden.wrapper.operation_scenarios import operation_scenarios
-
+from zen_garden import Results, compare_configs, compare_model_values, run
 # fixtures
 ##########
 
@@ -38,21 +38,22 @@ def compare_variables_results(test_model: str, results: Results, folder_path: st
     """
     # import json file containing selected variable values of test model
     # collection
-    with open(os.path.join(folder_path, "test_variables.json")) as f:
-        test_variables = json.load(f)
+    with open(os.path.join(folder_path, "test_variables.yaml")) as f:
+        test_variables = yaml.safe_load(f)
     # dictionary to store variable names, indices, values and test values of
     # variables which don't match the test values
-    failed_variables = defaultdict(dict)
+    failed_variables: defaultdict[str, dict[Any, Any]] = defaultdict(dict)
     compare_counter = 0
     # iterate through dataframe rows
     if test_model in test_variables:
         for s in test_variables[test_model]:
-            if s in results.solution_loader.scenarios:
-                scenario = results.solution_loader.scenarios[s]
+            if s in results.scenarios:
+                scenario = results.scenarios[s]
                 test_values = test_variables[test_model][s]
                 for c in test_values:
                     if c in scenario.components:
-                        values = results.get_df(c, scenario_name=s)
+                        values = results.get_unprocessed_result(c, scenario_name=s)
+                        assert isinstance(values, pd.Series)
                         for test_value in test_values[c]:
                             if isinstance(test_value["index"], list):
                                 if len(test_value["index"]) == 1:
@@ -91,11 +92,10 @@ def compare_variables_results(test_model: str, results: Results, folder_path: st
         warnings.warn(
             UserWarning(
                 f"No variables have been compared in {test_model}. If not "
-                f"intended, check the test_variables.json file."
+                f"intended, check the test_variables.yaml file."
             ),
             stacklevel=2,
         )
-
 
 def check_get_total_get_full_ts(
     results: Results,
@@ -118,7 +118,7 @@ def check_get_total_get_full_ts(
     test_variables = ["demand", "capacity", "storage_level", "capacity_limit"]
     scenario = None
     if specific_scenario:
-        scenario = next(iter(results.solution_loader.scenarios.keys()))
+        scenario = next(iter(results.scenarios.keys()))
     for test_variable in test_variables:
         results.get_total(test_variable, scenario_name=scenario, year=year)
         if test_variable != "capacity_limit":
@@ -131,6 +131,7 @@ def check_get_total_get_full_ts(
     if get_doc:
         results.get_doc(test_variables[0])
 
+
 def check_comparison_functions(results: list[Results], scenarios: list[str]):
     """
     Tests the functionality of the Results comparison functions.
@@ -139,9 +140,48 @@ def check_comparison_functions(results: list[Results], scenarios: list[str]):
         results: List of Results instances
         scenarios: List of scenario names
     """
-    cc = compare_configs(results, scenarios)
-    cp = compare_model_values(results, component_type="parameter", scenarios=scenarios)
-    cv = compare_model_values(results, component_type="variable", scenarios=scenarios,compare_total=False)
+    _cc = compare_configs(results, scenarios)
+    _cp = compare_model_values(results, component_type="parameter", scenarios=scenarios)
+    _cv = compare_model_values(
+        results, component_type="variable", scenarios=scenarios, compare_total=False
+    )
+
+def check_sectoral_costs_emissions(
+        results: Results,
+        scenario_name: str | None = None,
+        spatially_resolved: bool = False,
+        ):
+    """
+    Tests the functionality of the Results methods get_sectoral_costs() and
+    get_sectoral_emissions().
+
+    Args:
+        results: Results instance of testcase function has been called from
+        scenario_name: Name of the scenario to test
+        spatially_resolved: Whether to return spatially resolved data
+    """
+    costs, direct_costs = results.get_sectoral_costs(
+        scenario_name=scenario_name,
+        spatially_resolved=spatially_resolved,
+        overwrite=True
+    )
+    emissions, direct_emissions = results.get_sectoral_emissions(
+        scenario_name=scenario_name,
+        spatially_resolved=spatially_resolved,
+        overwrite=True
+    )
+    if "cost_total" in results.get_component_names("variable"):
+        total_costs = results.get_total("cost_total", scenario_name=scenario_name)
+        assert np.isclose(
+            total_costs, costs.sum(), rtol=1e-3
+        ).all(), "Total costs do not match the sum of sectoral costs"
+    if "carbon_emissions_annual" in results.get_component_names("variable"):
+        total_emissions = results.get_total(
+            "carbon_emissions_annual", scenario_name=scenario_name
+        )
+        assert np.isclose(
+            total_emissions, emissions.sum(), rtol=1e-3
+        ).all(), "Total emissions do not match the sum of sectoral emissions"
 
 # All the tests
 ###############
@@ -155,7 +195,7 @@ def test_1a(folder_path):
     # run the test
     data_set_name = "test_1a"
     run(
-        config=os.path.join("config_duals.json"),
+        config=os.path.join("config_duals.yaml"),
         dataset=os.path.join(data_set_name),
     )
 
@@ -164,6 +204,8 @@ def test_1a(folder_path):
     compare_variables_results(data_set_name, res, folder_path)
     # test functions get_total() and get_full_ts()
     check_get_total_get_full_ts(res)
+    # test sectoral costs and emissions
+    check_sectoral_costs_emissions(res, spatially_resolved=True)
     os.chdir(cwd)
 
 
@@ -171,7 +213,7 @@ def test_1b(folder_path):
     # run the test
     data_set_name = "test_1b"
     run(
-        config=os.path.join(folder_path, "config.json"),
+        config=os.path.join(folder_path, "config.yaml"),
         dataset=os.path.join(folder_path, data_set_name),
         folder_output=os.path.join(folder_path, "outputs"),
     )
@@ -185,7 +227,7 @@ def test_1c(folder_path):
     # run the test
     data_set_name = "test_1c"
     run(
-        config=os.path.join(folder_path, "config.json"),
+        config=os.path.join(folder_path, "config.yaml"),
         dataset=os.path.join(folder_path, data_set_name),
         folder_output=os.path.join(folder_path, "outputs"),
     )
@@ -199,7 +241,7 @@ def test_1d(folder_path):
     # run the test
     data_set_name = "test_1d"
     run(
-        config=os.path.join(folder_path, "config.json"),
+        config=os.path.join(folder_path, "config.yaml"),
         dataset=os.path.join(folder_path, data_set_name),
         folder_output=os.path.join(folder_path, "outputs"),
     )
@@ -213,7 +255,7 @@ def test_1e(folder_path):
     # run the test
     data_set_name = "test_1e"
     run(
-        config=os.path.join(folder_path, "config.json"),
+        config=os.path.join(folder_path, "config.yaml"),
         dataset=os.path.join(folder_path, data_set_name),
         folder_output=os.path.join(folder_path, "outputs"),
     )
@@ -230,7 +272,7 @@ def test_1f(folder_path):
     # run the test
     data_set_name = "test_1f"
     run(
-        config=os.path.join(folder_path, "config.json"),
+        config=os.path.join(folder_path, "config.yaml"),
         dataset=os.path.join(folder_path, data_set_name),
         folder_output=os.path.join(folder_path, "outputs"),
     )
@@ -247,7 +289,7 @@ def test_1g(folder_path):
     # run the test
     data_set_name = "test_1g"
     run(
-        config=os.path.join(folder_path, "config.json"),
+        config=os.path.join(folder_path, "config.yaml"),
         dataset=os.path.join(folder_path, data_set_name),
         folder_output=os.path.join(folder_path, "outputs"),
     )
@@ -261,7 +303,7 @@ def test_1h(folder_path):
     # run the test
     data_set_name = "test_1h"
     run(
-        config=os.path.join(folder_path, "config.json"),
+        config=os.path.join(folder_path, "config.yaml"),
         dataset=os.path.join(folder_path, data_set_name),
         folder_output=os.path.join(folder_path, "outputs"),
     )
@@ -275,7 +317,7 @@ def test_1i(folder_path):
     # run the test
     data_set_name = "test_1i"
     run(
-        config=os.path.join(folder_path, "config.json"),
+        config=os.path.join(folder_path, "config.yaml"),
         dataset=os.path.join(folder_path, data_set_name),
         folder_output=os.path.join(folder_path, "outputs"),
     )
@@ -284,35 +326,26 @@ def test_1i(folder_path):
     res = Results(os.path.join(folder_path, "outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
 
-
 def test_1j(folder_path):
     # run the test
     data_set_name = "test_1j"
-    data_set_name_op = data_set_name + "_none__operation"
     run(
-        config=os.path.join(folder_path, "config_duals.json"),
+        config=os.path.join(folder_path, "config.yaml"),
         dataset=os.path.join(folder_path, data_set_name),
         folder_output=os.path.join(folder_path, "outputs"),
-    )
-    operation_scenarios(
-        config=os.path.join(folder_path, "config_duals.json"),
-        dataset=os.path.join(folder_path, data_set_name),
-        folder_output=os.path.join(folder_path, "outputs"),
-        delete_data="True",
     )
 
     # read the results and check again
-    res_cap = Results(os.path.join(folder_path, "outputs", data_set_name))
-    res_op = Results(os.path.join(folder_path, "outputs", data_set_name_op))
-    compare_variables_results(data_set_name + "_capacity", res_cap, folder_path)
-    compare_variables_results(data_set_name + "_operation", res_op, folder_path)
-
+    res = Results(os.path.join(folder_path, "outputs", data_set_name))
+    compare_variables_results(data_set_name, res, folder_path)
+    # test sectoral costs and emissions
+    check_sectoral_costs_emissions(res, spatially_resolved=True)
 
 def test_2a(folder_path):
     # run the test
     data_set_name = "test_2a"
     run(
-        config=os.path.join(folder_path, "config.json"),
+        config=os.path.join(folder_path, "config.yaml"),
         dataset=os.path.join(folder_path, data_set_name),
         folder_output=os.path.join(folder_path, "outputs"),
     )
@@ -326,21 +359,7 @@ def test_2b(folder_path):
     # run the test
     data_set_name = "test_2b"
     run(
-        config=os.path.join(folder_path, "config.json"),
-        dataset=os.path.join(folder_path, data_set_name),
-        folder_output=os.path.join(folder_path, "outputs"),
-    )
-
-    # read the results and check again
-    res = Results(os.path.join(folder_path, "outputs", data_set_name))
-    compare_variables_results(data_set_name, res, folder_path)
-
-
-def test_2c(folder_path):
-    # run the test
-    data_set_name = "test_2c"
-    run(
-        config=os.path.join(folder_path, "config.json"),
+        config=os.path.join(folder_path, "config.yaml"),
         dataset=os.path.join(folder_path, data_set_name),
         folder_output=os.path.join(folder_path, "outputs"),
     )
@@ -354,7 +373,7 @@ def test_3a(folder_path):
     # run the test
     data_set_name = "test_3a"
     run(
-        config=os.path.join(folder_path, "config.json"),
+        config=os.path.join(folder_path, "config.yaml"),
         dataset=os.path.join(folder_path, data_set_name),
         folder_output=os.path.join(folder_path, "outputs"),
     )
@@ -368,7 +387,7 @@ def test_3b(folder_path):
     # run the test
     data_set_name = "test_3b"
     run(
-        config=os.path.join(folder_path, "config.json"),
+        config=os.path.join(folder_path, "config.yaml"),
         dataset=os.path.join(folder_path, data_set_name),
         folder_output=os.path.join(folder_path, "outputs"),
     )
@@ -384,7 +403,7 @@ def test_3c(folder_path):
     # run the test
     data_set_name = "test_3c"
     run(
-        config=os.path.join(folder_path, "config.json"),
+        config=os.path.join(folder_path, "config.yaml"),
         dataset=os.path.join(folder_path, data_set_name),
         folder_output=os.path.join(folder_path, "outputs"),
     )
@@ -400,7 +419,7 @@ def test_3d(folder_path):
     # run the test
     data_set_name = "test_3d"
     run(
-        config=os.path.join(folder_path, "config.json"),
+        config=os.path.join(folder_path, "config.yaml"),
         dataset=os.path.join(folder_path, data_set_name),
         folder_output=os.path.join(folder_path, "outputs"),
     )
@@ -419,7 +438,7 @@ def test_3e(folder_path):
     # run the test
     data_set_name = "test_3e"
     run(
-        config=os.path.join(folder_path, "config.json"),
+        config=os.path.join(folder_path, "config.yaml"),
         dataset=os.path.join(folder_path, data_set_name),
         folder_output=os.path.join(folder_path, "outputs"),
     )
@@ -436,7 +455,7 @@ def test_3f(folder_path):
     # run the test
     data_set_name = "test_3f"
     run(
-        config=os.path.join(folder_path, "config.json"),
+        config=os.path.join(folder_path, "config.yaml"),
         dataset=os.path.join(folder_path, data_set_name),
         folder_output=os.path.join(folder_path, "outputs"),
     )
@@ -453,7 +472,7 @@ def test_3g(folder_path):
     # run the test
     data_set_name = "test_3g"
     run(
-        config=os.path.join(folder_path, "config.json"),
+        config=os.path.join(folder_path, "config.yaml"),
         dataset=os.path.join(folder_path, data_set_name),
         folder_output=os.path.join(folder_path, "outputs"),
     )
@@ -469,7 +488,7 @@ def test_3h(folder_path):
     # run the test
     data_set_name = "test_3h"
     run(
-        config=os.path.join(folder_path, "config.json"),
+        config=os.path.join(folder_path, "config.yaml"),
         dataset=os.path.join(folder_path, data_set_name),
         folder_output=os.path.join(folder_path, "outputs"),
     )
@@ -485,7 +504,7 @@ def test_3i(folder_path):
     # run the test
     data_set_name = "test_3i"
     run(
-        config=os.path.join(folder_path, "config.json"),
+        config=os.path.join(folder_path, "config.yaml"),
         dataset=os.path.join(folder_path, data_set_name),
         folder_output=os.path.join(folder_path, "outputs"),
     )
@@ -501,7 +520,7 @@ def test_4a(folder_path):
     # run the test
     data_set_name = "test_4a"
     run(
-        config=os.path.join(folder_path, "config.json"),
+        config=os.path.join(folder_path, "config.yaml"),
         dataset=os.path.join(folder_path, data_set_name),
         folder_output=os.path.join(folder_path, "outputs"),
     )
@@ -514,8 +533,8 @@ def test_4a(folder_path):
     # test comparison functions
     res_0 = res
     res_1 = res
-    scen_0 = list(res_0.solution_loader.scenarios.keys())[0]
-    scen_1 = list(res_0.solution_loader.scenarios.keys())[1]
+    scen_0 = list(res_0.scenarios.keys())[0]
+    scen_1 = list(res_0.scenarios.keys())[1]
     check_comparison_functions([res_0, res_1], [scen_0, scen_1])
 
 
@@ -523,7 +542,7 @@ def test_4b(folder_path):
     # run the test
     data_set_name = "test_4b"
     run(
-        config=os.path.join(folder_path, "config.json"),
+        config=os.path.join(folder_path, "config.yaml"),
         dataset=os.path.join(folder_path, data_set_name),
         folder_output=os.path.join(folder_path, "outputs"),
     )
@@ -539,7 +558,7 @@ def test_4c(folder_path):
     # run the test
     data_set_name = "test_4c"
     run(
-        config=os.path.join(folder_path, "config.json"),
+        config=os.path.join(folder_path, "config.yaml"),
         dataset=os.path.join(folder_path, data_set_name),
         folder_output=os.path.join(folder_path, "outputs"),
     )
@@ -553,7 +572,7 @@ def test_4d(folder_path):
     # run the test
     data_set_name = "test_4d"
     run(
-        config=os.path.join(folder_path, "config.json"),
+        config=os.path.join(folder_path, "config.yaml"),
         dataset=os.path.join(folder_path, data_set_name),
         folder_output=os.path.join(folder_path, "outputs"),
     )
@@ -569,7 +588,7 @@ def test_5a(folder_path):
     # run the test
     data_set_name = "test_5a"
     run(
-        config=os.path.join(folder_path, "config.json"),
+        config=os.path.join(folder_path, "config.yaml"),
         dataset=os.path.join(folder_path, data_set_name),
         folder_output=os.path.join(folder_path, "outputs"),
     )
@@ -585,7 +604,7 @@ def test_5b(folder_path):
     # run the test
     data_set_name = "test_5b"
     run(
-        config=os.path.join(folder_path, "config.json"),
+        config=os.path.join(folder_path, "config.yaml"),
         dataset=os.path.join(folder_path, data_set_name),
         folder_output=os.path.join(folder_path, "outputs"),
     )
@@ -599,7 +618,7 @@ def test_5c(folder_path):
     # run the test
     data_set_name = "test_5c"
     run(
-        config=os.path.join(folder_path, "config.json"),
+        config=os.path.join(folder_path, "config.yaml"),
         dataset=os.path.join(folder_path, data_set_name),
         folder_output=os.path.join(folder_path, "outputs"),
     )
@@ -613,7 +632,7 @@ def test_5d(folder_path):
     # run the test
     data_set_name = "test_5d"
     run(
-        config=os.path.join(folder_path, "config.json"),
+        config=os.path.join(folder_path, "config.yaml"),
         dataset=os.path.join(folder_path, data_set_name),
         folder_output=os.path.join(folder_path, "outputs"),
     )
@@ -627,7 +646,7 @@ def test_6a(folder_path):
     # run the test
     data_set_name = "test_6a"
     run(
-        config=os.path.join(folder_path, "config.json"),
+        config=os.path.join(folder_path, "config.yaml"),
         dataset=os.path.join(folder_path, data_set_name),
         folder_output=os.path.join(folder_path, "outputs"),
     )
@@ -643,7 +662,7 @@ def test_7a(folder_path):
     # run the test
     data_set_name = "test_7a"
     run(
-        config=os.path.join(folder_path, "config_objective.json"),
+        config=os.path.join(folder_path, "config_objective.yaml"),
         dataset=os.path.join(folder_path, data_set_name),
         folder_output=os.path.join(folder_path, "outputs"),
     )
@@ -653,33 +672,11 @@ def test_7a(folder_path):
     compare_variables_results(data_set_name, res, folder_path)
 
 
-def test_7b(folder_path):
-    # run the test
-    data_set_name = "test_7b"
-    data_set_name_op = data_set_name + "_none__operation"
-    run(
-        config=os.path.join(folder_path, "config_duals.json"),
-        dataset=os.path.join(folder_path, data_set_name),
-        folder_output=os.path.join(folder_path, "outputs"),
-    )
-    operation_scenarios(
-        config=os.path.join(folder_path, "config_duals.json"),
-        dataset=os.path.join(folder_path, data_set_name),
-        folder_output=os.path.join(folder_path, "outputs"),
-        delete_data=True,
-    )
-    # read the results and check again
-    res_cap = Results(os.path.join(folder_path, "outputs", data_set_name))
-    res_op = Results(os.path.join(folder_path, "outputs", data_set_name_op))
-    compare_variables_results(data_set_name + "_capacity", res_cap, folder_path)
-    compare_variables_results(data_set_name + "_operation", res_op, folder_path)
-
-
 def test_8a(folder_path):
     # run the test
     data_set_name = "test_8a"
     run(
-        config=os.path.join(folder_path, "config.json"),
+        config=os.path.join(folder_path, "config.yaml"),
         dataset=os.path.join(folder_path, data_set_name),
         folder_output=os.path.join(folder_path, "outputs"),
     )
@@ -697,7 +694,7 @@ def test_9a(folder_path):
         match="The attribute units defined in the energy_system are not consistent!",
     ):
         run(
-            config=os.path.join(folder_path, "config.json"),
+            config=os.path.join(folder_path, "config.yaml"),
             dataset=os.path.join(folder_path, data_set_name),
             folder_output=os.path.join(folder_path, "outputs"),
         )
@@ -707,7 +704,7 @@ def test_10a(folder_path):
     # run the test
     data_set_name = "test_10a"
     run(
-        config=os.path.join(folder_path, "config.json"),
+        config=os.path.join(folder_path, "config.yaml"),
         dataset=os.path.join(folder_path, data_set_name),
         folder_output=os.path.join(folder_path, "outputs"),
     )
@@ -720,7 +717,7 @@ def test_11a(folder_path):
     # run the test
     data_set_name = "test_11a"
     run(
-        config=os.path.join(folder_path, "config.json"),
+        config=os.path.join(folder_path, "config.yaml"),
         dataset=os.path.join(folder_path, data_set_name),
         folder_output=os.path.join(folder_path, "outputs"),
     )
@@ -730,6 +727,5 @@ def test_11a(folder_path):
 
 
 if __name__ == "__main__":
-    folder_path = os.path.dirname(__file__)
-    test_7b(folder_path)
-
+    testcase_folder = os.path.dirname(__file__)
+    test_1a(testcase_folder)

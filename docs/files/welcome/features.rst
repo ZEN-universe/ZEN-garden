@@ -20,7 +20,7 @@ The core features are:
 8. :ref:`Scenario creation tool <features.scenario>`
 9. :ref:`Unit transformations and consistency checks <features.units>`
 10. :ref:`Multiple supported solvers <features.solvers>` 
-11. :ref:`input_handling.scaling algorithms for enhanced numerical stability <features.scaling>`
+11. :ref:`Scaling algorithms for enhanced numerical stability <features.scaling>`
 12. :ref:`Analysis and visualization tools <features.analysis>`
 
 
@@ -30,7 +30,7 @@ Multiple pre-defined objective functions
 ----------------------------------------
 
 The user can flexibly choose between the available objective functions 
-(:ref:`math_forumlation.objective`).
+(:ref:`mathematical_formulation.objectives`).
 
 The available objective functions are:
 
@@ -51,7 +51,7 @@ Flexible spatial resolution
 
 The user can flexible define the spatial resolution of their model,
 where each geographical regions is represented by a single node. The set of 
-nodes is defined in the input data. The :ref:`system settings <configuration.system>` (``system.json``) allows 
+nodes is defined in the input data. The :ref:`system settings <configuration.system>` (``system.yaml``) allows 
 users to flexibly select subsets of the set of nodes included in the input data.
 
 **Network:**
@@ -71,7 +71,7 @@ Flexible temporal resolution
 ZEN-garden optimizes the design and operation of energy systems over 
 multi-year time horizons. The reference year, the number of years, and the 
 interyearly resolution of the model can be flexibly modified in the system 
-configuration (``system.json``). 
+configuration (``system.yaml``). 
 
 **Intrayearly resolution:**
 
@@ -93,7 +93,7 @@ Variable foresight horizon
 The transition pathway can be optimized with perfect foresight, i.e., all years 
 optimized together, or myopic foresight, i.e., the optimization horizon is 
 reduced. The foresight and decision horizon lengths can be flexibly defined in 
-the system configuration (``system.json``).
+the system configuration (``system.yaml``).
 
 
 .. _features.emissions:
@@ -102,7 +102,8 @@ Emission limits and budgets
 ----------------------------
 
 Emissions are determined based on the carrier- and technology-specific carbon 
-intensities defined in the input data (:ref:`math_formulation.emissions_objective`).
+intensities defined in the input data
+(:ref:`mathematical_formulation.emissions_objective`).
 
 **Decarbonization pathway:**
 
@@ -117,7 +118,7 @@ a carbon emission overshoot price for the annual carbon emissions targets, or
 the carbon emission budget, respectively. The overshoot price determines the 
 penalty term that is added to the objective function.
 
-For more information see :ref:`math_formulation.emissions_constraints`.
+For more information see :ref:`mathematical_formulation.emissions_constraints`.
 
 
 .. _features.technology:
@@ -157,8 +158,6 @@ information on the available technology types see :ref:`input_structure.technolo
 
 * flexible definition of multiple in- and output carriers
 * minimum ("binary") and maximum load behavior
-* option to model the capital expenditures via a piecewise-affine approximation 
-  of non-linear cost-curves ("binary")
 * retrofitting, e.g., with carbon capture units (:ref:`input_structure.conversion_technologies`)
 * fuel substitution or fuel replacement (:ref:`input_structure.conversion_technologies`)
 
@@ -183,10 +182,10 @@ Clean input formats
 
 ZEN-garden completely separates the model code and the input data. No input data 
 is **ever** hard-coded into the model code. Instead, all inputs are structured 
-in the form of human-readable csv/json files (:ref:`input_structure.input_structure`).
+in human-readable CSV and YAML files (:ref:`input_structure.input_structure`).
 Inputs are designed to be minimalistic, with no redundant values. At minimum, 
 each parameter of every element must have a user-specified default value 
-(:ref:`input_structure.attribute_files`). Default values are always set in the ``.json`` 
+(:ref:`input_structure.attribute_files`). Default values are always set in the ``.yaml`` 
 files and apply uniformly to all dimensions of the parameter (i.e. nodes, time 
 steps, years, etc.). Default values can be overwritten to account variation of 
 the parameter across dimensions using the  ``.csv`` files 
@@ -200,7 +199,7 @@ Scenario creation tool
 
 The scenario tool allows users to repeatedly run ZEN-garden using variations
 of some base dataset. The desired variations for each scenario are specified in 
-a ``.json`` scenario file (:ref:`t_scenario.t_scenario`). Scenarios created using
+a ``.yaml`` scenario file (:ref:`t_scenario.t_scenario`). Scenarios created using
 the scenario tool are fully parallelizable on high-performance computing 
 clusters.
 
@@ -259,6 +258,5 @@ following functionalities:
 2. Visualization of the results with the ZEN-explorer visualization platform 
    (:ref:`t_analyze.visualization`), both offline and online `<https://zen-garden.ethz.ch/>`_.
 3. Comparison of two different results objects (:ref:`t_analyze.compare`)
-
 
 
