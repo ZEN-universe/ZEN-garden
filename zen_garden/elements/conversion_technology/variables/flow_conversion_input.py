@@ -19,8 +19,9 @@ class FlowConversionInput(GenericVariable):
 
     @classmethod
     def get_bounds(cls, model_constructor, index_sets):
+        optimization_model = model_constructor.optimization_model
         index_values, index_names = index_sets
-        sets = model_constructor.zen_model.sets
+        sets = optimization_model.sets
         index_arrs = sets.tuple_to_arr(index_values, index_names)
         coords = [
             sets.get_coord(data, name)
@@ -42,7 +43,7 @@ class FlowConversionInput(GenericVariable):
                     conversion_factor_lower = conversion_factor_upper = 1
                 else:
                     conversion_factor = (
-                        model_constructor.zen_model.parameters.conversion_factor.loc[
+                        optimization_model.parameters.conversion_factor.loc[
                             tech, carrier, node_set
                         ]
                     )
@@ -59,7 +60,7 @@ class FlowConversionInput(GenericVariable):
                             "to 0 after the time series aggregation."
                         )
 
-                capacity = model_constructor.zen_model.variables["capacity"]
+                capacity = optimization_model.variables["capacity"]
                 lower.loc[tech, carrier, ...] = (
                     capacity.lower.loc[tech, "power", node_set, time_step_year].data
                     * conversion_factor_lower

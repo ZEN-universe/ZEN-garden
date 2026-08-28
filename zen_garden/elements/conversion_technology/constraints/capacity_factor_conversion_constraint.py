@@ -26,11 +26,11 @@ class CapacityFactorConversionConstraint(GenericConstraint):
         technology :math:`h` at node :math:`n` in time step :math:`t` of year
         :math:`y`
         """
-        techs = model_constructor.zen_model.sets["set_conversion_technologies"]
+        techs = model_constructor.optimization_model.sets["set_conversion_technologies"]
         if len(techs) == 0:
             return
-        nodes = model_constructor.zen_model.sets["set_nodes"]
-        times = model_constructor.zen_model.parameters.max_load.coords[
+        nodes = model_constructor.optimization_model.sets["set_nodes"]
+        times = model_constructor.optimization_model.parameters.max_load.coords[
             "set_time_steps_operation"
         ]
         time_step_year = xr.DataArray(
@@ -41,8 +41,10 @@ class CapacityFactorConversionConstraint(GenericConstraint):
             coords=[times],
         )
         term_capacity = (
-            model_constructor.zen_model.parameters.max_load.loc[techs, nodes, :]
-            * model_constructor.zen_model.variables["capacity"].loc[
+            model_constructor.optimization_model.parameters.max_load.loc[
+                techs, nodes, :
+            ]
+            * model_constructor.optimization_model.variables["capacity"].loc[
                 techs, "power", nodes, time_step_year
             ]
         ).rename(
@@ -58,6 +60,6 @@ class CapacityFactorConversionConstraint(GenericConstraint):
         rhs = 0
         constraints = lhs >= rhs
 
-        model_constructor.zen_model.add_constraint(
+        model_constructor.optimization_model.add_constraint(
             "constraint_capacity_factor_conversion", constraints
         )

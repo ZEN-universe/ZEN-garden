@@ -16,9 +16,9 @@ class TotalCarbonEmissions(GenericExpression):
 
     @classmethod
     def get_expression(cls, model_constructor):
-        zen_model = model_constructor.zen_model
+        optimization_model = model_constructor.optimization_model
         return (
-            zen_model.variables["carbon_emissions_cumulative"]
-            .at[zen_model.sets["set_years"][-1]]
+            optimization_model.variables["carbon_emissions_cumulative"]
+            .at[optimization_model.sets["set_years"][-1]]
             .to_linexpr()
         )

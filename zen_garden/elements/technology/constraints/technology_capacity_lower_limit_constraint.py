@@ -24,9 +24,9 @@ class TechnologyCapacityLowerLimitConstraint(GenericConstraint):
         """
 
         # In TechnologyRules, we access variables and parameters directly via self
-        capacity = model_constructor.zen_model.variables["capacity"]
+        capacity = model_constructor.optimization_model.variables["capacity"]
         capacity_lower_limit = (
-            model_constructor.zen_model.parameters.capacity_lower_limit
+            model_constructor.optimization_model.parameters.capacity_lower_limit
         )
 
         # Create a mask so we only build constraints
@@ -41,6 +41,6 @@ class TechnologyCapacityLowerLimitConstraint(GenericConstraint):
         constraint = lhs >= rhs
 
         # Add the constraint to the model
-        model_constructor.zen_model.add_constraint(
+        model_constructor.optimization_model.add_constraint(
             "constraint_technology_capacity_lower_limit", constraint
         )

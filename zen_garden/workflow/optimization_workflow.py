@@ -22,9 +22,9 @@ from zen_garden.input.time_series_aggregation import TimeSeriesAggregation
 from zen_garden.input.unit_converter import UnitConverter
 from zen_garden.model.element_factory import ElementFactory
 from zen_garden.model.element_registry import ElementRegistry
+from zen_garden.model.optimization_model import OptimizationModel
 from zen_garden.model.schema import ModelSchema
 from zen_garden.model.time_steps import TimeStepsDicts
-from zen_garden.model.zen_model import ZenModel
 from zen_garden.types import YearSpecificTs
 from zen_garden.workflow.optimization_step import OptimizationStep
 
@@ -41,7 +41,7 @@ class OptimizationWorkflow:
     optimization problem.
     """
 
-    zen_model: ZenModel
+    optimization_model: OptimizationModel
     service_container: ServiceContainer
     dataset_path_resolver: DatasetPathResolver
     scenario_dict: ScenarioDict

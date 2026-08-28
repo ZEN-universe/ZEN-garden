@@ -25,9 +25,9 @@ if TYPE_CHECKING:
     from zen_garden.elements.energy_system import EnergySystem
     from zen_garden.input.network_topology import NetworkTopology
     from zen_garden.model.element_registry import ElementRegistry
+    from zen_garden.model.optimization_model import OptimizationModel
     from zen_garden.model.schema import ModelSchema
     from zen_garden.model.time_steps import TimeStepsDicts
-    from zen_garden.model.zen_model import ZenModel
 
 logger = logging.getLogger(__name__)
 
@@ -56,7 +56,7 @@ class ModelConstructor:
         self,
         service_container: "ServiceContainer",
         element_registry: "ElementRegistry",
-        zen_model: "ZenModel",
+        optimization_model: "OptimizationModel",
         model_schema: "ModelSchema",
         network_topology: "NetworkTopology",
         time_steps: "TimeStepsDicts",
@@ -64,7 +64,7 @@ class ModelConstructor:
     ):
         self.service_container = service_container
         self.element_registry = element_registry
-        self.zen_model = zen_model
+        self.optimization_model = optimization_model
         self.model_schema = model_schema
         self.network_topology = network_topology
         self.time_steps = time_steps
@@ -146,4 +146,4 @@ class ModelConstructor:
         :param list_index: list of names of indices
         :return: list_index: list of names of indices
         """
-        return self.zen_model.create_custom_set(list_index)
+        return self.optimization_model.create_custom_set(list_index)

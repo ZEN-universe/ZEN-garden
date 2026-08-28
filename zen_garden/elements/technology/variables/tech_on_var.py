@@ -30,10 +30,10 @@ class TechOnVar(GenericVariable):
             ]
         )
         index_names.pop(1)
-        mask = model_constructor.zen_model.sets.indices_to_mask(
+        mask = model_constructor.optimization_model.sets.indices_to_mask(
             techs_on_off, index_names, (0, 0)
         )[0]
-        times = model_constructor.zen_model.sets["set_time_steps_operation"]
+        times = model_constructor.optimization_model.sets["set_time_steps_operation"]
         time_step_year = xr.DataArray(
             [
                 model_constructor.time_steps.convert_time_step_operation2year(time)
@@ -43,7 +43,7 @@ class TechOnVar(GenericVariable):
             dims=["set_time_steps_operation"],
         )
         nonzero_capacity = (
-            model_constructor.zen_model.parameters.capacity_limit.sel(
+            model_constructor.optimization_model.parameters.capacity_limit.sel(
                 {"set_capacity_types": "power", "set_years": time_step_year}
             )
             != 0

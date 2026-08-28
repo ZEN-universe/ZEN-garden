@@ -36,26 +36,30 @@ class CostLimitShedDemandConstraint(GenericConstraint):
         time step :math:`t` of year :math:`y`
         """
         ### mask for finite price, otherwise the shed demand is zero
-        mask = model_constructor.zen_model.parameters.price_shed_demand != np.inf
+        mask = (
+            model_constructor.optimization_model.parameters.price_shed_demand != np.inf
+        )
 
         # cost of shedding demand
         lhs_cost = (
-            model_constructor.zen_model.variables["cost_shed_demand"]
-            - model_constructor.zen_model.parameters.price_shed_demand
-            * model_constructor.zen_model.variables["shed_demand"]
+            model_constructor.optimization_model.variables["cost_shed_demand"]
+            - model_constructor.optimization_model.parameters.price_shed_demand
+            * model_constructor.optimization_model.variables["shed_demand"]
         ).where(mask)
         rhs_cost = 0
         constraints_cost = lhs_cost == rhs_cost
 
         # limit of shedding demand:
         #   either the demand (price != inf) or zero (price == inf)
-        lhs_shed_demand = model_constructor.zen_model.variables["shed_demand"]
-        rhs_shed_demand = model_constructor.zen_model.parameters.demand.where(mask, 0.0)
+        lhs_shed_demand = model_constructor.optimization_model.variables["shed_demand"]
+        rhs_shed_demand = model_constructor.optimization_model.parameters.demand.where(
+            mask, 0.0
+        )
         constraints_shed_demand = lhs_shed_demand <= rhs_shed_demand
 
-        model_constructor.zen_model.add_constraint(
+        model_constructor.optimization_model.add_constraint(
             "constraint_cost_shed_demand", constraints_cost
         )
-        model_constructor.zen_model.add_constraint(
+        model_constructor.optimization_model.add_constraint(
             "constraint_limit_shed_demand", constraints_shed_demand
         )

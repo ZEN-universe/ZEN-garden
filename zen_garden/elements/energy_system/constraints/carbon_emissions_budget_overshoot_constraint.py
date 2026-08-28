@@ -25,10 +25,10 @@ class CarbonEmissionsBudgetOvershootConstraint(GenericConstraint):
         :math:`\\pi^{\\mathrm{CO_2,bud}}`: carbon price for budget overshoot
         """
         if (
-            model_constructor.zen_model.parameters.price_carbon_emissions_budget_overshoot
+            model_constructor.optimization_model.parameters.price_carbon_emissions_budget_overshoot
             == np.inf
         ):
-            lhs = model_constructor.zen_model.variables[
+            lhs = model_constructor.optimization_model.variables[
                 "carbon_emissions_budget_overshoot"
             ]
             rhs = 0
@@ -36,6 +36,6 @@ class CarbonEmissionsBudgetOvershootConstraint(GenericConstraint):
         else:
             constraints = None
 
-        model_constructor.zen_model.add_constraint(
+        model_constructor.optimization_model.add_constraint(
             "constraint_carbon_emissions_budget_overshoot", constraints
         )

@@ -47,8 +47,8 @@ class TechnologyLifetimeConstraint(TechnologyConstraint):
             [
                 (t, y, py)
                 for t, y in itertools.product(
-                    model_constructor.zen_model.sets["set_technologies"],
-                    model_constructor.zen_model.sets["set_years"],
+                    model_constructor.optimization_model.sets["set_technologies"],
+                    model_constructor.optimization_model.sets["set_years"],
                 )
                 for py in list(cls.get_lifetime_range(model_constructor, t, y))
             ],
@@ -61,25 +61,27 @@ class TechnologyLifetimeConstraint(TechnologyConstraint):
         lt_range = pd.Series(index=lt_range, data=-1)
         lt_range = (
             lt_range.to_xarray()
-            .broadcast_like(model_constructor.zen_model.variables["capacity"].lower)
+            .broadcast_like(
+                model_constructor.optimization_model.variables["capacity"].lower
+            )
             .fillna(0)
         )
-        capacity_addition = model_constructor.zen_model.variables[
+        capacity_addition = model_constructor.optimization_model.variables[
             "capacity_addition"
         ].rename({"set_years": "set_years_prev"})
         capacity_addition = capacity_addition.broadcast_like(lt_range)
         expr = (lt_range * capacity_addition).sum("set_years_prev")
         lhs = lp.merge(
-            [1 * model_constructor.zen_model.variables["capacity"], expr],
+            [1 * model_constructor.optimization_model.variables["capacity"], expr],
             compat="broadcast_equals",
             join="outer",
             cls=LinearExpression,
         )
         lhs_previous = lp.merge(
             [
-                1 * model_constructor.zen_model.variables["capacity_previous"],
+                1 * model_constructor.optimization_model.variables["capacity_previous"],
                 expr,
-                1 * model_constructor.zen_model.variables["capacity_addition"],
+                1 * model_constructor.optimization_model.variables["capacity_addition"],
             ],
             compat="broadcast_equals",
             join="outer",
@@ -87,16 +89,16 @@ class TechnologyLifetimeConstraint(TechnologyConstraint):
         )
         rhs = xr.align(
             lhs.const,
-            model_constructor.zen_model.parameters.existing_capacities,
+            model_constructor.optimization_model.parameters.existing_capacities,
             join="left",
         )[1]
         constraints = lhs == rhs
         constraints_previous = lhs_previous == rhs
 
         ### return
-        model_constructor.zen_model.add_constraint(
+        model_constructor.optimization_model.add_constraint(
             "constraint_technology_lifetime", constraints
         )
-        model_constructor.zen_model.add_constraint(
+        model_constructor.optimization_model.add_constraint(
             "constraint_technology_lifetime_previous", constraints_previous
         )

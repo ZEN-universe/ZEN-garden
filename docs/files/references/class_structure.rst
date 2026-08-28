@@ -137,7 +137,7 @@ Class Structure
        class EnergySystem
        class UnitConverter
        class Scaling
-       class ZenModel
+       class OptimizationModel
        class DatasetPathResolver
        class ModelConstructionService
        class ElementFactory

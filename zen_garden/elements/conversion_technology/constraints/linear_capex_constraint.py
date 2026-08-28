@@ -24,10 +24,10 @@ class LinearCapexConstraint(GenericConstraint):
         :math:`\\kappa^{\\mathrm{cap}}_{h,n,y}`: specific CAPEX
         :math:`\\Delta K_{h,n,y}`: power-capacity addition
         """
-        techs = model_constructor.zen_model.sets["set_conversion_technologies"]
-        nodes = model_constructor.zen_model.sets["set_nodes"]
+        techs = model_constructor.optimization_model.sets["set_conversion_technologies"]
+        nodes = model_constructor.optimization_model.sets["set_nodes"]
         capex_specific_conversion = (
-            model_constructor.zen_model.parameters.capex_specific_conversion
+            model_constructor.optimization_model.parameters.capex_specific_conversion
         )
         capex_specific_conversion = capex_specific_conversion.rename(
             {
@@ -44,10 +44,10 @@ class LinearCapexConstraint(GenericConstraint):
             }
         )
 
-        capacity_addition = model_constructor.zen_model.variables[
+        capacity_addition = model_constructor.optimization_model.variables[
             "capacity_addition"
         ].loc[techs, "power", nodes]
-        cost_capex_overnight = model_constructor.zen_model.variables[
+        cost_capex_overnight = model_constructor.optimization_model.variables[
             "cost_capex_overnight"
         ].loc[techs, "power", nodes]
 
@@ -68,6 +68,6 @@ class LinearCapexConstraint(GenericConstraint):
         rhs = 0
         constraints = lhs == rhs
 
-        model_constructor.zen_model.add_constraint(
+        model_constructor.optimization_model.add_constraint(
             "constraint_linear_capex", constraints
         )

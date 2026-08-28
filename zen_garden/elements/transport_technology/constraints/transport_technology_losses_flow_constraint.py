@@ -42,19 +42,19 @@ class TransportTechnologyLossesFlowConstraint(GenericConstraint):
         :math:`F^{\\mathrm{trans}}_{h,e,t}`: carrier flow through transport
         technology :math:`h` on edge :math:`e` in time step :math:`t` of year :math:`y`
         """
-        if len(model_constructor.zen_model.sets["set_transport_technologies"]) == 0:
+        optimization_model = model_constructor.optimization_model
+        if len(optimization_model.sets["set_transport_technologies"]) == 0:
             return
-        flow_transport = model_constructor.zen_model.variables["flow_transport"]
-        flow_transport_loss = model_constructor.zen_model.variables[
-            "flow_transport_loss"
-        ]
+        flow_transport = optimization_model.variables["flow_transport"]
+        flow_transport_loss = optimization_model.variables["flow_transport_loss"]
         # This mask checks the distance between nodes
         distance_isfinite = cast(
-            xr.DataArray, ~np.isinf(model_constructor.zen_model.parameters.distance)
+            xr.DataArray,
+            ~np.isinf(optimization_model.parameters.distance),
         )
         mask = distance_isfinite.broadcast_like(flow_transport.lower)
         loss_factor = (
-            model_constructor.zen_model.parameters.transport_loss_factor.broadcast_like(
+            optimization_model.parameters.transport_loss_factor.broadcast_like(
                 flow_transport.lower
             )
         )
@@ -62,6 +62,6 @@ class TransportTechnologyLossesFlowConstraint(GenericConstraint):
         rhs = 0
         constraints = lhs == rhs
 
-        model_constructor.zen_model.add_constraint(
+        optimization_model.add_constraint(
             "constraint_transport_technology_losses_flow", constraints
         )

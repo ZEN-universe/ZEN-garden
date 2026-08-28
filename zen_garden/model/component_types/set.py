@@ -29,11 +29,11 @@ class GenericSet(ABC):
     @classmethod
     def build(cls, model_constructor: "ModelConstructor") -> None:
         """Extract and register this set on the optimization model."""
-        model_constructor.zen_model.add_set(
+        model_constructor.optimization_model.add_set(
             name=cls.name,
             data=cls.get_data(model_constructor),
             doc=cls.doc,
             index_set=cls.index_set,
         )
         if cls.indexing_set:
-            model_constructor.zen_model.indexing_sets.append(cls.name)
+            model_constructor.optimization_model.indexing_sets.append(cls.name)

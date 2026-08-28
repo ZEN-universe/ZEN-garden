@@ -45,13 +45,13 @@ class MinimumFullLoadHoursConstraint(GenericConstraint):
           period :math:`y`
         """
         # get dimensions
-        techs = model_constructor.zen_model.sets["set_conversion_technologies"]
+        techs = model_constructor.optimization_model.sets["set_conversion_technologies"]
         if len(techs) == 0:
             return
-        nodes = model_constructor.zen_model.sets["set_nodes"]
+        nodes = model_constructor.optimization_model.sets["set_nodes"]
         # define mask
         min_full_load_hours_fraction = (
-            model_constructor.zen_model.parameters.min_full_load_hours_fraction
+            model_constructor.optimization_model.parameters.min_full_load_hours_fraction
         )
         mask = xr.DataArray(
             ~np.isclose(min_full_load_hours_fraction, 0),
@@ -62,7 +62,7 @@ class MinimumFullLoadHoursConstraint(GenericConstraint):
         term_capacity = (
             min_full_load_hours_fraction
             * model_constructor.config.system.unaggregated_time_steps_per_year
-            * model_constructor.zen_model.variables["capacity"]
+            * model_constructor.optimization_model.variables["capacity"]
             .sel(
                 {
                     "set_technologies": techs,
@@ -86,6 +86,6 @@ class MinimumFullLoadHoursConstraint(GenericConstraint):
         rhs = 0
         constraints = lhs >= rhs
 
-        model_constructor.zen_model.add_constraint(
+        model_constructor.optimization_model.add_constraint(
             "constraint_minimum_full_load_hours", constraints
         )

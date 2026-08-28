@@ -18,12 +18,16 @@ class CarbonEmissionsAnnualLimitConstraint(GenericConstraint):
         limit
         """
         lhs = (
-            model_constructor.zen_model.variables["carbon_emissions_annual"]
-            - model_constructor.zen_model.variables["carbon_emissions_annual_overshoot"]
+            model_constructor.optimization_model.variables["carbon_emissions_annual"]
+            - model_constructor.optimization_model.variables[
+                "carbon_emissions_annual_overshoot"
+            ]
         )
-        rhs = model_constructor.zen_model.parameters.carbon_emissions_annual_limit
+        rhs = (
+            model_constructor.optimization_model.parameters.carbon_emissions_annual_limit
+        )
         constraints = lhs <= rhs
 
-        model_constructor.zen_model.add_constraint(
+        model_constructor.optimization_model.add_constraint(
             "constraint_carbon_emissions_annual_limit", constraints
         )

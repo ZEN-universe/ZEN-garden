@@ -34,18 +34,22 @@ class CarbonEmissionsBudgetConstraint(GenericConstraint):
         ]
 
         lhs = (
-            model_constructor.zen_model.variables["carbon_emissions_cumulative"]
-            - model_constructor.zen_model.variables["carbon_emissions_budget_overshoot"]
+            model_constructor.optimization_model.variables[
+                "carbon_emissions_cumulative"
+            ]
+            - model_constructor.optimization_model.variables[
+                "carbon_emissions_budget_overshoot"
+            ]
             + (
-                model_constructor.zen_model.variables["carbon_emissions_annual"].where(
-                    m
-                )
+                model_constructor.optimization_model.variables[
+                    "carbon_emissions_annual"
+                ].where(m)
                 * (model_constructor.config.system.interval_between_years - 1)
             )
         )
-        rhs = model_constructor.zen_model.parameters.carbon_emissions_budget
+        rhs = model_constructor.optimization_model.parameters.carbon_emissions_budget
         constraints = lhs <= rhs
 
-        model_constructor.zen_model.add_constraint(
+        model_constructor.optimization_model.add_constraint(
             "constraint_carbon_emissions_budget", constraints
         )

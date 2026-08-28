@@ -26,22 +26,22 @@ class CostCarrierTotalConstraint(GenericConstraint):
         times = cls.get_year_time_step_duration_array(model_constructor)
         term_summed_cost_carrier = (
             (
-                model_constructor.zen_model.variables["cost_carrier"].broadcast_like(
-                    times
-                )
-                + model_constructor.zen_model.variables[
+                model_constructor.optimization_model.variables[
+                    "cost_carrier"
+                ].broadcast_like(times)
+                + model_constructor.optimization_model.variables[
                     "cost_shed_demand"
                 ].broadcast_like(times)
             )
             * times
         ).sum(["set_carriers", "set_nodes", "set_time_steps_operation"])
         lhs = (
-            model_constructor.zen_model.variables["cost_carrier_total"]
+            model_constructor.optimization_model.variables["cost_carrier_total"]
             - term_summed_cost_carrier
         )
         rhs = 0
         constraints = lhs == rhs
 
-        model_constructor.zen_model.add_constraint(
+        model_constructor.optimization_model.add_constraint(
             "constraint_cost_carrier_total", constraints
         )
