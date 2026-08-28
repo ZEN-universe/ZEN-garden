@@ -10,7 +10,6 @@ from zen_garden.services.attribute_data_loader import AttributeDataLoader
 from zen_garden.topology.generic_parameter import GenericParameter
 
 if TYPE_CHECKING:
-    from zen_garden.model.time_steps import TimeStepsDicts
     from zen_garden.preprocess.unit_converter import UnitConverter
     from zen_garden.services.dataset_path_resolver import DatasetPathResolver
     from zen_garden.services.element_registry import ElementRegistry
@@ -68,7 +67,6 @@ class Element:
         dataset_path_resolver: "DatasetPathResolver",
         scenario_dict: "ScenarioDict",
         input_data_checks: "InputDataChecks",
-        time_steps: "TimeStepsDicts",
         year_specific_ts: "YearSpecificTs",
     ):
         """Initialization of an element.
@@ -89,7 +87,6 @@ class Element:
         self.unit_converter = unit_converter
         self.dataset_path_resolver = dataset_path_resolver
         self.input_data_checks = input_data_checks
-        self.time_steps = time_steps
         # set if aggregated
         self.aggregated = False
         # create ElementDataLoader object

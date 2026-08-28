@@ -35,13 +35,18 @@ class OptimizationWorkflow:
     """Class defining the optimization model.
 
     The constructor only stores its inputs. The workflow then runs in explicit
-    stages: :meth:`load_data` builds the services and loads all input data,
-    :meth:`aggregate_time_series` conducts the time series aggregation, and
-    :meth:`run_steps` builds and solves the optimization problem.
+    stages: :meth:`load_data` wires the services and loads all input data,
+    :meth:`aggregate_time_series` builds the time-step registry and conducts the
+    time series aggregation, and :meth:`run_steps` builds and solves the
+    optimization problem.
     """
 
     zen_model: ZenModel
     service_container: ServiceContainer
+    dataset_path_resolver: DatasetPathResolver
+    scenario_dict: ScenarioDict
+    element_registry: ElementRegistry
+    unit_converter: UnitConverter
 
     def __init__(
         self,
@@ -61,20 +66,31 @@ class OptimizationWorkflow:
                 data such as resources, demand, etc.
 
         """
-        self.model_schema = model_schema
+        # work on a private copy so the shared input schema is left untouched
+        self.model_schema = copy.deepcopy(model_schema)
         self.init_scenario_dict = init_scenario_dict
         self.service_container = ServiceContainer("service_container")
 
     def load_data(self) -> None:
-        """Build the services and load all input data for the optimization.
+        """Load all input data for the optimization.
 
-        Sets up the service container, resolves dataset paths, applies the
-        scenario, validates the input data, registers all elements and loads
-        every input parameter. Must be called before
-        :meth:`aggregate_time_series` and :meth:`run_steps`.
+        Runs in three steps: :meth:`_build_services` wires the service graph,
+        :meth:`_register_elements` instantiates every configured element, and
+        :meth:`_load_parameters` loads every input parameter. Must be called
+        before :meth:`aggregate_time_series` and :meth:`run_steps`.
         """
-        # work on a private copy so the shared input schema is left untouched
-        self.model_schema = copy.deepcopy(self.model_schema)
+        self._build_services()
+        self._register_elements()
+        self._load_parameters()
+
+    def _build_services(self) -> None:
+        """Wire the service graph the rest of the workflow depends on.
+
+        This is the composition root: it only constructs and registers services
+        (path resolver, scenario mapping, data loaders, network topology, ...).
+        It does not read element data.
+        """
+
         # Register service: model_schema; instance: the workflow's private schema copy.
         self.service_container.register("model_schema", self.model_schema)
 
@@ -87,13 +103,13 @@ class OptimizationWorkflow:
         # dict to update elements according to scenario
         # WARNING: ScenarioDict::__init__ updates the config object!
         # Hence, input_data_checks must be initialized after ScenarioDict
-        scenario_dict = ScenarioDict(
+        self.scenario_dict = ScenarioDict(
             self.init_scenario_dict,
             self.dataset_path_resolver,
             self.model_schema,
         )
         # Register service: scenario_dict; instance: the initialized scenario mapping.
-        self.service_container.register("scenario_dict", scenario_dict)
+        self.service_container.register("scenario_dict", self.scenario_dict)
 
         # Input data checks validate the dataset's folder structure and technology
         # data, and are registered for later injection into elements.
@@ -114,25 +130,15 @@ class OptimizationWorkflow:
         # Register service: year_specific_ts; instance: a new empty YearSpecificTs.
         self.service_container.register("year_specific_ts", YearSpecificTs())
 
-        # initiate dictionary for storing time steps
-        # Injected services and explicit arguments: none.
-        # Register the resulting TimeStepsDicts as time_steps.
-        time_steps = self.service_container.build_and_register(
-            "time_steps", TimeStepsDicts
-        )
-        time_steps.sequence_time_steps_yearly = (
-            self.model_schema.sequence_time_steps_yearly
-        )
-
         # Initialize the global schema before creating any elements.
         energy_system_folder_path = Path(
             self.dataset_path_resolver.folder_of_set("energy_system")
         )
-        unit_converter = UnitConverter(
+        self.unit_converter = UnitConverter(
             energy_system_folder_path, self.config.solver.rounding_decimal_points_units
         )
         # Register service: unit_converter; instance: the dataset-specific unit handler.
-        self.service_container.register("unit_converter", unit_converter)
+        self.service_container.register("unit_converter", self.unit_converter)
 
         # Injected services: none; explicit argument: folder_path.
         # Register the resulting AttributeDataLoader as attribute_data_loader.
@@ -146,17 +152,21 @@ class OptimizationWorkflow:
         self.service_container.build_and_register("network_topology", NetworkTopology)
         # Injected services: model_schema, unit_converter; explicit arguments: none.
         # Register the resulting ElementRegistry as element_registry.
-        element_registry = self.service_container.build_and_register(
+        self.element_registry = self.service_container.build_and_register(
             "element_registry", ElementRegistry
         )
-        # instantiate every configured element and register it in the schema
+
+    def _register_elements(self) -> None:
+        """Instantiate every configured element and register it in the schema."""
         # Injected services: service_container, model_schema, input_data_checks;
         # explicit arguments: none.
         self.service_container.build(ElementFactory).register_elements()
 
         # check if all elements from the scenario_dict are in the model
-        scenario_dict.check_if_all_elements_in_model(element_registry)
+        self.scenario_dict.check_if_all_elements_in_model(self.element_registry)
 
+    def _load_parameters(self) -> None:
+        """Load every input parameter and validate the input units."""
         # Store all input parameters using one schema-wide dependency graph.
         # Injected service: model_schema; explicit arguments: none.
         # Register the resulting service as data_loading_service.
@@ -166,13 +176,25 @@ class OptimizationWorkflow:
         data_loading_service.load_parameters()
 
         # conduct consistency checks of input units
-        unit_converter.consistency_checks_input_units(self.config, element_registry)
+        self.unit_converter.consistency_checks_input_units(
+            self.config, self.element_registry
+        )
 
     def aggregate_time_series(self) -> None:
-        """Conduct the time series aggregation.
+        """Build the time-step registry and conduct the time series aggregation.
 
         Requires :meth:`load_data` to have been called first.
         """
+        # The time-step registry is owned by this phase: it is created here and
+        # then populated by TimeSeriesAggregation.
+        # Injected services and explicit arguments: none.
+        time_steps = self.service_container.build_and_register(
+            "time_steps", TimeStepsDicts
+        )
+        time_steps.sequence_time_steps_yearly = (
+            self.model_schema.sequence_time_steps_yearly
+        )
+
         # Injected services: model_schema, element_registry, time_steps,
         # year_specific_ts, attribute_data_loader; explicit arguments: none.
         # Register the resulting service as time_series_aggregation.
