@@ -19,6 +19,9 @@ flow_storage_inflow:
 capacity_limit:
   default_value: inf
   unit: GW
+capacity_lower_limit:
+  default_value: 0
+  unit: GW
 min_load:
   default_value: 0.0
   unit: '1'
@@ -72,6 +75,9 @@ capacity_existing_energy:
   unit: GWh
 capacity_limit_energy:
   default_value: inf
+  unit: GWh
+capacity_lower_limit_energy:
+  default_value: 0
   unit: GWh
 capacity_investment_existing_energy:
   default_value: 0.0

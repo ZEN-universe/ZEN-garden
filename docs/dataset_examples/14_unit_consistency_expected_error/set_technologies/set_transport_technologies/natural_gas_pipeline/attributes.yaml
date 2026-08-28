@@ -10,6 +10,9 @@ capacity_existing:
 capacity_limit:
   default_value: inf
   unit: kilotons/hour
+capacity_lower_limit:
+  default_value: 0
+  unit: kilotons/hour
 min_load:
   default_value: 0.0
   unit: '1'
