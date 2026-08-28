@@ -42,7 +42,8 @@ TECHNOLOGY_PARAMETERS: list[type[GenericParameter]] = [
     MinLoad,
     MaxLoad,
     CarbonIntensityTechnology,
-    # Computed from the parameters above; must stay last.
+    # Derived from the parameters above; the build pass is topologically sorted
+    # by ``GenericParameter.dependencies``, so list position is not load-bearing.
     ExistingCapacities,
     ExistingCapex,
 ]
