@@ -6,8 +6,8 @@ from typing import TYPE_CHECKING, Callable
 
 import psutil
 
-from zen_garden.di import ServiceContainer
 from zen_garden.model.constructor import ModelConstructor
+from zen_garden.service_container import ServiceContainer
 
 if TYPE_CHECKING:
     from zen_garden.model.optimization_model import OptimizationModel

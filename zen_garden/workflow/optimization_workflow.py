@@ -11,7 +11,6 @@ import copy
 import logging
 from pathlib import Path
 
-from zen_garden.di import ServiceContainer
 from zen_garden.input.attribute_data_loader import AttributeDataLoader
 from zen_garden.input.data_loading_service import DataLoadingService
 from zen_garden.input.dataset_path_resolver import DatasetPathResolver
@@ -25,6 +24,7 @@ from zen_garden.model.element_registry import ElementRegistry
 from zen_garden.model.optimization_model import OptimizationModel
 from zen_garden.model.schema import ModelSchema
 from zen_garden.model.time_steps import TimeStepsDicts
+from zen_garden.service_container import ServiceContainer
 from zen_garden.types import YearSpecificTs
 from zen_garden.workflow.optimization_step import OptimizationStep
 
