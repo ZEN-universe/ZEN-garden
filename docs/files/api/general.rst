@@ -19,7 +19,7 @@ General utilities
     zen_garden.utils.errors
     zen_garden.utils.iis_constraint_parser
     zen_garden.input.input_data_checks
-    zen_garden.input.scenario_expansion
+    zen_garden.input.scenario_utils
     zen_garden.utils.string_utils
     zen_garden.utils.utils
 
