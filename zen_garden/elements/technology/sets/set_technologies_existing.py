@@ -9,7 +9,7 @@ class SetTechnologiesExisting(GenericSet):
     )
 
     @classmethod
-    def get_data(cls, constructor):
-        return constructor.element_registry.get_attribute_of_all_elements(
-            constructor.element_class, cls.name
+    def get_data(cls, model_constructor):
+        return model_constructor.element_registry.get_attribute_of_all_elements(
+            model_constructor.element_class, cls.name
         )

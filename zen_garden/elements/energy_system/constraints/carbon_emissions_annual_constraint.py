@@ -2,7 +2,8 @@ from zen_garden.topology.generic_constraint import GenericConstraint
 
 
 class CarbonEmissionsAnnualConstraint(GenericConstraint):
-    def build(self):
+    @classmethod
+    def build(cls, model_constructor):
         """Summary:
         Add up all carbon emissions from technologies and carriers.
 
@@ -19,11 +20,13 @@ class CarbonEmissionsAnnualConstraint(GenericConstraint):
         :math:`y`
         """
         lhs = (
-            self.zen_model.variables["carbon_emissions_annual"]
-            - self.zen_model.variables["carbon_emissions_technology_total"]
-            - self.zen_model.variables["carbon_emissions_carrier_total"]
+            model_constructor.zen_model.variables["carbon_emissions_annual"]
+            - model_constructor.zen_model.variables["carbon_emissions_technology_total"]
+            - model_constructor.zen_model.variables["carbon_emissions_carrier_total"]
         )
         rhs = 0
         constraints = lhs == rhs
 
-        self.zen_model.add_constraint("constraint_carbon_emissions_annual", constraints)
+        model_constructor.zen_model.add_constraint(
+            "constraint_carbon_emissions_annual", constraints
+        )

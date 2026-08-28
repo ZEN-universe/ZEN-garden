@@ -124,22 +124,7 @@ class ModelConstructor:
         logger.info(f"Constructing variables for {self.element_class.__name__}")
 
         for variable in self.variables:
-            if not variable.should_construct(self):
-                continue
-            index_sets = variable.get_index_sets(self)
-            mask = variable.get_mask(self, index_sets)
-            if mask is not None and not mask.any():
-                continue
-            self.zen_model.add_variable(
-                name=variable.name,
-                index_sets=index_sets,
-                integer=variable.integer,
-                binary=variable.binary,
-                bounds=variable.get_bounds(self, index_sets),
-                mask=mask,
-                doc=variable.doc,
-                unit_category=variable.unit_category,
-            )
+            variable.build(self)
 
     def construct_expressions(self):  # noqa: B027
         """Construct reusable expressions from parameters and variables."""
@@ -149,8 +134,8 @@ class ModelConstructor:
         """Constructs the Constraints of this class."""
         logger.info(f"Constructing constraints for {self.element_class.__name__}")
 
-        for ConstraintClass in self.constraints:
-            self.service_container.build(ConstraintClass).build()
+        for constraint in self.constraints:
+            constraint.build(self)
 
     def construct_objective(self):  # noqa: B027
         """Constructs the Objective of this class."""

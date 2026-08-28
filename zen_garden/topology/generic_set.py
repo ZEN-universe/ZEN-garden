@@ -23,17 +23,17 @@ class GenericSet(ABC):
 
     @classmethod
     @abstractmethod
-    def get_data(cls, constructor: "ModelConstructor") -> Any:
+    def get_data(cls, model_constructor: "ModelConstructor") -> Any:
         """Extract the members of this set from model-construction state."""
 
     @classmethod
-    def build(cls, constructor: "ModelConstructor") -> None:
+    def build(cls, model_constructor: "ModelConstructor") -> None:
         """Extract and register this set on the optimization model."""
-        constructor.zen_model.add_set(
+        model_constructor.zen_model.add_set(
             name=cls.name,
-            data=cls.get_data(constructor),
+            data=cls.get_data(model_constructor),
             doc=cls.doc,
             index_set=cls.index_set,
         )
         if cls.indexing_set:
-            constructor.zen_model.indexing_sets.append(cls.name)
+            model_constructor.zen_model.indexing_sets.append(cls.name)

@@ -2,7 +2,8 @@ from zen_garden.topology.generic_constraint import GenericConstraint
 
 
 class CarbonEmissionsCarrierTotalConstraint(GenericConstraint):
-    def build(self):
+    @classmethod
+    def build(cls, model_constructor):
         """Summary:
         Total carbon emissions of importing and exporting carrier.
 
@@ -21,16 +22,16 @@ class CarbonEmissionsCarrierTotalConstraint(GenericConstraint):
         :math:`\\Delta t_t`: duration of time step :math:`t`
         """
         term_summed_carbon_emissions_carrier = (
-            self.zen_model.variables["carbon_emissions_carrier"]
-            * self.get_year_time_step_duration_array()
+            model_constructor.zen_model.variables["carbon_emissions_carrier"]
+            * cls.get_year_time_step_duration_array(model_constructor)
         ).sum(["set_carriers", "set_nodes", "set_time_steps_operation"])
         lhs = (
-            self.zen_model.variables["carbon_emissions_carrier_total"]
+            model_constructor.zen_model.variables["carbon_emissions_carrier_total"]
             - term_summed_carbon_emissions_carrier
         )
         rhs = 0
         constraints = lhs == rhs
 
-        self.zen_model.add_constraint(
+        model_constructor.zen_model.add_constraint(
             "constraint_carbon_emissions_carrier_total", constraints
         )

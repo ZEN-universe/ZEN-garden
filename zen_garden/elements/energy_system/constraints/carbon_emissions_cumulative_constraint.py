@@ -4,7 +4,8 @@ from zen_garden.topology.generic_constraint import GenericConstraint
 
 
 class CarbonEmissionsCumulativeConstraint(GenericConstraint):
-    def build(self):
+    @classmethod
+    def build(cls, model_constructor):
         """Summary:
         Cumulative carbon emissions over time.
 
@@ -25,23 +26,34 @@ class CarbonEmissionsCumulativeConstraint(GenericConstraint):
         :math:`m_0^{\\mathrm{cum}}`: cumulative emissions before the modeled horizon
         """
         m = [
-            True if year == self.model_schema.set_years[0] else False
-            for year in self.model_schema.set_years
+            True if year == model_constructor.model_schema.set_years[0] else False
+            for year in model_constructor.model_schema.set_years
         ]
 
         lhs = (
-            self.zen_model.variables["carbon_emissions_cumulative"]
-            - self.zen_model.variables["carbon_emissions_cumulative"].shift(set_years=1)
-            - self.zen_model.variables["carbon_emissions_annual"].shift(set_years=1)
-            * (self.config.system.interval_between_years - 1)
-            - self.zen_model.variables["carbon_emissions_annual"]
+            model_constructor.zen_model.variables["carbon_emissions_cumulative"]
+            - model_constructor.zen_model.variables[
+                "carbon_emissions_cumulative"
+            ].shift(set_years=1)
+            - model_constructor.zen_model.variables["carbon_emissions_annual"].shift(
+                set_years=1
+            )
+            * (model_constructor.config.system.interval_between_years - 1)
+            - model_constructor.zen_model.variables["carbon_emissions_annual"]
+        )
+        cumulative_existing = (
+            model_constructor.zen_model.parameters.carbon_emissions_cumulative_existing
         )
         rhs = (
-            xr.ones_like(self.zen_model.variables["carbon_emissions_cumulative"].mask)
-            * self.zen_model.parameters.carbon_emissions_cumulative_existing
+            xr.ones_like(
+                model_constructor.zen_model.variables[
+                    "carbon_emissions_cumulative"
+                ].mask
+            )
+            * cumulative_existing
         ).where(m, 0)
         constraints = lhs == rhs
 
-        self.zen_model.add_constraint(
+        model_constructor.zen_model.add_constraint(
             "constraint_carbon_emissions_cumulative", constraints
         )

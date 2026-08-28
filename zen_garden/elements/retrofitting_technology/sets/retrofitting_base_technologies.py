@@ -7,7 +7,7 @@ class SetRetrofittingBaseTechnologies(GenericSet):
     index_set = "set_retrofitting_technologies"
 
     @classmethod
-    def get_data(cls, constructor):
-        return constructor.element_registry.get_attribute_of_all_elements(
-            constructor.element_class, "retrofit_base_technology"
+    def get_data(cls, model_constructor):
+        return model_constructor.element_registry.get_attribute_of_all_elements(
+            model_constructor.element_class, "retrofit_base_technology"
         )

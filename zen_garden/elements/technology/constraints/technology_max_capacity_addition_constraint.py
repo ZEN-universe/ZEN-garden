@@ -4,7 +4,8 @@ from zen_garden.topology.generic_constraint import GenericConstraint
 
 
 class TechnologyMaxCapacityAdditionConstraint(GenericConstraint):
-    def build(self):
+    @classmethod
+    def build(cls, model_constructor):
         """Summary:
         Max capacity addition of technology.
 
@@ -24,7 +25,9 @@ class TechnologyMaxCapacityAdditionConstraint(GenericConstraint):
         at location :math:`p` in year :math:`y`
         :math:`\\Delta K_{h,p,y}`: capacity addition
         """
-        capacity_addition_max = self.zen_model.parameters.capacity_addition_max
+        capacity_addition_max = (
+            model_constructor.zen_model.parameters.capacity_addition_max
+        )
         mask = (
             (capacity_addition_max != np.inf)
             & (capacity_addition_max != 0)
@@ -35,12 +38,13 @@ class TechnologyMaxCapacityAdditionConstraint(GenericConstraint):
         if not mask.any():
             return None
         lhs = mask * (
-            capacity_addition_max * self.zen_model.variables["technology_installation"]
-            - self.zen_model.variables["capacity_addition"]
+            capacity_addition_max
+            * model_constructor.zen_model.variables["technology_installation"]
+            - model_constructor.zen_model.variables["capacity_addition"]
         )
         rhs = 0
         constraints = lhs >= rhs
 
-        self.zen_model.add_constraint(
+        model_constructor.zen_model.add_constraint(
             "constraint_technology_max_capacity_addition", constraints
         )

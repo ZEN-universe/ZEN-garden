@@ -25,6 +25,26 @@ class GenericVariable(ABC):
                 raise TypeError(f"{cls.__name__} must define {attr!r}")
 
     @classmethod
+    def build(cls, model_constructor: "ModelConstructor") -> None:
+        """Construct and register this variable on the optimization model."""
+        if not cls.should_construct(model_constructor):
+            return
+        index_sets = cls.get_index_sets(model_constructor)
+        mask = cls.get_mask(model_constructor, index_sets)
+        if mask is not None and not mask.any():
+            return
+        model_constructor.zen_model.add_variable(
+            name=cls.name,
+            index_sets=index_sets,
+            integer=cls.integer,
+            binary=cls.binary,
+            bounds=cls.get_bounds(model_constructor, index_sets),
+            mask=mask,
+            doc=cls.doc,
+            unit_category=cls.unit_category,
+        )
+
+    @classmethod
     def get_index_sets(cls, model_constructor: "ModelConstructor"):
         """Return the model indices used to construct this variable."""
         return model_constructor.create_custom_set(cls.indices)

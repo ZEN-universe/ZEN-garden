@@ -4,7 +4,8 @@ from zen_garden.topology.generic_constraint import GenericConstraint
 
 
 class CapacityEnergyToPowerRatioConstraint(GenericConstraint):
-    def build(self):
+    @classmethod
+    def build(cls, model_constructor):
         """Summary:
         Limit the energy-to-power ratio of capacity additions.
 
@@ -29,17 +30,17 @@ class CapacityEnergyToPowerRatioConstraint(GenericConstraint):
         :math:`r^{\\mathrm{EP,max}}_h`: maximum energy-to-power ratio of storage
         :math:`h`
         """
-        techs = self.zen_model.sets["set_storage_technologies"]
+        techs = model_constructor.zen_model.sets["set_storage_technologies"]
         if len(techs) == 0:
             return None
-        e2p_min = self.zen_model.parameters.energy_to_power_ratio_min
-        e2p_max = self.zen_model.parameters.energy_to_power_ratio_max
+        e2p_min = model_constructor.zen_model.parameters.energy_to_power_ratio_min
+        e2p_max = model_constructor.zen_model.parameters.energy_to_power_ratio_max
         mask_min = e2p_min != np.inf
         mask_max = e2p_max != np.inf
 
-        capacity_addition = self.zen_model.variables["capacity_addition"].rename(
-            {"set_technologies": "set_storage_technologies"}
-        )
+        capacity_addition = model_constructor.zen_model.variables[
+            "capacity_addition"
+        ].rename({"set_technologies": "set_storage_technologies"})
         capacity_addition_power = capacity_addition.sel(
             {"set_storage_technologies": techs, "set_capacity_types": "power"}
         )
@@ -56,9 +57,9 @@ class CapacityEnergyToPowerRatioConstraint(GenericConstraint):
         )
         constraints_max = lhs <= rhs
 
-        self.zen_model.add_constraint(
+        model_constructor.zen_model.add_constraint(
             "constraint_capacity_energy_to_power_ratio_min", constraints_min
         )
-        self.zen_model.add_constraint(
+        model_constructor.zen_model.add_constraint(
             "constraint_capacity_energy_to_power_ratio_max", constraints_max
         )

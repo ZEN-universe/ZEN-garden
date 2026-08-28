@@ -4,7 +4,8 @@ from zen_garden.topology.generic_constraint import GenericConstraint
 
 
 class NetPresentCostConstraint(GenericConstraint):
-    def build(self):
+    @classmethod
+    def build(cls, model_constructor):
         """Summary:
         Discounts the annual capital flows to calculate the net present cost.
 
@@ -27,29 +28,38 @@ class NetPresentCostConstraint(GenericConstraint):
         :math:`r^{\\mathrm{disc}}`: discount rate
         :math:`\\Delta y`: interval between planning periods
         """
-        factor = pd.Series(index=self.model_schema.set_years)
-        for year in self.model_schema.set_years:
+        factor = pd.Series(index=model_constructor.model_schema.set_years)
+        for year in model_constructor.model_schema.set_years:
             ### auxiliary calculations
-            if year == self.model_schema.set_years_entire_horizon[-1]:
+            if year == model_constructor.model_schema.set_years_entire_horizon[-1]:
                 interval_between_years = 1
             else:
-                interval_between_years = self.config.system.interval_between_years
+                interval_between_years = (
+                    model_constructor.config.system.interval_between_years
+                )
             # economic discount
             factor[year] = sum(
                 (
-                    (1 / (1 + self.zen_model.parameters.discount_rate))
+                    (1 / (1 + model_constructor.zen_model.parameters.discount_rate))
                     ** (
-                        self.config.system.interval_between_years
-                        * (year - self.model_schema.set_years[0])
+                        model_constructor.config.system.interval_between_years
+                        * (year - model_constructor.model_schema.set_years[0])
                         + _intermediate_time_step
                     )
                 )
                 for _intermediate_time_step in range(0, interval_between_years)
             )
-        term_discounted_cost_total = self.zen_model.variables["cost_total"] * factor
+        term_discounted_cost_total = (
+            model_constructor.zen_model.variables["cost_total"] * factor
+        )
 
-        lhs = self.zen_model.variables["net_present_cost"] - term_discounted_cost_total
+        lhs = (
+            model_constructor.zen_model.variables["net_present_cost"]
+            - term_discounted_cost_total
+        )
         rhs = 0
         constraints = lhs == rhs
 
-        self.zen_model.add_constraint("constraint_net_present_cost", constraints)
+        model_constructor.zen_model.add_constraint(
+            "constraint_net_present_cost", constraints
+        )

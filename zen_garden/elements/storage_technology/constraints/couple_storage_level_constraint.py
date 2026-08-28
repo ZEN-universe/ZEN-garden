@@ -2,7 +2,8 @@ from zen_garden.topology.generic_constraint import GenericConstraint
 
 
 class CoupleStorageLevelConstraint(GenericConstraint):
-    def build(self):
+    @classmethod
+    def build(cls, model_constructor):
         """Summary:
         Couple subsequent storage levels (time coupling constraints).
 
@@ -47,14 +48,16 @@ class CoupleStorageLevelConstraint(GenericConstraint):
         storage
         :math:`F^{\\mathrm{spill}}_{h,n,\\sigma(\\tilde{t})}`: storage spillage
         """
-        techs = self.zen_model.sets["set_storage_technologies"]
+        techs = model_constructor.zen_model.sets["set_storage_technologies"]
         if len(techs) == 0:
             return
-        self_discharge = self.zen_model.parameters.self_discharge
-        flow_storage_inflow = self.zen_model.parameters.flow_storage_inflow
-        flow_storage_spillage = self.zen_model.lp_model.variables.flow_storage_spillage
+        self_discharge = model_constructor.zen_model.parameters.self_discharge
+        flow_storage_inflow = model_constructor.zen_model.parameters.flow_storage_inflow
+        flow_storage_spillage = (
+            model_constructor.zen_model.lp_model.variables.flow_storage_spillage
+        )
         time_steps_storage_duration = (
-            self.zen_model.parameters.time_steps_storage_duration
+            model_constructor.zen_model.parameters.time_steps_storage_duration
         )
         # reformulate self discharge multiplier as partial geometric series
         multiplier_w_discharge = (
@@ -65,39 +68,46 @@ class CoupleStorageLevelConstraint(GenericConstraint):
             self_discharge != 0, 0.0
         ) + multiplier_wo_discharge.where(self_discharge == 0, 0.0)
         # time coupling to previous time step
-        times_coupling, mask_coupling = self.get_previous_storage_time_step_array()
+        times_coupling, mask_coupling = cls.get_previous_storage_time_step_array(
+            model_constructor
+        )
         self_discharge_previous = (1 - self_discharge) ** time_steps_storage_duration
         self_discharge_previous["set_time_steps_storage"] = times_coupling
-        term_delta_storage_level = self.zen_model.variables[
+        term_delta_storage_level = model_constructor.zen_model.variables[
             "storage_level"
-        ] - self_discharge_previous * self.zen_model.variables["storage_level"].sel(
+        ] - self_discharge_previous * model_constructor.zen_model.variables[
+            "storage_level"
+        ].sel(
             {"set_time_steps_storage": times_coupling}
         )
         # charge and discharge flow
-        times_year_time_step = self.get_year_time_step_array()
+        times_year_time_step = cls.get_year_time_step_array(model_constructor)
         efficiency_charge = (
-            self.zen_model.parameters.efficiency_charge.broadcast_like(
+            model_constructor.zen_model.parameters.efficiency_charge.broadcast_like(
                 times_year_time_step
             )
             .where(times_year_time_step, 0.0)
             .sum("set_years")
         )
         efficiency_discharge = (
-            self.zen_model.parameters.efficiency_discharge.broadcast_like(
+            model_constructor.zen_model.parameters.efficiency_discharge.broadcast_like(
                 times_year_time_step
             )
             .where(times_year_time_step, 0.0)
             .sum("set_years")
         )
         term_flow_charge_discharge = (
-            self.zen_model.variables["flow_storage_charge"] * efficiency_charge
-            - self.zen_model.variables["flow_storage_discharge"].to_linexpr()
+            model_constructor.zen_model.variables["flow_storage_charge"]
+            * efficiency_charge
+            - model_constructor.zen_model.variables[
+                "flow_storage_discharge"
+            ].to_linexpr()
             / efficiency_discharge
             + flow_storage_inflow
             - flow_storage_spillage
         )
-        times_power2energy = self.get_power2energy_time_step_array()
-        term_flow_charge_discharge = self.map_and_expand(
+        times_power2energy = cls.get_power2energy_time_step_array(model_constructor)
+        term_flow_charge_discharge = cls.map_and_expand(
             term_flow_charge_discharge, times_power2energy
         )
         term_flow_charge_discharge = term_flow_charge_discharge * multiplier
@@ -108,4 +118,6 @@ class CoupleStorageLevelConstraint(GenericConstraint):
         rhs = 0
         constraints = lhs == rhs
 
-        self.zen_model.add_constraint("constraint_couple_storage_level", constraints)
+        model_constructor.zen_model.add_constraint(
+            "constraint_couple_storage_level", constraints
+        )

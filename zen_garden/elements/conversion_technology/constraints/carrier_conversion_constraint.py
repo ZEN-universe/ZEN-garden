@@ -10,7 +10,8 @@ from zen_garden.utils import align_like
 
 
 class CarrierConversionConstraint(GenericConstraint):
-    def build(self):
+    @classmethod
+    def build(cls, model_constructor):
         """Summary:
         Conversion factor between reference carrier and dependent carrier.
 
@@ -36,22 +37,25 @@ class CarrierConversionConstraint(GenericConstraint):
         :math:`y`
         """
         # dependent carriers
-        flow_conversion_input_dep = self.zen_model.variables[
+        flow_conversion_input_dep = model_constructor.zen_model.variables[
             "flow_conversion_input"
         ].rename({"set_input_carriers": "set_dependent_carriers"})
-        flow_conversion_output_dep = self.zen_model.variables[
+        flow_conversion_output_dep = model_constructor.zen_model.variables[
             "flow_conversion_output"
         ].rename({"set_output_carriers": "set_dependent_carriers"})
         dc_in = pd.Series(
             {
                 (t, c): (
                     True
-                    if c in self.zen_model.sets["set_dependent_carriers"][t]
+                    if c
+                    in model_constructor.zen_model.sets["set_dependent_carriers"][t]
                     else False
                 )
                 for t, c in itertools.product(
-                    self.zen_model.sets["set_conversion_technologies"],
-                    self.zen_model.sets["set_input_carriers"].coordinate_values,
+                    model_constructor.zen_model.sets["set_conversion_technologies"],
+                    model_constructor.zen_model.sets[
+                        "set_input_carriers"
+                    ].coordinate_values,
                 )
             }
         )
@@ -59,12 +63,15 @@ class CarrierConversionConstraint(GenericConstraint):
             {
                 (t, c): (
                     True
-                    if c in self.zen_model.sets["set_dependent_carriers"][t]
+                    if c
+                    in model_constructor.zen_model.sets["set_dependent_carriers"][t]
                     else False
                 )
                 for t, c in itertools.product(
-                    self.zen_model.sets["set_conversion_technologies"],
-                    self.zen_model.sets["set_output_carriers"].coordinate_values,
+                    model_constructor.zen_model.sets["set_conversion_technologies"],
+                    model_constructor.zen_model.sets[
+                        "set_output_carriers"
+                    ].coordinate_values,
                 )
             }
         )
@@ -85,25 +92,29 @@ class CarrierConversionConstraint(GenericConstraint):
             cls=LinearExpression,
         ).where(dc)
         conversion_factor = align_like(
-            self.zen_model.parameters.conversion_factor, term_flow_dependent
+            model_constructor.zen_model.parameters.conversion_factor,
+            term_flow_dependent,
         )
         # reference carriers
-        flow_conversion_input = self.zen_model.variables[
+        flow_conversion_input = model_constructor.zen_model.variables[
             "flow_conversion_input"
         ].broadcast_like(conversion_factor)
-        flow_conversion_output = self.zen_model.variables[
+        flow_conversion_output = model_constructor.zen_model.variables[
             "flow_conversion_output"
         ].broadcast_like(conversion_factor)
         rc_in = pd.Series(
             {
                 (t, c): (
                     True
-                    if c in self.zen_model.sets["set_reference_carriers"][t]
+                    if c
+                    in model_constructor.zen_model.sets["set_reference_carriers"][t]
                     else False
                 )
                 for t, c in itertools.product(
-                    self.zen_model.sets["set_conversion_technologies"],
-                    self.zen_model.sets["set_input_carriers"].coordinate_values,
+                    model_constructor.zen_model.sets["set_conversion_technologies"],
+                    model_constructor.zen_model.sets[
+                        "set_input_carriers"
+                    ].coordinate_values,
                 )
             }
         )
@@ -111,12 +122,15 @@ class CarrierConversionConstraint(GenericConstraint):
             {
                 (t, c): (
                     True
-                    if c in self.zen_model.sets["set_reference_carriers"][t]
+                    if c
+                    in model_constructor.zen_model.sets["set_reference_carriers"][t]
                     else False
                 )
                 for t, c in itertools.product(
-                    self.zen_model.sets["set_conversion_technologies"],
-                    self.zen_model.sets["set_output_carriers"].coordinate_values,
+                    model_constructor.zen_model.sets["set_conversion_technologies"],
+                    model_constructor.zen_model.sets[
+                        "set_output_carriers"
+                    ].coordinate_values,
                 )
             }
         )
@@ -132,4 +146,6 @@ class CarrierConversionConstraint(GenericConstraint):
         rhs = 0
         constraints = lhs == rhs
 
-        self.zen_model.add_constraint("constraint_carrier_conversion", constraints)
+        model_constructor.zen_model.add_constraint(
+            "constraint_carrier_conversion", constraints
+        )

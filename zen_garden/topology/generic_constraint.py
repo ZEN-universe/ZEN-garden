@@ -8,56 +8,43 @@ import xarray as xr
 from linopy import Variable, merge
 from linopy.expressions import LinearExpression
 
+from zen_garden.model.components.zen_set import IndexedSet
+
 if TYPE_CHECKING:
-    from zen_garden.model.time_steps import TimeStepsDicts
-    from zen_garden.model.zen_model import ZenModel
-    from zen_garden.services.network_topology import NetworkTopology
-    from zen_garden.topology.model_schema import ModelSchema
+    from zen_garden.elements.model_constructor import ModelConstructor
 
 
 class GenericConstraint(ABC):
-    def __init__(
-        self,
-        zen_model: "ZenModel",
-        model_schema: "ModelSchema",
-        network_topology: "NetworkTopology",
-        time_steps: "TimeStepsDicts",
-    ):
-        """Constructor for generic rule.
+    """Base class for constraints.
 
-        :param config: Config object
-        :param zen_model: ZenModel object
-        :param model_schema: global model schema
-        """
-        self.zen_model = zen_model
-        self.model_schema = model_schema
-        self.network_topology = network_topology
-        self.time_steps = time_steps
+    Constraints are stateless: :meth:`build` is a classmethod that takes the
+    :class:`~zen_garden.elements.model_constructor.ModelConstructor` and adds the
+    constraint's rows to the optimization model. The helper methods below are
+    stateless too.
+    """
 
-    @property
-    def config(self):
-        """Return the canonical configuration from the model schema."""
-        return self.model_schema.config
-
+    @classmethod
     @abstractmethod
-    def build(self):
-        """Build the constraints."""
-        pass
+    def build(cls, model_constructor: "ModelConstructor") -> None:
+        """Build the constraint(s) and add them to the optimization model."""
 
     # helper methods for constraint rules
-    def get_year_time_step_array(self, storage=False):
+    @staticmethod
+    def get_year_time_step_array(model_constructor: "ModelConstructor", storage=False):
         """Returns array with year and time steps of each year.
 
         :param storage: boolean indicating if object is a storage object
         """
+        time_steps = model_constructor.time_steps
         # create times xarray with 1 where the operation time step is in the year
         if storage:
-            meth = self.time_steps.get_time_steps_year2storage
+            meth = time_steps.get_time_steps_year2storage
             time_step_name = "set_time_steps_storage"
         else:
-            meth = self.time_steps.get_time_steps_year2operation
+            meth = time_steps.get_time_steps_year2operation
             time_step_name = "set_time_steps_operation"
-        times = [(y, t) for y in self.zen_model.sets["set_years"] for t in meth(y)]
+        years = model_constructor.zen_model.sets["set_years"]
+        times = [(y, t) for y in years for t in meth(y)]
         times = pd.MultiIndex.from_tuples(times)
         times.names = ["set_years", time_step_name]
         times = pd.Series(index=times, data=1)
@@ -65,64 +52,72 @@ class GenericConstraint(ABC):
         times = times.fillna(0.0)
         return times
 
-    def get_year_time_step_duration_array(self):
+    @staticmethod
+    def get_year_time_step_duration_array(model_constructor: "ModelConstructor"):
         """Returns array with year and duration of time steps of each year."""
-        times = self.get_year_time_step_array()
+        times = GenericConstraint.get_year_time_step_array(model_constructor)
         time_steps_operation_duration = cast(
-            xr.DataArray | None, self.zen_model.parameters.time_steps_operation_duration
+            xr.DataArray | None,
+            model_constructor.zen_model.parameters.time_steps_operation_duration,
         )
         assert time_steps_operation_duration is not None
         times = times * time_steps_operation_duration
         return times
 
-    def get_previous_storage_time_step_array(self):
+    @staticmethod
+    def get_previous_storage_time_step_array(model_constructor: "ModelConstructor"):
         """Returns array with storage time steps and previous storage time steps."""
+        zen_model = model_constructor.zen_model
+        time_steps = model_constructor.time_steps
         times_prev = []
-        mask = []
-        for ts in self.zen_model.sets["set_time_steps_storage"]:
-            ts_end = self.time_steps.get_time_steps_storage_startend(ts)
+        mask_values = []
+        for ts in zen_model.sets["set_time_steps_storage"]:
+            ts_end = time_steps.get_time_steps_storage_startend(ts)
             if ts_end is not None:
-                if self.config.system.storage_periodicity:
+                if model_constructor.config.system.storage_periodicity:
                     times_prev.append(ts_end)
-                    mask.append(True)
+                    mask_values.append(True)
                 else:
                     times_prev.append(ts)
-                    mask.append(False)
+                    mask_values.append(False)
             else:
-                ts_prev = self.time_steps.get_previous_storage_time_step(ts)
+                ts_prev = time_steps.get_previous_storage_time_step(ts)
                 times_prev.append(ts_prev)
-                mask.append(True)
+                mask_values.append(True)
         mask = xr.DataArray(
-            mask,
+            mask_values,
             dims="set_time_steps_storage",
-            coords={
-                "set_time_steps_storage": self.zen_model.sets["set_time_steps_storage"]
-            },
+            coords={"set_time_steps_storage": zen_model.sets["set_time_steps_storage"]},
         )
         return times_prev, mask
 
-    def get_power2energy_time_step_array(self):
+    @staticmethod
+    def get_power2energy_time_step_array(model_constructor: "ModelConstructor"):
         """Returns array with power2energy time steps."""
+        zen_model = model_constructor.zen_model
         times = {
-            st: self.time_steps.convert_time_step_energy2power(st)
-            for st in self.zen_model.sets["set_time_steps_storage"]
+            st: model_constructor.time_steps.convert_time_step_energy2power(st)
+            for st in zen_model.sets["set_time_steps_storage"]
         }
         times = pd.Series(times, name="set_time_steps_operation")
         times.index.name = "set_time_steps_storage"
         return times
 
-    def get_storage2year_time_step_array(self):
+    @staticmethod
+    def get_storage2year_time_step_array(model_constructor: "ModelConstructor"):
         """Returns array with storage2year time steps."""
+        zen_model = model_constructor.zen_model
         times = {
             st: y
-            for y in self.zen_model.sets["set_years"]
-            for st in self.time_steps.get_time_steps_year2storage(y)
+            for y in zen_model.sets["set_years"]
+            for st in model_constructor.time_steps.get_time_steps_year2storage(y)
         }
         times = pd.Series(times, name="set_years")
         times.index.name = "set_time_steps_storage"
         return times
 
-    def map_and_expand(self, array, mapping):
+    @staticmethod
+    def map_and_expand(array, mapping):
         """Maps and expands array.
 
         :param array: xarray to map and expand
@@ -139,7 +134,8 @@ class GenericConstraint(ABC):
         array = array.assign_coords({mapping.index.name: mapping.index})
         return array
 
-    def align_and_mask(self, expr, mask):
+    @staticmethod
+    def align_and_mask(expr, mask):
         """Aligns and masks expr.
 
         :param expr: expression to align and mask
@@ -155,29 +151,31 @@ class GenericConstraint(ABC):
         expr = expr.where(mask)
         return expr
 
-    def get_flow_expression_conversion(self, techs, nodes, factor=None, rename=False):
+    @staticmethod
+    def get_flow_expression_conversion(
+        model_constructor: "ModelConstructor", techs, nodes, factor=None, rename=False
+    ):
         """Return the flow expression for conversion technologies."""
+        zen_model = model_constructor.zen_model
+        reference_carriers = cast(IndexedSet, zen_model.sets["set_reference_carriers"])
+        input_carriers = cast(IndexedSet, zen_model.sets["set_input_carriers"])
         reference_flows = []
         for t in techs:
-            rc = self.zen_model.sets["set_reference_carriers"][t][0]
+            rc = reference_carriers[t][0]
             if factor is not None:
                 mult = factor.loc[t, nodes]
             else:
                 mult = 1
             # TODO can we avoid the indexing here?
-            if rc in self.zen_model.sets["set_input_carriers"][t]:
+            if rc in input_carriers[t]:
                 reference_flows.append(
                     mult
-                    * self.zen_model.variables["flow_conversion_input"].loc[
-                        t, rc, nodes, :
-                    ]
+                    * zen_model.variables["flow_conversion_input"].loc[t, rc, nodes, :]
                 )
             else:
                 reference_flows.append(
                     mult
-                    * self.zen_model.variables["flow_conversion_output"].loc[
-                        t, rc, nodes, :
-                    ]
+                    * zen_model.variables["flow_conversion_output"].loc[t, rc, nodes, :]
                 )
         if rename:
             term_reference_flow = merge(
@@ -199,11 +197,13 @@ class GenericConstraint(ABC):
             )
         return term_reference_flow
 
-    def get_flow_expression_storage(self, rename=True):
+    @staticmethod
+    def get_flow_expression_storage(model_constructor: "ModelConstructor", rename=True):
         """Return the flow expression for storage technologies."""
+        zen_model = model_constructor.zen_model
         term = (
-            self.zen_model.variables["flow_storage_charge"]
-            + self.zen_model.variables["flow_storage_discharge"]
+            zen_model.variables["flow_storage_charge"]
+            + zen_model.variables["flow_storage_discharge"]
         )
         if rename:
             return term.rename(

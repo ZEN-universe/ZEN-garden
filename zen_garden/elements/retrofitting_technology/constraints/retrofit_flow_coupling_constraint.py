@@ -12,7 +12,8 @@ logger = logging.getLogger(__name__)
 
 
 class RetrofitFlowCouplingConstraint(GenericConstraint):
-    def build(self):
+    @classmethod
+    def build(cls, model_constructor):
         """Summary:
         Limit retrofit reference flow by the associated base-technology flow.
 
@@ -35,18 +36,25 @@ class RetrofitFlowCouplingConstraint(GenericConstraint):
         Reference flow is selected from the input or output flow according to each
         technology's configured reference carrier.
         """
-        flow_conversion_input = self.zen_model.variables["flow_conversion_input"]
-        flow_conversion_output = self.zen_model.variables["flow_conversion_output"]
+        flow_conversion_input = model_constructor.zen_model.variables[
+            "flow_conversion_input"
+        ]
+        flow_conversion_output = model_constructor.zen_model.variables[
+            "flow_conversion_output"
+        ]
         rc_in = pd.Series(
             {
                 (t, c): (
                     True
-                    if c in self.zen_model.sets["set_reference_carriers"][t]
+                    if c
+                    in model_constructor.zen_model.sets["set_reference_carriers"][t]
                     else False
                 )
                 for t, c in itertools.product(
-                    self.zen_model.sets["set_conversion_technologies"],
-                    self.zen_model.sets["set_input_carriers"].coordinate_values,
+                    model_constructor.zen_model.sets["set_conversion_technologies"],
+                    model_constructor.zen_model.sets[
+                        "set_input_carriers"
+                    ].coordinate_values,
                 )
             }
         )
@@ -54,12 +62,15 @@ class RetrofitFlowCouplingConstraint(GenericConstraint):
             {
                 (t, c): (
                     True
-                    if c in self.zen_model.sets["set_reference_carriers"][t]
+                    if c
+                    in model_constructor.zen_model.sets["set_reference_carriers"][t]
                     else False
                 )
                 for t, c in itertools.product(
-                    self.zen_model.sets["set_conversion_technologies"],
-                    self.zen_model.sets["set_output_carriers"].coordinate_values,
+                    model_constructor.zen_model.sets["set_conversion_technologies"],
+                    model_constructor.zen_model.sets[
+                        "set_output_carriers"
+                    ].coordinate_values,
                 )
             }
         )
@@ -73,24 +84,29 @@ class RetrofitFlowCouplingConstraint(GenericConstraint):
         retrofit_base_technologies = pd.Series(
             {
                 t: rt
-                for t in self.zen_model.sets["set_conversion_technologies"]
-                if t in self.zen_model.sets["set_retrofitting_base_technologies"]
-                for rt in self.zen_model.sets["set_retrofitting_base_technologies"][t]
+                for t in model_constructor.zen_model.sets["set_conversion_technologies"]
+                if t
+                in model_constructor.zen_model.sets[
+                    "set_retrofitting_base_technologies"
+                ]
+                for rt in model_constructor.zen_model.sets[
+                    "set_retrofitting_base_technologies"
+                ][t]
             },
             name="set_conversion_technologies",
         )
         retrofit_base_technologies.index.name = "set_conversion_technologies"
         retrofit_flow_coupling = (
-            self.zen_model.parameters.retrofit_flow_coupling_factor.rename(
+            model_constructor.zen_model.parameters.retrofit_flow_coupling_factor.rename(
                 {"set_retrofitting_technologies": "set_conversion_technologies"}
             )
         )
-        term_flow_retrofit = self.map_and_expand(
+        term_flow_retrofit = cls.map_and_expand(
             term_flow_reference, retrofit_base_technologies
         )
         term_flow_base = term_flow_reference.sel(
             {
-                "set_conversion_technologies": self.zen_model.sets[
+                "set_conversion_technologies": model_constructor.zen_model.sets[
                     "set_retrofitting_technologies"
                 ]
             }
@@ -99,4 +115,6 @@ class RetrofitFlowCouplingConstraint(GenericConstraint):
         rhs = 0
         constraints = lhs <= rhs
 
-        self.zen_model.add_constraint("constraint_retrofit_flow_coupling", constraints)
+        model_constructor.zen_model.add_constraint(
+            "constraint_retrofit_flow_coupling", constraints
+        )

@@ -2,7 +2,8 @@ from zen_garden.topology.generic_constraint import GenericConstraint
 
 
 class StorageLevelMaxConstraint(GenericConstraint):
-    def build(self):
+    @classmethod
+    def build(cls, model_constructor):
         """Summary:
         Limit maximum storage level to capacity.
 
@@ -19,13 +20,15 @@ class StorageLevelMaxConstraint(GenericConstraint):
         :math:`K^{\\mathrm{energy}}_{h,n,y}`: energy capacity of storage technology
         :math:`h` on node :math:`n` in year :math:`y`
         """
-        techs = self.zen_model.sets["set_storage_technologies"]
-        nodes = self.zen_model.sets["set_nodes"]
+        techs = model_constructor.zen_model.sets["set_storage_technologies"]
+        nodes = model_constructor.zen_model.sets["set_nodes"]
         if len(techs) == 0:
             return
         # mask for energy capacity and storage time steps
-        times = self.get_storage2year_time_step_array()
-        capacity = self.map_and_expand(self.zen_model.variables["capacity"], times)
+        times = cls.get_storage2year_time_step_array(model_constructor)
+        capacity = cls.map_and_expand(
+            model_constructor.zen_model.variables["capacity"], times
+        )
         capacity = capacity.rename(
             {
                 "set_technologies": "set_storage_technologies",
@@ -33,13 +36,17 @@ class StorageLevelMaxConstraint(GenericConstraint):
             }
         )
         capacity = capacity.sel({"set_nodes": nodes, "set_storage_technologies": techs})
-        storage_level = self.zen_model.variables["storage_level"]
+        storage_level = model_constructor.zen_model.variables["storage_level"]
         mask_capacity_type = (
-            self.zen_model.variables["capacity"].coords["set_capacity_types"]
+            model_constructor.zen_model.variables["capacity"].coords[
+                "set_capacity_types"
+            ]
             == "energy"
         )
         lhs = (storage_level - capacity).where(mask_capacity_type, 0.0)
         rhs = 0
         constraints = lhs <= rhs
 
-        self.zen_model.add_constraint("constraint_storage_level_max", constraints)
+        model_constructor.zen_model.add_constraint(
+            "constraint_storage_level_max", constraints
+        )

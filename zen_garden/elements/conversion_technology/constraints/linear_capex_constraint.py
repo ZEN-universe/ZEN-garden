@@ -6,7 +6,8 @@ from zen_garden.topology.generic_constraint import GenericConstraint
 
 
 class LinearCapexConstraint(GenericConstraint):
-    def build(self):
+    @classmethod
+    def build(cls, model_constructor):
         """Summary:
         If capacity and capex have a linear relationship.
 
@@ -23,9 +24,11 @@ class LinearCapexConstraint(GenericConstraint):
         :math:`\\kappa^{\\mathrm{cap}}_{h,n,y}`: specific CAPEX
         :math:`\\Delta K_{h,n,y}`: power-capacity addition
         """
-        techs = self.zen_model.sets["set_conversion_technologies"]
-        nodes = self.zen_model.sets["set_nodes"]
-        capex_specific_conversion = self.zen_model.parameters.capex_specific_conversion
+        techs = model_constructor.zen_model.sets["set_conversion_technologies"]
+        nodes = model_constructor.zen_model.sets["set_nodes"]
+        capex_specific_conversion = (
+            model_constructor.zen_model.parameters.capex_specific_conversion
+        )
         capex_specific_conversion = capex_specific_conversion.rename(
             {
                 old: new
@@ -41,12 +44,12 @@ class LinearCapexConstraint(GenericConstraint):
             }
         )
 
-        capacity_addition = self.zen_model.variables["capacity_addition"].loc[
-            techs, "power", nodes
-        ]
-        cost_capex_overnight = self.zen_model.variables["cost_capex_overnight"].loc[
-            techs, "power", nodes
-        ]
+        capacity_addition = model_constructor.zen_model.variables[
+            "capacity_addition"
+        ].loc[techs, "power", nodes]
+        cost_capex_overnight = model_constructor.zen_model.variables[
+            "cost_capex_overnight"
+        ].loc[techs, "power", nodes]
 
         capex_specific_conversion = capex_specific_conversion.broadcast_like(
             capacity_addition.lower
@@ -61,8 +64,10 @@ class LinearCapexConstraint(GenericConstraint):
             join="outer",
             cls=LinearExpression,
         )
-        lhs = self.align_and_mask(lhs, mask)
+        lhs = cls.align_and_mask(lhs, mask)
         rhs = 0
         constraints = lhs == rhs
 
-        self.zen_model.add_constraint("constraint_linear_capex", constraints)
+        model_constructor.zen_model.add_constraint(
+            "constraint_linear_capex", constraints
+        )

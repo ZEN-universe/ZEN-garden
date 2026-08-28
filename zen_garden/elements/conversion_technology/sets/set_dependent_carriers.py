@@ -9,10 +9,10 @@ class SetDependentCarriers(GenericSet):
     )
 
     @classmethod
-    def get_data(cls, constructor):
+    def get_data(cls, model_constructor):
         registry, element_class = (
-            constructor.element_registry,
-            constructor.element_class,
+            model_constructor.element_registry,
+            model_constructor.element_class,
         )
         inputs = registry.get_attribute_of_all_elements(element_class, "input_carrier")
         outputs = registry.get_attribute_of_all_elements(

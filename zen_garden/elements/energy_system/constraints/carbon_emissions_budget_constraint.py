@@ -2,7 +2,8 @@ from zen_garden.topology.generic_constraint import GenericConstraint
 
 
 class CarbonEmissionsBudgetConstraint(GenericConstraint):
-    def build(self):
+    @classmethod
+    def build(cls, model_constructor):
         """Summary:
         Carbon emissions budget of whole time horizon.
         The prediction extends until the end of the horizon, i.e., last optimization
@@ -28,19 +29,23 @@ class CarbonEmissionsBudgetConstraint(GenericConstraint):
         extrapolation term is omitted there because no intermediate years remain.
         """
         m = [
-            year != self.model_schema.set_years_entire_horizon[-1]
-            for year in self.model_schema.set_years
+            year != model_constructor.model_schema.set_years_entire_horizon[-1]
+            for year in model_constructor.model_schema.set_years
         ]
 
         lhs = (
-            self.zen_model.variables["carbon_emissions_cumulative"]
-            - self.zen_model.variables["carbon_emissions_budget_overshoot"]
+            model_constructor.zen_model.variables["carbon_emissions_cumulative"]
+            - model_constructor.zen_model.variables["carbon_emissions_budget_overshoot"]
             + (
-                self.zen_model.variables["carbon_emissions_annual"].where(m)
-                * (self.config.system.interval_between_years - 1)
+                model_constructor.zen_model.variables["carbon_emissions_annual"].where(
+                    m
+                )
+                * (model_constructor.config.system.interval_between_years - 1)
             )
         )
-        rhs = self.zen_model.parameters.carbon_emissions_budget
+        rhs = model_constructor.zen_model.parameters.carbon_emissions_budget
         constraints = lhs <= rhs
 
-        self.zen_model.add_constraint("constraint_carbon_emissions_budget", constraints)
+        model_constructor.zen_model.add_constraint(
+            "constraint_carbon_emissions_budget", constraints
+        )

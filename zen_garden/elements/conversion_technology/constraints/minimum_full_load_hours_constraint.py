@@ -5,7 +5,8 @@ from zen_garden.topology.generic_constraint import GenericConstraint
 
 
 class MinimumFullLoadHoursConstraint(GenericConstraint):
-    def build(self):
+    @classmethod
+    def build(cls, model_constructor):
         """Summary:
         Sets minimum full load hours for each unit.
 
@@ -44,13 +45,13 @@ class MinimumFullLoadHoursConstraint(GenericConstraint):
           period :math:`y`
         """
         # get dimensions
-        techs = self.zen_model.sets["set_conversion_technologies"]
+        techs = model_constructor.zen_model.sets["set_conversion_technologies"]
         if len(techs) == 0:
             return
-        nodes = self.zen_model.sets["set_nodes"]
+        nodes = model_constructor.zen_model.sets["set_nodes"]
         # define mask
         min_full_load_hours_fraction = (
-            self.zen_model.parameters.min_full_load_hours_fraction
+            model_constructor.zen_model.parameters.min_full_load_hours_fraction
         )
         mask = xr.DataArray(
             ~np.isclose(min_full_load_hours_fraction, 0),
@@ -60,8 +61,8 @@ class MinimumFullLoadHoursConstraint(GenericConstraint):
         # create constraint
         term_capacity = (
             min_full_load_hours_fraction
-            * self.config.system.unaggregated_time_steps_per_year
-            * self.zen_model.variables["capacity"]
+            * model_constructor.config.system.unaggregated_time_steps_per_year
+            * model_constructor.zen_model.variables["capacity"]
             .sel(
                 {
                     "set_technologies": techs,
@@ -77,12 +78,14 @@ class MinimumFullLoadHoursConstraint(GenericConstraint):
             )
         )
         term_annual_production = (
-            self.get_flow_expression_conversion(techs, nodes)
-            * self.get_year_time_step_duration_array()
+            cls.get_flow_expression_conversion(model_constructor, techs, nodes)
+            * cls.get_year_time_step_duration_array(model_constructor)
         ).sum("set_time_steps_operation")
 
         lhs = term_annual_production.where(mask) - term_capacity.where(mask)
         rhs = 0
         constraints = lhs >= rhs
 
-        self.zen_model.add_constraint("constraint_minimum_full_load_hours", constraints)
+        model_constructor.zen_model.add_constraint(
+            "constraint_minimum_full_load_hours", constraints
+        )

@@ -4,7 +4,8 @@ from zen_garden.topology.generic_constraint import GenericConstraint
 
 
 class CostCarbonEmissionsTotalConstraint(GenericConstraint):
-    def build(self):
+    @classmethod
+    def build(cls, model_constructor):
         """Summary:
         Carbon cost associated with the carbon emissions of the system in each year.
 
@@ -31,39 +32,41 @@ class CostCarbonEmissionsTotalConstraint(GenericConstraint):
         is assigned only to the last modeled year.
         """
         mask_last_year = [
-            year == self.model_schema.set_years[-1]
-            for year in self.model_schema.set_years
+            year == model_constructor.model_schema.set_years[-1]
+            for year in model_constructor.model_schema.set_years
         ]
 
         lhs = (
-            self.zen_model.variables["cost_carbon_emissions_total"]
-            - self.zen_model.variables["carbon_emissions_annual"]
-            * self.zen_model.parameters.price_carbon_emissions
+            model_constructor.zen_model.variables["cost_carbon_emissions_total"]
+            - model_constructor.zen_model.variables["carbon_emissions_annual"]
+            * model_constructor.zen_model.parameters.price_carbon_emissions
         )
         # add cost for overshooting carbon emissions budget
         budget_overshoot = (
-            self.zen_model.parameters.price_carbon_emissions_budget_overshoot
+            model_constructor.zen_model.parameters.price_carbon_emissions_budget_overshoot
         )
         if budget_overshoot != np.inf:
             lhs -= (
-                self.zen_model.variables["carbon_emissions_budget_overshoot"].where(
-                    mask_last_year
-                )
+                model_constructor.zen_model.variables[
+                    "carbon_emissions_budget_overshoot"
+                ].where(mask_last_year)
                 * budget_overshoot.item()
             )
         # add cost for overshooting annual carbon emissions limit
         annual_overshoot = (
-            self.zen_model.parameters.price_carbon_emissions_annual_overshoot
+            model_constructor.zen_model.parameters.price_carbon_emissions_annual_overshoot
         )
         if annual_overshoot != np.inf:
             lhs -= (
-                self.zen_model.variables["carbon_emissions_annual_overshoot"]
+                model_constructor.zen_model.variables[
+                    "carbon_emissions_annual_overshoot"
+                ]
                 * annual_overshoot.item()
             )
 
         rhs = 0
         constraints = lhs == rhs
 
-        self.zen_model.add_constraint(
+        model_constructor.zen_model.add_constraint(
             "constraint_cost_carbon_emissions_total", constraints
         )

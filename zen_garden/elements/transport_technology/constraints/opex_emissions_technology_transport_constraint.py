@@ -2,7 +2,8 @@ from zen_garden.topology.generic_constraint import GenericConstraint
 
 
 class OpexEmissionsTechnologyTransportConstraint(GenericConstraint):
-    def build(self):
+    @classmethod
+    def build(cls, model_constructor):
         """Summary:
         Calculate opex of each technology.
 
@@ -30,15 +31,15 @@ class OpexEmissionsTechnologyTransportConstraint(GenericConstraint):
         :math:`\\varepsilon^{\\mathrm{op}}_{h,e}`: carbon intensity of transport
         technology
         """
-        techs = self.zen_model.sets["set_transport_technologies"]
+        techs = model_constructor.zen_model.sets["set_transport_technologies"]
         if len(techs) == 0:
             return
-        edges = self.zen_model.sets["set_edges"]
-        lhs_opex = self.zen_model.variables["cost_opex_variable"].loc[
+        edges = model_constructor.zen_model.sets["set_edges"]
+        lhs_opex = model_constructor.zen_model.variables["cost_opex_variable"].loc[
             techs, edges, :
         ] - (
-            self.zen_model.parameters.opex_specific_variable
-            * self.zen_model.variables["flow_transport"].rename(
+            model_constructor.zen_model.parameters.opex_specific_variable
+            * model_constructor.zen_model.variables["flow_transport"].rename(
                 {
                     "set_transport_technologies": "set_technologies",
                     "set_edges": "set_location",
@@ -47,11 +48,11 @@ class OpexEmissionsTechnologyTransportConstraint(GenericConstraint):
         ).sel(
             {"set_technologies": techs, "set_location": edges}
         )
-        lhs_emissions = self.zen_model.variables["carbon_emissions_technology"].loc[
-            techs, edges, :
-        ] - (
-            self.zen_model.parameters.carbon_intensity_technology
-            * self.zen_model.variables["flow_transport"].rename(
+        lhs_emissions = model_constructor.zen_model.variables[
+            "carbon_emissions_technology"
+        ].loc[techs, edges, :] - (
+            model_constructor.zen_model.parameters.carbon_intensity_technology
+            * model_constructor.zen_model.variables["flow_transport"].rename(
                 {
                     "set_transport_technologies": "set_technologies",
                     "set_edges": "set_location",
@@ -76,9 +77,9 @@ class OpexEmissionsTechnologyTransportConstraint(GenericConstraint):
         constraints_opex = lhs_opex == rhs
         constraints_emissions = lhs_emissions == rhs
         ### return
-        self.zen_model.add_constraint(
+        model_constructor.zen_model.add_constraint(
             "constraint_opex_technology_transport", constraints_opex
         )
-        self.zen_model.add_constraint(
+        model_constructor.zen_model.add_constraint(
             "constraint_carbon_emissions_technology_transport", constraints_emissions
         )

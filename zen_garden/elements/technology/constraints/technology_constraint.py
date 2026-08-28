@@ -1,13 +1,22 @@
 from abc import ABC
-from typing import cast
+from typing import TYPE_CHECKING
 
 import numpy as np
 
 from zen_garden.topology.generic_constraint import GenericConstraint
 
+if TYPE_CHECKING:
+    from zen_garden.elements.model_constructor import ModelConstructor
+
 
 class TechnologyConstraint(GenericConstraint, ABC):
-    def get_lifetime_range(self, tech, year, use_depreciation_time=False):
+    @staticmethod
+    def get_lifetime_range(
+        model_constructor: "ModelConstructor",
+        tech,
+        year,
+        use_depreciation_time=False,
+    ):
         """Get active year range of technology: either lifetime or depreciation time.
 
         :param tech: name of the technology
@@ -16,18 +25,25 @@ class TechnologyConstraint(GenericConstraint, ABC):
             time instead of lifetime, namely for CAPEX calculation
         :return: lifetime or depreciation time range of technology
         """
-        first_lifetime_year = self.get_first_lifetime_time_step(
+        first_lifetime_year = TechnologyConstraint.get_first_lifetime_time_step(
+            model_constructor,
             tech,
             year,
             use_depreciation_time,
         )
         first_lifetime_year = max(
             first_lifetime_year,
-            cast(int, self.zen_model.sets["set_years"][0]),
+            model_constructor.model_schema.set_years[0],
         )
         return range(first_lifetime_year, year + 1)
 
-    def get_first_lifetime_time_step(self, tech, year, use_depreciation_time=False):
+    @staticmethod
+    def get_first_lifetime_time_step(
+        model_constructor: "ModelConstructor",
+        tech,
+        year,
+        use_depreciation_time=False,
+    ):
         """Get first time step of active capacity of technology.
 
         Returns the first time step within the lifetime or depreciation time of the
@@ -41,7 +57,7 @@ class TechnologyConstraint(GenericConstraint, ABC):
         :return: first time step where capacity or investment is still valid
         """
         # get params and system
-        params = self.zen_model.parameters.dict_parameters
+        params = model_constructor.zen_model.parameters.dict_parameters
         lifetime = (
             params.depreciation_time[tech]
             if use_depreciation_time
@@ -49,6 +65,11 @@ class TechnologyConstraint(GenericConstraint, ABC):
         )
         # conservative estimate of lifetime (floor)
         del_lifetime = (
-            int(np.floor(lifetime / self.config.system.interval_between_years)) - 1
+            int(
+                np.floor(
+                    lifetime / model_constructor.config.system.interval_between_years
+                )
+            )
+            - 1
         )
         return year - del_lifetime

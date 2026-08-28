@@ -7,7 +7,8 @@ from zen_garden.topology.generic_constraint import GenericConstraint
 
 
 class TransportTechnologyLossesFlowConstraint(GenericConstraint):
-    def build(self):
+    @classmethod
+    def build(cls, model_constructor):
         """Summary:
         Compute the flow losses for a carrier through a transport technology.
 
@@ -41,22 +42,26 @@ class TransportTechnologyLossesFlowConstraint(GenericConstraint):
         :math:`F^{\\mathrm{trans}}_{h,e,t}`: carrier flow through transport
         technology :math:`h` on edge :math:`e` in time step :math:`t` of year :math:`y`
         """
-        if len(self.zen_model.sets["set_transport_technologies"]) == 0:
+        if len(model_constructor.zen_model.sets["set_transport_technologies"]) == 0:
             return
-        flow_transport = self.zen_model.variables["flow_transport"]
-        flow_transport_loss = self.zen_model.variables["flow_transport_loss"]
+        flow_transport = model_constructor.zen_model.variables["flow_transport"]
+        flow_transport_loss = model_constructor.zen_model.variables[
+            "flow_transport_loss"
+        ]
         # This mask checks the distance between nodes
         distance_isfinite = cast(
-            xr.DataArray, ~np.isinf(self.zen_model.parameters.distance)
+            xr.DataArray, ~np.isinf(model_constructor.zen_model.parameters.distance)
         )
         mask = distance_isfinite.broadcast_like(flow_transport.lower)
-        loss_factor = self.zen_model.parameters.transport_loss_factor.broadcast_like(
-            flow_transport.lower
+        loss_factor = (
+            model_constructor.zen_model.parameters.transport_loss_factor.broadcast_like(
+                flow_transport.lower
+            )
         )
         lhs = (flow_transport_loss - loss_factor * flow_transport).where(mask, 0)
         rhs = 0
         constraints = lhs == rhs
 
-        self.zen_model.add_constraint(
+        model_constructor.zen_model.add_constraint(
             "constraint_transport_technology_losses_flow", constraints
         )

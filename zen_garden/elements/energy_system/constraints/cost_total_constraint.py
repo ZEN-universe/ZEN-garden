@@ -2,7 +2,8 @@ from zen_garden.topology.generic_constraint import GenericConstraint
 
 
 class CostTotalConstraint(GenericConstraint):
-    def build(self):
+    @classmethod
+    def build(cls, model_constructor):
         """Summary:
         Add up all costs from technologies and carriers.
 
@@ -24,13 +25,13 @@ class CostTotalConstraint(GenericConstraint):
         emissions in year :math:`y`
         """
         lhs = (
-            self.zen_model.variables["cost_total"]
-            - self.zen_model.variables["cost_capex_yearly_total"]
-            - self.zen_model.variables["cost_opex_yearly_total"]
-            - self.zen_model.variables["cost_carrier_total"]
-            - self.zen_model.variables["cost_carbon_emissions_total"]
+            model_constructor.zen_model.variables["cost_total"]
+            - model_constructor.zen_model.variables["cost_capex_yearly_total"]
+            - model_constructor.zen_model.variables["cost_opex_yearly_total"]
+            - model_constructor.zen_model.variables["cost_carrier_total"]
+            - model_constructor.zen_model.variables["cost_carbon_emissions_total"]
         )
         rhs = 0
         constraints = lhs == rhs
 
-        self.zen_model.add_constraint("constraint_cost_total", constraints)
+        model_constructor.zen_model.add_constraint("constraint_cost_total", constraints)

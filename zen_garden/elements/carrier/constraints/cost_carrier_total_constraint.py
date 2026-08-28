@@ -2,7 +2,8 @@ from zen_garden.topology.generic_constraint import GenericConstraint
 
 
 class CostCarrierTotalConstraint(GenericConstraint):
-    def build(self):
+    @classmethod
+    def build(cls, model_constructor):
         """Summary:
         Total cost of importing and exporting carrier.
 
@@ -22,16 +23,25 @@ class CostCarrierTotalConstraint(GenericConstraint):
         :math:`y`
         :math:`\\Delta t_t`: duration of time step :math:`t`
         """
-        times = self.get_year_time_step_duration_array()
+        times = cls.get_year_time_step_duration_array(model_constructor)
         term_summed_cost_carrier = (
             (
-                self.zen_model.variables["cost_carrier"].broadcast_like(times)
-                + self.zen_model.variables["cost_shed_demand"].broadcast_like(times)
+                model_constructor.zen_model.variables["cost_carrier"].broadcast_like(
+                    times
+                )
+                + model_constructor.zen_model.variables[
+                    "cost_shed_demand"
+                ].broadcast_like(times)
             )
             * times
         ).sum(["set_carriers", "set_nodes", "set_time_steps_operation"])
-        lhs = self.zen_model.variables["cost_carrier_total"] - term_summed_cost_carrier
+        lhs = (
+            model_constructor.zen_model.variables["cost_carrier_total"]
+            - term_summed_cost_carrier
+        )
         rhs = 0
         constraints = lhs == rhs
 
-        self.zen_model.add_constraint("constraint_cost_carrier_total", constraints)
+        model_constructor.zen_model.add_constraint(
+            "constraint_cost_carrier_total", constraints
+        )

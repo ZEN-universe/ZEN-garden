@@ -2,7 +2,8 @@ from zen_garden.topology.generic_constraint import GenericConstraint
 
 
 class CostCarrierConstraint(GenericConstraint):
-    def build(self):
+    @classmethod
+    def build(cls, model_constructor):
         """Summary:
         Cost of importing and exporting carrier.
 
@@ -26,13 +27,15 @@ class CostCarrierConstraint(GenericConstraint):
         """
         ### formulate constraint
         lhs = (
-            self.zen_model.variables["cost_carrier"]
-            - self.zen_model.parameters.price_import
-            * self.zen_model.variables["flow_import"]
-            + self.zen_model.parameters.price_export
-            * self.zen_model.variables["flow_export"]
+            model_constructor.zen_model.variables["cost_carrier"]
+            - model_constructor.zen_model.parameters.price_import
+            * model_constructor.zen_model.variables["flow_import"]
+            + model_constructor.zen_model.parameters.price_export
+            * model_constructor.zen_model.variables["flow_export"]
         )
         rhs = 0
         constraints = lhs == rhs
 
-        self.zen_model.add_constraint("constraint_cost_carrier", constraints)
+        model_constructor.zen_model.add_constraint(
+            "constraint_cost_carrier", constraints
+        )
