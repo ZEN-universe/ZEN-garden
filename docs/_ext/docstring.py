@@ -51,12 +51,73 @@ class DocstringDirective(SphinxDirective):
     """
 
     required_arguments = 1
+    number_equations = False
     option_spec = {
         "include-summary": directives.flag,
         "sections": directives.unchanged_required,
     }
 
     section_header = re.compile(r"^(Summary|Formulation|Notation):$", re.I)
+    math_directive = re.compile(r"^(?P<indent>\s*)\.\. math::\s*$")
+
+    @staticmethod
+    def make_label_component(value: str) -> str:
+        """Convert a document or Python object name into a label component."""
+        return re.sub(r"[^a-z0-9]+", "-", value.lower()).strip("-")
+
+    @staticmethod
+    def math_directive_has_label(lines: list[str], directive_index: int) -> bool:
+        """Return whether a math directive already has an explicit label."""
+        directive_indent = len(lines[directive_index]) - len(
+            lines[directive_index].lstrip()
+        )
+
+        for line in lines[directive_index + 1 :]:
+            if not line.strip():
+                break
+
+            indentation = len(line) - len(line.lstrip())
+            if indentation <= directive_indent:
+                break
+
+            stripped = line.strip()
+            if stripped.startswith(":label:"):
+                return True
+            if not stripped.startswith(":"):
+                break
+
+        return False
+
+    def number_math_directives(
+        self, lines: list[str], full_name: str
+    ) -> list[tuple[str, int]]:
+        """Add page-qualified labels to otherwise-unlabeled math directives."""
+        document = self.make_label_component(self.env.docname)
+        python_object = self.make_label_component(full_name)
+        numbered_lines: list[tuple[str, int]] = []
+        equation_index = 0
+
+        for offset, line in enumerate(lines):
+            numbered_lines.append((line, offset))
+            match = self.math_directive.match(line)
+            if match is None:
+                continue
+
+            equation_index += 1
+            if self.math_directive_has_label(lines, offset):
+                continue
+
+            label = f"docstring-equation-{document}-{python_object}-{equation_index}"
+            option_indent = f"{match.group('indent')}   "
+            numbered_lines.append((f"{option_indent}:label: {label}", offset))
+
+            next_line_is_content = offset + 1 < len(lines) and bool(
+                lines[offset + 1].strip()
+            )
+            if next_line_is_content:
+                numbered_lines.append(("", offset))
+
+        return numbered_lines
 
     def select_sections(self, lines: list[str]) -> list[str] | None:
         """Select named sections from a structured constraint docstring."""
@@ -146,8 +207,14 @@ class DocstringDirective(SphinxDirective):
         except (OSError, TypeError):
             source_line = 0
 
+        rendered_lines = (
+            self.number_math_directives(filtered, full_name)
+            if self.number_equations
+            else [(line, offset) for offset, line in enumerate(filtered)]
+        )
+
         content = StringList()
-        for offset, line in enumerate(filtered):
+        for line, offset in rendered_lines:
             content.append(line, source, source_line + offset)
 
         node = nodes.section()
@@ -188,6 +255,8 @@ class DocstringMethod(DocstringDirective):
 
 
     """
+
+    number_equations = True
 
     def run(self):
         full_name = self.arguments[0]
@@ -262,7 +331,7 @@ def setup(app: Sphinx) -> ExtensionMetadata:
     app.add_directive("docstring_class", DocstringClass)
 
     return {
-        "version": "0.1",
+        "version": "0.2",
         "parallel_read_safe": True,
         "parallel_write_safe": True,
     }

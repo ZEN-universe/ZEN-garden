@@ -30,7 +30,7 @@ Multiple pre-defined objective functions
 ----------------------------------------
 
 The user can flexibly choose between the available objective functions 
-(:ref:`math_forumlation.objective`).
+(:ref:`mathematical_formulation.objectives`).
 
 The available objective functions are:
 
@@ -102,7 +102,8 @@ Emission limits and budgets
 ----------------------------
 
 Emissions are determined based on the carrier- and technology-specific carbon 
-intensities defined in the input data (:ref:`math_formulation.emissions_objective`).
+intensities defined in the input data
+(:ref:`mathematical_formulation.emissions_objective`).
 
 **Decarbonization pathway:**
 
@@ -117,7 +118,7 @@ a carbon emission overshoot price for the annual carbon emissions targets, or
 the carbon emission budget, respectively. The overshoot price determines the 
 penalty term that is added to the objective function.
 
-For more information see :ref:`math_formulation.emissions_constraints`.
+For more information see :ref:`mathematical_formulation.emissions_constraints`.
 
 
 .. _features.technology:
