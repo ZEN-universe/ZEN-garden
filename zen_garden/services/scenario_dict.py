@@ -4,9 +4,9 @@ from copy import deepcopy
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from zen_garden.model.config import Config
     from zen_garden.services.dataset_path_resolver import DatasetPathResolver
     from zen_garden.services.element_registry import ElementRegistry
+    from zen_garden.topology.model_schema import ModelSchema
 
 
 class ScenarioDict(dict):
@@ -27,20 +27,18 @@ class ScenarioDict(dict):
         self,
         init_dict: dict,
         dataset_path_resolver: "DatasetPathResolver",
-        config: "Config",
-        element_type_classes: dict[str, type],
+        model_schema: "ModelSchema",
     ):
         """Initializes the dictionary from a normal dictionary.
 
         :param init_dict: The dictionary to initialize from
         :param dataset_path_resolver: The dataset path resolver
-        :param config: The config object
-        :param element_type_classes: The element type classes
+        :param model_schema: The canonical model schema
         """
         # set the attributes and expand the dict
         self.dataset_path_resolver = dataset_path_resolver
-        self.config = config
-        self.element_type_classes = element_type_classes
+        self.model_schema = model_schema
+        self.element_type_classes = model_schema.element_type_classes
 
         self.dict = self.expand_subsets(init_dict)
 
@@ -50,6 +48,10 @@ class ScenarioDict(dict):
 
         # finally we update the analysis, system, and solver in the config
         self.update_config()
+
+    @property
+    def config(self):
+        return self.model_schema.config
 
     def update_config(self):
         """Updates the analysis, system, and solver in the config."""

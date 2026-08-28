@@ -10,4 +10,4 @@ class SetNodesOnEdges(GenericSet):
 
     @classmethod
     def get_data(cls, constructor):
-        return constructor.energy_system.set_nodes_on_edges
+        return constructor.network_topology.set_nodes_on_edges

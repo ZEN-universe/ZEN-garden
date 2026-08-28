@@ -10,27 +10,23 @@ solve the optimization problem.
 import copy
 import logging
 from pathlib import Path
-from typing import TYPE_CHECKING
 
-from zen_garden.elements import ELEMENT_TYPE_CLASSES
-from zen_garden.elements.energy_system import EnergySystem
-from zen_garden.model.config import Config
 from zen_garden.model.time_steps import TimeStepsDicts
 from zen_garden.model.zen_model import ZenModel
 from zen_garden.optimization_step import OptimizationStep
 from zen_garden.preprocess.time_series_aggregation import TimeSeriesAggregation
 from zen_garden.preprocess.unit_handling import UnitHandling
 from zen_garden.services.dataset_path_resolver import DatasetPathResolver
+from zen_garden.services.element_factory import ElementFactory
 from zen_garden.services.element_registry import ElementRegistry
 from zen_garden.services.input_repository import InputRepository
+from zen_garden.services.network_topology import NetworkTopology
 from zen_garden.services.parameter_loading_service import ParameterLoadingService
 from zen_garden.services.scenario_dict import ScenarioDict
 from zen_garden.services.service_container import ServiceContainer
+from zen_garden.topology.model_schema import ModelSchema
 from zen_garden.types import YearSpecificTs
-
-if TYPE_CHECKING:
-    from zen_garden.default_config import Config as DefaultConfig
-    from zen_garden.utils import InputDataChecks
+from zen_garden.utils.input_data_checks import InputDataChecks
 
 logger = logging.getLogger(__name__)
 
@@ -38,11 +34,10 @@ logger = logging.getLogger(__name__)
 class OptimizationWorkflow:
     """Class defining the optimization model.
 
-    The class takes as inputs the properties of the optimization problem. The
-    properties are saved in the dictionaries analysis and system which are
-    passed to the class. After initializing the model, the class adds carriers
-    and technologies to the model and returns it. The class also includes a \
-    method to solve the optimization problem.
+    The constructor only stores its inputs. The workflow then runs in explicit
+    stages: :meth:`load_data` builds the services and loads all input data,
+    :meth:`aggregate_time_series` conducts the time series aggregation, and
+    :meth:`run_steps` builds and solves the optimization problem.
     """
 
     zen_model: ZenModel
@@ -50,34 +45,37 @@ class OptimizationWorkflow:
 
     def __init__(
         self,
-        raw_config: "DefaultConfig",
+        model_schema: ModelSchema,
         init_scenario_dict: dict,
-        input_data_checks: "InputDataChecks",
     ):
-        """Setup optimization of the energy system.
+        """Store the inputs for the optimization of the energy system.
 
-        This function sets up the optimization process for the energy system
-        using the provided configuration, scenario data, and input data checks.
+        The constructor only records its arguments. Call :meth:`load_data` and
+        :meth:`aggregate_time_series` (in that order) to build the services and
+        load the input data before running :meth:`run_steps`.
 
         Args:
-            config (Config): Config object used to extract the analysis, system,
-                and solver dictionaries.
-            scenario_dict (dict): Dictionary defining the scenario, including
+            model_schema (ModelSchema): Schema describing the optimization
+                problem, exposing the canonical configuration.
+            init_scenario_dict (dict): Dictionary defining the scenario, including
                 data such as resources, demand, etc.
-            input_data_checks (InputDataChecks): Input data checks object to
-                verify the integrity of the input data.
 
         """
+        self.model_schema = model_schema
+        self.init_scenario_dict = init_scenario_dict
         self.service_container = ServiceContainer("service_container")
 
-        # Copying is necessary, because the config object is modified,
-        # e.g., in add_elements of ElementRegistry
-        self.config = Config.from_setup(
-            copy.deepcopy(raw_config.analysis),
-            copy.deepcopy(raw_config.system),
-            copy.deepcopy(raw_config.solver),
-        )
-        self.service_container.register("config", self.config)
+    def load_data(self) -> None:
+        """Build the services and load all input data for the optimization.
+
+        Sets up the service container, resolves dataset paths, applies the
+        scenario, validates the input data, registers all elements and loads
+        every input parameter. Must be called before
+        :meth:`aggregate_time_series` and :meth:`run_steps`.
+        """
+        # work on a private copy so the shared input schema is left untouched
+        self.model_schema = copy.deepcopy(self.model_schema)
+        self.service_container.register("model_schema", self.model_schema)
 
         self.dataset_path_resolver = self.service_container.build_and_register(
             "dataset_path_resolver", DatasetPathResolver
@@ -87,14 +85,17 @@ class OptimizationWorkflow:
         # WARNING: ScenarioDict::__init__ updates the config object!
         # Hence, input_data_checks must be initialized after ScenarioDict
         scenario_dict = ScenarioDict(
-            init_scenario_dict,
+            self.init_scenario_dict,
             self.dataset_path_resolver,
-            self.config,
-            ELEMENT_TYPE_CLASSES,
+            self.model_schema,
         )
         self.service_container.register("scenario_dict", scenario_dict)
 
-        input_data_checks.config = self.config
+        # Input data checks validate the dataset's folder structure and technology
+        # data, and are registered for later injection into elements.
+        # NOTE: created here (rather than passed in) because they depend on the
+        # deep-copied model schema and the dataset path resolver built above.
+        input_data_checks = InputDataChecks(model_schema=self.model_schema)
         input_data_checks.dataset_path_resolver = self.dataset_path_resolver
         # check if input data exists
         input_data_checks.check_primary_folder_structure()
@@ -108,9 +109,14 @@ class OptimizationWorkflow:
         self.service_container.register("year_specific_ts", YearSpecificTs())
 
         # initiate dictionary for storing time steps
-        self.service_container.build_and_register("time_steps", TimeStepsDicts)
+        time_steps = self.service_container.build_and_register(
+            "time_steps", TimeStepsDicts
+        )
+        time_steps.sequence_time_steps_yearly = (
+            self.model_schema.sequence_time_steps_yearly
+        )
 
-        # Init the energy system
+        # Initialize the global schema before creating any elements.
         energy_system_folder_path = Path(
             self.dataset_path_resolver.folder_of_set("energy_system")
         )
@@ -122,14 +128,12 @@ class OptimizationWorkflow:
         self.service_container.build_and_register(
             "input_repository", InputRepository, folder_path=energy_system_folder_path
         )
-        self.energy_system = self.service_container.build_and_register(
-            "energy_system", EnergySystem
-        )
-
+        self.service_container.build_and_register("network_topology", NetworkTopology)
         element_registry = self.service_container.build_and_register(
             "element_registry", ElementRegistry
         )
-        element_registry.register_elements()
+        # instantiate every configured element and register it in the schema
+        self.service_container.build(ElementFactory).register_elements()
 
         # check if all elements from the scenario_dict are in the model
         scenario_dict.check_if_all_elements_in_model(element_registry)
@@ -141,20 +145,31 @@ class OptimizationWorkflow:
         parameter_loading_service.load_parameters()
 
         # conduct consistency checks of input units
-        unit_handling.consistency_checks_input_units(
-            self.config, self.energy_system, element_registry
-        )
+        unit_handling.consistency_checks_input_units(self.config, element_registry)
 
-        # conduct time series aggregation
+    def aggregate_time_series(self) -> None:
+        """Conduct the time series aggregation.
+
+        Requires :meth:`load_data` to have been called first.
+        """
         self.service_container.build_and_register(
             "time_series_aggregation", TimeSeriesAggregation
         )
+
+    @property
+    def config(self):
+        """Return the canonical configuration from the model schema."""
+        return self.model_schema.config
+
+    @property
+    def energy_system(self):
+        """Return the canonical energy-system element from the schema."""
+        return self.model_schema.energy_system
 
     def run_steps(
         self,
         scenario: str,
         model_name: str,
-        config: "DefaultConfig",
         no_solve: bool = False,
     ):
         """Run the optimization steps for the given scenario.
@@ -177,7 +192,7 @@ class OptimizationWorkflow:
                 steps_horizon=steps_horizon,
             )
             if not optimization_step.run_step(
-                scenario, step, model_name, config, steps_horizon_keys, no_solve
+                scenario, step, model_name, steps_horizon_keys, no_solve
             ):
                 break
 
@@ -187,7 +202,7 @@ class OptimizationWorkflow:
             # if not using rolling horizon, the optimization horizon
             # is the entire time series
             optimized_time_steps = [0]
-            steps_horizon = {0: self.energy_system.set_years}
+            steps_horizon = {0: self.model_schema.set_years}
             return optimized_time_steps, steps_horizon
 
         assert (
@@ -201,7 +216,7 @@ class OptimizationWorkflow:
             f"({self.config.system.years_in_decision_horizon})"
         )
         years_in_horizon = self.config.system.years_in_rolling_horizon
-        time_steps_yearly = self.energy_system.set_years
+        time_steps_yearly = self.model_schema.set_years
         # skip years_in_decision_horizon years
         optimized_time_steps = [
             year

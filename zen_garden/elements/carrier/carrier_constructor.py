@@ -5,7 +5,6 @@ import logging
 from typing_extensions import override
 
 from zen_garden.elements.carrier import Carrier
-from zen_garden.elements.carrier.constraints import CARRIER_CONSTRAINTS
 from zen_garden.elements.model_constructor import ModelConstructor
 
 logger = logging.getLogger(__name__)
@@ -13,22 +12,6 @@ logger = logging.getLogger(__name__)
 
 class CarrierConstructor(ModelConstructor):
     element_class = Carrier
-    constraints = CARRIER_CONSTRAINTS
-    parameters = Carrier.own_parameters
-    variables = Carrier.variables
-
-    @override
-    def has_elements(self) -> bool:
-        """Checks if there are any elements of the class
-        :class:`zen_garden.elements.carrier.Carrier`.
-
-        :return: True if there are elements, False otherwise
-        """
-        return True
-
-    @override
-    def construct_sets(self):
-        logger.info("Constructing sets for Carrier")
 
     @override
     def construct_vars(self):

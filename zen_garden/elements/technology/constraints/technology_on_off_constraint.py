@@ -5,7 +5,6 @@ import numpy as np
 import xarray as xr
 from linopy.expressions import LinearExpression
 
-from zen_garden.elements.technology import Technology
 from zen_garden.topology.generic_constraint import GenericConstraint
 
 
@@ -50,7 +49,7 @@ class TechnologyOnOffConstraint(GenericConstraint):
         :math:`\\overline{k}_{h,p,y}`: Big-M limit on :math:`K_{h,p,y}`
         """
         techs_on_off = self.zen_model.create_custom_set(
-            ["set_technologies", "set_on_off"], Technology
+            ["set_technologies", "set_on_off"]
         )[0]
 
         # sets

@@ -7,9 +7,11 @@ import numpy as np
 import pandas as pd
 
 from zen_garden.elements.element import Element
+from zen_garden.elements.technology.constraints import TECHNOLOGY_CONSTRAINTS
 from zen_garden.elements.technology.parameters import TECHNOLOGY_PARAMETERS
 from zen_garden.elements.technology.sets import TECHNOLOGY_SETS
 from zen_garden.elements.technology.variables import TECHNOLOGY_VARIABLES
+from zen_garden.topology.generic_constraint import GenericConstraint
 from zen_garden.topology.generic_parameter import GenericParameter
 from zen_garden.topology.generic_set import GenericSet
 from zen_garden.topology.generic_variable import GenericVariable
@@ -24,12 +26,12 @@ class Technology(Element):
     label = "set_technologies"
     location_type: str | None = None
     reference_carrier: list[str]
-    # Todo: Add the constraints here?
     lifetime: pd.Series
     lifetime_existing: pd.Series
     own_parameters: ClassVar[list[type[GenericParameter]]] = TECHNOLOGY_PARAMETERS
     variables: ClassVar[list[type[GenericVariable]]] = TECHNOLOGY_VARIABLES
     own_sets: ClassVar[list[type[GenericSet]]] = TECHNOLOGY_SETS
+    constraints: ClassVar[list[type[GenericConstraint]]] = TECHNOLOGY_CONSTRAINTS
 
     def initialize_reference_carrier(self):
         """Retrieves and stores information on reference."""
@@ -37,7 +39,7 @@ class Technology(Element):
             list[str],
             self.data_input.extract_carriers(carrier_type="reference_carrier"),
         )
-        self.energy_system.set_technology_of_carrier(self.name, self.reference_carrier)
+        self.model_schema.set_technology_of_carrier(self.name, self.reference_carrier)
 
     def prepare_input_data(self) -> None:
         """Load the vintage set needed by existing-capacity parameters."""

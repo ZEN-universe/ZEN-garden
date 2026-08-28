@@ -40,4 +40,5 @@ def register_plugins(
 
 
 def deregister_plugins():
+    """Deregister all plugin event callbacks."""
     EventPublisher.deregister_all()

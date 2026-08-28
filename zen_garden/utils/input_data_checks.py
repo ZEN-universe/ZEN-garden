@@ -1,49 +1,15 @@
 import logging
 import os
 import warnings
-from typing import TYPE_CHECKING
 
 import numpy as np
 
 from zen_garden.default_config import System
 from zen_garden.services.dataset_path_resolver import DatasetPathResolver
 
-if TYPE_CHECKING:
-    from zen_garden.model.config import Config
-
 logger = logging.getLogger(__name__)
 
 ATTRIBUTE_FILENAMES = ("attributes.json", "attributes.yaml", "attributes.yml")
-
-PROHIBITED_DATASET_CHARACTERS = [
-    " ",
-    ".",
-    ":",
-    ",",
-    ";",
-    "!",
-    "?",
-    "(",
-    ")",
-    "[",
-    "]",
-    "{",
-    "}",
-    "<",
-    ">",
-    "&",
-    "|",
-    "*",
-    "^",
-    "%",
-    "$",
-    "#",
-    "@",
-    "`",
-    "~",
-    "\\",
-    "/",
-]
 
 
 class InputDataChecks:
@@ -51,77 +17,36 @@ class InputDataChecks:
     element definitions, etc.) is defined correctly.
     """
 
-    config: "Config | None" = None
     dataset_path_resolver: "DatasetPathResolver | None" = None
 
-    def __init__(self, config):
+    def __init__(self, model_schema):
         """Initialize the class.
 
         Args:
-            config: config object used to extract the analysis, system and solver
-                dictionaries
+            model_schema: model schema exposing the canonical configuration used
+                to extract the analysis, system and solver dictionaries
         """
-        self.system = config.system
-        self.analysis = config.analysis
+        self.model_schema = model_schema
 
-    def check_technology_selections(self):
-        """Checks selection of different technologies in system.py file."""
-        # Checks if at least one technology is selected in the system.py file
-        assert (
-            len(
-                self.system.set_conversion_technologies
-                + self.system.set_transport_technologies
-                + self.system.set_storage_technologies
-            )
-            > 0
-        ), "No technology selected in system"
-        # Checks if identical technologies are selected multiple times in system.py
-        # file and removes possible duplicates
-        for tech_list in [
-            "set_conversion_technologies",
-            "set_transport_technologies",
-            "set_storage_technologies",
-        ]:
-            techs_selected = getattr(self.system, tech_list)
-            unique_elements = list(np.unique(techs_selected))
-            self.system = self.system.model_copy(update={tech_list: unique_elements})
+    @property
+    def config(self):
+        return self.model_schema.config
 
-    def check_year_definitions(self):
-        """Check if year-related parameters are defined correctly."""
-        # assert that number of optimized years is a positive integer
-        assert (
-            isinstance(self.system.optimized_years, int)
-            and self.system.optimized_years > 0
-        ), (
-            "Number of optimized years must be a positive integer, however it "
-            f"is {self.system.optimized_years}"
-        )
-        # assert that interval between years is a positive integer
-        assert (
-            isinstance(self.system.interval_between_years, int)
-            and self.system.interval_between_years > 0
-        ), (
-            "Interval between years must be a positive integer, however it is "
-            f"{self.system.interval_between_years}"
-        )
-        assert (
-            isinstance(self.system.reference_year, int)
-            and self.system.reference_year >= self.analysis.earliest_year_of_data
-        ), (
-            "Reference year must be an integer and larger than the defined "
-            f"earliest_year_of_data: {self.analysis.earliest_year_of_data}"
-        )
-        # check if the number of years in the rolling horizon isn't larger than
-        # the number of optimized years
-        if (
-            self.system.years_in_rolling_horizon > self.system.optimized_years
-            and self.system.use_rolling_horizon
-        ):
-            warnings.warn(
-                "The chosen number of years in the rolling horizon step is "
-                "larger than the total number of years optimized!",
-                stacklevel=2,
-            )
+    @property
+    def system(self):
+        return self.model_schema.config.system
+
+    @system.setter
+    def system(self, value):
+        self.model_schema.config.system = value
+
+    @property
+    def analysis(self):
+        return self.model_schema.config.analysis
+
+    @analysis.setter
+    def analysis(self, value):
+        self.model_schema.config.analysis = value
 
     def check_primary_folder_structure(self):
         """Checks if the primary folder structure (set_conversion_technology,
@@ -253,42 +178,6 @@ class InputDataChecks:
         assert self.dataset_path_resolver is not None
         paths = self.dataset_path_resolver.paths_of_element(set_name, element)
         return any(filename in paths for filename in ATTRIBUTE_FILENAMES)
-
-    def check_dataset(self):
-        """Ensures that the dataset chosen in the config does exist and contains a
-        system.py file.
-        """
-        dataset = os.path.basename(self.analysis.dataset)
-        dirname = os.path.dirname(self.analysis.dataset)
-        assert os.path.exists(
-            dirname
-        ), f"Requested folder {dirname} is not a valid path"
-        assert os.path.exists(self.analysis.dataset), (
-            f"The chosen dataset {dataset} does not exist at "
-            f"{self.analysis.dataset} as it is specified in the config"
-        )
-        # check if any character in the dataset name is prohibited
-        for char in PROHIBITED_DATASET_CHARACTERS:
-            if char in dataset:
-                raise ValueError(
-                    f"Character {char} is not allowed in the dataset name "
-                    f"{dataset}\nProhibited characters: "
-                    f"{PROHIBITED_DATASET_CHARACTERS}"
-                )
-        system_files = [
-            "system.yaml",
-            "system.yml",
-            "system.json",
-        ]
-        if not any(
-            os.path.exists(os.path.join(self.analysis.dataset, filename))
-            for filename in system_files
-        ):
-            raise FileNotFoundError(
-                f"No system definition file found in dataset "
-                f"'{self.analysis.dataset}'. "
-                "Expected one of: system.yaml, system.yml, system.json."
-            )
 
     def check_single_directed_edges(self, set_edges_input):
         """Checks if single-directed edges exist in the dataset (e.g. CH-DE exists,

@@ -20,7 +20,7 @@ you would add it to the ``Carrier`` class.
 .. tip::
 
     This guide assumes you have a good understanding of Python and the ZEN-garden framework.
-    ZEN-garden already has plenty of functionalities, so check out the :ref:`math_formulation.math_formulation` and
+    ZEN-garden already has plenty of functionalities, so check out the :ref:`mathematical_formulation.mathematical_formulation` and
     :ref:`notation.notation` for more information on how to use the existing functionalities.
 
 .. _adding_elements.adding_sets:
@@ -180,7 +180,7 @@ The ``add_variable`` method is called in the following way:
 
     self.zen_model.add_variable(
         name="flow_import",
-        index_sets=self.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_operation"], optimization_setup),
+        index_sets=self.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_operation"]),
         bounds=(0,np.inf),
         doc="node- and time-dependent carrier import from the grid",
         unit_category={"energy_quantity": 1, "time": -1},

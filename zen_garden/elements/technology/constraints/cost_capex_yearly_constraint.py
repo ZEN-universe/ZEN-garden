@@ -2,7 +2,6 @@ import linopy as lp
 import pandas as pd
 from linopy.expressions import LinearExpression
 
-from zen_garden.elements.technology import Technology
 from zen_garden.elements.technology.constraints.technology_constraint import (
     TechnologyConstraint,
 )
@@ -21,6 +20,18 @@ class CostCapexYearlyConstraint(TechnologyConstraint):
             \\sum_{\\tilde y\\in\\mathcal{Y}^{\\mathrm{dep}}_{h,y}}
             C^{\\mathrm{cap,overnight}}_{h,p,\\tilde y} +
             \\kappa^{\\mathrm{cap,ex}}_{h,p,y}\\right)
+
+        The annuity factor is
+
+        .. math::
+            a^{\\mathrm{ann}}_h =
+            \\begin{cases}
+            \\dfrac{(1+r^{\\mathrm{disc}})^{L_h^{\\mathrm{dep}}}
+            r^{\\mathrm{disc}}}
+            {(1+r^{\\mathrm{disc}})^{L_h^{\\mathrm{dep}}}-1},
+            & r^{\\mathrm{disc}} \\ne 0, \\\\
+            \\dfrac{1}{L_h^{\\mathrm{dep}}}, & r^{\\mathrm{disc}} = 0.
+            \\end{cases}
 
         Storage power- and energy-capacity CAPEX are stored separately and the
         equation is applied to both terms before aggregation.
@@ -44,8 +55,7 @@ class CostCapexYearlyConstraint(TechnologyConstraint):
                 "set_capacity_types",
                 "set_location",
                 "set_years",
-            ],
-            Technology,
+            ]
         )
         index = MultiIndexHelper(index_values, index_names)
         ### masks

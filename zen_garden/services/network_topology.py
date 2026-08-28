@@ -4,21 +4,21 @@ import numpy as np
 import pandas as pd
 
 if TYPE_CHECKING:
-    from zen_garden.model import Config
     from zen_garden.preprocess.unit_handling import UnitHandling
     from zen_garden.services.input_repository import InputRepository
+    from zen_garden.topology.model_schema import ModelSchema
     from zen_garden.utils.input_data_checks import InputDataChecks
 
 
 class NetworkTopology:
     def __init__(
         self,
-        config: "Config",
+        model_schema: "ModelSchema",
         input_repository: "InputRepository",
         input_data_checks: "InputDataChecks",
         unit_handling: "UnitHandling",
     ):
-        self.config = config
+        self.model_schema = model_schema
         self.input_repository = input_repository
         self.input_data_checks = input_data_checks
         self.unit_handling = unit_handling
@@ -29,6 +29,11 @@ class NetworkTopology:
         self.set_haversine_distances_edges = (
             self._calculate_haversine_distances_from_nodes()
         )
+
+    @property
+    def config(self):
+        """Return the canonical configuration from the model schema."""
+        return self.model_schema.config
 
     def _extract_nodes(self, extract_coordinates: bool):
         set_nodes_config = self.config.system.set_nodes

@@ -7,6 +7,6 @@ class SetElements(GenericSet):
     @classmethod
     def get_data(cls, constructor):
         return list(
-            set(constructor.energy_system.set_technologies)
-            | set(constructor.energy_system.set_carriers)
+            set(constructor.model_schema.set_technologies)
+            | set(constructor.model_schema.set_carriers)
         )

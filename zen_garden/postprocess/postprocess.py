@@ -20,7 +20,6 @@ from filelock import FileLock
 from tables import NaturalNameWarning
 
 if TYPE_CHECKING:
-    from zen_garden.model.config import Config
     from zen_garden.model.time_steps import TimeStepsDicts
     from zen_garden.model.zen_model import ZenModel
     from zen_garden.preprocess.scaling import Scaling
@@ -51,7 +50,7 @@ class Postprocess:
 
     def __init__(
         self,
-        config: "Config",
+        model_schema: "ModelSchema",
         unit_handling: "UnitHandling",
         zen_model: "ZenModel",
         scaling: "Scaling",
@@ -72,9 +71,10 @@ class Postprocess:
         """
         logger.info("\n--- Postprocess results ---\n")
         # get the necessary stuff from the model
-        self.config = config
+        self.model_schema = model_schema
         self.unit_handling = unit_handling
         self.zen_model = zen_model
+        self.energy_system = model_schema.energy_system
 
         self.lp_model = zen_model.lp_model
 
@@ -133,6 +133,11 @@ class Postprocess:
         self.save_param_map()
         if self.config.solver.run_diagnostics:
             self.save_benchmarking_data()
+
+    @property
+    def config(self):
+        """Return the canonical configuration from the model schema."""
+        return self.model_schema.config
 
     def save_benchmarking_data(self):
         """Saves the benchmarking data to a json file."""

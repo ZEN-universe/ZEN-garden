@@ -1,135 +1,39 @@
-import copy
-import logging
-from collections import defaultdict
-from typing import TYPE_CHECKING, Any, TypeVar, cast
+from typing import TYPE_CHECKING, Any, TypeVar
 
 import pandas as pd
 
-from zen_garden.elements import ELEMENT_TYPE_CLASSES
 from zen_garden.elements.element import Element
-from zen_garden.services.service_container import ServiceContainer
 
 if TYPE_CHECKING:
-    from zen_garden.elements.energy_system import EnergySystem
-    from zen_garden.model.config import Config
-    from zen_garden.model.time_steps import TimeStepsDicts
     from zen_garden.preprocess.unit_handling import UnitHandling
-    from zen_garden.services.dataset_path_resolver import DatasetPathResolver
-    from zen_garden.services.scenario_dict import ScenarioDict
-    from zen_garden.types import YearSpecificTs
-    from zen_garden.utils.input_data_checks import InputDataChecks
-
-logger = logging.getLogger(__name__)
+    from zen_garden.topology.model_schema import ModelSchema
 
 T = TypeVar("T", bound=Element)
 
 
 class ElementRegistry:
+    """Read-only accessor over the elements registered in the model schema.
+
+    Provides lookups by type or name and bulk extraction of element attributes
+    together with their units. Elements are put into the schema by
+    :class:`ElementFactory`.
+    """
+
     def __init__(
         self,
-        service_container: "ServiceContainer",
-        config: "Config",
-        energy_system: "EnergySystem",
-        input_data_checks: "InputDataChecks",
+        model_schema: "ModelSchema",
         unit_handling: "UnitHandling",
-        dataset_path_resolver: "DatasetPathResolver",
-        scenario_dict: "ScenarioDict",
-        time_steps: "TimeStepsDicts",
-        year_specific_ts: "YearSpecificTs",
     ):
-        self.service_container = service_container
-        self.config = config
-        self.energy_system = energy_system
-        self.input_data_checks = input_data_checks
+        self.model_schema = model_schema
         self.unit_handling = unit_handling
-        self.dataset_path_resolver = dataset_path_resolver
-        self.scenario_dict = scenario_dict
-        self.time_steps = time_steps
-        self.year_specific_ts = year_specific_ts
-
-        self.dict_elements: defaultdict[str, list[Element]] = defaultdict(list)
-
-    def register_elements(self) -> None:
-        """Set up the parameters, variables and constraints of the carriers."""
-        logger.info("\n--- Add elements to model--- \n")
-        for element_id in ELEMENT_TYPE_CLASSES.keys():
-            element_class = ELEMENT_TYPE_CLASSES[element_id]
-            element_name = element_class.label
-            element_set = cast(list[str], self.config.system[element_name])
-
-            # before adding the carriers, get set_carriers
-            # check if carrier data exists
-            if element_name == "set_carriers":
-                # TODO: Eliminate this hidden dependency on ConversionTechnology,
-                # which modifies set_carriers in EnergySystem
-                element_set = self.energy_system.set_carriers
-                self.config.system.set_carriers = element_set
-                self.input_data_checks.check_existing_carrier_data(element_set)
-
-            # check if element_set has a subset and remove subset from element_set
-            element_subset: list[str] = []
-            if element_name in self.config.analysis.subsets.keys():
-                if isinstance(self.config.analysis.subsets[element_name], list):
-                    subset_names = self.config.analysis.subsets[element_name]
-                elif isinstance(self.config.analysis.subsets[element_name], dict):
-                    subset_names = self.config.analysis.subsets[element_name].keys()
-                else:
-                    raise ValueError(
-                        f"Subset {element_name} has to be either a list or a dict"
-                    )
-                element_subset = [
-                    item
-                    for subset in subset_names
-                    for item in self.config.system[subset]
-                ]
-            else:
-                stack = [
-                    _dict
-                    for _dict in copy.deepcopy(self.config.analysis.subsets).values()
-                    if isinstance(_dict, dict)
-                ]
-                while stack:  # check if element_set is a subset of a subset
-                    cur_dict = stack.pop()
-                    element_subset = []
-                    for set_name, subsets in cur_dict.items():
-                        if element_name == set_name:
-                            if isinstance(subsets, list):
-                                element_subset += [
-                                    item
-                                    for subset_name in subsets
-                                    for item in self.config.system[subset_name]
-                                ]
-                        if isinstance(subsets, dict):
-                            stack.append(subsets)
-
-            # add element class
-            element_names = list(set(element_set) - set(element_subset))
-            for element_name in sorted(element_names):
-                self._register_element(element_class, element_name)
-
-    def _register_element(self, element_class: type[Element], element_name: str):
-        """Add an element to the element_dict with the class labels as key.
-
-        Args:
-            element_class: Class of the element
-            name: Name of the element
-        """
-        instance = self.service_container.build(
-            element_class, element_name=element_name
-        )
-        # Add instance to all classes that element_class inherits from, including itself
-        # MRO (Method Resolution Order) gives the order in which base classes
-        # are searched when looking for a method.
-        for class_name in element_class.__mro__:
-            self.dict_elements[class_name.__name__].append(instance)
 
     def all_elements_of_type(self, class_name: type[T]) -> list[T]:
         """Get all elements of the class in the energy system."""
-        return cast(list[T], self.dict_elements[class_name.__name__])
+        return self.model_schema.all_elements_of_type(class_name)
 
     def all_elements(self) -> list[Element]:
         """Get all elements in the energy system."""
-        return list(self.dict_elements[Element.__name__])
+        return self.model_schema.all_elements()
 
     def all_names_of_elements(self, class_name: type[Element]) -> list[str]:
         """Get all names of elements in class.
@@ -151,15 +55,26 @@ class ElementRegistry:
                 return element
         return None
 
+    def get_element_by_name(self, element_name: str) -> Element | None:
+        """Get a single element by name, regardless of its class.
+
+        :param element_name: name of the element
+        :return: the element whose name matches, or None if there is none
+        """
+        for element in self.all_elements():
+            if element.name == element_name:
+                return element
+        return None
+
     def get_element_class(self, name: str) -> type[Element] | None:
         """Get element class by name. If not an element class, return None.
 
         :param name: name of element class
         :return: element_class: return element whose name is matched
         """
-        for class_name in ELEMENT_TYPE_CLASSES:
-            if ELEMENT_TYPE_CLASSES[class_name].label == name:
-                return ELEMENT_TYPE_CLASSES[class_name]
+        for element_class in self.model_schema.element_classes:
+            if element_class.label == name:
+                return element_class
         return None
 
     def get_attribute_of_all_elements_with_units(
@@ -192,11 +107,13 @@ class ElementRegistry:
                     attribute_is_series = attribute_is_series_temp
             # if extracted for both capacity types
             else:
-                for capacity_type in self.config.system.set_capacity_types:
+                for capacity_type in self.model_schema.config.system.set_capacity_types:
                     # append energy only for storage technologies
                     if (
-                        capacity_type == self.config.system.set_capacity_types[0]
-                        or element.name in self.config.system.set_storage_technologies
+                        capacity_type
+                        == self.model_schema.config.system.set_capacity_types[0]
+                        or element.name
+                        in self.model_schema.config.system.set_storage_technologies
                     ):
                         dict_of_attributes, attribute_is_series_temp, dict_of_units = (
                             self.append_attribute_of_element_to_dict(
@@ -239,26 +156,26 @@ class ElementRegistry:
             element: element of class
             attribute_name (str): str name of attribute
             dict_of_attributes (dict): dict of attribute values
+            dict_of_units (dict): dict of attribute units
             capacity_type: capacity type for which attribute extracted. If None,
                 not listed in key
-            dict_of_attributes: returns dict of attribute values
         """
         attribute_is_series = False
         # add Energy for energy capacity type
-        if capacity_type == self.config.system.set_capacity_types[1]:
-            attribute_name += "_energy"
+        if capacity_type == self.model_schema.config.system.set_capacity_types[1]:
+            attribute_name = f"{attribute_name}_energy"
         # if element does not have attribute
         if not hasattr(element, attribute_name):
-            # if attribute is time series that does not exist
-            if (
+            is_missing_time_series = (
                 attribute_name in element.raw_time_series
                 and element.raw_time_series[attribute_name] is None
-            ):
+            )
+            if is_missing_time_series:
                 return dict_of_attributes, None, dict_of_units
-            else:
-                raise AssertionError(
-                    f"Element {element.name} does not have attribute {attribute_name}"
-                )
+            raise AssertionError(
+                f"Element {element.name} does not have attribute {attribute_name}"
+            )
+
         attribute: dict[str, Any] | pd.Series | int | Any | None = getattr(
             element, attribute_name
         )
@@ -266,96 +183,62 @@ class ElementRegistry:
             "Not yet implemented for pd.DataFrames. Wrong format for "
             f"element {element.name}"
         )
-        # add attribute to dict_of_attributes
         if attribute is None:
             return dict_of_attributes, False, dict_of_units
 
+        element_key = (element.name, capacity_type) if capacity_type else element.name
+        attribute_is_series = False
+
         if isinstance(attribute, dict):
             dict_of_attributes.update(
-                {(element.name,) + (key,): val for key, val in attribute.items()}
+                {(element.name, key): value for key, value in attribute.items()}
             )
         elif isinstance(attribute, pd.Series):
-            combined_key: str | tuple[str, str]
-            if capacity_type:
-                combined_key = (element.name, capacity_type)
-            else:
-                combined_key = element.name
-            if attribute_name in element.units:
-                if attribute_name in [
+            fallback_units = {
+                "capex_capacity_existing": ("opex_specific_fixed", None),
+                "capex_capacity_existing_energy": (
+                    "opex_specific_fixed_energy",
+                    None,
+                ),
+                "capex_specific_transport": ("opex_specific_fixed", None),
+                "capex_per_distance_transport": (
+                    "opex_specific_fixed",
+                    "[length]",
+                ),
+            }
+            unit_attribute = attribute_name
+            divisor_dimension = None
+            if attribute_name not in element.units:
+                unit_attribute, divisor_dimension = fallback_units.get(
+                    attribute_name, (None, None)
+                )
+
+            if unit_attribute is not None:
+                unit = element.units[unit_attribute]
+                if attribute_name not in {
                     "conversion_factor",
                     "retrofit_flow_coupling_factor",
-                ]:
-                    dict_of_units[combined_key] = element.units[attribute_name]
-                else:
-                    dict_of_units[combined_key] = element.units[attribute_name][
-                        "unit_in_base_units"
-                    ].units
-            else:
-                # needed since these
-                if attribute_name == "capex_capacity_existing":
-                    dict_of_units[combined_key] = element.units["opex_specific_fixed"][
-                        "unit_in_base_units"
-                    ].units
-                elif attribute_name == "capex_capacity_existing_energy":
-                    dict_of_units[combined_key] = element.units[
-                        "opex_specific_fixed_energy"
-                    ]["unit_in_base_units"].units
-                elif attribute_name == "capex_specific_transport":
-                    dict_of_units[combined_key] = element.units["opex_specific_fixed"][
-                        "unit_in_base_units"
-                    ].units
-                elif attribute_name == "capex_per_distance_transport":
-                    base_units = self.unit_handling.base_units.items()
-                    length_base_unit = [
-                        key for key, value in base_units if value == "[length]"
-                    ][0]
-                    dict_of_units[combined_key] = element.units["opex_specific_fixed"][
-                        "unit_in_base_units"
-                    ].units / self.unit_handling.ureg(length_base_unit)
-            if len(attribute) > 1:
-                dict_of_attributes[combined_key] = attribute
-                attribute_is_series = True
-            else:
-                if attribute.index == 0:
-                    dict_of_attributes[combined_key] = attribute.squeeze()
-                    attribute_is_series = False
-                # since single-directed edges are allowed to exist (e.g. CH-DE exists,
-                # DE-CH doesn't), TransportTechnology attributes shared with other
-                # technologies (such as capacity existing)
-                # mustn't be squeezed even-though the attributes length is smaller than
-                # 1. Otherwise, pd.concat(dict_of_attributes) messes up in
-                # initialize_component(), leading to an error further on in the code.
-                else:
-                    dict_of_attributes[combined_key] = attribute
-                    attribute_is_series = True
-        elif isinstance(attribute, int):
-            if capacity_type:
-                dict_of_attributes[(element.name, capacity_type)] = [attribute]
-            else:
-                dict_of_attributes[element.name] = [attribute]
+                }:
+                    unit = unit["unit_in_base_units"].units
+                if divisor_dimension is not None:
+                    base_unit = next(
+                        key
+                        for key, dimension in self.unit_handling.base_units.items()
+                        if dimension == divisor_dimension
+                    )
+                    unit = unit / self.unit_handling.ureg(base_unit)
+                dict_of_units[element_key] = unit
+
+            # Preserve non-default indices, such as single-directed transport edges,
+            # so that pd.concat retains their dimension downstream.
+            is_scalar = len(attribute) == 1 and attribute.index[0] == 0
+            dict_of_attributes[element_key] = (
+                attribute.squeeze() if is_scalar else attribute
+            )
+            attribute_is_series = not is_scalar
         else:
-            if capacity_type:
-                dict_of_attributes[(element.name, capacity_type)] = attribute
-            else:
-                dict_of_attributes[element.name] = attribute
+            dict_of_attributes[element_key] = (
+                [attribute] if isinstance(attribute, int) else attribute
+            )
+
         return dict_of_attributes, attribute_is_series, dict_of_units
-
-    def get_attribute_of_specific_element(
-        self, cls, element_name: str, attribute_name: str
-    ):
-        """Get attribute of specific element in class.
-
-        :param cls: class of the elements to return
-        :param element_name: str name of element
-        :param attribute_name: str name of attribute
-        :return: attribute_value: value of attribute
-        """
-        # get element
-        element = self.get_element(cls, element_name)
-        # assert that _element exists and has attribute
-        assert element, f"Element {element_name} not in class {cls.__name__}"
-        assert hasattr(
-            element, attribute_name
-        ), f"Element {element_name} does not have attribute {attribute_name}"
-        attribute_value = getattr(element, attribute_name)
-        return attribute_value

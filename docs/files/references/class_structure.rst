@@ -140,5 +140,6 @@ Class Structure
        class ZenModel
        class DatasetPathResolver
        class ModelConstructionService
+       class ElementFactory
        class ElementRegistry
        class YearSpecificTs

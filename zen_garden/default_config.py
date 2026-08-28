@@ -31,13 +31,46 @@ Default values are overwritten by any changes specified in the input files
 """
 
 import json
+import os
 import warnings
 from collections.abc import ItemsView, KeysView, ValuesView
+from importlib.metadata import version
 from pathlib import Path
 from typing import Any, Literal, Optional, Union
 
 import yaml
 from pydantic import BaseModel, ConfigDict, ValidationError
+from typing_extensions import override
+
+PROHIBITED_DATASET_CHARACTERS = [
+    " ",
+    ".",
+    ":",
+    ",",
+    ";",
+    "!",
+    "?",
+    "(",
+    ")",
+    "[",
+    "]",
+    "{",
+    "}",
+    "<",
+    ">",
+    "&",
+    "|",
+    "*",
+    "^",
+    "%",
+    "$",
+    "#",
+    "@",
+    "`",
+    "~",
+    "\\",
+    "/",
+]
 
 
 class ConfigBase(BaseModel):
@@ -176,6 +209,7 @@ class HeaderDataInputs(ConfigBase):
     set_technologies: str = "technology"
     set_technologies_existing: str = "technology_existing"
     set_capacity_types: str = "capacity_type"
+    set_retrofitting_technologies: str = "technology"
 
 
 class System(ConfigBase):
@@ -299,3 +333,165 @@ class Config(ConfigBase):
     plugins: dict[str, Any] = {}
 
     scenarios: dict[str, Any] = {"": {}}
+
+    @classmethod
+    @override
+    def from_file(
+        cls,
+        config_path: str | Path,
+        dataset_path: str | Path | None = None,
+        folder_output: str | Path | None = None,
+    ) -> "Config":
+        """Load analysis, solver, and dataset system configuration.
+
+        Relative paths are resolved against the main configuration file. A
+        supplied dataset or output folder overrides the corresponding analysis
+        setting before paths and the dataset's system file are loaded.
+        """
+        config = super().from_file(config_path)
+        assert isinstance(config, cls)
+        config_path = Path(config_path)
+        config_dir = config_path.parent
+
+        if dataset_path is not None:
+            config.analysis.dataset = str(dataset_path)
+        if folder_output is not None:
+            config.analysis.folder_output = str(folder_output)
+            config.solver.solver_dir = str(folder_output)
+
+        dataset_path = Path(config.analysis.dataset)
+        if not dataset_path.is_absolute():
+            dataset_path = (config_dir / dataset_path).resolve()
+        if dataset_path.exists():
+            config.analysis.dataset = str(dataset_path)
+            system_path = next(
+                (
+                    dataset_path / name
+                    for name in ("system.yaml", "system.yml", "system.json")
+                    if (dataset_path / name).exists()
+                ),
+                None,
+            )
+            if system_path is None:
+                raise FileNotFoundError(
+                    f"No system definition file found in dataset '{dataset_path}'. "
+                    "Expected one of: system.yaml, system.yml, system.json."
+                )
+            loaded_system = System.from_file(system_path)
+            config.system = config.system.model_copy(update=loaded_system.model_dump())
+
+        output_path = Path(config.analysis.folder_output)
+        if not output_path.is_absolute():
+            output_path = (config_dir / output_path).resolve()
+        config.analysis.folder_output = str(output_path)
+
+        solver_path = Path(config.solver.solver_dir)
+        if not solver_path.is_absolute():
+            solver_path = (config_dir / solver_path).resolve()
+        config.solver.solver_dir = str(solver_path)
+        config.analysis.zen_garden_version = version("zen-garden")
+        return config
+
+    def validate_configurations(self) -> None:
+        """Validate the configuration for internal consistency and against the dataset.
+
+        Ensures the selected dataset exists and is well-formed, that at least one
+        technology is selected (removing duplicate selections), and that the
+        year-related parameters are defined consistently. Raises ``AssertionError``,
+        ``ValueError`` or ``FileNotFoundError`` on the first problem encountered.
+        """
+        self._validate_dataset()
+        self._validate_technology_selections()
+        self._validate_year_definitions()
+
+    def _validate_dataset(self) -> None:
+        """Ensure the chosen dataset exists and contains a system definition file."""
+        dataset = os.path.basename(self.analysis.dataset)
+        dirname = os.path.dirname(self.analysis.dataset)
+        assert os.path.exists(
+            dirname
+        ), f"Requested folder {dirname} is not a valid path"
+        assert os.path.exists(self.analysis.dataset), (
+            f"The chosen dataset {dataset} does not exist at "
+            f"{self.analysis.dataset} as it is specified in the config"
+        )
+        # check if any character in the dataset name is prohibited
+        for char in PROHIBITED_DATASET_CHARACTERS:
+            if char in dataset:
+                raise ValueError(
+                    f"Character {char} is not allowed in the dataset name "
+                    f"{dataset}\nProhibited characters: "
+                    f"{PROHIBITED_DATASET_CHARACTERS}"
+                )
+        system_files = [
+            "system.yaml",
+            "system.yml",
+            "system.json",
+        ]
+        if not any(
+            os.path.exists(os.path.join(self.analysis.dataset, filename))
+            for filename in system_files
+        ):
+            raise FileNotFoundError(
+                f"No system definition file found in dataset "
+                f"'{self.analysis.dataset}'. "
+                "Expected one of: system.yaml, system.yml, system.json."
+            )
+
+    def _validate_technology_selections(self) -> None:
+        """Check the technology selection and drop any duplicate entries."""
+        # Checks if at least one technology is selected in the system file
+        assert (
+            len(
+                self.system.set_conversion_technologies
+                + self.system.set_transport_technologies
+                + self.system.set_storage_technologies
+            )
+            > 0
+        ), "No technology selected in system"
+        # Remove possible duplicates from the technology selections
+        for tech_list in [
+            "set_conversion_technologies",
+            "set_transport_technologies",
+            "set_storage_technologies",
+        ]:
+            techs_selected = getattr(self.system, tech_list)
+            unique_elements = sorted(set(techs_selected))
+            self.system = self.system.model_copy(update={tech_list: unique_elements})
+
+    def _validate_year_definitions(self) -> None:
+        """Check that year-related parameters are defined correctly."""
+        # assert that number of optimized years is a positive integer
+        assert (
+            isinstance(self.system.optimized_years, int)
+            and self.system.optimized_years > 0
+        ), (
+            "Number of optimized years must be a positive integer, however it "
+            f"is {self.system.optimized_years}"
+        )
+        # assert that interval between years is a positive integer
+        assert (
+            isinstance(self.system.interval_between_years, int)
+            and self.system.interval_between_years > 0
+        ), (
+            "Interval between years must be a positive integer, however it is "
+            f"{self.system.interval_between_years}"
+        )
+        assert (
+            isinstance(self.system.reference_year, int)
+            and self.system.reference_year >= self.analysis.earliest_year_of_data
+        ), (
+            "Reference year must be an integer and larger than the defined "
+            f"earliest_year_of_data: {self.analysis.earliest_year_of_data}"
+        )
+        # check if the number of years in the rolling horizon isn't larger than
+        # the number of optimized years
+        if (
+            self.system.years_in_rolling_horizon > self.system.optimized_years
+            and self.system.use_rolling_horizon
+        ):
+            warnings.warn(
+                "The chosen number of years in the rolling horizon step is "
+                "larger than the total number of years optimized!",
+                stacklevel=2,
+            )

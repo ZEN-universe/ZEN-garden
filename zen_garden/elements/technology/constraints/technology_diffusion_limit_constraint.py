@@ -7,29 +7,27 @@ import pandas as pd
 import xarray as xr
 from linopy.expressions import LinearExpression
 
-from zen_garden.elements.element import Element
-from zen_garden.elements.technology import Technology
 from zen_garden.model.components.zen_set import BaseSet
 from zen_garden.topology.generic_constraint import GenericConstraint
 
 if TYPE_CHECKING:
-    from zen_garden.elements.energy_system import EnergySystem
-    from zen_garden.model.config import Config
     from zen_garden.model.time_steps import TimeStepsDicts
     from zen_garden.model.zen_model import ZenModel
     from zen_garden.services.element_registry import ElementRegistry
+    from zen_garden.services.network_topology import NetworkTopology
+    from zen_garden.topology.model_schema import ModelSchema
 
 
 class TechnologyDiffusionLimitConstraint(GenericConstraint):
     def __init__(
         self,
-        config: "Config",
         zen_model: "ZenModel",
-        energy_system: "EnergySystem",
+        model_schema: "ModelSchema",
+        network_topology: "NetworkTopology",
         time_steps: "TimeStepsDicts",
         element_registry: "ElementRegistry",
     ):
-        super().__init__(config, zen_model, energy_system, time_steps)
+        super().__init__(zen_model, model_schema, network_topology, time_steps)
         self.element_registry = element_registry
 
     def build(self):
@@ -235,7 +233,7 @@ class TechnologyDiffusionLimitConstraint(GenericConstraint):
                 else 0
             )
             for t in self.zen_model.sets["set_technologies"]
-            for ot in self._get_class_set_of_element(t, Technology)
+            for ot in self._get_class_set_of_element(t)
         }
         market_share_unbounded = pd.Series(market_share_unbounded)
         market_share_unbounded.index.names = [
@@ -260,7 +258,7 @@ class TechnologyDiffusionLimitConstraint(GenericConstraint):
         )
         # existing capacities
         delta_years = interval_between_years * (
-            capacity_addition.coords["set_years"] - 1 - self.energy_system.set_years[0]
+            capacity_addition.coords["set_years"] - 1 - self.model_schema.set_years[0]
         )
         lifetime_existing = self.zen_model.parameters.lifetime_existing
         lifetime = self.zen_model.parameters.lifetime
@@ -336,16 +334,13 @@ class TechnologyDiffusionLimitConstraint(GenericConstraint):
                 "constraint_technology_diffusion_limit", constraints_an
             )
 
-    def _get_class_set_of_element(
-        self, element_name: str, class_name: type[Element]
-    ) -> BaseSet:
-        """Returns the set of all elements in the class of the element.
+    def _get_class_set_of_element(self, element_name: str) -> BaseSet:
+        """Returns the model set that the given element belongs to.
 
         :param element_name: name of element
-        :param klass: class of the elements to return
-        :return: class_set: set of all elements in the class of the element
+        :return: the set (e.g. ``set_conversion_technologies``) containing the element
         """
-        element = self.element_registry.get_element(class_name, element_name)
+        element = self.element_registry.get_element_by_name(element_name)
         if element is None:
-            raise ValueError(f"Element {element_name} not found in class {class_name}")
+            raise ValueError(f"Element {element_name} not found")
         return self.zen_model.sets[element.label]

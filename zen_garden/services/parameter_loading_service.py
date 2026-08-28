@@ -1,47 +1,39 @@
-"""Global, dependency-ordered parameter loading service."""
+"""Dependency-ordered parameter loading across the model schema."""
 
-import logging
-from typing import Any
-
-from zen_garden.elements import ELEMENT_TYPE_CLASSES
 from zen_garden.elements.energy_system import EnergySystem
-from zen_garden.services.element_registry import ElementRegistry
 from zen_garden.topology.generic_parameter import GenericParameter
-
-logger = logging.getLogger(__name__)
+from zen_garden.topology.model_schema import ModelSchema
 
 
 class ParameterLoadingService:
-    """Prepare targets and load every parameter using one schema-wide DAG."""
+    """Prepare elements and load their parameters in dependency order."""
 
-    def __init__(self, energy_system: EnergySystem, element_registry: ElementRegistry):
-        self.energy_system = energy_system
-        self.element_registry = element_registry
+    def __init__(self, model_schema: ModelSchema):
+        """Initialize the service for a fully registered model schema."""
+        self.model_schema = model_schema
 
     def load_parameters(self) -> None:
-        """Load parameters globally in dependency order."""
-        targets: list[Any] = [
-            self.energy_system,
-            *self.element_registry.all_elements(),
-        ]
-        for target in targets:
-            target.prepare_input_data()
+        """Prepare, load, and finalize every element in the schema."""
+        elements = self.model_schema.all_elements()
+        self.model_schema.parameters_interpolation_off = (
+            self.model_schema.energy_system.input_repository.read_mapping_file(
+                "parameters_interpolation_off"
+            )
+        )
+        for element in elements:
+            element.prepare_input_data()
 
         for parameter in self._parameter_order():
-            for target in targets:
-                if parameter not in target.parameters:
-                    continue
-                parameter.store_input_data(target)
+            for element in elements:
+                if parameter in element.parameters:
+                    parameter.store_input_data(element)
 
-        for target in targets:
-            finalize = getattr(target, "finalize_input_data", None)
-            if finalize is not None:
-                finalize()
+        for element in elements:
+            element.finalize_input_data()
 
-    @staticmethod
-    def _parameter_order() -> list[type[GenericParameter]]:
-        """Collect the schema parameter classes and topologically order them."""
-        parameters = list(EnergySystem.parameters)
-        for element_class in ELEMENT_TYPE_CLASSES.values():
+    def _parameter_order(self) -> list[type[GenericParameter]]:
+        """Topologically order every parameter declaration in the schema."""
+        parameters: list[type[GenericParameter]] = list(EnergySystem.parameters)
+        for element_class in self.model_schema.element_classes:
             parameters.extend(element_class.parameters)
         return GenericParameter.construction_order(parameters)

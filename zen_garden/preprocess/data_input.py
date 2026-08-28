@@ -12,11 +12,11 @@ import pandas as pd
 
 if TYPE_CHECKING:
     from zen_garden.elements.element import Element
-    from zen_garden.elements.energy_system import EnergySystem
-    from zen_garden.model.config import Config
     from zen_garden.preprocess.unit_handling import UnitHandling
     from zen_garden.services.input_repository import InputRepository
+    from zen_garden.services.network_topology import NetworkTopology
     from zen_garden.services.scenario_dict import ScenarioDict
+    from zen_garden.topology.model_schema import ModelSchema
     from zen_garden.types import YearSpecificTs
     from zen_garden.utils.input_data_checks import InputDataChecks
 
@@ -67,10 +67,10 @@ class DataInput:
 
     def __init__(
         self,
-        element: "Element | EnergySystem",
-        energy_system: "EnergySystem",
+        element: "Element",
+        model_schema: "ModelSchema",
+        network_topology: "NetworkTopology",
         unit_handling: "UnitHandling",
-        config: "Config",
         scenario_dict: "ScenarioDict",
         input_data_checks: "InputDataChecks",
         year_specific_ts: "YearSpecificTs",
@@ -83,13 +83,13 @@ class DataInput:
         :param system: dictionary defining the system
         :param analysis: dictionary defining the analysis framework
         :param solver: dictionary defining the solver
-        :param energy_system: instance of class <EnergySystem> to define energy_system
+        :param model_schema: global model schema
         :param unit_handling: instance of class <UnitHandling> to convert units
         """
         self.element = element
-        self.energy_system = energy_system
+        self.model_schema = model_schema
+        self.network_topology = network_topology
         self.unit_handling = unit_handling
-        self.config = config
         self.scenario_dict = scenario_dict
         self.input_data_checks = input_data_checks
         self.year_specific_ts = year_specific_ts
@@ -97,7 +97,7 @@ class DataInput:
         self.folder_path = folder_path
         self.input_repository = input_repository
         # get names of indices
-        self.index_names = self.config.analysis.header_data_inputs
+        self.index_names = self.model_schema.config.analysis.header_data_inputs
         # load attributes file
         self.attribute_dict = self.input_repository.load_attribute_file()
 
@@ -129,7 +129,7 @@ class DataInput:
         # if existing capacities and existing capacities not used
         if (
             file_name in ["capacity_existing", "capacity_existing_energy"]
-        ) and not self.config.system.use_capacities_existing:
+        ) and not self.model_schema.config.system.use_capacities_existing:
             df_output, *_ = self.create_default_output(
                 index_sets,
                 unit_category,
@@ -143,7 +143,7 @@ class DataInput:
                 index_sets,
                 unit_category,
                 file_name=file_name,
-                manual_default_value=self.energy_system.set_haversine_distances_edges,
+                manual_default_value=self.network_topology.set_haversine_distances_edges,
             )
         else:
             df_output, default_value, index_name_list = self.create_default_output(
@@ -498,7 +498,7 @@ class DataInput:
         :param df_output_generic: original/generic time series data (base case)
         """
         # years of optimization model
-        years = self.energy_system.set_time_steps_years
+        years = self.model_schema.set_time_steps_years
         # files to check
         file_names = os.listdir(self.folder_path)
         for file in file_names:
@@ -630,7 +630,7 @@ class DataInput:
         """
         # TODO merge changes in extract input data and optimization setup
         set_technologies_existing = np.array([0])
-        if self.config.system.use_capacities_existing:
+        if self.model_schema.config.system.use_capacities_existing:
             if storage_energy:
                 _energy_string = "_energy"
             else:
@@ -643,7 +643,10 @@ class DataInput:
             df_input = self.input_repository.read_csv(f_name)
             if df_input is None:
                 return [0]
-            if self.element.name in self.config.system.set_transport_technologies:
+            if (
+                self.element.name
+                in self.model_schema.config.system.set_transport_technologies
+            ):
                 location = "edge"
             else:
                 location = "node"
@@ -668,7 +671,7 @@ class DataInput:
         multi_idx = pd.MultiIndex.from_product(index_list, names=index_name_list)
         df_output = pd.Series(index=multi_idx, data=0, dtype=int)
         # if no existing capacities
-        if not self.config.system.use_capacities_existing:
+        if not self.model_schema.config.system.use_capacities_existing:
             return df_output
         f_name, scenario_factor = self.scenario_dict.get_param_file(
             self.element.name, file_name
@@ -685,7 +688,7 @@ class DataInput:
                 index_sets=index_sets,
             )
             # get reference year
-            reference_year = self.config.system.reference_year
+            reference_year = self.model_schema.config.system.reference_year
             if not hasattr(self.element, "lifetime"):
                 raise TypeError("Construction years require a technology element")
             # calculate remaining lifetime
@@ -768,15 +771,17 @@ class DataInput:
         for index in index_sets:
             index_name_list.append(self.index_names[index])
             if index in TIME_STEP_TYPES:
-                index_list.append(getattr(self.energy_system, index))
+                index_list.append(getattr(self.model_schema, index))
             elif index == "set_technologies_existing" and hasattr(
                 self.element, "set_technologies_existing"
             ):
                 index_list.append(self.element.set_technologies_existing)  # type: ignore[attr-defined]
-            elif index in type(self.config.system).model_fields:
-                index_list.append(self.config.system[index])
-            elif hasattr(self.energy_system, index):
-                index_list.append(getattr(self.energy_system, index))
+            elif index in type(self.model_schema.config.system).model_fields:
+                index_list.append(self.model_schema.config.system[index])
+            elif hasattr(self.model_schema, index):
+                index_list.append(getattr(self.model_schema, index))
+            elif hasattr(self.network_topology, index):
+                index_list.append(getattr(self.network_topology, index))
             else:
                 raise AttributeError(f"Index '{index}' cannot be found.")
         return index_list, index_name_list
@@ -825,9 +830,9 @@ class DataInput:
                         col: int(col) for col in df_input.columns if col.isnumeric()
                     }
                 )
-                requested_index_values = set(getattr(self.energy_system, yearly_ts))
+                requested_index_values = set(getattr(self.model_schema, yearly_ts))
                 requested_index_values_years = set(
-                    self.energy_system.set_time_steps_years
+                    self.model_schema.set_time_steps_years
                 )
                 requested_index_values_in_columns = requested_index_values.intersection(
                     df_input.columns
@@ -851,7 +856,7 @@ class DataInput:
             temporal_header = self.index_names["set_years"]
             if (
                 max(df_input.loc[:, temporal_header])
-                < self.config.analysis.earliest_year_of_data
+                < self.model_schema.config.analysis.earliest_year_of_data
             ):
                 warnings.warn(
                     f"Generic time indices (used in {file_name}) will not be "
@@ -879,7 +884,7 @@ class DataInput:
             df_input = df_input.set_index(index_names_column)
             if df_input.index.nlevels == 1:
                 combined_index = df_input.index.union(
-                    self.energy_system.set_time_steps_years
+                    self.model_schema.set_time_steps_years
                 )
                 is_single_index = True
             else:
@@ -889,7 +894,7 @@ class DataInput:
                         index_list.append(
                             df_input.index.get_level_values(index_name)
                             .unique()
-                            .union(self.energy_system.set_time_steps_years)
+                            .union(self.model_schema.set_time_steps_years)
                         )
                     else:
                         index_list.append(
@@ -906,8 +911,8 @@ class DataInput:
             df_input = df_input_temp.astype(float)
             # interpolate missing data
             file_names_int_off = []
-            if self.energy_system.parameters_interpolation_off is not None:
-                file_names_int_off = self.energy_system.parameters_interpolation_off[
+            if self.model_schema.parameters_interpolation_off is not None:
+                file_names_int_off = self.model_schema.parameters_interpolation_off[
                     "parameter_name"
                 ]
             if file_name not in file_names_int_off:
@@ -937,14 +942,14 @@ class DataInput:
             df_input = df_input.reset_index()
             # remove data of years that won't be simulated
             df_input = df_input[
-                df_input[temporal_header].isin(self.energy_system.set_time_steps_years)
+                df_input[temporal_header].isin(self.model_schema.set_time_steps_years)
             ]
             # convert yearly time indices to generic ones
             year2step = {
                 year: step
                 for year, step in zip(
-                    self.energy_system.set_time_steps_years,
-                    getattr(self.energy_system, yearly_ts),
+                    self.model_schema.set_time_steps_years,
+                    getattr(self.model_schema, yearly_ts),
                     strict=False,
                 )
             }

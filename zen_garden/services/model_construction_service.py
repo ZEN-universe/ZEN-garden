@@ -10,7 +10,7 @@ from zen_garden.elements.model_constructors import MODEL_CONSTRUCTORS
 from zen_garden.services.service_container import ServiceContainer
 
 if TYPE_CHECKING:
-    from zen_garden.model.config import Config
+    from zen_garden.topology.model_schema import ModelSchema
 
 logger = logging.getLogger(__name__)
 
@@ -39,10 +39,15 @@ class ModelConstructionService:
     def __init__(
         self,
         service_container: "ServiceContainer",
-        config: "Config",
+        model_schema: "ModelSchema",
     ):
         self.service_container = service_container
-        self.config = config
+        self.model_schema = model_schema
+
+    @property
+    def config(self):
+        """Return the canonical configuration from the model schema."""
+        return self.model_schema.config
 
     def construct_model(self):
         """Logic to construct a model based on the provided name and parameters."""

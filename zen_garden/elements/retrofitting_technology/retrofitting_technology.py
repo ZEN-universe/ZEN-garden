@@ -4,6 +4,9 @@ import logging
 from typing import ClassVar
 
 from zen_garden.elements.conversion_technology import ConversionTechnology
+from zen_garden.elements.retrofitting_technology.constraints import (
+    RETROFITTING_TECHNOLOGY_CONSTRAINTS,
+)
 from zen_garden.elements.retrofitting_technology.parameters import (
     RETROFITTING_TECHNOLOGY_PARAMETERS,
 )
@@ -13,6 +16,7 @@ from zen_garden.elements.retrofitting_technology.sets import (
 from zen_garden.elements.retrofitting_technology.variables import (
     RETROFITTING_TECHNOLOGY_VARIABLES,
 )
+from zen_garden.topology.generic_constraint import GenericConstraint
 from zen_garden.topology.generic_parameter import GenericParameter
 from zen_garden.topology.generic_set import GenericSet
 from zen_garden.topology.generic_variable import GenericVariable
@@ -26,12 +30,14 @@ class RetrofittingTechnology(ConversionTechnology):
     # set label
     label = "set_retrofitting_technologies"
     location_type = "set_nodes"
-    # Todo: Add the constraints here?
     own_parameters: ClassVar[list[type[GenericParameter]]] = (
         RETROFITTING_TECHNOLOGY_PARAMETERS
     )
     variables: ClassVar[list[type[GenericVariable]]] = RETROFITTING_TECHNOLOGY_VARIABLES
     own_sets: ClassVar[list[type[GenericSet]]] = RETROFITTING_TECHNOLOGY_SETS
+    constraints: ClassVar[list[type[GenericConstraint]]] = (
+        RETROFITTING_TECHNOLOGY_CONSTRAINTS
+    )
 
     def prepare_input_data(self) -> None:
         """Load the retrofit relationship before generic parameter loading."""

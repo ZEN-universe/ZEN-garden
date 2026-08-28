@@ -10,14 +10,14 @@ from zen_garden.services.input_repository import InputRepository
 from zen_garden.topology.generic_parameter import GenericParameter
 
 if TYPE_CHECKING:
-    from zen_garden.elements.energy_system import EnergySystem
-    from zen_garden.model.config import Config
     from zen_garden.model.time_steps import TimeStepsDicts
     from zen_garden.preprocess.unit_handling import UnitHandling
     from zen_garden.services.dataset_path_resolver import DatasetPathResolver
     from zen_garden.services.element_registry import ElementRegistry
+    from zen_garden.services.network_topology import NetworkTopology
     from zen_garden.services.scenario_dict import ScenarioDict
     from zen_garden.topology.generic_set import GenericSet
+    from zen_garden.topology.model_schema import ModelSchema
     from zen_garden.types import YearSpecificTs
     from zen_garden.utils.input_data_checks import InputDataChecks
 
@@ -33,6 +33,11 @@ class Element:
     parameters: ClassVar[list[type["GenericParameter"]]] = []
     own_sets: ClassVar[list[type["GenericSet"]]] = []
     sets: ClassVar[list[type["GenericSet"]]] = []
+
+    @property
+    def config(self):
+        """Return the canonical configuration from the model schema."""
+        return self.model_schema.config
 
     def __init_subclass__(cls, **kwargs):
         """Compose parameter declarations inherited from element base classes."""
@@ -52,8 +57,8 @@ class Element:
     def __init__(
         self,
         element_name: str,
-        config: "Config",
-        energy_system: "EnergySystem",
+        model_schema: "ModelSchema",
+        network_topology: "NetworkTopology",
         element_registry: "ElementRegistry",
         unit_handling: "UnitHandling",
         dataset_path_resolver: "DatasetPathResolver",
@@ -65,8 +70,7 @@ class Element:
         """Initialization of an element.
 
         :param element_name: Name of the element
-        :param config: Config object
-        :param energy_system: EnergySystem object
+        :param model_schema: Global model schema
         :param element_registry: ElementRegistry object
         :param unit_handling: UnitHandling object
         :param dataset_path_resolver: DatasetPathResolver object
@@ -75,10 +79,8 @@ class Element:
         """
         # set attributes
         self.name = element_name
-        # optimization setup
-        self.config = config
-        # energy system
-        self.energy_system = energy_system
+        self.model_schema = model_schema
+        self.network_topology = network_topology
         self.element_registry = element_registry
         self.unit_handling = unit_handling
         self.dataset_path_resolver = dataset_path_resolver
@@ -91,9 +93,9 @@ class Element:
         self.input_repository = InputRepository(folder_path)
         self.data_input = DataInput(
             element=self,
-            energy_system=self.energy_system,
+            model_schema=self.model_schema,
+            network_topology=self.network_topology,
             unit_handling=self.unit_handling,
-            config=self.config,
             scenario_dict=scenario_dict,
             input_data_checks=self.input_data_checks,
             year_specific_ts=year_specific_ts,
@@ -113,13 +115,16 @@ class Element:
     def prepare_input_data(self) -> None:
         """Prepare structural information required to load parameters."""
 
+    def finalize_input_data(self) -> None:
+        """Apply transformations that require all parameters to be loaded."""
+
     def _get_input_path(self):
         """Get input path where input data is stored input_path."""
         # get technology type
         class_label = self.label
         # check if class is a subset
         if class_label not in self.dataset_path_resolver.all_sets():
-            subsets = self.config.analysis.subsets
+            subsets = self.model_schema.config.analysis.subsets
             # iterate through subsets and check if class belongs to any of the subsets
             for set_name, subsets_list in subsets.items():
                 if class_label in subsets_list:
