@@ -117,18 +117,7 @@ class ModelConstructor:
         logger.info(f"Constructing parameters for {self.element_class.name}")
 
         for parameter in self.parameters:
-            # rename time steps
-            index_names = [
-                "set_time_steps_operation" if x == "set_hours" else x
-                for x in parameter.indices
-            ]
-            self.add_parameter(
-                name=parameter.name,
-                index_names=index_names,
-                doc=parameter.doc,
-                capacity_types=parameter.capacity_types,
-                set_time_steps=parameter.set_time_steps,
-            )
+            parameter.build(self)
 
     def construct_vars(self):
         """Constructs the Vars of this class."""

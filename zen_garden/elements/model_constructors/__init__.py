@@ -10,15 +10,14 @@ from zen_garden.elements.technology import Technology
 from zen_garden.elements.transport_technology import TransportTechnology
 
 from ..energy_system.energy_system_constructor import EnergySystemConstructor
-from ..technology.technology_constructor import TechnologyConstructor
 
 # (constructor class, element class) pairs, in construction order. Most element
-# types use the generic ModelConstructor; only types with genuine build behavior
-# get a subclass.
+# types use the generic ModelConstructor; only a type with genuine build
+# behavior (the energy-system objective) gets a subclass.
 MODEL_CONSTRUCTORS: list[tuple[type[ModelConstructor], type[Element]]] = [
     (EnergySystemConstructor, EnergySystem),
     (ModelConstructor, Carrier),
-    (TechnologyConstructor, Technology),
+    (ModelConstructor, Technology),
     (ModelConstructor, ConversionTechnology),
     (ModelConstructor, RetrofittingTechnology),
     (ModelConstructor, StorageTechnology),
@@ -41,6 +40,5 @@ assert set(_actual_element_classes) == _expected_element_classes, (
 __all__ = [
     "EnergySystemConstructor",
     "ModelConstructor",
-    "TechnologyConstructor",
     "MODEL_CONSTRUCTORS",
 ]

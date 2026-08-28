@@ -1,11 +1,25 @@
 from __future__ import annotations
 
 from abc import ABC
-from typing import Any, ClassVar
+from typing import TYPE_CHECKING, Any, ClassVar
+
+if TYPE_CHECKING:
+    from zen_garden.elements.model_constructor import ModelConstructor
 
 
 class GenericParameter(ABC):
-    """Abstract base class for parameters in ZEN-garden."""
+    """Abstract base class for parameters in ZEN-garden.
+
+    Lifecycle:
+
+    * :meth:`store_input_data` runs once during preprocessing and puts the
+      parameter's values onto the elements (usually read from input files).
+    * :meth:`build` runs during model construction -- once per rolling-horizon
+      step -- and registers the parameter on the optimization model. The default
+      reads the values stored by :meth:`store_input_data`; parameters that are
+      *derived* from other model parameters override :meth:`build` instead (and
+      leave :meth:`store_input_data` empty).
+    """
 
     name: ClassVar[str]
     indices: ClassVar[tuple[str, ...]]
@@ -32,12 +46,25 @@ class GenericParameter(ABC):
         if not isinstance(cls.dependencies, list):
             raise TypeError(f"{cls.__name__}.dependencies must be a list")
 
-    # This is a classmethod so that it can be called without creating an
-    # instance of the class, e.g. Parameter.build() rather than Parameter().build().
     @classmethod
-    def build(cls):
-        """Build the parameter."""
-        raise NotImplementedError("ToDO:")
+    def build(cls, model_constructor: "ModelConstructor") -> None:
+        """Register this parameter on the optimization model.
+
+        The default registers the values put on the elements by
+        :meth:`store_input_data`. Derived parameters override this to compute
+        their data from other, already-registered model parameters.
+        """
+        index_names = [
+            "set_time_steps_operation" if index == "set_hours" else index
+            for index in cls.indices
+        ]
+        model_constructor.add_parameter(
+            name=cls.name,
+            index_names=index_names,
+            doc=cls.doc,
+            capacity_types=cls.capacity_types,
+            set_time_steps=cls.set_time_steps,
+        )
 
     @classmethod
     def store_input_data(cls, element: Any) -> None:

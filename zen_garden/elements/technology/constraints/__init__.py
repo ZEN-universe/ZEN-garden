@@ -39,6 +39,10 @@ TECHNOLOGY_CONSTRAINTS: list[type[GenericConstraint]] = [
     CostOpexYearlyConstraint,
     CostOpexYearlyTotalConstraint,
     CarbonEmissionsTechnologyTotalConstraint,
+    # Built last: only adds constraints for technologies whose min_load data
+    # requires on/off modelling; a no-op (and cleans up its helper variables)
+    # otherwise.
+    TechnologyOnOffConstraint,
 ]
 
 __all__ = [

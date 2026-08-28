@@ -64,6 +64,11 @@ class TechnologyOnOffConstraint(GenericConstraint):
             dims=["set_time_steps_operation"],
         )
         if len(techs_on_off) == 0:
+            # No technology needs on/off modelling: drop the helper variables
+            # that were only added for this constraint.
+            for helper_variable in ("tech_on_var", "capacity_on_off_helper_var"):
+                if helper_variable in self.zen_model.lp_model.variables:
+                    self.zen_model.lp_model.variables.remove(helper_variable)
             return None
         # params and variables
         min_load = self.zen_model.parameters.min_load
