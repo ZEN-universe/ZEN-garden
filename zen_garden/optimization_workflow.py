@@ -47,6 +47,7 @@ class OptimizationWorkflow:
     scenario_dict: ScenarioDict
     element_registry: ElementRegistry
     unit_converter: UnitConverter
+    input_data_checks: InputDataChecks
 
     def __init__(
         self,
@@ -74,12 +75,14 @@ class OptimizationWorkflow:
     def load_data(self) -> None:
         """Load all input data for the optimization.
 
-        Runs in three steps: :meth:`_build_services` wires the service graph,
+        Runs in four steps: :meth:`_build_services` wires the service graph,
+        :meth:`_validate_dataset` checks the dataset's folder structure,
         :meth:`_register_elements` instantiates every configured element, and
         :meth:`_load_parameters` loads every input parameter. Must be called
         before :meth:`aggregate_time_series` and :meth:`run_steps`.
         """
         self._build_services()
+        self._validate_dataset()
         self._register_elements()
         self._load_parameters()
 
@@ -111,20 +114,13 @@ class OptimizationWorkflow:
         # Register service: scenario_dict; instance: the initialized scenario mapping.
         self.service_container.register("scenario_dict", self.scenario_dict)
 
-        # Input data checks validate the dataset's folder structure and technology
-        # data, and are registered for later injection into elements.
-        # NOTE: created here (rather than passed in) because they depend on the
-        # deep-copied model schema and the dataset path resolver built above.
-        input_data_checks = InputDataChecks(model_schema=self.model_schema)
-        input_data_checks.dataset_path_resolver = self.dataset_path_resolver
-        # check if input data exists
-        input_data_checks.check_primary_folder_structure()
-        # check if all needed data inputs for the chosen technologies exist and
-        # remove non-existent inputs
-        # WARNING: This function modifies the config object!
-        input_data_checks.check_existing_technology_data()
-        # Register service: input_data_checks; instance: the validated data checker.
-        self.service_container.register("input_data_checks", input_data_checks)
+        # Input data checks are used to validate the dataset and to resolve the
+        # technology set (see _validate_dataset / _register_elements). Created
+        # here because they depend on the deep-copied model schema and the
+        # dataset path resolver built above, and are injected into elements.
+        self.input_data_checks = InputDataChecks(model_schema=self.model_schema)
+        self.input_data_checks.dataset_path_resolver = self.dataset_path_resolver
+        self.service_container.register("input_data_checks", self.input_data_checks)
 
         # initiate dictionary for storing extra year data
         # Register service: year_specific_ts; instance: a new empty YearSpecificTs.
@@ -156,8 +152,17 @@ class OptimizationWorkflow:
             "element_registry", ElementRegistry
         )
 
+    def _validate_dataset(self) -> None:
+        """Validate the dataset's folder and file structure."""
+        self.input_data_checks.check_primary_folder_structure()
+
     def _register_elements(self) -> None:
-        """Instantiate every configured element and register it in the schema."""
+        """Resolve the technology set, then instantiate every configured element."""
+        # Derive config.system.set_technologies from the per-type subsets and
+        # fold nested subsets into their parents; ElementFactory reads these.
+        # WARNING: this mutates the config object.
+        self.input_data_checks.resolve_technology_set()
+
         # Injected services: service_container, model_schema, input_data_checks;
         # explicit arguments: none.
         self.service_container.build(ElementFactory).register_elements()

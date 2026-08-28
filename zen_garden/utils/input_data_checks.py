@@ -94,9 +94,16 @@ class InputDataChecks:
                     f"File {file_name} is missing in the energy_system directory"
                 )
 
-    def check_existing_technology_data(self):
-        """This method checks the existing technology input data and only regards
-        those technology elements whose folders contain a supported attributes file.
+    def resolve_technology_set(self):
+        """Resolve ``config.system.set_technologies`` from the per-type subsets.
+
+        Besides validating that every configured technology has an input folder
+        with a supported attributes file, this derives ``set_technologies`` (the
+        flat list of all technologies) from the per-type subset lists and folds
+        nested subsets into their parent set. Both are needed by ``ElementFactory``
+        and downstream code but are not authored in the config.
+
+        WARNING: this mutates the config object.
         """
         assert (
             self.config is not None and self.dataset_path_resolver is not None
