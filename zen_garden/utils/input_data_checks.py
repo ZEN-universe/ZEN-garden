@@ -4,7 +4,6 @@ import warnings
 
 import numpy as np
 
-from zen_garden.default_config import System
 from zen_garden.services.dataset_path_resolver import DatasetPathResolver
 
 logger = logging.getLogger(__name__)
@@ -36,17 +35,9 @@ class InputDataChecks:
     def system(self):
         return self.model_schema.config.system
 
-    @system.setter
-    def system(self, value):
-        self.model_schema.config.system = value
-
     @property
     def analysis(self):
         return self.model_schema.config.analysis
-
-    @analysis.setter
-    def analysis(self, value):
-        self.model_schema.config.analysis = value
 
     def check_primary_folder_structure(self):
         """Checks if the primary folder structure (set_conversion_technology,
@@ -200,32 +191,6 @@ class InputDataChecks:
                     f"{reversed_edge} doesn't exist!",
                     stacklevel=2,
                 )
-
-    def read_system_file(self, config):
-        """Reads the system file and updates the config instance.
-
-        Args:
-            config: config object containing the dataset path and current system
-                settings.
-        """
-        system_path = None
-        for filename in ["system.yaml", "system.yml", "system.json"]:
-            candidate = os.path.join(config.analysis.dataset, filename)
-            if os.path.exists(candidate):
-                system_path = candidate
-                break
-
-        if system_path is None:
-            raise FileNotFoundError(
-                f"No system definition file found in dataset "
-                f"'{config.analysis.dataset}'. "
-                f"Expected one of: system.yaml, system.yml, system.json."
-            )
-
-        system = System.from_file(system_path)
-        new_system = config.system.model_copy(update=system.model_dump())
-        config.system = new_system
-        self.system = new_system
 
     def check_carrier_configuration(
         self, input_carrier, output_carrier, reference_carrier, name
