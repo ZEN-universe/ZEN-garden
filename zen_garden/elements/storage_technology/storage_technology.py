@@ -8,6 +8,9 @@ from typing_extensions import override
 from zen_garden.elements.storage_technology.constraints import (
     STORAGE_TECHNOLOGY_CONSTRAINTS,
 )
+from zen_garden.elements.storage_technology.expressions import (
+    STORAGE_TECHNOLOGY_EXPRESSIONS,
+)
 from zen_garden.elements.storage_technology.parameters import (
     STORAGE_TECHNOLOGY_PARAMETERS,
 )
@@ -16,6 +19,7 @@ from zen_garden.elements.storage_technology.variables import (
 )
 from zen_garden.elements.technology import Technology
 from zen_garden.topology.generic_constraint import GenericConstraint
+from zen_garden.topology.generic_expression import GenericExpression
 from zen_garden.topology.generic_parameter import GenericParameter
 from zen_garden.topology.generic_variable import GenericVariable
 
@@ -32,6 +36,9 @@ class StorageTechnology(Technology):
         STORAGE_TECHNOLOGY_PARAMETERS
     )
     variables: ClassVar[list[type[GenericVariable]]] = STORAGE_TECHNOLOGY_VARIABLES
+    expressions: ClassVar[list[type[GenericExpression]]] = (
+        STORAGE_TECHNOLOGY_EXPRESSIONS
+    )
     constraints: ClassVar[list[type[GenericConstraint]]] = (
         STORAGE_TECHNOLOGY_CONSTRAINTS
     )

@@ -10,6 +10,9 @@ from zen_garden.elements.technology import Technology
 from zen_garden.elements.transport_technology.constraints import (
     TRANSPORT_TECHNOLOGY_CONSTRAINTS,
 )
+from zen_garden.elements.transport_technology.expressions import (
+    TRANSPORT_TECHNOLOGY_EXPRESSIONS,
+)
 from zen_garden.elements.transport_technology.parameters import (
     TRANSPORT_TECHNOLOGY_PARAMETERS,
 )
@@ -17,6 +20,7 @@ from zen_garden.elements.transport_technology.variables import (
     TRANSPORT_TECHNOLOGY_VARIABLES,
 )
 from zen_garden.topology.generic_constraint import GenericConstraint
+from zen_garden.topology.generic_expression import GenericExpression
 from zen_garden.topology.generic_parameter import GenericParameter
 from zen_garden.topology.generic_variable import GenericVariable
 
@@ -32,6 +36,9 @@ class TransportTechnology(Technology):
         TRANSPORT_TECHNOLOGY_PARAMETERS
     )
     variables: ClassVar[list[type[GenericVariable]]] = TRANSPORT_TECHNOLOGY_VARIABLES
+    expressions: ClassVar[list[type[GenericExpression]]] = (
+        TRANSPORT_TECHNOLOGY_EXPRESSIONS
+    )
     constraints: ClassVar[list[type[GenericConstraint]]] = (
         TRANSPORT_TECHNOLOGY_CONSTRAINTS
     )

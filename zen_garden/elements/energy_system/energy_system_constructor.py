@@ -15,52 +15,21 @@ class EnergySystemConstructor(ModelConstructor):
 
     @override
     def construct_objective(self):
-        """Constructs the pe.Objective of the class <EnergySystem>."""
+        """Set the optimization objective from a registered expression.
+
+        The objective candidates are built as energy-system expressions (see
+        ``zen_garden.elements.energy_system.expressions``); ``config.analysis``
+        selects which one to use and with which sense.
+        """
         logger.info("Constructing objective for EnergySystem")
 
-        # get selected objective rule
-        if self.config.analysis.objective == "total_cost":
-            objective = self.objective_total_cost()
-        elif self.config.analysis.objective == "total_carbon_emissions":
-            objective = self.objective_total_carbon_emissions()
-        else:
-            raise KeyError(f"Objective type {self.config.analysis.objective} not known")
+        objective_name = self.config.analysis.objective
+        if objective_name not in self.zen_model.expressions:
+            raise KeyError(f"Objective type {objective_name} not known")
 
-        # get selected objective sense
         sense = self.config.analysis.sense
         assert sense in ["min", "max"], f"Objective sense {sense} not known"
 
-        # construct objective
-        self.zen_model.lp_model.add_objective(objective, sense=sense)
-
-    # Objective rules
-    # ---------------
-
-    def objective_total_cost(self):
-        """Objective function to minimize the total net present cost.
-
-        .. math::
-            J = \\sum_{y\\in\\mathcal{Y}} NPC_y
-
-        :param model: optimization model
-        :return: net present cost objective function
-        """
-        return self.zen_model.variables["net_present_cost"].sum("set_years")
-
-    def objective_total_carbon_emissions(self):
-        """Objective function to minimize total emissions.
-
-        .. math::
-            J = E^{\\mathrm{cum}}_Y
-
-        :math:`E^{\\mathrm{cum}}_Y`: cumulative carbon emissions at the end of
-        the time horizon
-
-        :param model: optimization model
-        :return: total carbon emissions objective function
-        """
-        return (
-            self.zen_model.variables["carbon_emissions_cumulative"]
-            .at[self.zen_model.sets["set_years"][-1]]
-            .to_linexpr()
+        self.zen_model.lp_model.add_objective(
+            self.zen_model.expressions[objective_name], sense=sense
         )

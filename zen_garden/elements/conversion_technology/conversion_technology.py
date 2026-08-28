@@ -8,6 +8,9 @@ from typing_extensions import override
 from zen_garden.elements.conversion_technology.constraints import (
     CONVERSION_TECHNOLOGY_CONSTRAINTS,
 )
+from zen_garden.elements.conversion_technology.expressions import (
+    CONVERSION_TECHNOLOGY_EXPRESSIONS,
+)
 from zen_garden.elements.conversion_technology.parameters import (
     CONVERSION_TECHNOLOGY_PARAMETERS,
 )
@@ -19,6 +22,7 @@ from zen_garden.elements.conversion_technology.variables import (
 )
 from zen_garden.elements.technology import Technology
 from zen_garden.topology.generic_constraint import GenericConstraint
+from zen_garden.topology.generic_expression import GenericExpression
 from zen_garden.topology.generic_parameter import GenericParameter
 from zen_garden.topology.generic_set import GenericSet
 from zen_garden.topology.generic_variable import GenericVariable
@@ -37,6 +41,9 @@ class ConversionTechnology(Technology):
     )
     variables: ClassVar[list[type[GenericVariable]]] = CONVERSION_TECHNOLOGY_VARIABLES
     own_sets: ClassVar[list[type[GenericSet]]] = CONVERSION_TECHNOLOGY_SETS
+    expressions: ClassVar[list[type[GenericExpression]]] = (
+        CONVERSION_TECHNOLOGY_EXPRESSIONS
+    )
     constraints: ClassVar[list[type[GenericConstraint]]] = (
         CONVERSION_TECHNOLOGY_CONSTRAINTS
     )

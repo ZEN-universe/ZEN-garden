@@ -7,6 +7,9 @@ from zen_garden.elements.conversion_technology import ConversionTechnology
 from zen_garden.elements.retrofitting_technology.constraints import (
     RETROFITTING_TECHNOLOGY_CONSTRAINTS,
 )
+from zen_garden.elements.retrofitting_technology.expressions import (
+    RETROFITTING_TECHNOLOGY_EXPRESSIONS,
+)
 from zen_garden.elements.retrofitting_technology.parameters import (
     RETROFITTING_TECHNOLOGY_PARAMETERS,
 )
@@ -17,6 +20,7 @@ from zen_garden.elements.retrofitting_technology.variables import (
     RETROFITTING_TECHNOLOGY_VARIABLES,
 )
 from zen_garden.topology.generic_constraint import GenericConstraint
+from zen_garden.topology.generic_expression import GenericExpression
 from zen_garden.topology.generic_parameter import GenericParameter
 from zen_garden.topology.generic_set import GenericSet
 from zen_garden.topology.generic_variable import GenericVariable
@@ -38,6 +42,9 @@ class RetrofittingTechnology(ConversionTechnology):
     )
     variables: ClassVar[list[type[GenericVariable]]] = RETROFITTING_TECHNOLOGY_VARIABLES
     own_sets: ClassVar[list[type[GenericSet]]] = RETROFITTING_TECHNOLOGY_SETS
+    expressions: ClassVar[list[type[GenericExpression]]] = (
+        RETROFITTING_TECHNOLOGY_EXPRESSIONS
+    )
     constraints: ClassVar[list[type[GenericConstraint]]] = (
         RETROFITTING_TECHNOLOGY_CONSTRAINTS
     )

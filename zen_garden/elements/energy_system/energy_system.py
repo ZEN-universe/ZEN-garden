@@ -7,10 +7,12 @@ import pandas as pd
 
 from zen_garden.elements.element import Element
 from zen_garden.elements.energy_system.constraints import ENERGY_SYSTEM_CONSTRAINTS
+from zen_garden.elements.energy_system.expressions import ENERGY_SYSTEM_EXPRESSIONS
 from zen_garden.elements.energy_system.parameters import ENERGY_SYSTEM_PARAMETERS
 from zen_garden.elements.energy_system.sets import ENERGY_SYSTEM_SETS
 from zen_garden.elements.energy_system.variables import ENERGY_SYSTEM_VARIABLES
 from zen_garden.topology.generic_constraint import GenericConstraint
+from zen_garden.topology.generic_expression import GenericExpression
 from zen_garden.topology.generic_parameter import GenericParameter
 from zen_garden.topology.generic_set import GenericSet
 from zen_garden.topology.generic_variable import GenericVariable
@@ -25,6 +27,7 @@ class EnergySystem(Element):
     own_sets: ClassVar[list[type[GenericSet]]] = ENERGY_SYSTEM_SETS
     carbon_emissions_annual_limit: pd.Series
     variables: ClassVar[list[type[GenericVariable]]] = ENERGY_SYSTEM_VARIABLES
+    expressions: ClassVar[list[type[GenericExpression]]] = ENERGY_SYSTEM_EXPRESSIONS
     constraints: ClassVar[list[type[GenericConstraint]]] = ENERGY_SYSTEM_CONSTRAINTS
     time_steps_operation_duration: pd.Series | None
     time_steps_storage_duration: pd.Series | None

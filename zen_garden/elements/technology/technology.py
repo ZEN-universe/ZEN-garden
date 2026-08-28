@@ -8,10 +8,12 @@ import pandas as pd
 
 from zen_garden.elements.element import Element
 from zen_garden.elements.technology.constraints import TECHNOLOGY_CONSTRAINTS
+from zen_garden.elements.technology.expressions import TECHNOLOGY_EXPRESSIONS
 from zen_garden.elements.technology.parameters import TECHNOLOGY_PARAMETERS
 from zen_garden.elements.technology.sets import TECHNOLOGY_SETS
 from zen_garden.elements.technology.variables import TECHNOLOGY_VARIABLES
 from zen_garden.topology.generic_constraint import GenericConstraint
+from zen_garden.topology.generic_expression import GenericExpression
 from zen_garden.topology.generic_parameter import GenericParameter
 from zen_garden.topology.generic_set import GenericSet
 from zen_garden.topology.generic_variable import GenericVariable
@@ -31,6 +33,7 @@ class Technology(Element):
     own_parameters: ClassVar[list[type[GenericParameter]]] = TECHNOLOGY_PARAMETERS
     variables: ClassVar[list[type[GenericVariable]]] = TECHNOLOGY_VARIABLES
     own_sets: ClassVar[list[type[GenericSet]]] = TECHNOLOGY_SETS
+    expressions: ClassVar[list[type[GenericExpression]]] = TECHNOLOGY_EXPRESSIONS
     constraints: ClassVar[list[type[GenericConstraint]]] = TECHNOLOGY_CONSTRAINTS
 
     def initialize_reference_carrier(self):

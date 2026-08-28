@@ -2,12 +2,12 @@
 
 One :class:`ModelConstructor` instance is created per element *type*, given the
 element class as a constructor argument. The element class is the single source
-of truth for the sets, parameters, variables and constraints of that type; they
-are read off it in :meth:`~ModelConstructor.__init__`. All ``construct_*`` hooks
-have sensible defaults, and component-specific behavior is implemented by the
-set/parameter/variable/constraint classes themselves. A subclass is only needed
-for a type that also carries genuine build *behavior* (e.g. the energy-system
-objective).
+of truth for the sets, parameters, variables, expressions and constraints of
+that type; they are read off it in :meth:`~ModelConstructor.__init__`. All
+``construct_*`` hooks have sensible defaults, and component-specific behavior is
+implemented by the set/parameter/variable/expression/constraint classes
+themselves. A subclass is only needed for a type that also carries genuine build
+*behavior* (e.g. the energy-system objective).
 """
 
 import logging
@@ -16,6 +16,7 @@ from typing import TYPE_CHECKING
 from zen_garden.elements.element import Element
 from zen_garden.services.service_container import ServiceContainer
 from zen_garden.topology.generic_constraint import GenericConstraint
+from zen_garden.topology.generic_expression import GenericExpression
 from zen_garden.topology.generic_parameter import GenericParameter
 from zen_garden.topology.generic_set import GenericSet
 from zen_garden.topology.generic_variable import GenericVariable
@@ -45,6 +46,7 @@ class ModelConstructor:
     # so that __init__ can bind it per instance.
     element_class: "type[Element] | type[EnergySystem]" = Element
     constraints: list[type[GenericConstraint]] = []
+    expressions: list[type[GenericExpression]] = []
     parameters: list[type[GenericParameter]] = []
     variables: list[type[GenericVariable]] = []
     sets: list[type[GenericSet]] = []
@@ -76,6 +78,7 @@ class ModelConstructor:
         self.parameters = element_class.__dict__.get("own_parameters", [])
         self.variables = element_class.__dict__.get("variables", [])
         self.sets = element_class.__dict__.get("own_sets", [])
+        self.expressions = element_class.__dict__.get("expressions", [])
         self.constraints = element_class.__dict__.get("constraints", [])
         # A type may declare itself optional; then it is only built when at least
         # one element of it is configured (see :meth:`has_elements`).
@@ -123,9 +126,11 @@ class ModelConstructor:
         for variable in self.variables:
             variable.build(self)
 
-    def construct_expressions(self):  # noqa: B027
-        """Construct reusable expressions from parameters and variables."""
-        pass
+    def construct_expressions(self):
+        """Construct reusable linear expressions from parameters and variables."""
+        logger.info(f"Constructing expressions for {self.element_class.__name__}")
+        for expression in self.expressions:
+            expression.build(self)
 
     def construct_constraints(self):
         """Constructs the Constraints of this class."""
