@@ -37,7 +37,6 @@ Parameter Name;Symbol;Time Step Type;Description;Unit Category
 ``construction_time``;:math:`L^{\mathrm{con}}_{h}`;temporal immutable;Parameter which specifies the construction time of a newly built technology;{}
 ``depreciation_time``;:math:`L^{\mathrm{dep}}_{h}`;temporal immutable;Parameter which specifies the depreciation time of invested technologies (optional, default value is the lifetime);{}
 ``lifetime_existing``;:math:`L^{\mathrm{ex}}_{h,v}`;temporal immutable;Parameter which specifies the remaining lifetime of an existing technology;{}
-``transport_loss_factor_exponential``;:math:`\lambda^{\mathrm{exp}}_{h}`;temporal immutable;exponential carrier losses due to transport with transport technologies;"{""distance"": -1}"
 ``transport_loss_factor_linear``;:math:`\lambda^{\mathrm{lin}}_{h}`;temporal immutable;carrier losses due to transport with transport technologies;"{""distance"": -1}"
 ``self_discharge``;:math:`\lambda^{\mathrm{self}}_{h}`;temporal immutable;self-discharge rate of storage technologies;{}
 ``carbon_emissions_cumulative_existing``;:math:`m^{\mathrm{cum}}_{0}`;temporal immutable;Parameter which specifies the total previous carbon emissions;"{""emissions"": 1}"

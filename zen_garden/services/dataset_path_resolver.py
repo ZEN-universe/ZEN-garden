@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING, Any
 from zen_garden.default_config import Subsets
 
 if TYPE_CHECKING:
-    from zen_garden.model.config import Config
+    from zen_garden.topology.model_schema import ModelSchema
 
 
 FOLDER_KEY: str = "folder"
@@ -13,9 +13,13 @@ FOLDER_KEY: str = "folder"
 class DatasetPathResolver:
     """This class resolves the paths of the dataset based on the configuration."""
 
-    def __init__(self, config: "Config"):
-        self._config = config
+    def __init__(self, model_schema: "ModelSchema"):
+        self.model_schema = model_schema
         self._paths = self._resolve_dataset_paths()
+
+    @property
+    def _config(self):
+        return self.model_schema.config
 
     def _resolve_dataset_paths(self) -> dict:
         """This method creates a dictionary with the paths of the data split

@@ -31,8 +31,8 @@ class CostCarbonEmissionsTotalConstraint(GenericConstraint):
         is assigned only to the last modeled year.
         """
         mask_last_year = [
-            year == self.energy_system.set_years[-1]
-            for year in self.energy_system.set_years
+            year == self.model_schema.set_years[-1]
+            for year in self.model_schema.set_years
         ]
 
         lhs = (

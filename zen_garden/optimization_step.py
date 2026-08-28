@@ -14,7 +14,6 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 
-from zen_garden.default_config import Config as DefaultConfig
 from zen_garden.elements.technology import Technology
 from zen_garden.model.zen_model import ZenModel
 from zen_garden.postprocess.postprocess import Postprocess
@@ -23,13 +22,12 @@ from zen_garden.services.model_construction_service import ModelConstructionServ
 from zen_garden.utils import IISConstraintParser, StringUtils
 
 if TYPE_CHECKING:
-    from zen_garden.elements.energy_system import EnergySystem
-    from zen_garden.model.config import Config
     from zen_garden.model.time_steps import TimeStepsDicts
     from zen_garden.preprocess.unit_handling import UnitHandling
     from zen_garden.services.element_registry import ElementRegistry
     from zen_garden.services.scenario_dict import ScenarioDict
     from zen_garden.services.service_container import ServiceContainer
+    from zen_garden.topology.model_schema import ModelSchema
 
 logger = logging.getLogger(__name__)
 
@@ -50,8 +48,7 @@ class OptimizationStep:
     def __init__(
         self,
         service_container: "ServiceContainer",
-        config: "Config",
-        energy_system: "EnergySystem",
+        model_schema: "ModelSchema",
         element_registry: "ElementRegistry",
         unit_handling: "UnitHandling",
         scenario_dict: "ScenarioDict",
@@ -74,8 +71,7 @@ class OptimizationStep:
 
         """
         self.service_container = service_container
-        self.config = config
-        self.energy_system = energy_system
+        self.model_schema = model_schema
         self.element_registry = element_registry
         self.unit_handling = unit_handling
         self.scenario_dict = scenario_dict
@@ -88,12 +84,21 @@ class OptimizationStep:
             "zen_model", ZenModel
         )
 
+    @property
+    def config(self):
+        """Return the canonical configuration from the model schema."""
+        return self.model_schema.config
+
+    @property
+    def energy_system(self):
+        """Return the canonical energy-system element from the schema."""
+        return self.model_schema.energy_system
+
     def run_step(
         self,
         scenario: str,
         step: int,
         model_name: str,
-        config: "DefaultConfig",
         steps_horizon_keys: list[int],
         no_solve: bool = False,
     ) -> bool:
@@ -140,14 +145,14 @@ class OptimizationStep:
 
         # EVALUATE RESULTS
         scenario_name, subfolder, param_map = StringUtils.generate_folder_path(
-            config=config,
+            config=self.model_schema.config,
             scenario=scenario,
             scenario_dict=self.scenario_dict,
             steps_horizon=steps_horizon_keys,
             step=step,
         )
         self.write_results(
-            scenarios=config.scenarios,
+            scenarios=self.model_schema.config.scenarios,
             subfolder=subfolder,
             model_name=model_name,
             scenario_name=scenario_name,
@@ -169,6 +174,7 @@ class OptimizationStep:
         self.scaling = self.service_container.build_and_register(
             "scaling",
             Scaling,
+            config=self.config,
             lp_model=self.zen_model.lp_model,
             algorithm=self.config.solver.scaling_algorithm,
             include_rhs=self.config.solver.scaling_include_rhs,
@@ -228,8 +234,8 @@ class OptimizationStep:
         new_base_time_steps_horizon = base_time_steps_horizon.squeeze().tolist()
         if not isinstance(new_base_time_steps_horizon, list):
             new_base_time_steps_horizon = [new_base_time_steps_horizon]
-        self.energy_system.set_hours_all_years = new_base_time_steps_horizon
-        self.energy_system.set_years = time_steps_yearly_horizon
+        self.model_schema.set_hours_all_years = new_base_time_steps_horizon
+        self.model_schema.set_years = time_steps_yearly_horizon
 
     def prepare_scaling(self):
         """Prepare scaling of the optimization problem."""
@@ -285,10 +291,22 @@ class OptimizationStep:
 
     def write_IIS(self, scenario=""):
         """Write an ILP file to print the IIS if infeasible and using Gurobi."""
+        if not self.config.solver.name == "gurobi":
+            return
         if (
-            self.zen_model.lp_model.termination_condition == "infeasible"
-            and self.config.solver.name == "gurobi"
+            self.zen_model.lp_model.termination_condition == "infeasible_or_unbounded"
+            and (
+                "solver_options" not in self.config.solver
+                or "DualReductions" not in self.config.solver.solver_options
+            )
         ):
+            logger.warning(
+                "The optimization problem is infeasible or unbounded. "
+                "When using Gurobi, consider setting the solver option "
+                "'DualReductions' to 0 to get a more informative termination condition"
+                "and."
+            )
+        if self.zen_model.lp_model.termination_condition == "infeasible":
             output_folder = StringUtils.get_output_folder(self.config.analysis)
             ilp_file = os.path.join(
                 output_folder,
@@ -431,16 +449,14 @@ class OptimizationStep:
             param_map (dict): A dictionary mapping parameter names to their values.
         """
         Postprocess(
-            self.config,
+            self.model_schema,
             self.unit_handling,
             self.zen_model,
-            self.energy_system,
             self.scaling,
             self.time_steps,
             optimized_time_steps=self.optimized_time_steps,
             scenarios=scenarios,
             model_name=model_name,
             subfolder=subfolder,
-            scenario_name=scenario_name,
             param_map=param_map,
-        )
+        ).save_results(scenario_name)

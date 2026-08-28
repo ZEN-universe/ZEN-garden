@@ -7,12 +7,16 @@ import numpy as np
 from typing_extensions import override
 
 from zen_garden.elements.technology import Technology
+from zen_garden.elements.transport_technology.constraints import (
+    TRANSPORT_TECHNOLOGY_CONSTRAINTS,
+)
 from zen_garden.elements.transport_technology.parameters import (
     TRANSPORT_TECHNOLOGY_PARAMETERS,
 )
 from zen_garden.elements.transport_technology.variables import (
     TRANSPORT_TECHNOLOGY_VARIABLES,
 )
+from zen_garden.topology.generic_constraint import GenericConstraint
 from zen_garden.topology.generic_parameter import GenericParameter
 from zen_garden.topology.generic_variable import GenericVariable
 
@@ -24,11 +28,13 @@ class TransportTechnology(Technology):
     label = "set_transport_technologies"
     location_type = "set_edges"
     dict_reversed_edges: dict[str, str] = {}
-    # Todo: Add the constraints here?
     own_parameters: ClassVar[list[type[GenericParameter]]] = (
         TRANSPORT_TECHNOLOGY_PARAMETERS
     )
     variables: ClassVar[list[type[GenericVariable]]] = TRANSPORT_TECHNOLOGY_VARIABLES
+    constraints: ClassVar[list[type[GenericConstraint]]] = (
+        TRANSPORT_TECHNOLOGY_CONSTRAINTS
+    )
 
     @override
     def _initialize(self):

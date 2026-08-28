@@ -6,4 +6,4 @@ class SetCarriers(GenericSet):
 
     @classmethod
     def get_data(cls, constructor):
-        return constructor.energy_system.set_carriers
+        return constructor.model_schema.set_carriers

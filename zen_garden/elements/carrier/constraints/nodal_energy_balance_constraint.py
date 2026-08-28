@@ -3,7 +3,6 @@ import numpy as np
 import xarray as xr
 from linopy.expressions import LinearExpression
 
-from zen_garden.elements.carrier import Carrier
 from zen_garden.model.components.multi_index_helper import MultiIndexHelper
 from zen_garden.topology.generic_constraint import GenericConstraint
 
@@ -68,7 +67,7 @@ class NodalEnergyBalanceConstraint(GenericConstraint):
         :math:`F^{\\mathrm{exp}}_{c,n,t}`: exported carrier flow
         """
         index_values, index_names = self.zen_model.create_custom_set(
-            ["set_carriers", "set_nodes", "set_time_steps_operation"], Carrier
+            ["set_carriers", "set_nodes", "set_time_steps_operation"]
         )
         index = MultiIndexHelper(index_values, index_names)
         first_index_name = index_names[:1]
@@ -85,11 +84,11 @@ class NodalEnergyBalanceConstraint(GenericConstraint):
         if self.zen_model.variables["flow_transport"].size > 0:
             # recalculate all the edges
             edges_in = {
-                node: self.energy_system.calculate_connected_edges(node, "in")
+                node: self.network_topology.calculate_connected_edges(node, "in")
                 for node in self.zen_model.sets["set_nodes"]
             }
             edges_out = {
-                node: self.energy_system.calculate_connected_edges(node, "out")
+                node: self.network_topology.calculate_connected_edges(node, "out")
                 for node in self.zen_model.sets["set_nodes"]
             }
             max_edges = max(
@@ -126,8 +125,8 @@ class NodalEnergyBalanceConstraint(GenericConstraint):
                     for tech in self.zen_model.sets["set_transport_technologies"]
                     if carrier in self.zen_model.sets["set_reference_carriers"][tech]
                 ]
-                edges_in = self.energy_system.calculate_connected_edges(node, "in")
-                edges_out = self.energy_system.calculate_connected_edges(node, "out")
+                edges_in = self.network_topology.calculate_connected_edges(node, "in")
+                edges_out = self.network_topology.calculate_connected_edges(node, "out")
 
                 # get the variables for the in flow
                 in_vars_plus = (

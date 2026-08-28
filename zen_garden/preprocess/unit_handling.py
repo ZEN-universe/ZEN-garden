@@ -16,11 +16,11 @@ from pint import UnitRegistry
 from pint.util import column_echelon_form
 
 from zen_garden.elements.carrier import Carrier
+from zen_garden.elements.energy_system import EnergySystem
 from zen_garden.elements.retrofitting_technology import RetrofittingTechnology
 from zen_garden.elements.technology import Technology
 
 if TYPE_CHECKING:
-    from zen_garden.elements.energy_system import EnergySystem
     from zen_garden.model.config import Config
     from zen_garden.services.element_registry import ElementRegistry
 
@@ -518,7 +518,6 @@ class UnitHandling:
     def consistency_checks_input_units(
         self,
         config: "Config",
-        energy_system: "EnergySystem",
         element_registry: "ElementRegistry",
     ):
         """Performs unit consistency checks on the input data.
@@ -533,18 +532,20 @@ class UnitHandling:
         Args:
             config (Config): The configuration object containing settings for
                 the optimization, including unit consistency checks.
-            energy_system (EnergySystem): The energy system object containing
-                information about the overall system, including carriers and
-                technologies.
-
         Raises:
             AssertionError: If unit inconsistencies are found in the input
                 files or optimization setup.
         """
         if not config.solver.check_unit_consistency:
             return
-        elements = element_registry.all_elements()
-        items = elements + [energy_system]
+        all_elements = element_registry.all_elements()
+        energy_systems = element_registry.all_elements_of_type(EnergySystem)
+        assert len(energy_systems) == 1
+        energy_system = energy_systems[0]
+        elements = [
+            element for element in all_elements if not isinstance(element, EnergySystem)
+        ]
+        items = [*elements, energy_system]
         conversion_factor_units: dict[str, Any] = {}
         retrofit_flow_coupling_factors: dict[str, Any] = {}
         for item in items:

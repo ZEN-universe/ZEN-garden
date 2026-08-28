@@ -12,11 +12,10 @@ from tsam import ClusterConfig, ExtremeConfig
 from zen_garden.elements.element import Element
 
 if TYPE_CHECKING:
-    from zen_garden.elements.energy_system import EnergySystem
-    from zen_garden.model.config import Config
     from zen_garden.model.time_steps import TimeStepsDicts
     from zen_garden.services.element_registry import ElementRegistry
     from zen_garden.services.input_repository import InputRepository
+    from zen_garden.topology.model_schema import ModelSchema
     from zen_garden.types import YearSpecificTs
 
 logger = logging.getLogger(__name__)
@@ -27,8 +26,7 @@ class TimeSeriesAggregation(object):
 
     def __init__(
         self,
-        energy_system: "EnergySystem",
-        config: "Config",
+        model_schema: "ModelSchema",
         element_registry: "ElementRegistry",
         time_steps: "TimeStepsDicts",
         year_specific_ts: "YearSpecificTs",
@@ -37,14 +35,13 @@ class TimeSeriesAggregation(object):
         """Initializes the time series aggregation. The data is aggregated
         for a single year and then concatenated.
 
-        :param energy_system: The energy system to use
+        :param model_schema: The global model schema
         """
         logger.info("\n--- Time series aggregation ---\n")
         # initiate dictionary for saving year specific TSA results
         self.year_specific_tsa: dict[int, dict[tuple[str, str], Any]] = {}
-        self.energy_system = energy_system
+        self.model_schema = model_schema
         self.time_steps = time_steps
-        self.config = config
         self.element_registry = element_registry
         self.year_specific_ts = year_specific_ts
         self.input_repository = input_repository
@@ -52,7 +49,7 @@ class TimeSeriesAggregation(object):
         self.header_set_time_steps = self.config.analysis.header_data_inputs.set_hours
         # if set_hours as input (because already aggregated), use this as
         # base time step, otherwise self.set_hours
-        self.set_hours_unaggregated = self.energy_system.set_hours
+        self.set_hours_unaggregated = self.model_schema.set_hours
         self.number_typical_periods = min(
             self.config.system.unaggregated_time_steps_per_year,
             self.config.system.aggregated_time_steps_per_year,
@@ -109,6 +106,16 @@ class TimeSeriesAggregation(object):
         self.energy_system.time_steps_storage_duration = pd.Series(
             self.time_steps.time_steps_storage_duration
         )
+
+    @property
+    def config(self):
+        """Return the canonical configuration from the model schema."""
+        return self.model_schema.config
+
+    @property
+    def energy_system(self):
+        """Return the canonical energy-system element from the schema."""
+        return self.model_schema.energy_system
 
     def select_ts_of_all_elements(self):
         """This method retrieves the raw time series for the aggregation of all
@@ -250,18 +257,18 @@ class TimeSeriesAggregation(object):
         """
         self.excluded_ts = []
         if self.config.system.exclude_parameters_from_TSA:
-            excluded_parameters = self.input_repository.read_csv(
+            excluded_parameters = self.input_repository.read_yaml(
                 "exclude_parameter_from_TSA"
             )
             # exclude file exists
             if excluded_parameters is not None:
-                for _, vals in excluded_parameters.iterrows():
-                    element_name = vals.iloc[0]
-                    parameter = vals.iloc[1]
+                for element_name, parameters in excluded_parameters.items():
+                    if isinstance(parameters, str):
+                        parameters = [parameters]
                     element = self.element_registry.get_element(Element, element_name)
                     # specific element
                     if element is not None:
-                        if parameter is np.nan:
+                        if parameters is None:
                             logger.warning(
                                 f"Excluding all parameters "
                                 f"{', '.join(element.raw_time_series.keys())} "
@@ -270,13 +277,15 @@ class TimeSeriesAggregation(object):
                             )
                             for parameter_name in element.raw_time_series:
                                 self.excluded_ts.append((element_name, parameter_name))
-                        elif parameter in element.raw_time_series:
-                            self.excluded_ts.append((element_name, parameter))
+                        else:
+                            for parameter in parameters:
+                                if parameter in element.raw_time_series:
+                                    self.excluded_ts.append((element_name, parameter))
                     # for an entire set of elements
                     else:
-                        if parameter is np.nan:
+                        if parameters is None:
                             logger.warning(
-                                "Please specify a specific parameter to "
+                                "Please specify at least one parameter to "
                                 "exclude from time series aggregation when not "
                                 "providing a specific element"
                             )
@@ -285,21 +294,22 @@ class TimeSeriesAggregation(object):
                                 element_name
                             )
                             if element_class is not None:
-                                logger.info(
-                                    f"Parameter {parameter} is excluded from "
-                                    "time series aggregation for all elements "
-                                    f"in {element_name}"
-                                )
                                 class_elements = (
                                     self.element_registry.all_elements_of_type(
                                         element_class
                                     )
                                 )
-                                for class_element in class_elements:
-                                    if parameter in class_element.raw_time_series:
-                                        self.excluded_ts.append(
-                                            (class_element.name, parameter)
-                                        )
+                                for parameter in parameters:
+                                    logger.info(
+                                        f"Parameter {parameter} is excluded from "
+                                        "time series aggregation for all elements "
+                                        f"in {element_name}"
+                                    )
+                                    for class_element in class_elements:
+                                        if parameter in class_element.raw_time_series:
+                                            self.excluded_ts.append(
+                                                (class_element.name, parameter)
+                                            )
                             else:
                                 logger.warning(
                                     f"Exclusion from time series aggregation: "
@@ -381,8 +391,9 @@ class TimeSeriesAggregation(object):
                         df_ts_non_constant.columns.to_flat_index()
                     )
                 dict_raw_ts[ts] = df_ts_non_constant
-        df_ts_raw = pd.concat(dict_raw_ts.values(), axis=1, keys=dict_raw_ts.keys())
-        return df_ts_raw
+        if not dict_raw_ts:
+            return pd.DataFrame()
+        return pd.concat(dict_raw_ts.values(), axis=1, keys=dict_raw_ts.keys())
 
     def run_tsa_for_year_specific_ts(self, new_sequence_time_steps):
         """This method runs the time series aggregation for year-specific time
@@ -589,7 +600,7 @@ class TimeSeriesAggregation(object):
                 )
                 ts = ts_df.stack()
             else:
-                for year in self.energy_system.set_years:
+                for year in self.model_schema.set_years:
                     if not all(yearly_variation[year] == 1):
                         base_time_steps = self.time_steps.decode_time_step(
                             year, "yearly"
@@ -663,7 +674,7 @@ class TimeSeriesAggregation(object):
     def repeat_sequence_time_steps_for_all_years(self):
         """This method repeats the operational time series for all years."""
         logger.info("Repeat the time series sequences for all years")
-        optimized_years = len(self.energy_system.set_years)
+        optimized_years = len(self.model_schema.set_years)
         # concatenate the order of time steps and link with investment and yearly
         # time steps
         old_sequence_time_steps = self.time_steps.sequence_time_steps_operation
@@ -728,9 +739,7 @@ class TimeSeriesAggregation(object):
         # set the dict time_steps_energy2power
         self.time_steps.time_steps_energy2power = time_steps_energy2power
         # set the first and last time step of each year
-        self.time_steps.set_time_steps_storage_startend(
-            self.energy_system.config.system
-        )
+        self.time_steps.set_time_steps_storage_startend(self.model_schema.config.system)
 
     def unique_time_steps_multiple_indices(self, list_sequence_time_steps):
         """Returns the unique time steps of multiple time grids.

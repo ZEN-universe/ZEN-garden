@@ -11,8 +11,8 @@ from zen_garden.model.components.set_registry import SetRegistry
 from zen_garden.model.components.variable import Variable
 
 if TYPE_CHECKING:
-    from zen_garden.model.config import Config
     from zen_garden.services.service_container import ServiceContainer
+    from zen_garden.topology.model_schema import ModelSchema
 
 
 class ZenModel:
@@ -21,11 +21,12 @@ class ZenModel:
     def __init__(
         self,
         service_container: "ServiceContainer",
-        config: "Config",
+        model_schema: "ModelSchema",
     ):
-        self.indexing_sets = [key for key in config.system.keys() if "set" in key]
+        self.model_schema = model_schema
+        self.indexing_sets = [key for key in self.config.system.keys() if "set" in key]
 
-        self.lp_model = LinopyModel(solver_dir=config.solver.solver_dir)
+        self.lp_model = LinopyModel(solver_dir=self.config.solver.solver_dir)
         self.sets = service_container.build(
             SetRegistry, indexing_sets=self.indexing_sets
         )
@@ -36,6 +37,11 @@ class ZenModel:
         # Expressions are model-construction artifacts rather than input data.
         self.expressions: dict[str, Any] = {}
         self.constraints = Constraint(lp_model=self.lp_model)
+
+    @property
+    def config(self):
+        """Return the canonical configuration from the model schema."""
+        return self.model_schema.config
 
     def add_set(self, *args, **kwargs):
         """Add sets to the model.

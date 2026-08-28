@@ -6,4 +6,4 @@ class SetYears(GenericSet):
 
     @classmethod
     def get_data(cls, constructor):
-        return constructor.energy_system.set_years
+        return constructor.model_schema.set_years

@@ -47,12 +47,12 @@ def compare_variables_results(test_model: str, results: Results, folder_path: st
     # iterate through dataframe rows
     if test_model in test_variables:
         for s in test_variables[test_model]:
-            if s in results.solution_loader.scenarios:
-                scenario = results.solution_loader.scenarios[s]
+            if s in results.scenarios:
+                scenario = results.scenarios[s]
                 test_values = test_variables[test_model][s]
                 for c in test_values:
                     if c in scenario.components:
-                        values = results.get_df(c, scenario_name=s)
+                        values = results.get_unprocessed_result(c, scenario_name=s)
                         assert isinstance(values, pd.Series)
                         for test_value in test_values[c]:
                             if isinstance(test_value["index"], list):
@@ -97,7 +97,6 @@ def compare_variables_results(test_model: str, results: Results, folder_path: st
             stacklevel=2,
         )
 
-
 def check_get_total_get_full_ts(
     results: Results,
     specific_scenario=False,
@@ -119,7 +118,7 @@ def check_get_total_get_full_ts(
     test_variables = ["demand", "capacity", "storage_level", "capacity_limit"]
     scenario = None
     if specific_scenario:
-        scenario = next(iter(results.solution_loader.scenarios.keys()))
+        scenario = next(iter(results.scenarios.keys()))
     for test_variable in test_variables:
         results.get_total(test_variable, scenario_name=scenario, year=year)
         if test_variable != "capacity_limit":
@@ -147,6 +146,42 @@ def check_comparison_functions(results: list[Results], scenarios: list[str]):
         results, component_type="variable", scenarios=scenarios, compare_total=False
     )
 
+def check_sectoral_costs_emissions(
+        results: Results,
+        scenario_name: str | None = None,
+        spatially_resolved: bool = False,
+        ):
+    """
+    Tests the functionality of the Results methods get_sectoral_costs() and
+    get_sectoral_emissions().
+
+    Args:
+        results: Results instance of testcase function has been called from
+        scenario_name: Name of the scenario to test
+        spatially_resolved: Whether to return spatially resolved data
+    """
+    costs, direct_costs = results.get_sectoral_costs(
+        scenario_name=scenario_name,
+        spatially_resolved=spatially_resolved,
+        overwrite=True
+    )
+    emissions, direct_emissions = results.get_sectoral_emissions(
+        scenario_name=scenario_name,
+        spatially_resolved=spatially_resolved,
+        overwrite=True
+    )
+    if "cost_total" in results.get_component_names("variable"):
+        total_costs = results.get_total("cost_total", scenario_name=scenario_name)
+        assert np.isclose(
+            total_costs, costs.sum(), rtol=1e-3
+        ).all(), "Total costs do not match the sum of sectoral costs"
+    if "carbon_emissions_annual" in results.get_component_names("variable"):
+        total_emissions = results.get_total(
+            "carbon_emissions_annual", scenario_name=scenario_name
+        )
+        assert np.isclose(
+            total_emissions, emissions.sum(), rtol=1e-3
+        ).all(), "Total emissions do not match the sum of sectoral emissions"
 
 # All the tests
 ###############
@@ -169,6 +204,8 @@ def test_1a(folder_path):
     compare_variables_results(data_set_name, res, folder_path)
     # test functions get_total() and get_full_ts()
     check_get_total_get_full_ts(res)
+    # test sectoral costs and emissions
+    check_sectoral_costs_emissions(res, spatially_resolved=True)
     os.chdir(cwd)
 
 
@@ -289,6 +326,20 @@ def test_1i(folder_path):
     res = Results(os.path.join(folder_path, "outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
 
+def test_1j(folder_path):
+    # run the test
+    data_set_name = "test_1j"
+    run(
+        config=os.path.join(folder_path, "config.yaml"),
+        dataset=os.path.join(folder_path, data_set_name),
+        folder_output=os.path.join(folder_path, "outputs"),
+    )
+
+    # read the results and check again
+    res = Results(os.path.join(folder_path, "outputs", data_set_name))
+    compare_variables_results(data_set_name, res, folder_path)
+    # test sectoral costs and emissions
+    check_sectoral_costs_emissions(res, spatially_resolved=True)
 
 def test_2a(folder_path):
     # run the test
@@ -482,8 +533,8 @@ def test_4a(folder_path):
     # test comparison functions
     res_0 = res
     res_1 = res
-    scen_0 = list(res_0.solution_loader.scenarios.keys())[0]
-    scen_1 = list(res_0.solution_loader.scenarios.keys())[1]
+    scen_0 = list(res_0.scenarios.keys())[0]
+    scen_1 = list(res_0.scenarios.keys())[1]
     check_comparison_functions([res_0, res_1], [scen_0, scen_1])
 
 

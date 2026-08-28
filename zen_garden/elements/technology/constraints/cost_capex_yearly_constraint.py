@@ -2,7 +2,6 @@ import linopy as lp
 import pandas as pd
 from linopy.expressions import LinearExpression
 
-from zen_garden.elements.technology import Technology
 from zen_garden.elements.technology.constraints.technology_constraint import (
     TechnologyConstraint,
 )
@@ -56,8 +55,7 @@ class CostCapexYearlyConstraint(TechnologyConstraint):
                 "set_capacity_types",
                 "set_location",
                 "set_years",
-            ],
-            Technology,
+            ]
         )
         index = MultiIndexHelper(index_values, index_names)
         ### masks

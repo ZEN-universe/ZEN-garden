@@ -56,8 +56,8 @@ configuration file ``config.yaml`` contains more general settings for the
 optimization problem and the solver. Refer to the section :ref:`configuration.configuration`
 for more details.
 
-Depending on your analysis, more files can be added; see 
-:ref:`input_structure.attribute_files` and 
+Depending on your analysis, more files can be added; see
+:ref:`input_structure.attribute_files` and
 :ref:`t_scenario.t_scenario` for more information.
 
 .. _input_structure.folders:
@@ -159,11 +159,12 @@ A storage technology connects two time steps by charging at ``t=t0`` and
 discharging at ``t=t1``.
 
 .. note::
-    In ZEN-garden, the power-rated (charging-discharging) capacity and 
-    energy-rated (storage level) capacity of storage technologies are optimized 
-    independently.     If you want to fix the energy-to-power ratio, the 
-    attribute ``energy_to_power_ratio`` in ``attributes.yaml`` can be set to 
-    anything different than ``inf``.
+    In ZEN-garden, the power-rated (charging-discharging) capacity and
+    energy-rated (storage level) capacity of storage technologies are
+    optimized independently. To constrain the ratio between them, set
+    ``energy_to_power_ratio_min`` and/or ``energy_to_power_ratio_max`` in
+    ``attributes.yaml`` (defaults ``0`` and ``inf``). Fixing the ratio
+    requires setting both to the same value; see :ref:`t_storage.t_storage`.
 
 
 Transport Technologies

@@ -4,7 +4,7 @@ from zen_garden.topology.generic_constraint import GenericConstraint
 
 
 class CostOpexYearlyConstraint(GenericConstraint):
-    def build(self):
+    def build(self) -> None:
         """Summary:
         Yearly opex for a technology at a location in each year.
 
