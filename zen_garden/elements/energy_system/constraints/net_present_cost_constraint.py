@@ -28,6 +28,7 @@ class NetPresentCostConstraint(GenericConstraint):
         :math:`r^{\\mathrm{disc}}`: discount rate
         :math:`\\Delta y`: interval between planning periods
         """
+        optimization_model = model_constructor.optimization_model
         factor = pd.Series(index=model_constructor.model_schema.set_years)
         for year in model_constructor.model_schema.set_years:
             ### auxiliary calculations
@@ -40,7 +41,7 @@ class NetPresentCostConstraint(GenericConstraint):
             # economic discount
             factor[year] = sum(
                 (
-                    (1 / (1 + model_constructor.zen_model.parameters.discount_rate))
+                    (1 / (1 + optimization_model.parameters.discount_rate))
                     ** (
                         model_constructor.config.system.interval_between_years
                         * (year - model_constructor.model_schema.set_years[0])
@@ -49,17 +50,13 @@ class NetPresentCostConstraint(GenericConstraint):
                 )
                 for _intermediate_time_step in range(0, interval_between_years)
             )
-        term_discounted_cost_total = (
-            model_constructor.zen_model.variables["cost_total"] * factor
-        )
+        term_discounted_cost_total = optimization_model.variables["cost_total"] * factor
 
         lhs = (
-            model_constructor.zen_model.variables["net_present_cost"]
+            optimization_model.variables["net_present_cost"]
             - term_discounted_cost_total
         )
         rhs = 0
         constraints = lhs == rhs
 
-        model_constructor.zen_model.add_constraint(
-            "constraint_net_present_cost", constraints
-        )
+        optimization_model.add_constraint("constraint_net_present_cost", constraints)

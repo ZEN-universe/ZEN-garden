@@ -32,7 +32,7 @@ Sets can be added in the ``construct_sets`` method of the element consturctor cl
 e.g., :py:class:`EnergySystemConstructor <zen_garden.elements.energy_system.energy_system_constructor.EnergySystemConstructor>`,
 :py:class:`CarrierConstructor <zen_garden.elements.carrier.carrier_constructor.CarrierConstructor>`,
 or :py:class:`TechnologyConstructor <zen_garden.elements.technology.technology_constructor.TechnologyConstructor>`.
-The new set is added to ``self.zen_model.sets`` through the method ``self.zen_model.add_set()``.
+The new set is added to ``self.optimization_model.sets`` through the method ``self.optimization_model.add_set()``.
 
 The :py:meth:`add_set <zen_garden.model.registries.set_registry.SetRegistry.add_set>` method takes the following parameters:
 
@@ -45,12 +45,12 @@ Two examples for adding a set is shown below (from the ``Technology`` class):
 
 .. code-block:: python
 
-    self.zen_model.add_set(
+    self.optimization_model.add_set(
         name="set_conversion_technologies",
         data=energy_system.set_conversion_technologies,
         doc="Set of conversion technologies")
 
-    self.zen_model.add_set(
+    self.optimization_model.add_set(
         name="set_reference_carriers",
         data=self.element_registry.get_attribute_of_all_elements(
             self.element_class, "reference_carrier"
@@ -178,7 +178,7 @@ The ``add_variable`` method is called in the following way:
 
 .. code-block:: python
 
-    self.zen_model.add_variable(
+    self.optimization_model.add_variable(
         name="flow_import",
         index_sets=self.create_custom_set(["set_carriers", "set_nodes", "set_time_steps_operation"]),
         bounds=(0,np.inf),
@@ -203,7 +203,7 @@ Thereby, we can infer the unit of the variable from the unit categories of the p
 
 .. note::
 
-    The variables are available in the constraint rules through the ``self.zen_model.variables[<variable_name>]`` attribute.
+    The variables are available in the constraint rules through the ``self.optimization_model.variables[<variable_name>]`` attribute.
 
 .. _adding_elements.adding_constraints:
 

@@ -19,14 +19,14 @@ class CostCapexYearlyTotalConstraint(GenericConstraint):
         location :math:`p` in year :math:`y`
         :math:`p` in year :math:`y`, including all applicable capacity types
         """
-        lhs = model_constructor.zen_model.variables[
+        lhs = model_constructor.optimization_model.variables[
             "cost_capex_yearly_total"
-        ] - model_constructor.zen_model.variables["cost_capex_yearly"].sum(
+        ] - model_constructor.optimization_model.variables["cost_capex_yearly"].sum(
             ["set_technologies", "set_capacity_types", "set_location"]
         )
         rhs = 0
         constraints = lhs == rhs
 
-        model_constructor.zen_model.add_constraint(
+        model_constructor.optimization_model.add_constraint(
             "constraint_cost_capex_yearly_total", constraints
         )

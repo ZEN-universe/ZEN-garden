@@ -65,7 +65,7 @@ class GenericParameter(ABC):
             model_constructor, index_names
         )
         component_data = cls._ensure_multi_index(component_data)
-        model_constructor.zen_model.add_parameter(
+        model_constructor.optimization_model.add_parameter(
             cls.name,
             cls.doc,
             (component_data, index_list),
@@ -82,7 +82,7 @@ class GenericParameter(ABC):
             index_list = index_names
             if cls.set_time_steps is not None:
                 component_data = component_data[
-                    model_constructor.zen_model.sets[cls.set_time_steps]
+                    model_constructor.optimization_model.sets[cls.set_time_steps]
                 ]
             else:
                 if not isinstance(component_data, float):

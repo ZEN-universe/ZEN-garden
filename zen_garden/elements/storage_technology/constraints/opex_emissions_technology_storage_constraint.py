@@ -32,20 +32,20 @@ class OpexEmissionsTechnologyStorageConstraint(GenericConstraint):
         :math:`\\varepsilon^{\\mathrm{op}}_{h,n}`: carbon intensity of the storage
         technology
         """
-        techs = model_constructor.zen_model.sets["set_storage_technologies"]
+        techs = model_constructor.optimization_model.sets["set_storage_technologies"]
         if len(techs) == 0:
             return
-        nodes = model_constructor.zen_model.sets["set_nodes"]
-        lhs_opex = model_constructor.zen_model.variables["cost_opex_variable"].sel(
-            {"set_technologies": techs, "set_location": nodes}
-        ) - (
-            model_constructor.zen_model.parameters.opex_specific_variable
+        nodes = model_constructor.optimization_model.sets["set_nodes"]
+        lhs_opex = model_constructor.optimization_model.variables[
+            "cost_opex_variable"
+        ].sel({"set_technologies": techs, "set_location": nodes}) - (
+            model_constructor.optimization_model.parameters.opex_specific_variable
             * cls.get_flow_expression_storage(model_constructor)
         )
-        lhs_emissions = model_constructor.zen_model.variables[
+        lhs_emissions = model_constructor.optimization_model.variables[
             "carbon_emissions_technology"
         ].sel({"set_technologies": techs, "set_location": nodes}) - (
-            model_constructor.zen_model.parameters.carbon_intensity_technology
+            model_constructor.optimization_model.parameters.carbon_intensity_technology
             * cls.get_flow_expression_storage(model_constructor)
         )
         lhs_opex = lhs_opex.rename(
@@ -64,9 +64,9 @@ class OpexEmissionsTechnologyStorageConstraint(GenericConstraint):
         constraints_opex = lhs_opex == rhs
         constraints_emissions = lhs_emissions == rhs
 
-        model_constructor.zen_model.add_constraint(
+        model_constructor.optimization_model.add_constraint(
             "constraint_opex_technology_storage", constraints_opex
         )
-        model_constructor.zen_model.add_constraint(
+        model_constructor.optimization_model.add_constraint(
             "constraint_carbon_emissions_technology_storage", constraints_emissions
         )

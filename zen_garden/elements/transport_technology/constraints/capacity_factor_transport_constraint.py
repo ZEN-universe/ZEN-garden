@@ -25,11 +25,11 @@ class CapacityFactorTransportConstraint(GenericConstraint):
         :math:`K_{h,e,y}`: Capacity of transport technology :math:`h` on
         edge :math:`e` in year :math:`y`
         """
-        techs = model_constructor.zen_model.sets["set_transport_technologies"]
+        techs = model_constructor.optimization_model.sets["set_transport_technologies"]
         if len(techs) == 0:
             return
-        edges = model_constructor.zen_model.sets["set_edges"]
-        times = model_constructor.zen_model.variables["flow_transport"].coords[
+        edges = model_constructor.optimization_model.sets["set_edges"]
+        times = model_constructor.optimization_model.variables["flow_transport"].coords[
             "set_time_steps_operation"
         ]
         time_step_year = xr.DataArray(
@@ -40,8 +40,10 @@ class CapacityFactorTransportConstraint(GenericConstraint):
             coords=[times],
         )
         term_capacity = (
-            model_constructor.zen_model.parameters.max_load.loc[techs, edges, :]
-            * model_constructor.zen_model.variables["capacity"].loc[
+            model_constructor.optimization_model.parameters.max_load.loc[
+                techs, edges, :
+            ]
+            * model_constructor.optimization_model.variables["capacity"].loc[
                 techs, "power", edges, time_step_year
             ]
         ).rename(
@@ -53,13 +55,13 @@ class CapacityFactorTransportConstraint(GenericConstraint):
 
         lhs = (
             term_capacity
-            - model_constructor.zen_model.variables["flow_transport"].loc[
+            - model_constructor.optimization_model.variables["flow_transport"].loc[
                 techs, edges, :
             ]
         )
         rhs = 0
         constraints = lhs >= rhs
         ### return
-        model_constructor.zen_model.add_constraint(
+        model_constructor.optimization_model.add_constraint(
             "constraint_capacity_factor_transport", constraints
         )

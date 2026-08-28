@@ -25,7 +25,7 @@ class ExistingCapex(GenericParameter):
 
     @classmethod
     def build(cls, model_constructor):
-        model_constructor.zen_model.add_parameter(
+        model_constructor.optimization_model.add_parameter(
             name=cls.name,
             doc=cls.doc,
             data=compute_existing_quantity(

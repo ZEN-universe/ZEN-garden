@@ -1,4 +1,4 @@
-"""Generic constraint class for ZenModel."""
+"""Generic constraint class for OptimizationModel."""
 
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, cast
@@ -43,7 +43,7 @@ class GenericConstraint(ABC):
         else:
             meth = time_steps.get_time_steps_year2operation
             time_step_name = "set_time_steps_operation"
-        years = model_constructor.zen_model.sets["set_years"]
+        years = model_constructor.optimization_model.sets["set_years"]
         year_ts_pairs = [(y, t) for y in years for t in meth(y)]
         index = pd.MultiIndex.from_tuples(
             year_ts_pairs, names=["set_years", time_step_name]
@@ -57,7 +57,7 @@ class GenericConstraint(ABC):
         times = GenericConstraint.get_year_time_step_array(model_constructor)
         time_steps_operation_duration = cast(
             xr.DataArray | None,
-            model_constructor.zen_model.parameters.time_steps_operation_duration,
+            model_constructor.optimization_model.parameters.time_steps_operation_duration,
         )
         assert time_steps_operation_duration is not None
         times = times * time_steps_operation_duration
@@ -66,11 +66,11 @@ class GenericConstraint(ABC):
     @staticmethod
     def get_previous_storage_time_step_array(model_constructor: "ModelConstructor"):
         """Returns array with storage time steps and previous storage time steps."""
-        zen_model = model_constructor.zen_model
+        optimization_model = model_constructor.optimization_model
         time_steps = model_constructor.time_steps
         times_prev = []
         mask_values = []
-        for ts in zen_model.sets["set_time_steps_storage"]:
+        for ts in optimization_model.sets["set_time_steps_storage"]:
             ts_end = time_steps.get_time_steps_storage_startend(ts)
             if ts_end is not None:
                 if model_constructor.config.system.storage_periodicity:
@@ -86,17 +86,21 @@ class GenericConstraint(ABC):
         mask = xr.DataArray(
             mask_values,
             dims="set_time_steps_storage",
-            coords={"set_time_steps_storage": zen_model.sets["set_time_steps_storage"]},
+            coords={
+                "set_time_steps_storage": optimization_model.sets[
+                    "set_time_steps_storage"
+                ]
+            },
         )
         return times_prev, mask
 
     @staticmethod
     def get_power2energy_time_step_array(model_constructor: "ModelConstructor"):
         """Returns array with power2energy time steps."""
-        zen_model = model_constructor.zen_model
+        optimization_model = model_constructor.optimization_model
         mapping = {
             st: model_constructor.time_steps.convert_time_step_energy2power(st)
-            for st in zen_model.sets["set_time_steps_storage"]
+            for st in optimization_model.sets["set_time_steps_storage"]
         }
         times = pd.Series(mapping, name="set_time_steps_operation")
         times.index.name = "set_time_steps_storage"
@@ -105,10 +109,10 @@ class GenericConstraint(ABC):
     @staticmethod
     def get_storage2year_time_step_array(model_constructor: "ModelConstructor"):
         """Returns array with storage2year time steps."""
-        zen_model = model_constructor.zen_model
+        optimization_model = model_constructor.optimization_model
         mapping = {
             st: y
-            for y in zen_model.sets["set_years"]
+            for y in optimization_model.sets["set_years"]
             for st in model_constructor.time_steps.get_time_steps_year2storage(y)
         }
         times = pd.Series(mapping, name="set_years")
@@ -155,9 +159,11 @@ class GenericConstraint(ABC):
         model_constructor: "ModelConstructor", techs, nodes, factor=None, rename=False
     ):
         """Return the flow expression for conversion technologies."""
-        zen_model = model_constructor.zen_model
-        reference_carriers = cast(IndexedSet, zen_model.sets["set_reference_carriers"])
-        input_carriers = cast(IndexedSet, zen_model.sets["set_input_carriers"])
+        optimization_model = model_constructor.optimization_model
+        reference_carriers = cast(
+            IndexedSet, optimization_model.sets["set_reference_carriers"]
+        )
+        input_carriers = cast(IndexedSet, optimization_model.sets["set_input_carriers"])
         reference_flows = []
         for t in techs:
             rc = reference_carriers[t][0]
@@ -169,12 +175,16 @@ class GenericConstraint(ABC):
             if rc in input_carriers[t]:
                 reference_flows.append(
                     mult
-                    * zen_model.variables["flow_conversion_input"].loc[t, rc, nodes, :]
+                    * optimization_model.variables["flow_conversion_input"].loc[
+                        t, rc, nodes, :
+                    ]
                 )
             else:
                 reference_flows.append(
                     mult
-                    * zen_model.variables["flow_conversion_output"].loc[t, rc, nodes, :]
+                    * optimization_model.variables["flow_conversion_output"].loc[
+                        t, rc, nodes, :
+                    ]
                 )
         if rename:
             term_reference_flow = merge(
@@ -199,10 +209,10 @@ class GenericConstraint(ABC):
     @staticmethod
     def get_flow_expression_storage(model_constructor: "ModelConstructor", rename=True):
         """Return the flow expression for storage technologies."""
-        zen_model = model_constructor.zen_model
+        optimization_model = model_constructor.optimization_model
         term = (
-            zen_model.variables["flow_storage_charge"]
-            + zen_model.variables["flow_storage_discharge"]
+            optimization_model.variables["flow_storage_charge"]
+            + optimization_model.variables["flow_storage_discharge"]
         )
         if rename:
             return term.rename(

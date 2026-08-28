@@ -1,5 +1,5 @@
-"""ZEN-model to combine sets, parameters, expressions, variables and constraints
-from all elements into a single model."""
+"""The optimization model: the linopy model plus the component registries
+(sets, parameters, expressions, variables, constraints) from all elements."""
 
 from typing import TYPE_CHECKING, Any
 
@@ -15,7 +15,7 @@ if TYPE_CHECKING:
     from zen_garden.model.schema import ModelSchema
 
 
-class ZenModel:
+class OptimizationModel:
     """Store optimization-model sets, parameters, variables, and constraints."""
 
     def __init__(

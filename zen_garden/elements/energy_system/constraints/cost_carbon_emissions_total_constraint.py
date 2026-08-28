@@ -37,28 +37,30 @@ class CostCarbonEmissionsTotalConstraint(GenericConstraint):
         ]
 
         lhs = (
-            model_constructor.zen_model.variables["cost_carbon_emissions_total"]
-            - model_constructor.zen_model.variables["carbon_emissions_annual"]
-            * model_constructor.zen_model.parameters.price_carbon_emissions
+            model_constructor.optimization_model.variables[
+                "cost_carbon_emissions_total"
+            ]
+            - model_constructor.optimization_model.variables["carbon_emissions_annual"]
+            * model_constructor.optimization_model.parameters.price_carbon_emissions
         )
         # add cost for overshooting carbon emissions budget
         budget_overshoot = (
-            model_constructor.zen_model.parameters.price_carbon_emissions_budget_overshoot
+            model_constructor.optimization_model.parameters.price_carbon_emissions_budget_overshoot
         )
         if budget_overshoot != np.inf:
             lhs -= (
-                model_constructor.zen_model.variables[
+                model_constructor.optimization_model.variables[
                     "carbon_emissions_budget_overshoot"
                 ].where(mask_last_year)
                 * budget_overshoot.item()
             )
         # add cost for overshooting annual carbon emissions limit
         annual_overshoot = (
-            model_constructor.zen_model.parameters.price_carbon_emissions_annual_overshoot
+            model_constructor.optimization_model.parameters.price_carbon_emissions_annual_overshoot
         )
         if annual_overshoot != np.inf:
             lhs -= (
-                model_constructor.zen_model.variables[
+                model_constructor.optimization_model.variables[
                     "carbon_emissions_annual_overshoot"
                 ]
                 * annual_overshoot.item()
@@ -67,6 +69,6 @@ class CostCarbonEmissionsTotalConstraint(GenericConstraint):
         rhs = 0
         constraints = lhs == rhs
 
-        model_constructor.zen_model.add_constraint(
+        model_constructor.optimization_model.add_constraint(
             "constraint_cost_carbon_emissions_total", constraints
         )

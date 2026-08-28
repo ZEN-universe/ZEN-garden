@@ -37,7 +37,8 @@ class TransportTechnologyCapexConstraint(GenericConstraint):
         :math:`d^{\\mathrm{dist}}_{h,e}`: Transport distance for transport technology
         :math:`h` on edge :math:`e`
         """
-        index_values, index_list = model_constructor.zen_model.create_custom_set(
+        optimization_model = model_constructor.optimization_model
+        index_values, index_list = optimization_model.create_custom_set(
             ["set_transport_technologies", "set_edges", "set_years"]
         )
 
@@ -46,20 +47,20 @@ class TransportTechnologyCapexConstraint(GenericConstraint):
             return
         # get the coords
         coords = [
-            model_constructor.zen_model.parameters.capex_per_distance_transport.coords[
+            optimization_model.parameters.capex_per_distance_transport.coords[
                 "set_transport_technologies"
             ],
-            model_constructor.zen_model.parameters.capex_per_distance_transport.coords[
+            optimization_model.parameters.capex_per_distance_transport.coords[
                 "set_edges"
             ],
-            model_constructor.zen_model.parameters.capex_per_distance_transport.coords[
+            optimization_model.parameters.capex_per_distance_transport.coords[
                 "set_years"
             ],
         ]
 
         ### masks
         # This mask checks the distance between nodes for the condition
-        mask = np.isinf(model_constructor.zen_model.parameters.distance).astype(float)
+        mask = np.isinf(optimization_model.parameters.distance).astype(float)
 
         # This mask ensure we only get constraints where we want them
         index_arrs = SetRegistry.tuple_to_arr(index_values, index_list)
@@ -69,35 +70,35 @@ class TransportTechnologyCapexConstraint(GenericConstraint):
         ### auxiliary calculations TODO improve
         term_distance_inf = (
             mask
-            * model_constructor.zen_model.variables["capacity_addition"].loc[
+            * optimization_model.variables["capacity_addition"].loc[
                 coords[0], "power", coords[1], coords[2]
             ]
         )
         term_distance_not_inf = (1 - mask) * (
-            model_constructor.zen_model.variables["cost_capex_overnight"].loc[
+            optimization_model.variables["cost_capex_overnight"].loc[
                 coords[0], "power", coords[1], coords[2]
             ]
-            - model_constructor.zen_model.variables["capacity_addition"].loc[
+            - optimization_model.variables["capacity_addition"].loc[
                 coords[0], "power", coords[1], coords[2]
             ]
-            * model_constructor.zen_model.parameters.capex_specific_transport.loc[
+            * optimization_model.parameters.capex_specific_transport.loc[
                 coords[0], coords[1]
             ]
         )
         # Additional check to avoid binary variables when their coefficient is 0
         if np.any(
-            model_constructor.zen_model.parameters.transport_capex_distance.loc[
+            optimization_model.parameters.transport_capex_distance.loc[
                 coords[0], coords[1]
             ]
             != 0
         ):
             term_distance_not_inf -= (
                 (1 - mask)
-                * model_constructor.zen_model.variables["technology_installation"].loc[
+                * optimization_model.variables["technology_installation"].loc[
                     coords[0], "power", coords[1], coords[2]
                 ]
                 * (
-                    model_constructor.zen_model.parameters.transport_capex_distance.loc[
+                    optimization_model.parameters.transport_capex_distance.loc[
                         coords[0], coords[1]
                     ]
                 )
@@ -108,6 +109,6 @@ class TransportTechnologyCapexConstraint(GenericConstraint):
         lhs = lhs.where(global_mask)
         rhs = 0
         constraints = lhs == rhs
-        model_constructor.zen_model.add_constraint(
+        optimization_model.add_constraint(
             "constraint_transport_technology_capex", constraints
         )

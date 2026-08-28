@@ -27,15 +27,15 @@ class CostCarrierConstraint(GenericConstraint):
         """
         ### formulate constraint
         lhs = (
-            model_constructor.zen_model.variables["cost_carrier"]
-            - model_constructor.zen_model.parameters.price_import
-            * model_constructor.zen_model.variables["flow_import"]
-            + model_constructor.zen_model.parameters.price_export
-            * model_constructor.zen_model.variables["flow_export"]
+            model_constructor.optimization_model.variables["cost_carrier"]
+            - model_constructor.optimization_model.parameters.price_import
+            * model_constructor.optimization_model.variables["flow_import"]
+            + model_constructor.optimization_model.parameters.price_export
+            * model_constructor.optimization_model.variables["flow_export"]
         )
         rhs = 0
         constraints = lhs == rhs
 
-        model_constructor.zen_model.add_constraint(
+        model_constructor.optimization_model.add_constraint(
             "constraint_cost_carrier", constraints
         )

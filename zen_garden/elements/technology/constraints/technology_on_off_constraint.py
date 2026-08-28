@@ -47,18 +47,22 @@ class TechnologyOnOffConstraint(GenericConstraint):
         product of :math:`K_{h,p,y}` and :math:`z^{\\mathrm{on}}_{h,p,t}`
         :math:`\\overline{k}_{h,p,y}`: Big-M limit on :math:`K_{h,p,y}`
         """
-        techs_on_off = model_constructor.zen_model.create_custom_set(
+        techs_on_off = model_constructor.optimization_model.create_custom_set(
             ["set_technologies", "set_on_off"]
         )[0]
 
         # sets
-        conversion_techs = model_constructor.zen_model.sets[
+        conversion_techs = model_constructor.optimization_model.sets[
             "set_conversion_technologies"
         ]
-        storage_techs = model_constructor.zen_model.sets["set_storage_technologies"]
-        transport_techs = model_constructor.zen_model.sets["set_transport_technologies"]
-        nodes = model_constructor.zen_model.sets["set_nodes"]
-        times = model_constructor.zen_model.sets["set_time_steps_operation"]
+        storage_techs = model_constructor.optimization_model.sets[
+            "set_storage_technologies"
+        ]
+        transport_techs = model_constructor.optimization_model.sets[
+            "set_transport_technologies"
+        ]
+        nodes = model_constructor.optimization_model.sets["set_nodes"]
+        times = model_constructor.optimization_model.sets["set_time_steps_operation"]
         time_step_year = xr.DataArray(
             [
                 model_constructor.time_steps.convert_time_step_operation2year(t)
@@ -71,19 +75,22 @@ class TechnologyOnOffConstraint(GenericConstraint):
             # No technology needs on/off modelling: drop the helper variables
             # that were only added for this constraint.
             for helper_variable in ("tech_on_var", "capacity_on_off_helper_var"):
-                if helper_variable in model_constructor.zen_model.lp_model.variables:
-                    model_constructor.zen_model.lp_model.variables.remove(
+                if (
+                    helper_variable
+                    in model_constructor.optimization_model.lp_model.variables
+                ):
+                    model_constructor.optimization_model.lp_model.variables.remove(
                         helper_variable
                     )
             return None
         # params and variables
-        min_load = model_constructor.zen_model.parameters.min_load
-        capacity = model_constructor.zen_model.variables["capacity"].sel(
+        min_load = model_constructor.optimization_model.parameters.min_load
+        capacity = model_constructor.optimization_model.variables["capacity"].sel(
             {"set_capacity_types": "power", "set_years": time_step_year}
         )
         big_M = capacity.upper
-        binary = model_constructor.zen_model.variables["tech_on_var"]
-        capacity_on_off_helper = model_constructor.zen_model.variables[
+        binary = model_constructor.optimization_model.variables["tech_on_var"]
+        capacity_on_off_helper = model_constructor.optimization_model.variables[
             "capacity_on_off_helper_var"
         ]
         # mask for on_off variables
@@ -114,7 +121,7 @@ class TechnologyOnOffConstraint(GenericConstraint):
             )
         if len(transport_techs) > 0:
             list_flow_reference.append(
-                model_constructor.zen_model.variables["flow_transport"]
+                model_constructor.optimization_model.variables["flow_transport"]
                 .rename(
                     {
                         "set_transport_technologies": "set_technologies",
@@ -138,7 +145,7 @@ class TechnologyOnOffConstraint(GenericConstraint):
         )
         rhs_1a = 0
         constraints_1a = lhs_1a <= rhs_1a
-        model_constructor.zen_model.add_constraint(
+        model_constructor.optimization_model.add_constraint(
             "constraint_technology_on_off_operation_lower_bound", constraints_1a
         )
         # 1a, upper bound
@@ -147,7 +154,7 @@ class TechnologyOnOffConstraint(GenericConstraint):
         )
         rhs_1b = 0
         constraints_1b = lhs_1b <= rhs_1b
-        model_constructor.zen_model.add_constraint(
+        model_constructor.optimization_model.add_constraint(
             "constraint_technology_on_off_operation_upper_bound", constraints_1b
         )
         # constraint 2, limit capacity helper
@@ -155,7 +162,7 @@ class TechnologyOnOffConstraint(GenericConstraint):
         lhs_2 = cls.align_and_mask(capacity_on_off_helper - big_M * binary, mask_on_off)
         rhs_2 = 0
         constraints_2 = lhs_2 <= rhs_2
-        model_constructor.zen_model.add_constraint(
+        model_constructor.optimization_model.add_constraint(
             "constraint_technology_on_off_capacity_helper", constraints_2
         )
         # constraint 3, capacity helper bounds
@@ -165,13 +172,13 @@ class TechnologyOnOffConstraint(GenericConstraint):
         )
         rhs_3a = big_M
         constraints_3a = lhs_3a <= rhs_3a
-        model_constructor.zen_model.add_constraint(
+        model_constructor.optimization_model.add_constraint(
             "constraint_technology_on_off_capacity_helper_lower_bound", constraints_3a
         )
         # 3b, upper bound
         lhs_3b = cls.align_and_mask(capacity_on_off_helper - capacity, mask_on_off)
         rhs_3b = 0
         constraints_3b = lhs_3b <= rhs_3b
-        model_constructor.zen_model.add_constraint(
+        model_constructor.optimization_model.add_constraint(
             "constraint_technology_on_off_capacity_helper_upper_bound", constraints_3b
         )

@@ -67,8 +67,10 @@ class NodalEnergyBalanceConstraint(GenericConstraint):
         :math:`F^{\\mathrm{ch}}_{h,n,t}`: input flow to storage technology :math:`h`
         :math:`F^{\\mathrm{exp}}_{c,n,t}`: exported carrier flow
         """
-        index_values, index_names = model_constructor.zen_model.create_custom_set(
-            ["set_carriers", "set_nodes", "set_time_steps_operation"]
+        index_values, index_names = (
+            model_constructor.optimization_model.create_custom_set(
+                ["set_carriers", "set_nodes", "set_time_steps_operation"]
+            )
         )
         index = MultiIndexHelper(index_values, index_names)
         first_index_name = index_names[:1]
@@ -82,28 +84,28 @@ class NodalEnergyBalanceConstraint(GenericConstraint):
 
         ### auxiliary calculations
         # carrier flow transport technologies
-        if model_constructor.zen_model.variables["flow_transport"].size > 0:
+        if model_constructor.optimization_model.variables["flow_transport"].size > 0:
             # recalculate all the edges
             edges_in = {
                 node: model_constructor.network_topology.calculate_connected_edges(
                     node, "in"
                 )
-                for node in model_constructor.zen_model.sets["set_nodes"]
+                for node in model_constructor.optimization_model.sets["set_nodes"]
             }
             edges_out = {
                 node: model_constructor.network_topology.calculate_connected_edges(
                     node, "out"
                 )
-                for node in model_constructor.zen_model.sets["set_nodes"]
+                for node in model_constructor.optimization_model.sets["set_nodes"]
             }
             max_edges = max(
                 [
                     len(edges_in[node])
-                    for node in model_constructor.zen_model.sets["set_nodes"]
+                    for node in model_constructor.optimization_model.sets["set_nodes"]
                 ]
                 + [
                     len(edges_out[node])
-                    for node in model_constructor.zen_model.sets["set_nodes"]
+                    for node in model_constructor.optimization_model.sets["set_nodes"]
                 ]
             )
 
@@ -111,17 +113,19 @@ class NodalEnergyBalanceConstraint(GenericConstraint):
             flow_transport_in_vars = xr.DataArray(
                 -1,
                 coords=[
-                    model_constructor.zen_model.parameters.demand.coords[
+                    model_constructor.optimization_model.parameters.demand.coords[
                         "set_carriers"
                     ],
-                    model_constructor.zen_model.parameters.demand.coords["set_nodes"],
-                    model_constructor.zen_model.parameters.demand.coords[
+                    model_constructor.optimization_model.parameters.demand.coords[
+                        "set_nodes"
+                    ],
+                    model_constructor.optimization_model.parameters.demand.coords[
                         "set_time_steps_operation"
                     ],
                     xr.DataArray(
                         np.arange(
                             len(
-                                model_constructor.zen_model.sets[
+                                model_constructor.optimization_model.sets[
                                     "set_transport_technologies"
                                 ]
                             )
@@ -141,11 +145,13 @@ class NodalEnergyBalanceConstraint(GenericConstraint):
             for carrier, node in index.get_unique([0, 1]):
                 techs = [
                     tech
-                    for tech in model_constructor.zen_model.sets[
+                    for tech in model_constructor.optimization_model.sets[
                         "set_transport_technologies"
                     ]
                     if carrier
-                    in model_constructor.zen_model.sets["set_reference_carriers"][tech]
+                    in model_constructor.optimization_model.sets[
+                        "set_reference_carriers"
+                    ][tech]
                 ]
                 edges_in = model_constructor.network_topology.calculate_connected_edges(
                     node, "in"
@@ -158,14 +164,16 @@ class NodalEnergyBalanceConstraint(GenericConstraint):
 
                 # get the variables for the in flow
                 in_vars_plus = (
-                    model_constructor.zen_model.variables["flow_transport"]
+                    model_constructor.optimization_model.variables["flow_transport"]
                     .labels.loc[techs, edges_in, :]
                     .data
                 )
                 in_vars_plus = in_vars_plus.reshape((-1, in_vars_plus.shape[-1])).T
                 in_coefs_plus = np.ones_like(in_vars_plus)
                 in_vars_minus = (
-                    model_constructor.zen_model.variables["flow_transport_loss"]
+                    model_constructor.optimization_model.variables[
+                        "flow_transport_loss"
+                    ]
                     .labels.loc[techs, edges_in, :]
                     .data
                 )
@@ -182,7 +190,7 @@ class NodalEnergyBalanceConstraint(GenericConstraint):
 
                 # get the variables for the out flow
                 out_vars_plus = (
-                    model_constructor.zen_model.variables["flow_transport"]
+                    model_constructor.optimization_model.variables["flow_transport"]
                     .labels.loc[techs, edges_out, :]
                     .data
                 )
@@ -200,7 +208,7 @@ class NodalEnergyBalanceConstraint(GenericConstraint):
                 xr.Dataset(
                     {"coeffs": flow_transport_in_coeffs, "vars": flow_transport_in_vars}
                 ),
-                model_constructor.zen_model.lp_model,
+                model_constructor.optimization_model.lp_model,
             )
             term_flow_transport_out = lp.LinearExpression(
                 xr.Dataset(
@@ -209,17 +217,17 @@ class NodalEnergyBalanceConstraint(GenericConstraint):
                         "vars": flow_transport_out_vars,
                     }
                 ),
-                model_constructor.zen_model.lp_model,
+                model_constructor.optimization_model.lp_model,
             )
         else:
             # if there is no carrier flow we just create empty arrays
             term_flow_transport_in = (
-                model_constructor.zen_model.variables["flow_import"]
+                model_constructor.optimization_model.variables["flow_import"]
                 .where(xr.DataArray(False))
                 .to_linexpr()
             )
             term_flow_transport_out = (
-                model_constructor.zen_model.variables["flow_import"]
+                model_constructor.optimization_model.variables["flow_import"]
                 .where(xr.DataArray(False))
                 .to_linexpr()
             )
@@ -227,42 +235,44 @@ class NodalEnergyBalanceConstraint(GenericConstraint):
         # carrier input and output conversion technologies
         term_carrier_conversion_in = []
         term_carrier_conversion_out = []
-        nodes = list(model_constructor.zen_model.sets["set_nodes"])
+        nodes = list(model_constructor.optimization_model.sets["set_nodes"])
         for carrier in index.get_unique([0]):
             techs_in = [
                 tech
-                for tech in model_constructor.zen_model.sets[
+                for tech in model_constructor.optimization_model.sets[
                     "set_conversion_technologies"
                 ]
                 if carrier
-                in model_constructor.zen_model.sets["set_input_carriers"][tech]
+                in model_constructor.optimization_model.sets["set_input_carriers"][tech]
             ]
             # we need to catch emtpy lookups
             carrier_in = [carrier] if len(techs_in) > 0 else []
             techs_out = [
                 tech
-                for tech in model_constructor.zen_model.sets[
+                for tech in model_constructor.optimization_model.sets[
                     "set_conversion_technologies"
                 ]
                 if carrier
-                in model_constructor.zen_model.sets["set_output_carriers"][tech]
+                in model_constructor.optimization_model.sets["set_output_carriers"][
+                    tech
+                ]
             ]
             # we need to catch emtpy lookups
             carrier_out = [carrier] if len(techs_out) > 0 else []
             term_carrier_conversion_in.append(
-                model_constructor.zen_model.variables["flow_conversion_input"]
+                model_constructor.optimization_model.variables["flow_conversion_input"]
                 .loc[techs_in, carrier_in, nodes]
                 .sum(
-                    model_constructor.zen_model.variables["flow_conversion_input"].dims[
-                        :2
-                    ]
+                    model_constructor.optimization_model.variables[
+                        "flow_conversion_input"
+                    ].dims[:2]
                 )
             )
             term_carrier_conversion_out.append(
-                model_constructor.zen_model.variables["flow_conversion_output"]
+                model_constructor.optimization_model.variables["flow_conversion_output"]
                 .loc[techs_out, carrier_out, nodes]
                 .sum(
-                    model_constructor.zen_model.variables[
+                    model_constructor.optimization_model.variables[
                         "flow_conversion_output"
                     ].dims[:2]
                 )
@@ -272,49 +282,60 @@ class NodalEnergyBalanceConstraint(GenericConstraint):
             term_carrier_conversion_in, dim="group", join="outer", cls=LinearExpression
         )
         term_carrier_conversion_in = (
-            model_constructor.zen_model.constraints.reorder_group(
+            model_constructor.optimization_model.constraints.reorder_group(
                 term_carrier_conversion_in,
                 None,
                 None,
                 index.get_unique([0]),
                 first_index_name,
-                model_constructor.zen_model.lp_model,
+                model_constructor.optimization_model.lp_model,
             )
         )
         term_carrier_conversion_out = lp.merge(
             term_carrier_conversion_out, dim="group", join="outer", cls=LinearExpression
         )
         term_carrier_conversion_out = (
-            model_constructor.zen_model.constraints.reorder_group(
+            model_constructor.optimization_model.constraints.reorder_group(
                 term_carrier_conversion_out,
                 None,
                 None,
                 index.get_unique([0]),
                 first_index_name,
-                model_constructor.zen_model.lp_model,
+                model_constructor.optimization_model.lp_model,
             )
         )
 
         # carrier flow storage technologies
-        if model_constructor.zen_model.variables["flow_storage_discharge"].size > 0:
+        if (
+            model_constructor.optimization_model.variables[
+                "flow_storage_discharge"
+            ].size
+            > 0
+        ):
             term_flow_storage_discharge = []
             term_flow_storage_charge = []
             for carrier in index.get_unique([0]):
                 storage_techs = [
                     tech
-                    for tech in model_constructor.zen_model.sets[
+                    for tech in model_constructor.optimization_model.sets[
                         "set_storage_technologies"
                     ]
                     if carrier
-                    in model_constructor.zen_model.sets["set_reference_carriers"][tech]
+                    in model_constructor.optimization_model.sets[
+                        "set_reference_carriers"
+                    ][tech]
                 ]
                 term_flow_storage_discharge.append(
-                    model_constructor.zen_model.variables["flow_storage_discharge"]
+                    model_constructor.optimization_model.variables[
+                        "flow_storage_discharge"
+                    ]
                     .loc[storage_techs]
                     .sum("set_storage_technologies")
                 )
                 term_flow_storage_charge.append(
-                    model_constructor.zen_model.variables["flow_storage_charge"]
+                    model_constructor.optimization_model.variables[
+                        "flow_storage_charge"
+                    ]
                     .loc[storage_techs]
                     .sum("set_storage_technologies")
                 )
@@ -326,13 +347,13 @@ class NodalEnergyBalanceConstraint(GenericConstraint):
                 cls=LinearExpression,
             )
             term_flow_storage_discharge = (
-                model_constructor.zen_model.constraints.reorder_group(
+                model_constructor.optimization_model.constraints.reorder_group(
                     term_flow_storage_discharge,
                     None,
                     None,
                     index.get_unique([0]),
                     first_index_name,
-                    model_constructor.zen_model.lp_model,
+                    model_constructor.optimization_model.lp_model,
                 )
             )
             term_flow_storage_charge = lp.merge(
@@ -342,38 +363,38 @@ class NodalEnergyBalanceConstraint(GenericConstraint):
                 cls=LinearExpression,
             )
             term_flow_storage_charge = (
-                model_constructor.zen_model.constraints.reorder_group(
+                model_constructor.optimization_model.constraints.reorder_group(
                     term_flow_storage_charge,
                     None,
                     None,
                     index.get_unique([0]),
                     first_index_name,
-                    model_constructor.zen_model.lp_model,
+                    model_constructor.optimization_model.lp_model,
                 )
             )
         else:
             # if there is no carrier flow we just create empty arrays
             term_flow_storage_discharge = (
-                model_constructor.zen_model.variables["flow_import"]
+                model_constructor.optimization_model.variables["flow_import"]
                 .where(xr.DataArray(False))
                 .to_linexpr()
             )
             term_flow_storage_charge = (
-                model_constructor.zen_model.variables["flow_import"]
+                model_constructor.optimization_model.variables["flow_import"]
                 .where(xr.DataArray(False))
                 .to_linexpr()
             )
 
         # carrier import, demand and export
-        term_carrier_import = model_constructor.zen_model.variables[
+        term_carrier_import = model_constructor.optimization_model.variables[
             "flow_import"
         ].to_linexpr()
-        term_carrier_export = model_constructor.zen_model.variables[
+        term_carrier_export = model_constructor.optimization_model.variables[
             "flow_export"
         ].to_linexpr()
-        term_carrier_demand = model_constructor.zen_model.parameters.demand
+        term_carrier_demand = model_constructor.optimization_model.parameters.demand
         # shed demand
-        term_carrier_shed_demand = model_constructor.zen_model.variables[
+        term_carrier_shed_demand = model_constructor.optimization_model.variables[
             "shed_demand"
         ].to_linexpr()
 
@@ -399,6 +420,6 @@ class NodalEnergyBalanceConstraint(GenericConstraint):
         constraints = lhs.sel(aligned_idx) == rhs.sel(aligned_idx)
 
         ### return
-        model_constructor.zen_model.add_constraint(
+        model_constructor.optimization_model.add_constraint(
             "constraint_nodal_energy_balance", constraints
         )

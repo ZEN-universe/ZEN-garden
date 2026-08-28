@@ -21,9 +21,9 @@ from tables import NaturalNameWarning
 
 if TYPE_CHECKING:
     from zen_garden.input.unit_converter import UnitConverter
+    from zen_garden.model.optimization_model import OptimizationModel
     from zen_garden.model.schema import ModelSchema
     from zen_garden.model.time_steps import TimeStepsDicts
-    from zen_garden.model.zen_model import ZenModel
     from zen_garden.workflow.scaling import Scaling
 
 logger = logging.getLogger(__name__)
@@ -68,7 +68,7 @@ class Postprocess:
         self,
         model_schema: "ModelSchema",
         unit_converter: "UnitConverter",
-        zen_model: "ZenModel",
+        optimization_model: "OptimizationModel",
         scaling: "Scaling",
         time_steps: "TimeStepsDicts",
         optimized_time_steps: list[int],
@@ -89,10 +89,10 @@ class Postprocess:
         # get the necessary stuff from the model
         self.model_schema = model_schema
         self.unit_converter = unit_converter
-        self.zen_model = zen_model
+        self.optimization_model = optimization_model
         self.energy_system = model_schema.energy_system
 
-        self.lp_model = zen_model.lp_model
+        self.lp_model = optimization_model.lp_model
 
         self.optimized_time_steps = optimized_time_steps
         self.scenarios = scenarios
@@ -214,7 +214,7 @@ class Postprocess:
         """
 
         series: dict[str, pd.Series] = {}
-        for set in self.zen_model.sets:
+        for set in self.optimization_model.sets:
             if not set.is_indexed():
                 continue
 
@@ -228,7 +228,9 @@ class Postprocess:
             series[set.name] = pd.Series(data, name=set.name, index=indices)
 
         self._write_h5_file(self.name_dir / "sets.h5", series)
-        self._write_json_file(self.name_dir / "sets_docs", self.zen_model.sets.docs)
+        self._write_json_file(
+            self.name_dir / "sets_docs", self.optimization_model.sets.docs
+        )
 
         return list(series.keys())
 
@@ -242,14 +244,14 @@ class Postprocess:
             return []
 
         parameters = xr.Dataset()
-        for param in self.zen_model.parameters.docs.keys():
+        for param in self.optimization_model.parameters.docs.keys():
             if (
                 self.config.solver.selected_saved_parameters
                 and param not in self.config.solver.selected_saved_parameters
             ):
                 continue
             # get the values
-            vals = getattr(self.zen_model.parameters, param)
+            vals = getattr(self.optimization_model.parameters, param)
             # data frame
             if isinstance(vals, xr.DataArray):
                 parameters[param] = vals
@@ -260,12 +262,13 @@ class Postprocess:
         self._write_netcdf_file(self.name_dir / "parameters.nc", parameters)
         units = {
             name: pd.Series(value)
-            for name, value in self.zen_model.parameters.units.items()
+            for name, value in self.optimization_model.parameters.units.items()
             if value is not None
         }
         self._write_units_to_file(self.name_dir / "parameters_units.h5", units)
         self._write_json_file(
-            self.name_dir / "parameters_docs.json", self.zen_model.parameters.docs
+            self.name_dir / "parameters_docs.json",
+            self.optimization_model.parameters.docs,
         )
 
         return list(parameters.keys())
@@ -278,7 +281,7 @@ class Postprocess:
         self._write_netcdf_file(self.name_dir / "variables.nc", self.lp_model.solution)
 
         units = {
-            cast(str, name): self.zen_model.variables.units[cast(str, name)]
+            cast(str, name): self.optimization_model.variables.units[cast(str, name)]
             for name in self.lp_model.solution.keys()
         }
         units_filtered = {
@@ -288,7 +291,8 @@ class Postprocess:
         }
         self._write_units_to_file(self.name_dir / "variables_units.h5", units_filtered)
         self._write_json_file(
-            self.name_dir / "variables_docs.json", self.zen_model.variables.docs
+            self.name_dir / "variables_docs.json",
+            self.optimization_model.variables.docs,
         )
         return list(self.lp_model.solution.keys())
 
@@ -300,7 +304,7 @@ class Postprocess:
 
         self._write_netcdf_file(self.name_dir / "duals.nc", self.lp_model.dual)
         self._write_json_file(
-            self.name_dir / "duals_docs", self.zen_model.constraints.docs
+            self.name_dir / "duals_docs", self.optimization_model.constraints.docs
         )
         return list(self.lp_model.dual.keys())
 

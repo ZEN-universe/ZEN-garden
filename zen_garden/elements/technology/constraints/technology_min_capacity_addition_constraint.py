@@ -24,7 +24,7 @@ class TechnologyMinCapacityAdditionConstraint(GenericConstraint):
         :math:`\\Delta K_{h,p,y}`: capacity addition
         """
         capacity_addition_min = (
-            model_constructor.zen_model.parameters.capacity_addition_min
+            model_constructor.optimization_model.parameters.capacity_addition_min
         )
         mask = (capacity_addition_min != 0) & (capacity_addition_min.notnull())
 
@@ -34,13 +34,13 @@ class TechnologyMinCapacityAdditionConstraint(GenericConstraint):
 
         lhs = mask * (
             capacity_addition_min
-            * model_constructor.zen_model.variables["technology_installation"]
-            - model_constructor.zen_model.variables["capacity_addition"]
+            * model_constructor.optimization_model.variables["technology_installation"]
+            - model_constructor.optimization_model.variables["capacity_addition"]
         )
         rhs = 0
         constraints = lhs <= rhs
 
         ### return
-        model_constructor.zen_model.add_constraint(
+        model_constructor.optimization_model.add_constraint(
             "constraint_technology_min_capacity_addition", constraints
         )

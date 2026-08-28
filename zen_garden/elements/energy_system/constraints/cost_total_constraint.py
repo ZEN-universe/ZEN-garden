@@ -25,13 +25,17 @@ class CostTotalConstraint(GenericConstraint):
         emissions in year :math:`y`
         """
         lhs = (
-            model_constructor.zen_model.variables["cost_total"]
-            - model_constructor.zen_model.variables["cost_capex_yearly_total"]
-            - model_constructor.zen_model.variables["cost_opex_yearly_total"]
-            - model_constructor.zen_model.variables["cost_carrier_total"]
-            - model_constructor.zen_model.variables["cost_carbon_emissions_total"]
+            model_constructor.optimization_model.variables["cost_total"]
+            - model_constructor.optimization_model.variables["cost_capex_yearly_total"]
+            - model_constructor.optimization_model.variables["cost_opex_yearly_total"]
+            - model_constructor.optimization_model.variables["cost_carrier_total"]
+            - model_constructor.optimization_model.variables[
+                "cost_carbon_emissions_total"
+            ]
         )
         rhs = 0
         constraints = lhs == rhs
 
-        model_constructor.zen_model.add_constraint("constraint_cost_total", constraints)
+        model_constructor.optimization_model.add_constraint(
+            "constraint_cost_total", constraints
+        )

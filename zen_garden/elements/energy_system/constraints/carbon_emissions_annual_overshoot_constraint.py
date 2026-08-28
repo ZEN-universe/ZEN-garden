@@ -27,15 +27,15 @@ class CarbonEmissionsAnnualOvershootConstraint(GenericConstraint):
         :math:`\\overline{m}_y`: annual carbon emissions limit
         """
         no_price = (
-            model_constructor.zen_model.parameters.price_carbon_emissions_annual_overshoot
+            model_constructor.optimization_model.parameters.price_carbon_emissions_annual_overshoot
             == np.inf
         )
         no_limit = (
-            model_constructor.zen_model.parameters.carbon_emissions_annual_limit
+            model_constructor.optimization_model.parameters.carbon_emissions_annual_limit
             == np.inf
         ).all()
         if (no_price or no_limit) and not (no_price and no_limit):
-            lhs = model_constructor.zen_model.variables[
+            lhs = model_constructor.optimization_model.variables[
                 "carbon_emissions_annual_overshoot"
             ]
             rhs = 0
@@ -43,6 +43,6 @@ class CarbonEmissionsAnnualOvershootConstraint(GenericConstraint):
         else:
             constraints = None
 
-        model_constructor.zen_model.add_constraint(
+        model_constructor.optimization_model.add_constraint(
             "constraint_carbon_emissions_annual_overshoot", constraints
         )

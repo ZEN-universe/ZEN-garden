@@ -13,6 +13,6 @@ class TotalCost(GenericExpression):
 
     @classmethod
     def get_expression(cls, model_constructor):
-        return model_constructor.zen_model.variables["net_present_cost"].sum(
+        return model_constructor.optimization_model.variables["net_present_cost"].sum(
             "set_years"
         )

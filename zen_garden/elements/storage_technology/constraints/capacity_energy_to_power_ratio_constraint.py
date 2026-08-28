@@ -30,15 +30,19 @@ class CapacityEnergyToPowerRatioConstraint(GenericConstraint):
         :math:`r^{\\mathrm{EP,max}}_h`: maximum energy-to-power ratio of storage
         :math:`h`
         """
-        techs = model_constructor.zen_model.sets["set_storage_technologies"]
+        techs = model_constructor.optimization_model.sets["set_storage_technologies"]
         if len(techs) == 0:
             return None
-        e2p_min = model_constructor.zen_model.parameters.energy_to_power_ratio_min
-        e2p_max = model_constructor.zen_model.parameters.energy_to_power_ratio_max
+        e2p_min = (
+            model_constructor.optimization_model.parameters.energy_to_power_ratio_min
+        )
+        e2p_max = (
+            model_constructor.optimization_model.parameters.energy_to_power_ratio_max
+        )
         mask_min = e2p_min != np.inf
         mask_max = e2p_max != np.inf
 
-        capacity_addition = model_constructor.zen_model.variables[
+        capacity_addition = model_constructor.optimization_model.variables[
             "capacity_addition"
         ].rename({"set_technologies": "set_storage_technologies"})
         capacity_addition_power = capacity_addition.sel(
@@ -57,9 +61,9 @@ class CapacityEnergyToPowerRatioConstraint(GenericConstraint):
         )
         constraints_max = lhs <= rhs
 
-        model_constructor.zen_model.add_constraint(
+        model_constructor.optimization_model.add_constraint(
             "constraint_capacity_energy_to_power_ratio_min", constraints_min
         )
-        model_constructor.zen_model.add_constraint(
+        model_constructor.optimization_model.add_constraint(
             "constraint_capacity_energy_to_power_ratio_max", constraints_max
         )

@@ -33,7 +33,7 @@ class GenericVariable(ABC):
         mask = cls.get_mask(model_constructor, index_sets)
         if mask is not None and not mask.any():
             return
-        model_constructor.zen_model.add_variable(
+        model_constructor.optimization_model.add_variable(
             name=cls.name,
             index_sets=index_sets,
             integer=cls.integer,

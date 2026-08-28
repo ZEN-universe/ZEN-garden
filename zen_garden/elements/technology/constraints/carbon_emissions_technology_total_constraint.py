@@ -23,16 +23,20 @@ class CarbonEmissionsTechnologyTotalConstraint(GenericConstraint):
         :math:`\\Delta t_t`: duration of time step :math:`t`
         """
         term_summed_carbon_emissions_technology = (
-            model_constructor.zen_model.variables["carbon_emissions_technology"]
+            model_constructor.optimization_model.variables[
+                "carbon_emissions_technology"
+            ]
             * cls.get_year_time_step_duration_array(model_constructor)
         ).sum(["set_technologies", "set_location", "set_time_steps_operation"])
         lhs = (
-            model_constructor.zen_model.variables["carbon_emissions_technology_total"]
+            model_constructor.optimization_model.variables[
+                "carbon_emissions_technology_total"
+            ]
             - term_summed_carbon_emissions_technology
         )
         rhs = 0
         constraints = lhs == rhs
 
-        model_constructor.zen_model.add_constraint(
+        model_constructor.optimization_model.add_constraint(
             "constraint_carbon_emissions_technology_total", constraints
         )

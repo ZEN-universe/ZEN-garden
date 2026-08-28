@@ -57,7 +57,7 @@ class TechnologyConstraint(GenericConstraint, ABC):
         :return: first time step where capacity or investment is still valid
         """
         # get params and system
-        params = model_constructor.zen_model.parameters.dict_parameters
+        params = model_constructor.optimization_model.parameters.dict_parameters
         lifetime = (
             params.depreciation_time[tech]
             if use_depreciation_time

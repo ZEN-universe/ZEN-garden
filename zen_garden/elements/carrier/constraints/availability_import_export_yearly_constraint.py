@@ -32,49 +32,42 @@ class AvailabilityImportExportYearlyConstraint(GenericConstraint):
         :math:`F^{\\mathrm{exp}}_{c,n,t}`: flow of carrier :math:`c` exported at
         node :math:`n` in time step :math:`t` of year :math:`y`
         """
+        optimization_model = model_constructor.optimization_model
         # The constraint is only constrained if the availability is finite
-        mask_imp = (
-            model_constructor.zen_model.parameters.availability_import_yearly != np.inf
-        )
-        mask_exp = (
-            model_constructor.zen_model.parameters.availability_export_yearly != np.inf
-        )
+        mask_imp = optimization_model.parameters.availability_import_yearly != np.inf
+        mask_exp = optimization_model.parameters.availability_export_yearly != np.inf
 
         # import
         lhs_imp = (
             (
-                model_constructor.zen_model.variables["flow_import"]
+                optimization_model.variables["flow_import"]
                 * cls.get_year_time_step_duration_array(model_constructor)
             )
             .sum("set_time_steps_operation")
             .where(mask_imp)
         )
-        rhs_imp = (
-            model_constructor.zen_model.parameters.availability_import_yearly.where(
-                mask_imp
-            )
+        rhs_imp = optimization_model.parameters.availability_import_yearly.where(
+            mask_imp
         )
         constraints_imp = lhs_imp <= rhs_imp
 
         # export
         lhs_exp = (
             (
-                model_constructor.zen_model.variables["flow_export"]
+                optimization_model.variables["flow_export"]
                 * cls.get_year_time_step_duration_array(model_constructor)
             )
             .sum("set_time_steps_operation")
             .where(mask_exp)
         )
-        rhs_exp = (
-            model_constructor.zen_model.parameters.availability_export_yearly.where(
-                mask_exp
-            )
+        rhs_exp = optimization_model.parameters.availability_export_yearly.where(
+            mask_exp
         )
         constraints_exp = lhs_exp <= rhs_exp
 
-        model_constructor.zen_model.add_constraint(
+        optimization_model.add_constraint(
             "constraint_availability_import_yearly", constraints_imp
         )
-        model_constructor.zen_model.add_constraint(
+        optimization_model.add_constraint(
             "constraint_availability_export_yearly", constraints_exp
         )
