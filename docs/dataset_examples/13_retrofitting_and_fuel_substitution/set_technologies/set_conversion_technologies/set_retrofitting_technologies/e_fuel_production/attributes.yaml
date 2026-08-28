@@ -7,6 +7,9 @@ capacity_addition_max:
 min_load:
   default_value: 0.0
   unit: '1'
+min_full_load_hours_fraction:
+  default_value: 0
+  unit: '1'
 max_load:
   default_value: 0.95
   unit: '1'
@@ -37,6 +40,9 @@ conversion_factor:
     unit: GWh/GWh
 capacity_limit:
   default_value: inf
+  unit: GW
+capacity_lower_limit:
+  default_value: 0
   unit: GW
 capacity_existing:
   default_value: 0.0

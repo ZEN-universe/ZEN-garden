@@ -116,7 +116,7 @@ class Technology(Element):
                 - system.interval_between_years * (delta_lifetime - idx + 1)
                 for idx in index_step_horizon
             ]
-            self.lifetime_existing = lifetime.stack()
+            self.lifetime_existing = cast(pd.Series, lifetime.stack())
 
             for type_capacity in list(
                 set(new_capacity_addition.index.get_level_values(0))

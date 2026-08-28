@@ -257,18 +257,18 @@ class TimeSeriesAggregation(object):
         """
         self.excluded_ts = []
         if self.config.system.exclude_parameters_from_TSA:
-            excluded_parameters = self.attribute_data_loader.read_csv(
+            excluded_parameters = self.attribute_data_loader.read_yaml(
                 "exclude_parameter_from_TSA"
             )
             # exclude file exists
             if excluded_parameters is not None:
-                for _, vals in excluded_parameters.iterrows():
-                    element_name = vals.iloc[0]
-                    parameter = vals.iloc[1]
+                for element_name, parameters in excluded_parameters.items():
+                    if isinstance(parameters, str):
+                        parameters = [parameters]
                     element = self.element_registry.get_element(Element, element_name)
                     # specific element
                     if element is not None:
-                        if parameter is np.nan:
+                        if parameters is None:
                             logger.warning(
                                 f"Excluding all parameters "
                                 f"{', '.join(element.raw_time_series.keys())} "
@@ -277,13 +277,15 @@ class TimeSeriesAggregation(object):
                             )
                             for parameter_name in element.raw_time_series:
                                 self.excluded_ts.append((element_name, parameter_name))
-                        elif parameter in element.raw_time_series:
-                            self.excluded_ts.append((element_name, parameter))
+                        else:
+                            for parameter in parameters:
+                                if parameter in element.raw_time_series:
+                                    self.excluded_ts.append((element_name, parameter))
                     # for an entire set of elements
                     else:
-                        if parameter is np.nan:
+                        if parameters is None:
                             logger.warning(
-                                "Please specify a specific parameter to "
+                                "Please specify at least one parameter to "
                                 "exclude from time series aggregation when not "
                                 "providing a specific element"
                             )
@@ -292,21 +294,22 @@ class TimeSeriesAggregation(object):
                                 element_name
                             )
                             if element_class is not None:
-                                logger.info(
-                                    f"Parameter {parameter} is excluded from "
-                                    "time series aggregation for all elements "
-                                    f"in {element_name}"
-                                )
                                 class_elements = (
                                     self.element_registry.all_elements_of_type(
                                         element_class
                                     )
                                 )
-                                for class_element in class_elements:
-                                    if parameter in class_element.raw_time_series:
-                                        self.excluded_ts.append(
-                                            (class_element.name, parameter)
-                                        )
+                                for parameter in parameters:
+                                    logger.info(
+                                        f"Parameter {parameter} is excluded from "
+                                        "time series aggregation for all elements "
+                                        f"in {element_name}"
+                                    )
+                                    for class_element in class_elements:
+                                        if parameter in class_element.raw_time_series:
+                                            self.excluded_ts.append(
+                                                (class_element.name, parameter)
+                                            )
                             else:
                                 logger.warning(
                                     f"Exclusion from time series aggregation: "

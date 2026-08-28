@@ -47,7 +47,7 @@ class Variable(Component):
         self.model_schema = model_schema
         self.element_registry = element_registry
 
-        self.units: dict[str, Any] = {}
+        self.units: dict[str, pd.Series | None] = {}
 
     @property
     def config(self):

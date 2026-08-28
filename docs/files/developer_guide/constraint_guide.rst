@@ -1,4 +1,4 @@
-﻿.. _linopy.linopy:
+.. _linopy.linopy:
 
 #############################
 Writing constraints in Linopy
