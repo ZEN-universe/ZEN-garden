@@ -6,7 +6,7 @@ import logging
 from pathlib import Path
 
 from zen_garden.config import Config
-from zen_garden.input.scenario_expansion import ScenarioUtils
+from zen_garden.input.scenario_utils import ScenarioUtils
 from zen_garden.model.schema import ModelSchema
 from zen_garden.plugin_system.events import Event, EventPublisher
 from zen_garden.plugin_system.loader import register_plugins
