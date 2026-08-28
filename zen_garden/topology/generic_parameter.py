@@ -3,6 +3,9 @@ from __future__ import annotations
 from abc import ABC
 from typing import TYPE_CHECKING, Any, ClassVar
 
+import numpy as np
+import pandas as pd
+
 if TYPE_CHECKING:
     from zen_garden.elements.model_constructor import ModelConstructor
 
@@ -58,13 +61,90 @@ class GenericParameter(ABC):
             "set_time_steps_operation" if index == "set_hours" else index
             for index in cls.indices
         ]
-        model_constructor.add_parameter(
-            name=cls.name,
-            index_names=index_names,
-            doc=cls.doc,
-            capacity_types=cls.capacity_types,
-            set_time_steps=cls.set_time_steps,
+        component_data, index_list, units = cls.get_model_data(
+            model_constructor, index_names
         )
+        component_data = cls._ensure_multi_index(component_data)
+        model_constructor.zen_model.add_parameter(
+            cls.name,
+            cls.doc,
+            (component_data, index_list),
+            units,
+        )
+
+    @classmethod
+    def get_model_data(
+        cls, model_constructor: "ModelConstructor", index_names: list[str]
+    ):
+        """Collect this parameter's stored values, model indices, and units."""
+        if model_constructor.element_class is type(model_constructor.energy_system):
+            component_data = getattr(model_constructor.energy_system, cls.name)
+            index_list = index_names
+            if cls.set_time_steps is not None:
+                component_data = component_data[
+                    model_constructor.zen_model.sets[cls.set_time_steps]
+                ]
+            else:
+                if not isinstance(component_data, float):
+                    component_data = component_data.squeeze()
+            units = model_constructor.energy_system.units.get(cls.name, {})
+            return component_data, index_list, units
+
+        custom_set, index_list = model_constructor.create_custom_set(index_names)
+        component_data, units, attribute_is_series = (
+            model_constructor.element_registry.get_attribute_of_all_elements_with_units(
+                model_constructor.element_class,
+                cls.name,
+                capacity_types=cls.capacity_types,
+            )
+        )
+        if np.size(custom_set):
+            if attribute_is_series:
+                component_data = pd.concat(component_data, keys=component_data.keys())
+            else:
+                component_data = pd.Series(component_data)
+            component_data = cls._select_model_index(component_data, custom_set)
+        return component_data, index_list, units
+
+    @staticmethod
+    def _select_model_index(component_data, custom_set):
+        """Restrict parameter data to its model index."""
+        try:
+            if len(component_data) == len(custom_set) and len(custom_set[0]) == len(
+                component_data.index[0]
+            ):
+                return component_data
+            return component_data[custom_set]
+        except Exception:
+            custom_index = pd.Index(custom_set)
+            reduced_index = custom_index.copy()
+            assert isinstance(custom_index, pd.MultiIndex), (
+                f"Custom set {custom_set} is not a MultiIndex. "
+                "Please check the index sets of the component."
+            )
+            for level, shape in enumerate(custom_index.levshape):
+                if shape == 1:
+                    reduced_index = reduced_index.droplevel(level)
+            try:
+                component_data = component_data[reduced_index]
+                component_data.index = custom_index
+                return component_data
+            except KeyError as err:
+                raise KeyError(
+                    f"the custom set {custom_set} cannot be used as a subindex of "
+                    f"{component_data.index}"
+                ) from err
+
+    @staticmethod
+    def _ensure_multi_index(component_data):
+        """Represent a one-dimensional Series index as a MultiIndex."""
+        if isinstance(component_data, pd.Series) and not isinstance(
+            component_data.index, pd.MultiIndex
+        ):
+            component_data.index = pd.MultiIndex.from_product(
+                [component_data.index.to_list()]
+            )
+        return component_data
 
     @classmethod
     def store_input_data(cls, element: Any) -> None:

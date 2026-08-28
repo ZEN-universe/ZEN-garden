@@ -83,7 +83,7 @@ class OptimizationWorkflow:
         """
         self._build_services()
         self._validate_dataset()
-        self._register_elements()
+        self._build_and_register_elements()
         self._load_parameters()
 
     def _build_services(self) -> None:
@@ -156,7 +156,7 @@ class OptimizationWorkflow:
         """Validate the dataset's folder and file structure."""
         self.input_data_checks.check_primary_folder_structure()
 
-    def _register_elements(self) -> None:
+    def _build_and_register_elements(self) -> None:
         """Resolve the technology set, then instantiate every configured element."""
         # Derive config.system.set_technologies from the per-type subsets and
         # fold nested subsets into their parents; ElementFactory reads these.

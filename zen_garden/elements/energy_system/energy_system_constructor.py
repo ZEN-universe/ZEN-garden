@@ -1,16 +1,11 @@
 """Constructor for the EnergySystem."""
 
 import logging
-from typing import TYPE_CHECKING
 
-import pandas as pd
 from typing_extensions import override
 
 from zen_garden.elements.energy_system import EnergySystem
 from zen_garden.elements.model_constructor import ModelConstructor
-
-if TYPE_CHECKING:
-    pass
 
 logger = logging.getLogger(__name__)
 
@@ -37,56 +32,6 @@ class EnergySystemConstructor(ModelConstructor):
 
         # construct objective
         self.zen_model.lp_model.add_objective(objective, sense=sense)
-
-    @override
-    def _initialize_component(
-        self,
-        component_name: str,
-        index_names: list[str] | None,
-        capacity_types: bool = False,
-        set_time_steps: str | None = None,
-    ):
-        """Initialize a modeling component by extracting the stored input data.
-
-        Args:
-            component_name: name of modeling component
-            index_names: names of index sets, only if calling_class is not EnergySystem
-            set_time_steps: time steps, only if calling_class is EnergySystem
-        """
-        component = getattr(self.energy_system, component_name)
-        dict_of_units = {}
-        if component_name in self.energy_system.units:
-            dict_of_units = self.energy_system.units[component_name]
-
-        if index_names is not None:
-            index_list = index_names
-        elif set_time_steps is not None:
-            index_list = [set_time_steps]
-        else:
-            index_list = []
-
-        if set_time_steps:
-            component_data = component[self.zen_model.sets[set_time_steps]]
-        elif type(component) is float:
-            component_data = component
-        else:
-            component_data = component.squeeze()
-
-        return component_data, index_list, dict_of_units
-
-    def _ensure_pd_series_multi_index(self, component_data):
-        """Convert pd.Series index to pd.MultiIndex.
-
-        :param component_data: extracted data as pd.Series
-        :return: component_data: extracted data as pd.Series with MultiIndex
-        """
-        if isinstance(component_data, pd.Series) and not isinstance(
-            component_data.index, pd.MultiIndex
-        ):
-            component_data.index = pd.MultiIndex.from_product(
-                [component_data.index.to_list()]
-            )
-        return component_data
 
     # Objective rules
     # ---------------
