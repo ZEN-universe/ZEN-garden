@@ -2,7 +2,7 @@
 
 import pytest
 
-from zen_garden.topology.generic_parameter import GenericParameter
+from zen_garden.model.component_types.parameter import GenericParameter
 
 
 class InputParameter(GenericParameter):

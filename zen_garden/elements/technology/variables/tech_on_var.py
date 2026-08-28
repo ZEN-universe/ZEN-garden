@@ -1,6 +1,6 @@
 import xarray as xr
 
-from zen_garden.topology.generic_variable import GenericVariable
+from zen_garden.model.component_types.variable import GenericVariable
 
 
 class TechOnVar(GenericVariable):

@@ -13,7 +13,7 @@ from typing import TYPE_CHECKING
 import xarray as xr
 
 if TYPE_CHECKING:
-    from zen_garden.elements.model_constructor import ModelConstructor
+    from zen_garden.model.constructor import ModelConstructor
 
 _QUANTITY_INDEX = [
     "set_technologies",

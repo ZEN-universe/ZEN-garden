@@ -1,6 +1,6 @@
 """Energy-system set specifications."""
 
-from zen_garden.topology.generic_set import GenericSet
+from zen_garden.model.component_types.set import GenericSet
 
 from .set_carriers import SetCarriers
 from .set_edges import SetEdges

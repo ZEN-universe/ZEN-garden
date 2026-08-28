@@ -6,17 +6,17 @@ from typing import ClassVar, cast
 import numpy as np
 import pandas as pd
 
-from zen_garden.elements.element import Element
 from zen_garden.elements.technology.constraints import TECHNOLOGY_CONSTRAINTS
 from zen_garden.elements.technology.expressions import TECHNOLOGY_EXPRESSIONS
 from zen_garden.elements.technology.parameters import TECHNOLOGY_PARAMETERS
 from zen_garden.elements.technology.sets import TECHNOLOGY_SETS
 from zen_garden.elements.technology.variables import TECHNOLOGY_VARIABLES
-from zen_garden.topology.generic_constraint import GenericConstraint
-from zen_garden.topology.generic_expression import GenericExpression
-from zen_garden.topology.generic_parameter import GenericParameter
-from zen_garden.topology.generic_set import GenericSet
-from zen_garden.topology.generic_variable import GenericVariable
+from zen_garden.model.component_types.constraint import GenericConstraint
+from zen_garden.model.component_types.expression import GenericExpression
+from zen_garden.model.component_types.parameter import GenericParameter
+from zen_garden.model.component_types.set import GenericSet
+from zen_garden.model.component_types.variable import GenericVariable
+from zen_garden.model.element import Element
 
 logger = logging.getLogger(__name__)
 

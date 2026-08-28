@@ -1,6 +1,6 @@
 """technology parameters."""
 
-from zen_garden.topology.generic_parameter import GenericParameter
+from zen_garden.model.component_types.parameter import GenericParameter
 
 from .capacity_addition_max import CapacityAdditionMax
 from .capacity_addition_min import CapacityAdditionMin

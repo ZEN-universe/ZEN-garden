@@ -1,6 +1,6 @@
 import numpy as np
 
-from zen_garden.topology.generic_variable import GenericVariable
+from zen_garden.model.component_types.variable import GenericVariable
 
 
 class CarbonEmissionsAnnualOvershoot(GenericVariable):

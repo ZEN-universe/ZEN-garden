@@ -1,8 +1,8 @@
 import numpy as np
 import xarray as xr
 
-from zen_garden.model.components.set_registry import SetRegistry
-from zen_garden.topology.generic_constraint import GenericConstraint
+from zen_garden.model.component_types.constraint import GenericConstraint
+from zen_garden.model.registries.set_registry import SetRegistry
 
 
 class TransportTechnologyCapexConstraint(GenericConstraint):

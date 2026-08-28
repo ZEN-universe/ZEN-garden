@@ -1,6 +1,6 @@
 """Retrofitting-technology set specifications."""
 
-from zen_garden.topology.generic_set import GenericSet
+from zen_garden.model.component_types.set import GenericSet
 
 from .set_retrofitting_base_technologies import SetRetrofittingBaseTechnologies
 

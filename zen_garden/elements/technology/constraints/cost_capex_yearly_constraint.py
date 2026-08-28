@@ -5,7 +5,7 @@ from linopy.expressions import LinearExpression
 from zen_garden.elements.technology.constraints.technology_constraint import (
     TechnologyConstraint,
 )
-from zen_garden.model.components.multi_index_helper import MultiIndexHelper
+from zen_garden.model.registries.multi_index_helper import MultiIndexHelper
 
 
 class CostCapexYearlyConstraint(TechnologyConstraint):

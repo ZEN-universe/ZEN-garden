@@ -1,4 +1,4 @@
-from zen_garden.topology.generic_constraint import GenericConstraint
+from zen_garden.model.component_types.constraint import GenericConstraint
 
 
 class CarbonEmissionsBudgetConstraint(GenericConstraint):

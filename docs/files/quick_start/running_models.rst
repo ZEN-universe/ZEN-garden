@@ -81,7 +81,7 @@ Additional Remarks and Tips
    Note that the ``run`` function can take as an optional input arguments 
    any flags which can also be specified in the command line. For instance, in 
    order to specify a config file, you can use the code below. See 
-   :func:`zen_garden.runner.run` for full documentation of the ``run`` 
+   :func:`zen_garden.workflow.runner.run` for full documentation of the ``run`` 
    function.
 
 

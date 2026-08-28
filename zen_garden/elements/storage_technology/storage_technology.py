@@ -18,10 +18,10 @@ from zen_garden.elements.storage_technology.variables import (
     STORAGE_TECHNOLOGY_VARIABLES,
 )
 from zen_garden.elements.technology import Technology
-from zen_garden.topology.generic_constraint import GenericConstraint
-from zen_garden.topology.generic_expression import GenericExpression
-from zen_garden.topology.generic_parameter import GenericParameter
-from zen_garden.topology.generic_variable import GenericVariable
+from zen_garden.model.component_types.constraint import GenericConstraint
+from zen_garden.model.component_types.expression import GenericExpression
+from zen_garden.model.component_types.parameter import GenericParameter
+from zen_garden.model.component_types.variable import GenericVariable
 
 logger = logging.getLogger(__name__)
 

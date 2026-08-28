@@ -5,7 +5,7 @@ import logging
 
 import pandas as pd
 
-from zen_garden.topology.generic_constraint import GenericConstraint
+from zen_garden.model.component_types.constraint import GenericConstraint
 from zen_garden.utils import align_like
 
 logger = logging.getLogger(__name__)

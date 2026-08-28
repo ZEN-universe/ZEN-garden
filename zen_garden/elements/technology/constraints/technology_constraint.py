@@ -3,10 +3,10 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 
-from zen_garden.topology.generic_constraint import GenericConstraint
+from zen_garden.model.component_types.constraint import GenericConstraint
 
 if TYPE_CHECKING:
-    from zen_garden.elements.model_constructor import ModelConstructor
+    from zen_garden.model.constructor import ModelConstructor
 
 
 class TechnologyConstraint(GenericConstraint, ABC):

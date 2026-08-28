@@ -6,8 +6,8 @@ import pandas as pd
 import xarray as xr
 from linopy.expressions import LinearExpression
 
-from zen_garden.model.components.zen_set import BaseSet
-from zen_garden.topology.generic_constraint import GenericConstraint
+from zen_garden.model.component_types.constraint import GenericConstraint
+from zen_garden.model.zen_set import BaseSet
 
 
 class TechnologyDiffusionLimitConstraint(GenericConstraint):

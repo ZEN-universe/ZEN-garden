@@ -1,7 +1,7 @@
 from zen_garden.elements.technology.parameters._existing_quantity import (
     compute_existing_quantity,
 )
-from zen_garden.topology.generic_parameter import GenericParameter
+from zen_garden.model.component_types.parameter import GenericParameter
 
 
 class ExistingCapacities(GenericParameter):

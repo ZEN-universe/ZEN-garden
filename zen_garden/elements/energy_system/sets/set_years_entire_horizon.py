@@ -1,4 +1,4 @@
-from zen_garden.topology.generic_set import GenericSet
+from zen_garden.model.component_types.set import GenericSet
 
 
 class SetYearsEntireHorizon(GenericSet):

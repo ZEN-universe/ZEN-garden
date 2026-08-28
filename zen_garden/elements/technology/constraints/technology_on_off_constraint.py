@@ -3,7 +3,7 @@ import numpy as np
 import xarray as xr
 from linopy.expressions import LinearExpression
 
-from zen_garden.topology.generic_constraint import GenericConstraint
+from zen_garden.model.component_types.constraint import GenericConstraint
 
 
 class TechnologyOnOffConstraint(GenericConstraint):

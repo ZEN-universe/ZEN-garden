@@ -3,7 +3,7 @@ import os
 import shutil
 from pathlib import Path
 
-from zen_garden.utils.scenario_utils import ScenarioUtils
+from zen_garden.input.scenario_expansion import ScenarioUtils
 
 logger = logging.getLogger(__name__)
 

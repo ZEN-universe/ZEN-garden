@@ -20,11 +20,11 @@ from filelock import FileLock
 from tables import NaturalNameWarning
 
 if TYPE_CHECKING:
+    from zen_garden.input.unit_converter import UnitConverter
+    from zen_garden.model.schema import ModelSchema
     from zen_garden.model.time_steps import TimeStepsDicts
     from zen_garden.model.zen_model import ZenModel
-    from zen_garden.preprocess.scaling import Scaling
-    from zen_garden.preprocess.unit_converter import UnitConverter
-    from zen_garden.topology.model_schema import ModelSchema
+    from zen_garden.workflow.scaling import Scaling
 
 logger = logging.getLogger(__name__)
 

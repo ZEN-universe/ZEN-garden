@@ -1,6 +1,6 @@
 """Technology set specifications."""
 
-from zen_garden.topology.generic_set import GenericSet
+from zen_garden.model.component_types.set import GenericSet
 
 from .set_conversion_technologies import SetConversionTechnologies
 from .set_reference_carriers import SetReferenceCarriers

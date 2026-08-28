@@ -1,8 +1,8 @@
 import numpy as np
 import xarray as xr
 
-from zen_garden.model.components.multi_index_helper import MultiIndexHelper
-from zen_garden.topology.generic_variable import GenericVariable
+from zen_garden.model.component_types.variable import GenericVariable
+from zen_garden.model.registries.multi_index_helper import MultiIndexHelper
 
 
 class TechnologyInstallation(GenericVariable):

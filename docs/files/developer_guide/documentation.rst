@@ -337,8 +337,8 @@ all modules, classes, and methods. The automatic documentation is created by the
 by ``<path-to-ZEN-garden>/files/references/api_reference.rst`` ):
 
 - ``<path-to-ZEN-garden>/files/api/general.rst``
+- ``<path-to-ZEN-garden>/files/api/input.rst``
 - ``<path-to-ZEN-garden>/files/api/model.rst``
-- ``<path-to-ZEN-garden>/files/api/preprocess.rst``
 - ``<path-to-ZEN-garden>/files/api/postprocess.rst``
 
 The ``autosummary`` command automatically produces documentation for

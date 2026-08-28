@@ -19,11 +19,11 @@ from zen_garden.elements.retrofitting_technology.sets import (
 from zen_garden.elements.retrofitting_technology.variables import (
     RETROFITTING_TECHNOLOGY_VARIABLES,
 )
-from zen_garden.topology.generic_constraint import GenericConstraint
-from zen_garden.topology.generic_expression import GenericExpression
-from zen_garden.topology.generic_parameter import GenericParameter
-from zen_garden.topology.generic_set import GenericSet
-from zen_garden.topology.generic_variable import GenericVariable
+from zen_garden.model.component_types.constraint import GenericConstraint
+from zen_garden.model.component_types.expression import GenericExpression
+from zen_garden.model.component_types.parameter import GenericParameter
+from zen_garden.model.component_types.set import GenericSet
+from zen_garden.model.component_types.variable import GenericVariable
 
 logger = logging.getLogger(__name__)
 

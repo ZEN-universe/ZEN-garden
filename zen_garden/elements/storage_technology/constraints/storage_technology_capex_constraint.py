@@ -1,5 +1,5 @@
-from zen_garden.model.components.set_registry import SetRegistry
-from zen_garden.topology.generic_constraint import GenericConstraint
+from zen_garden.model.component_types.constraint import GenericConstraint
+from zen_garden.model.registries.set_registry import SetRegistry
 from zen_garden.utils import linexpr_from_tuple_np
 
 

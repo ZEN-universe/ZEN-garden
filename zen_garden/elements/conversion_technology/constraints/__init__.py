@@ -1,6 +1,6 @@
 """Conversion technology constraints."""
 
-from zen_garden.topology.generic_constraint import GenericConstraint
+from zen_garden.model.component_types.constraint import GenericConstraint
 
 from .capacity_factor_conversion_constraint import (
     CapacityFactorConversionConstraint,

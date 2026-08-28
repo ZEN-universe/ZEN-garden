@@ -1,7 +1,5 @@
 from .errors import OptimizationError
 from .iis_constraint_parser import IISConstraintParser
-from .input_data_checks import InputDataChecks
-from .scenario_utils import ScenarioUtils
 from .string_utils import StringUtils
 from .utils import (
     align_like,
@@ -22,12 +20,10 @@ __all__ = [
     "get_inheritors",
     "get_label_position",
     "IISConstraintParser",
-    "InputDataChecks",
     "linexpr_from_tuple_np",
     "metadata",
     "OptimizationError",
     "reformat_slicing_index",
-    "ScenarioUtils",
     "setup_logger",
     "slice_df_by_index",
     "StringUtils",

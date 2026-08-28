@@ -1,6 +1,6 @@
 """transport technology parameters."""
 
-from zen_garden.topology.generic_parameter import GenericParameter
+from zen_garden.model.component_types.parameter import GenericParameter
 
 from .capex_per_distance_transport import CapexPerDistanceTransport
 from .capex_specific_transport import CapexSpecificTransport

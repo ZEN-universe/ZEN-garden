@@ -1,6 +1,6 @@
 """Carrier expressions."""
 
-from zen_garden.topology.generic_expression import GenericExpression
+from zen_garden.model.component_types.expression import GenericExpression
 
 CARRIER_EXPRESSIONS: list[type[GenericExpression]] = []
 

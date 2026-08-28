@@ -4,8 +4,8 @@ from .postprocess.comparisons import (
     compare_model_values,
 )
 from .postprocess.results.results import Results
-from .runner import run
 from .utils import download_example_dataset
+from .workflow.runner import run
 
 __all__ = [
     "run",

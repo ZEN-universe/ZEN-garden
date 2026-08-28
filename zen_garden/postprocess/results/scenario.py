@@ -13,7 +13,7 @@ import xarray as xr
 from pint import UnitRegistry
 from xarray.backends.netCDF4_ import NetCDF4DataStore
 
-from zen_garden.default_config import Analysis, Solver, System
+from zen_garden.config import Analysis, Solver, System
 from zen_garden.postprocess.results.component_map import ComponentMap
 from zen_garden.postprocess.results.component_type import ComponentType
 from zen_garden.postprocess.results.timestep_map import TimestepMap

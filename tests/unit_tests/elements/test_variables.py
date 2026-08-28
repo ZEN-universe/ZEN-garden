@@ -15,7 +15,7 @@ from zen_garden.elements.technology.variables import TECHNOLOGY_VARIABLES
 from zen_garden.elements.transport_technology.variables import (
     TRANSPORT_TECHNOLOGY_VARIABLES,
 )
-from zen_garden.topology.generic_variable import GenericVariable
+from zen_garden.model.component_types.variable import GenericVariable
 
 # Collect all variables from all elements
 ALL_VARIABLE_LISTS = {
