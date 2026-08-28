@@ -3,9 +3,14 @@
 This file gets automatically updated in ZEN-garden's continuous integration 
 procedures. Do not edit the file manually.
 
-## [Unversioned Changes] - 2026-08-11 
+## [v3.1.0] - 2026-08-28 
+
+### New Features ✨
+- add plugin event after model schema creation to allow plugins to add parameters, variables, expressions, and constraints before the model is built. [[🔀 PR #1321](https://github.com/ZEN-universe/ZEN-garden/pull/1321) @csfunke]
 
 ### Maintenance Tasks 🧹
+- rename and reorganize the zen-garden files to create a more logical folder structure. [[🔀 PR #1321](https://github.com/ZEN-universe/ZEN-garden/pull/1321) @csfunke]
+- updates the versions of the linter `ruff` and the type checker `mypy`. [[🔀 PR #1321](https://github.com/ZEN-universe/ZEN-garden/pull/1321) @csfunke]
 - move code from results class to compute energy balance dataframes to ZEN-temple. [[🔀 PR #1281](https://github.com/ZEN-universe/ZEN-garden/pull/1281) @manud99]
 
 ## [v2.13.0] - 2026-07-01 
