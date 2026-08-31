@@ -6,6 +6,7 @@
 /data/*/
 /data/*
 /docs/files/api/generated/*
+/docs/files/references/_generated/*
 !/data/.gitkeep
 outputs*/
 zen_garden_env/

@@ -21,6 +21,9 @@ class TimestepType(Enum):
         """
         TIME_INDEX_MAP = {
             "set_years": TimestepType.yearly,
+            # retired internal name for the yearly dimension, still used by the
+            # header_data_inputs of pre-netCDF result folders
+            "set_time_steps_yearly": TimestepType.yearly,
             "set_time_steps_operation": TimestepType.operational,
             "set_time_steps_storage_level": TimestepType.storage,
             "set_time_steps_storage": TimestepType.storage,

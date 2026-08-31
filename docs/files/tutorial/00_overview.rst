@@ -42,13 +42,11 @@ five are independent of each other; take the ones you need.
 **Run studies** — go from one model run to many.
 
 13. :ref:`Scenario analysis <t_scenario_tutorial.t_scenario_tutorial>`
-14. :ref:`Operation scenarios <t_operation_only.t_operation_only>`
-15. :ref:`Managing output size <t_output.t_output>`
-16. :ref:`Running on Euler <t_euler.t_euler>`
+14. :ref:`Managing output size <t_output.t_output>`
 
 **When things go wrong**
 
-17. :ref:`Infeasibilities <t_infeasibilities.t_infeasibilities>`
+15. :ref:`Infeasibilities <t_infeasibilities.t_infeasibilities>`
 
 New users should start with
 :ref:`Analyze and compare results <t_analyze.t_analyze>`, which shows how to
@@ -75,7 +73,7 @@ Setup
 =====
 
 Unless a tutorial says otherwise, every tutorial starts from the example
-dataset ``5_multiple_time_steps_per_year``. To prepare it:
+dataset ``4_multiple_time_steps_per_year``. To prepare it:
 
 1. Install ZEN-garden by following the :ref:`installation guide
    <installation.installation>`.
@@ -88,7 +86,7 @@ dataset ``5_multiple_time_steps_per_year``. To prepare it:
 
    .. code-block:: shell
 
-       zen-example --dataset="5_multiple_time_steps_per_year"
+       zen-example --dataset="4_multiple_time_steps_per_year"
 
    The full list of example datasets is given in
    :ref:`dataset_examples.dataset_examples`.
@@ -97,7 +95,7 @@ dataset ``5_multiple_time_steps_per_year``. To prepare it:
 
    .. code-block:: shell
 
-       zen-garden --dataset="5_multiple_time_steps_per_year"
+       zen-garden --dataset="4_multiple_time_steps_per_year"
 
 ZEN-garden prints its progress to the terminal. On success, the last line is:
 
@@ -117,7 +115,7 @@ A new directory ``outputs`` is created in ``<data>``, containing the results.
 The tutorial dataset
 ====================
 
-``5_multiple_time_steps_per_year`` optimizes electricity and heat supply for a
+``4_multiple_time_steps_per_year`` optimizes electricity and heat supply for a
 two-node system. The two nodes are Germany (``DE``) and Switzerland (``CH``).
 Electricity is supplied by photovoltaics, heat by a natural gas boiler and a
 heat pump. Natural gas can be imported freely at each node, stored, and

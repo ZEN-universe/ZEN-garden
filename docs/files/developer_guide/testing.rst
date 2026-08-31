@@ -10,11 +10,11 @@ Testing
 Creating Tests
 ===============
 
-1. Create new test model in ``test\testcases``. The model follows the same
+1. Create new test model in ``tests\testcases``. The model follows the same
    format as any other ZEN-garden model and can be anything.
 2. Check the test model for correctness and ensure that it has a unique solution.
-3. Add variables on which to test to the file ``test\testcases\test_variables.yaml``.
-4. Add test case function to ``test\testcases\run_test.py``.
+3. Add variables on which to test to the file ``tests\testcases\test_variables.yaml``.
+4. Add test case function to ``tests\testcases\run_test.py``.
 5. Add the test-case description to ``tests\testcases\docu_test_cases.md``.
 
 .. _testing.run:

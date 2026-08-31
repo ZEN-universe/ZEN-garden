@@ -8,10 +8,24 @@ from typing import Any
 from pint import UnitRegistry
 
 from zen_garden.postprocess.results.scenario import Scenario
+from zen_garden.postprocess.results.scenario_v1 import ScenarioV1
+from zen_garden.postprocess.results.scenario_v2 import ScenarioV2
+from zen_garden.postprocess.results.scenario_v3 import ScenarioV3
 
 logger = logging.getLogger(__name__)
 
 CURRENT_OUTPUT_VERSION = 4
+
+# Result folders written by older ZEN-garden versions use a different on-disk
+# layout. Each such layout has a dedicated :class:`Scenario` subclass that only
+# overrides the file access. This maps the detected output version to the
+# reader that understands that layout; versions absent here are read with the
+# current :class:`Scenario`.
+LEGACY_SCENARIO_CLASSES: dict[int, type[Scenario]] = {
+    ScenarioV1.OUTPUT_VERSION: ScenarioV1,
+    ScenarioV2.OUTPUT_VERSION: ScenarioV2,
+    ScenarioV3.OUTPUT_VERSION: ScenarioV3,
+}
 
 
 class SolutionLoader:
@@ -26,14 +40,43 @@ class SolutionLoader:
         )  # pyright:ignore[reportUnknownMemberType]
         self._output_version: int = self.first_scenario.output_version
 
-        if self._output_version < CURRENT_OUTPUT_VERSION:
+        if (
+            self._output_version < CURRENT_OUTPUT_VERSION
+            and self._output_version not in LEGACY_SCENARIO_CLASSES
+        ):
             raise ValueError(
                 (
                     f"Output version {self._output_version} is not supported. "
-                    f"Please use an older version of ZEN-garden "
-                    f"or migrate your outputs folder."
+                    f"Please use an newer version of ZEN-garden."
                 )
             )
+
+    def _build_scenario(self, path: Path, name: str, base_scenario: str) -> Scenario:
+        """Instantiate the scenario reader matching the folder's output version.
+
+        Construction of a :class:`Scenario` does no I/O, so a lightweight probe
+        instance is used to detect the output version before picking the
+        (possibly legacy) reader class.
+
+        :param path: The path to the scenario folder.
+        :param name: The name of the scenario.
+        :param base_scenario: The name of the base scenario.
+        :return: A :class:`Scenario` (or subclass) instance for the folder.
+        """
+        probe = Scenario(path, name, base_scenario)
+        scenario_class = LEGACY_SCENARIO_CLASSES.get(probe.output_version)
+        if scenario_class is None:
+            return probe
+        logger.warning(
+            "Scenario %s has an outdated output version (%s).\n"
+            "Using the legacy reader %s, which will not be maintained in the "
+            "future.\nPlease consider re-running the model with the current "
+            "ZEN-garden version to update the outputs.",
+            name,
+            probe.output_version,
+            scenario_class.__name__,
+        )
+        return scenario_class(path, name, base_scenario)
 
     def _read_scenarios(self) -> dict[str, Scenario]:
         """Create the scenario instances. The definitions of the scenarios are
@@ -45,7 +88,7 @@ class SolutionLoader:
             scenario_configs: dict[str, dict[str, Any]] = json.load(f)
 
         if len(scenario_configs) == 1:
-            return {"none": Scenario(self.path, "none", "")}
+            return {"none": self._build_scenario(self.path, "none", "")}
 
         for id, config in scenario_configs.items():
             path = self.path / f"scenario_{config['base_scenario']}"
@@ -62,7 +105,7 @@ class SolutionLoader:
             name = f"scenario_{id}"
             base_scenario: str = config["base_scenario"]
 
-            scenarios[name] = Scenario(path, name, base_scenario)
+            scenarios[name] = self._build_scenario(path, name, base_scenario)
 
         return scenarios
 

@@ -3,6 +3,7 @@
 from zen_garden.elements.energy_system import EnergySystem
 from zen_garden.model.component_types.parameter import GenericParameter
 from zen_garden.model.schema import ModelSchema
+from zen_garden.workflow_step import workflow_step
 
 
 class DataLoadingService:
@@ -12,6 +13,12 @@ class DataLoadingService:
         """Initialize the service for a fully registered model schema."""
         self.model_schema = model_schema
 
+    @workflow_step(
+        order=6,
+        phase="Load data",
+        label="Read input data (attributes.yaml / .csv) for every element",
+        loop="scenario",
+    )
     def load_parameters(self) -> None:
         """Prepare, load, and finalize every element in the schema."""
         elements = self.model_schema.all_elements()

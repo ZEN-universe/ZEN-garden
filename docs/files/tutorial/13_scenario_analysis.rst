@@ -34,7 +34,7 @@ Setting up
 
 Two steps switch the scenario tool on.
 
-1. Add a ``scenarios.json`` file to the dataset folder:
+1. Add a ``scenarios.yaml`` file to the dataset folder:
 
    .. code-block:: text
 
@@ -43,12 +43,12 @@ Two steps switch the scenario tool on.
        |   |--energy_system/...
        |   |--set_carriers/...
        |   |--set_technologies/...
-       |   |--scenarios.json
-       |   `--system.json
+       |   |--scenarios.yaml
+       |   `--system.yaml
        |
-       `--config.json
+       `--config.yaml
 
-2. Set ``"conduct_scenario_analysis": true`` in ``system.json``.
+2. Set ``conduct_scenario_analysis: true`` in ``system.yaml``.
 
 Run the model exactly as before; every scenario is run in turn:
 
@@ -63,7 +63,7 @@ carries a ``scenario_`` prefix.
 .. note::
     By default the unmodified dataset is also run, as the default scenario,
     under the name ``scenario_`` (the prefix with an empty suffix). 
-    Set ``"run_default_scenario": false`` in ``system.json`` if
+    Set ``run_default_scenario: false`` in ``system.yaml`` if
     you only want the scenarios you defined. Check
     ``r.scenarios.keys()`` if you are ever unsure of the exact name.
 
@@ -75,31 +75,26 @@ Four ways to vary a parameter
 
 A scenario names an element, a parameter, and how to change it:
 
-.. code-block:: json
+.. code-block:: yaml
 
-    {
-      "high_gas_price": {
-        "natural_gas": {
-          "price_import": {
-            "default_op": 1.5
-          }
-        }
-      }
-    }
+    high_gas_price:
+      natural_gas:
+        price_import:
+          default_op: 1.5
 
 The four you will use most often are:
 
 ``default_op``
-    Multiply the default value from ``attributes.json`` by a factor. Best for
+    Multiply the default value from ``attributes.yaml`` by a factor. Best for
     "what if this were 50% higher".
 
 ``default``
-    Read the default value from a different attributes file. ``"attributes_low"``
-    reads ``attributes_low.json`` from the same folder. Best when a variant
+    Read the default value from a different attributes file. ``attributes_low``
+    reads ``attributes_low.yaml`` from the same folder. Best when a variant
     changes several parameters of one element together.
 
 ``file``
-    Read the values from a different ``.csv``. ``"price_import_high"`` reads
+    Read the values from a different ``.csv``. ``price_import_high`` reads
     ``price_import_high.csv``. Best when the variation differs by node or year.
 
 ``file_op``
@@ -108,15 +103,11 @@ The four you will use most often are:
 You can also vary ``system`` and ``analysis`` settings, which is how you change
 the technology set or the objective:
 
-.. code-block:: json
+.. code-block:: yaml
 
-    {
-      "no_gas_boiler": {
-        "system": {
-          "set_conversion_technologies": ["photovoltaics", "heat_pump"]
-        }
-      }
-    }
+    no_gas_boiler:
+      system:
+        set_conversion_technologies: [photovoltaics, heat_pump]
 
 .. warning::
     System and analysis values are type-checked against the existing setting. A
@@ -141,7 +132,7 @@ One ``Results`` object holds all scenarios. Select one with ``scenario_name``:
 .. important::
     Every scenario name carries a ``scenario_`` prefix, including the default
     scenario, whose name is exactly ``scenario_``. A
-    scenario you named ``"high_gas_price"`` in ``scenarios.json`` becomes
+    scenario you named ``high_gas_price`` in ``scenarios.yaml`` becomes
     ``"scenario_high_gas_price"`` here, and the folder it is written to is
     named the same way. Use ``r.scenarios.keys()`` to see the exact names
     rather than guessing them.
@@ -150,26 +141,22 @@ Exercises
 =========
 
 The exercises are cumulative. Work on a copy of
-``5_multiple_time_steps_per_year``.
+``4_multiple_time_steps_per_year``.
 
-1. **Run three gas price scenarios.** Create ``scenarios.json``:
+1. **Run three gas price scenarios.** Create ``scenarios.yaml``:
 
-   .. code-block:: json
+   .. code-block:: yaml
 
-       {
-         "gas_price_low": {
-           "natural_gas": {
-             "price_import": {"default_op": 0.5}
-           }
-         },
-         "gas_price_high": {
-           "natural_gas": {
-             "price_import": {"default_op": 2.0}
-           }
-         }
-       }
+       gas_price_low:
+         natural_gas:
+           price_import:
+             default_op: 0.5
+       gas_price_high:
+         natural_gas:
+           price_import:
+             default_op: 2.0
 
-   Set ``"conduct_scenario_analysis": true`` and run.
+   Set ``conduct_scenario_analysis: true`` and run.
 
    *Expected result: there are three result folders (*``scenario_``\ *,*
    ``scenario_gas_price_low``\ *,* ``scenario_gas_price_high``\ *): the
@@ -183,34 +170,25 @@ The exercises are cumulative. Work on a copy of
    scenario removing the gas boiler from
    ``set_conversion_technologies``.
 
-   .. code-block:: json
+   .. code-block:: yaml
 
-       {
-         "no_gas_boiler": {
-           "system": {
-             "set_conversion_technologies": ["photovoltaics", "heat_pump"]
-           }
-         }
-       }
+       no_gas_boiler:
+         system:
+           set_conversion_technologies: [photovoltaics, heat_pump]
 
    *Expected result: four scenarios now run. The no-boiler scenario now produces the 
    entire heat through heat pumps (218 GW).*
 
-4. **Generate a price sweep without writing four scenarios.** Replace the two
+3. **Generate a price sweep without writing four scenarios.** Replace the two
    price scenarios (you can remove the no-boiler scenario) with one that uses a list:
 
-   .. code-block:: json
+   .. code-block:: yaml
 
-       {
-         "gas_price_sweep": {
-           "natural_gas": {
-             "price_import": {
-               "default_op": [0.5, 1.0, 1.5, 2.0],
-               "default_op_fmt": "gas_price_{}"
-             }
-           }
-         }
-       }
+       gas_price_sweep:
+         natural_gas:
+           price_import:
+             default_op: [0.5, 1.0, 1.5, 2.0]
+             default_op_fmt: "gas_price_{}"
 
    *Expected result: four sub-scenarios named* ``scenario_gas_price_0.5``
    *through* ``scenario_gas_price_2.0``\ *, in
@@ -223,5 +201,3 @@ The exercises are cumulative. Work on a copy of
 
 .. seealso::
     :ref:`t_scenario.t_scenario` for the full syntax.
-    :ref:`t_euler.t_euler` to run the scenarios in parallel on a cluster
-    instead of one after another.

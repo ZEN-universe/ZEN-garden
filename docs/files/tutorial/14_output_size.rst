@@ -14,7 +14,7 @@ On the tutorial dataset, output size is irrelevant. On a European model with
 hourly resolution, thirty years and a dozen scenarios, it becomes the thing
 that fills your disk and makes results slow to load.
 
-Everything here is set in the ``solver`` section of ``config.json``.
+Everything here is set in the ``solver`` section of ``config.yaml``.
 
 
 .. _t_output.what_is_saved:
@@ -58,14 +58,11 @@ everything"** of that type, which is the default:
 
 So this saves the duals of one constraint and nothing else:
 
-.. code-block:: json
+.. code-block:: yaml
 
-    {
-      "solver": {
-        "save_duals": true,
-        "selected_saved_duals": ["constraint_nodal_energy_balance"]
-      }
-    }
+    solver:
+      save_duals: true
+      selected_saved_duals: [constraint_nodal_energy_balance]
 
 This is usually what you want. The nodal energy balance dual is the marginal
 price of a carrier at a node and time step, the reason most people enable
@@ -111,7 +108,7 @@ Exercises
 =========
 
 The exercises are cumulative. Work on a copy of
-``5_multiple_time_steps_per_year``.
+``4_multiple_time_steps_per_year``.
 
 1. **Measure the baseline.** Run the dataset as shipped and record the size of
    the output folder on disk.
@@ -129,9 +126,9 @@ The exercises are cumulative. Work on a copy of
 
 3. **Keep the dual you actually want and drop the rest.** Add:
 
-   .. code-block:: json
+   .. code-block:: yaml
 
-       "selected_saved_duals": ["constraint_nodal_energy_balance"]
+       selected_saved_duals: [constraint_nodal_energy_balance]
 
    and set ``save_reduced_costs`` back to ``false``.
 

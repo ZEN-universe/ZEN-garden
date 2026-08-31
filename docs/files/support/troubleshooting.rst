@@ -18,31 +18,29 @@ ZEN-garden tries to make its error messages as helpful as possible, but errors
 that occur inside other packages can still be hard to read.
 
 
-Trailing comma at the end of a list in JSON
--------------------------------------------
+Indentation errors in YAML
+---------------------------
 
-``"list": [1, 2, 3,]`` is wrong; it should be ``"list": [1, 2, 3]``. This is a
-common mistake because Python allows it and JSON does not. The resulting error
-message is cryptic::
+YAML uses indentation, not braces, to define structure. Mixing tabs and
+spaces, or shifting the indentation level of a line so it no longer lines up
+with its siblings, produces a parsing error. The resulting error message
+points at the offending line and column, for example::
 
-    json.decoder.JSONDecodeError: Expecting value: [...]
+    yaml.scanner.ScannerError: while scanning for the next token
+    found character '\t' that cannot start any token
 
-Check ``system.json``, ``config.json``, ``scenarios.json`` and the
-``attributes.json`` files for commas at the end of lists. Scrolling up in the
+Check ``system.yaml``, ``config.yaml``, ``scenarios.yaml`` and the
+``attributes.yaml`` files for inconsistent indentation. Scrolling up in the
 error message usually reveals which file caused it.
-
-.. note::
-    JSON also does not support comments. ``//`` or ``#`` anywhere in a
-    ``.json`` file produces the same error.
 
 
 Unit consistency errors
 -----------------------
 
-The dataset example ``15_unit_consistency_expected_error`` intentionally
+The dataset example ``14_unit_consistency_expected_error`` intentionally
 contains inconsistent units. Run it following the instructions for
 :ref:`using dataset examples <building.examples>` and use the error message to
-locate the inconsistent ``unit`` entries in the ``attributes.json`` files.
+locate the inconsistent ``unit`` entries in the ``attributes.yaml`` files.
 See :ref:`t_units.t_units` and :ref:`input_structure.attribute_files` for the
 unit conventions.
 
@@ -99,7 +97,8 @@ If you are struggling with long solution times:
 3. Improve the numerics by scaling the model. See :ref:`t_scaling.t_scaling`
    for the algorithms and :ref:`t_scaling.scaling_recommendations` for which
    configuration to start from.
-4. Check the numerical range with ``"solver": {"analyze_numerics": true}``, and
+4. Check the numerical range with ``analyze_numerics: true`` in the ``solver``
+   section of ``config.yaml``, and
    if you are using Gurobi, consult the `guidelines for numerical issues
    <https://www.gurobi.com/documentation/current/refman/guidelines_for_numerical_i.html>`_.
 5. Reduce what is written to disk; large output files can dominate the runtime

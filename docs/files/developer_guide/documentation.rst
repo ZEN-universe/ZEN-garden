@@ -38,7 +38,11 @@ Each of these elements is described in detail below:
 * ``_ext`` - a folder containing manually programmed extensions for
   the Sphinx package. For example, this folder contains the ``docsttring.py``
   extension, which allows users to insert text from docstrings of methods or
-  classes into the documentation (see :ref:`documentation.docstrings`).
+  classes into the documentation (see :ref:`documentation.docstrings`). It
+  also contains ``workflow_diagram.py``, which generates the run-sequence
+  diagram on the :ref:`API reference <api_reference.api_reference>` page from
+  the ``@workflow_step`` markers in :py:mod:`zen_garden.workflow_step`, so
+  that diagram cannot drift from the code it describes.
 
 * ``dataset_examples`` - a folder containing the input files for the
   :ref:`dataset examples <dataset_examples.dataset_examples>`. Developers can
@@ -340,6 +344,7 @@ by ``<path-to-ZEN-garden>/files/references/api_reference.rst`` ):
 - ``<path-to-ZEN-garden>/files/api/input.rst``
 - ``<path-to-ZEN-garden>/files/api/model.rst``
 - ``<path-to-ZEN-garden>/files/api/postprocess.rst``
+- ``<path-to-ZEN-garden>/files/api/plugin_system.rst``
 
 The ``autosummary`` command automatically produces documentation for
 modules and sub-modules based on the docstrings in the code. In addition, it

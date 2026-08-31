@@ -19,8 +19,8 @@ Plugin contract
   imports the module `...<plugin>.plugin`. You can find a template in
   `zen_garden.plugins._template`
 - Registration: use the `Event` helper to attach functions to events
-  (see `zen_garden.events.Event` for available events). The function will
-  be called at the respective event.
+  (see `zen_garden.plugin_system.events.Event` for available events). The
+  function will be called at the respective event.
 - Config: use the dictonary at `config.plugins` to specify a config to
   pass to the plugin.
 
@@ -31,25 +31,25 @@ The tests include a minimal plugin used as an example. A shortened version:
 
 .. code-block:: python
 
-    # tests/unit_tests/fake_plugin/plugin.py
-    from zen_garden.plugin_system.events import EventPublisher
-    from tests.unit_tests.test_events import TestEvent
+    # tests/unit_tests/plugins/fixtures/fake_plugin/plugin.py
+    from zen_garden.plugin_system.events import Event, EventPublisher
 
     config = {}
 
 
-    @EventPublisher.register(TestEvent.test_event1)
-    def first_method(**kwargs):
-        pass
+    @EventPublisher.register(Event.test_event1)
+    def define_global_data(**kwargs):
+        global stored_data
+        stored_data = kwargs["data_to_keep"]
 
-    @EventPublisher.register(TestEvent.test_event2)
-    def first_method(**kwargs):
-        pass
+    @EventPublisher.register(Event.test_event2)
+    def append_global_data_to_kwargs(**kwargs):
+        kwargs["spy"].append(stored_data)
 
 How the loader uses your plugin
 -------------------------------
 
-The loader function `zen_garden.plugins.loader.register_plugins`
+The loader function `zen_garden.plugin_system.loader.register_plugins`
 imports `zen_garden.plugins.<name>.plugin` and updates the plugin module's
 `config` dict with the configuration provided in `config.yaml`. The loader
 registers the plugin's callbacks to the events they are decorated with, so

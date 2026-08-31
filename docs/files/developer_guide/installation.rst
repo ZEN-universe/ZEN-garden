@@ -99,4 +99,4 @@ yourself with the model, you may now follow the quick start guide on
 prepend `uv run` to the commands in the quick start guide. For example, to run a
 model, you would type::
 
-    uv run zen-example --config="config.json" --dataset="1_base_case"
+    uv run zen-example --config="config.yaml" --dataset="1_base_case"

@@ -27,6 +27,7 @@ from zen_garden.model.time_steps import TimeStepsDicts
 from zen_garden.service_container import ServiceContainer
 from zen_garden.types import YearSpecificTs
 from zen_garden.workflow.optimization_step import OptimizationStep
+from zen_garden.workflow_step import workflow_step
 
 logger = logging.getLogger(__name__)
 
@@ -185,6 +186,12 @@ class OptimizationWorkflow:
             self.config, self.element_registry
         )
 
+    @workflow_step(
+        order=7,
+        phase="Load data",
+        label="Conduct time series aggregation",
+        loop="scenario",
+    )
     def aggregate_time_series(self) -> None:
         """Build the time-step registry and conduct the time series aggregation.
 
@@ -217,6 +224,12 @@ class OptimizationWorkflow:
         """Return the canonical energy-system element from the schema."""
         return self.model_schema.energy_system
 
+    @workflow_step(
+        order=8,
+        phase="Construct & solve",
+        label="Compute rolling-horizon steps",
+        loop="scenario",
+    )
     def run_steps(
         self,
         scenario: str,

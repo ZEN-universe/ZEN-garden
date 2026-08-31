@@ -144,19 +144,16 @@ This is convenient and occasionally wrong. A carbon budget that steps down in
 into a ramp.
 
 To switch interpolation off for specific parameters, create
-``energy_system/parameters_interpolation_off.json``:
+``energy_system/parameters_interpolation_off.yaml``:
 
-.. code-block:: json
+.. code-block:: yaml
 
-    {
-      "parameter_name": [
-        "carbon_emissions_annual_limit",
-        "demand_yearly_variation"
-      ]
-    }
+    parameter_name:
+      - carbon_emissions_annual_limit
+      - demand_yearly_variation
 
 For the parameters listed there, years without a specified value fall back to
-the **default value** from ``attributes.json`` instead of being interpolated.
+the **default value** from ``attributes.yaml`` instead of being interpolated.
 
 .. important::
     List the name of the *file*, not the underlying parameter. Writing
@@ -171,7 +168,7 @@ The exercises are cumulative.
 
 1. **Grow electricity demand by 10% per year and confirm the model responds.**
    Add ``set_carriers/electricity/demand_yearly_variation.csv`` to
-   ``5_multiple_time_steps_per_year``:
+   ``4_multiple_time_steps_per_year``:
 
    .. code-block:: text
 
@@ -210,15 +207,12 @@ The exercises are cumulative.
 
 3. **Switch interpolation off and see the difference.** Keep the two-row file
    from exercise 2 and add
-   ``energy_system/parameters_interpolation_off.json``:
+   ``energy_system/parameters_interpolation_off.yaml``:
 
-   .. code-block:: json
+   .. code-block:: yaml
 
-       {
-         "parameter_name": [
-           "demand_yearly_variation"
-         ]
-       }
+       parameter_name:
+         - demand_yearly_variation
 
    *Expected result: 2024 no longer gets 1.1. It falls back to the default
    value of the yearly variation, which is 1, so 2024 demand drops back to the

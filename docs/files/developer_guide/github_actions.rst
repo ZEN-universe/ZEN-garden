@@ -31,7 +31,7 @@ installs ZEN-garden, and then runs the ZEN-garden test suite. The branch
 protection rules require that all jobs in this action must pass in order for 
 a pull request to be eligible for a merge. 
 
-Bump and Release: ``pytest_with_conda.yml``
+Bump and Release: ``bump_and_release.yml``
 -------------------------------------------
 
 This action is triggered whenever a push is made to main branch of ZEN-garden

@@ -25,12 +25,12 @@ calendar, see :ref:`time_representation.time_representation`.
 Switching aggregation on
 ========================
 
-Two settings in ``system.json`` control it:
+Two settings in ``system.yaml`` control it:
 
-.. code-block:: json
+.. code-block:: yaml
 
-    "conduct_time_series_aggregation": true,
-    "aggregated_time_steps_per_year": 10
+    conduct_time_series_aggregation: true
+    aggregated_time_steps_per_year: 10
 
 ``unaggregated_time_steps_per_year`` is the number of base time steps, i.e., the
 resolution of your input data. ``aggregated_time_steps_per_year`` is how many
@@ -43,14 +43,14 @@ smaller than the first.
     aggregation is disabled and the model behaves as if the two were equal.
 
 To switch aggregation off entirely, set
-``"conduct_time_series_aggregation": false``. If you want a shorter period
+``conduct_time_series_aggregation: false``. If you want a shorter period
 rather than a coarser one, reduce ``unaggregated_time_steps_per_year`` instead
 — that models the first *N* hours of the year at full resolution, which is a
 different thing from clustering the whole year.
 
-The clustering algorithm itself, e.g., with the settings ``clusterMethod``, 
-``representationMethod``, ``extremePeriodMethod``, is configured in the ``analysis`` 
-section of ``config.json``. The available options and defaults are listed under the
+The clustering algorithm itself, e.g., with the settings ``clusterMethod``,
+``representationMethod``, ``extremePeriodMethod``, is configured in the ``analysis``
+section of ``config.yaml``. The available options and defaults are listed under the
 timeseries aggregation settings in :ref:`configuration.analysis`.
 
 .. note::
@@ -113,7 +113,7 @@ Exercises
 =========
 
 The exercises are cumulative. Work on a copy of
-``5_multiple_time_steps_per_year``, which has 96 base time steps and
+``4_multiple_time_steps_per_year``, which has 96 base time steps and
 aggregation switched off.
 
 1. **Establish the exact answer.** Run the dataset as shipped, with
@@ -132,9 +132,9 @@ aggregation switched off.
        cv = compare_model_values([r_full, r_agg], component_type='variable')
        capacity_comp = cv["capacity"].loc[:,(slice(None),2023)].round(4)
 
-   *Expected result: The PV capacity is reduced by 4%, and gas boiler capacity is 
+   *Expected result: The PV capacity is reduced by 4%, and gas boiler capacity is
    reduced by 12%. The total annual cost is reduced from 833 MEuro to 783 MEuro,
-    a 6% drop.*
+   a 6% drop.*
 
 3. **Sweep the number of representative time steps.** Repeat exercise 2 with 5,
    10, 20 and 50 representative time steps.

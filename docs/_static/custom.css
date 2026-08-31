@@ -1,0 +1,14 @@
+/* The mermaid-zoom feature (the `:zoom:` option used on `.. mermaid::`
+   directives) fixes rendered diagrams to a 500px height by default and lets
+   the width shrink to whatever that height's aspect ratio implies. That
+   suits small class diagrams, but it makes a tall, top-down flowchart like
+   the API-reference run-sequence diagram render narrow and with illegibly
+   small text. Wrap a diagram in `.. container:: workflow-diagram-large` to
+   let it render at its natural size instead. */
+.workflow-diagram-large .mermaid-container > pre.mermaid,
+.workflow-diagram-large .mermaid-container > pre.mermaid > svg,
+.workflow-diagram-large pre.mermaid,
+.workflow-diagram-large pre.mermaid > svg {
+    height: auto !important;
+    max-height: none !important;
+}

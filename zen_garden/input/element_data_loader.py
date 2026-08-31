@@ -31,18 +31,6 @@ TIME_STEP_TYPES = [
 """List of valid time step types."""
 
 PARAMETER_CHANGE_LOG = {
-    "min_full_load_hours_fraction": {
-        "default_value": 0,  # only 0, 1, or 'inf' are allowed
-        "unit": "min_load",
-    },
-    "capacity_lower_limit": {
-        "default_value": 0,  # only 0, 1, or 'inf' are allowed
-        "unit": "capacity_limit",
-    },
-    "capacity_lower_limit_energy": {
-        "default_value": 0,  # only 0, 1, or 'inf' are allowed
-        "unit": "capacity_limit_energy",
-    },
 }
 """Dictionary to log changes in parameter values.
 

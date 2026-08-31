@@ -38,20 +38,19 @@ their folders sit inside a dedicated subfolder:
     set_technologies/
     `--set_conversion_technologies/
        |--CHP_plant/
-       |   `--attributes.json
+       |   `--attributes.yaml
        `--set_retrofitting_technologies/
           |--carbon_capture/
-          |   `--attributes.json
+          |   `--attributes.yaml
           `--e_fuel_production/
-              `--attributes.json
+              `--attributes.yaml
 
-They are listed in ``system.json`` under their own set:
+They are listed in ``system.yaml`` under their own set:
 
-.. code-block:: json
+.. code-block:: yaml
 
-    "set_retrofitting_technologies": [
-        "carbon_capture"
-    ]
+    set_retrofitting_technologies:
+      - carbon_capture
 
 
 .. _t_retrofit.coupling:
@@ -61,13 +60,12 @@ The coupling factor
 
 One extra parameter links the retrofit to its base technology:
 
-.. code-block:: json
+.. code-block:: yaml
 
-    "retrofit_flow_coupling_factor": {
-      "base_technology": "CHP_plant",
-      "default_value": 0.18,
-      "unit": "kilotons/GWh"
-    }
+    retrofit_flow_coupling_factor:
+      base_technology: CHP_plant
+      default_value: 0.18
+      unit: kilotons/GWh
 
 It names the base technology and gives the ratio between the reference carrier
 flow of the retrofit and that of the base technology. The constraint is an
@@ -124,8 +122,8 @@ The exercises are cumulative. Use the dedicated example dataset:
 
 .. code-block:: shell
 
-    zen-example --dataset="14_retrofitting_and_fuel_substitution"
-    zen-garden --dataset="14_retrofitting_and_fuel_substitution"
+    zen-example --dataset="13_retrofitting_and_fuel_substitution"
+    zen-garden --dataset="13_retrofitting_and_fuel_substitution"
 
 This dataset adds a ``CHP_plant``, a ``carbon_capture`` retrofit, a
 ``carbon_storage`` technology and an ``e_fuel_production`` retrofit to the
@@ -136,7 +134,7 @@ familiar two-node system.
     Euro/ton over 2023-2025, plus a hard annual emissions limit of 0 in 2025
     (``energy_system/carbon_emissions_annual_limit.csv``). Both are already
     pushing the system towards capture and towards zero emissions in the last
-    year. Check ``energy_system/attributes.json`` and the accompanying
+    year. Check ``energy_system/attributes.yaml`` and the accompanying
     ``.csv`` files before you start, the same way
     :ref:`t_emissions.t_emissions` recommends for the plain emissions
     tutorial.
@@ -159,9 +157,9 @@ familiar two-node system.
    dataset and move ``carbon_capture`` out of
    ``set_retrofitting_technologies`` into ``set_conversion_technologies``,
    removing its ``retrofit_flow_coupling_factor`` and listing it under
-   ``set_conversion_technologies`` in ``system.json``. To avoid an unbounded 
-   solution, set the capacity limit of the capture unit to 100 kiloton/hour in 
-    ``set_technologies/carbon_capture/attributes.json``. Re-run the model.
+   ``set_conversion_technologies`` in ``system.yaml``. To avoid an unbounded
+   solution, set the capacity limit of the capture unit to 100 kiloton/hour in
+   ``set_technologies/carbon_capture/attributes.yaml``. Re-run the model.
 
    *Expected result: the carbon capture plant constantly runs at its capacity limit, and
    captures carbon, regardless of the CHP plant's operation. In this example, it is
@@ -171,5 +169,5 @@ familiar two-node system.
 .. seealso::
     :ref:`additional_features.retrofitting_technologies` explains both
     applications in more depth, and
-    :ref:`dataset_examples.14_retrofitting_and_fuel_substitution` describes the
+    :ref:`dataset_examples.13_retrofitting_and_fuel_substitution` describes the
     example dataset.

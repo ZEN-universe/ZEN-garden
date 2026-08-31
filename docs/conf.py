@@ -32,6 +32,7 @@ author = (
     "Lukas Schmidt-Engelbertz, "
     "Nour Boulos, "
     "Christoph Funke, "
+    "Manuel Dublanc, "
     "Giovanni Sansavini"
 )
 release = get_version("zen_garden")
@@ -58,6 +59,7 @@ extensions = [
     "sphinx.ext.imgconverter",  # for SVG conversion
     "sphinxcontrib.mermaid",  # for class diagrams
     "docstring",  # custom extension for inserting docstring text
+    "workflow_diagram",  # custom extension for the API reference workflow diagram
 ]
 # allow errors in the notebooks
 nbsphinx_allow_errors = True
@@ -161,6 +163,8 @@ html_favicon = "files/figures/general/zen_garden_logo_text.png"
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
+html_static_path = ["_static"]
+html_css_files = ["custom.css"]
 
 
 ## ----------------------------------------------------------------------------

@@ -34,8 +34,8 @@ technology is not deployed continuously.
 The five parameters
 ===================
 
-Four are technology parameters, in the technology's ``attributes.json``; the
-fifth is a system-wide parameter in ``energy_system/attributes.json``.
+Four are technology parameters, in the technology's ``attributes.yaml``; the
+fifth is a system-wide parameter in ``energy_system/attributes.yaml``.
 
 ``max_diffusion_rate``
     The maximum annual capacity addition as a fraction of the existing
@@ -90,13 +90,13 @@ Exercises
 =========
 
 The exercises are cumulative. Work on a copy of
-``5_multiple_time_steps_per_year`` and extend it to ten years so that growth
+``4_multiple_time_steps_per_year`` and extend it to ten years so that growth
 has room to show:
 
-.. code-block:: json
+.. code-block:: yaml
 
-    "optimized_years": 10,
-    "interval_between_years": 1
+    optimized_years: 10
+    interval_between_years: 1
 
 .. warning::
     On the unmodified dataset, the heat pump is never competitive with the gas
@@ -111,7 +111,7 @@ has room to show:
     nothing will look different between them.
 
 1. **Establish the unconstrained baseline.** Run with the default
-   ``max_diffusion_rate`` of ``"inf"`` and plot heat pump capacity by year.
+   ``max_diffusion_rate`` of ``inf`` and plot heat pump capacity by year.
 
    *Expected result: capacity jumps to its final level almost immediately,
    in the first year where it becomes economic. There is no ramp, because
@@ -123,14 +123,13 @@ has room to show:
    2032 as the price keeps rising — DE follows the same pattern at 142.21 ->
    147.56 GW. No ramp, exactly as expected.*
 
-2. **Constrain the growth rate.** In the heat pump's ``attributes.json``, set:
+2. **Constrain the growth rate.** In the heat pump's ``attributes.yaml``, set:
 
-   .. code-block:: json
+   .. code-block:: yaml
 
-       "max_diffusion_rate": {
-         "default_value": 0.3,
-         "unit": "1"
-       }
+       max_diffusion_rate:
+         default_value: 0.3
+         unit: "1"
 
    *Expected result: capacity now grows gradually year over year rather than
    jumping. The growth is roughly exponential at first and flattens as demand
@@ -146,7 +145,7 @@ has room to show:
 
 3. **Reproduce the trap.** Set the heat pump's ``capacity_existing`` to ``0``
    everywhere, and set ``market_share_unbounded`` to ``0`` in
-   ``energy_system/attributes.json``, keeping ``max_diffusion_rate`` at 0.3.
+   ``energy_system/attributes.yaml``, keeping ``max_diffusion_rate`` at 0.3.
 
    *Expected result: heat pump capacity stays at zero in every year. Its
    knowledge stock starts at zero, 30% of zero is zero, and there is no
