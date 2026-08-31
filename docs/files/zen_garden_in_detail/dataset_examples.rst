@@ -138,7 +138,7 @@ differently from the previous examples:
 
 .. csv-table:: Yearly import availability of natural gas in CH
     :header-rows: 1
-    :file: ../../dataset_examples/7_time_series_aggregation/set_carriers/
+    :file: ../../dataset_examples/6_time_series_aggregation/set_carriers/
            natural_gas/availability_import_yearly.csv
     :widths: 15 15 15 15
     :delim: ,

@@ -94,7 +94,7 @@ locked in by what we already have?"
 .. seealso::
     ``allow_investment`` is the complementary setting: it forbids *new*
     capacity, so only the existing fleet may be operated. See
-    :ref:`t_operation_only.t_operation_only`.
+    :ref:`configuration.system`.
 
 
 Exercises

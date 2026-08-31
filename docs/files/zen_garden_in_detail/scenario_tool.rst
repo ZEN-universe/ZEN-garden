@@ -16,7 +16,8 @@ settings. This page is the reference for the ``scenarios.json`` file format:
 
 For a worked, hands-on introduction, see the tutorial on
 :ref:`scenario analysis <t_scenario_tutorial.t_scenario_tutorial>`. To run
-scenarios in parallel on a cluster, see :ref:`t_euler.t_euler`.
+scenarios in parallel on a cluster, see
+:ref:`running the analysis <t_scenario.running_the_analysis>`.
 
 
 .. _scenario_analysis.scenario_setup:

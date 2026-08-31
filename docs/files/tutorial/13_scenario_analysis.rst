@@ -223,5 +223,5 @@ The exercises are cumulative. Work on a copy of
 
 .. seealso::
     :ref:`t_scenario.t_scenario` for the full syntax.
-    :ref:`t_euler.t_euler` to run the scenarios in parallel on a cluster
-    instead of one after another.
+    :ref:`t_scenario.running_the_analysis` to run the scenarios in parallel
+    on a cluster instead of one after another.

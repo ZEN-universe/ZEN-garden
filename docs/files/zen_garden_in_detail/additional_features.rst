@@ -209,7 +209,7 @@ must be lower or equal to the reference flow of the converted technology times t
 The lower-or-equal sign allows for partial retrofitting of the converted technology.
 
 Check out the dataset example
-:ref:`dataset_examples.13_retrofitting_and_fuel_substitution`.
+:ref:`dataset_examples.14_retrofitting_and_fuel_substitution`.
 
 Retrofitting technologies are useful for two main applications:
 

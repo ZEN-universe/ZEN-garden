@@ -42,13 +42,11 @@ five are independent of each other; take the ones you need.
 **Run studies** — go from one model run to many.
 
 13. :ref:`Scenario analysis <t_scenario_tutorial.t_scenario_tutorial>`
-14. :ref:`Operation scenarios <t_operation_only.t_operation_only>`
-15. :ref:`Managing output size <t_output.t_output>`
-16. :ref:`Running on Euler <t_euler.t_euler>`
+14. :ref:`Managing output size <t_output.t_output>`
 
 **When things go wrong**
 
-17. :ref:`Infeasibilities <t_infeasibilities.t_infeasibilities>`
+15. :ref:`Infeasibilities <t_infeasibilities.t_infeasibilities>`
 
 New users should start with
 :ref:`Analyze and compare results <t_analyze.t_analyze>`, which shows how to
