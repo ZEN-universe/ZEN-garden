@@ -33,9 +33,10 @@ Run ZEN-garden
 
 
 .. tip::
-   ZEN-garden provides tools for easily reading and visualizing the outputs.
-   For an introduction on how to analyze and visualize model outputs, see the
-   :ref:`tutorial on analyzing outputs <t_analyze.t_analyze>`.
+   ZEN-garden provides tools for easily reading the outputs, while the
+   separately installable ZEN-temple package provides the visualization
+   platform. For an introduction on how to analyze and visualize model outputs,
+   see the :ref:`tutorial on analyzing outputs <t_analyze.t_analyze>`.
 
 
 .. _running.additional_remarks:
