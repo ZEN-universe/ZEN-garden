@@ -47,6 +47,16 @@ Now you can install the zen-garden package with the following command
 
     pip install zen-garden
 
+The visualization platform is maintained in the ZEN-temple package.
+Install it separately if you want to use the ``zen-visualization`` command:
+
+.. code:: shell
+
+    pip install zen-temple
+
+When working from a local checkout of the ZEN-temple repository, install ZEN-temple
+in the same environment with ``pip install -e .`` from the ZEN-temple repository.
+
 To test whether the installation was successful, type:
 
 .. code:: shell

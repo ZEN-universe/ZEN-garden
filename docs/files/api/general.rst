@@ -6,7 +6,6 @@ Command-line interfaces
 
     zen_garden.cli.zen_example_cli
     zen_garden.cli.zen_garden_cli
-    zen_garden.cli.zen_visualization_cli
 
 
 General utilities
@@ -22,6 +21,5 @@ General utilities
     zen_garden.input.scenario_utils
     zen_garden.utils.string_utils
     zen_garden.utils.utils
-
 
 

@@ -134,7 +134,7 @@ aggregation switched off.
 
    *Expected result: The PV capacity is reduced by 4%, and gas boiler capacity is 
    reduced by 12%. The total annual cost is reduced from 833 MEuro to 783 MEuro,
-    a 6% drop.*
+   a 6% drop.*
 
 3. **Sweep the number of representative time steps.** Repeat exercise 2 with 5,
    10, 20 and 50 representative time steps.

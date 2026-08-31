@@ -133,7 +133,7 @@ the ``biomass_boiler`` you created above.
 
 1.  **What share of the heat in CH is generated from the biomass boiler in 2023?**
 
-    View the production of heat using the ZEN-garden visualization platform,
+    View the production of heat using the visualization platform,
     as described in the tutorial on :ref:`analyzing outputs<t_analyze.t_analyze>`.
 
     `Solution: 71.7 % (1560 GWh from biomass boiler / 2177 GWh total heat production)`

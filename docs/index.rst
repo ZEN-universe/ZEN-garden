@@ -56,8 +56,8 @@ Documentation
    files/tutorial/11_time_series_aggregation
    files/tutorial/12_myopic_foresight
    files/tutorial/13_scenario_analysis
-   files/tutorial/14_infeasibilities
-   files/tutorial/15_output_size
+   files/tutorial/14_output_size
+   files/tutorial/15_infeasibilities
 
 .. toctree::
    :maxdepth: 1

@@ -37,7 +37,7 @@ Exercises
 .. _t_infeasibilities.break_it:
 
 Step 1: make the model infeasible
---------------------------------
+---------------------------------
 
 Work on a copy of ``5_multiple_time_steps_per_year``.
 
@@ -73,8 +73,9 @@ demand cannot be supplied.
    .. code:: json
 
        "unaggregated_time_steps_per_year": 1
-6. Change the solver to ``gurobi`` in ``config.json`` to use the IIS feature.
-7. Run the model.
+
+7. Change the solver to ``gurobi`` in ``config.json`` to use the IIS feature.
+8. Run the model.
 
 .. _t_infeasibilities.read_it:
 

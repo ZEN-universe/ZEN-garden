@@ -77,10 +77,6 @@ autodoc_default_options = {
     "special-members": "__init__",
 }
 
-# The visualization CLI delegates to the separately distributed ZEN-temple
-# package. Its local implementation is not needed to render this API page.
-autodoc_mock_imports = ["zen_temple"]
-
 numfig = True
 
 # Prevent Spynx from showing nested defaults and typehints.

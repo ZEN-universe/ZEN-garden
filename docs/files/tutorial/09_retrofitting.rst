@@ -161,7 +161,7 @@ familiar two-node system.
    removing its ``retrofit_flow_coupling_factor`` and listing it under
    ``set_conversion_technologies`` in ``system.json``. To avoid an unbounded 
    solution, set the capacity limit of the capture unit to 100 kiloton/hour in 
-    ``set_technologies/carbon_capture/attributes.json``. Re-run the model.
+   ``set_technologies/carbon_capture/attributes.json``. Re-run the model.
 
    *Expected result: the carbon capture plant constantly runs at its capacity limit, and
    captures carbon, regardless of the CHP plant's operation. In this example, it is
