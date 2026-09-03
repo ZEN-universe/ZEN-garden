@@ -865,8 +865,10 @@ class Scenario:
         years = [ry + int(i) * del_y for i in year_index]
         if isinstance(df, pd.Series):
             df.index = years
+            df.index.name = year_index.name
         else:
             df.columns = years
+            df.columns.name = year_index.name
         return df
 
     def _convert_year2ts(self, year: int) -> int:

@@ -35,7 +35,7 @@ def compare_model_values(
         component_type = ComponentType(component_type)
 
     logger.info(
-        "Comparing the model parameters of "
+        "Comparing the model components of "
         f"{results[0].name, results[1].name} "
         f"and scenarios {scenarios[0], scenarios[1]}"
     )
