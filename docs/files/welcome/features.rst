@@ -255,8 +255,6 @@ The results of the optimization can be analyzed and visualized with the
 following functionalities:
 
 1. Detailed results analysis with the results class (:ref:`t_analyze.results_code`)
-2. Visualization of the results with the ZEN-explorer visualization platform 
+2. Visualization of the results with the visualization platform
    (:ref:`t_analyze.visualization`), both offline and online `<https://zen-garden.ethz.ch/>`_.
 3. Comparison of two different results objects (:ref:`t_analyze.compare`)
-
-

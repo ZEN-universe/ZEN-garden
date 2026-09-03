@@ -37,7 +37,7 @@ Exercises
 .. _t_infeasibilities.break_it:
 
 Step 1: make the model infeasible
-----------------------------------
+---------------------------------
 
 Work on a copy of ``4_multiple_time_steps_per_year``.
 

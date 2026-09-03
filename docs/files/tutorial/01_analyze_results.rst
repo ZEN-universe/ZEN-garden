@@ -7,13 +7,13 @@ Analyze and compare results
 .. admonition:: At a glance
    :class: note
 
-   | **You will** read model results with the visualization platform and with the 
+   | **You will** read model results with the ZEN-temple visualization platform and with the
         ``Results`` class, and compare two runs against each other.
    | **You need** the setup from :ref:`tutorials_intro.setup`.
 
 ZEN-garden offers two ways to look at results.
 
-The **visualization platform** is the place to start. It shows standardized,
+The **ZEN-temple visualization platform** is the place to start. It shows standardized,
 interactive plots of capacity mixes, generation mixes, energy balances and
 technology locations, and lets you focus on specific regions, time steps, scenarios and
 carriers.
@@ -43,8 +43,10 @@ Running the platform
 
         cd <data>
 
-2. Activate the ZEN-garden environment if it is not already active (see
-   :ref:`instructions <installation.activate>`), then run:
+2. Activate the environment if it is not already active (see
+   :ref:`instructions <installation.activate>`). The visualization platform is
+   provided by the separately installable ZEN-temple package; install it with
+   ``pip install zen-temple`` if it is not already installed. Then run:
 
    .. code-block:: shell
 
@@ -90,7 +92,7 @@ The main menu shows four options
     :figwidth: 550 pt
     :align: center
 
-    Homepage of the ZEN-garden visualization platform.
+    Homepage of the visualization platform.
 
 
 Exercises
