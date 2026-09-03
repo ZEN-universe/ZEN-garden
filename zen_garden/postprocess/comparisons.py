@@ -341,8 +341,9 @@ def _get_comparison_df(val_0, val_1, result_names, component_name, rtol):
                 f"{val_1.index.nlevels} ({result_names[1]})"
             )
             val_0, val_1 = _align_index_levels(val_0, val_1)
-            return pd.concat(
-                [val_0, val_1], keys=result_names, axis=1).sort_index(axis=1, level=1)
+            return pd.concat([val_0, val_1], keys=result_names, axis=1).sort_index(
+                axis=1, level=1
+            )
 
         missing_index = (
             val_0.index.difference(val_1.index)

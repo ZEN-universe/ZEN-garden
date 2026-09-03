@@ -30,8 +30,7 @@ TIME_STEP_TYPES = [
 ]
 """List of valid time step types."""
 
-PARAMETER_CHANGE_LOG = {
-}
+PARAMETER_CHANGE_LOG = {}
 """Dictionary to log changes in parameter values.
 
 The keys are the new parameter names. The values are dictionaries with the default value

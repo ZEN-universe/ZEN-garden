@@ -110,9 +110,9 @@ def _build_mermaid_source(steps: list["WorkflowStep"]) -> str:
                 )
 
     prev_node_id: str | None = None
-    for i, (step, path) in enumerate(zip(steps, paths)):
+    for i, (step, path) in enumerate(zip(steps, paths, strict=True)):
         common = 0
-        for a, b in zip(open_stack, path):
+        for a, b in zip(open_stack, path, strict=False):
             if a != b:
                 break
             common += 1
@@ -120,7 +120,7 @@ def _build_mermaid_source(steps: list["WorkflowStep"]) -> str:
         for level in range(common, len(path)):
             loop_name = path[level]
             lines.append(
-                f'{indent * (level + 1)}subgraph {loop_name}_loop'
+                f"{indent * (level + 1)}subgraph {loop_name}_loop"
                 f'["{_LOOP_LABELS[loop_name]}"]'
             )
             open_stack.append(loop_name)

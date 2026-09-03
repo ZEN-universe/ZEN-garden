@@ -338,9 +338,7 @@ class Config(ConfigBase):
 
     @classmethod
     @override
-    @workflow_step(
-        order=1, phase="Setup", label="Load config.yaml and system.yaml"
-    )
+    @workflow_step(order=1, phase="Setup", label="Load config.yaml and system.yaml")
     def from_file(
         cls,
         config_path: str | Path,

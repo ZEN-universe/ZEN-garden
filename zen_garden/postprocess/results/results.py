@@ -15,8 +15,8 @@ from zen_garden.postprocess.results.cost_emission_calculation import (
     CostEmissionCalculation,
 )
 from zen_garden.postprocess.results.scenario import Index, Scenario
-from zen_garden.postprocess.results.timestep_type import TimestepType
 from zen_garden.postprocess.results.solution_loader import SolutionLoader
+from zen_garden.postprocess.results.timestep_type import TimestepType
 
 logger = logging.getLogger(__name__)
 
@@ -568,7 +568,7 @@ class Results:
             df = df.unstack(time_dim) if time_dim else df
             return df
         elif all(isinstance(df, pd.DataFrame) for df in df_dict.values()):
-            return pd.concat(df_dict, keys=df_dict.keys(),axis=0,names=["scenario"])
+            return pd.concat(df_dict, keys=df_dict.keys(), axis=0, names=["scenario"])
         else:
             raise ValueError(
                 (
