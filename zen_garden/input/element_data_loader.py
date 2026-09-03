@@ -5,7 +5,7 @@ import logging
 import os
 import warnings
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 import pandas as pd
@@ -30,7 +30,7 @@ TIME_STEP_TYPES = [
 ]
 """List of valid time step types."""
 
-PARAMETER_CHANGE_LOG = {}
+PARAMETER_CHANGE_LOG: dict[str, "str | dict[str, Any]"] = {}
 """Dictionary to log changes in parameter values.
 
 The keys are the new parameter names. The values are dictionaries with the default value

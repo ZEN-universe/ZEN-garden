@@ -563,7 +563,9 @@ class Results:
             return next(iter(df_dict.values()))
 
         if all(isinstance(df, pd.Series) for df in df_dict.values()):
-            df = pd.concat(df_dict, axis=0, names=["scenario"])
+            df: pd.DataFrame | pd.Series = pd.concat(
+                df_dict, axis=0, names=["scenario"]
+            )
             time_dim = [dim for dim in df.index.names if dim in TimestepType]
             df = df.unstack(time_dim) if time_dim else df
             return df

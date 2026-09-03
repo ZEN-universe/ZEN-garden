@@ -422,8 +422,8 @@ def _get_different_vals(
     """
     is_close = np.isclose(val_0, val_1, rtol=rtol, equal_nan=True)
     if isinstance(val_0, pd.DataFrame) and isinstance(val_1, pd.DataFrame):
-        diff_val_0 = val_0[(~is_close).any(axis=1)]
-        diff_val_1 = val_1[(~is_close).any(axis=1)]
+        diff_val_0: pd.DataFrame | pd.Series = val_0[(~is_close).any(axis=1)]
+        diff_val_1: pd.DataFrame | pd.Series = val_1[(~is_close).any(axis=1)]
     else:
         diff_val_0 = val_0[(~is_close)]
         diff_val_1 = val_1[(~is_close)]
