@@ -8,8 +8,14 @@ import importlib
 from types import ModuleType
 
 from zen_garden.plugin_system.events import EventPublisher
+from zen_garden.workflow_step import workflow_step
 
 
+@workflow_step(
+    order=3,
+    phase="Setup",
+    label="Register plugins; notify via after_model_schema_creation event",
+)
 def register_plugins(
     plugins_config: dict[str, dict], source_package: str = "zen_garden.plugins"
 ) -> dict[str, ModuleType]:

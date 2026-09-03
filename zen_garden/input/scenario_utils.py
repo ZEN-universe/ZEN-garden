@@ -8,6 +8,7 @@ from collections import defaultdict
 import yaml
 
 from zen_garden.input.scenario_dict import ScenarioDict
+from zen_garden.workflow_step import workflow_step
 
 logger = logging.getLogger(__name__)
 
@@ -76,6 +77,7 @@ class ScenarioUtils:
                             os.remove(sub_folder_path)
 
     @staticmethod
+    @workflow_step(order=4, phase="Setup", label="Resolve scenarios to run")
     def get_scenarios(config, job_index):
         """Retrieves and overwrites the scenario dicts.
 

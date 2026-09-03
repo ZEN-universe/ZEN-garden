@@ -7,7 +7,7 @@ features needed from the later examples.
 
 Every dataset contains:
 
-- `system.json`, which selects the nodes and technologies and configures the
+- `system.yaml`, which selects the nodes and technologies and configures the
   optimization;
 - `energy_system`, which defines nodes, edges, units, and system-wide input
   data;
@@ -15,7 +15,7 @@ Every dataset contains:
 - `set_technologies`, which defines conversion, storage, transport, and, where
   applicable, retrofit technologies.
 
-Values shared by all indices are stored in `attributes.json`. Values that vary
+Values shared by all indices are stored in `attributes.yaml`. Values that vary
 by node, edge, time step, or year are stored in parameter-specific CSV files.
 The following examples show the currently supported dataset sequence.
 
@@ -53,7 +53,7 @@ storage and pipeline are available but are not needed because natural gas can
 be imported without limits at both nodes.
 
 Use this example as the template for a new dataset. Adjust the selected nodes
-and technologies in `system.json`, then add or remove the corresponding carrier
+and technologies in `system.yaml`, then add or remove the corresponding carrier
 and technology directories.
 
 ## 2_multi_year_optimization
@@ -110,7 +110,7 @@ optimization horizon or can represent committed future construction.
 ## 10_multi_scenario
 
 This example enables `conduct_scenario_analysis` and defines its scenarios in
-`scenarios.json`. The scenarios select alternative input files, including
+`scenarios.yaml`. The scenarios select alternative input files, including
 different carbon prices and carrier attributes, without duplicating the full
 dataset.
 
@@ -125,7 +125,7 @@ output carrier to the reference carrier.
 ZEN-garden linearly interpolates missing yearly parameter values by default.
 This example demonstrates that behavior for annual carbon-emission limits and
 carbon prices. Parameters listed in
-`energy_system/parameters_interpolation_off.json` use their default value
+`energy_system/parameters_interpolation_off.yaml` use their default value
 instead of interpolation.
 
 ## 13_retrofitting_and_fuel_substitution

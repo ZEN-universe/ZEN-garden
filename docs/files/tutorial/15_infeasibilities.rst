@@ -39,42 +39,40 @@ Exercises
 Step 1: make the model infeasible
 ---------------------------------
 
-Work on a copy of ``5_multiple_time_steps_per_year``.
+Work on a copy of ``4_multiple_time_steps_per_year``.
 
 Heat demand in this model can only be met by burning natural gas or running a
 heat pump, and natural gas has to be imported. Remove the import and the heat
 demand cannot be supplied.
 
-1. Open ``set_carriers/natural_gas/attributes.json``.
+1. Open ``set_carriers/natural_gas/attributes.yaml``.
 2. Set the default value of ``availability_import`` to ``0``:
 
-   .. code:: json
+   .. code:: yaml
 
-       "availability_import": {
-         "default_value": 0,
-         "unit": "GW"
-       }
-3. Set the price for shedding heat demand to ``"inf"`` in 
-    ``set_carriers/heat/attributes.json``:
+       availability_import:
+         default_value: 0
+         unit: GW
+3. Set the price for shedding heat demand to ``inf`` in
+    ``set_carriers/heat/attributes.yaml``:
 
-   .. code:: json
+   .. code:: yaml
 
-       "price_shed_demand": {
-         "default_value": "inf",
-         "unit": "kEuro/GWh"
-       }
+       price_shed_demand:
+         default_value: inf
+         unit: kEuro/GWh
 4. Delete ``set_carriers/natural_gas/availability_import.csv``, so
    that nothing overwrites the new default.
-5. Remove ``"heat_pump"`` from ``set_conversion_technologies`` in
-   ``system.json``, so that the gas boiler is the only source of heat.
-6. Set the number of time steps to 1 in ``system.json`` to make the problem smaller
+5. Remove ``heat_pump`` from ``set_conversion_technologies`` in
+   ``system.yaml``, so that the gas boiler is the only source of heat.
+6. Set the number of time steps to 1 in ``system.yaml`` to make the problem smaller
    and easier to read:
 
-   .. code:: json
+   .. code:: yaml
 
-       "unaggregated_time_steps_per_year": 1
+       unaggregated_time_steps_per_year: 1
 
-7. Change the solver to ``gurobi`` in ``config.json`` to use the IIS feature.
+7. Change the solver to ``gurobi`` in ``config.yaml`` to use the IIS feature.
 8. Run the model.
 
 .. _t_infeasibilities.read_it:
@@ -113,17 +111,13 @@ which is often caused by `bad numerics
 
 If you are using Gurobi, disable `DualReductions
 <https://www.gurobi.com/documentation/current/refman/dualreductions.html>`_ to
-get a definite answer. Add to ``config.json``:
+get a definite answer. Add to ``config.yaml``:
 
-.. code-block:: json
+.. code-block:: yaml
 
-    {
-      "solver": {
-        "solver_options": {
-          "DualReductions": 0
-        }
-      }
-    }
+    solver:
+      solver_options:
+        DualReductions: 0
 
 If the problem then reports ``infeasible``, it really is infeasible. If not,
 you most likely have numerical issues — see :ref:`t_scaling.t_scaling`.
@@ -211,7 +205,7 @@ still yours.
 
 2. **Make the model infeasible a second way: leave imports available, but set
    the** ``capacity_limit`` **of the natural gas boiler to 0 while the heat pump
-   is still removed from** ``system.json``\ **. Which constraint family appears
+   is still removed from** ``system.yaml``\ **. Which constraint family appears
    in the IIS this time?**
 
    *Expected result: the IIS now involves the capacity limit and the technology

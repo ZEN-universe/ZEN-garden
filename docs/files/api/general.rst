@@ -15,6 +15,7 @@ General utilities
    :toctree: generated
 
     zen_garden.workflow.runner
+    zen_garden.workflow_step
     zen_garden.utils.errors
     zen_garden.utils.iis_constraint_parser
     zen_garden.input.input_data_checks

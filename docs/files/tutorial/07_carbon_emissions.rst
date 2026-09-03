@@ -32,14 +32,14 @@ instruments for it. They can be used alone or together:
      - Penalizes every tonne in the objective.
 
 All three are parameters of the energy system, so they live in
-``energy_system/attributes.json`` and, if they vary by year, in a matching
+``energy_system/attributes.yaml`` and, if they vary by year, in a matching
 ``.csv`` in the ``energy_system`` folder.
 
 .. note::
-    The dataset we are using in this example, ``7_time_series_aggregation``, 
+    The dataset we are using in this example, ``6_time_series_aggregation``,
     already has a carbon budget of about
     4.27 gigatons and a budget overshoot price of 400 Euro/tons. Look at
-    ``energy_system/attributes.json`` before you start, so you know what you
+    ``energy_system/attributes.yaml`` before you start, so you know what you
     are changing.
 
 
@@ -49,7 +49,7 @@ Annual limits
 =============
 
 ``carbon_emissions_annual_limit`` is indexed by year. Set the default in
-``attributes.json`` and the yearly path in
+``attributes.yaml`` and the yearly path in
 ``energy_system/carbon_emissions_annual_limit.csv``:
 
 .. code-block:: text
@@ -74,14 +74,13 @@ Cumulative budget
 =================
 
 ``carbon_emissions_budget`` applies to the entire planning horizon, so a single
-value in ``energy_system/attributes.json`` is enough:
+value in ``energy_system/attributes.yaml`` is enough:
 
-.. code-block:: json
+.. code-block:: yaml
 
-    "carbon_emissions_budget": {
-      "default_value": 2.0,
-      "unit": "gigatons"
-    }
+    carbon_emissions_budget:
+      default_value: 2.0
+      unit: gigatons
 
 A budget lets the optimizer choose *when* to abate. Given a discount rate and the 
 existing capacity, it will generally emit more early and abate later.
@@ -133,11 +132,11 @@ Exercises
 =========
 
 The exercises are cumulative. Work on a copy of
-``8_yearly_variation``.
+``7_yearly_variation``.
 
 1. **Start from an unconstrained baseline.** Set
-   ``carbon_emissions_budget`` and ``price_carbon_emissions_budget_overshoot`` to 
-   ``"inf"`` in ``energy_system/attributes.json``, run the model, and record total 
+   ``carbon_emissions_budget`` and ``price_carbon_emissions_budget_overshoot`` to
+   ``inf`` in ``energy_system/attributes.yaml``, run the model, and record total
    emissions and total cost.
 
    .. code:: python
@@ -151,7 +150,7 @@ The exercises are cumulative. Work on a copy of
    boiler. This is your reference point — every instrument below should raise
    cost and lower emissions relative to it.*
 
-   *On* ``8_yearly_variation``\ *: Around 33 Mton/year (334 Mton over
+   *On* ``7_yearly_variation``\ *: Around 33 Mton/year (334 Mton over
    the three years) and yearly costs at around 72000 MEuro/year.*
 
 2. **Impose a cumulative budget of roughly half the baseline emissions.** Set a carbon
@@ -165,10 +164,10 @@ The exercises are cumulative. Work on a copy of
    MEuro/year (+4%).*
 
 3. **Replace the budget with annual limits that sum to the same total.** Set
-   ``carbon_emissions_budget`` back to ``"inf"`` and add a
-   ``carbon_emissions_annual_limit.csv`` 
-   (**Make sure that the unit in attributes.json is in megatons**) whose values sum to the budget
-   from exercise 2: 
+   ``carbon_emissions_budget`` back to ``inf`` and add a
+   ``carbon_emissions_annual_limit.csv``
+   (**Make sure that the unit in attributes.yaml is in megatons**) whose values sum to the budget
+   from exercise 2:
 
    .. code-block:: text
 

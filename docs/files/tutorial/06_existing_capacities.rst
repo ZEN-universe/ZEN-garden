@@ -79,12 +79,12 @@ lag between investment and construction is the construction time.
 Switching brownfield off
 ========================
 
-``use_capacities_existing`` in ``system.json`` controls whether existing
+``use_capacities_existing`` in ``system.yaml`` controls whether existing
 capacities are used at all:
 
-.. code-block:: json
+.. code-block:: yaml
 
-    "use_capacities_existing": false
+    use_capacities_existing: false
 
 The default is ``true``. Setting it to ``false`` ignores every
 ``capacity_existing`` entry and runs a greenfield optimization on the same
@@ -93,8 +93,7 @@ locked in by what we already have?"
 
 .. seealso::
     ``allow_investment`` is the complementary setting: it forbids *new*
-    capacity, so only the existing fleet may be operated. See
-    :ref:`configuration.system`.
+    capacity, so only the existing fleet may be operated.
 
 
 Exercises
@@ -106,8 +105,8 @@ Download it alongside your tutorial dataset:
 
 .. code-block:: shell
 
-    zen-example --dataset="10_brown_field"
-    zen-garden --dataset="10_brown_field"
+    zen-example --dataset="9_brown_field"
+    zen-garden --dataset="9_brown_field"
 
 This dataset extends the yearly-variation example with an existing
 photovoltaics fleet in ``CH`` and ``DE``, given per construction year from the
@@ -119,7 +118,7 @@ late 1990s onwards.
    .. code:: python
 
        from zen_garden import Results
-       r = Results(path='<data>/outputs/10_brown_field')
+       r = Results(path='<data>/outputs/9_brown_field')
        print(r.get_total('capacity_existing', index="photovoltaics"))
 
    *Expected result: a non-zero existing fleet in both nodes, considerably
@@ -131,14 +130,14 @@ late 1990s onwards.
    inside the 2023-2025 horizon.*
 
 2. **Compare capacity additions against a greenfield run.** Copy the dataset,
-   set ``"use_capacities_existing": false`` in ``system.json``, and run it.
+   set ``use_capacities_existing: false`` in ``system.yaml``, and run it.
    Then compare the two:
 
    .. code:: python
 
        from zen_garden import Results, compare_model_values
-       r_brown = Results(path='<data>/outputs/10_brown_field')
-       r_green = Results(path='<data>/outputs/10_brown_field_greenfield')
+       r_brown = Results(path='<data>/outputs/9_brown_field')
+       r_green = Results(path='<data>/outputs/9_brown_field_greenfield')
        compare_model_values([r_brown, r_green], component_type='variable')
 
    *Expected result: the greenfield run adds more photovoltaic capacity in the
@@ -158,7 +157,7 @@ late 1990s onwards.
    scenarios converge.*
 
 3. **Make the fleet retire and watch the model replace it.** In the copied
-   dataset, reduce the ``lifetime`` of photovoltaics in ``attributes.json`` to
+   dataset, reduce the ``lifetime`` of photovoltaics in ``attributes.yaml`` to
    a value short enough that the older installations retire during the horizon —
    for example 20 years.
 
@@ -169,7 +168,7 @@ late 1990s onwards.
    the construction year.*
 
 .. seealso::
-    :ref:`dataset_examples.dataset_examples` describes ``10_brown_field`` in
+    :ref:`dataset_examples.dataset_examples` describes ``9_brown_field`` in
     context, and :ref:`additional_features.construction_times` covers the
     related delay between an investment decision and capacity becoming
     available.

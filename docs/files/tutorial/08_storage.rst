@@ -33,16 +33,14 @@ store are described by the same technology class with different cost ratios.
 To fix the ratio between them, e.g., for a battery that is always "four-hour" storage, 
 constrain it:
 
-.. code-block:: json
+.. code-block:: yaml
 
-    "energy_to_power_ratio_min": {
-      "default_value": 4,
-      "unit": "h"
-    },
-    "energy_to_power_ratio_max": {
-      "default_value": 4,
-      "unit": "h"
-    }
+    energy_to_power_ratio_min:
+      default_value: 4
+      unit: h
+    energy_to_power_ratio_max:
+      default_value: 4
+      unit: h
 
 The defaults are ``0`` and ``inf``, which leaves the ratio free.
 
@@ -76,7 +74,7 @@ hydro plant is modelled.
 Periodicity
 ===========
 
-``storage_periodicity`` in ``system.json`` (default ``true``) requires the
+``storage_periodicity`` in ``system.yaml`` (default ``true``) requires the
 storage level at the end of each year to equal the level at the start. Without
 it, the optimizer would happily start the year with a full store it never paid
 to fill.
@@ -86,10 +84,10 @@ planning horizon instead of each year: the level at the start of the horizon
 must equal the level at the end, but individual years may end fuller or emptier
 than they started.
 
-.. code-block:: json
+.. code-block:: yaml
 
-    "storage_periodicity": true,
-    "multiyear_periodicity": true
+    storage_periodicity: true
+    multiyear_periodicity: true
 
 This matters when supply varies between years, e.g., a year of high gas
 availability followed by a scarce one, because it lets a store carry energy
@@ -109,7 +107,7 @@ across the year boundary.
 Exercises
 =========
 
-The exercises are cumulative and use ``5_multiple_time_steps_per_year``, which
+The exercises are cumulative and use ``4_multiple_time_steps_per_year``, which
 already contains a ``natural_gas_storage``. Work on a copy.
 
 1. **Find out whether the storage is used at all, and why not.** Run the
@@ -144,7 +142,7 @@ already contains a ``natural_gas_storage``. Work on a copy.
    storage power capacity.*
 
 3. **Turn on multi-year periodicity and compare.** Set
-   ``"multiyear_periodicity": true`` in ``system.json`` and add a 
+   ``multiyear_periodicity: true`` in ``system.yaml`` and add a
    ``availability_import_yearly_variation.csv`` file in the 
    ``set_carriers/natural_gas/`` directory:
 

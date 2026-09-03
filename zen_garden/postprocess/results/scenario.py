@@ -302,8 +302,13 @@ class Scenario:
     @property
     def output_version(self) -> int:
         """Returns the output version of the scenario."""
-        if self.analysis.output_version is None:
-            # fallback for older versions of the solution without this field
+        if (
+            "output_version" not in self.analysis.__pydantic_fields_set__
+            or self.analysis.output_version is None
+        ):
+            # fallback for older solutions written before this field existed
+            # (``model_construct`` still fills the schema default, so an absent
+            # field cannot be detected from its value alone).
             return self._solution_version()
         return self.analysis.output_version
 
@@ -860,8 +865,10 @@ class Scenario:
         years = [ry + int(i) * del_y for i in year_index]
         if isinstance(df, pd.Series):
             df.index = years
+            df.index.name = year_index.name
         else:
             df.columns = years
+            df.columns.name = year_index.name
         return df
 
     def _convert_year2ts(self, year: int) -> int:

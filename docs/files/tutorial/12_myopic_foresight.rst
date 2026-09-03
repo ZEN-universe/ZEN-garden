@@ -24,13 +24,13 @@ optimizes again, each time seeing only a few years ahead.
 The two horizons
 ================
 
-Myopic foresight is configured by three settings in ``system.json``:
+Myopic foresight is configured by three settings in ``system.yaml``:
 
-.. code-block:: json
+.. code-block:: yaml
 
-    "use_rolling_horizon": true,
-    "years_in_rolling_horizon": 2,
-    "years_in_decision_horizon": 1
+    use_rolling_horizon: true
+    years_in_rolling_horizon: 2
+    years_in_decision_horizon: 1
 
 ``use_rolling_horizon``
     Switches the rolling horizon on. Default ``false``, i.e., perfect foresight.
@@ -110,23 +110,23 @@ already configured for a rolling horizon over ten years:
 
 .. code-block:: shell
 
-    zen-example --dataset="9_myopic_foresight"
-    zen-garden --dataset="9_myopic_foresight"
+    zen-example --dataset="8_myopic_foresight"
+    zen-garden --dataset="8_myopic_foresight"
 
-Its ``system.json`` sets ``"use_rolling_horizon": true`` with
-``"years_in_rolling_horizon": 1`` — single-step foresight, the most extreme
+Its ``system.yaml`` sets ``use_rolling_horizon: true`` with
+``years_in_rolling_horizon: 1`` — single-step foresight, the most extreme
 case.
 
 1. **Build the perfect-foresight counterpart.** Copy the dataset, set
-   ``"use_rolling_horizon": false``, and run it.
+   ``use_rolling_horizon: false``, and run it.
 
 2. **Compare the two capacity pathways.**
 
    .. code:: python
 
        from zen_garden import Results
-       r_myopic  = Results(path='<data>/outputs/9_myopic_foresight')
-       r_perfect = Results(path='<data>/outputs/9_myopic_foresight_perfect')
+       r_myopic  = Results(path='<data>/outputs/8_myopic_foresight')
+       r_perfect = Results(path='<data>/outputs/8_myopic_foresight_perfect')
        cv = compare_model_values([r_myopic, r_perfect], component_type="variable")
 
    *Expected result: In 2023, the myopic run does not invest in heat pumps at all,

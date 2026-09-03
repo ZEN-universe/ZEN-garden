@@ -103,7 +103,7 @@ Exercises
 
    a. Click "The Transition Pathway".
    b. Click "Capacity".
-   c. Select `Solution` = ``5_multiple_time_steps_per_year``,
+   c. Select `Solution` = ``4_multiple_time_steps_per_year``,
       `Variable` = ``capacity``, `Technology Type` = ``conversion``,
       `Carrier` = ``heat``. This shows all conversion technology capacities
       for technologies that produce or consume heat.
@@ -115,7 +115,7 @@ Exercises
 2. **For Germany in 2023, which hour has the highest electricity demand?**
 
    a. Click "The Energy Balance", then "Nodal Energy Balance".
-   b. Select `Solution` = ``5_multiple_time_steps_per_year``,
+   b. Select `Solution` = ``4_multiple_time_steps_per_year``,
       `Year` = ``2023``, `Node` = ``Germany``, `Carrier` = ``electricity``.
    c. Hover over the peak to read the hour and the demand value.
 
@@ -138,7 +138,7 @@ environment active, and load the results:
 .. code:: python
 
     from zen_garden import Results
-    r = Results(path='<data>/outputs/5_multiple_time_steps_per_year')
+    r = Results(path='<data>/outputs/4_multiple_time_steps_per_year')
 
 The ``Results`` class exposes the sets of technologies and nodes, the model
 parameters, the optimal values of the primal variables, and the dual variables.
@@ -230,7 +230,7 @@ Exercises
    .. code:: python
 
     from zen_garden import Results
-    r = Results(path='<data>/outputs/5_multiple_time_steps_per_year')
+    r = Results(path='<data>/outputs/4_multiple_time_steps_per_year')
     capacity_CH = r.get_total('capacity', index=("natural_gas_boiler", None, "CH"), year=0).iloc[0, 0]
     capacity_DE = r.get_total('capacity', index=("natural_gas_boiler", None, "DE"), year=0).iloc[0, 0]
     print(f"Swiss capacity:  {capacity_CH}")
@@ -246,7 +246,7 @@ Exercises
 
     from zen_garden import Results
     import numpy as np
-    r = Results(path='<data>/outputs/5_multiple_time_steps_per_year')
+    r = Results(path='<data>/outputs/4_multiple_time_steps_per_year')
     demand_DE = r.get_full_ts('demand', index=("electricity", "DE"), year=0)
     print(f"Hour number: {np.argmax(demand_DE)}")
     print(f"Demand:      {np.max(demand_DE)}")
@@ -258,13 +258,13 @@ Exercises
    answers the same question for Switzerland.
 
 3. **What is the marginal price of electricity in Germany at that same hour?**
-   Re-run the dataset with ``"save_duals": true`` in ``config.json`` (see
+   Re-run the dataset with ``save_duals: true`` in ``config.yaml`` (see
    :ref:`t_configuration.t_configuration`), then:
 
    .. code:: python
 
     from zen_garden import Results
-    r = Results(path='<data>/outputs/5_multiple_time_steps_per_year')
+    r = Results(path='<data>/outputs/4_multiple_time_steps_per_year')
     dual = r.get_dual(
         'constraint_nodal_energy_balance',
         index={"carrier": "electricity", "node": "DE"},
@@ -289,7 +289,7 @@ technology involved in supplying it.
 .. code:: python
 
     from zen_garden import Results
-    r = Results(path='<data>/outputs/5_multiple_time_steps_per_year')
+    r = Results(path='<data>/outputs/4_multiple_time_steps_per_year')
     total_costs, direct_costs = r.get_sectoral_costs()
     total_emissions, direct_emissions = r.get_sectoral_emissions()
 
@@ -337,11 +337,11 @@ When two datasets give different answers, the fastest way to find out why is to
 compare them directly rather than reading both sets of results.
 
 Make a second run to compare against. Copy the dataset, remove the natural gas
-boiler from ``set_conversion_technologies`` in ``system.json``, and run it:
+boiler from ``set_conversion_technologies`` in ``system.yaml``, and run it:
 
 .. code-block:: shell
 
-    zen-garden --dataset="5_multiple_time_steps_per_year_no_boiler"
+    zen-garden --dataset="4_multiple_time_steps_per_year_no_boiler"
 
 Then compare the two:
 
@@ -349,8 +349,8 @@ Then compare the two:
 
     from zen_garden import Results, compare_model_values, compare_configs
 
-    r1 = Results(path='<data>/outputs/5_multiple_time_steps_per_year')
-    r2 = Results(path='<data>/outputs/5_multiple_time_steps_per_year_no_boiler')
+    r1 = Results(path='<data>/outputs/4_multiple_time_steps_per_year')
+    r2 = Results(path='<data>/outputs/4_multiple_time_steps_per_year_no_boiler')
 
     compare_configs([r1, r2])
     compare_model_values([r1, r2], component_type='parameter')

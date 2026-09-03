@@ -35,7 +35,7 @@ def compare_model_values(
         component_type = ComponentType(component_type)
 
     logger.info(
-        "Comparing the model parameters of "
+        "Comparing the model components of "
         f"{results[0].name, results[1].name} "
         f"and scenarios {scenarios[0], scenarios[1]}"
     )
@@ -334,6 +334,17 @@ def _get_comparison_df(val_0, val_1, result_names, component_name, rtol):
         logger.info(
             f"Component {component_name} does not have matching " f"index or columns"
         )
+        if val_0.index.nlevels != val_1.index.nlevels:
+            logger.info(
+                f"Component {component_name} has different index levels: "
+                f"{val_0.index.nlevels} ({result_names[0]}) vs "
+                f"{val_1.index.nlevels} ({result_names[1]})"
+            )
+            val_0, val_1 = _align_index_levels(val_0, val_1)
+            return pd.concat([val_0, val_1], keys=result_names, axis=1).sort_index(
+                axis=1, level=1
+            )
+
         missing_index = (
             val_0.index.difference(val_1.index)
             if len(val_0.index) > len(val_1.index)
@@ -367,6 +378,34 @@ def _get_comparison_df(val_0, val_1, result_names, component_name, rtol):
         return _get_different_vals(val_0, val_1, result_names, rtol)
 
 
+def _align_index_levels(
+    val_0: "pd.DataFrame | pd.Series[Any]", val_1: "pd.DataFrame | pd.Series[Any]"
+) -> tuple["pd.DataFrame | pd.Series[Any]", "pd.DataFrame | pd.Series[Any]"]:
+    """Aligns the index levels of two objects with a differing number of index
+    levels, so they can be meaningfully concatenated.
+
+    Whichever level names are present on only one of the two objects are added
+    to the other, filled with NaN for every row, and both indexes are then
+    reordered to share one common level order. Rows are not otherwise
+    re-aligned; this only ensures the two indexes are structurally compatible.
+
+    :param val_0: first dataframe or series
+    :param val_1: second dataframe or series
+    :return: (val_0, val_1) with the same index level names, in the same order
+    """
+    names_0 = list(val_0.index.names)
+    names_1 = list(val_1.index.names)
+    all_names = names_0 + [name for name in names_1 if name not in names_0]
+
+    def _add_missing_levels(val, names):
+        for name in all_names:
+            if name not in names:
+                val = pd.concat([val], keys=[np.nan], names=[name])
+        return val.reorder_levels(all_names)
+
+    return _add_missing_levels(val_0, names_0), _add_missing_levels(val_1, names_1)
+
+
 def _get_different_vals(
     val_0: "pd.DataFrame | pd.Series[Any]",
     val_1: "pd.DataFrame | pd.Series[Any]",
@@ -383,8 +422,8 @@ def _get_different_vals(
     """
     is_close = np.isclose(val_0, val_1, rtol=rtol, equal_nan=True)
     if isinstance(val_0, pd.DataFrame) and isinstance(val_1, pd.DataFrame):
-        diff_val_0 = val_0[(~is_close).any(axis=1)]
-        diff_val_1 = val_1[(~is_close).any(axis=1)]
+        diff_val_0: pd.DataFrame | pd.Series = val_0[(~is_close).any(axis=1)]
+        diff_val_1: pd.DataFrame | pd.Series = val_1[(~is_close).any(axis=1)]
     else:
         diff_val_0 = val_0[(~is_close)]
         diff_val_1 = val_1[(~is_close)]

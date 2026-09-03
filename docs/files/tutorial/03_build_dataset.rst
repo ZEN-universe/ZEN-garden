@@ -30,7 +30,7 @@ demand, supplied by photovoltaics. Then we will grow it.
 Step 1: create the folder skeleton
 ==================================
 
-A dataset is a folder of ``.json`` and ``.csv`` files. Create this structure:
+A dataset is a folder of ``.yaml`` and ``.csv`` files. Create this structure:
 
 .. code-block:: text
 
@@ -42,22 +42,19 @@ A dataset is a folder of ``.json`` and ``.csv`` files. Create this structure:
     |   |   |--set_conversion_technologies/
     |   |   |--set_storage_technologies/
     |   |   `--set_transport_technologies/
-    |   `--system.json
+    |   `--system.yaml
     |
-    `--config.json
+    `--config.yaml
 
 All three technology subfolders must exist, even when empty.
 
-``config.json`` sits **outside** the dataset folder and names the dataset to
+``config.yaml`` sits **outside** the dataset folder and names the dataset to
 run:
 
-.. code-block:: json
+.. code-block:: yaml
 
-    {
-      "analysis": {
-        "dataset": "my_first_model"
-      }
-    }
+    analysis:
+      dataset: my_first_model
 
 
 .. _t_build.energy_system:
@@ -83,19 +80,16 @@ but the file must exist with its header:
 
     edge,node_from,node_to
 
-``energy_system/base_units.json`` defines the units everything is converted to:
+``energy_system/base_units.yaml`` defines the units everything is converted to:
 
-.. code-block:: json
+.. code-block:: yaml
 
-    {
-      "unit": [
-        "hour",
-        "GW",
-        "km",
-        "megatons",
-        "megaEuro"
-      ]
-    }
+    unit:
+      - hour
+      - GW
+      - km
+      - megatons
+      - megaEuro
 
 ``energy_system/unit_definitions.txt`` adds units Pint does not already know.
 At minimum, define the currency:
@@ -104,53 +98,41 @@ At minimum, define the currency:
 
     Euro = [currency] = EURO = Eur
 
-``energy_system/attributes.json`` holds system-wide parameters. Every parameter
+``energy_system/attributes.yaml`` holds system-wide parameters. Every parameter
 of the energy system needs a default value:
 
-.. code-block:: json
+.. code-block:: yaml
 
-    {
-      "carbon_emissions_annual_limit": {
-        "default_value": "inf",
-        "unit": "megatons"
-      },
-      "carbon_emissions_budget": {
-        "default_value": "inf",
-        "unit": "megatons"
-      },
-      "carbon_emissions_cumulative_existing": {
-        "default_value": 0.0,
-        "unit": "megatons"
-      },
-      "price_carbon_emissions": {
-        "default_value": 0.0,
-        "unit": "Euro/tons"
-      },
-      "price_carbon_emissions_budget_overshoot": {
-        "default_value": "inf",
-        "unit": "Euro/tons"
-      },
-      "price_carbon_emissions_annual_overshoot": {
-        "default_value": "inf",
-        "unit": "Euro/tons"
-      },
-      "knowledge_depreciation_rate": {
-        "default_value": 0.1,
-        "unit": "1"
-      },
-      "knowledge_spillover_rate": {
-        "default_value": 0.0,
-        "unit": "1"
-      },
-      "market_share_unbounded": {
-        "default_value": 0.1,
-        "unit": "1"
-      },
-      "discount_rate": {
-        "default_value": 0.06,
-        "unit": "1"
-      }
-    }
+    carbon_emissions_annual_limit:
+      default_value: inf
+      unit: megatons
+    carbon_emissions_budget:
+      default_value: inf
+      unit: megatons
+    carbon_emissions_cumulative_existing:
+      default_value: 0.0
+      unit: megatons
+    price_carbon_emissions:
+      default_value: 0.0
+      unit: Euro/tons
+    price_carbon_emissions_budget_overshoot:
+      default_value: inf
+      unit: Euro/tons
+    price_carbon_emissions_annual_overshoot:
+      default_value: inf
+      unit: Euro/tons
+    knowledge_depreciation_rate:
+      default_value: 0.1
+      unit: "1"
+    knowledge_spillover_rate:
+      default_value: 0.0
+      unit: "1"
+    market_share_unbounded:
+      default_value: 0.1
+      unit: "1"
+    discount_rate:
+      default_value: 0.06
+      unit: "1"
 
 Setting the emission limits and prices to ``inf`` and ``0`` switches those
 mechanisms off for now; :ref:`t_emissions.t_emissions` turns them on.
@@ -166,54 +148,42 @@ Step 3: add a carrier
 =====================
 
 Each carrier gets a folder under ``set_carriers`` containing an
-``attributes.json`` that defines **every** parameter a carrier can have:
+``attributes.yaml`` that defines **every** parameter a carrier can have:
 
-``set_carriers/electricity/attributes.json``
+``set_carriers/electricity/attributes.yaml``
 
-.. code-block:: json
+.. code-block:: yaml
 
-    {
-      "demand": {
-        "default_value": 10.0,
-        "unit": "GW"
-      },
-      "availability_import": {
-        "default_value": 0.0,
-        "unit": "GW"
-      },
-      "availability_export": {
-        "default_value": 0.0,
-        "unit": "GW"
-      },
-      "availability_import_yearly": {
-        "default_value": "inf",
-        "unit": "GWh"
-      },
-      "availability_export_yearly": {
-        "default_value": "inf",
-        "unit": "GWh"
-      },
-      "price_import": {
-        "default_value": 0.0,
-        "unit": "kiloEuro/GWh"
-      },
-      "price_export": {
-        "default_value": 0.0,
-        "unit": "kiloEuro/GWh"
-      },
-      "price_shed_demand": {
-        "default_value": "inf",
-        "unit": "kiloEuro/GWh"
-      },
-      "carbon_intensity_carrier_import": {
-        "default_value": 0.0,
-        "unit": "kilotons/GWh"
-      },
-      "carbon_intensity_carrier_export": {
-        "default_value": 0.0,
-        "unit": "kilotons/GWh"
-      }
-    }
+    demand:
+      default_value: 10.0
+      unit: GW
+    availability_import:
+      default_value: 0.0
+      unit: GW
+    availability_export:
+      default_value: 0.0
+      unit: GW
+    availability_import_yearly:
+      default_value: inf
+      unit: GWh
+    availability_export_yearly:
+      default_value: inf
+      unit: GWh
+    price_import:
+      default_value: 0.0
+      unit: kiloEuro/GWh
+    price_export:
+      default_value: 0.0
+      unit: kiloEuro/GWh
+    price_shed_demand:
+      default_value: inf
+      unit: kiloEuro/GWh
+    carbon_intensity_carrier_import:
+      default_value: 0.0
+      unit: kilotons/GWh
+    carbon_intensity_carrier_export:
+      default_value: 0.0
+      unit: kilotons/GWh
 
 Two choices worth noting. ``availability_import`` is ``0``, so electricity
 cannot simply be bought — it has to be generated, which is the point of the
@@ -221,7 +191,7 @@ model. ``price_shed_demand`` is ``inf``, so demand may not be dropped; if the
 model cannot meet demand it will be infeasible rather than quietly shedding it.
 
 .. note::
-    Carriers are **not** listed in ``system.json``. ZEN-garden infers them from
+    Carriers are **not** listed in ``system.yaml``. ZEN-garden infers them from
     the technologies you select.
 
 
@@ -230,89 +200,71 @@ model cannot meet demand it will be infeasible rather than quietly shedding it.
 Step 4: add a technology
 ========================
 
-``set_technologies/set_conversion_technologies/photovoltaics/attributes.json``
+``set_technologies/set_conversion_technologies/photovoltaics/attributes.yaml``
 
-.. code-block:: json
+.. code-block:: yaml
 
-    {
-      "reference_carrier": {
-        "default_value": ["electricity"]
-      },
-      "input_carrier": {
-        "default_value": []
-      },
-      "output_carrier": {
-        "default_value": ["electricity"]
-      },
-      "conversion_factor": [],
-      "capacity_limit": {
-        "default_value": "inf",
-        "unit": "GW"
-      },
-      "capacity_existing": {
-        "default_value": 0.0,
-        "unit": "GW"
-      },
-      "capacity_investment_existing": {
-        "default_value": 0.0,
-        "unit": "GW"
-      },
-      "capacity_addition_min": {
-        "default_value": 0.0,
-        "unit": "GW"
-      },
-      "capacity_addition_max": {
-        "default_value": "inf",
-        "unit": "GW"
-      },
-      "capacity_addition_unbounded": {
-        "default_value": 0.0,
-        "unit": "GW"
-      },
-      "max_diffusion_rate": {
-        "default_value": "inf",
-        "unit": "1"
-      },
-      "min_load": {
-        "default_value": 0.0,
-        "unit": "1"
-      },
-      "max_load": {
-        "default_value": 1.0,
-        "unit": "1"
-      },
-      "lifetime": {
-        "default_value": 25.0,
-        "unit": "1"
-      },
-      "construction_time": {
-        "default_value": 0.0,
-        "unit": "1"
-      },
-      "carbon_intensity_technology": {
-        "default_value": 0.0,
-        "unit": "kilotons/GWh"
-      },
-      "capex_specific_conversion": {
-        "default_value": 700.0,
-        "unit": "Euro/kW"
-      },
-      "opex_specific_fixed": {
-        "default_value": 10.0,
-        "unit": "Euro/kW"
-      },
-      "opex_specific_variable": {
-        "default_value": 0.0,
-        "unit": "kiloEuro/GWh"
-      }
-    }
+    reference_carrier:
+      default_value:
+        - electricity
+    input_carrier:
+      default_value: []
+    output_carrier:
+      default_value:
+        - electricity
+    conversion_factor: []
+    capacity_limit:
+      default_value: inf
+      unit: GW
+    capacity_existing:
+      default_value: 0.0
+      unit: GW
+    capacity_investment_existing:
+      default_value: 0.0
+      unit: GW
+    capacity_addition_min:
+      default_value: 0.0
+      unit: GW
+    capacity_addition_max:
+      default_value: inf
+      unit: GW
+    capacity_addition_unbounded:
+      default_value: 0.0
+      unit: GW
+    max_diffusion_rate:
+      default_value: inf
+      unit: "1"
+    min_load:
+      default_value: 0.0
+      unit: "1"
+    max_load:
+      default_value: 1.0
+      unit: "1"
+    lifetime:
+      default_value: 25.0
+      unit: "1"
+    construction_time:
+      default_value: 0.0
+      unit: "1"
+    carbon_intensity_technology:
+      default_value: 0.0
+      unit: kilotons/GWh
+    capex_specific_conversion:
+      default_value: 700.0
+      unit: Euro/kW
+    opex_specific_fixed:
+      default_value: 10.0
+      unit: Euro/kW
+    opex_specific_variable:
+      default_value: 0.0
+      unit: kiloEuro/GWh
 
 Photovoltaics has no input carrier, so ``input_carrier`` is an empty list and
 ``conversion_factor`` is empty too. The ``reference_carrier`` is electricity,
 which means the capacity is rated in GW of electricity output.
 
 .. warning::
-    ``attributes.json`` must contain **all** parameters of the element type,
+    ``attributes.yaml`` must contain **all** parameters of the element type,
     not just the ones you care about. A missing parameter is an error, not a
     silent default. :ref:`notation.notation` lists the parameters of each
     element type.
@@ -320,29 +272,25 @@ which means the capacity is rated in GW of electricity output.
 
 .. _t_build.system:
 
-Step 5: write system.json
+Step 5: write system.yaml
 =========================
 
-``system.json`` selects what actually enters the optimization:
+``system.yaml`` selects what actually enters the optimization:
 
-.. code-block:: json
+.. code-block:: yaml
 
-    {
-        "set_conversion_technologies": [
-            "photovoltaics"
-        ],
-        "set_storage_technologies": [],
-        "set_transport_technologies": [],
-        "set_nodes": [
-            "CH"
-        ],
-        "reference_year": 2024,
-        "unaggregated_time_steps_per_year": 24,
-        "aggregated_time_steps_per_year": 24,
-        "conduct_time_series_aggregation": false,
-        "optimized_years": 1,
-        "interval_between_years": 1
-    }
+    set_conversion_technologies:
+      - photovoltaics
+    set_storage_technologies: []
+    set_transport_technologies: []
+    set_nodes:
+      - CH
+    reference_year: 2024
+    unaggregated_time_steps_per_year: 24
+    aggregated_time_steps_per_year: 24
+    conduct_time_series_aggregation: false
+    optimized_years: 1
+    interval_between_years: 1
 
 Start small: one year, 24 hours, one node. You can grow every one of these
 numbers once the model runs.
@@ -365,8 +313,8 @@ Step 6: run it
     shape.
 
 If the run fails, work through :ref:`troubleshooting.troubleshooting`. The most
-common first-time errors are a trailing comma in a ``.json`` file, a missing
-parameter in ``attributes.json``, and inconsistent units.
+common first-time errors are inconsistent indentation in a ``.yaml`` file, a
+missing parameter in ``attributes.yaml``, and inconsistent units.
 
 
 Exercises
@@ -385,13 +333,13 @@ The exercises are cumulative — each builds on the model from the previous one.
        CH,18,20
 
    *Expected result: the model still solves. Demand is 10 GW — the default from
-   ``attributes.json`` — in every hour except 0, 8 and 18. Installed PV
+   ``attributes.yaml`` — in every hour except 0, 8 and 18. Installed PV
    capacity is now set by the 20 GW peak in hour 18 rather than by the flat
-   default. This is the core idea of the input format: the ``.json`` gives the
+   default. This is the core idea of the input format: the ``.yaml`` gives the
    default, the ``.csv`` overwrites it where you care.*
 
 2. **Add a second node and connect it.** Add ``DE`` to ``set_nodes.csv`` and to
-   ``set_nodes`` in ``system.json``.
+   ``set_nodes`` in ``system.yaml``.
 
    *Expected result: the model solves with PV built at both nodes
    independently. Because there is no transport technology yet, each node must

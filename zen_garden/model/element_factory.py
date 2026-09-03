@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING
 
 from zen_garden.elements.energy_system import EnergySystem
 from zen_garden.model.element import Element
+from zen_garden.workflow_step import workflow_step
 
 if TYPE_CHECKING:
     from zen_garden.input.input_data_checks import InputDataChecks
@@ -36,6 +37,12 @@ class ElementFactory:
         self.model_schema = model_schema
         self.input_data_checks = input_data_checks
 
+    @workflow_step(
+        order=5,
+        phase="Load data",
+        label="Instantiate elements (carriers, technologies, energy system)",
+        loop="scenario",
+    )
     def register_elements(self):
         """Instantiate every configured element and register it in the schema."""
         logger.info("\n--- Add elements to model--- \n")

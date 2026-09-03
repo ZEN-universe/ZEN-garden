@@ -5,7 +5,7 @@ import logging
 import os
 import warnings
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 import pandas as pd
@@ -30,20 +30,7 @@ TIME_STEP_TYPES = [
 ]
 """List of valid time step types."""
 
-PARAMETER_CHANGE_LOG = {
-    "min_full_load_hours_fraction": {
-        "default_value": 0,  # only 0, 1, or 'inf' are allowed
-        "unit": "min_load",
-    },
-    "capacity_lower_limit": {
-        "default_value": 0,  # only 0, 1, or 'inf' are allowed
-        "unit": "capacity_limit",
-    },
-    "capacity_lower_limit_energy": {
-        "default_value": 0,  # only 0, 1, or 'inf' are allowed
-        "unit": "capacity_limit_energy",
-    },
-}
+PARAMETER_CHANGE_LOG: dict[str, "str | dict[str, Any]"] = {}
 """Dictionary to log changes in parameter values.
 
 The keys are the new parameter names. The values are dictionaries with the default value

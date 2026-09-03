@@ -6,15 +6,16 @@ Overview
 
 The ZEN-garden plugin system lets you extend core behaviour without altering the
 main codebase. Plugins are regular Python packages that register callback
-functions for events triggered `zen_garden.events.EventPublisher`.
+functions for events triggered by `zen_garden.plugin_system.events.EventPublisher`.
 
 - Plugins live under `zen_garden.plugins.<plugin_name>.plugin` and expose a
   `config` dictionary for configuration.
-- The loader `register_plugins` imports selected plugins and merges
-  user-provided settings into each plugin's `config` before execution.
+- The loader `zen_garden.plugin_system.loader.register_plugins` imports
+  selected plugins and merges user-provided settings into each plugin's
+  `config` before execution.
 - Use the `EventPublisher.register(Event.<name>)` decorator to attach functions to
-  events that will be called by the framework at defined points (for example, 
-  before/after model construction). 
+  events that will be called by the framework at defined points (for example,
+  before/after model construction).
 
 See also
 --------

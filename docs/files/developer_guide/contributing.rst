@@ -52,7 +52,7 @@ All contributions follow the **fork-and-pull request workflow**.
     git checkout -b <feature_name>
 
 4. Implement your changes.
-5. Run formatting, linting, and tests locally.
+5. Run formatting, linting, type checking, and tests locally.
 6. Submit a **Pull Request (PR)** from your fork to the upstream repository.
 
 .. note::
@@ -197,7 +197,8 @@ The following rules apply:
 
 4. **Code quality checks must pass**
 
-   The **Black** formatter and **Ruff** linter must not report any issues.
+   The **Black** formatter, **Ruff** linter, and **Mypy** type checker must not
+   report any issues.
 
 
 .. _contributing.merge:

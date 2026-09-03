@@ -42,6 +42,8 @@ import yaml
 from pydantic import BaseModel, ConfigDict, ValidationError
 from typing_extensions import override
 
+from zen_garden.workflow_step import workflow_step
+
 PROHIBITED_DATASET_CHARACTERS = [
     " ",
     ".",
@@ -336,6 +338,7 @@ class Config(ConfigBase):
 
     @classmethod
     @override
+    @workflow_step(order=1, phase="Setup", label="Load config.yaml and system.yaml")
     def from_file(
         cls,
         config_path: str | Path,

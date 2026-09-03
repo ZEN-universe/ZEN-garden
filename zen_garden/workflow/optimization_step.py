@@ -20,6 +20,7 @@ from zen_garden.model.optimization_model import OptimizationModel
 from zen_garden.postprocess.postprocess import Postprocess
 from zen_garden.utils import IISConstraintParser, StringUtils
 from zen_garden.workflow.scaling import Scaling
+from zen_garden.workflow_step import workflow_step
 
 if TYPE_CHECKING:
     from zen_garden.input.scenario_dict import ScenarioDict
@@ -162,6 +163,12 @@ class OptimizationStep:
 
         return True
 
+    @workflow_step(
+        order=10,
+        phase="Construct & solve",
+        label="Build sets, parameters, variables, constraints (linopy model)",
+        loop="rolling_horizon",
+    )
     def construct_optimization_problem(self) -> OptimizationModel:
         """Constructs the optimization problem."""
         # create empty ConcreteModel
@@ -204,6 +211,12 @@ class OptimizationStep:
             decision_horizon = list(range(step_horizon, next_optimization_step))
         return decision_horizon
 
+    @workflow_step(
+        order=9,
+        phase="Construct & solve",
+        label="Restrict to this rolling-horizon step",
+        loop="rolling_horizon",
+    )
     def overwrite_time_indices(self, step_horizon):
         """Select subset of time indices, matching the step horizon.
 
@@ -253,6 +266,12 @@ class OptimizationStep:
         if self.config.solver.use_scaling:
             self.scaling.re_scale()
 
+    @workflow_step(
+        order=11,
+        phase="Construct & solve",
+        label="Solve the optimization problem",
+        loop="rolling_horizon",
+    )
     def solve(self, scenario: str = "base"):
         """Create model instance by assigning parameter values and initializing sets."""
         solver_name = self.config.solver.name
@@ -321,6 +340,12 @@ class OptimizationStep:
             parser = IISConstraintParser(ilp_file, self.optimization_model.lp_model)
             parser.write_parsed_output()
 
+    @workflow_step(
+        order=12,
+        phase="Construct & solve",
+        label="Carry capacity and emissions into next horizon step",
+        loop="rolling_horizon",
+    )
     def add_results_of_optimization_step(self, step_horizon):
         """Adds capacity additions and carbon emissions to the next optimization step.
 
@@ -437,6 +462,12 @@ class OptimizationStep:
             + carbon_emissions_annual * (interval_between_years - 1)
         )
 
+    @workflow_step(
+        order=13,
+        phase="Postprocess",
+        label="Write results to disk (Postprocess.save_results)",
+        loop="rolling_horizon",
+    )
     def write_results(
         self,
         scenarios,

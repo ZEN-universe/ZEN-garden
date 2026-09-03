@@ -44,7 +44,7 @@ There are three different time indices:
 The time parameters
 ===================
 
-The parameters below are set in ``system.json``
+The parameters below are set in ``system.yaml``
 (see :ref:`configuration.system`).
 
 * ``reference_year``: first year of the optimization. Used to calculate the
@@ -73,11 +73,11 @@ The parameters below are set in ``system.json``
 
 Example I, no rolling horizon:
 
-.. code-block:: json
+.. code-block:: yaml
 
-    "reference_year": 2020,
-    "optimized_years": 4,
-    "interval_between_years": 10
+    reference_year: 2020
+    optimized_years: 4
+    interval_between_years: 10
 
 The resulting investigated years are:
 
@@ -87,14 +87,14 @@ The resulting investigated years are:
 
 Example II, rolling horizon:
 
-.. code-block:: json
+.. code-block:: yaml
 
-    "reference_year": 2020,
-    "optimized_years": 4,
-    "interval_between_years": 10,
-    "use_rolling_horizon": true,
-    "years_in_rolling_horizon": 2,
-    "years_in_decision_horizon": 1
+    reference_year: 2020
+    optimized_years: 4
+    interval_between_years: 10
+    use_rolling_horizon: true
+    years_in_rolling_horizon: 2
+    years_in_decision_horizon: 1
 
 The resulting sequence of investigated years is:
 
@@ -123,7 +123,7 @@ operational costs and operational carbon emissions of each aggregated time step
 are multiplied by the ``time_steps_operation_duration`` of that time step.
 
 The clustering algorithm itself is configured in the ``analysis`` section of
-``config.json``; see the timeseries aggregation settings in
+``config.yaml``; see the timeseries aggregation settings in
 :ref:`configuration.analysis`. Most importantly, ``clusterMethod`` selects the
 clustering algorithm. Note that ``kmeans`` averages the input data over the
 representative time steps, which smooths peaks and reduces extreme-period

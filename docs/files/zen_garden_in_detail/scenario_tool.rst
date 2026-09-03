@@ -6,7 +6,7 @@ The scenario tool
 
 The scenario tool overwrites parameter values so that a model can be run many
 times with variations to the input data, the system settings or the analysis
-settings. This page is the reference for the ``scenarios.json`` file format:
+settings. This page is the reference for the ``scenarios.yaml`` file format:
 
 * How to define scenarios
 * Hierarchical expansion of sets to quickly define parameter changes for
@@ -15,9 +15,7 @@ settings. This page is the reference for the ``scenarios.json`` file format:
 * How to overwrite system and analysis settings
 
 For a worked, hands-on introduction, see the tutorial on
-:ref:`scenario analysis <t_scenario_tutorial.t_scenario_tutorial>`. To run
-scenarios in parallel on a cluster, see
-:ref:`running the analysis <t_scenario.running_the_analysis>`.
+:ref:`scenario analysis <t_scenario_tutorial.t_scenario_tutorial>`.
 
 
 .. _scenario_analysis.scenario_setup:

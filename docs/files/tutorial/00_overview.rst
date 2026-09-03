@@ -73,7 +73,7 @@ Setup
 =====
 
 Unless a tutorial says otherwise, every tutorial starts from the example
-dataset ``5_multiple_time_steps_per_year``. To prepare it:
+dataset ``4_multiple_time_steps_per_year``. To prepare it:
 
 1. Install ZEN-garden by following the :ref:`installation guide
    <installation.installation>`.
@@ -86,7 +86,7 @@ dataset ``5_multiple_time_steps_per_year``. To prepare it:
 
    .. code-block:: shell
 
-       zen-example --dataset="5_multiple_time_steps_per_year"
+       zen-example --dataset="4_multiple_time_steps_per_year"
 
    The full list of example datasets is given in
    :ref:`dataset_examples.dataset_examples`.
@@ -95,7 +95,7 @@ dataset ``5_multiple_time_steps_per_year``. To prepare it:
 
    .. code-block:: shell
 
-       zen-garden --dataset="5_multiple_time_steps_per_year"
+       zen-garden --dataset="4_multiple_time_steps_per_year"
 
 ZEN-garden prints its progress to the terminal. On success, the last line is:
 
@@ -115,7 +115,7 @@ A new directory ``outputs`` is created in ``<data>``, containing the results.
 The tutorial dataset
 ====================
 
-``5_multiple_time_steps_per_year`` optimizes electricity and heat supply for a
+``4_multiple_time_steps_per_year`` optimizes electricity and heat supply for a
 two-node system. The two nodes are Germany (``DE``) and Switzerland (``CH``).
 Electricity is supplied by photovoltaics, heat by a natural gas boiler and a
 heat pump. Natural gas can be imported freely at each node, stored, and

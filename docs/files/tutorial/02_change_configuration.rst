@@ -7,15 +7,15 @@ Change configurations
 .. admonition:: At a glance
    :class: note
 
-   | **You will** change ZEN-garden's behaviour by editing ``config.json`` and ``system.json``.
+   | **You will** change ZEN-garden's behaviour by editing ``config.yaml`` and ``system.yaml``.
    | **You need** the setup from :ref:`tutorials_intro.setup`.
 
 Configurations control how the model is solved and what it represents. They
 live in two files:
 
-* ``config.json`` — how the model is **processed, solved and saved**: which
+* ``config.yaml`` — how the model is **processed, solved and saved**: which
   solver to use, what to save, how to aggregate time steps, whether to scale.
-* ``system.json`` — the **physical energy system**: which technologies and
+* ``system.yaml`` — the **physical energy system**: which technologies and
   nodes to include, how many years, the objective function, whether to use a
   rolling foresight horizon.
 
@@ -30,18 +30,17 @@ live in two files:
     |
     `--config.yaml
 
-Note that ``config.json`` sits next to the dataset folder, not inside it: one
-``config.json`` can serve several datasets.
+Note that ``config.yaml`` sits next to the dataset folder, not inside it: one
+``config.yaml`` can serve several datasets.
 
 The complete list of available settings, with types and defaults, is in
 :ref:`configuration.configuration`. This tutorial shows how to change them.
 
 .. warning::
 
-    A common mistake is a trailing comma at the end of a JSON list:
-    ``"list": [1, 2, 3,]`` is invalid, it should be ``"list": [1, 2, 3]``.
-    JSON also does not allow comments. Both produce the error
-    ``json.decoder.JSONDecodeError: Expecting value: [...]``. See
+    A common mistake is inconsistent indentation. YAML uses indentation to
+    define structure, so mixing tabs and spaces, or shifting the indentation
+    level between lines, produces a parsing error. See
     :ref:`troubleshooting.troubleshooting`.
 
 
@@ -50,33 +49,28 @@ The complete list of available settings, with types and defaults, is in
 Modifying config.yaml
 =====================
 
-``config.json`` contains two dictionaries, ``analysis`` and ``solver``. To
-change a setting, add ``"<configuration_name>": <value>`` to the appropriate
+``config.yaml`` contains two dictionaries, ``analysis`` and ``solver``. To
+change a setting, add ``<configuration_name>: <value>`` to the appropriate
 dictionary. Anything you do not specify keeps its default.
 
 The example below is not exhaustive; it shows the shape of the file.
 
-.. code:: json
+.. code:: yaml
 
-    {
-      "analysis": {
-        "dataset": "5_multiple_time_steps_per_year"
-      },
-      "solver": {
-        "name": "gurobi",
-        "solver_options": {
-          "Method": 2,
-          "BarHomogeneous": 1,
-          "DualReductions": 0,
-          "Threads": 128,
-          "Crossover": 0
-        },
-        "save_duals": false,
-        "use_scaling": true,
-        "run_diagnostics": true,
-        "scaling_include_rhs": true
-      }
-    }
+    analysis:
+      dataset: 4_multiple_time_steps_per_year
+    solver:
+      name: gurobi
+      solver_options:
+        Method: 2
+        BarHomogeneous: 1
+        DualReductions: 0
+        Threads: 128
+        Crossover: 0
+      save_duals: false
+      use_scaling: true
+      run_diagnostics: true
+      scaling_include_rhs: true
 
 The available settings are listed in :ref:`configuration.analysis` and
 :ref:`configuration.solver`.
@@ -97,18 +91,14 @@ Exercise
       :ref:`configuration.solver`. The setting is ``save_duals`` and it takes
       a boolean.
 
-   b. Add it to ``config.json``:
+   b. Add it to ``config.yaml``:
 
-      .. code:: json
+      .. code:: yaml
 
-         {
-           "analysis": {
-             "dataset": "5_multiple_time_steps_per_year"
-           },
-           "solver": {
-             "save_duals": true
-           }
-         }
+         analysis:
+           dataset: 4_multiple_time_steps_per_year
+         solver:
+           save_duals: true
 
    c. Re-run the model and load the results as in
       :ref:`t_analyze.t_analyze`. ``r.get_component_names('dual')`` now returns
@@ -124,40 +114,34 @@ Exercise
 
 .. _t_configuration.system:
 
-Modifying system.json
+Modifying system.yaml
 =====================
 
-``system.json`` is a single dictionary describing the energy system. It lists
+``system.yaml`` is a single dictionary describing the energy system. It lists
 the technologies and nodes to include, and controls the temporal resolution.
-The file shipped with ``5_multiple_time_steps_per_year`` is:
+The file shipped with ``4_multiple_time_steps_per_year`` is:
 
-.. code:: json
+.. code:: yaml
 
-    {
-        "set_conversion_technologies": [
-            "natural_gas_boiler",
-            "photovoltaics",
-            "heat_pump"
-        ],
-        "set_storage_technologies": [
-            "natural_gas_storage"
-        ],
-        "set_transport_technologies": [
-            "natural_gas_pipeline"
-        ],
-        "set_nodes": [
-            "DE",
-            "CH"
-        ],
-        "reference_year": 2023,
-        "unaggregated_time_steps_per_year": 96,
-        "aggregated_time_steps_per_year": 96,
-        "conduct_time_series_aggregation": false,
-        "optimized_years": 3,
-        "interval_between_years": 1,
-        "use_rolling_horizon": false,
-        "years_in_rolling_horizon": 1
-    }
+    set_conversion_technologies:
+      - natural_gas_boiler
+      - photovoltaics
+      - heat_pump
+    set_storage_technologies:
+      - natural_gas_storage
+    set_transport_technologies:
+      - natural_gas_pipeline
+    set_nodes:
+      - DE
+      - CH
+    reference_year: 2023
+    unaggregated_time_steps_per_year: 96
+    aggregated_time_steps_per_year: 96
+    conduct_time_series_aggregation: false
+    optimized_years: 3
+    interval_between_years: 1
+    use_rolling_horizon: false
+    years_in_rolling_horizon: 1
 
 Only technologies listed here enter the optimization, even if more are defined
 in ``set_technologies``. The same is true for nodes. The full list of settings
@@ -173,7 +157,7 @@ you changed in the first.
 1. **Remove the natural gas boiler from the system. What heat pump capacity is
    then installed in Switzerland in 2023?**
 
-   a. In ``system.json``, delete ``"natural_gas_boiler"`` from
+   a. In ``system.yaml``, delete ``natural_gas_boiler`` from
       ``set_conversion_technologies``. Save the file.
    b. Run the model (:ref:`running.run_model`).
    c. Read the heat pump capacity, either in the visualization platform or with
@@ -186,8 +170,8 @@ you changed in the first.
    representative time steps. What is the new heat pump capacity in
    Switzerland in 2023, and how did the heat demand profile change?**
 
-   a. In ``system.json``, set ``"conduct_time_series_aggregation": true`` and
-      ``"aggregated_time_steps_per_year": 10``. Save the file.
+   a. In ``system.yaml``, set ``conduct_time_series_aggregation: true`` and
+      ``aggregated_time_steps_per_year: 10``. Save the file.
    b. Run the model.
    c. Read the heat pump capacity, and look at the hourly energy balance to see
       the demand profile.

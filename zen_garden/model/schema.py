@@ -9,6 +9,7 @@ from zen_garden.config import Config
 from zen_garden.elements import ELEMENT_TYPE_CLASSES
 from zen_garden.elements.energy_system import EnergySystem
 from zen_garden.model.element import Element
+from zen_garden.workflow_step import workflow_step
 
 T = TypeVar("T", bound=Element)
 
@@ -16,6 +17,7 @@ T = TypeVar("T", bound=Element)
 class ModelSchema:
     """Describe the complete element and index structure of a model."""
 
+    @workflow_step(order=2, phase="Setup", label="Build model schema (blueprint only)")
     def __init__(self, config: Config):
         """Construct a model blueprint using configuration only."""
         self.config = config

@@ -141,7 +141,7 @@ you like. The important settings are:
   ``uv`` environment. The interpreter path can be obtained by running
   ``uv run python -c "import sys; print(sys.executable)"`` from the ZEN-garden
   repository.
-* Set the "Working directory" to the path that contains the ``config.json``.
+* Set the "Working directory" to the path that contains the ``config.yaml``.
   This directory will also be used to save the results.
 
 In the end, your configuration to run ZEN-garden as a module should look
@@ -215,7 +215,7 @@ executes ``zen_garden`` directly with the same environment that is used by
 To debug ZEN-garden, select ``Python Debugger: Debug using launch.json`` from
 the debug menu as shown in the figure. Note that no command-line flags can be
 entered with this configuration. The dataset must therefore be specified in
-the ``config.json`` file located in the dataset folder.
+the ``config.yaml`` file located in the dataset folder.
 
 .. image:: ../figures/developer_guide/VSCode_Debug.png
     :alt: VS Code Debug

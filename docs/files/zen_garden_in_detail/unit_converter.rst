@@ -1,8 +1,8 @@
 .. _t_units.t_units:
 
-################################
+###############################
 Unit conversion and consistency
-################################
+###############################
 
 ZEN-garden models describe physical processes, where numerical values are
 associated with physical units. Input data may use different units for the

@@ -153,7 +153,7 @@ vector in the scaling process by setting ``scaling_include_rhs``: ``True``.
 **When not to use scaling?**
 
 If the optimization problem already has a good numerical range (which can be 
-checked with ``"solver": {"analyze_numerics": true}``), scaling might not be 
+checked with ``analyze_numerics: true`` in the ``solver`` section), scaling might not be
 necessary. Also if the optimization problem already solves fast, the time 
 necessary for scaling the problem might outweigh the time savings from solving 
 the scaled optimization problem. As a rule of thumb, if the time to solve the 
