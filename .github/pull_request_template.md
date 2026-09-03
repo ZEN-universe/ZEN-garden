@@ -44,7 +44,7 @@ Please check all items that apply. If an item is not applicable, please remove i
 ### Code changes
 - [ ] If the name of an existing parameter is changed, both the new and old names are added to `PARAMETER_CHANGE_LOG` in `zen_garden/preprocess/data_input.py`.
 - [ ] If a new parameter is added, the default value (0, 1, or `np.inf` allowed) and a parameter with the same unit are added to `PARAMETER_CHANGE_LOG` in `zen_garden/preprocess/data_input.py`.
-- [ ] If the name of an existing variable is changed and the variable is used in the visualization platform, the name change is added to `variable_versions` in the [ZEN-temple code](https://github.com/ZEN-universe/ZEN-temple/blob/main/src/zen_temple/utils.py).
+- [ ] If the name of an existing variable is changed and the variable is used in the visualization platform, the name change is added to `variable_versions` in the [ZEN-temple code](https://github.com/ZEN-universe/ZEN-temple/blob/main/zen_temple/versions.py).
 
 
 ### Documentation
