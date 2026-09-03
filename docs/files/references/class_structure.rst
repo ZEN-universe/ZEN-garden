@@ -11,59 +11,78 @@ Class Structure
    ---
    classDiagram
        class Element {
-           +type1 attribute1
-           +returntype1 method1()
+           +own_parameters
+           +own_sets
+           +always_construct
+           +_initialize()
+           +prepare_input_data()
+           +finalize_input_data()
        }
 
        class Technology {
-           +store_input_data()
+           +prepare_input_data()
        }
-       class Carrier {
-           +store_input_data()
+       class Carrier
+       class EnergySystem {
+           +_initialize()
+           +finalize_input_data()
        }
        class ConversionTechnology {
-           +store_input_data()
+           +_initialize()
        }
        class StorageTechnology {
-           +store_input_data()
+           +_initialize()
        }
        class RetrofittingTechnology {
-           +store_input_data()
+           +prepare_input_data()
        }
        class TransportTechnology {
-           +store_input_data()
+           +_initialize()
        }
 
 
        Element <|-- Technology
        Element <|-- Carrier
+       Element <|-- EnergySystem
        Technology <|-- ConversionTechnology
        Technology <|-- StorageTechnology
        Technology <|-- TransportTechnology
        ConversionTechnology <|-- RetrofittingTechnology
+
+Every ``Element`` subclass declares which sets, parameters, variables,
+constraints, and expressions belong to it through class attributes
+(``own_sets``, ``own_parameters``, ``variables``, ``constraints``,
+``expressions``); see :ref:`adding_elements.structure`. Only the methods
+actually overridden by a subclass are listed on it above; the rest are
+inherited unchanged from ``Element``.
 
 
 .. mermaid::
    :zoom:
 
    ---
-   title: Rules
+   title: Model Construction
    ---
    classDiagram
-       class GenericRule
-       class CarrierRules
-       class TechnologyRules
-       class ConversionTechnologyRules
-       class StorageTechnologyRules
-       class RetrofittingTechnologyRules
-       class TransportTechnologyRules
+       class ModelConstructor
+       class ElementRegistry
+       class OptimizationModel
+       class ModelSchema
+       class NetworkTopology
+       class TimeStepsDicts
 
-       GenericRule <|-- CarrierRules
-       GenericRule <|-- TechnologyRules
-       GenericRule <|-- ConversionTechnologyRules
-       GenericRule <|-- StorageTechnologyRules
-       GenericRule <|-- TransportTechnologyRules
-       GenericRule <|-- RetrofittingTechnologyRules
+       ModelConstructor --> ElementRegistry
+       ModelConstructor --> OptimizationModel
+       ModelConstructor --> ModelSchema
+       ModelConstructor --> NetworkTopology
+       ModelConstructor --> TimeStepsDicts
+
+There is one ``ModelConstructor`` instance per element *type* (not per
+concrete element); it reads that type's declared sets, parameters, variables,
+and constraints off the element class and builds them through the
+collaborators shown above. No subclassing is needed to add a new element
+type.
+
 
 .. mermaid::
    :zoom:
@@ -72,67 +91,95 @@ Class Structure
    title: Default Config
    ---
    classDiagram
-   
-       class Subscriptable
+
+       class ConfigBase
        class Config
-       class System 
+       class System
        class Solver
        class Analysis
        class Subsets
        class HeaderDataInputs
        class TimeSeriesAggregation
 
-       Subscriptable <|-- Config
+       ConfigBase <|-- Config
+       ConfigBase <|-- Analysis
+       ConfigBase <|-- Solver
+       ConfigBase <|-- System
+       ConfigBase <|-- Subsets
+       ConfigBase <|-- HeaderDataInputs
+       ConfigBase <|-- TimeSeriesAggregation
        Config *-- Analysis
-       Config *-- Solver 
-       Config *-- System 
-       Subscriptable <|-- Analysis
-       Subscriptable <|-- TimeSeriesAggregation
-       Subscriptable <|-- Solver
-       Subscriptable <|-- System
-       Subscriptable <|-- HeaderDataInputs
-       Subscriptable <|-- Subsets
+       Config *-- Solver
+       Config *-- System
+       Analysis *-- Subsets
+       Analysis *-- HeaderDataInputs
+       Analysis *-- TimeSeriesAggregation
 
 
 .. mermaid::
    :zoom:
 
    ---
-   title: Components
+   title: Optimization Model
    ---
    classDiagram
-       class Component
-       class ZenIndex
-       class ZenSet
-       class IndexSet
+       class OptimizationModel
+       class Registry
+       class SetRegistry
+       class ParameterRegistry
+       class VariableRegistry
+       class ConstraintRegistry
+       class BaseSet
+       class SimpleSet
+       class IndexedSet
        class DictParameter
-       class Parameter 
-       class Variable 
-       class Constraint
+       class GenericSet
+       class GenericParameter
+       class GenericVariable
+       class GenericConstraint
 
-       Component <|-- IndexSet
-       Component <|-- Parameter
-       Component <|-- Variable
-       Component <|-- Constraint
+       Registry <|-- SetRegistry
+       Registry <|-- ParameterRegistry
+       Registry <|-- VariableRegistry
+       Registry <|-- ConstraintRegistry
+       BaseSet <|-- SimpleSet
+       BaseSet <|-- IndexedSet
+       SetRegistry *-- BaseSet
+       ParameterRegistry *-- DictParameter
+       OptimizationModel *-- SetRegistry
+       OptimizationModel *-- ParameterRegistry
+       OptimizationModel *-- VariableRegistry
+       OptimizationModel *-- ConstraintRegistry
+       GenericSet ..> SetRegistry : build()
+       GenericParameter ..> ParameterRegistry : build()
+       GenericVariable ..> VariableRegistry : build()
+       GenericConstraint ..> ConstraintRegistry : build()
+
+``OptimizationModel`` holds one registry per component kind, each built once
+for the whole model. ``GenericSet``, ``GenericParameter``, ``GenericVariable``,
+and ``GenericConstraint`` are the base classes a developer subclasses to add a
+new component (see :ref:`adding_elements.structure` and :ref:`linopy.linopy`);
+each subclass's ``build`` method populates the matching registry.
 
 
-.. 
+.. mermaid::
    :zoom:
-
 
    ---
    title: Other Classes
    ---
    classDiagram
-       class ISSConstraintParser
+       class IISConstraintParser
        class ScenarioDict
        class InputDataChecks
        class StringUtils
        class ScenarioUtils
        class OptimizationError
-       class DataInput
+       class ElementDataLoader
        class TimeSeriesAggregation
-       class TimeSteps
-       class EnergySystem
-       class UnitHandling 
+       class UnitConverter
        class Scaling
+       class DatasetPathResolver
+       class ModelConstructionService
+       class ElementFactory
+       class MultiIndexHelper

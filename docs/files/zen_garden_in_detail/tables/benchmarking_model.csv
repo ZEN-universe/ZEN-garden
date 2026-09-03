@@ -1,0 +1,8 @@
+Model;Type;#Variables ;#Constraints;RHS range;LHS range
+PI_small;only electricity and heating sector, no strong year coupling through expansion constraints;1092999;1636234;9;9
+WES_nofe;whole-energy system, year coupling through expansion constraints for each node individually (most complex case study);4191392;7039066;11;8
+WES_nofe_PI;whole-energy system, year coupling through expansion constraints for each node individually (most complex case study);;;11;8
+WES_nofe_PC;whole-energy system, year coupling through expansion constraints for each node individually (most complex case study);;;11;8
+NoErr;whole-energy system, year coupling through expansion constraints for all nodes together;4196124;7017047;12;11
+Snapshot ;single-year optimization;1834197;1636205;7;8
+Operation;operational optimization;4911453;1420119;9;8

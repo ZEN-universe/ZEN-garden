@@ -52,7 +52,7 @@ All contributions follow the **fork-and-pull request workflow**.
     git checkout -b <feature_name>
 
 4. Implement your changes.
-5. Run formatting, linting, and tests locally.
+5. Run formatting, linting, type checking, and tests locally.
 6. Submit a **Pull Request (PR)** from your fork to the upstream repository.
 
 .. note::
@@ -135,6 +135,23 @@ Some issues can be fixed automatically:
 
     ruff check . --fix
 
+
+.. _contributing.type_checking:
+
+Type Checking
+-------------
+
+All code must pass type checking using *Mypy*.
+
+Run the following command in the repository root:
+
+.. code:: shell
+
+    mypy .
+
+Please resolve all reported issues before submitting a pull request.
+
+
 .. _contributing.pre_commit_hooks:
 
 Pre-commit Hooks
@@ -148,8 +165,8 @@ properly. To setup pre-commit properly execute the following commands once:
 
 .. code:: shell
 
-    pip install -e[dev]
-    pre-commit install
+    uv sync --extra dev
+    uv run pre-commit install
 
 Afterwards, whenever you run git commit, *Ruff* and *Black* are executed.
 
@@ -180,7 +197,8 @@ The following rules apply:
 
 4. **Code quality checks must pass**
 
-   The **Black** formatter and **Ruff** linter must not report any issues.
+   The **Black** formatter, **Ruff** linter, and **Mypy** type checker must not
+   report any issues.
 
 
 .. _contributing.merge:

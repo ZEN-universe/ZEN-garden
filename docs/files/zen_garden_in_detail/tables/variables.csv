@@ -1,0 +1,40 @@
+Variable Name;Symbol;Time Step Type;Description;Unit Category
+``cost_capex_yearly_total``;:math:`C^{\mathrm{cap}}_{y}`;``set_years``;total capex for installing all technologies in all locations at all times in period y;"{""money"": 1}"
+``cost_capex_yearly``;:math:`C^{\mathrm{cap,ann}}_{h,p,y}`;``set_years``;annual capex for having technology h at location p;"{""money"": 1}"
+``cost_capex_overnight``;:math:`C^{\mathrm{cap,overnight}}_{h,p,y}`;``set_years``;capex for building technology h at location p and period y;"{""money"": 1}"
+``cost_carrier``;:math:`C^{\mathrm{carrier}}_{c,n,t}`;``set_time_steps_operation``;node- and time-dependent carrier cost due to import and export;{"money": 1, "time": -1}
+``cost_carrier_total``;:math:`C^{\mathrm{carrier}}_{y}`;``set_years``;total carrier cost due to import and export;{"money": 1}
+``cost_carbon_emissions_total``;:math:`C^{\mathrm{CO_2}}_{y}`;``set_years``;total cost of carbon emissions of energy system;{"money": 1}
+``net_present_cost``;:math:`C^{\mathrm{NPC}}_{y}`;``set_years``;net_present_cost of energy system;{"money": 1}
+``cost_opex_yearly_total``;:math:`C^{\mathrm{op}}_{y}`;``set_years``;total opex all technologies and locations in year y;"{""money"": 1}"
+``cost_opex_yearly``;:math:`C^{\mathrm{op,ann}}_{h,p,y}`;``set_years``;yearly opex for operating technology h at location p and year y;"{""money"": 1}"
+``cost_opex_variable``;:math:`C^{\mathrm{op,var}}_{h,p,t}`;``set_time_steps_operation``;opex for operating technology h at location p and operational time step t;"{""money"": 1, ""time"": -1}"
+``cost_shed_demand``;:math:`C^{\mathrm{shed}}_{c,n,t}`;``set_time_steps_operation``;cost shed carrier demand;{"money": 1, "time": -1}
+``cost_total``;:math:`C^{\mathrm{total}}_{y}`;``set_years``;total cost of energy system; {"money": 1}
+``capacity_addition``;:math:`\Delta K_{h,p,y}`;``set_years``;size of built technology h (invested capacity after construction) at location p and period y;"{""energy_quantity"": 1, ""time"": -1}"
+``capacity_investment``;:math:`\Delta K^{\mathrm{inv}}_{h,p,y}`;``set_years``;size of invested technology h at location p and period y;"{""energy_quantity"": 1, ""time"": -1}"
+``flow_storage_charge``;:math:`F^{\mathrm{ch}}_{h,n,t}`;``set_time_steps_operation``;carrier flow into a storage technology;{"energy_quantity": 1, "time": -1}
+``flow_conversion_input``;:math:`F^{\mathrm{conv,in}}_{h,c^{\mathrm{in}},n,t}`;``set_time_steps_operation``;Carrier input of conversion technologies;{"energy_quantity": 1, "time": -1}
+``flow_conversion_output``;:math:`F^{\mathrm{conv,out}}_{h,c^{\mathrm{out}},n,t}`;``set_time_steps_operation``;Carrier output of conversion technologies;{"energy_quantity": 1, "time": -1}
+``flow_storage_discharge``;:math:`F^{\mathrm{dis}}_{h,n,t}`;``set_time_steps_operation``;carrier flow out of a storage technology;{"energy_quantity": 1, "time": -1}
+``flow_export``;:math:`F^{\mathrm{exp}}_{c,n,t}`;``set_time_steps_operation``;node- and time-dependent carrier export from the grid;{"energy_quantity": 1, "time": -1}
+``flow_import``;:math:`F^{\mathrm{imp}}_{c,n,t}`;``set_time_steps_operation``;node- and time-dependent carrier import from the grid;{"energy_quantity": 1, "time": -1}
+``flow_transport_loss``;:math:`F^{\mathrm{loss}}_{h,e,t}`;``set_time_steps_operation``;carrier flow through a transport technology;{"energy_quantity": 1, "time": -1}
+``shed_demand``;:math:`F^{\mathrm{shed}}_{c,n,t}`;``set_time_steps_operation``;shed carrier demand;{"energy_quantity": 1, "time": -1}
+``flow_storage_spillage``;:math:`F^{\mathrm{spill}}_{h,n,t}`;``set_time_steps_operation``;energy spillage for storage technology;{"energy_quantity": 1, "time": -1}
+``flow_transport``;:math:`F^{\mathrm{trans}}_{h,e,t}`;``set_time_steps_operation``;carrier flow through a transport technology;{"energy_quantity": 1, "time": -1}
+``capacity``;:math:`K_{h,p,y}`;``set_years``;size of installed technology h at location p and period y;"{""energy_quantity"": 1, ""time"": -1}"
+``capacity_on_off_helper_var``;:math:`\widehat{K}_{h,p,t}`;``set_time_steps_operation``;Helper variable that substitutes the product of capacity and tech_on_var;"{""energy_quantity"": 1, ""time"": -1}"
+``capacity_previous``;:math:`K^{\mathrm{prev}}_{h,p,y}`;``set_years``;size of installed technology h at location p before additions in period y;"{""energy_quantity"": 1, ""time"": -1}"
+``carbon_emissions_annual``;:math:`M_{y}`;``set_years``;annual carbon emissions of energy system;{"emissions": 1}
+``carbon_emissions_annual_overshoot``;:math:`M^{\mathrm{ann,over}}_{y}`;``set_years``;overshoot of the annual carbon emissions limit of energy system;{"emissions": 1}
+``carbon_emissions_budget_overshoot``;:math:`M^{\mathrm{bud,over}}_{y}`;``set_years``;overshoot carbon emissions of energy system at the end of the time horizon;{"emissions": 1}
+``carbon_emissions_carrier``;:math:`M^{\mathrm{carrier}}_{c,n,t}`;``set_time_steps_operation``;carbon emissions of importing and exporting carriers;{"emissions": 1, "time": -1}
+``carbon_emissions_carrier_total``;:math:`M^{\mathrm{carrier}}_{y}`;``set_years``;total carbon emissions of importing and exporting carriers;{"emissions": 1}
+``carbon_emissions_cumulative``;:math:`M^{\mathrm{cum}}_{y}`;``set_years``;cumulative carbon emissions of energy system over time for each year;{"emissions": 1}
+``carbon_emissions_technology``;:math:`M^{\mathrm{tech}}_{h,p,t}`;``set_time_steps_operation``;carbon emissions for operating technology h at location p and time t;"{""emissions"": 1, ""time"": -1}"
+``carbon_emissions_technology_total``;:math:`M^{\mathrm{tech}}_{y}`;``set_years``;total carbon emissions for operating technology at location p and period y;"{""emissions"": 1}"
+``storage_level``;:math:`S^{\mathrm{level}}_{h,n,\tilde{t}}`;``set_time_steps_storage``;storage level of storage technology on node in each storage time step;{"energy_quantity": 1}
+``charge_storage_binary``;:math:`z^{\mathrm{ch}}_{h,n,t}`;``set_time_steps_operation``;binary variable indicating whether the storage technology is in charging mode (1) or discharging mode (0);{}
+``technology_installation``;:math:`z^{\mathrm{install}}_{h,p,y}`;``set_years``;binary variable which equals 1 if technology h is installed at location p and period y, else 0;{}
+``tech_on_var``;:math:`z^{\mathrm{on}}_{h,p,t}`;``set_time_steps_operation``;Binary variable which equals 1 when technology h is switched on at location p and operational time step t, else 0;{}

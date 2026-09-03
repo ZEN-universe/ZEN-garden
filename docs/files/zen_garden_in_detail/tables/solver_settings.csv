@@ -21,4 +21,3 @@ Key;Type;Default Value;Description
 ``rounding_decimal_points_capacity``;``int``;``4``;specify the rounding decimal points for capacities value if ``round_parameters`` is ``True``
 ``rounding_decimal_points_tsa``;``int``;``4``;specify the rounding decimal points used in the timeseries aggregation if ``round_parameters`` is ``True``
 ``rounding_decimal_points_units``;``int``;``6``;specify the rounding decimal points for the unit conversions
-``linear_regression_check``;``dict[str, float]``;``{'eps_intercept': 0.1, 'epsRvalue': 1 - (1e-5)}``; settings of the linear regression checking if a piecewise affine linearization is needed

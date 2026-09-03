@@ -26,14 +26,17 @@ class Event(Enum):
 
         The event can be triggered in the core as:
 
-        >>> EventPublisher.trigger(Event.after_model_construction, any_arg)
-
-
-    Todo:
-        - define event locations in core
+        >>> EventPublisher.trigger(Event.after_model_schema_creation, any_arg)
 
     """
 
+    #: Fired once the :class:`~zen_garden.model.schema.ModelSchema` has been
+    #: created and plugins have been registered, before any scenario is run.
+    #: Observers receive the ``ModelSchema`` instance and may modify it (add
+    #: elements, parameters, variables, constraints).
+    after_model_schema_creation = auto()
+
+    #: Placeholder events used only by the test suite and the plugin template.
     test_event1 = auto()
     test_event2 = auto()
 

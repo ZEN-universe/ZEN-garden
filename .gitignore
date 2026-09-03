@@ -2,9 +2,11 @@
 ##############
 /.idea
 /.vscode
+/.zed
 /data/*/
 /data/*
 /docs/files/api/generated/*
+/docs/files/references/_generated/*
 !/data/.gitkeep
 outputs*/
 zen_garden_env/
@@ -15,8 +17,7 @@ zen_garden_env/
 .coverage
 *runscript.py
 *test.py
-/tests/testcases/test_1k__operation/*
-/tests/testcases/test_7b__operation/*
+*__operation*
 
 # pytest monitor
 .pymon

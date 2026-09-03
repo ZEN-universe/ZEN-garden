@@ -1,0 +1,41 @@
+import numpy as np
+
+from zen_garden.model.component_types.constraint import GenericConstraint
+
+
+class CarbonEmissionsBudgetOvershootConstraint(GenericConstraint):
+    @classmethod
+    def build(cls, model_constructor):
+        """Summary:
+        Enforces zero budget overshoot if price for budget overshoot is inf.
+
+        ensures carbon emissions overshoot of carbon budget is zero when
+        carbon emissions price for budget overshoot is inf.
+
+        Formulation:
+
+        .. math::
+            \\text{if } \\pi^{\\mathrm{CO_2,bud}} =\\infty
+            \\text{, then: }M_y^{\\mathrm{bud,over}} = 0
+
+        Notation:
+
+        :math:`M_y^{\\mathrm{bud,over}}`: overshoot carbon emissions of energy system at
+        the end of the time horizon
+        :math:`\\pi^{\\mathrm{CO_2,bud}}`: carbon price for budget overshoot
+        """
+        if (
+            model_constructor.optimization_model.parameters.price_carbon_emissions_budget_overshoot
+            == np.inf
+        ):
+            lhs = model_constructor.optimization_model.variables[
+                "carbon_emissions_budget_overshoot"
+            ]
+            rhs = 0
+            constraints = lhs == rhs
+        else:
+            constraints = None
+
+        model_constructor.optimization_model.add_constraint(
+            "constraint_carbon_emissions_budget_overshoot", constraints
+        )
