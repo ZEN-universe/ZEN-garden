@@ -3,10 +3,52 @@
 This file gets automatically updated in ZEN-garden's continuous integration 
 procedures. Do not edit the file manually.
 
-## [Unversioned Changes] - 2026-08-11 
+## [v3.0.0] - 2026-09-03 
+
+### New Features ✨
+- Add legacy scenario readers for results versions v1, v2, and v3 to preserve backward compatibility with results produced by earlier ZEN-garden versions. [[🔀 PR #1326](https://github.com/ZEN-universe/ZEN-garden/pull/1326) @jacob-mannhardt]
+- Add Leontief input-output tables for sectoral cost and emission allocation, exposed as `Results.get_sectoral_costs()` and `get_sectoral_emissions()`, with on-disk caching and optional spatial resolution. [[🔀 PR #1326](https://github.com/ZEN-universe/ZEN-garden/pull/1326) @jacob-mannhardt]
+- Allow config, system, scenario, attribute, and unit input files to be specified as YAML in addition to JSON, improving readability and enabling comments. [[🔀 PR #1326](https://github.com/ZEN-universe/ZEN-garden/pull/1326) @jacob-mannhardt]
+- Add a plugin event fired after model-schema creation so that plugins can register additional parameters, variables, expressions, and constraints before the model is built. [[🔀 PR #1326](https://github.com/ZEN-universe/ZEN-garden/pull/1326) @jacob-mannhardt]
+- Set up `uv` to manage Python dependencies, making it easier to keep environments consistent across branches with differing dependency versions. [[🔀 PR #1326](https://github.com/ZEN-universe/ZEN-garden/pull/1326) @jacob-mannhardt]
+- Speed up and reduce the memory footprint of results reading by loading index names without reading all data, caching xarray datasets, skipping re-validation of pydantic JSON files, and constructing `get_full_ts` dataframes more efficiently. [[🔀 PR #1326](https://github.com/ZEN-universe/ZEN-garden/pull/1326) @jacob-mannhardt]
+- Add the missing input-data header for retrofitting technologies. [[🔀 PR #1326](https://github.com/ZEN-universe/ZEN-garden/pull/1326) @jacob-mannhardt]
+
+### Bug Fixes 🐛
+- Adjust the technology diffusion-limit constraint to exclude the target technology from its own unbounded market-share allowance, deriving the allowance only from other technologies in the same class with the same reference carrier. [[🔀 PR #1326](https://github.com/ZEN-universe/ZEN-garden/pull/1326) @jacob-mannhardt]
+- Preserve indexed attribute dimensions and resolve fallback units consistently, preventing single-directed transport data from being squeezed incorrectly during downstream processing. [[🔀 PR #1326](https://github.com/ZEN-universe/ZEN-garden/pull/1326) @jacob-mannhardt]
+- Correct a working-directory-dependent dataset-name bug in the solution loader, where a multi-segment relative path on Windows leaked into and duplicated part of the Leontief cache filename. [[🔀 PR #1326](https://github.com/ZEN-universe/ZEN-garden/pull/1326) @jacob-mannhardt]
+- Handle pandas `Series` and empty dataframes correctly in `get_full_ts()` and stop it from overwriting the index. [[🔀 PR #1326](https://github.com/ZEN-universe/ZEN-garden/pull/1326) @jacob-mannhardt]
+- Fix results handling for solutions run with rolling horizon enabled. [[🔀 PR #1326](https://github.com/ZEN-universe/ZEN-garden/pull/1326) @jacob-mannhardt]
+- Resolve documentation build warnings and errors, correcting broken cross-references, tutorial structure, heading formatting, and outdated dataset example paths. [[🔀 PR #1326](https://github.com/ZEN-universe/ZEN-garden/pull/1326) @jacob-mannhardt]
+- Fix remaining mypy type errors across the codebase to allow stricter type checking going forward. [[🔀 PR #1326](https://github.com/ZEN-universe/ZEN-garden/pull/1326) @jacob-mannhardt]
+
+### Documentation Changes 📝
+- Rewrite the mathematical formulation around the current constraint docstrings and updated notation, add unique labels to automatically numbered equations, fix cross-references, and document the zero-discount annuity case. [[🔀 PR #1326](https://github.com/ZEN-universe/ZEN-garden/pull/1326) @jacob-mannhardt]
+- Restructure the tutorials into a linear progression, add results-API-reference, troubleshooting, and time-representation pages, move the scaling and scenario-tool guides into "ZEN-garden in detail", and remove the PWA (nonlinear CAPEX) documentation and superseded legacy tutorials. [[🔀 PR #1326](https://github.com/ZEN-universe/ZEN-garden/pull/1326) @jacob-mannhardt]
+- Refresh and simplify the dataset documentation and dataset-creation tutorial, removing the obsolete piecewise-affine nonlinear-CAPEX example and adding missing parameter definitions to the example datasets. [[🔀 PR #1326](https://github.com/ZEN-universe/ZEN-garden/pull/1326) @jacob-mannhardt]
+- Update installation, quick-start, and reference documentation to describe `uv`-based environment setup and the separately installable ZEN-temple visualization package. [[🔀 PR #1326](https://github.com/ZEN-universe/ZEN-garden/pull/1326) @jacob-mannhardt]
+- Align API reference, module paths, and docstrings across the documentation with the refactored core module structure. [[🔀 PR #1326](https://github.com/ZEN-universe/ZEN-garden/pull/1326) @jacob-mannhardt]
 
 ### Maintenance Tasks 🧹
+- Reorganize the codebase into a more logical, element-based folder structure, grouping constraints, variables, and parameters by element type and introducing `workflow/` and restructured `utils/` subpackages. [[🔀 PR #1326](https://github.com/ZEN-universe/ZEN-garden/pull/1326) @jacob-mannhardt]
+- Update the `ruff` and `mypy` tooling versions and add `pandas-stubs` and a `basedpyright` configuration for stricter development-time type checking. [[🔀 PR #1326](https://github.com/ZEN-universe/ZEN-garden/pull/1326) @jacob-mannhardt]
+- Add `netCDF4` as a runtime dependency to support the new results storage format. [[🔀 PR #1326](https://github.com/ZEN-universe/ZEN-garden/pull/1326) @jacob-mannhardt]
+- Migrate remaining JSON test fixtures (e.g., `test_1b`) to YAML and add missing default parameter values and units to test fixtures. [[🔀 PR #1326](https://github.com/ZEN-universe/ZEN-garden/pull/1326) @jacob-mannhardt]
+- Expand and clean up test coverage, including a second technology in the diffusion-limit regression case, a fix for degeneracy in `test_1g`, a new `test_1j`, and removal of the obsolete `test_7b` dataset and the operation-only CLI module. [[🔀 PR #1326](https://github.com/ZEN-universe/ZEN-garden/pull/1326) @jacob-mannhardt]
+- Remove unused code, including the obsolete `postprocess/results/cache.py` module and the stale piecewise-constraint wrapper. [[🔀 PR #1326](https://github.com/ZEN-universe/ZEN-garden/pull/1326) @jacob-mannhardt]
+- Upgrade to TSAM v4 [[🔀 PR #1326](https://github.com/ZEN-universe/ZEN-garden/pull/1326) @jacob-mannhardt]
 - move code from results class to compute energy balance dataframes to ZEN-temple. [[🔀 PR #1281](https://github.com/ZEN-universe/ZEN-garden/pull/1281) @manud99]
+
+### BREAKING CHANGES ⚠️
+- Store optimization results as NetCDF files. Results are now written and read as xarray datasets through `netCDF4` instead of the previous per-component format, which changes the output-folder layout and requires re-running models to obtain readable results. [[🔀 PR #1326](https://github.com/ZEN-universe/ZEN-garden/pull/1326) @jacob-mannhardt]
+- Rewrite the solution loader and `Results` API. `Results.get_df()` is renamed to `get_unprocessed_result()`, `Results.solution_loader.scenarios` becomes `Results.scenarios`, the `get_total_per_scenario`/`get_full_ts_per_scenario` helpers are removed, and the remaining methods return all scenarios when no `scenario_name` is passed. [[🔀 PR #1326](https://github.com/ZEN-universe/ZEN-garden/pull/1326) @jacob-mannhardt]
+- Refactor the model-construction core around a single `ModelSchema` source of truth. `EnergySystem` becomes a subclass of `Element`, `ElementRegistry`/`ElementFactory` are split, constraints are built in the element classes rather than per-element `ModelConstructor` objects, `create_custom_set` no longer takes a class, `config` is removed from `ServiceContainer`, and input validation moves from `InputDataChecks` into the config layer. [[🔀 PR #1326](https://github.com/ZEN-universe/ZEN-garden/pull/1326) @jacob-mannhardt]
+- Convert all model input files from JSON to YAML. `config`, `system`, `scenario`, `attributes`, `base_units`, and `parameter_interpolation_off` files can now be written as YAML; the default config file becomes `config.yaml` (JSON now needs an explicit CLI flag), support for `base_units.csv` and `scenario.py` files is dropped, and comments become possible in input files. [[🔀 PR #1326](https://github.com/ZEN-universe/ZEN-garden/pull/1326) @jacob-mannhardt]
+- Remove the operations wrapper, which is moved to a plugin, and drop support for the old `__main__.py` entry point in favor of `runner.py` and a new package entry point. [[🔀 PR #1326](https://github.com/ZEN-universe/ZEN-garden/pull/1326) @jacob-mannhardt]
+- Remove the deprecated `time_steps` argument from `DataInput.extract_input_data`. Time-step classification is now handled automatically via `index_sets`. [[🔀 PR #1326](https://github.com/ZEN-universe/ZEN-garden/pull/1326) @jacob-mannhardt]
+- Move the visualization CLI to the separately installable ZEN-temple package. The bundled `zen-visualization` entry point and `zen-temple` dependency are removed from ZEN-garden. [[🔀 PR #1326](https://github.com/ZEN-universe/ZEN-garden/pull/1326) @jacob-mannhardt]
+- Removed PWA for nonlinear capex approximation. [[🔀 PR #1326](https://github.com/ZEN-universe/ZEN-garden/pull/1326) @jacob-mannhardt]
 
 ## [v2.13.0] - 2026-07-01 
 
