@@ -1,10 +1,10 @@
 """Abstract class defining a standard Element."""
 
+import logging
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, ClassVar
 
 import pandas as pd
-import logging
 
 from zen_garden.input.attribute_data_loader import AttributeDataLoader
 from zen_garden.input.element_data_loader import ElementDataLoader

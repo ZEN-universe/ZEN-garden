@@ -574,9 +574,12 @@ class Scenario:
                 ]
                 df_temp = df_temp.interpolate(method="linear", axis=1)
                 output_df = pd.concat(
-                    [output_df, 
-                     df_temp.loc[:, tstart_reconstructed:first_valid_timestep-1]]
-                    , axis=1).sort_index(axis=1)
+                    [
+                        output_df,
+                        df_temp.loc[:, tstart_reconstructed : first_valid_timestep - 1],
+                    ],
+                    axis=1,
+                ).sort_index(axis=1)
 
             output_df = output_df.apply(
                 lambda row: np.interp(
