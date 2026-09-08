@@ -523,7 +523,6 @@ class Scenario:
                 )
                 values[time_steps_year] = values[time_steps_year] / annuity[year_temp]
 
-        # try:
         if timestep_type is TimestepType.operational:
             if select_year_time_steps:
                 sequence_timesteps = sequence_timesteps[
@@ -574,9 +573,13 @@ class Scenario:
                     :, sequence_timesteps[first_valid_timestep]
                 ]
                 df_temp = df_temp.interpolate(method="linear", axis=1)
-                output_df.loc[
-                    :, first_occurrences[tstart] : last_occurrences[tstart]
-                ] = df_temp.loc[:, tstart_reconstructed:first_valid_timestep]
+                output_df = pd.concat(
+                    [
+                        output_df,
+                        df_temp.loc[:, tstart_reconstructed : first_valid_timestep - 1],
+                    ],
+                    axis=1,
+                ).sort_index(axis=1)
 
             output_df = output_df.apply(
                 lambda row: np.interp(

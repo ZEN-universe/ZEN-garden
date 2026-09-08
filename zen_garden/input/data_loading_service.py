@@ -1,5 +1,7 @@
 """Dependency-ordered parameter loading across the model schema."""
 
+import logging
+
 from zen_garden.elements.energy_system import EnergySystem
 from zen_garden.model.component_types.parameter import GenericParameter
 from zen_garden.model.schema import ModelSchema
@@ -31,6 +33,7 @@ class DataLoadingService:
             element.prepare_input_data()
 
         for parameter in self._parameter_order():
+            logging.info(f"Loading parameter {parameter.name}...")
             for element in elements:
                 if parameter in element.parameters:
                     parameter.store_input_data(element)

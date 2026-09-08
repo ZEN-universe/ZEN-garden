@@ -112,11 +112,12 @@ class ConfigBase(BaseModel):
                 schema validation.
         """
         path = Path(path)
-        if not path.exists():
+        path_json = path.with_suffix(".json")
+        if not path.exists() and not path_json.exists():
             raise FileNotFoundError(
                 f"File not found: '{path}'. Expected a JSON or YAML configuration file."
             )
-
+        path = path if path.exists() else path_json
         try:
             with path.open("r", encoding="utf-8") as file:
                 if path.suffix.lower() in {".yaml", ".yml"}:

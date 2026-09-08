@@ -1,5 +1,6 @@
 """Abstract class defining a standard Element."""
 
+import logging
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, ClassVar
 
@@ -79,6 +80,7 @@ class Element:
         :param scenario_dict: ScenarioDict object
         :param input_data_checks: InputDataChecks object
         """
+        logging.info(f"Initializing {self.label} {element_name}...")
         # set attributes
         self.name = element_name
         self.model_schema = model_schema
