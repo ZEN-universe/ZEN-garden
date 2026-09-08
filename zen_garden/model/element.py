@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, ClassVar
 
 import pandas as pd
+import logging
 
 from zen_garden.input.attribute_data_loader import AttributeDataLoader
 from zen_garden.input.element_data_loader import ElementDataLoader
@@ -79,6 +80,7 @@ class Element:
         :param scenario_dict: ScenarioDict object
         :param input_data_checks: InputDataChecks object
         """
+        logging.info(f"Initializing {self.label} {element_name}...")
         # set attributes
         self.name = element_name
         self.model_schema = model_schema

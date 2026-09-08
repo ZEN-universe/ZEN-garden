@@ -117,7 +117,7 @@ class ElementFactory:
 
         Args:
             element_class: Class of the element
-            name: Name of the element
+            element_name: Name of the element
         """
         # Injected services: model_schema, network_topology, element_registry,
         # unit_converter, dataset_path_resolver, scenario_dict, input_data_checks,
