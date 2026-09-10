@@ -2,19 +2,18 @@
 
 Provide a brief summary of the changes proposed in this pull request.
 
-Closes # (if applicable).
-
-
 ## Detailed list of changes
 
 List all changes proposed in the pull request in the format `<type>: <description>` (**mandatory**). This list will be used to update the changelog. Valid types include `fix`, `feat`, `docs`, `chore`, and `breaking`.
 
 The first sentence of the description should be written in the imperative tense (e.g., "Add new feature" or "Clean existing code file"). Subsequent sentences may have any format; however, the description must consist of only one paragraph (no newline characters).
 
+Reference any related issues in the applicable detailed description using a [GitHub closing keyword](https://docs.github.com/en/issues/tracking-your-work-with-issues/using-issues/linking-a-pull-request-to-an-issue), such as `Fixes #101`. Place the reference in a new sentence at the end of the description so that the issue is linked in the changelog.
+
 An example list is shown below. Update these sections to match the changes proposed in the pull request.:
 
-- fix: describe bug fixed through the pull-request, including 1-2 additional sentences on the context. Bug fixes automatically lead to patch version bumps.
-- feat: describe new features added to the model. Features include any new functionality that is available to ZEN-garden users. New features automatically lead to minor version bumps.
+- fix: describe bug fixed through the pull request, including 1-2 additional sentences on the context. Bug fixes automatically lead to patch version bumps. Fixes #101.
+- feat: describe new features added to the model. Features include any new functionality that is available to ZEN-garden users. New features automatically lead to minor version bumps. Resolves #102.
 - docs: describe changes to the documentation. This category is for all changes to the documentation or docstrings. Documentation changes do not bump the ZEN-garden version.
 - chore: describe maintenance tasks such as updating tests, improving continuous integration workflows, and refactoring code. These tasks do not change the functionality of ZEN-garden from a user perspective and therefore do not lead to a version bump. They are primarily relevant for developers.
 - breaking: describe breaking changes. Add a 1–2 sentence description of the breaking change. Breaking changes automatically lead to a major version bump.
