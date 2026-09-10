@@ -1,3 +1,5 @@
+from .model.schema import ModelSchema
+from .plugin_system.events import Event, EventPublisher
 from .postprocess.comparisons import (
     compare_configs,
     compare_dicts,
@@ -14,4 +16,7 @@ __all__ = [
     "compare_configs",
     "compare_model_values",
     "compare_dicts",
+    "Event",
+    "EventPublisher",
+    "ModelSchema",
 ]
