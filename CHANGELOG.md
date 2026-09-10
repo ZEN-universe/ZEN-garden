@@ -3,6 +3,11 @@
 This file gets automatically updated in ZEN-garden's continuous integration 
 procedures. Do not edit the file manually.
 
+## [Unversioned Changes] - 2026-09-10 
+
+### Documentation Changes 📝
+- allow issue references to be included in the changelog. Issue references in the detailed list of changes of the pull request description will be automatically processed and linked. [[📋 Issue #1198](https://github.com/ZEN-universe/ZEN-garden/issues/1198)] [[🔀 PR #1330](https://github.com/ZEN-universe/ZEN-garden/pull/1330) @csfunke]
+
 ## [v3.0.1] - 2026-09-08 
 
 ### Bug Fixes 🐛
