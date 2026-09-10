@@ -26,6 +26,11 @@ from datetime import date, datetime
 from pathlib import Path
 from typing import Tuple, TypedDict
 
+ISSUE_REFERENCE_PATTERN = re.compile(
+    r"\b(?:close(?:s|d)?|fix(?:es|ed)?|resolve(?:s|d)?)\s+#(\d+)\b",
+    re.IGNORECASE,
+)
+
 
 class ChangeCategory(TypedDict):
     """A changelog category and its collected entries."""
@@ -86,6 +91,35 @@ def get_zen_garden_version(pyproject_toml_file: Path) -> str:
     return version
 
 
+def get_issue_info(change: str) -> str:
+    """Build changelog links for issues referenced by a change.
+
+    Issue references use GitHub's closing-keyword format, for example
+    ``fixes #123``. Repeated references to the same issue are included only
+    once, in the order in which they occur.
+    """
+    issue_numbers = dict.fromkeys(ISSUE_REFERENCE_PATTERN.findall(change))
+    return " ".join(
+        f"[[📋 Issue #{issue_number}]"
+        f"(https://github.com/ZEN-universe/ZEN-garden/issues/{issue_number})]"
+        for issue_number in issue_numbers
+    )
+
+
+def remove_issue_references(change: str) -> str:
+    """Remove closing-keyword issue references and repair nearby punctuation."""
+    change = ISSUE_REFERENCE_PATTERN.sub("", change)
+    change = re.sub(r"\(\s*\)", "", change)
+    change = re.sub(r"\b(?:and|or)\s*(?=[,.;:!?]|$)", "", change)
+    change = re.sub(r"\s+([,.;:!?])", r"\1", change)
+    change = re.sub(r"([,;:])(?:\s*\1)+", r"\1", change)
+    change = re.sub(r"([,;:])\s*([.!?])", r"\2", change)
+    change = re.sub(r"([.!?])(?:\s*\1)+", r"\1", change)
+    change = re.sub(r"^[\s,;:.]+", "", change)
+    change = re.sub(r"\s{2,}", " ", change)
+    return change.strip()
+
+
 def parse_changes_from_pr_body(pr_body: str, pr_number: str, pr_author: str) -> dict:
     """Parse pull request body and categorize changes.
 
@@ -138,7 +172,12 @@ def parse_changes_from_pr_body(pr_body: str, pr_number: str, pr_author: str) -> 
         m = re.match(r"-\s*(\w+)\s*:\s*(.+)", line)  # search correct format
         if m:
             change_type = m.group(1).lower()
-            description = m.group(2).strip() + f" {pr_info}"
+            description = m.group(2).strip()
+            issue_info = get_issue_info(description)
+            if issue_info:
+                description = remove_issue_references(description)
+                description = f"{description} {issue_info}".strip()
+            description += f" {pr_info}"
             if change_type in categorized_changes:
                 categorized_changes[change_type]["changes"].append(description)
             else:
