@@ -100,7 +100,7 @@ def get_issue_info(change: str) -> str:
     """
     issue_numbers = dict.fromkeys(ISSUE_REFERENCE_PATTERN.findall(change))
     return " ".join(
-        f"[[Issue #{issue_number}]"
+        f"[[📋 Issue #{issue_number}]"
         f"(https://github.com/ZEN-universe/ZEN-garden/issues/{issue_number})]"
         for issue_number in issue_numbers
     )
