@@ -25,9 +25,9 @@ Please check all items that apply. If an item is not applicable, please remove i
 
 ### PR structure
 - [ ] The PR has a descriptive title.
-- [ ] The corresponding issue is linked with `#` in the PR description.
 - [ ] A detailed list of changes is provided.
-
+  - [ ] Changes are categorized into `fix`, `feat`, `docs`, `chore`, or `breaking`.
+  - [ ] Issues are linked with a github keyword plus `#`. 
 
 ### Code quality
 - [ ] Newly introduced dependencies are added to `pyproject.toml`.

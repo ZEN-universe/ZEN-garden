@@ -116,6 +116,7 @@ def remove_issue_references(change: str) -> str:
     change = re.sub(r"([,;:])\s*([.!?])", r"\2", change)
     change = re.sub(r"([.!?])(?:\s*\1)+", r"\1", change)
     change = re.sub(r"^[\s,;:.]+", "", change)
+    change = re.sub(r"\s{2,}", " ", change)
     return change.strip()
 
 
