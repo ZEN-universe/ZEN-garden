@@ -33,6 +33,8 @@ class GenericParameter(ABC):
     set_time_steps: ClassVar[str | None] = None
     input_name: ClassVar[str | None] = None
     input_indices: ClassVar[tuple[str, ...] | None] = None
+    default_value: ClassVar[int | float | str | None] = None
+    default_unit: ClassVar[str | None] = None
     dependencies: ClassVar[list[str]] = []
 
     def __init_subclass__(cls, **kwargs):
@@ -48,6 +50,14 @@ class GenericParameter(ABC):
                 raise TypeError(f"{cls.__name__} must define {attr!r}")
         if not isinstance(cls.dependencies, list):
             raise TypeError(f"{cls.__name__}.dependencies must be a list")
+        if cls.default_value is not None and cls.default_value not in (0, 1, "inf"):
+            raise TypeError(
+                f"{cls.__name__}.default_value must be 0, 1, 'inf', or None"
+            )
+        if (cls.default_value is None) != (cls.default_unit is None):
+            raise TypeError(
+                f"{cls.__name__}.default_value and default_unit must be set together"
+            )
 
     @classmethod
     def build(cls, model_constructor: "ModelConstructor") -> None:
@@ -155,6 +165,8 @@ class GenericParameter(ABC):
             name,
             index_sets=indices,
             unit_category=cls.unit_category,
+            parameter_default_value=cls.default_value,
+            parameter_default_unit=cls.default_unit,
         )
         cls._store_value(element, cls.name, value)
 
@@ -165,6 +177,12 @@ class GenericParameter(ABC):
                 f"{name}_energy",
                 index_sets=indices,
                 unit_category=energy_units,
+                parameter_default_value=cls.default_value,
+                parameter_default_unit=(
+                    f"{cls.default_unit}_energy"
+                    if cls.default_unit is not None
+                    else None
+                ),
             )
             cls._store_value(element, f"{cls.name}_energy", energy_value)
 

@@ -30,7 +30,7 @@ Please check all items that apply. If an item is not applicable, please remove i
   - [ ] Issues are linked with a github keyword plus `#`. 
 
 ### Code quality
-- [ ] Newly introduced dependencies are added to `pyproject.toml`.
+- [ ] Newly introduced dependencies are added to `pyproject.toml` and synced using `uv sync --upgrade`.
 - [ ] Code changes have been tested locally and all tests pass.
 - [ ] Code has been formatted via ``black .`` in a terminal window.
 - [ ] Linter ``ruff check .`` passes all checks.
@@ -42,7 +42,6 @@ Please check all items that apply. If an item is not applicable, please remove i
 
 ### Code changes
 - [ ] If the name of an existing parameter is changed, both the new and old names are added to `PARAMETER_CHANGE_LOG` in `zen_garden/input/element_data_loader.py`.
-- [ ] If a new parameter is added, the default value (0, 1, or `np.inf` allowed) and a parameter with the same unit are added to `PARAMETER_CHANGE_LOG` in `zen_garden/input/element_data_loader.py`.
 - [ ] If the name of an existing variable is changed and the variable is used in the visualization platform, the name change is added to `variable_versions` in the [ZEN-temple code](https://github.com/ZEN-universe/ZEN-temple/blob/main/zen_temple/versions.py).
 
 
