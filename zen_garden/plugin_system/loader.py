@@ -93,9 +93,7 @@ def register_plugins(
     """
     loaded_plugins: dict[str, ModuleType] = {}
 
-    installed_plugins = (
-        _get_installed_plugins() if source_package is None else {}
-    )
+    installed_plugins = _get_installed_plugins() if source_package is None else {}
 
     for plugin_name, plugin_config in plugins_config.items():
         if source_package is None:

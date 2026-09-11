@@ -20,7 +20,7 @@ class ElementFactory:
     """Instantiates every model element and registers it in the model schema.
 
     The concrete elements to build (carriers, technologies, the energy system)
-    are derived from ``model_schema.element_classes`` together with the
+    are derived from ``model_schema.element_classes_ordered`` together with the
     configured system sets. Each element is created through the service
     container so its dependencies are injected, then handed to
     :meth:`ModelSchema.register_element`. Querying the resulting elements is the
@@ -46,7 +46,7 @@ class ElementFactory:
     def register_elements(self):
         """Instantiate every configured element and register it in the schema."""
         logger.info("\n--- Add elements to model--- \n")
-        for element_class in self.model_schema.element_classes:
+        for element_class in self.model_schema.element_classes_ordered:
             if element_class is EnergySystem:
                 self._register_element(EnergySystem, EnergySystem.name)
                 continue
