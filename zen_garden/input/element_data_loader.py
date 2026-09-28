@@ -235,18 +235,24 @@ class ElementDataLoader:
         )
         assert len(missing_index) <= 1, (
             f"More than one the requested index sets ({missing_index}) are "
-            "missing from input file for {file_name}"
+            f"missing from input file for {file_name} for {self.element.name}."
         )
 
         # no indices missing
         if len(missing_index) == 0:
             df_input = ElementDataLoader.extract_from_input_without_missing_index(
-                df_input, index_name_list, file_name
+                df_input, index_name_list, file_name, self.element.name
             )
         else:
             missing_index = missing_index[0]
             # check if special case of existing Technology
             if "technology_existing" in missing_index:
+                if file_name not in df_input.columns:
+                    raise KeyError(
+                        f"{file_name} not in columns of "
+                        f"input file for {self.element.name}"
+                    )
+                
                 df_output = (
                     ElementDataLoader.extract_from_input_for_capacities_existing(
                         df_input,
@@ -267,6 +273,7 @@ class ElementDataLoader:
                     copy.deepcopy(index_name_list),
                     file_name,
                     missing_index,
+                    self.element.name
                 )
 
         # check for duplicate indices
@@ -340,6 +347,10 @@ class ElementDataLoader:
             attribute_name, attribute_dict
         )
         if subelement is not None:
+            assert isinstance(attribute_value, dict), (
+                f"{attribute_name} of {self.element.name} is not a dict, "
+                f"but subelement {subelement} is requested"
+            )
             assert (
                 subelement in attribute_value.keys()
             ), f"{subelement} not in {attribute_name} of {self.element.name}"
@@ -952,27 +963,29 @@ class ElementDataLoader:
         return df_input
 
     @staticmethod
-    def extract_from_input_without_missing_index(df_input, index_name_list, file_name):
+    def extract_from_input_without_missing_index(
+        df_input, index_name_list, file_name, element_name):
         """Extracts the demanded values from Input dataframe and
         reformulates dataframe.
 
         :param df_input: raw input dataframe
         :param index_name_list: list of name of indices
         :param file_name: name of selected file
+        :param element_name: name of selected element
         :return: df_input: reformulated input dataframe
         """
         if index_name_list:
             df_input = df_input.set_index(index_name_list)
         assert len(df_input.columns) == 1, (
-            f"Input file for {file_name} has more than one value "
-            "column: {df_input.columns.to_list()}"
+            f"Input file for {file_name} for {element_name} has more than one value "
+            f"column: {df_input.columns.to_list()}"
         )
         df_input = df_input.squeeze(axis=1)
         return df_input
 
     @staticmethod
     def extract_from_input_with_missing_index(
-        df_input, df_output, index_name_list, file_name, missing_index
+        df_input, df_output, index_name_list, file_name, missing_index, element_name
     ):
         """Extracts the demanded values from Input dataframe and reformulates
         dataframe if the index is missing. Either, the missing index is
@@ -986,6 +999,7 @@ class ElementDataLoader:
             index_name_list: list of name of indices
             file_name: name of selected file
             missing_index: missing index in df_input
+            element_name: name of selected element
 
         Returns:
             pandas.DataFrame: reformulated input dataframe
@@ -994,7 +1008,8 @@ class ElementDataLoader:
         if not index_name_list:
             # assert that single value
             assert df_input.size == 1, (
-                f"Cannot establish unique values for file {file_name} because "
+                f"Cannot establish unique values for file {file_name} "
+                f"for {element_name} because "
                 "of too many columns or not overlapping index"
             )
             val_input = df_input.squeeze()
@@ -1030,7 +1045,7 @@ class ElementDataLoader:
             else:
                 assert df_input_temp.index.names[-1] != "time", (
                     "Only works if columns contain time index and not for "
-                    "{df_input_temp.index.names[-1]}"
+                    f"{df_input_temp.index.names[-1]}"
                 )
                 df_input = df_input_temp.to_frame().apply(
                     lambda row: df_input.loc[row.name[0:-1], str(row.name[-1])], axis=1

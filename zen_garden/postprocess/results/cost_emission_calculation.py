@@ -40,9 +40,12 @@ class CostEmissionCalculation:
         self.r = r
         self.path = Path(r.path)
         self._leontief_cache: dict[str, dict[str, Any]] = {"cost": {}, "emissions": {}}
-        self.conversion_technologies = self.r.get_system().set_conversion_technologies
-        self.transport_technologies = self.r.get_system().set_transport_technologies
-        self.storage_technologies = self.r.get_system().set_storage_technologies
+        conversion_technologies = self.r.get_system().set_conversion_technologies
+        transport_technologies = self.r.get_system().set_transport_technologies
+        storage_technologies = self.r.get_system().set_storage_technologies
+        self.conversion_technologies = sorted(list(set(conversion_technologies)))
+        self.transport_technologies = sorted(list(set(transport_technologies)))
+        self.storage_technologies = sorted(list(set(storage_technologies)))
 
     def _get_leontief_raw_totals(self, scenario_name: str) -> dict[str, pd.DataFrame]:
         """fetch all raw totals needed to build the Leontief cost system.

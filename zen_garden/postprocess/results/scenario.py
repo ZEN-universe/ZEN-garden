@@ -729,7 +729,7 @@ class Scenario:
         ), f"Component {component_name} is not a series, but a {type(series)}."
 
         _, timestep_type = TimestepType.from_index_names(
-            [str(name) for name in series.index.names]
+            self.get_index_names(component_name)
         )
         unit_map = {
             unit: self._convert_to_pint_unit(
