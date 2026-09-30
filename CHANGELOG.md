@@ -3,6 +3,14 @@
 This file gets automatically updated in ZEN-garden's continuous integration 
 procedures. Do not edit the file manually.
 
+## [v3.1.1] - 2026-09-30 
+
+### Bug Fixes 🐛
+- bump to `v3.1.1` since `v3.0.0` is already taken on PyPi due to a past release error. [[🔀 PR #1342](https://github.com/ZEN-universe/ZEN-garden/pull/1342) @csfunke]
+
+### Documentation Changes 📝
+- update plugin documentaiton. [[🔀 PR #1342](https://github.com/ZEN-universe/ZEN-garden/pull/1342) @csfunke]
+
 ## [v3.1.0] - 2026-09-30 
 
 ### New Features ✨
