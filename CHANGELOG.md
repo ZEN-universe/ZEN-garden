@@ -3,10 +3,28 @@
 This file gets automatically updated in ZEN-garden's continuous integration 
 procedures. Do not edit the file manually.
 
-## [Unversioned Changes] - 2026-09-10 
+## [v3.1.0] - 2026-09-30 
+
+### New Features ✨
+- make  `Event`, `EventPublisher`, `GenericConstraint`, `GenericParameter`, `GenericSet`, `GenericVariable`, `ConfigBase`, and `ModelSchema` publically accessable by adding the to the ZEN-garden `__init__.py`. [[🔀 PR #1335](https://github.com/ZEN-universe/ZEN-garden/pull/1335) @csfunke]
+- allow default values and default units for new parameters to be directly specified the parameter class definitions. As a result, the `PARAMETER_CHANGE_LOG` is still used only for changes to parameter names. [[🔀 PR #1335](https://github.com/ZEN-universe/ZEN-garden/pull/1335) @csfunke]
+- make plugin configs subclasses of Pydantic `BaseModel` rather than dictionaries. This allows for better validation of user-input configurations. [[🔀 PR #1335](https://github.com/ZEN-universe/ZEN-garden/pull/1335) @csfunke]
+- add `py.typed` marker to signal that ZEN-garden is typed and enable type-checking for package users. [[🔀 PR #1335](https://github.com/ZEN-universe/ZEN-garden/pull/1335) @csfunke]
+
+### Bug Fixes 🐛
+- fix plugin loader so that it properly detects plugins registered via `pyproject.toml` entry points. [[🔀 PR #1335](https://github.com/ZEN-universe/ZEN-garden/pull/1335) @csfunke]
+- handle empty variables in `get_full_ts()` to avoid errors when certain technology types (e.g. storage technologies) are not used. [[🔀 PR #1335](https://github.com/ZEN-universe/ZEN-garden/pull/1335) @csfunke]
 
 ### Documentation Changes 📝
 - allow issue references to be included in the changelog. Issue references in the detailed list of changes of the pull request description will be automatically processed and linked. [[📋 Issue #1198](https://github.com/ZEN-universe/ZEN-garden/issues/1198)] [[🔀 PR #1330](https://github.com/ZEN-universe/ZEN-garden/pull/1330) @csfunke]
+
+### Maintenance Tasks 🧹
+- make `model_schema` a keyword argument in the plugin event trigger to avoid ambiguity. [[🔀 PR #1335](https://github.com/ZEN-universe/ZEN-garden/pull/1335) @csfunke]
+- update package requirements to require `tsam>4.0.0`. [[🔀 PR #1335](https://github.com/ZEN-universe/ZEN-garden/pull/1335) @csfunke]
+- update and sync uv lock file. [[🔀 PR #1335](https://github.com/ZEN-universe/ZEN-garden/pull/1335) @csfunke]
+- refactor `ModelSchema.element_classes` to ensure there is a single source of truth for the element type class list. [[🔀 PR #1335](https://github.com/ZEN-universe/ZEN-garden/pull/1335) @csfunke]
+- refactor integration tests to move them into a new folder `end_to_end` and clearly separte fixtures from test codes. [[🔀 PR #1335](https://github.com/ZEN-universe/ZEN-garden/pull/1335) @csfunke]
+- remove `zen_garden\plugin` folder. This template is now obsolete since plugins should be programmed as separate packages outside of ZEN-garden. [[🔀 PR #1335](https://github.com/ZEN-universe/ZEN-garden/pull/1335) @csfunke]
 
 ## [v3.0.1] - 2026-09-08 
 
