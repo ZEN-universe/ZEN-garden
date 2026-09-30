@@ -29,11 +29,12 @@ Using an existing plugin
 
 **Installation**
 
-Install the plugin package like any other Python package:
+Install a plugin package from a local path, like this (set the -e flag for editable mode):
 
 .. code-block:: shell
 
-    pip install zen_garden_myplugin
+     uv pip install -e path\to\zen_garden_plugins --no-deps
+
 
 **Activation**
 
