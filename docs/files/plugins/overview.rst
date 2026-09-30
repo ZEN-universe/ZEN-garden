@@ -16,7 +16,7 @@ and say: *"Yes, I can add a new constraint"* or *"I can modify the results"*.
 
 Plugins live in the
 `ZEN-garden plugins repository <https://github.com/ZEN-universe/ZEN-garden-plugins>`_
-or be developed privately. You can install them like any other Python package and
+or can be developed privately. You can install them like any other Python package and
 activate them in your ``config.yaml``.
 
 **Key idea:** You write a function, decorate it with the event you at which the
