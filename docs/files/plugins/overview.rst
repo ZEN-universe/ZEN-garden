@@ -14,9 +14,12 @@ Think of it like this: ZEN-garden has a workflow. At certain moments (called "ev
 it pauses and asks: *"Does anyone want to do something here?"* Plugins raise their hand
 and say: *"Yes, I can add a new constraint"* or *"I can modify the results"*.
 
-Plugins live in the
+Plugins are programmed as a Python package. Publicly accessible plugins that are 
+verified by the ZEN-garden maintainers live in the 
 `ZEN-garden plugins repository <https://github.com/ZEN-universe/ZEN-garden-plugins>`_
-or can be developed privately. You can install them like any other Python package and
+repository. The easiest way to create a new plugin is to fork this repository and 
+add a new plugin on your personal fork. Alternatively, plugins can also be developed
+privately in a new python package. You can install them like any other Python package and
 activate them in your ``config.yaml``.
 
 **Key idea:** You write a function, decorate it with the event you at which the
