@@ -5,7 +5,7 @@ import logging
 import os
 import warnings
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 import numpy as np
 import pandas as pd
@@ -30,22 +30,17 @@ TIME_STEP_TYPES = [
 ]
 """List of valid time step types."""
 
-PARAMETER_CHANGE_LOG: dict[str, "str | dict[str, Any]"] = {}
-"""Dictionary to log changes in parameter values.
+PARAMETER_CHANGE_LOG: dict[str, str] = {}
+"""Dictionary mapping renamed parameters from their current to previous names.
 
-The keys are the new parameter names. The values are dictionaries with the default value
-and the unit of the new parameter. The unit is taken from an existing parameter
-with the same unit.
+The keys are the current parameter names and the values are their former names.
 
 Example
 -------
 
 .. code-block:: python
 
-    "new_parameter_name": {
-        "default_value": 0, # only 0, 1, or 'inf' are allowed
-        "unit": "existing_parameter_name_with_same_unit"
-    }
+    {"new_parameter_name": "old_parameter_name"}
 """
 
 
@@ -88,7 +83,15 @@ class ElementDataLoader:
         # load attributes file
         self.attribute_dict = self.attribute_data_loader.load_attribute_file()
 
-    def extract_input_data(self, file_name, index_sets, unit_category, subelement=None):
+    def extract_input_data(
+        self,
+        file_name,
+        index_sets,
+        unit_category,
+        subelement=None,
+        parameter_default_value=None,
+        parameter_default_unit=None,
+    ):
         """Loads and restructures input data for the current scenario.
 
         Defaults and units are taken from the attributes file, then values from the
@@ -138,6 +141,8 @@ class ElementDataLoader:
                 unit_category,
                 file_name=file_name,
                 subelement=subelement,
+                parameter_default_value=parameter_default_value,
+                parameter_default_unit=parameter_default_unit,
             )
         # read input file
         f_name, scenario_factor = self.scenario_dict.get_param_file(
@@ -323,7 +328,13 @@ class ElementDataLoader:
         return attribute_dict, factor
 
     def extract_attribute(
-        self, attribute_name, unit_category, return_unit=False, subelement=None
+        self,
+        attribute_name,
+        unit_category,
+        return_unit=False,
+        subelement=None,
+        default_value=None,
+        default_unit=None,
     ):
         """Reads input data and restructures the dataframe to return
         (multi)indexed dict.
@@ -337,7 +348,10 @@ class ElementDataLoader:
         """
         attribute_dict, factor = self.get_attribute_dict(attribute_name)
         attribute_value, attribute_unit = self._extract_attribute_value(
-            attribute_name, attribute_dict
+            attribute_name,
+            attribute_dict,
+            default_value=default_value,
+            default_unit=default_unit,
         )
         if subelement is not None:
             assert (
@@ -404,7 +418,13 @@ class ElementDataLoader:
         else:
             return None
 
-    def _extract_attribute_value(self, attribute_name, attribute_dict):
+    def _extract_attribute_value(
+        self,
+        attribute_name,
+        attribute_dict,
+        default_value=None,
+        default_unit=None,
+    ):
         """Reads attribute value from dict.
 
         :param attribute_name: name of selected attribute
@@ -412,44 +432,27 @@ class ElementDataLoader:
         :return: attribute value, attribute unit
         """
         if attribute_name not in attribute_dict:
-            # The attribute is not found because of an update
             if attribute_name in PARAMETER_CHANGE_LOG:
-                # CASE 1: There is a new attribute
-                if isinstance(PARAMETER_CHANGE_LOG[attribute_name], dict):
-                    missing_attribute = PARAMETER_CHANGE_LOG[attribute_name]
-
-                    if missing_attribute["default_value"] not in [0, 1, "inf"]:
-                        raise AttributeError(
-                            f"Default value of attribute {attribute_name} must "
-                            f"be 0 , 1, or 'inf' but is "
-                            f"{missing_attribute['default_value']}"
-                        )
-
-                    attribute_dict[attribute_name] = {
-                        "default_value": missing_attribute["default_value"],
-                        "unit": attribute_dict[missing_attribute["unit"]]["unit"],
-                    }
-
-                    warnings.warn(
-                        f"\nAttribute {attribute_name} is not yet included in "
-                        f"your model. Automatic assign default_value:"
-                        f"{attribute_dict[attribute_name]['default_value']}, "
-                        f"unit: {attribute_dict[attribute_name]['unit']}\n",
-                        DeprecationWarning,
-                        stacklevel=2,
-                    )
-
-                # CASE 2: The attribute has a new name
-                else:
-                    old_name = PARAMETER_CHANGE_LOG[attribute_name]
-                    attribute_dict[attribute_name] = attribute_dict.pop(old_name)
-
-                    warnings.warn(
-                        f"Attribute {old_name} is now called {attribute_name}",
-                        DeprecationWarning,
-                        stacklevel=2,
-                    )
-
+                old_name = PARAMETER_CHANGE_LOG[attribute_name]
+                attribute_dict[attribute_name] = attribute_dict.pop(old_name)
+                warnings.warn(
+                    f"Attribute {old_name} is now called {attribute_name}",
+                    DeprecationWarning,
+                    stacklevel=2,
+                )
+            elif default_value is not None and default_unit is not None:
+                attribute_dict[attribute_name] = {
+                    "default_value": default_value,
+                    "unit": attribute_dict[default_unit]["unit"],
+                }
+                warnings.warn(
+                    f"\nAttribute {attribute_name} is not yet included in "
+                    f"your model. Automatic assign default_value:"
+                    f"{default_value}, unit: "
+                    f"{attribute_dict[attribute_name]['unit']}\n",
+                    DeprecationWarning,
+                    stacklevel=2,
+                )
             else:
                 raise AttributeError(
                     f"Attribute {attribute_name} does not exist in input data "
@@ -698,6 +701,8 @@ class ElementDataLoader:
         file_name=None,
         manual_default_value=None,
         subelement=None,
+        parameter_default_value=None,
+        parameter_default_unit=None,
     ):
         """Creates default output dataframe.
 
@@ -730,7 +735,11 @@ class ElementDataLoader:
         else:
             default_name = file_name
             default_value = self.extract_attribute(
-                default_name, unit_category, subelement=subelement
+                default_name,
+                unit_category,
+                subelement=subelement,
+                default_value=parameter_default_value,
+                default_unit=parameter_default_unit,
             )
 
         # create output Series filled with default value

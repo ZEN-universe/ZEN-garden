@@ -16,9 +16,9 @@ from zen_garden import Results, compare_configs, compare_model_values, run
 @pytest.fixture
 def folder_path():
     """
-    :return: Returns the path of the testcase folder
+    :return: Returns the path containing the end-to-end test fixtures.
     """
-    return os.path.dirname(__file__)
+    return os.path.join(os.path.dirname(__file__), "fixtures")
 
 
 # helper functions
@@ -38,7 +38,7 @@ def compare_variables_results(test_model: str, results: Results, folder_path: st
     """
     # import json file containing selected variable values of test model
     # collection
-    with open(os.path.join(folder_path, "test_variables.yaml")) as f:
+    with open(os.path.join(os.path.dirname(folder_path), "test_variables.yaml")) as f:
         test_variables = yaml.safe_load(f)
     # dictionary to store variable names, indices, values and test values of
     # variables which don't match the test values
@@ -197,10 +197,11 @@ def test_1a(folder_path):
     run(
         config=os.path.join("config_duals.yaml"),
         dataset=os.path.join(data_set_name),
+        folder_output=os.path.join(os.path.dirname(folder_path), "outputs"),
     )
 
     # read the results and check again
-    res = Results(os.path.join("outputs", data_set_name))
+    res = Results(os.path.join(os.path.dirname(folder_path), "outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
     # test functions get_total() and get_full_ts()
     check_get_total_get_full_ts(res)
@@ -215,11 +216,11 @@ def test_1b(folder_path):
     run(
         config=os.path.join(folder_path, "config.yaml"),
         dataset=os.path.join(folder_path, data_set_name),
-        folder_output=os.path.join(folder_path, "outputs"),
+        folder_output=os.path.join(os.path.dirname(folder_path), "outputs"),
     )
 
     # read the results and check again
-    res = Results(os.path.join(folder_path, "outputs", data_set_name))
+    res = Results(os.path.join(os.path.dirname(folder_path), "outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
 
 
@@ -229,11 +230,11 @@ def test_1c(folder_path):
     run(
         config=os.path.join(folder_path, "config.yaml"),
         dataset=os.path.join(folder_path, data_set_name),
-        folder_output=os.path.join(folder_path, "outputs"),
+        folder_output=os.path.join(os.path.dirname(folder_path), "outputs"),
     )
 
     # read the results and check again
-    res = Results(os.path.join(folder_path, "outputs", data_set_name))
+    res = Results(os.path.join(os.path.dirname(folder_path), "outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
 
 
@@ -243,11 +244,11 @@ def test_1d(folder_path):
     run(
         config=os.path.join(folder_path, "config.yaml"),
         dataset=os.path.join(folder_path, data_set_name),
-        folder_output=os.path.join(folder_path, "outputs"),
+        folder_output=os.path.join(os.path.dirname(folder_path), "outputs"),
     )
 
     # read the results and check again
-    res = Results(os.path.join(folder_path, "outputs", data_set_name))
+    res = Results(os.path.join(os.path.dirname(folder_path), "outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
 
 
@@ -257,14 +258,14 @@ def test_1e(folder_path):
     run(
         config=os.path.join(folder_path, "config.yaml"),
         dataset=os.path.join(folder_path, data_set_name),
-        folder_output=os.path.join(folder_path, "outputs"),
+        folder_output=os.path.join(os.path.dirname(folder_path), "outputs"),
     )
 
     # read the results and check again
-    res = Results(os.path.join(folder_path, "outputs", data_set_name))
+    res = Results(os.path.join(os.path.dirname(folder_path), "outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
     # read the results and check again
-    res = Results(os.path.join(folder_path, "outputs", data_set_name))
+    res = Results(os.path.join(os.path.dirname(folder_path), "outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
 
 
@@ -274,14 +275,14 @@ def test_1f(folder_path):
     run(
         config=os.path.join(folder_path, "config.yaml"),
         dataset=os.path.join(folder_path, data_set_name),
-        folder_output=os.path.join(folder_path, "outputs"),
+        folder_output=os.path.join(os.path.dirname(folder_path), "outputs"),
     )
 
     # read the results and check again
-    res = Results(os.path.join(folder_path, "outputs", data_set_name))
+    res = Results(os.path.join(os.path.dirname(folder_path), "outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
     # read the results and check again
-    res = Results(os.path.join(folder_path, "outputs", data_set_name))
+    res = Results(os.path.join(os.path.dirname(folder_path), "outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
 
 
@@ -291,11 +292,11 @@ def test_1g(folder_path):
     run(
         config=os.path.join(folder_path, "config.yaml"),
         dataset=os.path.join(folder_path, data_set_name),
-        folder_output=os.path.join(folder_path, "outputs"),
+        folder_output=os.path.join(os.path.dirname(folder_path), "outputs"),
     )
 
     # read the results and check again
-    res = Results(os.path.join(folder_path, "outputs", data_set_name))
+    res = Results(os.path.join(os.path.dirname(folder_path), "outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
 
 
@@ -305,11 +306,11 @@ def test_1h(folder_path):
     run(
         config=os.path.join(folder_path, "config.yaml"),
         dataset=os.path.join(folder_path, data_set_name),
-        folder_output=os.path.join(folder_path, "outputs"),
+        folder_output=os.path.join(os.path.dirname(folder_path), "outputs"),
     )
 
     # read the results and check again
-    res = Results(os.path.join(folder_path, "outputs", data_set_name))
+    res = Results(os.path.join(os.path.dirname(folder_path), "outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
 
 
@@ -319,11 +320,11 @@ def test_1i(folder_path):
     run(
         config=os.path.join(folder_path, "config.yaml"),
         dataset=os.path.join(folder_path, data_set_name),
-        folder_output=os.path.join(folder_path, "outputs"),
+        folder_output=os.path.join(os.path.dirname(folder_path), "outputs"),
     )
 
     # read the results and check again
-    res = Results(os.path.join(folder_path, "outputs", data_set_name))
+    res = Results(os.path.join(os.path.dirname(folder_path), "outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
 
 def test_1j(folder_path):
@@ -332,11 +333,11 @@ def test_1j(folder_path):
     run(
         config=os.path.join(folder_path, "config.yaml"),
         dataset=os.path.join(folder_path, data_set_name),
-        folder_output=os.path.join(folder_path, "outputs"),
+        folder_output=os.path.join(os.path.dirname(folder_path), "outputs"),
     )
 
     # read the results and check again
-    res = Results(os.path.join(folder_path, "outputs", data_set_name))
+    res = Results(os.path.join(os.path.dirname(folder_path), "outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
     # test sectoral costs and emissions
     check_sectoral_costs_emissions(res, spatially_resolved=True)
@@ -347,11 +348,11 @@ def test_2a(folder_path):
     run(
         config=os.path.join(folder_path, "config.yaml"),
         dataset=os.path.join(folder_path, data_set_name),
-        folder_output=os.path.join(folder_path, "outputs"),
+        folder_output=os.path.join(os.path.dirname(folder_path), "outputs"),
     )
 
     # read the results and check again
-    res = Results(os.path.join(folder_path, "outputs", data_set_name))
+    res = Results(os.path.join(os.path.dirname(folder_path), "outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
 
 
@@ -361,11 +362,11 @@ def test_2b(folder_path):
     run(
         config=os.path.join(folder_path, "config.yaml"),
         dataset=os.path.join(folder_path, data_set_name),
-        folder_output=os.path.join(folder_path, "outputs"),
+        folder_output=os.path.join(os.path.dirname(folder_path), "outputs"),
     )
 
     # read the results and check again
-    res = Results(os.path.join(folder_path, "outputs", data_set_name))
+    res = Results(os.path.join(os.path.dirname(folder_path), "outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
 
 
@@ -375,11 +376,11 @@ def test_3a(folder_path):
     run(
         config=os.path.join(folder_path, "config.yaml"),
         dataset=os.path.join(folder_path, data_set_name),
-        folder_output=os.path.join(folder_path, "outputs"),
+        folder_output=os.path.join(os.path.dirname(folder_path), "outputs"),
     )
 
     # read the results and check again
-    res = Results(os.path.join(folder_path, "outputs", data_set_name))
+    res = Results(os.path.join(os.path.dirname(folder_path), "outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
 
 
@@ -389,11 +390,11 @@ def test_3b(folder_path):
     run(
         config=os.path.join(folder_path, "config.yaml"),
         dataset=os.path.join(folder_path, data_set_name),
-        folder_output=os.path.join(folder_path, "outputs"),
+        folder_output=os.path.join(os.path.dirname(folder_path), "outputs"),
     )
 
     # read the results and check again
-    res = Results(os.path.join(folder_path, "outputs", data_set_name))
+    res = Results(os.path.join(os.path.dirname(folder_path), "outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
     # test functions get_total() and get_full_ts()
     check_get_total_get_full_ts(res)
@@ -405,11 +406,11 @@ def test_3c(folder_path):
     run(
         config=os.path.join(folder_path, "config.yaml"),
         dataset=os.path.join(folder_path, data_set_name),
-        folder_output=os.path.join(folder_path, "outputs"),
+        folder_output=os.path.join(os.path.dirname(folder_path), "outputs"),
     )
 
     # read the results and check again
-    res = Results(os.path.join(folder_path, "outputs", data_set_name))
+    res = Results(os.path.join(os.path.dirname(folder_path), "outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
     # test functions get_total() and get_full_ts()
     check_get_total_get_full_ts(res, year=2022)
@@ -421,14 +422,14 @@ def test_3d(folder_path):
     run(
         config=os.path.join(folder_path, "config.yaml"),
         dataset=os.path.join(folder_path, data_set_name),
-        folder_output=os.path.join(folder_path, "outputs"),
+        folder_output=os.path.join(os.path.dirname(folder_path), "outputs"),
     )
 
     # compare the variables of the optimization setup ## disabled for myopic
     # foresight tests!
     # compare_variables(data_set_name, optimization_setup, folder_path)
     # read the results and check again
-    res = Results(os.path.join(folder_path, "outputs", data_set_name))
+    res = Results(os.path.join(os.path.dirname(folder_path), "outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
     # test functions get_total() and get_full_ts()
     check_get_total_get_full_ts(res, discount_to_first_step=False)
@@ -440,14 +441,14 @@ def test_3e(folder_path):
     run(
         config=os.path.join(folder_path, "config.yaml"),
         dataset=os.path.join(folder_path, data_set_name),
-        folder_output=os.path.join(folder_path, "outputs"),
+        folder_output=os.path.join(os.path.dirname(folder_path), "outputs"),
     )
 
     # compare the variables of the optimization setup ## disabled for myopic
     # foresight tests!
     # compare_variables(data_set_name, optimization_setup, folder_path)
     # read the results and check again
-    res = Results(os.path.join(folder_path, "outputs", data_set_name))
+    res = Results(os.path.join(os.path.dirname(folder_path), "outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
 
 
@@ -457,14 +458,14 @@ def test_3f(folder_path):
     run(
         config=os.path.join(folder_path, "config.yaml"),
         dataset=os.path.join(folder_path, data_set_name),
-        folder_output=os.path.join(folder_path, "outputs"),
+        folder_output=os.path.join(os.path.dirname(folder_path), "outputs"),
     )
 
     # compare the variables of the optimization setup ## disabled for myopic
     # foresight tests!
     # compare_variables(data_set_name, optimization_setup, folder_path)
     # read the results and check again
-    res = Results(os.path.join(folder_path, "outputs", data_set_name))
+    res = Results(os.path.join(os.path.dirname(folder_path), "outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
 
 
@@ -474,11 +475,11 @@ def test_3g(folder_path):
     run(
         config=os.path.join(folder_path, "config.yaml"),
         dataset=os.path.join(folder_path, data_set_name),
-        folder_output=os.path.join(folder_path, "outputs"),
+        folder_output=os.path.join(os.path.dirname(folder_path), "outputs"),
     )
 
     # read the results and check again
-    res = Results(os.path.join(folder_path, "outputs", data_set_name))
+    res = Results(os.path.join(os.path.dirname(folder_path), "outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
     # test functions get_total() and get_full_ts()
     check_get_total_get_full_ts(res)
@@ -490,11 +491,11 @@ def test_3h(folder_path):
     run(
         config=os.path.join(folder_path, "config.yaml"),
         dataset=os.path.join(folder_path, data_set_name),
-        folder_output=os.path.join(folder_path, "outputs"),
+        folder_output=os.path.join(os.path.dirname(folder_path), "outputs"),
     )
 
     # read the results and check again
-    res = Results(os.path.join(folder_path, "outputs", data_set_name))
+    res = Results(os.path.join(os.path.dirname(folder_path), "outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
     # test functions get_total() and get_full_ts()
     check_get_total_get_full_ts(res)
@@ -506,11 +507,11 @@ def test_3i(folder_path):
     run(
         config=os.path.join(folder_path, "config.yaml"),
         dataset=os.path.join(folder_path, data_set_name),
-        folder_output=os.path.join(folder_path, "outputs"),
+        folder_output=os.path.join(os.path.dirname(folder_path), "outputs"),
     )
 
     # read the results and check again
-    res = Results(os.path.join(folder_path, "outputs", data_set_name))
+    res = Results(os.path.join(os.path.dirname(folder_path), "outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
     # test functions get_total() and get_full_ts()
     check_get_total_get_full_ts(res)
@@ -522,11 +523,11 @@ def test_4a(folder_path):
     run(
         config=os.path.join(folder_path, "config.yaml"),
         dataset=os.path.join(folder_path, data_set_name),
-        folder_output=os.path.join(folder_path, "outputs"),
+        folder_output=os.path.join(os.path.dirname(folder_path), "outputs"),
     )
 
     # read the results and check again
-    res = Results(os.path.join(folder_path, "outputs", data_set_name))
+    res = Results(os.path.join(os.path.dirname(folder_path), "outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
     # test functions get_total() and get_full_ts()
     check_get_total_get_full_ts(res)
@@ -544,11 +545,11 @@ def test_4b(folder_path):
     run(
         config=os.path.join(folder_path, "config.yaml"),
         dataset=os.path.join(folder_path, data_set_name),
-        folder_output=os.path.join(folder_path, "outputs"),
+        folder_output=os.path.join(os.path.dirname(folder_path), "outputs"),
     )
 
     # read the results and check again
-    res = Results(os.path.join(folder_path, "outputs", data_set_name))
+    res = Results(os.path.join(os.path.dirname(folder_path), "outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
     # test functions get_total() and get_full_ts()
     check_get_total_get_full_ts(res, specific_scenario=True)
@@ -560,11 +561,11 @@ def test_4c(folder_path):
     run(
         config=os.path.join(folder_path, "config.yaml"),
         dataset=os.path.join(folder_path, data_set_name),
-        folder_output=os.path.join(folder_path, "outputs"),
+        folder_output=os.path.join(os.path.dirname(folder_path), "outputs"),
     )
 
     # read the results and check again
-    res = Results(os.path.join(folder_path, "outputs", data_set_name))
+    res = Results(os.path.join(os.path.dirname(folder_path), "outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
 
 
@@ -574,11 +575,11 @@ def test_4d(folder_path):
     run(
         config=os.path.join(folder_path, "config.yaml"),
         dataset=os.path.join(folder_path, data_set_name),
-        folder_output=os.path.join(folder_path, "outputs"),
+        folder_output=os.path.join(os.path.dirname(folder_path), "outputs"),
     )
 
     # read the results and check again
-    res = Results(os.path.join(folder_path, "outputs", data_set_name))
+    res = Results(os.path.join(os.path.dirname(folder_path), "outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
     # test functions get_total() and get_full_ts()
     check_get_total_get_full_ts(res)
@@ -590,11 +591,11 @@ def test_5a(folder_path):
     run(
         config=os.path.join(folder_path, "config.yaml"),
         dataset=os.path.join(folder_path, data_set_name),
-        folder_output=os.path.join(folder_path, "outputs"),
+        folder_output=os.path.join(os.path.dirname(folder_path), "outputs"),
     )
 
     # read the results and check again
-    res = Results(os.path.join(folder_path, "outputs", data_set_name))
+    res = Results(os.path.join(os.path.dirname(folder_path), "outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
     # test functions get_total() and get_full_ts()
     check_get_total_get_full_ts(res)
@@ -606,11 +607,11 @@ def test_5b(folder_path):
     run(
         config=os.path.join(folder_path, "config.yaml"),
         dataset=os.path.join(folder_path, data_set_name),
-        folder_output=os.path.join(folder_path, "outputs"),
+        folder_output=os.path.join(os.path.dirname(folder_path), "outputs"),
     )
 
     # read the results and check again
-    res = Results(os.path.join(folder_path, "outputs", data_set_name))
+    res = Results(os.path.join(os.path.dirname(folder_path), "outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
 
 
@@ -620,11 +621,11 @@ def test_5c(folder_path):
     run(
         config=os.path.join(folder_path, "config.yaml"),
         dataset=os.path.join(folder_path, data_set_name),
-        folder_output=os.path.join(folder_path, "outputs"),
+        folder_output=os.path.join(os.path.dirname(folder_path), "outputs"),
     )
 
     # read the results and check again
-    res = Results(os.path.join(folder_path, "outputs", data_set_name))
+    res = Results(os.path.join(os.path.dirname(folder_path), "outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
 
 
@@ -634,11 +635,11 @@ def test_5d(folder_path):
     run(
         config=os.path.join(folder_path, "config.yaml"),
         dataset=os.path.join(folder_path, data_set_name),
-        folder_output=os.path.join(folder_path, "outputs"),
+        folder_output=os.path.join(os.path.dirname(folder_path), "outputs"),
     )
 
     # read the results and check again
-    res = Results(os.path.join(folder_path, "outputs", data_set_name))
+    res = Results(os.path.join(os.path.dirname(folder_path), "outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
 
 
@@ -648,11 +649,11 @@ def test_6a(folder_path):
     run(
         config=os.path.join(folder_path, "config.yaml"),
         dataset=os.path.join(folder_path, data_set_name),
-        folder_output=os.path.join(folder_path, "outputs"),
+        folder_output=os.path.join(os.path.dirname(folder_path), "outputs"),
     )
 
     # read the results and check again
-    res = Results(os.path.join(folder_path, "outputs", data_set_name))
+    res = Results(os.path.join(os.path.dirname(folder_path), "outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
     # test functions get_total() and get_full_ts()
     check_get_total_get_full_ts(res)
@@ -664,11 +665,11 @@ def test_7a(folder_path):
     run(
         config=os.path.join(folder_path, "config_objective.yaml"),
         dataset=os.path.join(folder_path, data_set_name),
-        folder_output=os.path.join(folder_path, "outputs"),
+        folder_output=os.path.join(os.path.dirname(folder_path), "outputs"),
     )
 
     # read the results and check again
-    res = Results(os.path.join(folder_path, "outputs", data_set_name))
+    res = Results(os.path.join(os.path.dirname(folder_path), "outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
 
 
@@ -678,10 +679,10 @@ def test_8a(folder_path):
     run(
         config=os.path.join(folder_path, "config.yaml"),
         dataset=os.path.join(folder_path, data_set_name),
-        folder_output=os.path.join(folder_path, "outputs"),
+        folder_output=os.path.join(os.path.dirname(folder_path), "outputs"),
     )
     # read the results and check again
-    res = Results(os.path.join(folder_path, "outputs", data_set_name))
+    res = Results(os.path.join(os.path.dirname(folder_path), "outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
     check_get_total_get_full_ts(res)
 
@@ -696,7 +697,7 @@ def test_9a(folder_path):
         run(
             config=os.path.join(folder_path, "config.yaml"),
             dataset=os.path.join(folder_path, data_set_name),
-            folder_output=os.path.join(folder_path, "outputs"),
+            folder_output=os.path.join(os.path.dirname(folder_path), "outputs"),
         )
 
 
@@ -706,10 +707,10 @@ def test_10a(folder_path):
     run(
         config=os.path.join(folder_path, "config.yaml"),
         dataset=os.path.join(folder_path, data_set_name),
-        folder_output=os.path.join(folder_path, "outputs"),
+        folder_output=os.path.join(os.path.dirname(folder_path), "outputs"),
     )
     # read the results and check again
-    res = Results(os.path.join(folder_path, "outputs", data_set_name))
+    res = Results(os.path.join(os.path.dirname(folder_path), "outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
 
 
@@ -719,13 +720,13 @@ def test_11a(folder_path):
     run(
         config=os.path.join(folder_path, "config.yaml"),
         dataset=os.path.join(folder_path, data_set_name),
-        folder_output=os.path.join(folder_path, "outputs"),
+        folder_output=os.path.join(os.path.dirname(folder_path), "outputs"),
     )
     # read the results and check again
-    res = Results(os.path.join(folder_path, "outputs", data_set_name))
+    res = Results(os.path.join(os.path.dirname(folder_path), "outputs", data_set_name))
     compare_variables_results(data_set_name, res, folder_path)
 
 
 if __name__ == "__main__":
-    testcase_folder = os.path.dirname(__file__)
+    testcase_folder = os.path.join(os.path.dirname(__file__), "fixtures")
     test_4d(testcase_folder)

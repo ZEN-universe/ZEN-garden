@@ -3,10 +3,13 @@
 Unit tests for `EventPublisher` and `Event` semantics.
 """
 
+from importlib.metadata import EntryPoint
+
 import pytest
 
+from zen_garden.config import Config
 from zen_garden.plugin_system.events import Event, EventPublisher
-from zen_garden.plugin_system.loader import register_plugins
+from zen_garden.plugin_system.loader import ENTRY_POINT_GROUP, register_plugins
 
 
 @pytest.fixture(scope="function", autouse=True)
@@ -94,14 +97,23 @@ class TestEvents:
         # Assert
         assert spy == []
 
-    def test_plugin_keep_data_between_events(self):
+    def test_plugin_keep_data_between_events(self, monkeypatch):
         """Triggering an event with a global variable.
 
         Confirms that a plugin can keep data between events using a global variable.
         """
         # Arrange
-        plugins = {"fake_plugin": {}}
-        register_plugins(plugins, source_package="tests.unit_tests.plugins.fixtures")
+        entry_point = EntryPoint(
+            name="fake_plugin",
+            value="tests.unit_tests.plugins.fixtures.fake_plugin.plugin",
+            group=ENTRY_POINT_GROUP,
+        )
+        monkeypatch.setattr(
+            "zen_garden.plugin_system.loader.entry_points",
+            lambda *, group: [entry_point],
+        )
+        config = Config(plugins={"fake_plugin": {}})
+        register_plugins(config)
         spy = []
 
         # Act

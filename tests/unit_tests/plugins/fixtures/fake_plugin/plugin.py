@@ -1,8 +1,12 @@
-from typing import Any
-
+from zen_garden.config import ConfigBase
 from zen_garden.plugin_system.events import Event, EventPublisher
 
-config: dict[str, Any] = {}
+
+class Config(ConfigBase):
+    """Minimal plugin configuration for loader tests."""
+
+    any_parameter: str = ""
+    default_parameter: str = "default_value"
 
 
 @EventPublisher.register(Event.test_event1)

@@ -76,7 +76,7 @@ class ElementRegistry:
         :param name: name of element class
         :return: element_class: return element whose name is matched
         """
-        for element_class in self.model_schema.element_classes:
+        for element_class in self.model_schema.element_classes_ordered:
             if element_class.label == name:
                 return element_class
         return None

@@ -38,7 +38,7 @@ class ScenarioDict(dict):
         # set the attributes and expand the dict
         self.dataset_path_resolver = dataset_path_resolver
         self.model_schema = model_schema
-        self.element_type_classes = model_schema.element_type_classes
+        self.element_type_classes = model_schema.configurable_element_type_classes
 
         self.dict = self.expand_subsets(init_dict)
 

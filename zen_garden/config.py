@@ -39,7 +39,7 @@ from pathlib import Path
 from typing import Any, Literal, Optional, Union
 
 import yaml
-from pydantic import BaseModel, ConfigDict, ValidationError
+from pydantic import BaseModel, ConfigDict, Field, ValidationError
 from typing_extensions import override
 
 from zen_garden.workflow_step import workflow_step
@@ -333,8 +333,7 @@ class Config(ConfigBase):
     analysis: Analysis = Analysis()
     solver: Solver = Solver()
     system: System = System()
-    plugins: dict[str, Any] = {}
-
+    plugins: dict[str, dict[str, Any]] = Field(default_factory=dict)
     scenarios: dict[str, Any] = {"": {}}
 
     @classmethod

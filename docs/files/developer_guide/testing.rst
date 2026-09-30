@@ -10,12 +10,12 @@ Testing
 Creating Tests
 ===============
 
-1. Create new test model in ``tests\testcases``. The model follows the same
+1. Create a new test model in ``tests/end_to_end/fixtures``. The model follows the same
    format as any other ZEN-garden model and can be anything.
 2. Check the test model for correctness and ensure that it has a unique solution.
-3. Add variables on which to test to the file ``tests\testcases\test_variables.yaml``.
-4. Add test case function to ``tests\testcases\run_test.py``.
-5. Add the test-case description to ``tests\testcases\docu_test_cases.md``.
+3. Add variables on which to test to the file ``tests/end_to_end/test_variables.yaml``.
+4. Add the test case function to ``tests/end_to_end/run_test.py``.
+5. Add the test-case description to ``tests/end_to_end/docu_test_cases.md``.
 
 .. _testing.run:
 
@@ -61,7 +61,7 @@ settings:
   will only work for Conda environments that were also declared as such in
   PyCharm; if you set the path to the Python executable yourself, you should
   create a new proper PyCharm interpreter.
-- Set the "Working directory" to the directory ``tests/testcases`` of the repo.
+- Set the "Working directory" to the directory ``tests/end_to_end`` of the repo.
 
 In the end, your configuration to run the coverage should look similar to this:
 

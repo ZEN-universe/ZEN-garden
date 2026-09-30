@@ -54,7 +54,7 @@ class ModelConstructionService:
 
     def construct_model(self):
         """Logic to construct a model based on the provided name and parameters."""
-        # model_schema.element_classes is the ordered list of every element type
+        # model_schema.element_classes_ordered is the ordered list of every element type
         # (EnergySystem first, then ELEMENT_TYPE_CLASSES). One generic
         # ModelConstructor is built per type.
         self._model_constructors = [
@@ -62,7 +62,7 @@ class ModelConstructionService:
             # optimization_model, model_schema, network_topology, time_steps;
             # explicit argument: element_class.
             self.service_container.build(ModelConstructor, element_class=element_class)
-            for element_class in self.model_schema.element_classes
+            for element_class in self.model_schema.element_classes_ordered
         ]
         # Filter out model constructors that do not have any elements to construct
         self._model_constructors = [

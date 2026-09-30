@@ -460,6 +460,10 @@ class Scenario:
         values = self.get_values(
             component_name, index, keep_raw=keep_raw, rename_index=False
         )
+
+        if values.empty:
+            return pd.DataFrame()
+
         timestep_column, timestep_type = TimestepType.from_index_names(
             [str(name) for name in values.index.names]
         )
