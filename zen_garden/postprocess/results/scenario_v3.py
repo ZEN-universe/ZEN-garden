@@ -169,7 +169,6 @@ class ScenarioV3(Scenario):
         if series is None:
             return None
         series = self._to_internal_index_names(series)
-        series = drop_unit_levels(series)
         # Post-processing below is identical to Scenario.get_unit; only the
         # location of the raw unit series (see ``_load_unit_series``) differs
         # between the formats.
@@ -183,6 +182,7 @@ class ScenarioV3(Scenario):
             for unit in cast("pd.Series[str]", series.unique())
         }
         series = series.map(unit_map)
+        series = drop_unit_levels(series)
         series = series.sort_index()
         if series.size == 1 and series.index.name is None:
             return series.iloc[0]
