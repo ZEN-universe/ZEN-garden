@@ -3,6 +3,15 @@
 This file gets automatically updated in ZEN-garden's continuous integration 
 procedures. Do not edit the file manually.
 
+## [v3.2.0] - 2026-10-15 
+
+### New Features ✨
+- improve the error messages in the data loader [[🔀 PR #1347](https://github.com/ZEN-universe/ZEN-garden/pull/1347) @jacob-mannhardt]
+
+### Bug Fixes 🐛
+- fixes the storage level reconstruction, so that the first hours are not nans anymore [[🔀 PR #1347](https://github.com/ZEN-universe/ZEN-garden/pull/1347) @jacob-mannhardt]
+- fixes the extraction of the unit, especially the dropping of the levels, so that the time is correctly handled (GW -> GWh for annual values) [[🔀 PR #1347](https://github.com/ZEN-universe/ZEN-garden/pull/1347) @jacob-mannhardt]
+
 ## [v3.1.1] - 2026-09-30 
 
 ### Bug Fixes 🐛
