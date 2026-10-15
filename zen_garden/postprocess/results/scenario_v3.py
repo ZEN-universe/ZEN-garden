@@ -25,6 +25,7 @@ import numpy as np
 import pandas as pd
 
 from zen_garden.config import HeaderDataInputs
+from zen_garden.postprocess.postprocess import drop_unit_levels
 from zen_garden.postprocess.results.component_map import ComponentMap
 from zen_garden.postprocess.results.component_type import ComponentType
 from zen_garden.postprocess.results.scenario import (
@@ -33,7 +34,6 @@ from zen_garden.postprocess.results.scenario import (
     Scenario,
     _build_query,
 )
-from zen_garden.postprocess.postprocess import drop_unit_levels
 from zen_garden.postprocess.results.timestep_type import TimestepType
 
 logger = logging.getLogger(__name__)
