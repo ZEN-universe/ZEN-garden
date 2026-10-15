@@ -152,25 +152,16 @@ folder).
     The parameters are available in the constraint's ``build`` method through
     the ``model_constructor.optimization_model.parameters.<parameter_name>`` attribute.
 
-Logging new and changed parameters
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Handling new and renamed parameters
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-If you add a new parameter or change the name of an existing one, please document 
-that in
+If you change the name of an existing parameter, document that in
 :py:data:`PARAMETER_CHANGE_LOG <zen_garden.input.element_data_loader.PARAMETER_CHANGE_LOG>`.
-The reason to add the name is that the new or changed parameters will be searched for 
-in the input data, but are not available in the datasets of others. 
-To avoid breaking changes, the new or changed parameters are documented in the log file 
-and then equivalent parameters are found without breaking the code.
+This allows existing datasets to continue using the old name.
 
 The keys of ``PARAMETER_CHANGE_LOG`` are always the new, current parameter name.
-There are two possible options:
-
-1. You change the name of an existing parameter, e.g.,
-   from ``outdated_name`` to ``updated_name``.
-   In this case, you add the new name as the key and the old name as the value.
-   The code will then search for the old name in the input data and use the new name in 
-   the optimization.
+Add the new name as the key and the old name as the value. The code will then
+search for the old name in the input data and use the new name in the optimization.
 
 .. code-block:: python
 
@@ -179,20 +170,18 @@ There are two possible options:
         # other parameters...
     }
 
-2. You add a new parameter that had not existed before, e.g., ``new_parameter``.
-   In addition to the new name, you also provide the ``default_value`` 
-   (only `0`, `1`, or `inf` are allowed), and another parameter with the same 
-   unit category that is used to infer the unit of the new parameter.
+For a new parameter that is missing from existing datasets, define
+``default_value`` (only ``0``, ``1``, or ``"inf"`` are allowed) and
+``default_unit`` on its :py:class:`GenericParameter
+<zen_garden.model.component_types.parameter.GenericParameter>` subclass.
+``default_unit`` names an existing parameter whose input unit should be reused.
 
 .. code-block:: python
 
-    PARAMETER_CHANGE_LOG = {
-        "new_parameter": {
-            "default_value": 0,
-            "unit": "existing_parameter_name_with_same_unit"
-        },
-        # other parameters...
-    }
+    class NewParameter(GenericParameter):
+        # other parameter metadata...
+        default_value = 0
+        default_unit = "existing_parameter_name_with_same_unit"
 
 In every major release, the log file is cleared, so users must update their input data 
 accordingly.

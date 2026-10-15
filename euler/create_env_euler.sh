@@ -18,5 +18,6 @@ source zen_garden_env/bin/activate
 
 # install the requirements
 pip install -U pip
-pip install -e ..[dev,vis,docs]
+pip install uv
+uv pip install -e ..[dev,vis,docs]
 pip install gurobipy==12.0.1

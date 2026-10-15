@@ -9,3 +9,5 @@ class CapacityLowerLimit(GenericParameter):
     doc = "Lower capacity limit of technologies"
     unit_category = {"energy_quantity": 1, "time": -1}
     capacity_types = True
+    default_value = 0
+    default_unit = "capacity_limit"

@@ -21,17 +21,28 @@ class ModelSchema:
     def __init__(self, config: Config):
         """Construct a model blueprint using configuration only."""
         self.config = config
-        self.element_classes: tuple[type[Element], ...] = (
-            EnergySystem,
-            *ELEMENT_TYPE_CLASSES.values(),
-        )
-        self.element_type_classes = dict(ELEMENT_TYPE_CLASSES)
+        self.element_type_classes: dict[str, type[Element]] = {
+            "EnergySystem": EnergySystem,
+            **ELEMENT_TYPE_CLASSES,
+        }
         self.parameters_interpolation_off: dict[str, Any] | None = None
         self.dict_technology_of_carrier: dict[str, list[str]] = {}
         self.set_carriers: list[str] = []
         self._set_hours_all_years: list[int] | None = None
         self._set_years: list[int] | None = None
         self._elements: defaultdict[str, list[Element]] = defaultdict(list)
+
+    @property
+    def element_classes_ordered(self) -> tuple[type[Element], ...]:
+        return tuple(self.element_type_classes.values())
+
+    @property
+    def configurable_element_type_classes(self) -> dict[str, type[Element]]:
+        return {
+            name: element_class
+            for name, element_class in self.element_type_classes.items()
+            if element_class is not EnergySystem
+        }
 
     def register_element(self, element: Element) -> None:
         """Register an element under every element type in its inheritance tree."""

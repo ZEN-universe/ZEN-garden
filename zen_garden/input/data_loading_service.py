@@ -44,6 +44,6 @@ class DataLoadingService:
     def _parameter_order(self) -> list[type[GenericParameter]]:
         """Topologically order every parameter declaration in the schema."""
         parameters: list[type[GenericParameter]] = list(EnergySystem.parameters)
-        for element_class in self.model_schema.element_classes:
+        for element_class in self.model_schema.element_classes_ordered:
             parameters.extend(element_class.parameters)
         return GenericParameter.construction_order(parameters)

@@ -1,3 +1,10 @@
+from .config import ConfigBase
+from .model.component_types.constraint import GenericConstraint
+from .model.component_types.parameter import GenericParameter
+from .model.component_types.set import GenericSet
+from .model.component_types.variable import GenericVariable
+from .model.schema import ModelSchema
+from .plugin_system.events import Event, EventPublisher
 from .postprocess.comparisons import (
     compare_configs,
     compare_dicts,
@@ -14,4 +21,12 @@ __all__ = [
     "compare_configs",
     "compare_model_values",
     "compare_dicts",
+    "ConfigBase",
+    "Event",
+    "EventPublisher",
+    "GenericConstraint",
+    "GenericParameter",
+    "GenericSet",
+    "GenericVariable",
+    "ModelSchema",
 ]
