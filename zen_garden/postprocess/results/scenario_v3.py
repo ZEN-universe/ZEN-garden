@@ -1,6 +1,6 @@
 """Scenario reader for pre-netCDF ZEN-garden result folders (output version 3).
 
-Result folders written by ZEN-garden ``< 3.0.0`` (output version 3 - the last
+Result folders written by ZEN-garden ``< 3.0.0`` (output version 3, the last
 on-disk format supported by ``solution_loader.py`` on the ``main`` branch before
 the switch to netCDF) store every component in per-type HDF5 files
 (``var_dict.h5``, ``param_dict.h5``, ``set_dict.h5``, ``dual_dict.h5`` and,
@@ -8,34 +8,12 @@ optionally, ``reduced_costs_dict.h5``) rather than the ``*.nc`` files plus
 ``component_map.json`` / ``*_docs.json`` used by the current
 :class:`~zen_garden.postprocess.results.scenario.Scenario`.
 
-Within one of those HDF5 files each component is a ``pandas.Series`` stored under
-its own key, its unit series (if any) is stored under ``<key>_units``, and its
-metadata lives in the HDF5 attributes of the component group (``docstring``,
-``index_names``, ``has_units``, ``name``).
-
 :class:`ScenarioV3` inherits from :class:`Scenario` and overrides only the
 members that read the result files directly: :attr:`component_map` (there is no
 ``component_map.json``), :meth:`get_raw_values`, :meth:`get_unit` (via
 :meth:`_load_unit_series`), :meth:`get_doc` and :meth:`get_index_names`. The
 config JSONs, ``unit_definitions.txt`` and ``dict_all_sequence_time_steps*.json``
 are byte-for-byte compatible and their accessors are inherited unchanged.
-
-Legacy folders also name the index levels with the *friendly* names (``year``,
-``node``, ``time_operation``, ...) instead of the internal ``set_*`` names the
-current :class:`Scenario` machinery expects, so :meth:`get_raw_values` and
-:meth:`get_unit` normalise them via :meth:`_to_internal_index_names` (using the
-inverse of ``analysis.header_data_inputs``) before handing the series to the
-inherited logic, which renames them back on the way out. Without this,
-``get_total`` / ``get_full_ts`` would neither unstack the time dimension nor
-convert the time-step index to calendar years.
-
-The raw file access is isolated in a few small helpers
-(:meth:`_read_component_series`, :meth:`_load_unit_series`,
-:meth:`_to_internal_index_names`, :meth:`time_steps`) so that the readers for
-the even older output versions 1 and 2
-(:mod:`~zen_garden.postprocess.results.scenario_v2` /
-:mod:`~zen_garden.postprocess.results.scenario_v1`) can subclass
-:class:`ScenarioV3` and override just those.
 """
 
 import logging
@@ -55,6 +33,7 @@ from zen_garden.postprocess.results.scenario import (
     Scenario,
     _build_query,
 )
+from zen_garden.postprocess.postprocess import drop_unit_levels
 from zen_garden.postprocess.results.timestep_type import TimestepType
 
 logger = logging.getLogger(__name__)
@@ -190,7 +169,6 @@ class ScenarioV3(Scenario):
         if series is None:
             return None
         series = self._to_internal_index_names(series)
-
         # Post-processing below is identical to Scenario.get_unit; only the
         # location of the raw unit series (see ``_load_unit_series``) differs
         # between the formats.
@@ -204,6 +182,7 @@ class ScenarioV3(Scenario):
             for unit in cast("pd.Series[str]", series.unique())
         }
         series = series.map(unit_map)
+        series = drop_unit_levels(series)
         series = series.sort_index()
         if series.size == 1 and series.index.name is None:
             return series.iloc[0]
@@ -265,20 +244,6 @@ class ScenarioV3(Scenario):
 
     def _friendly_to_internal_index(self) -> dict[str, str]:
         """Map on-disk (friendly) index names to internal ``set_*`` names.
-
-        Built by inverting ``analysis.header_data_inputs`` (internal -> friendly).
-        The folder's own mapping takes precedence so that the names produced here
-        round-trip cleanly through :meth:`_rename_index`; the current
-        :class:`HeaderDataInputs` schema fills in any friendly name the folder
-        did not record (``header_data_inputs`` is loaded without validation and
-        may be partial). When several dimensions share a friendly name the first
-        wins - the choice is irrelevant because :meth:`_rename_index` collapses
-        them back to the same friendly name.
-
-        The yearly dimension is the one case where an old folder's internal name
-        (``set_time_steps_yearly``) differs from today's (``set_years``); both are
-        recognised by :meth:`TimestepType.from_index_names`, so either resolves to
-        :attr:`TimestepType.yearly` downstream.
 
         :return: A mapping ``friendly name -> internal name``.
         """

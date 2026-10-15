@@ -41,7 +41,9 @@ UNRELATED_INDEXES_FOR_UNITS = set(
         "set_edges",
         "set_time_steps_operation",
         "set_time_steps_storage",
+        "set_time_steps_yearly",
         "set_years",
+        "set_hours",
     ]
 )
 
@@ -61,6 +63,29 @@ def _append_suffix(file_name: Path, suffix: str) -> Path:
     return file_name.with_name(file_name.name + suffix)
 
 
+def drop_unit_levels(series: pd.Series) -> pd.Series:
+    """Drops the unrelated index levels from the series.
+
+    Args:
+        series: The series to drop the levels from
+    Returns:
+        The series with the unrelated index levels dropped.
+    """
+    levels_to_drop = cast(
+        list[Hashable],
+        list(UNRELATED_INDEXES_FOR_UNITS & set(series.index.names)),
+    )
+    if levels_to_drop and len(levels_to_drop) < len(series.index.names):
+        reduced_series = series.droplevel(levels_to_drop)
+        reduced_series = reduced_series[
+            ~reduced_series.index.duplicated(keep="first")
+        ]
+    elif levels_to_drop:
+        # if there are no index levels left, we must only keep one entry
+        reduced_series = series.reset_index(drop=True).loc[[0]]
+    else:
+        reduced_series = series
+    return reduced_series
 class Postprocess:
     """Class is defining the postprocessing of the results."""
 
@@ -546,20 +571,7 @@ class Postprocess:
         """
         units_dict_reduced = {}
         for key, series in units_dict.items():
-            levels_to_drop = cast(
-                list[Hashable],
-                list(UNRELATED_INDEXES_FOR_UNITS & set(series.index.names)),
-            )
-            if levels_to_drop and len(levels_to_drop) < len(series.index.names):
-                reduced_series = series.droplevel(levels_to_drop)
-                reduced_series = reduced_series[
-                    ~reduced_series.index.duplicated(keep="first")
-                ]
-            elif levels_to_drop:
-                # if there are no index levels left, we must only keep one entry
-                reduced_series = series.reset_index(drop=True).loc[[0]]
-            else:
-                reduced_series = series
+            reduced_series = drop_unit_levels(series)
             units_dict_reduced[key] = reduced_series
         self._write_h5_file(f_name, units_dict_reduced)
 
