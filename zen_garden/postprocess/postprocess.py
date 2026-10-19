@@ -77,15 +77,15 @@ def drop_unit_levels(series: pd.Series) -> pd.Series:
     )
     if levels_to_drop and len(levels_to_drop) < len(series.index.names):
         reduced_series = series.droplevel(levels_to_drop)
-        reduced_series = reduced_series[
-            ~reduced_series.index.duplicated(keep="first")
-        ]
+        reduced_series = reduced_series[~reduced_series.index.duplicated(keep="first")]
     elif levels_to_drop:
         # if there are no index levels left, we must only keep one entry
         reduced_series = series.reset_index(drop=True).loc[[0]]
     else:
         reduced_series = series
     return reduced_series
+
+
 class Postprocess:
     """Class is defining the postprocessing of the results."""
 
