@@ -61,7 +61,7 @@ dev = [
     "coverage",
     "pytest-xdist",
     "pytest-cov",
-    "black==26.5.1",
+    "black==26.10.1",
     "ruff==0.16.5",
     "mypy==2.3.1",
     "pandas-stubs",

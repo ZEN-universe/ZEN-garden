@@ -257,7 +257,7 @@ class ElementDataLoader:
                         f"{file_name} not in columns of "
                         f"input file for {self.element.name}"
                     )
-                
+
                 df_output = (
                     ElementDataLoader.extract_from_input_for_capacities_existing(
                         df_input,
@@ -278,7 +278,7 @@ class ElementDataLoader:
                     copy.deepcopy(index_name_list),
                     file_name,
                     missing_index,
-                    self.element.name
+                    self.element.name,
                 )
 
         # check for duplicate indices
@@ -973,7 +973,8 @@ class ElementDataLoader:
 
     @staticmethod
     def extract_from_input_without_missing_index(
-        df_input, index_name_list, file_name, element_name):
+        df_input, index_name_list, file_name, element_name
+    ):
         """Extracts the demanded values from Input dataframe and
         reformulates dataframe.
 
