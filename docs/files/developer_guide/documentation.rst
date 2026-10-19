@@ -87,7 +87,6 @@ publication. To build the documentation locally, use the following steps:
    .. code::
 
        cd <path-to-ZEN-garden>\docs
-       uv sync --extra docs
 
 3. Remove all previous builds and clear any cached files from Sphinx. To do
    this, run the command shown below. This step should repeated each time
@@ -95,13 +94,13 @@ publication. To build the documentation locally, use the following steps:
 
    .. code::
 
-       uv run make clean
+       make clean
 
 4. Build the local documentation using the command:
 
    .. code::
 
-       uv make make html
+       make html
 
 5. The documentation is then available in the ``docs/build/html`` folder. Open the
    ``index.html`` file in your browser to preview the documentation. Repeat steps

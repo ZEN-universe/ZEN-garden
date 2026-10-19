@@ -5,12 +5,9 @@ channels:
 dependencies:
   - pip
   - python=3.13
-  - uv
+  - pip:
+      - -e .[dev,vis,gurobipy,docs]
 
-# To create the environment, run the following commands:
-# ```sh
 # conda remove --name zen-garden-env --all
 # conda env create -f zen_garden_env.yml
 # conda activate zen-garden-env
-# uv sync --extra dev,docs,vis,gurobipy
-# ```

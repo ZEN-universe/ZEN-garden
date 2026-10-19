@@ -30,7 +30,7 @@ make sure to add a new test that covers the new code.
 
 You can execute the tests by running::
 
-    uv run pytest --cov="zen_garden" -n auto tests/ -v
+    pytest --cov="zen_garden" -n auto tests/ -v
 
 **Pycharm configuration**
 

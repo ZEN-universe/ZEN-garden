@@ -36,7 +36,7 @@ Install a plugin package from a local path, like this (set the -e flag for edita
 
 .. code-block:: shell
 
-     uv pip install -e path\to\zen_garden_plugins --no-deps
+     pip install -e path\to\zen_garden_plugins --no-deps
 
 
 **Activation**
