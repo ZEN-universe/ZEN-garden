@@ -3,6 +3,11 @@
 This file gets automatically updated in ZEN-garden's continuous integration 
 procedures. Do not edit the file manually.
 
+## [v3.2.1] - 2026-10-19 
+
+### Bug Fixes 🐛
+- remove `uv` as the ZEN-garden environment manager and use `conda` + `pip` instead. Conda does not work seamlessly with `uv`, which was developed for use in standard python virtual environments. [[📋 Issue #1349](https://github.com/ZEN-universe/ZEN-garden/issues/1349)] [[🔀 PR #1353](https://github.com/ZEN-universe/ZEN-garden/pull/1353) @csfunke]
+
 ## [v3.2.0] - 2026-10-15 
 
 ### New Features ✨
