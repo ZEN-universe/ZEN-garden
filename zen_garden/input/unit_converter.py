@@ -65,6 +65,9 @@ class UnitConverter:
         self.ureg: UnitRegistry = UnitRegistry()
         # snapshot of the default units to identify user-defined units later
         self.default_unit_items = set(self.ureg._units.items())
+        # caches of the unit conversions into base units, keyed by unit string
+        self._unit_in_base_units_cache: dict[str, tuple[Any, Any]] = {}
+        self._unit_multiplier_cache: dict[str, float] = {}
 
         # dict of element attribute values
         self.dict_attribute_values: dict[str, dict[str, Any]] = {}
@@ -499,23 +502,55 @@ class UnitConverter:
                 If `get_multiplier` is True, returns the multiplier as a float
                 and the base units as a `pint.Quantity`.
         """
-        # convert attribute unit into unit combination of base units
+        # the conversion only depends on the unit string, so string units are
+        # cached (NaN units are not cached since they log a per-attribute warning)
+        use_cache = isinstance(input_unit, str)
+        if use_cache and input_unit in self._unit_in_base_units_cache:
+            combined_unit, attribute_unit_in_base_units = (
+                self._unit_in_base_units_cache[input_unit]
+            )
+        else:
+            combined_unit, attribute_unit_in_base_units = (
+                self._calculate_unit_in_base_units(input_unit)
+            )
+            if use_cache:
+                self._unit_in_base_units_cache[input_unit] = (
+                    combined_unit,
+                    attribute_unit_in_base_units,
+                )
+        # calculate the multiplier to convert the attribute unit into base units
+        if get_multiplier:
+            if use_cache and input_unit in self._unit_multiplier_cache:
+                multiplier = self._unit_multiplier_cache[input_unit]
+            else:
+                multiplier = self.get_unit_multiplier(
+                    input_unit, attribute_name, path, combined_unit=combined_unit
+                )
+                if use_cache:
+                    self._unit_multiplier_cache[input_unit] = multiplier
+            return multiplier, attribute_unit_in_base_units
+        else:
+            return attribute_unit_in_base_units
+
+    def _calculate_unit_in_base_units(self, input_unit):
+        """Expresses an input unit as a combination of base units.
+
+        :param input_unit: The unit to be converted (e.g., "kg", "m/s")
+        :return: combined_unit: dimensionless combined unit (None for
+            dimensionless input units)
+        :return: unit_in_base_units: input unit expressed in base units
+        """
         combined_unit = None
-        attribute_unit_in_base_units = self.ureg("")
+        unit_in_base_units = self.ureg("")
         if input_unit != "1" and not pd.isna(input_unit):
             combined_unit, base_combination = self.calculate_combined_unit(input_unit)
             for unit, power in zip(
                 base_combination.index, base_combination, strict=False
             ):
-                attribute_unit_in_base_units *= self.ureg(unit) ** power
-        # calculate the multiplier to convert the attribute unit into base units
-        if get_multiplier:
-            multiplier = self.get_unit_multiplier(
-                input_unit, attribute_name, path, combined_unit=combined_unit
-            )
-            return multiplier, attribute_unit_in_base_units
-        else:
-            return attribute_unit_in_base_units
+                # base units with power 0 do not change the unit
+                if power != 0:
+                    unit_in_base_units *= self.ureg(unit) ** power
+        return combined_unit, unit_in_base_units
 
     def consistency_checks_input_units(
         self,
