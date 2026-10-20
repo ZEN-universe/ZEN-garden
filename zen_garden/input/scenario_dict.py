@@ -153,6 +153,12 @@ class ScenarioDict(dict):
             # dicts and have a list in them, only then do the list expansion,
             # otherwise proceed as always.
             for param, param_dict in sorted(element_dict.items(), key=lambda x: x[0]):
+                assert isinstance(param_dict, dict), (
+                    f"The parameter {param} in element {element} in scenario "
+                    f"{scenario['base_scenario']} is not a dictionary, "
+                    "but it should contain a valid operator: "
+                    f"{list(ScenarioDict._param_dict_keys)}!"
+                )
                 if element in ScenarioDict._setting_elements:
                     if not isinstance(param_dict, dict):
                         continue

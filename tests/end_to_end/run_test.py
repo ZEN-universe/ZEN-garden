@@ -729,4 +729,4 @@ def test_11a(folder_path):
 
 if __name__ == "__main__":
     testcase_folder = os.path.join(os.path.dirname(__file__), "fixtures")
-    test_4d(testcase_folder)
+    test_5b(testcase_folder)

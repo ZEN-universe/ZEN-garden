@@ -1,0 +1,9 @@
+knowledge_depreciation_rate:
+  default_value: 0.2
+  unit: '1'
+knowledge_spillover_rate:
+  default_value: 0.15
+  unit: '1'
+market_share_unbounded:
+  default_value: 0.01
+  unit: '1'

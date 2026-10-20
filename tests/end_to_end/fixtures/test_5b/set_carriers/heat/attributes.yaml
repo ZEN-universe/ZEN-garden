@@ -8,7 +8,7 @@ demand:
   default_value: 0.0
   unit: GW
 price_shed_demand:
-  default_value: inf
+  default_value: 1000
   unit: kiloEuro/GWh
 availability_import:
   default_value: 0.0
