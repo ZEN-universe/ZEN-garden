@@ -34,7 +34,9 @@ class TechnologyDiffusionLimitConstraint(GenericConstraint):
         The unbounded market share term :math:`\\chi` is separate from
         knowledge spillover. It uses :math:`K^{\\mathrm{prev}}` for other
         technologies in the target technology's class (excluding the target
-        itself) whose reference carrier matches the target. The term is
+        itself: :math:`\\tilde{
+        \\mathcal H}}=\\{\\tilde h\\in\\mathcal H\\mid \\tilde h\\ne h\\}`) 
+        whose reference carrier matches the target. The term is
         calculated at the target location; ``market_share_unbounded`` supplies
         the coefficient :math:`\\chi`.
 
@@ -58,7 +60,8 @@ class TechnologyDiffusionLimitConstraint(GenericConstraint):
         where the sum is over other nodes. For transport technologies,
         :math:`K^\\omega=K^0` because node-to-node spillover is zero.
 
-        For finite maximum diffusion rates, a global constraint is added:
+        To avoid spillover loops from one country to another, 
+        a global constraint is added:
 
         .. math::
             \\sum_p\\Delta K_{h,p,y}\\leq
@@ -243,15 +246,18 @@ class TechnologyDiffusionLimitConstraint(GenericConstraint):
             .sum("set_other_technologies")
         )
         # existing capacities
-        delta_years = interval_between_years * (
+        years_from_start = interval_between_years * (
             capacity_addition.coords["set_years"]
-            - 1
-            - model_constructor.model_schema.set_years[0]
+            - optimization_model.sets["set_years"][0]
         )
         lifetime_existing = optimization_model.parameters.lifetime_existing
         lifetime = optimization_model.parameters.lifetime
         kdr_existing = (1 - knowledge_depreciation_rate) ** (
-            delta_years + lifetime - lifetime_existing
+            years_from_start - 1 + lifetime - lifetime_existing
+        )
+        # remove knowledge from existing technologies built in the future
+        kdr_existing = kdr_existing.where(
+            lifetime >= lifetime_existing - years_from_start, 0
         )
         capacity_existing_total_nosr = capacity_existing
         # capacity addition unbounded

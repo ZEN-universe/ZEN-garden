@@ -728,5 +728,44 @@ def test_11a(folder_path):
 
 
 if __name__ == "__main__":
+    import argparse
+
+    available_tests = {
+        name: func
+        for name, func in globals().items()
+        if name.startswith("test_") and callable(func)
+    }
+    parser = argparse.ArgumentParser(description="Run end-to-end test(s) by hand.")
+    parser.add_argument(
+        "tests",
+        nargs="*",
+        help="Test(s) to run, e.g. '4a' or 'test_4a'. Use --all to run all tests.",
+    )
+    parser.add_argument("--all", action="store_true", help="Run all tests.")
+    parser.add_argument(
+        "--list", action="store_true", help="List the available tests and exit."
+    )
+    args = parser.parse_args()
+
+    if args.list:
+        print("\n".join(available_tests))
+        parser.exit()
+    if args.all:
+        selected_tests = list(available_tests)
+    elif args.tests:
+        selected_tests = [
+            t if t.startswith("test_") else f"test_{t}" for t in args.tests
+        ]
+        unknown_tests = [t for t in selected_tests if t not in available_tests]
+        if unknown_tests:
+            parser.error(
+                f"Unknown test(s): {', '.join(unknown_tests)}. "
+                f"Use --list to see the available tests."
+            )
+    else:
+        parser.error("Specify at least one test or use --all.")
+
     testcase_folder = os.path.join(os.path.dirname(__file__), "fixtures")
-    test_4d(testcase_folder)
+    for test_name in selected_tests:
+        print(f"Running {test_name}")
+        available_tests[test_name](testcase_folder)

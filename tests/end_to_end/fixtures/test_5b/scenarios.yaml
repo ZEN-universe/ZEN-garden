@@ -1,0 +1,33 @@
+'unbounded_market_share':
+  EnergySystem:
+    market_share_unbounded:
+      default: attributes_ter.yaml
+'existing_capa':
+  high_efficiency_ng_boiler:
+    capacity_existing:
+      file: capacity_existing_existing_capa
+'knowledge_depreciation':
+  EnergySystem:
+    knowledge_depreciation_rate:
+      default: attributes_ter.yaml
+  high_efficiency_ng_boiler:
+    capacity_existing:
+      file: capacity_existing_existing_capa
+'spillover':
+  EnergySystem:
+    knowledge_spillover_rate:
+      default: attributes_ter.yaml
+  high_efficiency_ng_boiler:
+    capacity_existing:
+      file: capacity_existing_existing_capa
+'inf_spillover':
+  EnergySystem:
+    knowledge_spillover_rate:
+      default: attributes_inf_sr.yaml
+  high_efficiency_ng_boiler:
+    capacity_existing:
+      file: capacity_existing_existing_capa
+'future_existing_capa':
+  high_efficiency_ng_boiler:
+    capacity_existing:
+      file: capacity_existing_future_existing_capa

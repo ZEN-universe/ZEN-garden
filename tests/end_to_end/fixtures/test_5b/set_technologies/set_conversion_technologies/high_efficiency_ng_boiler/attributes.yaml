@@ -44,7 +44,7 @@ opex_specific_fixed:
   default_value: 87.6
   unit: Euro/kW
 max_diffusion_rate:
-  default_value: 0.15
+  default_value: 0.1
   unit: '1'
 input_carrier:
   default_value:
