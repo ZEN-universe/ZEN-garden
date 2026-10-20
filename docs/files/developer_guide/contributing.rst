@@ -165,8 +165,8 @@ properly. To setup pre-commit properly execute the following commands once:
 
 .. code:: shell
 
-    uv sync --extra dev
-    uv run pre-commit install
+    pip install -e ".[dev]"
+    pre-commit install
 
 Afterwards, whenever you run git commit, *Ruff* and *Black* are executed.
 

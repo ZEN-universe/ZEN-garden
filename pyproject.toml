@@ -16,7 +16,7 @@ authors = [
   {name = "Giovanni Sansavini"},
   ]
 # do not change version manually! Done by bump2version
-version = "3.1.1"
+version = "3.2.1"
 requires-python= ">=3.11,<3.14"
 description="ZEN-garden is an optimization model of energy systems and value chains."
 readme = "README.md"
@@ -61,7 +61,7 @@ dev = [
     "coverage",
     "pytest-xdist",
     "pytest-cov",
-    "black==26.5.1",
+    "black==26.10.1",
     "ruff==0.16.5",
     "mypy==2.3.1",
     "pandas-stubs",

@@ -30,7 +30,7 @@ Please check all items that apply. If an item is not applicable, please remove i
   - [ ] Issues are linked with a github keyword plus `#`. 
 
 ### Code quality
-- [ ] Newly introduced dependencies are added to `pyproject.toml` and synced using `uv sync --upgrade`.
+- [ ] Newly introduced dependencies are added to `pyproject.toml`.
 - [ ] Code changes have been tested locally and all tests pass.
 - [ ] Code has been formatted via ``black .`` in a terminal window.
 - [ ] Linter ``ruff check .`` passes all checks.
