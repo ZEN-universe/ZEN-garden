@@ -50,15 +50,34 @@ class Technology(Element):
             self.element_data_loader.extract_set_technologies_existing()
         )
 
-    def calculate_capex_of_capacities_existing(self):
+    def calculate_capex_of_capacities_existing(self, storage_energy=False):
         """This method calculates the annualized capex of the existing capacities.
 
         :param storage_energy: boolean if energy storage
         :return: capex of existing capacities
         """
-        return self.capacity_existing.to_frame().apply(
+        capacities_existing = (
+            self.capacity_existing_energy if storage_energy else self.capacity_existing
+        )
+        return self.calculate_capex_of_capacities(
+            capacities_existing, storage_energy=storage_energy
+        )
+
+    def calculate_capex_of_capacities(self, capacities, storage_energy=False):
+        """Calculates the capex of all existing capacities at once.
+
+        Child classes override this with a vectorized calculation. This fallback
+        evaluates calculate_capex_of_single_capacity row by row.
+
+        :param capacities: existing capacities indexed by location and
+            technology vintage
+        :param storage_energy: boolean if energy capacity or power capacity
+        :return: capex of existing capacities
+        """
+        kwargs = {"storage_energy": True} if storage_energy else {}
+        return capacities.to_frame().apply(
             lambda _capacity_existing: self.calculate_capex_of_single_capacity(
-                _capacity_existing.squeeze(), _capacity_existing.name
+                _capacity_existing.squeeze(), _capacity_existing.name, **kwargs
             ),
             axis=1,
         )
@@ -69,6 +88,22 @@ class Technology(Element):
         :param args: arguments
         """
         raise NotImplementedError
+
+    @staticmethod
+    def _first_value_per_location(series, locations):
+        """Vectorized equivalent of ``series[location].iloc[0]`` per location.
+
+        :param series: series whose first index level is the location
+        :param locations: locations for which the first value is returned
+        :return: numpy array with the first value of each location
+        """
+        first_level = series.index.get_level_values(0)
+        is_first = ~first_level.duplicated()
+        first_values = pd.Series(series.to_numpy()[is_first], index=first_level[is_first])
+        missing = pd.Index(locations).difference(first_values.index)
+        if len(missing) > 0:
+            raise KeyError(f"Locations {list(missing)} not in index of {series.name}")
+        return first_values.reindex(locations).to_numpy()
 
     def calculate_fraction_of_year(self):
         """Calculate fraction of year."""

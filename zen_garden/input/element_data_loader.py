@@ -43,6 +43,38 @@ Example
     {"new_parameter_name": "old_parameter_name"}
 """
 
+_MULTI_INDEX_CACHE: dict[tuple, pd.MultiIndex] = {}
+"""Cache of the default output indices, which repeat across elements."""
+_MULTI_INDEX_CACHE_SIZE = 256
+
+
+def _get_multi_index(index_list, index_name_list) -> pd.MultiIndex:
+    """Returns the product MultiIndex of the index values, reusing cached indices.
+
+    A shallow copy is returned, which reuses the levels and codes but not the
+    names, since some code renames index levels in place.
+
+    :param index_list: list of index values per level
+    :param index_name_list: list of level names
+    :return: product MultiIndex
+    """
+    key = tuple(
+        (
+            name,
+            type(next(iter(values))) if len(values) else None,
+            tuple(values),
+        )
+        for name, values in zip(index_name_list, index_list, strict=True)
+    )
+    multi_index = _MULTI_INDEX_CACHE.get(key)
+    if multi_index is None:
+        multi_index = pd.MultiIndex.from_product(index_list, names=index_name_list)
+        if len(_MULTI_INDEX_CACHE) >= _MULTI_INDEX_CACHE_SIZE:
+            # drop the oldest entry
+            _MULTI_INDEX_CACHE.pop(next(iter(_MULTI_INDEX_CACHE)))
+        _MULTI_INDEX_CACHE[key] = multi_index
+    return multi_index.copy()
+
 
 class ElementDataLoader:
     """Class to extract input data."""
@@ -675,7 +707,7 @@ class ElementDataLoader:
             df_output: return existing capacity and existing lifetime
         """
         index_list, index_name_list = self.construct_index_list(index_sets)
-        multi_idx = pd.MultiIndex.from_product(index_list, names=index_name_list)
+        multi_idx = _get_multi_index(index_list, index_name_list)
         df_output = pd.Series(index=multi_idx, data=0, dtype=int)
         # if no existing capacities
         if not self.model_schema.config.system.use_capacities_existing:
@@ -730,9 +762,7 @@ class ElementDataLoader:
         index_list, index_name_list = self.construct_index_list(index_sets)
         # create pd.MultiIndex and select data
         if index_sets:
-            index_multi_index = pd.MultiIndex.from_product(
-                index_list, names=index_name_list
-            )
+            index_multi_index = _get_multi_index(index_list, index_name_list)
         else:
             index_multi_index = pd.Index([0])
         # use distances computed with node coordinates as default values
@@ -1083,7 +1113,15 @@ class ElementDataLoader:
         :param missing_index: missing index in df_input
         :return: df_output: filled output dataframe
         """
-        index_name_list.remove(missing_index)
+        # do not modify the index_name_list of the caller
+        index_name_list = [name for name in index_name_list if name != missing_index]
+        if len(index_name_list) == 1 and set(df_output.index.names) == {
+            index_name_list[0],
+            missing_index,
+        }:
+            return ElementDataLoader._fill_capacities_existing_vectorized(
+                df_input, df_output, index_name_list[0], missing_index, column
+            )
         df_input = df_input.set_index(index_name_list)
         set_location = df_input.index.unique()
         for location in set_location:
@@ -1113,4 +1151,46 @@ class ElementDataLoader:
                             f"Values in {column} are not integers, but should be"
                         )
                 df_output.loc[location, index] = values
+        return df_output
+
+    @staticmethod
+    def _fill_capacities_existing_vectorized(
+        df_input, df_output, location_name, technology_existing_name, column
+    ):
+        """Vectorized version of the per-location loop for existing capacities.
+
+        The i-th row of a location in df_input is assigned to the i-th
+        existing technology of that location in df_output. df_output is
+        modified in place.
+
+        :param df_input: raw input dataframe
+        :param df_output: default output series indexed by location and
+            existing technology
+        :param location_name: name of the location column
+        :param technology_existing_name: name of the existing technology level
+        :param column: select specific column
+        :return: df_output: filled output series
+        """
+        locations = df_input[location_name]
+        is_in_output = locations.isin(df_output.index.unique(level=location_name))
+        if not is_in_output.any():
+            return df_output
+        # number the rows of each location in their order in the input file
+        vintages = df_input.groupby(location_name, sort=False).cumcount()
+        values = df_input.loc[is_in_output, column].to_numpy()
+        target_index = pd.MultiIndex.from_arrays(
+            [locations[is_in_output].to_numpy(), vintages[is_in_output].to_numpy()],
+            names=[location_name, technology_existing_name],
+        ).reorder_levels(df_output.index.names)
+        positions = df_output.index.get_indexer(target_index)
+        if (positions < 0).any():
+            raise KeyError(
+                f"{column} has more entries per location than existing technologies"
+            )
+        # check that correct dtype of values
+        if df_output.dtype == int and values.dtype.kind == "f":
+            if not np.all(np.mod(values, 1) == 0):
+                raise ValueError(f"Values in {column} are not integers, but should be")
+            values = values.astype(int)
+        df_output.iloc[positions] = values
         return df_output

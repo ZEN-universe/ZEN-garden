@@ -3,6 +3,8 @@
 import logging
 from typing import ClassVar, cast
 
+import numpy as np
+import pandas as pd
 from typing_extensions import override
 
 from zen_garden.elements.conversion_technology.constraints import (
@@ -86,3 +88,18 @@ class ConversionTechnology(Technology):
         capex = self.capex_specific_conversion[index[0]].iloc[0] * capacity
 
         return capex
+
+    @override
+    def calculate_capex_of_capacities(self, capacities, storage_energy=False):
+        """Vectorized version of calculate_capex_of_single_capacity.
+
+        :param capacities: existing capacities indexed by node and vintage
+        :param storage_energy: unused for conversion technologies
+        :return: annualized capex of existing capacities
+        """
+        capacity = capacities.to_numpy(dtype=float)
+        capex_specific = self._first_value_per_location(
+            self.capex_specific_conversion, capacities.index.get_level_values(0)
+        )
+        capex = np.where(capacity == 0, 0.0, capex_specific * capacity)
+        return pd.Series(capex, index=capacities.index)
