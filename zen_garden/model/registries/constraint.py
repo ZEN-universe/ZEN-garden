@@ -75,11 +75,17 @@ class ConstraintRegistry(Registry):
         :param name: name of variable
         :param constraint: linopy constraint
         """
-        lhs = constraint.lhs
-        sign = constraint.sign
+        # pass the constraint directly to avoid rebuilding it from lhs, sign, rhs
         rhs = constraint.rhs
-        mask = constraint.mask
-        self._add_con(name, lhs, sign, rhs, mask=mask)
+        mask = ~np.isnan(rhs) & np.isfinite(rhs)
+        if constraint.mask is not None:
+            mask = mask & constraint.mask
+        if isinstance(mask, np.bool_):
+            return
+        # masked entries must have a finite rhs, since the scaling reads all rhs
+        data = constraint.data.assign(rhs=rhs.fillna(0))
+        constraint = lp.constraints.Constraint(data, self.lp_model, skip_broadcast=True)
+        self.lp_model.add_constraints(constraint, name=name, mask=mask)
 
     def _add_con(self, name, lhs, sign, rhs, mask=None):
         """Adds a constraint to the model.

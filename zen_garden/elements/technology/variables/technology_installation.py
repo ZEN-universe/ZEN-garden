@@ -21,13 +21,15 @@ class TechnologyInstallation(GenericVariable):
     @classmethod
     def get_mask(cls, model_constructor, index_sets):
         optimization_model = model_constructor.optimization_model
+        # variables.coords merges all variables, so only compute it once
+        variable_coords = optimization_model.lp_model.variables.coords
         mask = xr.DataArray(
             False,
             coords=[
-                optimization_model.lp_model.variables.coords["set_years"],
-                optimization_model.lp_model.variables.coords["set_technologies"],
-                optimization_model.lp_model.variables.coords["set_capacity_types"],
-                optimization_model.lp_model.variables.coords["set_location"],
+                variable_coords["set_years"],
+                variable_coords["set_technologies"],
+                variable_coords["set_capacity_types"],
+                variable_coords["set_location"],
             ],
         )
         technologies = list(optimization_model.sets["set_transport_technologies"])

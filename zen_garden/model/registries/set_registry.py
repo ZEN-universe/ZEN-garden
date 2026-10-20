@@ -114,12 +114,7 @@ class SetRegistry(Registry):
         # multiple indices
         if isinstance(index_values[0], tuple):
             # there might be more index names than tuple members
-            ndims = len(index_values[0])
-            tmp_vals = [[] for _ in range(ndims)]
-            for t in index_values:
-                for i in range(ndims):
-                    tmp_vals[i].append(t[i])
-            index_arrs = [xr.DataArray(t) for t in tmp_vals]
+            index_arrs = [xr.DataArray(list(t)) for t in zip(*index_values)]
         else:
             index_arrs = [xr.DataArray(index_values)]
 

@@ -63,6 +63,8 @@ class UnitConverter:
         self.folder_path = folder_path
         self.rounding_decimal_points_units = rounding_decimal_points_units
         self.ureg: UnitRegistry = UnitRegistry()
+        # snapshot of the default units to identify user-defined units later
+        self.default_unit_items = set(self.ureg._units.items())
 
         # dict of element attribute values
         self.dict_attribute_values: dict[str, dict[str, Any]] = {}

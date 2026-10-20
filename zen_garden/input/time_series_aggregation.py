@@ -6,8 +6,6 @@ from typing import TYPE_CHECKING, Any
 
 import numpy as np
 import pandas as pd
-import tsam
-from tsam import ClusterConfig, ExtremeConfig
 
 from zen_garden.model.element import Element
 
@@ -55,6 +53,8 @@ class TimeSeriesAggregation(object):
             self.config.system.aggregated_time_steps_per_year,
         )
         self.conducted_tsa = False
+        # unstacked raw time series, reused when setting the aggregated time series
+        self._unstacked_raw_ts: dict[tuple[str, str], pd.DataFrame] = {}
         self.get_excluded_ts()
         # if number of time steps >= number of base time steps, skip aggregation
         if (
@@ -151,6 +151,10 @@ class TimeSeriesAggregation(object):
 
     def run_tsa(self, year_specific=None):
         """This method runs the time series aggregation."""
+        # import lazily, since tsam (and sklearn) are slow to import
+        import tsam
+        from tsam import ClusterConfig, ExtremeConfig
+
         # substitute column names
         self.substitute_column_names(direction="flatten", year_specific=year_specific)
         cluster_config = ClusterConfig(
@@ -208,7 +212,9 @@ class TimeSeriesAggregation(object):
                     continue
                 index_names = list(raw_ts[ts].index.names)
                 index_names.remove(self.header_set_time_steps)
-                df_ts = raw_ts[ts].unstack(level=index_names)
+                df_ts = self._unstacked_raw_ts.get((element.name, ts))
+                if df_ts is None:
+                    df_ts = raw_ts[ts].unstack(level=index_names)
 
                 df_aggregated_ts = pd.DataFrame(
                     index=self.set_hours, columns=df_ts.columns
@@ -250,6 +256,8 @@ class TimeSeriesAggregation(object):
                 )
                 setattr(element, ts, df_aggregated_ts)
                 element.aggregated = True
+        # free the memory of the cached unstacked time series
+        self._unstacked_raw_ts = {}
 
     def get_excluded_ts(self):
         """Gets the names of all elements and parameter ts that shall be
@@ -377,11 +385,11 @@ class TimeSeriesAggregation(object):
                 continue
             raw_ts[ts].name = ts
             df_ts = raw_ts[ts].unstack(level=header_set_time_steps).T
+            # cache the unstacked time series, unstacking is expensive
+            self._unstacked_raw_ts[(element.name, ts)] = df_ts
             # select time series that are not constant (rows have more
             # than 1 unique entries)
-            df_ts_non_constant = df_ts[
-                df_ts.columns[df_ts.apply(lambda column: len(np.unique(column)) != 1)]
-            ]
+            df_ts_non_constant = df_ts[df_ts.columns[df_ts.nunique(dropna=False) != 1]]
             if (element.name, ts) in self.excluded_ts:
                 df_empty = pd.DataFrame(index=df_ts_non_constant.index)
                 dict_raw_ts[ts] = df_empty

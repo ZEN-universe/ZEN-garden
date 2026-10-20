@@ -13,7 +13,6 @@ from typing import TYPE_CHECKING, Any, Hashable, Literal, cast
 
 import numpy as np
 import pandas as pd
-import pint
 import xarray as xr
 import yaml
 from filelock import FileLock
@@ -435,8 +434,8 @@ class Postprocess:
 
         # Only save user-defined units (skip base units like 'meter')
         all_units = self.unit_converter.ureg._units
-        default_units = pint.UnitRegistry()._units
-        user_units = list(set(all_units.items()).difference(default_units.items()))
+        default_unit_items = self.unit_converter.default_unit_items
+        user_units = list(set(all_units.items()).difference(default_unit_items))
         lines = list(set(unit.raw for _, unit in user_units if hasattr(unit, "raw")))  # type: ignore[attr-defined]
 
         self._write_txt_file(dirname / "unit_definitions.txt", "\n".join(lines))
