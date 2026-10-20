@@ -3,6 +3,12 @@
 This file gets automatically updated in ZEN-garden's continuous integration 
 procedures. Do not edit the file manually.
 
+## [v3.2.2] - 2026-10-20 
+
+### Bug Fixes 🐛
+- Fix the dropping of the unit indices by first converting it to annual values before dropping them [[🔀 PR #1355](https://github.com/ZEN-universe/ZEN-garden/pull/1355) @jacob-mannhardt]
+- improve validation of the results [[🔀 PR #1355](https://github.com/ZEN-universe/ZEN-garden/pull/1355) @jacob-mannhardt]
+
 ## [v3.2.1] - 2026-10-19 
 
 ### Bug Fixes 🐛
