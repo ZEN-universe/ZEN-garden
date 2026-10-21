@@ -1059,9 +1059,7 @@ class ElementDataLoader:
         df_input = df_input.set_index(index_name_list)
         # missing index values
         # take unique values first, iterating over all values is slow
-        requested_index_values = set(
-            df_output.index.unique(level=missing_index)
-        )
+        requested_index_values = set(df_output.index.unique(level=missing_index))
         # the missing index is the columns of df_input
         requested_index_values_in_columns = requested_index_values.intersection(
             df_input.columns

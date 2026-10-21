@@ -589,7 +589,7 @@ class UnitConverter:
         retrofit_flow_coupling_factors: dict[str, Any] = {}
         dimensionless = self.ureg("dimensionless")
         # the division signs only depend on the carrier, so compute them once
-        self._division_signs_cache: dict[tuple[str, bool], int] = {}
+        self._division_signs_cache = {}
         for item in items:
             energy_quantity_units: dict[str, Any] = {}
             # copy to not add the reference carrier units to the element units
@@ -1005,9 +1005,7 @@ class UnitConverter:
         # which unit most likely is the wrong one
         unit_counts = self._count_units(energy_quantity_units.values())
         candidate_counts = [
-            count
-            for _, count in unit_counts
-            if count < len(energy_quantity_units) / 2
+            count for _, count in unit_counts if count < len(energy_quantity_units) / 2
         ]
         if not candidate_counts:
             return {}

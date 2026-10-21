@@ -2,8 +2,6 @@ import logging
 import os
 import warnings
 
-import numpy as np
-
 from zen_garden.input.dataset_path_resolver import DatasetPathResolver
 
 logger = logging.getLogger(__name__)

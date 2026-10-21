@@ -92,8 +92,8 @@ def _unstack_time_by_reshape(series: pd.Series, time_level: str):
         columns.name = index.names[0]
     else:
         columns = pd.MultiIndex(
-            levels=index.levels[:-1],
-            codes=sorted_column_codes,
+            levels=list(index.levels[:-1]),  # type: ignore[arg-type]
+            codes=sorted_column_codes,  # type: ignore[arg-type]
             names=index.names[:-1],
             verify_integrity=False,
         ).remove_unused_levels()

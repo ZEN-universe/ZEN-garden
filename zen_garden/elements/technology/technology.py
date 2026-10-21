@@ -99,7 +99,9 @@ class Technology(Element):
         """
         first_level = series.index.get_level_values(0)
         is_first = ~first_level.duplicated()
-        first_values = pd.Series(series.to_numpy()[is_first], index=first_level[is_first])
+        first_values = pd.Series(
+            series.to_numpy()[is_first], index=first_level[is_first]
+        )
         missing = pd.Index(locations).difference(first_values.index)
         if len(missing) > 0:
             raise KeyError(f"Locations {list(missing)} not in index of {series.name}")
