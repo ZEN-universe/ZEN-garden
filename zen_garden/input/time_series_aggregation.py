@@ -19,6 +19,104 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
+def _unstack_time(series: pd.Series, time_level: str) -> pd.DataFrame:
+    """Equivalent of ``series.unstack(level=time_level).T``.
+
+    If the index is a full product with the time steps as last level (as
+    created for default outputs), the values are reshaped with numpy, which is
+    much faster than unstacking. Rows and columns are sorted by their codes,
+    as unstack does. Otherwise, pandas' unstack is used.
+
+    :param series: time series with a MultiIndex containing the time level
+    :param time_level: name of the time level
+    :return: DataFrame with the time steps as index and the other levels as columns
+    """
+    fast = _unstack_time_by_reshape(series, time_level)
+    if fast is not None:
+        return fast
+    return series.unstack(level=time_level).T
+
+
+def _unstack_time_by_reshape(series: pd.Series, time_level: str):
+    """Reshape-based unstacking, returns None if the index is not supported."""
+    index = series.index
+    if (
+        not isinstance(index, pd.MultiIndex)
+        or index.nlevels < 2
+        or index.names[-1] != time_level
+        or len(index) == 0
+    ):
+        return None
+    codes = np.vstack([np.asarray(level_codes) for level_codes in index.codes])
+    if (codes < 0).any():
+        return None
+    # only full products in which all level values are used (as for default
+    # outputs), since unstack orders differently with unused level values
+    for level_codes, level in zip(codes, index.levels, strict=True):
+        if len(np.unique(level_codes)) != len(level):
+            return None
+    time_codes = codes[-1]
+    other_codes = codes[:-1]
+    # the time steps of one column form a contiguous block
+    changes = np.flatnonzero((other_codes[:, 1:] != other_codes[:, :-1]).any(axis=0))
+    n_time = changes[0] + 1 if len(changes) else len(index)
+    if len(index) % n_time != 0:
+        return None
+    n_columns = len(index) // n_time
+    # all blocks must contain the same time steps in the same order
+    time_blocks = time_codes.reshape(n_columns, n_time)
+    if not (time_blocks == time_blocks[0]).all():
+        return None
+    if len(np.unique(time_blocks[0])) != n_time:
+        return None
+    # the other levels must be constant within a block and unique across blocks
+    other_blocks = other_codes.reshape(len(other_codes), n_columns, n_time)
+    if not (other_blocks == other_blocks[:, :, :1]).all():
+        return None
+    column_codes = other_blocks[:, :, 0]
+    if np.unique(column_codes, axis=1).shape[1] != n_columns:
+        return None
+    # sort rows and columns by their codes, as unstack does
+    time_order = np.argsort(time_blocks[0], kind="stable")
+    column_order = np.lexsort(column_codes[::-1])
+    values = series.to_numpy().reshape(n_columns, n_time)
+    values = values[column_order][:, time_order].T
+    # same memory layout as the result of unstack (column-wise contiguous), since
+    # the layout affects the floating point rounding of sums and means
+    values = np.asfortranarray(values)
+    time_index = index.levels[-1].take(time_blocks[0][time_order])
+    time_index.name = time_level
+    sorted_column_codes = column_codes[:, column_order]
+    if len(other_codes) == 1:
+        columns = index.levels[0].take(sorted_column_codes[0])
+        columns.name = index.names[0]
+    else:
+        columns = pd.MultiIndex(
+            levels=index.levels[:-1],
+            codes=sorted_column_codes,
+            names=index.names[:-1],
+            verify_integrity=False,
+        ).remove_unused_levels()
+    return pd.DataFrame(values, index=time_index, columns=columns, copy=False)
+
+
+def _is_constant(df: pd.DataFrame) -> np.ndarray:
+    """Equivalent of ``df.nunique(dropna=False) == 1`` for numeric frames.
+
+    :param df: DataFrame whose columns are checked
+    :return: boolean array, True for constant columns
+    """
+    values = df.to_numpy()
+    if len(values) == 0 or values.dtype.kind not in "fiub":
+        return (df.nunique(dropna=False) == 1).to_numpy()
+    first = values[0]
+    is_equal = values == first
+    if values.dtype.kind == "f":
+        # NaN counts as one distinct value
+        is_equal |= np.isnan(values) & np.isnan(first)
+    return is_equal.all(axis=0)
+
+
 class TimeSeriesAggregation(object):
     """Class containing methods to apply time series aggregation."""
 
@@ -216,6 +314,15 @@ class TimeSeriesAggregation(object):
                 if df_ts is None:
                     df_ts = raw_ts[ts].unstack(level=index_names)
 
+                if (element.name, ts) not in self.excluded_ts:
+                    df_aggregated_ts = self._build_aggregated_ts(
+                        df_ts, element.name, ts, index_names
+                    )
+                    if df_aggregated_ts is not None:
+                        setattr(element, ts, df_aggregated_ts)
+                        element.aggregated = True
+                        continue
+
                 df_aggregated_ts = pd.DataFrame(
                     index=self.set_hours, columns=df_ts.columns
                 )
@@ -258,6 +365,71 @@ class TimeSeriesAggregation(object):
                 element.aggregated = True
         # free the memory of the cached unstacked time series
         self._unstacked_raw_ts = {}
+
+    def _build_aggregated_ts(self, df_ts, element_name, ts, index_names):
+        """Builds the aggregated time series of one parameter with numpy.
+
+        Equivalent to filling a DataFrame indexed by the aggregated time steps
+        with the typical periods (aggregated columns) and the raw values (constant
+        columns) and stacking it, but much faster.
+
+        :param df_ts: unstacked raw time series (time steps x columns)
+        :param element_name: name of the element
+        :param ts: name of the time series
+        :param index_names: names of the non-time index levels
+        :return: aggregated time series, or None if the layout is not supported
+        """
+        hours = pd.Index(self.set_hours, name=self.header_set_time_steps)
+        columns = df_ts.columns
+        if not columns.is_unique or df_ts.to_numpy().dtype.kind != "f":
+            return None
+        if columns.nlevels != len(index_names):
+            return None
+        aggregated_values = np.full((len(hours), len(columns)), np.nan)
+        is_aggregated = np.zeros(len(columns), dtype=bool)
+        if (
+            element_name in self.typical_periods
+            and ts in self.typical_periods[element_name]
+        ):
+            df_typical_periods = self.typical_periods[element_name, ts]
+            aggregated_columns = columns.intersection(df_typical_periods.columns)
+            if len(aggregated_columns) > 0:
+                positions = columns.get_indexer(aggregated_columns)
+                aggregated_values[:, positions] = (
+                    df_typical_periods[aggregated_columns]
+                    .reindex(hours)
+                    .to_numpy(dtype=float)
+                )
+                is_aggregated[positions] = True
+        # columns which are not aggregated because they are constant
+        if not is_aggregated.all():
+            row_positions = df_ts.index.get_indexer(hours)
+            if (row_positions < 0).any():
+                return None
+            aggregated_values[:, ~is_aggregated] = df_ts.to_numpy()[row_positions][
+                :, ~is_aggregated
+            ]
+        # time step by time step with the columns in their order (as stack does)
+        n_hours, n_columns = aggregated_values.shape
+        if isinstance(columns, pd.MultiIndex):
+            column_levels = list(columns.levels)
+            column_codes = [np.asarray(codes) for codes in columns.codes]
+        else:
+            column_codes_single, column_level = pd.factorize(columns, sort=True)
+            if (column_codes_single < 0).any():
+                return None
+            column_levels = [column_level]
+            column_codes = [column_codes_single]
+        index = pd.MultiIndex(
+            levels=[*column_levels, hours],
+            codes=[
+                *(np.tile(codes, n_hours) for codes in column_codes),
+                np.repeat(np.arange(n_hours), n_columns),
+            ],
+            names=[*index_names, self.header_set_time_steps],
+            verify_integrity=False,
+        )
+        return pd.Series(aggregated_values.ravel(), index=index)
 
     def get_excluded_ts(self):
         """Gets the names of all elements and parameter ts that shall be
@@ -384,12 +556,12 @@ class TimeSeriesAggregation(object):
             if raw_ts[ts] is None:
                 continue
             raw_ts[ts].name = ts
-            df_ts = raw_ts[ts].unstack(level=header_set_time_steps).T
+            df_ts = _unstack_time(raw_ts[ts], header_set_time_steps)
             # cache the unstacked time series, unstacking is expensive
             self._unstacked_raw_ts[(element.name, ts)] = df_ts
             # select time series that are not constant (rows have more
             # than 1 unique entries)
-            df_ts_non_constant = df_ts[df_ts.columns[df_ts.nunique(dropna=False) != 1]]
+            df_ts_non_constant = df_ts[df_ts.columns[~_is_constant(df_ts)]]
             if (element.name, ts) in self.excluded_ts:
                 df_empty = pd.DataFrame(index=df_ts_non_constant.index)
                 dict_raw_ts[ts] = df_empty
