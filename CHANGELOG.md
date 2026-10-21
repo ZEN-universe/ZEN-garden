@@ -3,6 +3,14 @@
 This file gets automatically updated in ZEN-garden's continuous integration 
 procedures. Do not edit the file manually.
 
+## [v3.3.0] - 2026-10-21 
+
+### New Features ✨
+- cache unit multipliers and conversion tests to speed up unit handling [[🔀 PR #1359](https://github.com/ZEN-universe/ZEN-garden/pull/1359) @jacob-mannhardt]
+- speed up extraction of existing capacities [[🔀 PR #1359](https://github.com/ZEN-universe/ZEN-garden/pull/1359) @jacob-mannhardt]
+- speed up TSA (reshaping) [[🔀 PR #1359](https://github.com/ZEN-universe/ZEN-garden/pull/1359) @jacob-mannhardt]
+- speed up some linopy operations in constraints [[🔀 PR #1359](https://github.com/ZEN-universe/ZEN-garden/pull/1359) @jacob-mannhardt]
+
 ## [v3.2.3] - 2026-10-20 
 
 ### Bug Fixes 🐛
