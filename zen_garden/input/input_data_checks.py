@@ -2,8 +2,6 @@ import logging
 import os
 import warnings
 
-import numpy as np
-
 from zen_garden.input.dataset_path_resolver import DatasetPathResolver
 
 logger = logging.getLogger(__name__)
@@ -237,8 +235,11 @@ class InputDataChecks:
         :param file_name: name of selected file
         :return: df_input without duplicate indices
         """
-        unique_elements, counts = np.unique(df_input.index, return_counts=True)
-        duplicates = unique_elements[counts > 1]
+        # hash-based duplicate detection, much faster than np.unique on strings
+        duplicate_mask = df_input.index.duplicated(keep="first")
+        if not duplicate_mask.any():
+            return df_input
+        duplicates = df_input.index[duplicate_mask].unique()
 
         if len(duplicates) != 0:
             for duplicate in duplicates:
@@ -257,7 +258,6 @@ class InputDataChecks:
                         f"different values: {df_input.loc[duplicates]}."
                     )
             # remove duplicates
-            duplicate_mask = df_input.index.duplicated(keep="first")
             df_input = df_input[~duplicate_mask]
 
         return df_input

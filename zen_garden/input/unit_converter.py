@@ -63,6 +63,13 @@ class UnitConverter:
         self.folder_path = folder_path
         self.rounding_decimal_points_units = rounding_decimal_points_units
         self.ureg: UnitRegistry = UnitRegistry()
+        # snapshot of the default units to identify user-defined units later
+        self.default_unit_items = set(self.ureg._units.items())
+        # caches of the unit conversions into base units, keyed by unit string
+        self._unit_in_base_units_cache: dict[str, tuple[Any, Any]] = {}
+        self._unit_multiplier_cache: dict[str, float] = {}
+        self._base_unit_of_dimension: dict[str, Any] = {}
+        self._division_signs_cache: dict[tuple[str, bool], int] = {}
 
         # dict of element attribute values
         self.dict_attribute_values: dict[str, dict[str, Any]] = {}
@@ -497,23 +504,55 @@ class UnitConverter:
                 If `get_multiplier` is True, returns the multiplier as a float
                 and the base units as a `pint.Quantity`.
         """
-        # convert attribute unit into unit combination of base units
+        # the conversion only depends on the unit string, so string units are
+        # cached (NaN units are not cached since they log a per-attribute warning)
+        use_cache = isinstance(input_unit, str)
+        if use_cache and input_unit in self._unit_in_base_units_cache:
+            combined_unit, attribute_unit_in_base_units = (
+                self._unit_in_base_units_cache[input_unit]
+            )
+        else:
+            combined_unit, attribute_unit_in_base_units = (
+                self._calculate_unit_in_base_units(input_unit)
+            )
+            if use_cache:
+                self._unit_in_base_units_cache[input_unit] = (
+                    combined_unit,
+                    attribute_unit_in_base_units,
+                )
+        # calculate the multiplier to convert the attribute unit into base units
+        if get_multiplier:
+            if use_cache and input_unit in self._unit_multiplier_cache:
+                multiplier = self._unit_multiplier_cache[input_unit]
+            else:
+                multiplier = self.get_unit_multiplier(
+                    input_unit, attribute_name, path, combined_unit=combined_unit
+                )
+                if use_cache:
+                    self._unit_multiplier_cache[input_unit] = multiplier
+            return multiplier, attribute_unit_in_base_units
+        else:
+            return attribute_unit_in_base_units
+
+    def _calculate_unit_in_base_units(self, input_unit):
+        """Expresses an input unit as a combination of base units.
+
+        :param input_unit: The unit to be converted (e.g., "kg", "m/s")
+        :return: combined_unit: dimensionless combined unit (None for
+            dimensionless input units)
+        :return: unit_in_base_units: input unit expressed in base units
+        """
         combined_unit = None
-        attribute_unit_in_base_units = self.ureg("")
+        unit_in_base_units = self.ureg("")
         if input_unit != "1" and not pd.isna(input_unit):
             combined_unit, base_combination = self.calculate_combined_unit(input_unit)
             for unit, power in zip(
                 base_combination.index, base_combination, strict=False
             ):
-                attribute_unit_in_base_units *= self.ureg(unit) ** power
-        # calculate the multiplier to convert the attribute unit into base units
-        if get_multiplier:
-            multiplier = self.get_unit_multiplier(
-                input_unit, attribute_name, path, combined_unit=combined_unit
-            )
-            return multiplier, attribute_unit_in_base_units
-        else:
-            return attribute_unit_in_base_units
+                # base units with power 0 do not change the unit
+                if power != 0:
+                    unit_in_base_units *= self.ureg(unit) ** power
+        return combined_unit, unit_in_base_units
 
     def consistency_checks_input_units(
         self,
@@ -548,9 +587,13 @@ class UnitConverter:
         items = [*elements, energy_system]
         conversion_factor_units: dict[str, Any] = {}
         retrofit_flow_coupling_factors: dict[str, Any] = {}
+        dimensionless = self.ureg("dimensionless")
+        # the division signs only depend on the carrier, so compute them once
+        self._division_signs_cache = {}
         for item in items:
             energy_quantity_units: dict[str, Any] = {}
-            unit_dict = item.units
+            # copy to not add the reference carrier units to the element units
+            unit_dict = dict(item.units)
             reference_carrier: Carrier | None = None
             # since technology elements have a lot of parameters related to
             # their reference carrier, their unit consistency must be checked
@@ -624,9 +667,7 @@ class UnitConverter:
                         )
                     )
                 elif unit_specs["unit_category"] == {}:
-                    assert unit_specs["unit_in_base_units"] == self.ureg(
-                        "dimensionless"
-                    ), (
+                    assert unit_specs["unit_in_base_units"] == dimensionless, (
                         f"The attribute {attribute_name} of "
                         f"{item.__class__.__name__} {item.name} is per "
                         "definition dimensionless. However, its unit was "
@@ -644,15 +685,19 @@ class UnitConverter:
                     )
             # remove attributes whose units became dimensionless since they don't
             # have an energy quantity
-            energy_quantity_units_check = {
+            energy_quantity_units_in_base_units = {
                 key: value.to_base_units().units
                 for key, value in energy_quantity_units.items()
-                if value.to_base_units().units != self.ureg("dimensionless")
+            }
+            energy_quantity_units_check = {
+                key: value
+                for key, value in energy_quantity_units_in_base_units.items()
+                if value != dimensionless
             }
             energy_quantity_units = {
                 key: value
                 for key, value in energy_quantity_units.items()
-                if value != self.ureg("dimensionless")
+                if value != dimensionless
             }
             # check if conversion factor units are consistent
             self._check_for_power_power(
@@ -706,17 +751,15 @@ class UnitConverter:
                 for key, value in energy_quantity_units.items()
                 if any(es in key for es in exclude_strings)
             }
-            time_base_unit = [
-                key for key, value in self.base_units.items() if value == "[time]"
-            ][0]
+            time_base_unit = self._get_base_unit_of_dimension("[time]")
             for key, value in cf_energy_quantity_units.items():
                 # if conversion factor unit is in not in energy units, try to
                 # convert it to energy units by multiplying with time base unit
                 if value != non_cf_energy_quantity_unit:
-                    energy_quantity_units[key] = value * self.ureg(time_base_unit)
+                    energy_quantity_units[key] = value * time_base_unit
                     energy_quantity_units_check[key] = (
                         energy_quantity_units_check[key]
-                        * self.ureg(time_base_unit).to_base_units().units
+                        * time_base_unit.to_base_units().units
                     )
 
     def assert_unit_consistency(
@@ -958,26 +1001,42 @@ class UnitConverter:
                 A dictionary of attributes that have the least frequently
                 appearing units, along with their energy quantity terms.
         """
-        min_unit_count = np.inf
-        attributes_with_lowest_appearance = {}
         # count for all unique units how many times they appear to get an estimate
         # which unit most likely is the wrong one
-        for distinct_unit in set(energy_quantity_units.values()):
-            unit_count = list(energy_quantity_units.values()).count(distinct_unit)
-            if (
-                unit_count <= min_unit_count
-                and unit_count < len(energy_quantity_units) / 2
-            ):
-                min_unit_count = unit_count
-                wrong_value = distinct_unit
-                attributes_with_lowest_appearance.update(
-                    {
-                        key: value
-                        for key, value in energy_quantity_units.items()
-                        if value == wrong_value
-                    }
-                )
-        return attributes_with_lowest_appearance
+        unit_counts = self._count_units(energy_quantity_units.values())
+        candidate_counts = [
+            count for _, count in unit_counts if count < len(energy_quantity_units) / 2
+        ]
+        if not candidate_counts:
+            return {}
+        min_unit_count = min(candidate_counts)
+        wrong_units = [unit for unit, count in unit_counts if count == min_unit_count]
+        return {
+            key: value
+            for key, value in energy_quantity_units.items()
+            if any(value == unit for unit in wrong_units)
+        }
+
+    @staticmethod
+    def _count_units(units):
+        """Counts how often each distinct unit appears.
+
+        Units are compared with == and returned in order of first appearance,
+        so the result does not depend on the hash order of a set (which changes
+        between runs).
+
+        :param units: iterable of units
+        :return: list of (unit, count) tuples
+        """
+        unit_counts: list[list] = []
+        for unit in units:
+            for unit_count in unit_counts:
+                if unit_count[0] == unit:
+                    unit_count[1] += 1
+                    break
+            else:
+                unit_counts.append([unit, 1])
+        return [(unit, count) for unit, count in unit_counts]
 
     def get_most_often_appearing_energy_unit(self, energy_units):
         """Finds the most commonly appearing energy unit for a carrier's attributes.
@@ -994,12 +1053,12 @@ class UnitConverter:
                 The energy unit that appears most frequently across the
                 attributes of the carrier.
         """
+        # count for all unique units how many times they appear to get an estimate
+        # which unit most likely is the correct one (ties are broken by order of
+        # appearance)
         max_unit_count = 0
         correct_value = None
-        # count for all unique units how many times they appear to get an estimate
-        # which unit most likely is the correct one
-        for distinct_unit in set(energy_units.values()):
-            unit_count = list(energy_units.values()).count(distinct_unit)
+        for distinct_unit, unit_count in self._count_units(energy_units.values()):
             if unit_count > max_unit_count:
                 max_unit_count = unit_count
                 correct_value = distinct_unit
@@ -1065,29 +1124,21 @@ class UnitConverter:
                 if carrier.name == dependent_carrier_name
             ][0]
 
-            div_signs_dependent_carrier_energy = (
-                self._get_number_of_division_signs_energy_quantity(
-                    dependent_carrier.units
-                )
+            div_signs_dependent_carrier_energy = self._get_division_signs_of_carrier(
+                dependent_carrier
             )
-            div_signs_ref_carrier_energy = (
-                self._get_number_of_division_signs_energy_quantity(
-                    reference_carrier.units
-                )
+            div_signs_ref_carrier_energy = self._get_division_signs_of_carrier(
+                reference_carrier
             )
             number_of_division_signs_energy = (
                 div_signs_dependent_carrier_energy + div_signs_ref_carrier_energy
             )
 
-            div_signs_dependent_carrier_power = (
-                self._get_number_of_division_signs_energy_quantity(
-                    dependent_carrier.units, power=True
-                )
+            div_signs_dependent_carrier_power = self._get_division_signs_of_carrier(
+                dependent_carrier, power=True
             )
-            div_signs_ref_carrier_power = (
-                self._get_number_of_division_signs_energy_quantity(
-                    reference_carrier.units, power=True
-                )
+            div_signs_ref_carrier_power = self._get_division_signs_of_carrier(
+                reference_carrier, power=True
             )
             number_of_division_signs_power = (
                 div_signs_ref_carrier_power + div_signs_dependent_carrier_power
@@ -1128,6 +1179,22 @@ class UnitConverter:
             conversion_factor_units[dependent_carrier_name] = factor_units
         return conversion_factor_units
 
+    def _get_division_signs_of_carrier(self, carrier, power=False):
+        """Cached number of division signs in a carrier's energy or power unit.
+
+        :param carrier: carrier element
+        :param power: if True, count the division signs in the power unit
+        :return: number of division signs
+        """
+        key = (carrier.name, power)
+        if key not in self._division_signs_cache:
+            self._division_signs_cache[key] = (
+                self._get_number_of_division_signs_energy_quantity(
+                    carrier.units, power=power
+                )
+            )
+        return self._division_signs_cache[key]
+
     def _get_number_of_division_signs_energy_quantity(self, carrier_units, power=False):
         """Counts the number of division signs in a carrier's energy or power unit.
 
@@ -1148,14 +1215,12 @@ class UnitConverter:
                 power unit.
         """
         energy_units = {}
-        time_base_unit = [
-            key for key, value in self.base_units.items() if value == "[time]"
-        ][0]
+        time_base_unit = self._get_base_unit_of_dimension("[time]")
         for attribute_name, unit_specs in carrier_units.items():
             energy_unit = self._remove_non_energy_units(unit_specs, attribute_name)
             if power:
-                energy_unit[attribute_name] = energy_unit[attribute_name] / self.ureg(
-                    time_base_unit
+                energy_unit[attribute_name] = (
+                    energy_unit[attribute_name] / time_base_unit
                 )
             energy_units.update(energy_unit)
         energy_unit_ref_carrier = self.get_most_often_appearing_energy_unit(
@@ -1190,18 +1255,27 @@ class UnitConverter:
         unit_category = unit_specs["unit_category"]
         for dim, dim_name in distinct_dims.items():
             if dim in unit_category:
-                dim_unit = [
-                    key for key, value in self.base_units.items() if value == dim_name
-                ][0]
+                dim_unit = self._get_base_unit_of_dimension(dim_name)
                 if dim == "time" and "energy_quantity" in unit_category:
-                    unit = unit / self.ureg(dim_unit) ** (
-                        -1 * unit_category["energy_quantity"]
-                    )
+                    unit = unit / dim_unit ** (-1 * unit_category["energy_quantity"])
                 else:
-                    unit = unit / self.ureg(dim_unit) ** unit_category[dim]
+                    unit = unit / dim_unit ** unit_category[dim]
         if "energy_quantity" in unit_category:
             unit = unit ** unit_category["energy_quantity"]
         return {attribute_name: unit}
+
+    def _get_base_unit_of_dimension(self, dim_name):
+        """Returns the base unit of a dimension as a pint Quantity.
+
+        :param dim_name: name of the dimension, e.g. "[time]"
+        :return: base unit of the dimension
+        """
+        if dim_name not in self._base_unit_of_dimension:
+            dim_unit = [
+                key for key, value in self.base_units.items() if value == dim_name
+            ][0]
+            self._base_unit_of_dimension[dim_name] = self.ureg(dim_unit)
+        return self._base_unit_of_dimension[dim_name]
 
     def save_carrier_energy_quantities(self, element_registry: "ElementRegistry"):
         """Saves energy quantity units of carriers after consistency checks.

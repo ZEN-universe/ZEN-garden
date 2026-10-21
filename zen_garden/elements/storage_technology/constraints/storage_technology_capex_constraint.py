@@ -56,15 +56,13 @@ class StorageTechnologyCapexConstraint(GenericConstraint):
         techs, capacity_types, nodes, times = SetRegistry.tuple_to_arr(
             index_values, index_names, unique=True
         )
+        # variables.coords merges all variables, so only compute it once
+        variable_coords = model_constructor.optimization_model.lp_model.variables.coords
         coords = [
-            model_constructor.optimization_model.lp_model.variables.coords[
-                "set_storage_technologies"
-            ],
-            model_constructor.optimization_model.lp_model.variables.coords[
-                "set_capacity_types"
-            ],
-            model_constructor.optimization_model.lp_model.variables.coords["set_nodes"],
-            model_constructor.optimization_model.lp_model.variables.coords["set_years"],
+            variable_coords["set_storage_technologies"],
+            variable_coords["set_capacity_types"],
+            variable_coords["set_nodes"],
+            variable_coords["set_years"],
         ]
 
         ### formulate constraint

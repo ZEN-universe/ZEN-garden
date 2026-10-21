@@ -181,14 +181,17 @@ class VariableRegistry(Registry):
                 if level and "carrier" in str(level)
             ][0]
             energy_quantities = self.unit_converter.carrier_energy_quantities
-            for (
-                carrier,
-                energy_quantity,
-            ) in energy_quantities.items():
-                carrier_idx = var_units.index.get_level_values(carrier_level) == carrier
-                var_units[carrier_idx] = str(
+            # map the units per carrier at once instead of masking per carrier
+            unit_by_carrier = {
+                carrier: str(
                     (unit * energy_quantity ** unit_category["energy_quantity"]).units
                 )
+                for carrier, energy_quantity in energy_quantities.items()
+            }
+            var_units[:] = np.asarray(
+                var_units.index.get_level_values(carrier_level).map(unit_by_carrier),
+                dtype=object,
+            )
         # energy_quantity depends on technology index level (e.g. capacity)
         else:
             tech_level = [
@@ -196,29 +199,30 @@ class VariableRegistry(Registry):
                 for level in var_units.index.names
                 if level and "technologies" in str(level)
             ][0]
+            energy_quantities = self.unit_converter.carrier_energy_quantities
+            # map the units per technology at once instead of masking per technology
+            unit_by_tech = {}
             for technology in self.element_registry.all_elements_by_type_name(
                 "Technology"
             ):
-                reference_carrier = technology.reference_carrier[0]
-                energy_quantities = self.unit_converter.carrier_energy_quantities
-                energy_quantity = [
-                    energy_quantity
-                    for carrier, energy_quantity in energy_quantities.items()
-                    if carrier == reference_carrier
-                ][0]
-                tech_idx = (
-                    var_units.index.get_level_values(tech_level) == technology.name
-                )
-                var_units[tech_idx] = str(
+                energy_quantity = energy_quantities[technology.reference_carrier[0]]
+                unit_by_tech[technology.name] = str(
                     (unit * energy_quantity ** unit_category["energy_quantity"]).units
                 )
+            var_units[:] = np.asarray(
+                var_units.index.get_level_values(tech_level).map(unit_by_tech),
+                dtype=object,
+            )
             if "set_capacity_types" in var_units.index.names:
                 energy_idx = (
                     var_units.index.get_level_values("set_capacity_types") == "energy"
                 )
-                var_units[energy_idx] = var_units[energy_idx].apply(
-                    lambda u: str(self.unit_converter.ureg(u + "*hour").units)
-                )
+                # only parse each distinct unit once
+                energy_units = {
+                    u: str(self.unit_converter.ureg(u + "*hour").units)
+                    for u in var_units[energy_idx].unique()
+                }
+                var_units[energy_idx] = var_units[energy_idx].map(energy_units)
 
         return var_units[mask.to_series()]
 

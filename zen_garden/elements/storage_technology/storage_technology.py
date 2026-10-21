@@ -3,6 +3,7 @@
 import logging
 from typing import ClassVar
 
+import pandas as pd
 from typing_extensions import override
 
 from zen_garden.elements.storage_technology.constraints import (
@@ -68,15 +69,21 @@ class StorageTechnology(Technology):
         return absolute_capex
 
     @override
-    def calculate_capex_of_capacities_existing(self, storage_energy=False):
-        capacities_existing = (
-            self.capacity_existing_energy if storage_energy else self.capacity_existing
+    def calculate_capex_of_capacities(self, capacities, storage_energy=False):
+        """Vectorized version of calculate_capex_of_single_capacity.
+
+        :param capacities: existing capacities indexed by node and vintage
+        :param storage_energy: boolean if energy capacity or power capacity
+        :return: capex of existing capacities
+        """
+        capex_specific_storage = (
+            self.capex_specific_storage_energy
+            if storage_energy
+            else self.capex_specific_storage
         )
-        return capacities_existing.to_frame().apply(
-            lambda _capacity_existing: self.calculate_capex_of_single_capacity(
-                _capacity_existing.squeeze(),
-                _capacity_existing.name,
-                storage_energy=storage_energy,
-            ),
-            axis=1,
+        capex_specific = self._first_value_per_location(
+            capex_specific_storage, capacities.index.get_level_values(0)
+        )
+        return pd.Series(
+            capex_specific * capacities.to_numpy(dtype=float), index=capacities.index
         )

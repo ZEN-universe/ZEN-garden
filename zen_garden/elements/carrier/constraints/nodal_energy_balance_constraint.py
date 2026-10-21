@@ -110,38 +110,55 @@ class NodalEnergyBalanceConstraint(GenericConstraint):
             )
 
             # create the variables
-            flow_transport_in_vars = xr.DataArray(
-                -1,
-                coords=[
-                    model_constructor.optimization_model.parameters.demand.coords[
-                        "set_carriers"
-                    ],
-                    model_constructor.optimization_model.parameters.demand.coords[
-                        "set_nodes"
-                    ],
-                    model_constructor.optimization_model.parameters.demand.coords[
-                        "set_time_steps_operation"
-                    ],
-                    xr.DataArray(
-                        np.arange(
-                            len(
-                                model_constructor.optimization_model.sets[
-                                    "set_transport_technologies"
-                                ]
-                            )
-                            * (2 * max_edges + 1)
-                        ),
-                        dims=["_term"],
-                    ),
+            coords = [
+                model_constructor.optimization_model.parameters.demand.coords[
+                    "set_carriers"
                 ],
-            )
-            flow_transport_in_coeffs = xr.full_like(
-                flow_transport_in_vars, np.nan, dtype=float
-            )
-            flow_transport_out_vars = flow_transport_in_vars.copy()
-            flow_transport_out_coeffs = xr.full_like(
-                flow_transport_in_vars, np.nan, dtype=float
-            )
+                model_constructor.optimization_model.parameters.demand.coords[
+                    "set_nodes"
+                ],
+                model_constructor.optimization_model.parameters.demand.coords[
+                    "set_time_steps_operation"
+                ],
+                xr.DataArray(
+                    np.arange(
+                        len(
+                            model_constructor.optimization_model.sets[
+                                "set_transport_technologies"
+                            ]
+                        )
+                        * (2 * max_edges + 1)
+                    ),
+                    dims=["_term"],
+                ),
+            ]
+            # fill numpy arrays by position, xarray .loc in the loop is slow
+            shape = tuple(len(c) for c in coords)
+            flow_transport_in_vars = np.full(shape, -1, dtype=int)
+            flow_transport_in_coeffs = np.full(shape, np.nan, dtype=float)
+            flow_transport_out_vars = np.full(shape, -1, dtype=int)
+            flow_transport_out_coeffs = np.full(shape, np.nan, dtype=float)
+            carrier_pos = {c: i for i, c in enumerate(coords[0].values)}
+            node_pos = {n: i for i, n in enumerate(coords[1].values)}
+
+            def _label_selector(var_name):
+                """Positional equivalent of labels.loc[techs, edges, :]."""
+                labels = model_constructor.optimization_model.variables[var_name].labels
+                pos = [
+                    {v: i for i, v in enumerate(labels.coords[dim].values)}
+                    for dim in labels.dims[:2]
+                ]
+                data = labels.data
+
+                def select(techs, edges):
+                    tech_idx = np.array([pos[0][t] for t in techs], dtype=int)
+                    edge_idx = np.array([pos[1][e] for e in edges], dtype=int)
+                    return data[np.ix_(tech_idx, edge_idx)]
+
+                return select
+
+            select_flow_transport = _label_selector("flow_transport")
+            select_flow_transport_loss = _label_selector("flow_transport_loss")
             for carrier, node in index.get_unique([0, 1]):
                 techs = [
                     tech
@@ -162,59 +179,46 @@ class NodalEnergyBalanceConstraint(GenericConstraint):
                     )
                 )
 
+                c_pos = carrier_pos[carrier]
+                n_pos = node_pos[node]
+
                 # get the variables for the in flow
-                in_vars_plus = (
-                    model_constructor.optimization_model.variables["flow_transport"]
-                    .labels.loc[techs, edges_in, :]
-                    .data
-                )
+                in_vars_plus = select_flow_transport(techs, edges_in)
                 in_vars_plus = in_vars_plus.reshape((-1, in_vars_plus.shape[-1])).T
-                in_coefs_plus = np.ones_like(in_vars_plus)
-                in_vars_minus = (
-                    model_constructor.optimization_model.variables[
-                        "flow_transport_loss"
-                    ]
-                    .labels.loc[techs, edges_in, :]
-                    .data
-                )
+                in_vars_minus = select_flow_transport_loss(techs, edges_in)
                 in_vars_minus = in_vars_minus.reshape((-1, in_vars_minus.shape[-1])).T
-                in_coefs_minus = np.ones_like(in_vars_minus)
-                in_vars = np.concatenate([in_vars_plus, in_vars_minus], axis=1)
-                in_coefs = np.concatenate([in_coefs_plus, -in_coefs_minus], axis=1)
-                flow_transport_in_vars.loc[
-                    carrier, node, :, : in_vars.shape[-1] - 1
-                ] = in_vars
-                flow_transport_in_coeffs.loc[
-                    carrier, node, :, : in_coefs.shape[-1] - 1
-                ] = in_coefs
+                n_plus = in_vars_plus.shape[-1]
+                n_in = n_plus + in_vars_minus.shape[-1]
+                flow_transport_in_vars[c_pos, n_pos, :, :n_plus] = in_vars_plus
+                flow_transport_in_vars[c_pos, n_pos, :, n_plus:n_in] = in_vars_minus
+                flow_transport_in_coeffs[c_pos, n_pos, :, :n_plus] = 1
+                flow_transport_in_coeffs[c_pos, n_pos, :, n_plus:n_in] = -1
 
                 # get the variables for the out flow
-                out_vars_plus = (
-                    model_constructor.optimization_model.variables["flow_transport"]
-                    .labels.loc[techs, edges_out, :]
-                    .data
-                )
+                out_vars_plus = select_flow_transport(techs, edges_out)
                 out_vars_plus = out_vars_plus.reshape((-1, out_vars_plus.shape[-1])).T
-                out_coefs_plus = np.ones_like(out_vars_plus)
-                flow_transport_out_vars.loc[
-                    carrier, node, :, : out_vars_plus.shape[-1] - 1
-                ] = out_vars_plus
-                flow_transport_out_coeffs.loc[
-                    carrier, node, :, : out_coefs_plus.shape[-1] - 1
-                ] = out_coefs_plus
+                n_out = out_vars_plus.shape[-1]
+                flow_transport_out_vars[c_pos, n_pos, :, :n_out] = out_vars_plus
+                flow_transport_out_coeffs[c_pos, n_pos, :, :n_out] = 1
 
-            # craete the linear expression
+            # create the linear expression
+            def _to_dataarray(data):
+                return xr.DataArray(data, coords=coords)
+
             term_flow_transport_in = lp.LinearExpression(
                 xr.Dataset(
-                    {"coeffs": flow_transport_in_coeffs, "vars": flow_transport_in_vars}
+                    {
+                        "coeffs": _to_dataarray(flow_transport_in_coeffs),
+                        "vars": _to_dataarray(flow_transport_in_vars),
+                    }
                 ),
                 model_constructor.optimization_model.lp_model,
             )
             term_flow_transport_out = lp.LinearExpression(
                 xr.Dataset(
                     {
-                        "coeffs": flow_transport_out_coeffs,
-                        "vars": flow_transport_out_vars,
+                        "coeffs": _to_dataarray(flow_transport_out_coeffs),
+                        "vars": _to_dataarray(flow_transport_out_vars),
                     }
                 ),
                 model_constructor.optimization_model.lp_model,
