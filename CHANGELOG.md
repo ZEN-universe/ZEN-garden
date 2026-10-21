@@ -3,6 +3,15 @@
 This file gets automatically updated in ZEN-garden's continuous integration 
 procedures. Do not edit the file manually.
 
+## [v3.2.3] - 2026-10-20 
+
+### Bug Fixes 🐛
+- fix technology expansion constraint. It led to an error when existing capacities were set for future years. This added expansion potential for earlier years, thereby profiting from future capacity additions, which is wrong. [[📋 Issue #1352](https://github.com/ZEN-universe/ZEN-garden/issues/1352)] [[🔀 PR #1357](https://github.com/ZEN-universe/ZEN-garden/pull/1357) @jacob-mannhardt]
+
+### Maintenance Tasks 🧹
+- updated technology expansion tests, to step by step test the different parameters of the constraint. Implemented as multiple scenarios [[🔀 PR #1357](https://github.com/ZEN-universe/ZEN-garden/pull/1357) @jacob-mannhardt]
+- improve error message when operator is missing in scenario dict [[🔀 PR #1357](https://github.com/ZEN-universe/ZEN-garden/pull/1357) @jacob-mannhardt]
+
 ## [v3.2.2] - 2026-10-20 
 
 ### Bug Fixes 🐛
