@@ -3,6 +3,14 @@
 This file gets automatically updated in ZEN-garden's continuous integration 
 procedures. Do not edit the file manually.
 
+## [v3.3.1] - 2026-10-22 
+
+### Bug Fixes 🐛
+- Fix the dataset tests that failed for V3. [[🔀 PR #1361](https://github.com/ZEN-universe/ZEN-garden/pull/1361) @jacob-mannhardt]
+
+### Maintenance Tasks 🧹
+- add a test that checks the structure of dataset tests [[🔀 PR #1361](https://github.com/ZEN-universe/ZEN-garden/pull/1361) @jacob-mannhardt]
+
 ## [v3.3.0] - 2026-10-21 
 
 ### New Features ✨
