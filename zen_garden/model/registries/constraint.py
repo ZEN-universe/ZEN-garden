@@ -23,7 +23,7 @@ class ConstraintRegistry(Registry):
         self.lp_model = lp_model
         super().__init__()
 
-    def add_constraint(self, name, constraint, doc=""):
+    def add_constraint(self, name, constraint, doc="", mask=None):
         """Initialization of a constraint.
 
         :param name: name of variable
@@ -51,14 +51,14 @@ class ConstraintRegistry(Registry):
                 else:
                     _key = str(key)
                 _name = f"{name}--{key}"
-                self._add_single_constraint(_name, cons)
+                self._add_single_constraint(_name, cons, mask=mask)
                 self.docs[name] = self.compile_doc_string(
                     doc, index_list=list(cons.indexes), name=_name
                 )
         elif isinstance(constraint, lp.constraints.Constraint) or isinstance(
             constraint, lp.constraints.AnonymousConstraint
         ):
-            self._add_single_constraint(name, constraint)
+            self._add_single_constraint(name, constraint, mask=mask)
             self.docs[name] = self.compile_doc_string(
                 doc, index_list=list(constraint.indexes), name=name
             )
@@ -69,7 +69,7 @@ class ConstraintRegistry(Registry):
                 f"is {type(constraint).__name__}"
             )
 
-    def _add_single_constraint(self, name, constraint):
+    def _add_single_constraint(self, name, constraint, mask=None):
         """Adds a single constraint to the model.
 
         :param name: name of variable
@@ -77,15 +77,17 @@ class ConstraintRegistry(Registry):
         """
         # pass the constraint directly to avoid rebuilding it from lhs, sign, rhs
         rhs = constraint.rhs
-        mask = ~np.isnan(rhs) & np.isfinite(rhs)
+        finite_mask = ~np.isnan(rhs) & np.isfinite(rhs)
         if constraint.mask is not None:
-            mask = mask & constraint.mask
-        if isinstance(mask, np.bool_):
+            finite_mask &= constraint.mask
+        if mask is not None:
+            finite_mask &= mask
+        if isinstance(finite_mask, np.bool_):
             return
         # masked entries must have a finite rhs, since the scaling reads all rhs
         data = constraint.data.assign(rhs=rhs.fillna(0))
         constraint = lp.constraints.Constraint(data, self.lp_model, skip_broadcast=True)
-        self.lp_model.add_constraints(constraint, name=name, mask=mask)
+        self.lp_model.add_constraints(constraint, name=name, mask=finite_mask)
 
     def _add_con(self, name, lhs, sign, rhs, mask=None):
         """Adds a constraint to the model.

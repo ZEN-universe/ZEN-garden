@@ -1,9 +1,12 @@
 import xarray as xr
 
+from zen_garden.elements.technology.masks import PowerOperationMask
 from zen_garden.model.component_types.constraint import GenericConstraint
 
 
 class CapacityFactorConversionConstraint(GenericConstraint):
+    masks = {"constraint_capacity_factor_conversion": [PowerOperationMask]}
+
     @classmethod
     def build(cls, model_constructor):
         """Summary:
@@ -60,6 +63,6 @@ class CapacityFactorConversionConstraint(GenericConstraint):
         rhs = 0
         constraints = lhs >= rhs
 
-        model_constructor.optimization_model.add_constraint(
-            "constraint_capacity_factor_conversion", constraints
+        cls.add_constraint(
+            model_constructor, "constraint_capacity_factor_conversion", constraints
         )

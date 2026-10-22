@@ -1,7 +1,10 @@
+from zen_garden.elements.technology.masks import StorageStateMask
 from zen_garden.model.component_types.constraint import GenericConstraint
 
 
 class StorageLevelMaxConstraint(GenericConstraint):
+    masks = {"constraint_storage_level_max": [StorageStateMask]}
+
     @classmethod
     def build(cls, model_constructor):
         """Summary:
@@ -47,6 +50,6 @@ class StorageLevelMaxConstraint(GenericConstraint):
         rhs = 0
         constraints = lhs <= rhs
 
-        model_constructor.optimization_model.add_constraint(
-            "constraint_storage_level_max", constraints
+        cls.add_constraint(
+            model_constructor, "constraint_storage_level_max", constraints
         )

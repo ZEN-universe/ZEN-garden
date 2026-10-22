@@ -2,10 +2,13 @@ import linopy as lp
 import numpy as np
 from linopy.expressions import LinearExpression
 
+from zen_garden.elements.technology.masks import PowerCapacityAdditionMask
 from zen_garden.model.component_types.constraint import GenericConstraint
 
 
 class LinearCapexConstraint(GenericConstraint):
+    masks = {"constraint_linear_capex": [PowerCapacityAdditionMask]}
+
     @classmethod
     def build(cls, model_constructor):
         """Summary:
@@ -68,6 +71,4 @@ class LinearCapexConstraint(GenericConstraint):
         rhs = 0
         constraints = lhs == rhs
 
-        model_constructor.optimization_model.add_constraint(
-            "constraint_linear_capex", constraints
-        )
+        cls.add_constraint(model_constructor, "constraint_linear_capex", constraints)

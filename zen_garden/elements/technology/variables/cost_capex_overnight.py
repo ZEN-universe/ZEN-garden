@@ -1,5 +1,6 @@
 import numpy as np
 
+from zen_garden.elements.technology.masks import CapacityAdditionEligibleMask
 from zen_garden.model.component_types.variable import GenericVariable
 
 
@@ -10,6 +11,7 @@ class CostCapexOvernight(GenericVariable):
     indices = ["set_technologies", "set_capacity_types", "set_location", "set_years"]
     doc = "Variable for capex for building technology at location l and time t"
     unit_category = {"money": 1}
+    masks = [CapacityAdditionEligibleMask]
 
     @classmethod
     def get_bounds(cls, model_constructor, index_sets):

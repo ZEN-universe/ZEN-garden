@@ -204,6 +204,10 @@ and declares:
   of the parameters.
 - ``get_bounds(cls, model_constructor, index_sets)``: an optional classmethod
   returning a ``(lower, upper)`` tuple. If omitted, the variable is unbounded.
+- ``masks``: an optional list of
+  :py:class:`GenericMask <zen_garden.model.component_types.mask.GenericMask>`
+  subclasses. Their structural masks are aligned to the variable and combined
+  with logical AND.
 
 .. code-block:: python
 
@@ -240,10 +244,43 @@ case a single set is used, pass its name directly, e.g. ``indices =
 
 .. tip::
 
-    A variable can also restrict *which* indices are actually constructed by
-    overriding ``get_mask`` (a boolean array over ``index_sets``) or skip
-    construction entirely for the current configuration by overriding
-    ``should_construct``. ``TechnologyInstallation`` uses both.
+    A variable can restrict *which* indices are actually constructed by listing
+    reusable structural masks. For example, technology operation variables use
+    ``masks = [PowerOperationMask]``. A completely false mask keeps an
+    addressable variable in the model API but creates no solver columns.
+    ``get_mask`` remains available for compatibility with extensions, while new
+    model code should use ``GenericMask`` subclasses. Construction can be
+    skipped entirely for the current configuration by overriding
+    ``should_construct``.
+
+Structural masks
+~~~~~~~~~~~~~~~~
+
+A structural mask describes indices at which a variable or constraint can
+affect a feasible solution. It is distinct from a boolean condition used to
+select a branch of an equation. Create reusable masks by subclassing
+``GenericMask``:
+
+.. code-block:: python
+
+    class AvailableAssetMask(GenericMask):
+        name = "available_asset"
+        dependencies = [ExistingAssetMask, PotentialAssetMask]
+
+        @classmethod
+        def build(cls, model_constructor, registry):
+            return registry[ExistingAssetMask] | registry[PotentialAssetMask]
+
+Dependencies are constructed in topological order after all parameters and
+before variables. Cycles and duplicate names raise errors. A list assigned to a
+variable or constraint is always combined with AND; implement intentional OR
+logic inside a named composite mask as above. Masks may depend on sets,
+parameters, configuration, time mappings, and other masks, but not on variables
+or constraints.
+
+Masks use canonical ``set_technologies`` and ``set_location`` dimensions. The
+``MaskRegistry`` projects these onto technology subsets and nodes or edges, and
+broadcasts across additional target dimensions such as carriers.
 
 .. note::
 
@@ -264,6 +301,30 @@ in ``zen_garden/elements/carrier/constraints/__init__.py``, which the
 ``Carrier`` element class exposes through its ``constraints`` attribute.
 
 Please follow the constraint guide in :ref:`linopy.linopy`.
+
+A constraint class can declare structural masks for each constraint it emits.
+The dictionary key must be the exact registered constraint name:
+
+.. code-block:: python
+
+    class ExampleConstraint(GenericConstraint):
+        masks = {
+            "constraint_example": [AvailableAssetMask],
+        }
+
+        @classmethod
+        def build(cls, model_constructor):
+            constraint = ...
+            cls.add_constraint(
+                model_constructor,
+                "constraint_example",
+                constraint,
+            )
+
+``add_constraint`` aligns and combines the declared masks with the constraint's
+own Linopy mask and its finite right-hand side. Conditions that formulate
+different mathematical branches should remain in ``build`` rather than being
+extracted into structural masks.
 
 .. tip::
 

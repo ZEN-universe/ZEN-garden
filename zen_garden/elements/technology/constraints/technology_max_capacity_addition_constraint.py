@@ -1,9 +1,14 @@
 import numpy as np
 
+from zen_garden.elements.technology.masks import CapacityAdditionEligibleMask
 from zen_garden.model.component_types.constraint import GenericConstraint
 
 
 class TechnologyMaxCapacityAdditionConstraint(GenericConstraint):
+    masks = {
+        "constraint_technology_max_capacity_addition": [CapacityAdditionEligibleMask]
+    }
+
     @classmethod
     def build(cls, model_constructor):
         """Summary:
@@ -45,6 +50,8 @@ class TechnologyMaxCapacityAdditionConstraint(GenericConstraint):
         rhs = 0
         constraints = lhs >= rhs
 
-        model_constructor.optimization_model.add_constraint(
-            "constraint_technology_max_capacity_addition", constraints
+        cls.add_constraint(
+            model_constructor,
+            "constraint_technology_max_capacity_addition",
+            constraints,
         )

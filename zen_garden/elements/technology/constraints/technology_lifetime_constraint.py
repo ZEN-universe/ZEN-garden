@@ -8,9 +8,15 @@ from linopy.expressions import LinearExpression
 from zen_garden.elements.technology.constraints.technology_constraint import (
     TechnologyConstraint,
 )
+from zen_garden.elements.technology.masks import CapacityAvailableMask
 
 
 class TechnologyLifetimeConstraint(TechnologyConstraint):
+    masks = {
+        "constraint_technology_lifetime": [CapacityAvailableMask],
+        "constraint_technology_lifetime_previous": [CapacityAvailableMask],
+    }
+
     @classmethod
     def build(cls, model_constructor):
         """Summary:
@@ -96,9 +102,11 @@ class TechnologyLifetimeConstraint(TechnologyConstraint):
         constraints_previous = lhs_previous == rhs
 
         ### return
-        model_constructor.optimization_model.add_constraint(
-            "constraint_technology_lifetime", constraints
+        cls.add_constraint(
+            model_constructor, "constraint_technology_lifetime", constraints
         )
-        model_constructor.optimization_model.add_constraint(
-            "constraint_technology_lifetime_previous", constraints_previous
+        cls.add_constraint(
+            model_constructor,
+            "constraint_technology_lifetime_previous",
+            constraints_previous,
         )

@@ -1,7 +1,7 @@
 """Generic constraint class for OptimizationModel."""
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, ClassVar, cast
 
 import pandas as pd
 import xarray as xr
@@ -11,6 +11,7 @@ from linopy.expressions import LinearExpression
 from zen_garden.model.registries.set import IndexedSet
 
 if TYPE_CHECKING:
+    from zen_garden.model.component_types.mask import GenericMask
     from zen_garden.model.constructor import ModelConstructor
 
 
@@ -23,10 +24,31 @@ class GenericConstraint(ABC):
     stateless too.
     """
 
+    masks: ClassVar[dict[str, list[type["GenericMask"]]]] = {}
+
+    def __init_subclass__(cls, **kwargs):
+        super().__init_subclass__(**kwargs)
+        inherited_masks = {}
+        for base in cls.__bases__:
+            inherited_masks.update(getattr(base, "masks", {}))
+        own_masks = cls.__dict__.get("masks", {})
+        cls.masks = {**inherited_masks, **own_masks}
+
     @classmethod
     @abstractmethod
     def build(cls, model_constructor: "ModelConstructor") -> None:
         """Build the constraint(s) and add them to the optimization model."""
+
+    @classmethod
+    def add_constraint(cls, model_constructor, name, constraint, doc=""):
+        """Add a constraint with the structural masks declared for ``name``."""
+        optimization_model = model_constructor.optimization_model
+        mask = optimization_model.masks.combine_for_constraint(
+            cls.masks.get(name, []), constraint
+        )
+        if mask is not None:
+            optimization_model.masks.log_reduction(name, mask)
+        optimization_model.add_constraint(name, constraint, doc=doc, mask=mask)
 
     # helper methods for constraint rules
     @staticmethod

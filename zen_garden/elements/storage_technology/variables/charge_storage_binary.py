@@ -1,3 +1,4 @@
+from zen_garden.elements.technology.masks import PowerOperationMask
 from zen_garden.model.component_types.variable import GenericVariable
 
 
@@ -9,6 +10,7 @@ class ChargeStorageBinary(GenericVariable):
     doc = "Binary variable for charge binary for storage technology"
     unit_category = {}
     binary = True
+    masks = [PowerOperationMask]
 
     @classmethod
     def get_bounds(cls, model_constructor, index_sets):

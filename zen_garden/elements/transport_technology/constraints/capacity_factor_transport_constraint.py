@@ -1,9 +1,20 @@
 import xarray as xr
 
+from zen_garden.elements.technology.masks import (
+    FiniteTransportRouteMask,
+    PowerOperationMask,
+)
 from zen_garden.model.component_types.constraint import GenericConstraint
 
 
 class CapacityFactorTransportConstraint(GenericConstraint):
+    masks = {
+        "constraint_capacity_factor_transport": [
+            PowerOperationMask,
+            FiniteTransportRouteMask,
+        ]
+    }
+
     @classmethod
     def build(cls, model_constructor):
         """Summary:
@@ -62,6 +73,6 @@ class CapacityFactorTransportConstraint(GenericConstraint):
         rhs = 0
         constraints = lhs >= rhs
         ### return
-        model_constructor.optimization_model.add_constraint(
-            "constraint_capacity_factor_transport", constraints
+        cls.add_constraint(
+            model_constructor, "constraint_capacity_factor_transport", constraints
         )

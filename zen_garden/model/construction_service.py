@@ -73,6 +73,7 @@ class ModelConstructionService:
 
         self._construct_sets()
         self._construct_params()
+        self._construct_masks()
         self._construct_vars()
         self._construct_expressions()
         self._construct_constraints()
@@ -87,6 +88,20 @@ class ModelConstructionService:
     def _construct_params(self):
         for model_constructor in self._model_constructors:
             model_constructor.construct_params()
+
+    @measure_run_time
+    def _construct_masks(self):
+        """Construct all masks referenced by variables and constraints."""
+        mask_owners = {}
+        for model_constructor in self._model_constructors:
+            for variable in model_constructor.variables:
+                for mask in variable.masks:
+                    mask_owners.setdefault(mask, model_constructor)
+            for constraint in model_constructor.constraints:
+                for masks in constraint.masks.values():
+                    for mask in masks:
+                        mask_owners.setdefault(mask, model_constructor)
+        self.optimization_model.masks.build_all(mask_owners)
 
     @measure_run_time
     def _construct_vars(self):

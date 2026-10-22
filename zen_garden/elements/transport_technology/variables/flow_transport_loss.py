@@ -1,5 +1,9 @@
 import numpy as np
 
+from zen_garden.elements.technology.masks import (
+    FiniteTransportRouteMask,
+    PowerOperationMask,
+)
 from zen_garden.model.component_types.variable import GenericVariable
 
 
@@ -13,6 +17,7 @@ class FlowTransportLoss(GenericVariable):
         "carrier through transport technology on edge i and time t"
     )
     unit_category = {"energy_quantity": 1, "time": -1}
+    masks = [PowerOperationMask, FiniteTransportRouteMask]
 
     @classmethod
     def get_bounds(cls, model_constructor, index_sets):

@@ -1,7 +1,10 @@
+from zen_garden.elements.technology.masks import StorageOperationMask
 from zen_garden.model.component_types.constraint import GenericConstraint
 
 
 class FlowStorageSpillageConstraint(GenericConstraint):
+    masks = {"constraint_flow_storage_spillage": [StorageOperationMask]}
+
     @classmethod
     def build(cls, model_constructor):
         """Summary:
@@ -37,6 +40,6 @@ class FlowStorageSpillageConstraint(GenericConstraint):
         rhs = 0
         constraints = lhs <= rhs
 
-        model_constructor.optimization_model.add_constraint(
-            "constraint_flow_storage_spillage", constraints
+        cls.add_constraint(
+            model_constructor, "constraint_flow_storage_spillage", constraints
         )

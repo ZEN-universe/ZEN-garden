@@ -1,9 +1,18 @@
 import numpy as np
 
+from zen_garden.elements.technology.masks import (
+    CapacityAdditionEligibleMask,
+    CapacityAvailableMask,
+)
 from zen_garden.model.component_types.constraint import GenericConstraint
 
 
 class TechnologyCapacityLimitConstraint(GenericConstraint):
+    masks = {
+        "constraint_technology_capacity_limit_not_reached": [CapacityAvailableMask],
+        "constraint_technology_capacity_limit_reached": [CapacityAdditionEligibleMask],
+    }
+
     @classmethod
     def build(cls, model_constructor):
         """Summary:
@@ -62,9 +71,13 @@ class TechnologyCapacityLimitConstraint(GenericConstraint):
             ]
         constraints_reached = lhs_reached == rhs_reached
 
-        model_constructor.optimization_model.add_constraint(
-            "constraint_technology_capacity_limit_not_reached", constraints_not_reached
+        cls.add_constraint(
+            model_constructor,
+            "constraint_technology_capacity_limit_not_reached",
+            constraints_not_reached,
         )
-        model_constructor.optimization_model.add_constraint(
-            "constraint_technology_capacity_limit_reached", constraints_reached
+        cls.add_constraint(
+            model_constructor,
+            "constraint_technology_capacity_limit_reached",
+            constraints_reached,
         )

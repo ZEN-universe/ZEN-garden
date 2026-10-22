@@ -1,6 +1,7 @@
 import numpy as np
 import xarray as xr
 
+from zen_garden.elements.technology.masks import PowerOperationMask
 from zen_garden.model.component_types.variable import GenericVariable
 
 
@@ -16,6 +17,7 @@ class FlowConversionInput(GenericVariable):
     ]
     doc = "Variable for carrier input of conversion technologies"
     unit_category = {"energy_quantity": 1, "time": -1}
+    masks = [PowerOperationMask]
 
     @classmethod
     def get_bounds(cls, model_constructor, index_sets):

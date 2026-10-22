@@ -1,7 +1,10 @@
+from zen_garden.elements.technology.masks import CapacityAvailableMask
 from zen_garden.model.component_types.constraint import GenericConstraint
 
 
 class TechnologyCapacityLowerLimitConstraint(GenericConstraint):
+    masks = {"constraint_technology_capacity_lower_limit": [CapacityAvailableMask]}
+
     @classmethod
     def build(cls, model_constructor):
         """Summary:
@@ -41,6 +44,6 @@ class TechnologyCapacityLowerLimitConstraint(GenericConstraint):
         constraint = lhs >= rhs
 
         # Add the constraint to the model
-        model_constructor.optimization_model.add_constraint(
-            "constraint_technology_capacity_lower_limit", constraint
+        cls.add_constraint(
+            model_constructor, "constraint_technology_capacity_lower_limit", constraint
         )

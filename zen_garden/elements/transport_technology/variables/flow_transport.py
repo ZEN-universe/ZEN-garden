@@ -1,6 +1,10 @@
 import numpy as np
 import xarray as xr
 
+from zen_garden.elements.technology.masks import (
+    FiniteTransportRouteMask,
+    PowerOperationMask,
+)
 from zen_garden.model.component_types.variable import GenericVariable
 
 
@@ -11,6 +15,7 @@ class FlowTransport(GenericVariable):
     indices = ["set_transport_technologies", "set_edges", "set_time_steps_operation"]
     doc = "Variable for carrier flow through transport technology on edge i and time t"
     unit_category = {"energy_quantity": 1, "time": -1}
+    masks = [PowerOperationMask, FiniteTransportRouteMask]
 
     @classmethod
     def get_bounds(cls, model_constructor, index_sets):

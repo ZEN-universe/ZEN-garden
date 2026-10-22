@@ -1,11 +1,14 @@
 import numpy as np
 import xarray as xr
 
+from zen_garden.elements.technology.masks import PowerCapacityAdditionMask
 from zen_garden.model.component_types.constraint import GenericConstraint
 from zen_garden.model.registries.set_registry import SetRegistry
 
 
 class TransportTechnologyCapexConstraint(GenericConstraint):
+    masks = {"constraint_transport_technology_capex": [PowerCapacityAdditionMask]}
+
     @classmethod
     def build(cls, model_constructor):
         """Summary:
@@ -109,6 +112,6 @@ class TransportTechnologyCapexConstraint(GenericConstraint):
         lhs = lhs.where(global_mask)
         rhs = 0
         constraints = lhs == rhs
-        optimization_model.add_constraint(
-            "constraint_transport_technology_capex", constraints
+        cls.add_constraint(
+            model_constructor, "constraint_transport_technology_capex", constraints
         )

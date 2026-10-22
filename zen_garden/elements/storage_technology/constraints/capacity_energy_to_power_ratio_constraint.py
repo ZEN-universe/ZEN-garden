@@ -1,9 +1,15 @@
 import numpy as np
 
+from zen_garden.elements.technology.masks import CapacityAdditionAnyTypeMask
 from zen_garden.model.component_types.constraint import GenericConstraint
 
 
 class CapacityEnergyToPowerRatioConstraint(GenericConstraint):
+    masks = {
+        "constraint_capacity_energy_to_power_ratio_min": [CapacityAdditionAnyTypeMask],
+        "constraint_capacity_energy_to_power_ratio_max": [CapacityAdditionAnyTypeMask],
+    }
+
     @classmethod
     def build(cls, model_constructor):
         """Summary:
@@ -61,9 +67,13 @@ class CapacityEnergyToPowerRatioConstraint(GenericConstraint):
         )
         constraints_max = lhs <= rhs
 
-        model_constructor.optimization_model.add_constraint(
-            "constraint_capacity_energy_to_power_ratio_min", constraints_min
+        cls.add_constraint(
+            model_constructor,
+            "constraint_capacity_energy_to_power_ratio_min",
+            constraints_min,
         )
-        model_constructor.optimization_model.add_constraint(
-            "constraint_capacity_energy_to_power_ratio_max", constraints_max
+        cls.add_constraint(
+            model_constructor,
+            "constraint_capacity_energy_to_power_ratio_max",
+            constraints_max,
         )

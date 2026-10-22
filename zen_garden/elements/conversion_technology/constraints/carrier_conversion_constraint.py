@@ -5,11 +5,14 @@ import pandas as pd
 import xarray as xr
 from linopy.expressions import LinearExpression
 
+from zen_garden.elements.technology.masks import PowerOperationMask
 from zen_garden.model.component_types.constraint import GenericConstraint
 from zen_garden.utils import align_like
 
 
 class CarrierConversionConstraint(GenericConstraint):
+    masks = {"constraint_carrier_conversion": [PowerOperationMask]}
+
     @classmethod
     def build(cls, model_constructor):
         """Summary:
@@ -162,6 +165,6 @@ class CarrierConversionConstraint(GenericConstraint):
         rhs = 0
         constraints = lhs == rhs
 
-        model_constructor.optimization_model.add_constraint(
-            "constraint_carrier_conversion", constraints
+        cls.add_constraint(
+            model_constructor, "constraint_carrier_conversion", constraints
         )

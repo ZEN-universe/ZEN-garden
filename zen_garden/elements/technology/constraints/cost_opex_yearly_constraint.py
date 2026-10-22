@@ -1,9 +1,12 @@
 import pandas as pd
 
+from zen_garden.elements.technology.masks import CapacityAnyTypeMask
 from zen_garden.model.component_types.constraint import GenericConstraint
 
 
 class CostOpexYearlyConstraint(GenericConstraint):
+    masks = {"constraint_cost_opex_yearly": [CapacityAnyTypeMask]}
+
     @classmethod
     def build(cls, model_constructor):
         """Summary:
@@ -61,4 +64,6 @@ class CostOpexYearlyConstraint(GenericConstraint):
         constraints = lhs == rhs
 
         ### return
-        optimization_model.add_constraint("constraint_cost_opex_yearly", constraints)
+        cls.add_constraint(
+            model_constructor, "constraint_cost_opex_yearly", constraints
+        )

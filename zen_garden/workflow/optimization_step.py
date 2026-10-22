@@ -13,6 +13,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 import numpy as np
+import pandas as pd
 
 from zen_garden.elements.technology import Technology
 from zen_garden.model.construction_service import ModelConstructionService
@@ -390,20 +391,20 @@ class OptimizationStep:
             None
 
         """
-        capacity_addition = (
-            self.optimization_model.lp_model.solution["capacity_addition"]
-            .to_series()
-            .dropna()
+        capacity_indices = [
+            "set_technologies",
+            "set_capacity_types",
+            "set_location",
+            "set_years",
+        ]
+        capacity_addition = self._solution_with_masked_zeros(
+            "capacity_addition", capacity_indices
         )
-        invest_capacity = (
-            self.optimization_model.lp_model.solution["capacity_investment"]
-            .to_series()
-            .dropna()
+        invest_capacity = self._solution_with_masked_zeros(
+            "capacity_investment", capacity_indices
         )
-        cost_capex_overnight = (
-            self.optimization_model.lp_model.solution["cost_capex_overnight"]
-            .to_series()
-            .dropna()
+        cost_capex_overnight = self._solution_with_masked_zeros(
+            "cost_capex_overnight", capacity_indices
         )
 
         if self.config.solver.round_parameters:
@@ -430,6 +431,21 @@ class OptimizationStep:
                 capacity_addition_tech, cost_capex_tech, decision_horizon
             )
             tech.add_new_capacity_investment(capacity_investment, decision_horizon)
+
+    def _solution_with_masked_zeros(
+        self, variable_name: str, indices: list[str]
+    ) -> pd.Series:
+        """Return a solution series with structural masked entries set to zero.
+
+        Linopy reports structurally masked variable entries as missing. Rolling-
+        horizon state transfer still needs valid technology-index combinations
+        that were masked because they cannot be nonzero in the current step.
+        Invalid combinations from indexed sets remain excluded.
+        """
+        index_values, index_names = self.optimization_model.create_custom_set(indices)
+        expected_index = pd.MultiIndex.from_tuples(index_values, names=index_names)
+        solution = self.optimization_model.lp_model.solution[variable_name].to_series()
+        return solution.reindex(expected_index).fillna(0.0)
 
     def add_carbon_emission_cumulative(self, decision_horizon):
         """Adds current emissions to existing emissions.

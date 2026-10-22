@@ -1,7 +1,13 @@
+from zen_garden.elements.technology.masks import PowerOperationMask
 from zen_garden.model.component_types.constraint import GenericConstraint
 
 
 class ChargeDischargeBinaryConstraint(GenericConstraint):
+    masks = {
+        "constraint_charge_storage_binary": [PowerOperationMask],
+        "constraint_discharge_storage_binary": [PowerOperationMask],
+    }
+
     @classmethod
     def build(cls, model_constructor):
         """Summary:
@@ -77,9 +83,11 @@ class ChargeDischargeBinaryConstraint(GenericConstraint):
         rhs = capacity_limit
         constraint_discharge = lhs <= rhs
 
-        model_constructor.optimization_model.add_constraint(
-            "constraint_charge_storage_binary", constraint_charge
+        cls.add_constraint(
+            model_constructor, "constraint_charge_storage_binary", constraint_charge
         )
-        model_constructor.optimization_model.add_constraint(
-            "constraint_discharge_storage_binary", constraint_discharge
+        cls.add_constraint(
+            model_constructor,
+            "constraint_discharge_storage_binary",
+            constraint_discharge,
         )

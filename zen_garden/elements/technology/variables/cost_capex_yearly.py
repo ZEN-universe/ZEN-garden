@@ -1,5 +1,6 @@
 import numpy as np
 
+from zen_garden.elements.technology.masks import CapexActiveMask
 from zen_garden.model.component_types.variable import GenericVariable
 
 
@@ -10,6 +11,7 @@ class CostCapexYearly(GenericVariable):
     indices = ["set_technologies", "set_capacity_types", "set_location", "set_years"]
     doc = "Variable for annual capex for having technology at location l"
     unit_category = {"money": 1}
+    masks = [CapexActiveMask]
 
     @classmethod
     def get_bounds(cls, model_constructor, index_sets):
