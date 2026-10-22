@@ -20,9 +20,7 @@ def find_dataset_files():
     dataset_dirs = []
     for entry in filtered_entries:
         path = os.path.join(folder_path, entry)
-        if os.path.isdir(path) and (
-            "system.py" in os.listdir(path) or "system.json" in os.listdir(path)
-        ):
+        if os.path.isdir(path) and "system.yaml" in os.listdir(path):
             dataset_dirs.append(path)
 
     return dataset_dirs
@@ -35,7 +33,7 @@ def find_dataset_files():
 @pytest.mark.parametrize("dataset_name", find_dataset_files())
 def test_dataset(dataset_name):
     dataset_main_path = Path(dataset_name).parent.absolute()
-    config = str(dataset_main_path / "config.json")
+    config = str(dataset_main_path / "config.yaml")
     if dataset_name.replace("_", "").endswith("expectederror"):
         with pytest.raises(AssertionError):
             run(config=config, dataset=dataset_name)

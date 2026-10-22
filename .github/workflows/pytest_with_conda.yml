@@ -121,7 +121,7 @@ jobs:
       - uses: actions/cache@v3
         if: ${{ env.SKIPTESTS == 'false' }}
         with:
-          path: ${{ matrix.prefix }}
+          path: ${{ env.CONDA }}/envs/zen-garden-env
           key: ${{ matrix.label }}-conda-${{ hashFiles('zen_garden_env.yml') }}-${{ env.DATE }}-${{ env.CACHE_NUMBER }}
         id: cache
 

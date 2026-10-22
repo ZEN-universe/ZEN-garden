@@ -57,8 +57,8 @@ def download_example_dataset(dataset):
     downloads the ZEN-garden dataset examples from the ZEN-garden Zenodo
     repository. It then extracts the dataset specified by the user and saves
     it to the current working directory. In addition, it also downloads a
-    ``config.json`` file and a Jupyter notebook demonstrating how to analyze
-    the results of a model.
+    ``config.yaml`` file (``config.json`` for older releases) and a Jupyter
+    notebook demonstrating how to analyze the results of a model.
 
     Args:
         dataset (str): Name of the dataset to be downloaded. The following
@@ -74,7 +74,7 @@ def download_example_dataset(dataset):
     Returns:
         tuple:
             str: The local path of the copied example
-            str: The local path of the copied config.json
+            str: The local path of the copied config file
 
     Raises:
         FileNotFoundError: If either the dataset or the config file could not
@@ -105,7 +105,11 @@ def download_example_dataset(dataset):
     # define relevant paths
     base_path = zenodo_zip.filelist[0].filename
     example_path = f"{base_path}docs/dataset_examples/{dataset}/"
-    config_path = f"{base_path}docs/dataset_examples/config.json"
+    # older releases ship config.json, newer ones config.yaml
+    config_paths = {
+        f"{base_path}docs/dataset_examples/{name}": name
+        for name in ("config.yaml", "config.json")
+    }
     notebook_path = f"{base_path}docs/dataset_examples/example_notebook.ipynb"
 
     # create local directories
@@ -118,7 +122,7 @@ def download_example_dataset(dataset):
 
     # initialize flags for extracting files
     example_found = False
-    config_found = False
+    config_name = None
     notebook_found = False
 
     # search for example within ZIP file
@@ -136,11 +140,11 @@ def download_example_dataset(dataset):
                     f.write(zenodo_zip.read(file))
             example_found = True
 
-        # download config.json
-        elif file.filename == config_path:
-            with open(os.path.join(local_dataset_path, "config.json"), "wb") as f:
+        # download config file (prefer config.yaml if both exist)
+        elif file.filename in config_paths and config_name != "config.yaml":
+            config_name = config_paths[file.filename]
+            with open(os.path.join(local_dataset_path, config_name), "wb") as f:
                 f.write(zenodo_zip.read(file))
-            config_found = True
 
         # download jupyter notebook
         elif file.filename == notebook_path:
@@ -162,9 +166,9 @@ def download_example_dataset(dataset):
         raise FileNotFoundError(
             f"Example {dataset} could not be found in the dataset examples!"
         )
-    if not config_found:
+    if config_name is None:
         raise FileNotFoundError(
-            "Config.json file could not be downloaded from the dataset examples!"
+            "Config file could not be downloaded from the dataset examples!"
         )
     if not notebook_found:
         warnings.warn(
@@ -177,7 +181,7 @@ def download_example_dataset(dataset):
     logger.info(f"Example dataset {dataset} downloaded to {local_example_path}")
 
     # return
-    return local_example_path, os.path.join(local_dataset_path, "config.json")
+    return local_example_path, os.path.join(local_dataset_path, config_name)
 
 
 # linopy helpers
