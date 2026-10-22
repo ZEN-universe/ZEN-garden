@@ -2,6 +2,7 @@ from abc import ABC
 from typing import TYPE_CHECKING, ClassVar
 
 if TYPE_CHECKING:
+    from zen_garden.model.component_types.mask import GenericMask
     from zen_garden.model.constructor import ModelConstructor
 
 
@@ -14,6 +15,7 @@ class GenericVariable(ABC):
     unit_category: ClassVar[dict[str, int]]
     integer: ClassVar[bool] = False
     binary: ClassVar[bool] = False
+    masks: ClassVar[list[type["GenericMask"]]] = []
 
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)
@@ -23,6 +25,11 @@ class GenericVariable(ABC):
         for attr in required:
             if not hasattr(cls, attr):
                 raise TypeError(f"{cls.__name__} must define {attr!r}")
+        inherited_masks = []
+        for base in cls.__bases__:
+            inherited_masks.extend(getattr(base, "masks", ()))
+        own_masks = cls.__dict__.get("masks", ())
+        cls.masks = list(dict.fromkeys([*inherited_masks, *own_masks]))
 
     @classmethod
     def build(cls, model_constructor: "ModelConstructor") -> None:
@@ -30,9 +37,19 @@ class GenericVariable(ABC):
         if not cls.should_construct(model_constructor):
             return
         index_sets = cls.get_index_sets(model_constructor)
-        mask = cls.get_mask(model_constructor, index_sets)
-        if mask is not None and not mask.any():
-            return
+        declared_mask = model_constructor.optimization_model.masks.combine_for_indices(
+            cls.masks, model_constructor, index_sets
+        )
+        custom_mask = cls.get_mask(model_constructor, index_sets)
+        if declared_mask is None:
+            mask = custom_mask
+        elif custom_mask is None:
+            mask = declared_mask
+        else:
+            custom_mask = custom_mask.reindex_like(declared_mask, fill_value=False)
+            mask = declared_mask & custom_mask
+        if mask is not None:
+            model_constructor.optimization_model.masks.log_reduction(cls.name, mask)
         model_constructor.optimization_model.add_variable(
             name=cls.name,
             index_sets=index_sets,

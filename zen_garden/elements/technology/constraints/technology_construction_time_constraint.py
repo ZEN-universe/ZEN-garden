@@ -6,10 +6,13 @@ import pandas as pd
 import xarray as xr
 from linopy.expressions import LinearExpression
 
+from zen_garden.elements.technology.masks import CapacityAdditionEligibleMask
 from zen_garden.model.component_types.constraint import GenericConstraint
 
 
 class TechnologyConstructionTimeConstraint(GenericConstraint):
+    masks = {"constraint_technology_construction_time": [CapacityAdditionEligibleMask]}
+
     @classmethod
     def build(cls, model_constructor):
         """Summary:
@@ -142,8 +145,8 @@ class TechnologyConstructionTimeConstraint(GenericConstraint):
         rhs_outside = 0
         constraints_outside = lhs_outside == rhs_outside
 
-        model_constructor.optimization_model.add_constraint(
-            "constraint_technology_construction_time", constraints
+        cls.add_constraint(
+            model_constructor, "constraint_technology_construction_time", constraints
         )
         model_constructor.optimization_model.add_constraint(
             "constraint_technology_construction_time_outside", constraints_outside

@@ -3,10 +3,19 @@ from typing import cast
 import numpy as np
 import xarray as xr
 
+from zen_garden.elements.technology.masks import PowerOperationMask
+from zen_garden.elements.transport_technology.masks import FiniteTransportRouteMask
 from zen_garden.model.component_types.constraint import GenericConstraint
 
 
 class TransportTechnologyLossesFlowConstraint(GenericConstraint):
+    masks = {
+        "constraint_transport_technology_losses_flow": [
+            PowerOperationMask,
+            FiniteTransportRouteMask,
+        ]
+    }
+
     @classmethod
     def build(cls, model_constructor):
         """Summary:
@@ -62,6 +71,8 @@ class TransportTechnologyLossesFlowConstraint(GenericConstraint):
         rhs = 0
         constraints = lhs == rhs
 
-        optimization_model.add_constraint(
-            "constraint_transport_technology_losses_flow", constraints
+        cls.add_constraint(
+            model_constructor,
+            "constraint_transport_technology_losses_flow",
+            constraints,
         )

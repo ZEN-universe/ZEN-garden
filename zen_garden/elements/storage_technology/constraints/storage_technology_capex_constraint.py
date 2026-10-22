@@ -1,9 +1,12 @@
+from zen_garden.elements.technology.masks import CapacityAdditionEligibleMask
 from zen_garden.model.component_types.constraint import GenericConstraint
 from zen_garden.model.registries.set_registry import SetRegistry
 from zen_garden.utils import linexpr_from_tuple_np
 
 
 class StorageTechnologyCapexConstraint(GenericConstraint):
+    masks = {"constraint_storage_technology_capex": [CapacityAdditionEligibleMask]}
+
     @classmethod
     def build(cls, model_constructor):
         """Summary:
@@ -89,6 +92,6 @@ class StorageTechnologyCapexConstraint(GenericConstraint):
         rhs = 0
         constraints = lhs == rhs
 
-        model_constructor.optimization_model.add_constraint(
-            "constraint_storage_technology_capex", constraints
+        cls.add_constraint(
+            model_constructor, "constraint_storage_technology_capex", constraints
         )

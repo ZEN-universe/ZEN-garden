@@ -1,7 +1,13 @@
+from zen_garden.elements.technology.masks import PowerOperationMask
 from zen_garden.model.component_types.constraint import GenericConstraint
 
 
 class OpexEmissionsTechnologyConversionConstraint(GenericConstraint):
+    masks = {
+        "constraint_opex_technology_conversion": [PowerOperationMask],
+        "constraint_carbon_emissions_technology_conversion": [PowerOperationMask],
+    }
+
     @classmethod
     def build(cls, model_constructor):
         """Summary:
@@ -81,9 +87,11 @@ class OpexEmissionsTechnologyConversionConstraint(GenericConstraint):
         constraints_opex = lhs_opex == rhs
         constraints_emissions = lhs_emissions == rhs
 
-        model_constructor.optimization_model.add_constraint(
-            "constraint_opex_technology_conversion", constraints_opex
+        cls.add_constraint(
+            model_constructor, "constraint_opex_technology_conversion", constraints_opex
         )
-        model_constructor.optimization_model.add_constraint(
-            "constraint_carbon_emissions_technology_conversion", constraints_emissions
+        cls.add_constraint(
+            model_constructor,
+            "constraint_carbon_emissions_technology_conversion",
+            constraints_emissions,
         )

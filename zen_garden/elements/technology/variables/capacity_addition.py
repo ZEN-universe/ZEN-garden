@@ -1,5 +1,6 @@
 import numpy as np
 
+from zen_garden.elements.technology.masks import CapacityAdditionEligibleMask
 from zen_garden.model.component_types.variable import GenericVariable
 
 
@@ -13,6 +14,7 @@ class CapacityAddition(GenericVariable):
         "at location l and time t"
     )
     unit_category = {"energy_quantity": 1, "time": -1}
+    masks = [CapacityAdditionEligibleMask]
 
     @classmethod
     def get_bounds(cls, model_constructor, index_sets):

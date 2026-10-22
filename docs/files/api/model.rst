@@ -50,6 +50,7 @@ Component types
 
     zen_garden.model.component_types.set
     zen_garden.model.component_types.parameter
+    zen_garden.model.component_types.mask
     zen_garden.model.component_types.variable
     zen_garden.model.component_types.expression
     zen_garden.model.component_types.constraint
@@ -79,6 +80,7 @@ Optimization model
     zen_garden.model.optimization_model
     zen_garden.model.registries.base
     zen_garden.model.registries.constraint
+    zen_garden.model.registries.mask
     zen_garden.model.registries.multi_index_helper
     zen_garden.model.registries.parameter
     zen_garden.model.registries.set

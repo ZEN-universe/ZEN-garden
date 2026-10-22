@@ -1,5 +1,6 @@
 import numpy as np
 
+from zen_garden.elements.technology.masks import CapacityAvailableMask
 from zen_garden.model.component_types.variable import GenericVariable
 
 
@@ -10,6 +11,7 @@ class Capacity(GenericVariable):
     indices = ["set_technologies", "set_capacity_types", "set_location", "set_years"]
     doc = "Variable for size of installed technology at location l and time t"
     unit_category = {"energy_quantity": 1, "time": -1}
+    masks = [CapacityAvailableMask]
 
     @classmethod
     def get_bounds(cls, model_constructor, index_sets):

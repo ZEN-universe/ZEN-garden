@@ -5,10 +5,13 @@ from linopy.expressions import LinearExpression
 from zen_garden.elements.technology.constraints.technology_constraint import (
     TechnologyConstraint,
 )
+from zen_garden.elements.technology.masks import CapexActiveMask
 from zen_garden.model.registries.multi_index_helper import MultiIndexHelper
 
 
 class CostCapexYearlyConstraint(TechnologyConstraint):
+    masks = {"constraint_cost_capex_yearly": [CapexActiveMask]}
+
     @classmethod
     def build(cls, model_constructor):
         """Summary:
@@ -119,6 +122,6 @@ class CostCapexYearlyConstraint(TechnologyConstraint):
         constraints = lhs == rhs
 
         ### return
-        model_constructor.optimization_model.add_constraint(
-            "constraint_cost_capex_yearly", constraints
+        cls.add_constraint(
+            model_constructor, "constraint_cost_capex_yearly", constraints
         )

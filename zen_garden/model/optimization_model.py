@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, Any
 from linopy import Model as LinopyModel
 
 from zen_garden.model.registries.constraint import ConstraintRegistry
+from zen_garden.model.registries.mask import MaskRegistry
 from zen_garden.model.registries.parameter import ParameterRegistry
 from zen_garden.model.registries.set_registry import SetRegistry
 from zen_garden.model.registries.variable import VariableRegistry
@@ -38,6 +39,7 @@ class OptimizationModel:
             VariableRegistry, lp_model=self.lp_model, sets=self.sets
         )
         self.parameters = ParameterRegistry(sets=self.sets)
+        self.masks = MaskRegistry()
         # Expressions are model-construction artifacts rather than input data.
         self.expressions: dict[str, Any] = {}
         self.constraints = ConstraintRegistry(lp_model=self.lp_model)

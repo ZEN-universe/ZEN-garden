@@ -1,5 +1,6 @@
 import numpy as np
 
+from zen_garden.elements.storage_technology.masks import StorageOperationMask
 from zen_garden.model.component_types.variable import GenericVariable
 
 
@@ -13,6 +14,7 @@ class FlowStorageSpillage(GenericVariable):
         "storage time step"
     )
     unit_category = {"energy_quantity": 1, "time": -1}
+    masks = [StorageOperationMask]
 
     @classmethod
     def get_bounds(cls, model_constructor, index_sets):

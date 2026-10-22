@@ -1,10 +1,13 @@
 import numpy as np
 import xarray as xr
 
+from zen_garden.elements.technology.masks import PowerCapacityYearMask
 from zen_garden.model.component_types.constraint import GenericConstraint
 
 
 class MinimumFullLoadHoursConstraint(GenericConstraint):
+    masks = {"constraint_minimum_full_load_hours": [PowerCapacityYearMask]}
+
     @classmethod
     def build(cls, model_constructor):
         """Summary:
@@ -86,6 +89,6 @@ class MinimumFullLoadHoursConstraint(GenericConstraint):
         rhs = 0
         constraints = lhs >= rhs
 
-        model_constructor.optimization_model.add_constraint(
-            "constraint_minimum_full_load_hours", constraints
+        cls.add_constraint(
+            model_constructor, "constraint_minimum_full_load_hours", constraints
         )

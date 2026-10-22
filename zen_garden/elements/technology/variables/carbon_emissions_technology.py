@@ -1,3 +1,4 @@
+from zen_garden.elements.technology.masks import PowerOperationMask
 from zen_garden.model.component_types.variable import GenericVariable
 
 
@@ -11,6 +12,7 @@ class CarbonEmissionsTechnology(GenericVariable):
         "time t"
     )
     unit_category = {"emissions": 1, "time": -1}
+    masks = [PowerOperationMask]
 
     @classmethod
     def get_bounds(cls, model_constructor, index_sets):

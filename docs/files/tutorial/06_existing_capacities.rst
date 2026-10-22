@@ -64,6 +64,12 @@ is already committed but not yet built:
 The 2.5 GW appears in 2030 whether or not the optimizer would have chosen it,
 and is unavailable before then.
 
+ZEN-garden's structural model masks follow this timing as well: the committed
+capacity and its operational variables are omitted before 2030 and activated
+from 2030 until retirement. This remains true when ``allow_investment`` is
+``false`` or ``capacity_limit`` is zero, because neither setting cancels
+capacity that is already committed.
+
 .. tip::
     Use this for projects under construction or contractually fixed. Modelling
     them as free investment decisions lets the optimizer "cancel" commitments

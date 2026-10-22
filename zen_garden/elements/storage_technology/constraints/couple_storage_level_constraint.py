@@ -1,7 +1,10 @@
+from zen_garden.elements.storage_technology.masks import StorageStateMask
 from zen_garden.model.component_types.constraint import GenericConstraint
 
 
 class CoupleStorageLevelConstraint(GenericConstraint):
+    masks = {"constraint_couple_storage_level": [StorageStateMask]}
+
     @classmethod
     def build(cls, model_constructor):
         """Summary:
@@ -120,6 +123,6 @@ class CoupleStorageLevelConstraint(GenericConstraint):
         rhs = 0
         constraints = lhs == rhs
 
-        model_constructor.optimization_model.add_constraint(
-            "constraint_couple_storage_level", constraints
+        cls.add_constraint(
+            model_constructor, "constraint_couple_storage_level", constraints
         )
