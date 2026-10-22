@@ -28,7 +28,7 @@ def prepare_scenarios(config: Config, job_index: list[int] | None):
 
 
 def run(
-    config: str | Path = "./config.json",
+    config: str | Path = "./config.yaml",
     dataset: str | Path | None = None,
     job_index: list[int] | None = None,
     folder_output: str | Path | None = None,
@@ -44,9 +44,10 @@ def run(
 
     Args:
         config_obj (str | Path): Path to the configuration file
-            (e.g. ``config.json``).
+            (e.g. ``config.yaml``).
             If the file is located in the current working directory, the
-            filename alone may be specified. Defaults to ``"./config.json"``.
+            filename alone may be specified. Defaults to ``"./config.yaml"``
+            (falls back to ``"./config.json"`` if no YAML file exists).
         dataset (str | Path | None): Path to the folder containing the input dataset
             (e.g. ``"./1_base_case"``). If located in the current working
             directory, the folder name alone may be used. Defaults to the
