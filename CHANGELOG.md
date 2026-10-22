@@ -3,6 +3,14 @@
 This file gets automatically updated in ZEN-garden's continuous integration 
 procedures. Do not edit the file manually.
 
+## [v3.4.0] - 2026-10-22 
+
+### New Features ✨
+- Add the GenericMask component type and MaskRegistry. Construct required masks after parameters and before variables, resolve transitive dependencies in topological order, detect dependency cycles and duplicate names, align canonical technology and location dimensions with component-specific dimensions, and combine multiple masks using logical AND. [[🔀 PR #1363](https://github.com/ZEN-universe/ZEN-garden/pull/1363) @csfunke]
+- Extend GenericVariable with an inheritable list of reusable structural masks. Combine declared masks with legacy get_mask() results for backward compatibility, retain fully masked variables in the model API without creating solver columns, and log retained model entries for diagnostics. [[🔀 PR #1363](https://github.com/ZEN-universe/ZEN-garden/pull/1363) @csfunke]
+- Extend GenericConstraint with constraint-name-specific mask declarations. Combine structural masks with intrinsic Linopy masks and finite-right-hand-side checks before creating solver constraint rows. [[🔀 PR #1363](https://github.com/ZEN-universe/ZEN-garden/pull/1363) @csfunke]
+- Apply structural masks to relevant technology, conversion, storage, and transport variables and constraints. Reduce unused capacity, investment, cost, emissions, flow, storage-state, installation, and operational entries without changing their public result names. [[🔀 PR #1363](https://github.com/ZEN-universe/ZEN-garden/pull/1363) @csfunke]
+
 ## [v3.3.1] - 2026-10-22 
 
 ### Bug Fixes 🐛
