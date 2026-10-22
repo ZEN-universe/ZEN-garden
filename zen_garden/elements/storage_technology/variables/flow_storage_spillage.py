@@ -1,6 +1,6 @@
 import numpy as np
 
-from zen_garden.elements.technology.masks import StorageOperationMask
+from zen_garden.elements.storage_technology.masks import StorageOperationMask
 from zen_garden.model.component_types.variable import GenericVariable
 
 

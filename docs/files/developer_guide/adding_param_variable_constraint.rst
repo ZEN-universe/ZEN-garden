@@ -282,6 +282,16 @@ Masks use canonical ``set_technologies`` and ``set_location`` dimensions. The
 ``MaskRegistry`` projects these onto technology subsets and nodes or edges, and
 broadcasts across additional target dimensions such as carriers.
 
+Like parameters, variables, and constraints, every mask is defined in its own
+module inside the ``masks`` package of the element that owns it. Shared
+technology masks therefore live in ``technology/masks``, while storage- and
+transport-specific masks live in their respective element packages. Each
+package re-exports its mask classes and provides a typed ``*_MASKS`` list for
+discoverability. Mask construction remains usage-driven: variables,
+constraints, and mask dependencies determine which masks the registry builds.
+Specialized elements may depend on masks from their parent element, but parent
+elements must not import masks from specialized elements.
+
 .. note::
 
     The variables are available in the constraint's ``build`` method through

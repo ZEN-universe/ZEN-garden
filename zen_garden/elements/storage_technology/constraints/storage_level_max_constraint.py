@@ -1,4 +1,4 @@
-from zen_garden.elements.technology.masks import StorageStateMask
+from zen_garden.elements.storage_technology.masks import StorageStateMask
 from zen_garden.model.component_types.constraint import GenericConstraint
 
 

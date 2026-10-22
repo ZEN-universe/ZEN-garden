@@ -1,7 +1,5 @@
-from zen_garden.elements.technology.masks import (
-    FiniteTransportRouteMask,
-    PowerOperationMask,
-)
+from zen_garden.elements.technology.masks import PowerOperationMask
+from zen_garden.elements.transport_technology.masks import FiniteTransportRouteMask
 from zen_garden.model.component_types.constraint import GenericConstraint
 
 
