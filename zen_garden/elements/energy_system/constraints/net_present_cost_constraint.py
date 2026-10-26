@@ -1,11 +1,18 @@
-import pandas as pd
-
+from zen_garden.elements.energy_system.expressions.discounted_annual_system_cost import (  # noqa: E501
+    DiscountedAnnualSystemCost,
+)
+from zen_garden.elements.energy_system.variables.net_present_cost import NetPresentCost
 from zen_garden.model.component_types.constraint import GenericConstraint
 
 
 class NetPresentCostConstraint(GenericConstraint):
+    """Net Present Cost."""
+
+    name = "constraint_net_present_cost"
+    indices = ("set_years",)
+
     @classmethod
-    def build(cls, model_constructor):
+    def get_constraint(cls, model_constructor):
         """Summary:
         Discounts the annual capital flows to calculate the net present cost.
 
@@ -27,36 +34,15 @@ class NetPresentCostConstraint(GenericConstraint):
         :math:`C^{\\mathrm{total}}_y`: total cost of energy system in year :math:`y`
         :math:`r^{\\mathrm{disc}}`: discount rate
         :math:`\\Delta y`: interval between planning periods
+
+        Args:
+            model_constructor: Object containing the optimization model.
+
+        Returns:
+            Constraint over its declared model indices.
         """
-        optimization_model = model_constructor.optimization_model
-        factor = pd.Series(index=model_constructor.model_schema.set_years)
-        for year in model_constructor.model_schema.set_years:
-            ### auxiliary calculations
-            if year == model_constructor.model_schema.set_years_entire_horizon[-1]:
-                interval_between_years = 1
-            else:
-                interval_between_years = (
-                    model_constructor.config.system.interval_between_years
-                )
-            # economic discount
-            factor[year] = sum(
-                (
-                    (1 / (1 + optimization_model.parameters.discount_rate))
-                    ** (
-                        model_constructor.config.system.interval_between_years
-                        * (year - model_constructor.model_schema.set_years[0])
-                        + _intermediate_time_step
-                    )
-                )
-                for _intermediate_time_step in range(0, interval_between_years)
-            )
-        term_discounted_cost_total = optimization_model.variables["cost_total"] * factor
-
-        lhs = (
-            optimization_model.variables["net_present_cost"]
-            - term_discounted_cost_total
+        model = model_constructor.optimization_model
+        return (
+            model.variables[NetPresentCost]
+            == model.expressions[DiscountedAnnualSystemCost]
         )
-        rhs = 0
-        constraints = lhs == rhs
-
-        optimization_model.add_constraint("constraint_net_present_cost", constraints)

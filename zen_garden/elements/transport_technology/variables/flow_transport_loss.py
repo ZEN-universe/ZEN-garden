@@ -9,13 +9,17 @@ class FlowTransportLoss(GenericVariable):
     """Variable for carrier flow loss through transport technology."""
 
     name = "flow_transport_loss"
-    indices = ["set_transport_technologies", "set_edges", "set_time_steps_operation"]
-    doc = (
-        "Variable for carrier flow lost due to resistances etc. by transporting "
-        "carrier through transport technology on edge i and time t"
-    )
+    symbol = r"F^{\mathrm{loss}}_{h,e,t}"
+    indices = [
+        "set_transport_technologies",
+        "set_edges",
+        "set_years",
+        "set_representative_hours",
+    ]
+    doc = "Carrier flow through a transport technology."
     unit_category = {"energy_quantity": 1, "time": -1}
     masks = [PowerOperationMask, FiniteTransportRouteMask]
+    mask_default_value = 0.0
 
     @classmethod
     def get_bounds(cls, model_constructor, index_sets):

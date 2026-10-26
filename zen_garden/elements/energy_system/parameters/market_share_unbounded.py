@@ -5,6 +5,7 @@ class MarketShareUnbounded(GenericParameter):
     """Unbounded market share."""
 
     name = "market_share_unbounded"
+    symbol = r"\chi"
     indices = ()
-    doc = "Unbounded market share"
+    doc = "Parameter which specifies the unbounded market share."
     unit_category = {}

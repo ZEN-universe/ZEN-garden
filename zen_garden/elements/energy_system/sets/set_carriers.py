@@ -2,7 +2,9 @@ from zen_garden.model.component_types.set import GenericSet
 
 
 class SetCarriers(GenericSet):
-    name, doc = "set_carriers", "Set of carriers"
+    name = "set_carriers"
+    symbol = r"c \in \mathcal{C}"
+    doc = "Set of carriers."
 
     @classmethod
     def get_data(cls, model_constructor):

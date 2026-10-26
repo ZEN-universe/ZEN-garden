@@ -1,19 +1,27 @@
 import linopy as lp
-import pandas as pd
+import xarray as xr
 from linopy.expressions import LinearExpression
 
-from zen_garden.elements.technology.constraints.technology_constraint import (
-    TechnologyConstraint,
+from zen_garden.elements.technology.expressions.annualized_capex_from_existing_capacity import (  # noqa: E501
+    AnnualizedCapexFromExistingCapacity,
+)
+from zen_garden.elements.technology.expressions.annualized_capex_from_new_investments import (  # noqa: E501
+    AnnualizedCapexFromNewInvestments,
 )
 from zen_garden.elements.technology.masks import CapexActiveMask
-from zen_garden.model.registries.multi_index_helper import MultiIndexHelper
+from zen_garden.elements.technology.variables.cost_capex_yearly import CostCapexYearly
+from zen_garden.model.component_types.constraint import GenericConstraint
 
 
-class CostCapexYearlyConstraint(TechnologyConstraint):
-    masks = {"constraint_cost_capex_yearly": [CapexActiveMask]}
+class CostCapexYearlyConstraint(GenericConstraint):
+    """Cost Capex Yearly."""
+
+    name = "constraint_cost_capex_yearly"
+    indices = ("set_technologies", "set_location", "set_years")
+    masks = (CapexActiveMask,)
 
     @classmethod
-    def build(cls, model_constructor):
+    def get_constraint(cls, model_constructor):
         """Summary:
         Aggregates the capex of built capacity and of existing capacity.
 
@@ -52,76 +60,26 @@ class CostCapexYearlyConstraint(TechnologyConstraint):
         additions
         :math:`\\kappa^{\\mathrm{cap,ex}}_{h,p,y}`: remaining overnight CAPEX of
         existing capacity
-        """
-        index_values, index_names = (
-            model_constructor.optimization_model.create_custom_set(
-                [
-                    "set_technologies",
-                    "set_capacity_types",
-                    "set_location",
-                    "set_years",
-                ]
-            )
-        )
-        index = MultiIndexHelper(index_values, index_names)
-        ### masks
-        # not needed
 
-        # Annuity factor
-        dr = model_constructor.optimization_model.parameters.discount_rate
-        lt = model_constructor.optimization_model.parameters.depreciation_time
+        Args:
+            model_constructor: Object containing the optimization model.
 
-        if dr != 0:
-            a = ((1 + dr) ** lt * dr) / ((1 + dr) ** lt - 1)
-        else:
-            a = 1 / lt
-
-        lt_range = pd.MultiIndex.from_tuples(
-            [
-                (t, y, py)
-                for t, y in index.get_unique(["set_technologies", "set_years"])
-                for py in list(
-                    cls.get_lifetime_range(
-                        model_constructor, t, y, use_depreciation_time=True
-                    )
-                )
-            ]
-        )
-
-        lt_range = pd.Series(index=lt_range, data=-1)
-        lt_range.index.names = [
-            "set_technologies",
-            "set_years",
-            "set_years_prev",
-        ]
-        lt_range = (
-            lt_range.to_xarray()
-            .broadcast_like(
-                model_constructor.optimization_model.variables["capacity"].lower
-            )
-            .fillna(0)
-        )
-
-        cost_capex_overnight = model_constructor.optimization_model.variables[
-            "cost_capex_overnight"
-        ].rename({"set_years": "set_years_prev"})
-        cost_capex_overnight = cost_capex_overnight.broadcast_like(lt_range)
-        expr = (lt_range * a * cost_capex_overnight).sum("set_years_prev")
+        Returns:
+            Constraint over its declared model indices.
+"""
+        model = model_constructor.optimization_model
         lhs = lp.merge(
             [
-                1 * model_constructor.optimization_model.variables["cost_capex_yearly"],
-                expr,
+                1 * model.variables[CostCapexYearly],
+                -model.expressions[AnnualizedCapexFromNewInvestments],
             ],
             compat="broadcast_equals",
             join="outer",
             cls=LinearExpression,
         )
-        rhs = (
-            a * model_constructor.optimization_model.parameters.existing_capex
-        ).broadcast_like(lhs.const)
-        constraints = lhs == rhs
-
-        ### return
-        cls.add_constraint(
-            model_constructor, "constraint_cost_capex_yearly", constraints
-        )
+        rhs = xr.align(
+            lhs.const,
+            model.expressions[AnnualizedCapexFromExistingCapacity],
+            join="left",
+        )[1]
+        return lhs == rhs

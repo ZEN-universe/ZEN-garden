@@ -1,20 +1,35 @@
-import xarray as xr
-
+from zen_garden.elements.energy_system.sets.set_edges import SetEdges
 from zen_garden.elements.technology.masks import PowerOperationMask
+from zen_garden.elements.technology.parameters.max_load import MaxLoad
+from zen_garden.elements.technology.sets.set_transport_technologies import (
+    SetTransportTechnologies,
+)
+from zen_garden.elements.technology.variables.capacity import Capacity
 from zen_garden.elements.transport_technology.masks import FiniteTransportRouteMask
+from zen_garden.elements.transport_technology.variables.flow_transport import (
+    FlowTransport,
+)
 from zen_garden.model.component_types.constraint import GenericConstraint
 
 
 class CapacityFactorTransportConstraint(GenericConstraint):
-    masks = {
-        "constraint_capacity_factor_transport": [
-            PowerOperationMask,
-            FiniteTransportRouteMask,
-        ]
-    }
+    """Capacity Factor Transport."""
+
+    name = "constraint_capacity_factor_transport"
+    indices = (
+        "set_transport_technologies",
+        "set_edges",
+        "set_years",
+        "set_representative_hours",
+    )
+    masks = (PowerOperationMask, FiniteTransportRouteMask)
 
     @classmethod
-    def build(cls, model_constructor):
+    def should_construct(cls, model_constructor):
+        return bool(model_constructor.optimization_model.sets[SetTransportTechnologies])
+
+    @classmethod
+    def get_constraint(cls, model_constructor):
         """Summary:
         Load is limited by the installed capacity and the maximum load factor.
 
@@ -33,27 +48,21 @@ class CapacityFactorTransportConstraint(GenericConstraint):
         :math:`y`
         :math:`K_{h,e,y}`: Capacity of transport technology :math:`h` on
         edge :math:`e` in year :math:`y`
+
+        Args:
+            model_constructor: Object containing the optimization model.
+
+        Returns:
+            Constraint over its declared model indices.
         """
-        techs = model_constructor.optimization_model.sets["set_transport_technologies"]
-        if len(techs) == 0:
-            return
-        edges = model_constructor.optimization_model.sets["set_edges"]
-        times = model_constructor.optimization_model.variables["flow_transport"].coords[
-            "set_time_steps_operation"
-        ]
-        time_step_year = xr.DataArray(
-            [
-                model_constructor.time_steps.convert_time_step_operation2year(t)
-                for t in times.data
-            ],
-            coords=[times],
-        )
+        techs = model_constructor.optimization_model.sets[SetTransportTechnologies]
+        edges = model_constructor.optimization_model.sets[SetEdges]
         term_capacity = (
-            model_constructor.optimization_model.parameters.max_load.loc[
-                techs, edges, :
+            model_constructor.optimization_model.parameters[MaxLoad].loc[
+                techs, edges, :, :
             ]
-            * model_constructor.optimization_model.variables["capacity"].loc[
-                techs, "power", edges, time_step_year
+            * model_constructor.optimization_model.variables[Capacity].loc[
+                techs, edges, :
             ]
         ).rename(
             {
@@ -64,13 +73,11 @@ class CapacityFactorTransportConstraint(GenericConstraint):
 
         lhs = (
             term_capacity
-            - model_constructor.optimization_model.variables["flow_transport"].loc[
-                techs, edges, :
+            - model_constructor.optimization_model.variables[FlowTransport].loc[
+                techs, edges, :, :
             ]
         )
         rhs = 0
         constraints = lhs >= rhs
         ### return
-        cls.add_constraint(
-            model_constructor, "constraint_capacity_factor_transport", constraints
-        )
+        return constraints

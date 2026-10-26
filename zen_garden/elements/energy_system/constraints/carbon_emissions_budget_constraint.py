@@ -1,9 +1,20 @@
+from zen_garden.elements.energy_system.expressions.emissions_counted_toward_budget import (  # noqa: E501
+    EmissionsCountedTowardBudget,
+)
+from zen_garden.elements.energy_system.parameters.carbon_emissions_budget import (
+    CarbonEmissionsBudget,
+)
 from zen_garden.model.component_types.constraint import GenericConstraint
 
 
 class CarbonEmissionsBudgetConstraint(GenericConstraint):
+    """Carbon Emissions Budget."""
+
+    name = "constraint_carbon_emissions_budget"
+    indices = ("set_years",)
+
     @classmethod
-    def build(cls, model_constructor):
+    def get_constraint(cls, model_constructor):
         """Summary:
         Carbon emissions budget of whole time horizon.
         The prediction extends until the end of the horizon, i.e., last optimization
@@ -27,29 +38,14 @@ class CarbonEmissionsBudgetConstraint(GenericConstraint):
         system
         :math:`y_\\mathrm{H}`: final year of the entire optimization horizon. The
         extrapolation term is omitted there because no intermediate years remain.
+
+        Args:
+            model_constructor: Object containing the optimization model.
+
+        Returns:
+            Constraint over its declared model indices.
         """
-        m = [
-            year != model_constructor.model_schema.set_years_entire_horizon[-1]
-            for year in model_constructor.model_schema.set_years
-        ]
-
-        lhs = (
-            model_constructor.optimization_model.variables[
-                "carbon_emissions_cumulative"
-            ]
-            - model_constructor.optimization_model.variables[
-                "carbon_emissions_budget_overshoot"
-            ]
-            + (
-                model_constructor.optimization_model.variables[
-                    "carbon_emissions_annual"
-                ].where(m)
-                * (model_constructor.config.system.interval_between_years - 1)
-            )
-        )
-        rhs = model_constructor.optimization_model.parameters.carbon_emissions_budget
-        constraints = lhs <= rhs
-
-        model_constructor.optimization_model.add_constraint(
-            "constraint_carbon_emissions_budget", constraints
+        model = model_constructor.optimization_model
+        return model.expressions[EmissionsCountedTowardBudget] <= (
+            model.parameters[CarbonEmissionsBudget]
         )

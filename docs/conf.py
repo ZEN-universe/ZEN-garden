@@ -59,6 +59,7 @@ extensions = [
     "sphinx.ext.imgconverter",  # for SVG conversion
     "sphinxcontrib.mermaid",  # for class diagrams
     "docstring",  # custom extension for inserting docstring text
+    "model_component_table",  # tables generated from model component metadata
     "workflow_diagram",  # custom extension for the API reference workflow diagram
 ]
 # allow errors in the notebooks

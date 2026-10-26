@@ -1,9 +1,20 @@
+from zen_garden.elements.carrier.expressions.annual_import_export_emissions import (
+    AnnualImportExportEmissions,
+)
+from zen_garden.elements.carrier.variables.carbon_emissions_carrier_total import (
+    CarbonEmissionsCarrierTotal,
+)
 from zen_garden.model.component_types.constraint import GenericConstraint
 
 
 class CarbonEmissionsCarrierTotalConstraint(GenericConstraint):
+    """Carbon Emissions Carrier Total."""
+
+    name = "constraint_carbon_emissions_carrier_total"
+    indices = ("set_years",)
+
     @classmethod
-    def build(cls, model_constructor):
+    def get_constraint(cls, model_constructor):
         """Summary:
         Total carbon emissions of importing and exporting carrier.
 
@@ -20,20 +31,15 @@ class CarbonEmissionsCarrierTotalConstraint(GenericConstraint):
         and exporting carrier :math:`c` at node :math:`n` in time step :math:`t`
         of year :math:`y`
         :math:`\\Delta t_t`: duration of time step :math:`t`
-        """
-        term_summed_carbon_emissions_carrier = (
-            model_constructor.optimization_model.variables["carbon_emissions_carrier"]
-            * cls.get_year_time_step_duration_array(model_constructor)
-        ).sum(["set_carriers", "set_nodes", "set_time_steps_operation"])
-        lhs = (
-            model_constructor.optimization_model.variables[
-                "carbon_emissions_carrier_total"
-            ]
-            - term_summed_carbon_emissions_carrier
-        )
-        rhs = 0
-        constraints = lhs == rhs
 
-        model_constructor.optimization_model.add_constraint(
-            "constraint_carbon_emissions_carrier_total", constraints
+        Args:
+            model_constructor: Object containing the optimization model.
+
+        Returns:
+            Constraint over its declared model indices.
+        """
+        model = model_constructor.optimization_model
+        return (
+            model.variables[CarbonEmissionsCarrierTotal]
+            == model.expressions[AnnualImportExportEmissions]
         )

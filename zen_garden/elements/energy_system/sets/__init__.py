@@ -2,15 +2,16 @@
 
 from zen_garden.model.component_types.set import GenericSet
 
+from .set_capacity_types import SetCapacityTypes
 from .set_carriers import SetCarriers
 from .set_edges import SetEdges
 from .set_elements import SetElements
-from .set_hours_all_years import SetHoursAllYears
+from .set_hours import SetHours
 from .set_nodes import SetNodes
 from .set_nodes_on_edges import SetNodesOnEdges
+from .set_representative_hours import SetRepresentativeHours
+from .set_representative_hours_storage import SetRepresentativeHoursStorage
 from .set_technologies import SetTechnologies
-from .set_time_steps_operation import SetTimeStepsOperation
-from .set_time_steps_storage import SetTimeStepsStorage
 from .set_years import SetYears
 from .set_years_entire_horizon import SetYearsEntireHorizon
 
@@ -19,26 +20,28 @@ ENERGY_SYSTEM_SETS: list[type[GenericSet]] = [
     SetEdges,
     SetNodesOnEdges,
     SetCarriers,
+    SetCapacityTypes,
     SetTechnologies,
     SetElements,
-    SetHoursAllYears,
+    SetHours,
     SetYears,
     SetYearsEntireHorizon,
-    SetTimeStepsOperation,
-    SetTimeStepsStorage,
+    SetRepresentativeHours,
+    SetRepresentativeHoursStorage,
 ]
 
 __all__ = [
     "ENERGY_SYSTEM_SETS",
     "SetCarriers",
+    "SetCapacityTypes",
     "SetEdges",
     "SetElements",
-    "SetHoursAllYears",
+    "SetHours",
     "SetNodes",
     "SetNodesOnEdges",
     "SetTechnologies",
-    "SetTimeStepsOperation",
-    "SetTimeStepsStorage",
+    "SetRepresentativeHours",
+    "SetRepresentativeHoursStorage",
     "SetYears",
     "SetYearsEntireHorizon",
 ]

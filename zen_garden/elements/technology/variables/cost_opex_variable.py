@@ -8,10 +8,17 @@ class CostOpexVariable(GenericVariable):
     """Variable for operational expenditure."""
 
     name = "cost_opex_variable"
-    indices = ["set_technologies", "set_location", "set_time_steps_operation"]
-    doc = "Variable for opex for operating technology at location l and time t"
+    symbol = r"C^{\mathrm{op,var}}_{h,p,t}"
+    indices = [
+        "set_technologies",
+        "set_location",
+        "set_years",
+        "set_representative_hours",
+    ]
+    doc = "Opex for operating technology h at location p and operational time step t."
     unit_category = {"money": 1, "time": -1}
     masks = [PowerOperationMask]
+    mask_default_value = 0.0
 
     @classmethod
     def get_bounds(cls, model_constructor, index_sets):

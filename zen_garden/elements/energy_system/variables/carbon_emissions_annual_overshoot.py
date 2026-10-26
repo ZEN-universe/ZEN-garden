@@ -7,8 +7,9 @@ class CarbonEmissionsAnnualOvershoot(GenericVariable):
     """Variable for annual carbon emissions overshoot."""
 
     name = "carbon_emissions_annual_overshoot"
+    symbol = r"M^{\mathrm{ann,over}}_{y}"
     indices = ["set_years"]
-    doc = "Variable for overshoot of the annual carbon emissions limit of energy system"
+    doc = "Overshoot of the annual carbon emissions limit of energy system."
     unit_category = {"emissions": 1}
 
     @classmethod

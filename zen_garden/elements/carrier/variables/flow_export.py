@@ -7,8 +7,14 @@ class FlowExport(GenericVariable):
     """Variable for export flow."""
 
     name = "flow_export"
-    indices = ["set_carriers", "set_nodes", "set_time_steps_operation"]
-    doc = "Variable for node- and time-dependent carrier export from the grid"
+    symbol = r"F^{\mathrm{exp}}_{c,n,t}"
+    indices = [
+        "set_carriers",
+        "set_nodes",
+        "set_years",
+        "set_representative_hours",
+    ]
+    doc = "Node- and time-dependent carrier export from the grid."
     unit_category = {"energy_quantity": 1, "time": -1}
 
     @classmethod

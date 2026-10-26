@@ -110,7 +110,7 @@ class ModelConstructor:
     def construct_sets(self):
         """Constructs the Sets of this class."""
         logger.info(f"Constructing sets for {self.element_class.__name__}")
-        for model_set in self.sets:
+        for model_set in GenericSet.construction_order(self.sets, ignore_missing=True):
             model_set.build(self)
 
     def construct_params(self):
@@ -119,7 +119,7 @@ class ModelConstructor:
         # Build in dependency order so that derived parameters (which read other
         # already-registered model parameters in their build()) see their inputs.
         # ignore_missing: cross-type dependencies (e.g. on "distance") are only
-        # relevant to the store_input_data pass and may not be in this list.
+        # relevant to the input-data pass and may not be in this list.
         ordered = GenericParameter.construction_order(
             self.parameters, ignore_missing=True
         )
@@ -130,7 +130,9 @@ class ModelConstructor:
         """Constructs the Vars of this class."""
         logger.info(f"Constructing variables for {self.element_class.__name__}")
 
-        for variable in self.variables:
+        for variable in GenericVariable.construction_order(
+            self.variables, ignore_missing=True
+        ):
             variable.build(self)
 
     def construct_expressions(self):
@@ -143,7 +145,9 @@ class ModelConstructor:
         """Constructs the Constraints of this class."""
         logger.info(f"Constructing constraints for {self.element_class.__name__}")
 
-        for constraint in self.constraints:
+        for constraint in GenericConstraint.construction_order(
+            self.constraints, ignore_missing=True
+        ):
             constraint.build(self)
 
     def create_custom_set(self, list_index: list[str]):

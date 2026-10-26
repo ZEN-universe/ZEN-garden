@@ -10,8 +10,9 @@ class CapacityAnyTypeMask(GenericMask):
     """Capacity availability reduced across power and energy capacity types."""
 
     name = "capacity_any_type"
-    dependencies = [CapacityAvailableMask]
+    indices = ("set_technologies", "set_location", "set_years")
+    dependencies = (CapacityAvailableMask,)
 
     @classmethod
-    def build(cls, model_constructor, registry):
-        return registry[CapacityAvailableMask].any("set_capacity_types")
+    def get_mask(cls, model_constructor, registry):
+        return registry[CapacityAvailableMask]

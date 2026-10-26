@@ -1,15 +1,46 @@
 import numpy as np
 import xarray as xr
 
+from zen_garden.elements.conversion_technology.expressions.conversion_reference_flow import (  # noqa: E501
+    ConversionReferenceFlow,
+)
+from zen_garden.elements.conversion_technology.parameters.min_full_load_hours_fraction import (  # noqa: E501
+    MinFullLoadHoursFraction,
+)
+from zen_garden.elements.energy_system.parameters.modeled_year_hours import (
+    ModeledYearHours,
+)
+from zen_garden.elements.energy_system.parameters.weight_representative_hours import (
+    WeightRepresentativeHours,
+)
+from zen_garden.elements.energy_system.sets.set_nodes import SetNodes
 from zen_garden.elements.technology.masks import PowerCapacityYearMask
+from zen_garden.elements.technology.sets.set_conversion_technologies import (
+    SetConversionTechnologies,
+)
+from zen_garden.elements.technology.variables.capacity import Capacity
 from zen_garden.model.component_types.constraint import GenericConstraint
 
 
 class MinimumFullLoadHoursConstraint(GenericConstraint):
-    masks = {"constraint_minimum_full_load_hours": [PowerCapacityYearMask]}
+    """Minimum Full Load Hours."""
+
+    name = "constraint_minimum_full_load_hours"
+    indices = (
+        "set_conversion_technologies",
+        "set_nodes",
+        "set_years",
+    )
+    masks = (PowerCapacityYearMask,)
 
     @classmethod
-    def build(cls, model_constructor):
+    def should_construct(cls, model_constructor):
+        return bool(
+            model_constructor.optimization_model.sets[SetConversionTechnologies]
+        )
+
+    @classmethod
+    def get_constraint(cls, model_constructor):
         """Summary:
         Sets minimum full load hours for each unit.
 
@@ -46,16 +77,20 @@ class MinimumFullLoadHoursConstraint(GenericConstraint):
         - :math:`F^{\\mathrm{ref}}_{h,n,t}`: reference carrier flow of the technology
           :math:`h` at node :math:`n` in time step :math:`t` in planning
           period :math:`y`
+
+        Args:
+            model_constructor: Object containing the optimization model.
+
+        Returns:
+            Constraint over its declared model indices.
         """
         # get dimensions
-        techs = model_constructor.optimization_model.sets["set_conversion_technologies"]
-        if len(techs) == 0:
-            return
-        nodes = model_constructor.optimization_model.sets["set_nodes"]
+        techs = model_constructor.optimization_model.sets[SetConversionTechnologies]
+        nodes = model_constructor.optimization_model.sets[SetNodes]
         # define mask
-        min_full_load_hours_fraction = (
-            model_constructor.optimization_model.parameters.min_full_load_hours_fraction
-        )
+        min_full_load_hours_fraction = model_constructor.optimization_model.parameters[
+            MinFullLoadHoursFraction
+        ]
         mask = xr.DataArray(
             ~np.isclose(min_full_load_hours_fraction, 0),
             dims=min_full_load_hours_fraction.dims,
@@ -64,12 +99,11 @@ class MinimumFullLoadHoursConstraint(GenericConstraint):
         # create constraint
         term_capacity = (
             min_full_load_hours_fraction
-            * model_constructor.config.system.unaggregated_time_steps_per_year
-            * model_constructor.optimization_model.variables["capacity"]
+            * model_constructor.optimization_model.parameters[ModeledYearHours]
+            * model_constructor.optimization_model.variables[Capacity]
             .sel(
                 {
                     "set_technologies": techs,
-                    "set_capacity_types": ["power"],
                     "set_location": nodes,
                 }
             )
@@ -80,15 +114,16 @@ class MinimumFullLoadHoursConstraint(GenericConstraint):
                 }
             )
         )
+        weights = model_constructor.optimization_model.parameters[
+            WeightRepresentativeHours
+        ]
         term_annual_production = (
-            cls.get_flow_expression_conversion(model_constructor, techs, nodes)
-            * cls.get_year_time_step_duration_array(model_constructor)
-        ).sum("set_time_steps_operation")
+            model_constructor.optimization_model.expressions[ConversionReferenceFlow]
+            * weights
+        ).sum("set_representative_hours")
 
         lhs = term_annual_production.where(mask) - term_capacity.where(mask)
         rhs = 0
         constraints = lhs >= rhs
 
-        cls.add_constraint(
-            model_constructor, "constraint_minimum_full_load_hours", constraints
-        )
+        return constraints

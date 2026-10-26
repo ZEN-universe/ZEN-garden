@@ -10,8 +10,9 @@ class CapacityAdditionAnyTypeMask(GenericMask):
     """Addition eligibility reduced across power and energy capacity types."""
 
     name = "capacity_addition_any_type"
-    dependencies = [CapacityAdditionEligibleMask]
+    indices = ("set_technologies", "set_location", "set_years")
+    dependencies = (CapacityAdditionEligibleMask,)
 
     @classmethod
-    def build(cls, model_constructor, registry):
-        return registry[CapacityAdditionEligibleMask].any("set_capacity_types")
+    def get_mask(cls, model_constructor, registry):
+        return registry[CapacityAdditionEligibleMask]

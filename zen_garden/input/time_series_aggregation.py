@@ -2,7 +2,7 @@
 
 import copy
 import logging
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 import numpy as np
 import pandas as pd
@@ -196,13 +196,16 @@ class TimeSeriesAggregation(object):
         self.repeat_sequence_time_steps_for_all_years()
         logger.info("Calculate operational time steps for storage levels")
         self.calculate_time_steps_storage_level()
-        # overwrite duration of operational and storage time steps in energy
-        # system
-        self.energy_system.time_steps_operation_duration = pd.Series(
-            self.time_steps.time_steps_operation_duration
+        self.time_steps.initialize_representative_hours(
+            self.model_schema.set_years_entire_horizon,
+            self.config.system,
         )
-        self.energy_system.time_steps_storage_duration = pd.Series(
-            self.time_steps.time_steps_storage_duration
+        self._convert_time_series_to_representative_hours()
+        self.energy_system.weight_representative_hours = (
+            self.time_steps.weight_representative_hours
+        )
+        self.energy_system.duration_representative_hours_storage = (
+            self.time_steps.duration_representative_hours_storage
         )
 
     @property
@@ -920,6 +923,50 @@ class TimeSeriesAggregation(object):
         self.time_steps.time_steps_energy2power = time_steps_energy2power
         # set the first and last time step of each year
         self.time_steps.set_time_steps_storage_startend(self.model_schema.config.system)
+
+    def _convert_time_series_to_representative_hours(self) -> None:
+        """Replace aggregated flat time indices with explicit year/hour levels."""
+        mapping = self.time_steps.operation_step_to_pair
+        assert mapping is not None
+        input_time_name = self.config.analysis.header_data_inputs.set_hours
+        for element in self.element_registry.all_elements():
+            for parameter_name, raw_data in element.raw_time_series.items():
+                if raw_data is None:
+                    continue
+                parameter = getattr(element, parameter_name)
+                if not isinstance(parameter, pd.Series):
+                    continue
+                time_level = next(
+                    (
+                        name
+                        for name in parameter.index.names
+                        if name in {input_time_name, "set_hours"}
+                    ),
+                    None,
+                )
+                if time_level is None:
+                    continue
+                time_level = cast(str, time_level)
+                index_frame = parameter.index.to_frame(index=False)
+                time_position = list(parameter.index.names).index(time_level)
+                pairs = index_frame[time_level].map(mapping)
+                if pairs.isna().any():
+                    missing = index_frame.loc[pairs.isna(), time_level].unique()
+                    raise KeyError(
+                        f"No year-aware representative-hour mapping for {missing}."
+                    )
+                index_frame.insert(
+                    time_position,
+                    "set_years",
+                    [int(pair[0]) for pair in pairs],
+                )
+                index_frame.insert(
+                    time_position + 1,
+                    "set_representative_hours",
+                    [int(pair[1]) for pair in pairs],
+                )
+                index_frame = index_frame.drop(columns=time_level)
+                parameter.index = pd.MultiIndex.from_frame(index_frame)
 
     def unique_time_steps_multiple_indices(self, list_sequence_time_steps):
         """Returns the unique time steps of multiple time grids.

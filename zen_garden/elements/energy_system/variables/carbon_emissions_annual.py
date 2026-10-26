@@ -5,8 +5,9 @@ class CarbonEmissionsAnnual(GenericVariable):
     """Variable for annual carbon emissions."""
 
     name = "carbon_emissions_annual"
+    symbol = r"M_{y}"
     indices = ["set_years"]
-    doc = "Variable for annual carbon emissions of energy system"
+    doc = "Annual carbon emissions of energy system."
     unit_category = {"emissions": 1}
 
     @classmethod

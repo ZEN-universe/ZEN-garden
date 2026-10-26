@@ -1,20 +1,26 @@
-from zen_garden.model.component_types.parameter import GenericParameter
+from zen_garden.elements.transport_technology.parameters.distance import Distance
+from zen_garden.model.component_types.parameter import (
+    GenericParameter,
+    ParameterInputData,
+)
 
 
 class CarbonIntensityTechnology(GenericParameter):
     """Carbon intensity of each technology."""
 
     name = "carbon_intensity_technology"
+    symbol = r"\varepsilon^{\mathrm{op}}_{h}"
     indices = ("set_technologies", "set_location")
-    doc = "Carbon intensity of each technology"
+    doc = "Parameter which specifies the carbon intensity of each technology."
     unit_category = {"emissions": 1, "energy_quantity": -1}
-    dependencies = ["distance"]
+    dependencies = (Distance,)
 
     @classmethod
-    def store_input_data(cls, element):
+    def get_input_data(cls, element):
         """Load carbon intensity after all transport distances are available."""
-        super().store_input_data(element)
-        unit = element.units[cls.name]["unit_in_base_units"].units
+        data = super().get_input_data(element)
+        assert data is not None
+        unit = data.units["unit_in_base_units"].units
         if getattr(element, "location_type", None) == "set_edges" and (
             "/ kilometer" in str(unit)
         ):
@@ -27,4 +33,5 @@ class CarbonIntensityTechnology(GenericParameter):
                     "distance": -1,
                 },
             )
-            cls._store_value(element, cls.name, value * element.distance)
+            return ParameterInputData(value * element.distance, element.units[cls.name])
+        return data

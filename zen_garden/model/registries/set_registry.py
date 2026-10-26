@@ -1,174 +1,446 @@
-"""Class to prepare parameter data for pyomo parameter prerequisites."""
+"""Canonical model-domain and relation registry."""
 
-import itertools
+from __future__ import annotations
+
 import logging
 import uuid
-from collections.abc import Mapping
+from collections.abc import Sequence
 from typing import TYPE_CHECKING, Any
 
 import numpy as np
+import pandas as pd
 import xarray as xr
 
-from zen_garden.model.registries.base import Registry
-from zen_garden.model.registries.set import BaseSet, IndexedSet, SimpleSet
+from zen_garden.model.component_types.index import GenericIndex
+from zen_garden.model.component_types.set import GenericSet
+from zen_garden.model.registries.base import Registry, component_name
+from zen_garden.model.registries.set import DomainSet, RelationSet, ResolvedIndex
 
 if TYPE_CHECKING:
+    from linopy import Model as LinopyModel
+
     from zen_garden.model.element_registry import ElementRegistry
     from zen_garden.model.schema import ModelSchema
 
 logger = logging.getLogger(__name__)
 
+SetKey = str | type[GenericSet] | type[GenericIndex]
+
+
+def set_name(key: SetKey) -> str:
+    """Return the canonical name for a set or structural-index key."""
+    if isinstance(key, type) and issubclass(key, GenericIndex):
+        return key.name
+    return component_name(key, GenericSet)
+
+
+def _coordinate_array(values: Sequence[Any] | pd.Index) -> np.ndarray:
+    """Return a one-dimensional coordinate array, including tuple members."""
+    members = list(values)
+    if any(isinstance(member, tuple) for member in members):
+        array = np.empty(len(members), dtype=object)
+        array[:] = members
+        return array
+    if not members:
+        return np.array([], dtype=object)
+    return np.asarray(members)
+
 
 class SetRegistry(Registry):
-    """Class to prepare parameter data for pyomo parameter prerequisites.
-    Formerly known as IndexSet."""
+    """Store domains, sparse relations, and their xarray coordinates."""
 
     def __init__(
         self,
         model_schema: "ModelSchema",
         element_registry: "ElementRegistry",
-        indexing_sets: list[str],
     ):
-        """Initialization of the SetRegistry object."""
-        # base class init
         super().__init__()
-
         self.model_schema = model_schema
         self.element_registry = element_registry
-        self.indexing_sets = indexing_sets
-
-        # attributes for the actual sets and index sets of the indexed sets
-        self.sets: dict[str, BaseSet] = {}
-        self.index_sets: dict[str, str] = {}
-
-        # this is the Dataset with the coords
+        self.sets: dict[str, DomainSet] = {}
+        self.relations: dict[str, RelationSet] = {}
         self.coords_dataset = xr.Dataset()
+        self.legacy_indexed_set_relations: dict[str, str] = {}
 
     @property
     def config(self):
         """Return the canonical configuration from the model schema."""
         return self.model_schema.config
 
-    def add_set(self, name, data, doc, index_set: str | None = None):
-        """Adds a set to the SetRegistry (this set it not indexed).
-
-        :param name: The name of the set
-        :param data: The data used for the init
-        :param doc: The docstring of the set
-        :param index_set: The name of the index set if the set it self is indexed
-        """
-        if name in self.sets:
-            logger.warning(f"{name} already added. Will be overwritten!")
-
-        # added data and docs
-        if isinstance(data, Mapping):
-            model_set: BaseSet = IndexedSet(
-                data=data, name=name, doc=doc, index_set=index_set
-            )
-        else:
-            model_set = SimpleSet(data=data, name=name, doc=doc)
-        self.sets[name] = model_set
+    def add_domain(self, domain: DomainSet) -> None:
+        """Validate and register one canonical model domain."""
+        if domain.name in self.sets:
+            raise ValueError(f"Domain {domain.name!r} already added")
+        self.sets[domain.name] = domain
         self.coords_dataset = self.coords_dataset.assign_coords(
-            {name: np.array(list(model_set.coordinate_values))}
+            {domain.name: _coordinate_array(domain.members)}
         )
-        self.docs[name] = self.compile_doc_string(
-            doc, name=name, index_list=[index_set] if index_set is not None else []
+        self.docs[domain.name] = self.compile_doc_string(
+            domain.doc,
+            name=domain.name,
+            index_list=[],
         )
-        if index_set is not None:
-            self.index_sets[name] = index_set
 
-    def is_indexed(self, name: str) -> bool:
-        """Checks if the set with the name is indexed.
+    def add_relation(self, relation: RelationSet) -> None:
+        """Validate and register one canonical sparse relation."""
+        if relation.name in self.relations:
+            raise ValueError(f"Relation {relation.name!r} already added")
+        missing_dimensions = set(relation.dimensions).difference(self.sets)
+        if missing_dimensions:
+            raise KeyError(
+                f"Relation {relation.name!r} uses unknown domains "
+                f"{sorted(missing_dimensions)!r}"
+            )
+        for dimension in relation.dimensions:
+            invalid = relation.combinations.get_level_values(dimension).difference(
+                self.sets[dimension].members
+            )
+            if len(invalid):
+                raise ValueError(
+                    f"Relation {relation.name!r} contains members outside domain "
+                    f"{dimension!r}: {invalid.tolist()!r}"
+                )
+        self.relations[relation.name] = relation
 
-        :param name: The name of the set
-        :return: True if indexed, False otherwise
-        """
-        return isinstance(self.sets[name], IndexedSet)
+    def finalize_structural_sets(self) -> None:
+        """Register derived domains and relations after declared sets exist."""
+        if "set_location" not in self.sets:
+            locations = [*self.sets["set_nodes"], *self.sets["set_edges"]]
+            self.add_domain(DomainSet("set_location", locations, "Model locations"))
 
-    def get_index_name(self, name: str) -> str:
-        """Returns the index name of an indexed set.
+        relation_name = "relation_technology_location"
+        if relation_name not in self.relations:
+            node_technologies: list[Any] = []
+            for subset in (
+                "set_conversion_technologies",
+                "set_storage_technologies",
+                "set_retrofitting_technologies",
+            ):
+                node_technologies.extend(self.sets[subset])
+            node_technologies = list(dict.fromkeys(node_technologies))
+            combinations = [
+                (technology, node)
+                for technology in node_technologies
+                for node in self.sets["set_nodes"]
+            ]
+            combinations.extend(
+                (technology, edge)
+                for technology in self.sets["set_transport_technologies"]
+                for edge in self.sets["set_edges"]
+            )
+            self.add_relation(
+                RelationSet(
+                    relation_name,
+                    ("set_technologies", "set_location"),
+                    combinations,
+                )
+            )
 
-        :param name: The name of the indexed set
-        :return: The name of the index set
-        """
-        if not self.is_indexed(name):
-            raise ValueError(f"Set {name} is not an indexed set!")
-        zen_set = self.sets[name]
-        if not isinstance(zen_set, IndexedSet):
-            raise ValueError(f"Set {name} is not an indexed set!")
-        return zen_set.index_set
+        capacity_relation_name = "relation_technology_capacity_type"
+        if capacity_relation_name not in self.relations:
+            storage_technologies = set(self.sets["set_storage_technologies"])
+            combinations = [
+                (technology, capacity_type)
+                for technology in self.sets["set_technologies"]
+                for capacity_type in self.sets["set_capacity_types"]
+                if capacity_type != "energy" or technology in storage_technologies
+            ]
+            self.add_relation(
+                RelationSet(
+                    capacity_relation_name,
+                    ("set_technologies", "set_capacity_types"),
+                    combinations,
+                    "Meaningful capacity categories for each technology.",
+                )
+            )
+        self._register_technology_subtype_relations()
+
+    def _register_technology_subtype_relations(self) -> None:
+        """Register exact-name projections of general technology relations."""
+        technology_relations = [
+            relation
+            for relation in self.relations.values()
+            if "set_technologies" in relation.dimensions
+        ]
+        for relation in technology_relations:
+            technology_position = relation.dimensions.index("set_technologies")
+            for subtype in (
+                "set_conversion_technologies",
+                "set_storage_technologies",
+                "set_transport_technologies",
+                "set_retrofitting_technologies",
+            ):
+                dimensions = list(relation.dimensions)
+                dimensions[technology_position] = subtype
+                derived_dimensions = tuple(dimensions)
+                if any(
+                    existing.dimensions == derived_dimensions
+                    for existing in self.relations.values()
+                ):
+                    continue
+                combinations = [
+                    row
+                    for row in relation.combinations
+                    if row[technology_position] in self.sets[subtype]
+                ]
+                name = f"{relation.name}_{subtype.removeprefix('set_')}"
+                self.add_relation(
+                    RelationSet(
+                        name,
+                        derived_dimensions,
+                        combinations,
+                        relation.doc,
+                        relation.apply_by_default,
+                    )
+                )
+
+    def get_related(
+        self,
+        source_dimension: SetKey,
+        source_member: Any,
+        target_dimension: SetKey,
+    ) -> pd.Index:
+        """Return a unique two-dimensional relation projection."""
+        source_name = set_name(source_dimension)
+        target_name = set_name(target_dimension)
+        matches = [
+            relation
+            for relation in self.relations.values()
+            if set(relation.dimensions) == {source_name, target_name}
+        ]
+        if len(matches) != 1:
+            raise ValueError(
+                "Expected exactly one relation between "
+                f"{source_dimension!r} and {target_dimension!r}, found "
+                f"{[relation.name for relation in matches]!r}"
+            )
+        return matches[0].project(
+            target_name,
+            **{source_name: source_member},
+        )
+
+    def create_custom_set(
+        self,
+        list_index: Sequence[str],
+        index_relations: str | Sequence[str] = "auto",
+    ) -> tuple[list[Any], list[str]]:
+        """Resolve readable domains to the legacy registry boundary shape."""
+        resolved = self.resolve_indices(list_index, index_relations=index_relations)
+        return resolved.values, list(resolved.dimensions)
+
+    def resolve_indices(
+        self,
+        dimensions: Sequence[str],
+        *,
+        index_relations: str | Sequence[str] = "auto",
+    ) -> ResolvedIndex:
+        """Resolve domains and selected relations with deterministic joins."""
+        dimensions_tuple = tuple(dimensions)
+        unknown = set(dimensions_tuple).difference(self.sets)
+        if unknown:
+            raise KeyError(f"Unknown index domains {sorted(unknown)!r}")
+        if len(set(dimensions_tuple)) != len(dimensions_tuple):
+            raise ValueError(f"Index domains must be unique: {dimensions_tuple!r}")
+
+        relation_names = self._select_relations(dimensions_tuple, index_relations)
+        if not dimensions_tuple:
+            return ResolvedIndex(
+                dimensions=(),
+                combinations=pd.MultiIndex.from_tuples([(0,)], names=["_scalar"]),
+                coordinates={},
+                structural_mask=xr.DataArray(True),
+                applied_relations=relation_names,
+            )
+
+        frame = pd.DataFrame(index=[0])
+        for relation_name in relation_names:
+            relation_frame = self.relations[relation_name].combinations.to_frame(
+                index=False
+            )
+            if len(frame.columns) == 0:
+                frame = relation_frame
+                continue
+            shared = [column for column in frame if column in relation_frame]
+            if shared:
+                frame = frame.merge(
+                    relation_frame,
+                    on=shared,
+                    how="inner",
+                    sort=False,
+                )
+            else:
+                frame = frame.merge(relation_frame, how="cross", sort=False)
+
+        for dimension in dimensions_tuple:
+            if dimension in frame:
+                continue
+            domain_frame = pd.DataFrame({dimension: self.sets[dimension].members})
+            frame = frame.merge(domain_frame, how="cross", sort=False)
+
+        frame = frame.loc[:, list(dimensions_tuple)]
+        if frame.duplicated().any():
+            duplicates = frame.loc[frame.duplicated(keep=False)].to_dict("records")
+            raise ValueError(
+                "Resolved index contains duplicate combinations: " f"{duplicates!r}"
+            )
+        combinations = pd.MultiIndex.from_frame(frame, names=dimensions_tuple)
+        coordinates = {
+            dimension: self.sets[dimension].members for dimension in dimensions_tuple
+        }
+        structural_mask = xr.DataArray(
+            False,
+            coords={
+                dimension: _coordinate_array(coordinate)
+                for dimension, coordinate in coordinates.items()
+            },
+            dims=dimensions_tuple,
+        )
+        if len(combinations):
+            selectors = tuple(
+                xr.DataArray(
+                    combinations.get_level_values(dimension).to_numpy(),
+                    dims="_entry",
+                )
+                for dimension in dimensions_tuple
+            )
+            structural_mask.loc[selectors] = True
+        return ResolvedIndex(
+            dimensions=dimensions_tuple,
+            combinations=combinations,
+            coordinates=coordinates,
+            structural_mask=structural_mask,
+            applied_relations=relation_names,
+        )
+
+    def _select_relations(
+        self,
+        dimensions: tuple[str, ...],
+        index_relations: str | Sequence[str],
+    ) -> tuple[str, ...]:
+        """Validate and select automatic or explicit relation names."""
+        requested = set(dimensions)
+        if index_relations == "auto":
+            selected = tuple(
+                name
+                for name, relation in self.relations.items()
+                if relation.apply_by_default
+                and set(relation.dimensions).issubset(requested)
+            )
+            signatures: dict[tuple[str, ...], list[str]] = {}
+            for name in selected:
+                signature = tuple(sorted(self.relations[name].dimensions))
+                signatures.setdefault(signature, []).append(name)
+            ambiguous = {
+                signature: names
+                for signature, names in signatures.items()
+                if len(names) > 1
+            }
+            if ambiguous:
+                raise ValueError(f"Ambiguous default index relations: {ambiguous!r}")
+            return selected
+        if isinstance(index_relations, str):
+            raise ValueError("index_relations must be 'auto' or a sequence of names")
+        selected = tuple(index_relations)
+        missing = set(selected).difference(self.relations)
+        if missing:
+            raise KeyError(f"Unknown index relations {sorted(missing)!r}")
+        invalid = [
+            name
+            for name in selected
+            if not set(self.relations[name].dimensions).issubset(requested)
+        ]
+        if invalid:
+            raise ValueError(
+                f"Relations do not fit declared domains {dimensions!r}: {invalid!r}"
+            )
+        return selected
 
     @staticmethod
-    def tuple_to_arr(index_values, index_list, unique=False):
-        """Transforms list of tuples into a list of xarrays with everything from tuple.
-
-        :param index_values: The list of tuples with the index values
-        :param index_list: The names of the indices, used in case of emtpy values
-        :param unique: If True, the values are unique
-        :return: A list of arrays
-        """
-        # if the list is empty
+    def tuple_to_arr(
+        index_values: Sequence[Any] | pd.Series,
+        index_list: Sequence[str],
+        unique: bool = False,
+    ) -> tuple[xr.DataArray | np.ndarray, ...]:
+        """Split resolved rows into one pairwise selector per dimension."""
+        if not index_list:
+            return ()
         if len(index_values) == 0:
-            return tuple(xr.DataArray([]) for _ in index_list)
-
-        # multiple indices
-        if isinstance(index_values[0], tuple):
-            # there might be more index names than tuple members
-            index_arrs = [
-                xr.DataArray(list(t)) for t in zip(*index_values, strict=True)
+            arrays: list[xr.DataArray | np.ndarray] = [
+                xr.DataArray([], dims="_entry") for _ in index_list
+            ]
+        elif len(index_list) == 1:
+            arrays = [
+                xr.DataArray(_coordinate_array(list(index_values)), dims="_entry")
             ]
         else:
-            index_arrs = [xr.DataArray(index_values)]
-
-        # make unique
+            arrays = [
+                xr.DataArray(_coordinate_array(values), dims="_entry")
+                for values in zip(*index_values, strict=True)
+            ]
         if unique:
-            index_arrs = [np.unique(t.data) for t in index_arrs]
+            return tuple(np.unique(array.data) for array in arrays)
+        return tuple(arrays)
 
-        return tuple(index_arrs)
+    def get_coord(
+        self, data: xr.DataArray | np.ndarray[Any, Any] | Sequence[Any], name: str
+    ):
+        """Return the canonical domain coordinate or unique supplied values."""
+        if name in self.sets:
+            return self.coords_dataset.coords[name]
+        raw = data.data if isinstance(data, xr.DataArray) else data
+        return np.unique(raw)
 
-    def indices_to_mask(self, index_values, index_list, bounds, model=None):
-        """Transforms a list of index values into a mask.
-
-        :param index_values: A list of index values (tuples)
-        :param index_list: The list of the names of the indices
-        :param bounds: Either None, tuple, array or callable to define the bounds of
-            the variable
-        :param model: The model to which the mask belongs, note that indices which don't
-            match existing indices are renamed to match the model
-        :return: The mask as xarray
-        """
-        # get the coords
-        index_arrs = SetRegistry.tuple_to_arr(index_values, index_list)
-        coords = [
-            self.get_coord(data, name)
-            for data, name in zip(index_arrs, index_list, strict=False)
-        ]
-
-        index_list, mask = self.create_variable_mask(
-            coords, index_arrs, index_list, model
+    def indices_to_mask(
+        self,
+        index_values: Sequence[Any] | pd.Series,
+        index_list: list[str],
+        bounds: Any,
+        model: "LinopyModel | None" = None,
+    ) -> tuple[xr.DataArray, Any, Any]:
+        """Build an index mask and bounds for the Linopy boundary."""
+        index_arrs = self.tuple_to_arr(index_values, index_list)
+        canonical_coords = {
+            name: (
+                _coordinate_array(self.sets[name].members)
+                if name in self.sets
+                else np.unique(index_arr.data)
+            )
+            for index_arr, name in zip(index_arrs, index_list, strict=True)
+        }
+        backend_names = list(index_list)
+        if model is not None:
+            for position, name in enumerate(index_list):
+                if len(canonical_coords[name]) == 0 and name in model.variables.coords:
+                    backend_names[position] = f"{name}_{uuid.uuid4()}"
+        coords = {
+            backend_name: canonical_coords[canonical_name]
+            for canonical_name, backend_name in zip(
+                index_list, backend_names, strict=True
+            )
+        }
+        mask = xr.DataArray(False, coords=coords, dims=backend_names)
+        if len(index_values):
+            mask.loc[index_arrs] = True
+        lower, upper = self._create_variable_bounds(
+            bounds,
+            mask,
+            index_arrs,
+            index_values,
         )
-
-        lower, upper = self.create_variable_bounds(
-            bounds, coords, index_arrs, index_list, index_values
-        )
-
         return mask, lower, upper
 
-    def create_variable_bounds(
-        self, bounds, coords, index_arrs, index_list, index_values
-    ):
-        """Creates the bounds for the variables.
-
-        :param bounds: The bounds of the variable
-        :param coords: The coordinates of the variable
-        :param index_arrs: The index values as xarrays
-        :param index_list: The list of the index names
-        :param index_values: The list of the index values
-        :return: The lower and upper bounds as xarrays
-        """
-        # get the bounds
-        lower = xr.DataArray(-np.inf, coords=coords, dims=index_list)
-        upper = xr.DataArray(np.inf, coords=coords, dims=index_list)
+    @staticmethod
+    def _create_variable_bounds(
+        bounds: Any,
+        mask: xr.DataArray,
+        index_arrs: tuple[xr.DataArray | np.ndarray, ...],
+        index_values: Sequence[Any] | pd.Series,
+    ) -> tuple[Any, Any]:
+        """Create explicit-dimension lower and upper bound arrays."""
+        if bounds is None:
+            return -np.inf, np.inf
+        lower = xr.full_like(mask, -np.inf, dtype=float)
+        upper = xr.full_like(mask, np.inf, dtype=float)
         if isinstance(bounds, tuple):
             if isinstance(bounds[0], xr.DataArray):
                 lower.loc[index_arrs] = bounds[0].loc[index_arrs]
@@ -180,228 +452,56 @@ class SetRegistry(Registry):
             lower.loc[index_arrs] = bounds[:, 0]
             upper.loc[index_arrs] = bounds[:, 1]
         elif callable(bounds):
-            tmp_low = []
-            tmp_up = []
-            for t in index_values:
-                b = bounds(*t)
-                tmp_low.append(b[0])
-                tmp_up.append(b[1])
-            lower.loc[index_arrs] = tmp_low
-            upper.loc[index_arrs] = tmp_up
-        elif bounds is None:
-            lower = -np.inf
-            upper = np.inf
+            low_values: list[Any] = []
+            high_values: list[Any] = []
+            for value in index_values:
+                arguments = (
+                    value
+                    if len(index_arrs) > 1 and isinstance(value, tuple)
+                    else (value,)
+                )
+                low, high = bounds(*arguments)
+                low_values.append(low)
+                high_values.append(high)
+            lower.loc[index_arrs] = low_values
+            upper.loc[index_arrs] = high_values
         else:
             raise ValueError(
-                f"bounds should be None, tuple, array or callable, is: {bounds}"
+                "bounds must be None, a tuple, an array, or a callable; "
+                f"received {type(bounds).__name__}"
             )
         return lower, upper
 
-    def create_variable_mask(self, coords, index_arrs, index_list, model):
-        """Creates the mask for the variables.
+    def on_off_technologies(self, domain: SetKey = "set_technologies") -> DomainSet:
+        """Return technologies for which on/off operation must be modeled."""
+        domain_name = set_name(domain)
+        return DomainSet(
+            domain_name,
+            (
+                technology
+                for technology in self.sets[domain_name]
+                if self._check_on_off_modeled(str(technology))
+            ),
+        )
 
-        :param coords: The coordinates of the variable
-        :param index_arrs: The index values as xarrays
-        :param index_list: The list of the index names
-        :param model: The model to which the mask belongs, note that indices which
-            don't match existing indices are renamed to match the model
-        :return: The mask as xarray
-        """
-        # save the index names under different names if they are empty
-        if model is not None:
-            index_names = []
-            for index_name, coord in zip(index_list, coords, strict=False):
-                # Check if there is already an index with same name but different size
-                if coord.size == 0 and index_name in model.variables.coords:
-                    index_names.append(index_name + f"_{uuid.uuid4()}")
-                else:
-                    index_names.append(index_name)
-            index_list = index_names
-        # init the mask
-        mask = xr.DataArray(False, coords=coords, dims=index_list)
-        mask.loc[index_arrs] = True
-        return index_list, mask
+    def _check_on_off_modeled(self, technology: str) -> bool:
+        """Return whether a technology needs explicit on/off behavior."""
+        element = self.element_registry.get_element_by_name(technology)
+        if element is None:
+            raise KeyError(f"Technology {technology!r} is not registered")
+        if not hasattr(element, "min_load"):
+            raise AttributeError(f"Technology {technology!r} has no min_load")
+        unique_min_load = list(set(element.min_load.values))
+        return not (len(unique_min_load) == 1 and unique_min_load[0] == 0)
 
-    def get_coord(self, data, name):
-        """Transforms data into a coordinate to avoid same name with different values.
+    def __getitem__(self, name: SetKey) -> DomainSet:
+        """Return a canonical domain by name or declarative set/index class."""
+        return self.sets[set_name(name)]
 
-        Transforms the data into a proper coordinate. If the name of the data is in
-        a set, the sets superset is returned otherwise all unique data values are
-        returned, this is to avoid having sets with the same name and different values.
-
-        :param data: The data to transform
-        :param name: The name of the set
-        :return: The proper coordinate
-        """
-        if name in self and len(data) > 0:
-            return self.coords_dataset.coords[name]
-        else:
-            return np.unique(data)
-
-    def __getitem__(self, name) -> BaseSet:
-        """Returns a set.
-
-        :param name: The name of the set to get
-        :return: The set that has the name
-        """
-        return self.sets[name]
-
-    def __contains__(self, item):
-        """The is for the "in" keyword.
-
-        :param item: The item to check
-        :return: True if item is contained, False otherwies
-        """
+    def __contains__(self, item: object) -> bool:
+        if isinstance(item, type) and issubclass(item, (GenericSet, GenericIndex)):
+            return item.name in self.sets
         return item in self.sets
 
     def __iter__(self):
-        """Returns an iterator over the sets.
-
-        :return: The iterator
-        """
         return iter(self.sets.values())
-
-    def create_custom_set(self, list_index: list[str]):
-        """Creates custom set for model component.
-
-        :param list_index: list of names of indices
-        :return: list_index: list of names of indices
-        """
-        list_index = list(list_index)  # make a copy of the list to avoid side effects
-
-        # Case 1: all index sets are already defined in model and no set is indexed
-        if all(
-            index in self.sets and not self.is_indexed(index) for index in list_index
-        ):
-            base_sets = [self.sets[index] for index in list_index if index in self.sets]
-            # return indices as cartesian product of sets
-            base_custom_set: list[Any] = (
-                list(itertools.product(*base_sets))
-                if len(base_sets) > 1
-                else list(base_sets[0])
-            )
-            return base_custom_set, list_index
-
-        if list_index[0] not in self.indexing_sets:
-            raise NotImplementedError(
-                f"Index <{list_index[0]}> is not in the indexing sets."
-            )
-
-        # Case 2: first index is indexed, build custom set based on first index
-        custom_set: list[Any] = []
-        for element in self.sets[list_index[0]]:
-            append_element = True
-            list_sets: list[Any] = []
-
-            for index in list_index[1:]:
-                # if the set already exist in model
-                if index in self.sets:
-                    append = self._handle_existing_set(index, element, list_sets)
-                    if not append:
-                        raise NotImplementedError(
-                            f"Index <{index}> is not known in sets."
-                        )
-                    continue
-
-                # if index is set_location
-                if index == "set_location":
-                    self._handle_set_location_index(element, list_sets)
-                    continue
-
-                # if set is used to determine if on-off behavior is modeled
-                # exclude technologies which have no min_load
-                if "on_off" in index:
-                    append_element = self._append_on_off_modeled(element, index)
-                    continue
-
-                # split in capacity types of power and energy
-                if index == "set_capacity_types":
-                    self._handle_set_capacity_types_index(element, list_sets)
-                    continue
-
-                raise NotImplementedError(f"Index <{index}> not known")
-
-            # append indices to custom_set if element is supposed to be appended
-            if append_element:
-                if list_sets:
-                    custom_set.extend(list(itertools.product([element], *list_sets)))
-                else:
-                    custom_set.extend([element])
-        return custom_set, list_index
-
-    def _handle_existing_set(self, index: str, element: str, list_sets: list[Any]):
-        """Handles existing sets in the model.
-        Returns True if handled, False if unknown.
-
-        :param index: index to handle
-        :param element: element to handle
-        :param sets: sets of the optimization setup
-        :param list_sets: list of sets to append
-        """
-        if not self.is_indexed(index):
-            list_sets.append(self.sets[index])
-            return True
-        elif self.get_index_name(index) in self.sets:
-            indexed_set = self.sets[index]
-            if not isinstance(indexed_set, IndexedSet):
-                raise TypeError(f"Set {index} is not indexed")
-            list_sets.append(indexed_set[element])
-            return True
-        return False
-
-    def _append_on_off_modeled(self, element: str, index: str) -> bool:
-        """Checks if the on-off-behavior (min-load) of a technology needs to be modeled.
-
-        :param element: technology in model
-        :param index: index to check
-        :return model_on_off: Bool indicating if on-off-behavior needs to be modeled
-        """
-        model_on_off = self._check_on_off_modeled(element)
-        return not (("set_no_on_off" in index and model_on_off) or (not model_on_off))
-
-    def _handle_set_location_index(self, element: str, list_sets: list[Any]):
-        """Handles the set_location index for the custom set.
-
-        :param element: element to handle
-        :param sets: sets of the optimization setup
-        :param list_sets: list of sets to append
-        """
-        if (
-            element in self.sets["set_conversion_technologies"]
-            or element in self.sets["set_storage_technologies"]
-            or element in self.sets["set_retrofitting_technologies"]
-        ):
-            list_sets.append(self.sets["set_nodes"])
-        elif element in self.sets["set_transport_technologies"]:
-            list_sets.append(self.sets["set_edges"])
-
-    def _handle_set_capacity_types_index(self, element: str, list_sets: list[Any]):
-        """Handles the set_capacity_types index for the custom set.
-
-        :param element: element to handle
-        :param sets: sets of the optimization setup
-        :param list_sets: list of sets to append
-        """
-        if element in self.sets["set_storage_technologies"]:
-            list_sets.append(self.config.system.set_capacity_types)
-        else:
-            list_sets.append([self.config.system.set_capacity_types[0]])
-
-    def _check_on_off_modeled(self, tech: str):
-        """Checks if on-off-behavior of a technology needs to be modeled.
-
-        If the technology has a minimum load of 0 for all nodes and time steps, and all
-        dependent carriers have a lower bound of 0 (only for conversion technologies
-        modeled as pwa), then on-off-behavior is not necessary to model.
-
-        :param tech: technology in model
-        :return model_on_off: Bool indicating if on-off-behaviour needs to be modeled
-        """
-        element = self.element_registry.get_element_by_name(tech)
-        assert element is not None, f"Technology {tech} is not registered"
-        assert hasattr(element, "min_load"), f"Technology {tech} has no min_load"
-        # 'min_load' is a parameter set dynamically on the element instance
-        element_attrs: Any = element
-        unique_min_load = list(set(element_attrs.min_load.values))
-        # disable if only one unique min_load which is zero
-        return not (len(unique_min_load) == 1 and unique_min_load[0] == 0)

@@ -3,14 +3,39 @@
 import copy
 import itertools
 import logging
-from typing import Sequence
+from typing import Sequence, TypeVar
 
 import pandas as pd
 import xarray as xr
 
-from zen_garden.model.registries.set import BaseSet
+from zen_garden.model.component_types.component import GenericComponent
+from zen_garden.model.registries.set import DomainSet
 
 logger = logging.getLogger(__name__)
+
+ComponentT = TypeVar("ComponentT", bound=GenericComponent)
+
+
+def component_name(key: str | type[ComponentT], expected_type: type) -> str:
+    """Return the canonical name for a string or component specification.
+
+    Args:
+        key: Registered component name or its declarative component class.
+        expected_type: Component base class accepted by the target registry.
+
+    Returns:
+        Canonical string name used by the registry backend.
+
+    Raises:
+        TypeError: If ``key`` is not a string or the expected component class.
+    """
+    if isinstance(key, str):
+        return key
+    if isinstance(key, type) and issubclass(key, expected_type):
+        return key.name
+    raise TypeError(
+        f"Expected a string or {expected_type.__name__} subclass, " f"received {key!r}"
+    )
 
 
 class Registry:
@@ -60,7 +85,7 @@ class Registry:
     @staticmethod
     def get_index_names_data(
         index_list: (
-            BaseSet | tuple[list | pd.Series, list[str]] | list[list] | xr.DataArray
+            DomainSet | tuple[list | pd.Series, list[str]] | list[list] | xr.DataArray
         ),
     ) -> tuple[list | pd.Series, list[str]]:
         """Splits index_list in data and index names.
@@ -71,7 +96,7 @@ class Registry:
         """
         index_values: list | pd.Series
         index_names: list[str]
-        if isinstance(index_list, BaseSet):
+        if isinstance(index_list, DomainSet):
             index_values = list(index_list)
             index_names = [index_list.name]
         elif isinstance(index_list, tuple):

@@ -6,11 +6,21 @@ class ChargeStorageBinary(GenericVariable):
     """Variable for charge storage binary."""
 
     name = "charge_storage_binary"
-    indices = ["set_storage_technologies", "set_nodes", "set_time_steps_operation"]
-    doc = "Binary variable for charge binary for storage technology"
+    symbol = r"z^{\mathrm{ch}}_{h,n,t}"
+    indices = [
+        "set_storage_technologies",
+        "set_nodes",
+        "set_years",
+        "set_representative_hours",
+    ]
+    doc = (
+        "Binary variable indicating whether the storage technology is in "
+        "charging mode (1) or discharging mode (0)."
+    )
     unit_category = {}
-    binary = True
+    variable_type = "binary"
     masks = [PowerOperationMask]
+    mask_default_value = 0.0
 
     @classmethod
     def get_bounds(cls, model_constructor, index_sets):

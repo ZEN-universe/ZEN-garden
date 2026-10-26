@@ -5,8 +5,9 @@ class CostCarbonEmissionsTotal(GenericVariable):
     """Variable for total cost of carbon emissions."""
 
     name = "cost_carbon_emissions_total"
+    symbol = r"C^{\mathrm{CO_2}}_{y}"
     indices = ["set_years"]
-    doc = "Variable for total cost of carbon emissions of energy system"
+    doc = "Total cost of carbon emissions of energy system."
     unit_category = {"money": 1}
 
     @classmethod

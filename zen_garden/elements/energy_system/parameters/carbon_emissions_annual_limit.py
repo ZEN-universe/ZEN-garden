@@ -5,7 +5,8 @@ class CarbonEmissionsAnnualLimit(GenericParameter):
     """Annual carbon emissions limit."""
 
     name = "carbon_emissions_annual_limit"
+    symbol = r"\overline{m}_{y}"
     indices = ("set_years",)
-    doc = "Annual carbon emissions limit"
+    doc = "Parameter which specifies the total limit on carbon emissions."
     unit_category = {"emissions": 1}
     set_time_steps = "set_years"

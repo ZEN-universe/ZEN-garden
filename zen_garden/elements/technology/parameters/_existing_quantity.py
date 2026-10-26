@@ -12,19 +12,31 @@ from typing import TYPE_CHECKING
 
 import xarray as xr
 
+from zen_garden.elements.energy_system.parameters.interval_between_years import (
+    IntervalBetweenYears,
+)
+from zen_garden.elements.energy_system.sets.set_nodes import SetNodes
+from zen_garden.elements.technology.parameters.lifetime import Lifetime
+from zen_garden.elements.technology.parameters.lifetime_existing import LifetimeExisting
+from zen_garden.elements.technology.sets.set_storage_technologies import (
+    SetStorageTechnologies,
+)
+
 if TYPE_CHECKING:
     from zen_garden.model.constructor import ModelConstructor
 
 _QUANTITY_INDEX = [
     "set_technologies",
-    "set_capacity_types",
     "set_location",
     "set_years",
 ]
 
 
 def compute_existing_quantity(
-    model_constructor: "ModelConstructor", source_parameter: str
+    model_constructor: "ModelConstructor",
+    source_parameter: str,
+    *,
+    storage_energy: bool = False,
 ) -> xr.DataArray:
     """Sum ``source_parameter`` over existing-capacity vintages still active.
 
@@ -36,11 +48,44 @@ def compute_existing_quantity(
     """
     parameters = model_constructor.optimization_model.parameters
     source = getattr(parameters, source_parameter)
+    if source.size == 0:
+        quantity = _restrict_to_technology_index(model_constructor, xr.DataArray(0.0))
+        return (
+            _select_storage_energy_quantity(model_constructor, quantity)
+            if storage_energy
+            else quantity
+        )
+    if storage_energy:
+        source = source.rename(
+            {
+                "set_storage_technologies": "set_technologies",
+                "set_nodes": "set_location",
+            }
+        )
     still_active = _still_active_vintages(
-        model_constructor, parameters.lifetime_existing, parameters.lifetime
+        model_constructor, parameters[LifetimeExisting], parameters[Lifetime]
     )
     quantity = (source * still_active).sum("set_technologies_existing")
-    return _restrict_to_technology_index(model_constructor, quantity)
+    quantity = _restrict_to_technology_index(model_constructor, quantity)
+    if not storage_energy:
+        return quantity
+    return _select_storage_energy_quantity(model_constructor, quantity)
+
+
+def _select_storage_energy_quantity(
+    model_constructor: "ModelConstructor", quantity: xr.DataArray
+) -> xr.DataArray:
+    """Select storage technologies and expose their energy-capacity indices."""
+    model = model_constructor.optimization_model
+    return quantity.sel(
+        set_technologies=model.sets[SetStorageTechnologies],
+        set_location=model.sets[SetNodes],
+    ).rename(
+        {
+            "set_technologies": "set_storage_technologies",
+            "set_location": "set_nodes",
+        }
+    )
 
 
 def _still_active_vintages(
@@ -55,7 +100,7 @@ def _still_active_vintages(
     newly built unit. NaN remaining lifetimes (absent vintages) resolve to
     ``False``.
     """
-    interval = model_constructor.config.system.interval_between_years
+    interval = model_constructor.optimization_model.parameters[IntervalBetweenYears]
     years = list(model_constructor.model_schema.set_years)
     year = xr.DataArray(years, coords={"set_years": years}, dims="set_years")
     elapsed = (year - years[0]) * interval
@@ -69,7 +114,7 @@ def _still_active_vintages(
 def _restrict_to_technology_index(
     model_constructor: "ModelConstructor", quantity: xr.DataArray
 ) -> xr.DataArray:
-    """Keep only (technology, capacity_type, location, year) tuples in the index."""
+    """Keep only valid technology, location, and year tuples."""
     index_values, index_names = model_constructor.create_custom_set(_QUANTITY_INDEX)
     index_arrays = model_constructor.optimization_model.sets.tuple_to_arr(
         index_values, index_names

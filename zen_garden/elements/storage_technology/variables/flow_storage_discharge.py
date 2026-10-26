@@ -7,6 +7,12 @@ class FlowStorageDischarge(FlowStorageCharge):
     """Variable for carrier flow out of storage technology."""
 
     name = "flow_storage_discharge"
-    indices = ["set_storage_technologies", "set_nodes", "set_time_steps_operation"]
-    doc = "Variable for carrier flow out of storage technology on node i and time t"
+    symbol = r"F^{\mathrm{dis}}_{h,n,t}"
+    indices = [
+        "set_storage_technologies",
+        "set_nodes",
+        "set_years",
+        "set_representative_hours",
+    ]
+    doc = "Carrier flow discharged from a storage technology."
     unit_category = {"energy_quantity": 1, "time": -1}

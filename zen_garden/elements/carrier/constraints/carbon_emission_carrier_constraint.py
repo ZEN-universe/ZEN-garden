@@ -1,9 +1,30 @@
+from zen_garden.elements.carrier.parameters.carbon_intensity_carrier_export import (
+    CarbonIntensityCarrierExport,
+)
+from zen_garden.elements.carrier.parameters.carbon_intensity_carrier_import import (
+    CarbonIntensityCarrierImport,
+)
+from zen_garden.elements.carrier.variables.carbon_emissions_carrier import (
+    CarbonEmissionsCarrier,
+)
+from zen_garden.elements.carrier.variables.flow_export import FlowExport
+from zen_garden.elements.carrier.variables.flow_import import FlowImport
 from zen_garden.model.component_types.constraint import GenericConstraint
 
 
 class CarbonEmissionsCarrierConstraint(GenericConstraint):
+    """Carbon Emissions Carrier."""
+
+    name = "constraint_carbon_emissions_carrier"
+    indices = (
+        "set_carriers",
+        "set_nodes",
+        "set_years",
+        "set_representative_hours",
+    )
+
     @classmethod
-    def build(cls, model_constructor):
+    def get_constraint(cls, model_constructor):
         """Summary:
         Carbon emissions of importing and exporting carrier.
 
@@ -27,29 +48,27 @@ class CarbonEmissionsCarrierConstraint(GenericConstraint):
         node :math:`n` in time step :math:`t` of year :math:`y`
         :math:`F^{\\mathrm{exp}}_{c,n,t}`: flow of carrier :math:`c` exported at
         node :math:`n` in time step :math:`t` of year :math:`y`
+
+        Args:
+            model_constructor: Object containing the optimization model.
+
+        Returns:
+            Constraint over its declared model indices.
         """
-        # create times xarray with 1 where the operation time step is in the year
-        times = cls.get_year_time_step_array(model_constructor)
-        # convert the carbon intensity carrier from yearly to operation time steps
-        # TODO map and expand
         carbon_intensity_carrier_import = (
-            model_constructor.optimization_model.parameters.carbon_intensity_carrier_import.broadcast_like(
-                times
-            )
-            * times
-        ).sum("set_years")
+            model_constructor.optimization_model.parameters[
+                CarbonIntensityCarrierImport
+            ]
+        )
         carbon_intensity_carrier_export = (
-            model_constructor.optimization_model.parameters.carbon_intensity_carrier_export.broadcast_like(
-                times
-            )
-            * times
-        ).sum("set_years")
-        lhs = model_constructor.optimization_model.variables[
-            "carbon_emissions_carrier"
-        ] - (
-            model_constructor.optimization_model.variables["flow_import"]
+            model_constructor.optimization_model.parameters[
+                CarbonIntensityCarrierExport
+            ]
+        )
+        lhs = model_constructor.optimization_model.variables[CarbonEmissionsCarrier] - (
+            model_constructor.optimization_model.variables[FlowImport]
             * carbon_intensity_carrier_import
-            - model_constructor.optimization_model.variables["flow_export"]
+            - model_constructor.optimization_model.variables[FlowExport]
             * carbon_intensity_carrier_export
         )
 
@@ -57,6 +76,4 @@ class CarbonEmissionsCarrierConstraint(GenericConstraint):
 
         constraints = lhs == rhs
 
-        model_constructor.optimization_model.add_constraint(
-            "constraint_carbon_emissions_carrier", constraints
-        )
+        return constraints

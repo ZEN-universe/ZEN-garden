@@ -10,9 +10,9 @@ class PowerCapacityAdditionMask(GenericMask):
     """Eligible power-capacity additions without the capacity-type dimension."""
 
     name = "power_capacity_addition"
-    dependencies = [CapacityAdditionEligibleMask]
+    indices = ("set_technologies", "set_location", "set_years")
+    dependencies = (CapacityAdditionEligibleMask,)
 
     @classmethod
-    def build(cls, model_constructor, registry):
-        mask = registry[CapacityAdditionEligibleMask].sel(set_capacity_types="power")
-        return mask.drop_vars("set_capacity_types", errors="ignore")
+    def get_mask(cls, model_constructor, registry):
+        return registry[CapacityAdditionEligibleMask]

@@ -7,10 +7,11 @@ class CostCapexYearlyTotal(GenericVariable):
     """Variable for total capex."""
 
     name = "cost_capex_yearly_total"
+    symbol = r"C^{\mathrm{cap}}_{y}"
     indices = ["set_years"]
     doc = (
-        "Variable for total capex for installing all technologies in all locations at "
-        "all times"
+        "Total capex for installing all technologies in all locations at all "
+        "times in period y."
     )
     unit_category = {"money": 1}
 

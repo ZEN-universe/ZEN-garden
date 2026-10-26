@@ -7,11 +7,9 @@ class CarbonEmissionsBudgetOvershoot(GenericVariable):
     """Variable for carbon emissions budget overshoot."""
 
     name = "carbon_emissions_budget_overshoot"
+    symbol = r"M^{\mathrm{bud,over}}_{y}"
     indices = ["set_years"]
-    doc = (
-        "Variable for overshoot carbon emissions of energy system at the end of the "
-        "time horizon"
-    )
+    doc = "Overshoot carbon emissions of energy system at the end of the time horizon."
     unit_category = {"emissions": 1}
 
     @classmethod

@@ -8,11 +8,10 @@ class CapacityPrevious(GenericVariable):
     """Variable for installed technology capacity from previous year."""
 
     name = "capacity_previous"
-    indices = ["set_technologies", "set_capacity_types", "set_location", "set_years"]
-    doc = "Variable for size of installed technology at location l and BEFORE time t"
+    symbol = r"K^{\mathrm{prev}}_{h,p,y}"
+    indices = ("set_technologies", "set_location", "set_years")
+    doc = "Size of installed technology h at location p before additions in period y."
     unit_category = {"energy_quantity": 1, "time": -1}
-    masks = [CapacityAvailableMask]
-
-    @classmethod
-    def get_bounds(cls, model_constructor, index_sets):
-        return 0, np.inf
+    bounds = (0, np.inf)
+    masks = (CapacityAvailableMask,)
+    mask_default_value = 0.0

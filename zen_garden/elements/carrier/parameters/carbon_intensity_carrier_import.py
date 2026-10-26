@@ -5,6 +5,10 @@ class CarbonIntensityCarrierImport(GenericParameter):
     """Parameter which specifies the carbon intensity of carrier import."""
 
     name = "carbon_intensity_carrier_import"
+    symbol = r"\varepsilon^{\mathrm{imp}}_{c,y}"
     indices = ("set_carriers", "set_nodes", "set_years")
-    doc = "Parameter which specifies the carbon intensity of carrier import"
+    doc = (
+        "Parameter which specifies the carrier carbon intensity for carrier "
+        "import flows."
+    )
     unit_category = {"emissions": 1, "energy_quantity": -1}

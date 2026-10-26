@@ -412,7 +412,7 @@ are followed by the dotted path of a class or method, respectively.
 
     .. docstring_class:: zen_garden.elements.carrier.Carrier
 
-    .. docstring_method:: zen_garden.elements.conversion_technology.constraints.CapacityFactorConversionConstraint.build
+    .. docstring_method:: zen_garden.elements.conversion_technology.constraints.CapacityFactorConversionConstraint.get_constraint
 
 Constraint docstrings are divided into ``Summary:``, ``Formulation:``, and
 ``Notation:`` sections. Use the ``sections`` option to select any subset and
@@ -422,7 +422,7 @@ tables:
 
 .. code::
 
-    .. docstring_method:: zen_garden.elements.conversion_technology.constraints.CapacityFactorConversionConstraint.build
+    .. docstring_method:: zen_garden.elements.conversion_technology.constraints.CapacityFactorConversionConstraint.get_constraint
        :sections: summary, formulation
 
 Equations inserted with ``docstring_method`` are numbered automatically. The

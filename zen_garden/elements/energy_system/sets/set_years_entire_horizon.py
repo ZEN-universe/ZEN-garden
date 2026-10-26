@@ -2,9 +2,11 @@ from zen_garden.model.component_types.set import GenericSet
 
 
 class SetYearsEntireHorizon(GenericSet):
-    name, doc = (
-        "set_years_entire_horizon",
-        "Set of yearly time steps of the entire optimization horizon",
+    name = "set_years_entire_horizon"
+    symbol = r"y \in \mathcal{Y}^{\mathrm{horizon}}"
+    doc = (
+        "All yearly timesteps, regardless of whether they are inside or "
+        "outside the current foresight horizon."
     )
 
     @classmethod

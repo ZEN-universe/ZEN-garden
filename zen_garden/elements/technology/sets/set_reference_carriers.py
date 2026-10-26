@@ -1,12 +1,12 @@
+from zen_garden.elements.energy_system.sets.set_technologies import SetTechnologies
 from zen_garden.model.component_types.set import GenericSet
 
 
 class SetReferenceCarriers(GenericSet):
-    name, doc, index_set = (
-        "set_reference_carriers",
-        "Reference carriers indexed by technology",
-        "set_technologies",
-    )
+    name = "set_reference_carriers"
+    symbol = r"c_{h}^{\mathrm{ref}} \in \mathcal{C}"
+    doc = "Reference carrier corresponding to a technology."
+    index_set = SetTechnologies
 
     @classmethod
     def get_data(cls, model_constructor):

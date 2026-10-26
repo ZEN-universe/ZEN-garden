@@ -5,8 +5,9 @@ class NetPresentCost(GenericVariable):
     """Variable for net present cost."""
 
     name = "net_present_cost"
+    symbol = r"C^{\mathrm{NPC}}_{y}"
     indices = ["set_years"]
-    doc = "Variable for net_present_cost of energy system"
+    doc = "Net_present_cost of energy system."
     unit_category = {"money": 1}
 
     @classmethod

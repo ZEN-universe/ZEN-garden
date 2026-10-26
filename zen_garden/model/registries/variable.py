@@ -1,14 +1,15 @@
 """The VariableRegistry, which collects the model's decision variables."""
 
 import logging
-from typing import TYPE_CHECKING, Any, Callable, cast
+from typing import TYPE_CHECKING, Any, Callable
 
 import numpy as np
 import pandas as pd
 import xarray as xr
 
-from zen_garden.model.registries.base import Registry
-from zen_garden.model.registries.set import BaseSet
+from zen_garden.model.component_types.variable import GenericVariable, VariableType
+from zen_garden.model.registries.base import Registry, component_name
+from zen_garden.model.registries.set import DomainSet
 
 if TYPE_CHECKING:
     from linopy import Model as LinopyModel
@@ -19,6 +20,35 @@ if TYPE_CHECKING:
     from zen_garden.model.schema import ModelSchema
 
 logger = logging.getLogger(__name__)
+
+
+def align_mask(mask: xr.DataArray, target: xr.DataArray) -> xr.DataArray:
+    """Align a canonical mask to backend dimensions, including empty renames."""
+    if tuple(mask.dims) != tuple(target.dims):
+        if mask.ndim != target.ndim or mask.shape != target.shape:
+            raise ValueError(
+                f"Cannot align mask dimensions {tuple(mask.dims)!r} with backend "
+                f"dimensions {tuple(target.dims)!r}"
+            )
+        invalid_renames = [
+            (source, destination)
+            for source, destination in zip(mask.dims, target.dims, strict=True)
+            if source != destination
+            and mask.sizes[source] != 0
+            and target.sizes[destination] != 0
+        ]
+        if invalid_renames:
+            raise ValueError(
+                "Positional mask-dimension renaming is allowed only for empty "
+                f"backend dimensions, not {invalid_renames!r}"
+            )
+        rename = {
+            source: destination
+            for source, destination in zip(mask.dims, target.dims, strict=True)
+            if source != destination
+        }
+        mask = mask.rename(rename)
+    return mask.reindex_like(target, fill_value=False).astype(bool)
 
 
 class VariableRegistry(Registry):
@@ -47,6 +77,11 @@ class VariableRegistry(Registry):
         self.element_registry = element_registry
 
         self.units: dict[str, pd.Series | None] = {}
+        self.structural_masks: dict[str, xr.DataArray] = {}
+        self.performance_masks: dict[str, xr.DataArray] = {}
+        self.mask_default_values: dict[str, float] = {}
+        self.applied_relations: dict[str, tuple[str, ...]] = {}
+        self.index_diagnostics: dict[str, dict[str, Any]] = {}
 
     @property
     def config(self):
@@ -58,11 +93,10 @@ class VariableRegistry(Registry):
         name: str,
         # TODO: Find smaller set of types for index_sets
         index_sets: (
-            BaseSet | tuple[list | pd.Series, list[str]] | list[list] | xr.DataArray
+            DomainSet | tuple[list | pd.Series, list[str]] | list[list] | xr.DataArray
         ),
         unit_category,
-        integer: bool = False,
-        binary: bool = False,
+        variable_type: VariableType = "continuous",
         # TODO: Create Type alias for bounds
         bounds: (
             tuple[xr.DataArray, xr.DataArray]
@@ -74,6 +108,9 @@ class VariableRegistry(Registry):
         ) = None,
         doc: str = "",
         mask: xr.DataArray | None = None,
+        structural_mask: xr.DataArray | None = None,
+        mask_default_value: float | None = None,
+        applied_relations: tuple[str, ...] = (),
     ):
         """Initialization of a variable.
 
@@ -81,37 +118,56 @@ class VariableRegistry(Registry):
         :param name: name of variable
         :param index_sets: Tuple of index values and index names
         :param unit_category: dict defining the dimensionality of the variable's unit
-        :param integer: If it is an integer variable
-        :param binary: If it is a binary variable
+        :param variable_type: Domain of the variable
         :param bounds:  bounds of variable
         :param doc: docstring of variable
         :param mask: mask of variable
         """
         if name in self.docs.keys():
-            logger.warning(f"Variable {name} already added. Can only be added once")
-            return
+            raise ValueError(f"Variable {name!r} already added. Can only be added once")
+        if variable_type not in ("continuous", "binary", "integer"):
+            raise ValueError(f"Unknown variable type {variable_type!r}")
+        if mask_default_value not in (None, 0.0):
+            raise ValueError("Performance-mask defaults currently support only 0.0")
+        if (mask is None) != (mask_default_value is None):
+            raise ValueError(
+                "A performance mask and mask_default_value must be supplied together"
+            )
 
         index_values, index_list = self.get_index_names_data(index_sets)
         mask_index, lower, upper = self.sets.indices_to_mask(
             index_values, index_list, bounds, self.lp_model
         )
-        if mask is not None:
-            mask = mask.reindex_like(mask_index, fill_value=cast(Any, False))
-            mask_index = mask_index & mask
-        self.lp_model.add_variables(
-            lower=lower,
-            upper=upper,
-            integer=integer,
-            binary=binary,
-            name=name,
-            mask=mask_index,
-            coords=mask_index.coords,
+        if mask_index.size == 0:
+            lower, upper = -np.inf, np.inf
+        canonical_structural = (
+            structural_mask.copy() if structural_mask is not None else mask_index.copy()
         )
+        solver_structural = align_mask(canonical_structural, mask_index)
+        performance_mask = xr.full_like(canonical_structural, True, dtype=bool)
+        if mask is not None:
+            performance_mask = mask.astype(bool)
+            solver_performance = align_mask(performance_mask, mask_index)
+            mask_index = solver_structural & solver_performance
+        else:
+            mask_index = solver_structural
+        try:
+            self.lp_model.add_variables(
+                lower=lower,
+                upper=upper,
+                integer=variable_type == "integer",
+                binary=variable_type == "binary",
+                name=name,
+                mask=mask_index,
+                coords=mask_index.coords,
+            )
+        except ValueError as error:
+            raise ValueError(f"Failed to register variable {name!r}") from error
 
         # save variable doc
-        if integer:
+        if variable_type == "integer":
             domain = "Integers"
-        elif binary:
+        elif variable_type == "binary":
             domain = "Binary"
         elif isinstance(bounds, tuple) and isinstance(bounds[0], xr.DataArray):
             domain = "BoundedReals"
@@ -126,6 +182,53 @@ class VariableRegistry(Registry):
         self.units[name] = self._get_var_units(
             unit_category, index_values, index_list, mask_index
         )
+        self.structural_masks[name] = canonical_structural
+        self.performance_masks[name] = performance_mask
+        if mask_default_value is not None:
+            self.mask_default_values[name] = mask_default_value
+        self.applied_relations[name] = applied_relations
+        self._record_index_diagnostics(
+            name,
+            canonical_structural,
+            performance_mask,
+            applied_relations,
+        )
+
+    def _record_index_diagnostics(
+        self,
+        name: str,
+        structural_mask: xr.DataArray,
+        performance_mask: xr.DataArray,
+        applied_relations: tuple[str, ...],
+    ) -> None:
+        """Record structural/performance density diagnostics for a variable."""
+        dense_cells = structural_mask.size
+        structurally_valid = int(structural_mask.sum().item())
+        performance_active = int(performance_mask.sum().item())
+        solver_entries = int((structural_mask & performance_mask).sum().item())
+        if solver_entries:
+            dense_active_ratio = dense_cells / solver_entries
+        elif dense_cells:
+            dense_active_ratio = float("inf")
+        else:
+            dense_active_ratio = 1.0
+        self.index_diagnostics[name] = {
+            "requested_dimensions": tuple(structural_mask.dims),
+            "applied_relations": applied_relations,
+            "dense_cells": dense_cells,
+            "structurally_valid": structurally_valid,
+            "performance_active": performance_active,
+            "solver_entries": solver_entries,
+            "dense_active_ratio": dense_active_ratio,
+        }
+        if dense_active_ratio >= 5:
+            logger.warning(
+                "Variable %s has dense/active index ratio %.3g (%d/%d)",
+                name,
+                dense_active_ratio,
+                dense_cells,
+                solver_entries,
+            )
 
     def _get_var_units(self, unit_category, var_index_values, index_list, mask):
         """Creates series of units with identical multi-index as variable has.
@@ -213,23 +316,12 @@ class VariableRegistry(Registry):
                 var_units.index.get_level_values(tech_level).map(unit_by_tech),
                 dtype=object,
             )
-            if "set_capacity_types" in var_units.index.names:
-                energy_idx = (
-                    var_units.index.get_level_values("set_capacity_types") == "energy"
-                )
-                # only parse each distinct unit once
-                energy_units = {
-                    u: str(self.unit_converter.ureg(u + "*hour").units)
-                    for u in var_units[energy_idx].unique()
-                }
-                var_units[energy_idx] = var_units[energy_idx].map(energy_units)
-
         return var_units[mask.to_series()]
 
-    def __getitem__(self, key):
-        """Get variable values by name.
+    def __getitem__(self, key: str | type[GenericVariable]):
+        """Get variable values by name or declarative variable class.
 
         :param key: name of variable
         :return: variable values
         """
-        return self.lp_model.variables[key]
+        return self.lp_model.variables[component_name(key, GenericVariable)]

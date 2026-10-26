@@ -10,6 +10,7 @@
 !/data/.gitkeep
 outputs*/
 zen_garden_env/
+/.codex-baseline
 *.swp
 *~
 *.pyc

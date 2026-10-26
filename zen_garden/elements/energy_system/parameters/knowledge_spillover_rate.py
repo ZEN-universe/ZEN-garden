@@ -5,6 +5,7 @@ class KnowledgeSpilloverRate(GenericParameter):
     """Knowledge spillover rate."""
 
     name = "knowledge_spillover_rate"
+    symbol = r"\omega"
     indices = ()
-    doc = "Knowledge spillover rate"
+    doc = "Parameter which specifies the knowledge spillover rate."
     unit_category = {}

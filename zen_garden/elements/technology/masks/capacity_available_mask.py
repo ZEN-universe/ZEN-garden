@@ -13,8 +13,9 @@ class CapacityAvailableMask(GenericMask):
     """Existing or potentially constructed capacity available by model year."""
 
     name = "capacity_available"
-    dependencies = [ExistingCapacityMask, PotentialNewCapacityMask]
+    indices = ("set_technologies", "set_location", "set_years")
+    dependencies = (ExistingCapacityMask, PotentialNewCapacityMask)
 
     @classmethod
-    def build(cls, model_constructor, registry):
+    def get_mask(cls, model_constructor, registry):
         return registry[ExistingCapacityMask] | registry[PotentialNewCapacityMask]

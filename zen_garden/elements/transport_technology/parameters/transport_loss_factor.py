@@ -1,19 +1,24 @@
 import numpy as np
 
-from zen_garden.model.component_types.parameter import GenericParameter
+from zen_garden.elements.transport_technology.parameters.distance import Distance
+from zen_garden.model.component_types.parameter import (
+    GenericParameter,
+    ParameterInputData,
+)
 
 
 class TransportLossFactor(GenericParameter):
     """Carrier losses due to transport."""
 
     name = "transport_loss_factor"
+    symbol = r"\lambda^{\mathrm{trans}}_{h,e}"
     indices = ("set_transport_technologies", "set_edges")
-    doc = "Carrier losses due to transport"
+    doc = "Fractional carrier loss along a transport connection."
     unit_category = {}
-    dependencies = ["distance"]
+    dependencies = (Distance,)
 
     @classmethod
-    def store_input_data(cls, element):
+    def get_input_data(cls, element):
         """Calculate transport loss from its linear or exponential input."""
         attributes = element.element_data_loader.attribute_dict
         has_linear = "transport_loss_factor_linear" in attributes
@@ -42,4 +47,4 @@ class TransportLossFactor(GenericParameter):
             element.config.system.set_transport_technologies_loss_exponential.append(
                 element.name
             )
-        cls._store_value(element, cls.name, value)
+        return ParameterInputData(value, element.units.get(input_name))

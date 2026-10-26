@@ -7,8 +7,9 @@ class CostOpexYearlyTotal(GenericVariable):
     """Variable for total operational expenditure."""
 
     name = "cost_opex_yearly_total"
+    symbol = r"C^{\mathrm{op}}_{y}"
     indices = ["set_years"]
-    doc = "Variable for total opex all technologies and locations in year y"
+    doc = "Total opex all technologies and locations in year y."
     unit_category = {"money": 1}
 
     @classmethod

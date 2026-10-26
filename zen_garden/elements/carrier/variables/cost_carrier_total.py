@@ -5,8 +5,9 @@ class CostCarrierTotal(GenericVariable):
     """Variable for total carrier import/export cost."""
 
     name = "cost_carrier_total"
+    symbol = r"C^{\mathrm{carrier}}_{y}"
     indices = ["set_years"]
-    doc = "Variable for total carrier cost due to import and export"
+    doc = "Total carrier cost due to import and export."
     unit_category = {"money": 1}
 
     @classmethod

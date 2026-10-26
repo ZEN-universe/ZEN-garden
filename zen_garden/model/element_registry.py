@@ -81,16 +81,12 @@ class ElementRegistry:
                 return element_class
         return None
 
-    def get_attribute_of_all_elements_with_units(
-        self, cls, attribute_name: str, capacity_types=False
-    ):
+    def get_attribute_of_all_elements_with_units(self, cls, attribute_name: str):
         """Get attribute values and units of all elements in a class.
 
         Args:
             cls: class of the elements to return
             attribute_name (str): name of attribute
-            capacity_types (boolean): if attributes extracted for all capacity types
-
         Returns:
             dict_of_attributes (dict): dict of attribute values
             dict_of_units (dict): dict of attribute units
@@ -101,50 +97,23 @@ class ElementRegistry:
         dict_of_units: dict[str | tuple[str, ...], Any] = {}
         attribute_is_series = False
         for element in class_elements:
-            if not capacity_types:
-                dict_of_attributes, attribute_is_series_temp, dict_of_units = (
-                    self.append_attribute_of_element_to_dict(
-                        element, attribute_name, dict_of_attributes, dict_of_units
-                    )
+            dict_of_attributes, attribute_is_series_temp, dict_of_units = (
+                self.append_attribute_of_element_to_dict(
+                    element, attribute_name, dict_of_attributes, dict_of_units
                 )
-                if attribute_is_series_temp:
-                    attribute_is_series = attribute_is_series_temp
-            # if extracted for both capacity types
-            else:
-                for capacity_type in self.model_schema.config.system.set_capacity_types:
-                    # append energy only for storage technologies
-                    if (
-                        capacity_type
-                        == self.model_schema.config.system.set_capacity_types[0]
-                        or element.name
-                        in self.model_schema.config.system.set_storage_technologies
-                    ):
-                        dict_of_attributes, attribute_is_series_temp, dict_of_units = (
-                            self.append_attribute_of_element_to_dict(
-                                element,
-                                attribute_name,
-                                dict_of_attributes,
-                                dict_of_units,
-                                capacity_type,
-                            )
-                        )
-                        if attribute_is_series_temp:
-                            attribute_is_series = attribute_is_series_temp
+            )
+            if attribute_is_series_temp:
+                attribute_is_series = attribute_is_series_temp
         return dict_of_attributes, dict_of_units, attribute_is_series
 
-    def get_attribute_of_all_elements(
-        self, cls, attribute_name: str, capacity_types=False
-    ):
+    def get_attribute_of_all_elements(self, cls, attribute_name: str):
         """Get attribute values of all elements in a class.
 
         Args:
             cls: class of the elements to return
             attribute_name (str): name of attribute
-            capacity_types (boolean): if attributes extracted for all capacity types
         """
-        return self.get_attribute_of_all_elements_with_units(
-            cls, attribute_name, capacity_types
-        )[0]
+        return self.get_attribute_of_all_elements_with_units(cls, attribute_name)[0]
 
     def append_attribute_of_element_to_dict(
         self,
@@ -152,7 +121,6 @@ class ElementRegistry:
         attribute_name,
         dict_of_attributes: dict[str | tuple[str, ...], Any],
         dict_of_units: dict[str | tuple[str, ...], Any],
-        capacity_type=None,
     ):
         """Get attribute values of all elements in this class.
 
@@ -161,13 +129,8 @@ class ElementRegistry:
             attribute_name (str): str name of attribute
             dict_of_attributes (dict): dict of attribute values
             dict_of_units (dict): dict of attribute units
-            capacity_type: capacity type for which attribute extracted. If None,
-                not listed in key
         """
         attribute_is_series = False
-        # add Energy for energy capacity type
-        if capacity_type == self.model_schema.config.system.set_capacity_types[1]:
-            attribute_name = f"{attribute_name}_energy"
         # if element does not have attribute
         if not hasattr(element, attribute_name):
             is_missing_time_series = (
@@ -190,7 +153,7 @@ class ElementRegistry:
         if attribute is None:
             return dict_of_attributes, False, dict_of_units
 
-        element_key = (element.name, capacity_type) if capacity_type else element.name
+        element_key = element.name
         attribute_is_series = False
 
         if isinstance(attribute, dict):

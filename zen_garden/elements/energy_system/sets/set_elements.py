@@ -2,7 +2,9 @@ from zen_garden.model.component_types.set import GenericSet
 
 
 class SetElements(GenericSet):
-    name, doc, indexing_set = "set_elements", "Set of elements", True
+    name = "set_elements"
+    symbol = r"a \in \mathcal{A}"
+    doc = "Set of elements."
 
     @classmethod
     def get_data(cls, model_constructor):

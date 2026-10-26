@@ -1,29 +1,44 @@
-"""Tests for simple and indexed ZEN set representations."""
+"""Tests for canonical ZEN domain and relation representations."""
 
-from zen_garden.model.registries.set import IndexedSet, SimpleSet
+import pandas as pd
+import pytest
 
-
-def test_simple_zen_set_exposes_ordered_members_as_coordinate_values():
-    zen_set = SimpleSet(["CH", "DE", "CH"], name="set_nodes")
-
-    assert list(zen_set) == ["CH", "DE"]
-    assert list(zen_set.coordinate_values) == ["CH", "DE"]
-    assert zen_set[0] == "CH"
-    assert not zen_set.is_indexed()
+from zen_garden.model.registries.set import DomainSet, RelationSet
 
 
-def test_indexed_zen_set_maps_keys_to_simple_sets_and_flattens_coordinates():
-    zen_set = IndexedSet(
+def test_domain_set_exposes_ordered_canonical_members():
+    domain = DomainSet("set_nodes", ["CH", "DE"])
+
+    assert isinstance(domain.members, pd.Index)
+    assert domain.members.name == "set_nodes"
+    assert list(domain) == ["CH", "DE"]
+    assert list(domain.coordinate_values) == ["CH", "DE"]
+    assert domain[0] == "CH"
+
+
+def test_domain_set_rejects_duplicate_members():
+    with pytest.raises(ValueError, match="duplicate members"):
+        DomainSet("set_nodes", ["CH", "DE", "CH"])
+
+
+def test_relation_set_normalizes_mapping_and_supports_named_projection():
+    relation = RelationSet(
+        "relation_technology_input_carrier",
+        ("set_conversion_technologies", "set_input_carriers"),
         {
             "boiler": ["gas", "heat"],
             "heat_pump": ["electricity", "heat"],
         },
-        name="set_input_carriers",
-        index_set="set_conversion_technologies",
     )
 
-    assert list(zen_set) == ["boiler", "heat_pump"]
-    assert isinstance(zen_set["boiler"], SimpleSet)
-    assert list(zen_set["boiler"]) == ["gas", "heat"]
-    assert list(zen_set.coordinate_values) == ["gas", "heat", "electricity"]
-    assert zen_set.get_index_name() == "set_conversion_technologies"
+    assert isinstance(relation.combinations, pd.MultiIndex)
+    assert relation.combinations.names == [
+        "set_conversion_technologies",
+        "set_input_carriers",
+    ]
+    assert list(
+        relation.project("set_input_carriers", set_conversion_technologies="boiler")
+    ) == ["gas", "heat"]
+    assert list(
+        relation.project("set_conversion_technologies", set_input_carriers="heat")
+    ) == ["boiler", "heat_pump"]

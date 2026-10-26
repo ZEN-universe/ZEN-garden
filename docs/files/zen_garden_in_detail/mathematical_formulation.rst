@@ -13,11 +13,11 @@ problem. For a complete list of symbols, see :ref:`notation.notation`.
 
    Important notes on the development and maintenance of this formulation:
 
-   * constraint ``build`` docstrings are the source of truth for equations and
+   * constraint ``get_constraint`` docstrings are the source of truth for equations and
      implementation-specific conditions. Do not write equations into this file.
      If an equation changes, its docstring should be updated in the same change.
    * The objective function definitions are documented here because they are implemented
-     as objective methods rather than constraint ``build`` methods.
+     as objective methods rather than constraint ``get_constraint`` methods.
    * :ref:`notation.notation` is the source of truth for sets, parameters,
      variables, symbols, time-step types, descriptions, and units. If a
      symbol or component description changes, its entry in the notation tables
@@ -67,14 +67,12 @@ The annual total cost combines capital expenditure, technology operating
 expenditure, carrier import/export and demand-shedding costs, and
 carbon-emissions costs.
 
-.. docstring_method:: zen_garden.elements.energy_system.constraints.CostTotalConstraint.build
-   :sections: summary, formulation
+.. docstring_method:: zen_garden.elements.energy_system.constraints.CostTotalConstraint.get_constraint
 
 Net present cost
 ^^^^^^^^^^^^^^^^
 
-.. docstring_method:: zen_garden.elements.energy_system.constraints.NetPresentCostConstraint.build
-   :sections: summary, formulation
+.. docstring_method:: zen_garden.elements.energy_system.constraints.NetPresentCostConstraint.get_constraint
 
 Here, :math:`y` indexes planning periods rather than calendar years. The
 uppercase :math:`\Delta y` is the number of calendar years between planning
@@ -93,14 +91,14 @@ new capacity investments and the remaining CAPEX of existing capacity.
 
 CAPEX symbols and parameters are defined in :ref:`notation.notation`.
 
-.. docstring_method:: zen_garden.elements.technology.constraints.CostCapexYearlyConstraint.build
-   :sections: summary, formulation
+.. docstring_method:: zen_garden.elements.technology.constraints.CostCapexYearlyConstraint.get_constraint
+
+.. docstring_method:: zen_garden.elements.storage_technology.constraints.CostCapexYearlyEnergyConstraint.get_constraint
 
 Total annual technology CAPEX
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. docstring_method:: zen_garden.elements.technology.constraints.CostCapexYearlyTotalConstraint.build
-   :sections: summary, formulation
+.. docstring_method:: zen_garden.elements.technology.constraints.CostCapexYearlyTotalConstraint.get_constraint
 
 Annual technology OPEX
 ^^^^^^^^^^^^^^^^^^^^^^
@@ -109,40 +107,36 @@ Annual technology OPEX combines variable costs that depend on carrier flow
 with fixed costs proportional to installed capacity; storage technologies also
 have an energy-capacity term.
 
-.. docstring_method:: zen_garden.elements.technology.constraints.CostOpexYearlyConstraint.build
-   :sections: summary, formulation
+.. docstring_method:: zen_garden.elements.technology.constraints.CostOpexYearlyConstraint.get_constraint
 
 Total annual technology OPEX
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. docstring_method:: zen_garden.elements.technology.constraints.CostOpexYearlyTotalConstraint.build
-   :sections: summary, formulation
+.. docstring_method:: zen_garden.elements.technology.constraints.CostOpexYearlyTotalConstraint.get_constraint
 
 Carrier import and export cost
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Carrier parameters and variables are catalogued in :ref:`notation.notation`.
 
-.. docstring_method:: zen_garden.elements.carrier.constraints.CostCarrierConstraint.build
-   :sections: summary, formulation
+.. docstring_method:: zen_garden.elements.carrier.constraints.CostCarrierConstraint.get_constraint
 
 Demand-shedding cost and limit
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. docstring_method:: zen_garden.elements.carrier.constraints.CostLimitShedDemandConstraint.build
-   :sections: summary, formulation
+.. docstring_method:: zen_garden.elements.carrier.constraints.CostShedDemandConstraint.get_constraint
+
+.. docstring_method:: zen_garden.elements.carrier.constraints.LimitShedDemandConstraint.get_constraint
 
 Total annual carrier cost
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. docstring_method:: zen_garden.elements.carrier.constraints.CostCarrierTotalConstraint.build
-   :sections: summary, formulation
+.. docstring_method:: zen_garden.elements.carrier.constraints.CostCarrierTotalConstraint.get_constraint
 
 Carbon-emissions cost
 ^^^^^^^^^^^^^^^^^^^^^
 
-.. docstring_method:: zen_garden.elements.energy_system.constraints.CostCarbonEmissionsTotalConstraint.build
-   :sections: summary, formulation
+.. docstring_method:: zen_garden.elements.energy_system.constraints.CostCarbonEmissionsTotalConstraint.get_constraint
 
 
 Technology operating costs and emissions
@@ -155,20 +149,23 @@ in :ref:`model_formulation_docstrings.emissions`.
 Conversion technologies
 ^^^^^^^^^^^^^^^^^^^^^^^
 
-.. docstring_method:: zen_garden.elements.conversion_technology.constraints.OpexEmissionsTechnologyConversionConstraint.build
-   :sections: summary, formulation
+.. docstring_method:: zen_garden.elements.conversion_technology.constraints.OpexTechnologyConversionConstraint.get_constraint
+
+.. docstring_method:: zen_garden.elements.conversion_technology.constraints.CarbonEmissionsTechnologyConversionConstraint.get_constraint
 
 Storage technologies
 ^^^^^^^^^^^^^^^^^^^^
 
-.. docstring_method:: zen_garden.elements.storage_technology.constraints.OpexEmissionsTechnologyStorageConstraint.build
-   :sections: summary, formulation
+.. docstring_method:: zen_garden.elements.storage_technology.constraints.OpexTechnologyStorageConstraint.get_constraint
+
+.. docstring_method:: zen_garden.elements.storage_technology.constraints.CarbonEmissionsTechnologyStorageConstraint.get_constraint
 
 Transport technologies
 ^^^^^^^^^^^^^^^^^^^^^^
 
-.. docstring_method:: zen_garden.elements.transport_technology.constraints.OpexEmissionsTechnologyTransportConstraint.build
-   :sections: summary, formulation
+.. docstring_method:: zen_garden.elements.transport_technology.constraints.OpexTechnologyTransportConstraint.get_constraint
+
+.. docstring_method:: zen_garden.elements.transport_technology.constraints.CarbonEmissionsTechnologyTransportConstraint.get_constraint
 
 
 Carrier balance and external exchange
@@ -186,8 +183,7 @@ exports; shed demand reduces served demand. Their notation is defined in
 Nodal carrier balance
 ^^^^^^^^^^^^^^^^^^^^^
 
-.. docstring_method:: zen_garden.elements.carrier.constraints.NodalEnergyBalanceConstraint.build
-   :sections: summary, formulation
+.. docstring_method:: zen_garden.elements.carrier.constraints.NodalEnergyBalanceConstraint.get_constraint
 
 Time-dependent import and export availability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -195,14 +191,16 @@ Time-dependent import and export availability
 Setting an import or export availability to infinity removes the corresponding
 availability limit.
 
-.. docstring_method:: zen_garden.elements.carrier.constraints.AvailabilityImportExportConstraint.build
-   :sections: summary, formulation
+.. docstring_method:: zen_garden.elements.carrier.constraints.AvailabilityImportConstraint.get_constraint
+
+.. docstring_method:: zen_garden.elements.carrier.constraints.AvailabilityExportConstraint.get_constraint
 
 Annual import and export availability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. docstring_method:: zen_garden.elements.carrier.constraints.AvailabilityImportExportYearlyConstraint.build
-   :sections: summary, formulation
+.. docstring_method:: zen_garden.elements.carrier.constraints.AvailabilityImportYearlyConstraint.get_constraint
+
+.. docstring_method:: zen_garden.elements.carrier.constraints.AvailabilityExportYearlyConstraint.get_constraint
 
 
 .. _model_formulation_docstrings.emissions:
@@ -217,26 +215,22 @@ in :ref:`notation.notation`.
 Carrier emissions
 ^^^^^^^^^^^^^^^^^
 
-.. docstring_method:: zen_garden.elements.carrier.constraints.CarbonEmissionsCarrierConstraint.build
-   :sections: summary, formulation
+.. docstring_method:: zen_garden.elements.carrier.constraints.CarbonEmissionsCarrierConstraint.get_constraint
 
 Total annual carrier emissions
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. docstring_method:: zen_garden.elements.carrier.constraints.CarbonEmissionsCarrierTotalConstraint.build
-   :sections: summary, formulation
+.. docstring_method:: zen_garden.elements.carrier.constraints.CarbonEmissionsCarrierTotalConstraint.get_constraint
 
 Total annual technology emissions
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. docstring_method:: zen_garden.elements.technology.constraints.CarbonEmissionsTechnologyTotalConstraint.build
-   :sections: summary, formulation
+.. docstring_method:: zen_garden.elements.technology.constraints.CarbonEmissionsTechnologyTotalConstraint.get_constraint
 
 Total annual system emissions
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. docstring_method:: zen_garden.elements.energy_system.constraints.CarbonEmissionsAnnualConstraint.build
-   :sections: summary, formulation
+.. docstring_method:: zen_garden.elements.energy_system.constraints.CarbonEmissionsAnnualConstraint.get_constraint
 
 Cumulative emissions
 ^^^^^^^^^^^^^^^^^^^^
@@ -245,32 +239,27 @@ Cumulative emissions are attributed to the end of each year. They include the
 initial value in the first planning period and are carried forward in
 subsequent periods.
 
-.. docstring_method:: zen_garden.elements.energy_system.constraints.CarbonEmissionsCumulativeConstraint.build
-   :sections: summary, formulation
+.. docstring_method:: zen_garden.elements.energy_system.constraints.CarbonEmissionsCumulativeConstraint.get_constraint
 
 Annual emissions limit
 ^^^^^^^^^^^^^^^^^^^^^^
 
-.. docstring_method:: zen_garden.elements.energy_system.constraints.CarbonEmissionsAnnualLimitConstraint.build
-   :sections: summary, formulation
+.. docstring_method:: zen_garden.elements.energy_system.constraints.CarbonEmissionsAnnualLimitConstraint.get_constraint
 
 Annual-limit overshoot
 ^^^^^^^^^^^^^^^^^^^^^^
 
-.. docstring_method:: zen_garden.elements.energy_system.constraints.CarbonEmissionsAnnualOvershootConstraint.build
-   :sections: summary, formulation
+.. docstring_method:: zen_garden.elements.energy_system.constraints.CarbonEmissionsAnnualOvershootConstraint.get_constraint
 
 Cumulative emissions budget
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. docstring_method:: zen_garden.elements.energy_system.constraints.CarbonEmissionsBudgetConstraint.build
-   :sections: summary, formulation
+.. docstring_method:: zen_garden.elements.energy_system.constraints.CarbonEmissionsBudgetConstraint.get_constraint
 
 Budget overshoot
 ^^^^^^^^^^^^^^^^
 
-.. docstring_method:: zen_garden.elements.energy_system.constraints.CarbonEmissionsBudgetOvershootConstraint.build
-   :sections: summary, formulation
+.. docstring_method:: zen_garden.elements.energy_system.constraints.CarbonEmissionsBudgetOvershootConstraint.get_constraint
 
 
 Operational technology constraints
@@ -282,28 +271,24 @@ the corresponding sections of :ref:`notation.notation`.
 Conversion capacity factor
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. docstring_method:: zen_garden.elements.conversion_technology.constraints.CapacityFactorConversionConstraint.build
-   :sections: summary, formulation
+.. docstring_method:: zen_garden.elements.conversion_technology.constraints.CapacityFactorConversionConstraint.get_constraint
 
 Carrier conversion
 ^^^^^^^^^^^^^^^^^^
 
-.. docstring_method:: zen_garden.elements.conversion_technology.constraints.CarrierConversionConstraint.build
-   :sections: summary, formulation
+.. docstring_method:: zen_garden.elements.conversion_technology.constraints.CarrierConversionConstraint.get_constraint
 
 Minimum full-load hours
 ^^^^^^^^^^^^^^^^^^^^^^^
 
 This constraint is currently available only for conversion technologies.
 
-.. docstring_method:: zen_garden.elements.conversion_technology.constraints.MinimumFullLoadHoursConstraint.build
-   :sections: summary, formulation
+.. docstring_method:: zen_garden.elements.conversion_technology.constraints.MinimumFullLoadHoursConstraint.get_constraint
 
 Storage capacity factor
 ^^^^^^^^^^^^^^^^^^^^^^^
 
-.. docstring_method:: zen_garden.elements.storage_technology.constraints.CapacityFactorStorageConstraint.build
-   :sections: summary, formulation
+.. docstring_method:: zen_garden.elements.storage_technology.constraints.CapacityFactorStorageConstraint.get_constraint
 
 Storage-level coupling
 ^^^^^^^^^^^^^^^^^^^^^^
@@ -316,8 +301,7 @@ The storage-level formulation maps storage time steps to operational time
 steps. The canonical storage variables and temporal parameters are listed in
 :ref:`notation.notation`.
 
-.. docstring_method:: zen_garden.elements.storage_technology.constraints.CoupleStorageLevelConstraint.build
-   :sections: summary, formulation
+.. docstring_method:: zen_garden.elements.storage_technology.constraints.CoupleStorageLevelConstraint.get_constraint
 
 Maximum storage level
 ^^^^^^^^^^^^^^^^^^^^^
@@ -327,26 +311,24 @@ level cannot have an unmodeled peak between its start and end. Enforcing the
 capacity limit at both endpoints therefore also enforces it throughout the
 step.
 
-.. docstring_method:: zen_garden.elements.storage_technology.constraints.StorageLevelMaxConstraint.build
-   :sections: summary, formulation
+.. docstring_method:: zen_garden.elements.storage_technology.constraints.StorageLevelMaxConstraint.get_constraint
 
 Storage spillage
 ^^^^^^^^^^^^^^^^
 
-.. docstring_method:: zen_garden.elements.storage_technology.constraints.FlowStorageSpillageConstraint.build
-   :sections: summary, formulation
+.. docstring_method:: zen_garden.elements.storage_technology.constraints.FlowStorageSpillageConstraint.get_constraint
 
 Mutually exclusive charging and discharging
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. docstring_method:: zen_garden.elements.storage_technology.constraints.ChargeDischargeBinaryConstraint.build
-   :sections: summary, formulation
+.. docstring_method:: zen_garden.elements.storage_technology.constraints.ChargeStorageBinaryConstraint.get_constraint
+
+.. docstring_method:: zen_garden.elements.storage_technology.constraints.DischargeStorageBinaryConstraint.get_constraint
 
 Transport capacity factor
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. docstring_method:: zen_garden.elements.transport_technology.constraints.CapacityFactorTransportConstraint.build
-   :sections: summary, formulation
+.. docstring_method:: zen_garden.elements.transport_technology.constraints.CapacityFactorTransportConstraint.get_constraint
 
 Transport losses
 ^^^^^^^^^^^^^^^^
@@ -354,14 +336,12 @@ Transport losses
 Transport losses can be modeled with either a linear or an exponential loss
 factor based on transport distance.
 
-.. docstring_method:: zen_garden.elements.transport_technology.constraints.TransportTechnologyLossesFlowConstraint.build
-   :sections: summary, formulation
+.. docstring_method:: zen_garden.elements.transport_technology.constraints.TransportTechnologyLossesFlowConstraint.get_constraint
 
 Retrofit flow coupling
 ^^^^^^^^^^^^^^^^^^^^^^
 
-.. docstring_method:: zen_garden.elements.retrofitting_technology.constraints.RetrofitFlowCouplingConstraint.build
-   :sections: summary, formulation
+.. docstring_method:: zen_garden.elements.retrofitting_technology.constraints.RetrofitFlowCouplingConstraint.get_constraint
 
 .. _mathematical_formulation.technology_on_off:
 
@@ -371,8 +351,15 @@ Technology on/off operation
 This generic constraint applies the appropriate activity-flow expression for
 each technology type.
 
-.. docstring_method:: zen_garden.elements.technology.constraints.TechnologyOnOffConstraint.build
-   :sections: summary, formulation
+.. docstring_method:: zen_garden.elements.technology.constraints.TechnologyOnOffCapacityHelperConstraint.get_constraint
+
+.. docstring_method:: zen_garden.elements.technology.constraints.TechnologyOnOffCapacityHelperLowerBoundConstraint.get_constraint
+
+.. docstring_method:: zen_garden.elements.technology.constraints.TechnologyOnOffCapacityHelperUpperBoundConstraint.get_constraint
+
+.. docstring_method:: zen_garden.elements.technology.constraints.TechnologyOnOffOperationLowerBoundConstraint.get_constraint
+
+.. docstring_method:: zen_garden.elements.technology.constraints.TechnologyOnOffOperationUpperBoundConstraint.get_constraint
 
 
 Investment and capacity constraints
@@ -386,42 +373,60 @@ capacity. General technology notation is defined in
 Technology lifetime
 ^^^^^^^^^^^^^^^^^^^
 
-.. docstring_method:: zen_garden.elements.technology.constraints.TechnologyLifetimeConstraint.build
-   :sections: summary, formulation
+.. docstring_method:: zen_garden.elements.technology.constraints.TechnologyLifetimeConstraint.get_constraint
+
+.. docstring_method:: zen_garden.elements.technology.constraints.TechnologyLifetimePreviousConstraint.get_constraint
+
+.. docstring_method:: zen_garden.elements.storage_technology.constraints.StorageEnergyLifetimeConstraint.get_constraint
+
+.. docstring_method:: zen_garden.elements.storage_technology.constraints.StorageEnergyLifetimePreviousConstraint.get_constraint
 
 Capacity upper limit
 ^^^^^^^^^^^^^^^^^^^^
 
-.. docstring_method:: zen_garden.elements.technology.constraints.TechnologyCapacityLimitConstraint.build
-   :sections: summary, formulation
+.. docstring_method:: zen_garden.elements.technology.constraints.TechnologyCapacityLimitReachedConstraint.get_constraint
+
+.. docstring_method:: zen_garden.elements.technology.constraints.TechnologyCapacityLimitNotReachedConstraint.get_constraint
+
+.. docstring_method:: zen_garden.elements.storage_technology.constraints.StorageEnergyCapacityLimitReachedConstraint.get_constraint
+
+.. docstring_method:: zen_garden.elements.storage_technology.constraints.StorageEnergyCapacityLimitNotReachedConstraint.get_constraint
 
 Capacity lower limit
 ^^^^^^^^^^^^^^^^^^^^
 
-.. docstring_method:: zen_garden.elements.technology.constraints.TechnologyCapacityLowerLimitConstraint.build
-   :sections: summary, formulation
+.. docstring_method:: zen_garden.elements.technology.constraints.TechnologyCapacityLowerLimitConstraint.get_constraint
+
+.. docstring_method:: zen_garden.elements.storage_technology.constraints.StorageEnergyCapacityLowerLimitConstraint.get_constraint
 
 .. _mathematical_formulation.minimum_capacity_addition:
 
 Minimum capacity addition
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. docstring_method:: zen_garden.elements.technology.constraints.TechnologyMinCapacityAdditionConstraint.build
-   :sections: summary, formulation
+.. docstring_method:: zen_garden.elements.technology.constraints.TechnologyMinCapacityAdditionConstraint.get_constraint
+
+.. docstring_method:: zen_garden.elements.storage_technology.constraints.StorageEnergyMinCapacityAdditionConstraint.get_constraint
 
 Maximum capacity addition
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. docstring_method:: zen_garden.elements.technology.constraints.TechnologyMaxCapacityAdditionConstraint.build
-   :sections: summary, formulation
+.. docstring_method:: zen_garden.elements.technology.constraints.TechnologyMaxCapacityAdditionConstraint.get_constraint
+
+.. docstring_method:: zen_garden.elements.storage_technology.constraints.StorageEnergyMaxCapacityAdditionConstraint.get_constraint
 
 .. _mathematical_formulation.construction_time:
 
 Construction time
 ^^^^^^^^^^^^^^^^^
 
-.. docstring_method:: zen_garden.elements.technology.constraints.TechnologyConstructionTimeConstraint.build
-   :sections: summary, formulation
+.. docstring_method:: zen_garden.elements.technology.constraints.TechnologyConstructionTimeConstraint.get_constraint
+
+.. docstring_method:: zen_garden.elements.technology.constraints.TechnologyConstructionTimeOutsideConstraint.get_constraint
+
+.. docstring_method:: zen_garden.elements.storage_technology.constraints.StorageEnergyConstructionTimeConstraint.get_constraint
+
+.. docstring_method:: zen_garden.elements.storage_technology.constraints.StorageEnergyConstructionTimeOutsideConstraint.get_constraint
 
 .. _mathematical_formulation.technology_diffusion:
 
@@ -460,29 +465,34 @@ knowledge being freely transferable between locations. For storage
 technologies, the diffusion limits are applied independently to power and
 energy capacity.
 
-.. docstring_method:: zen_garden.elements.technology.constraints.TechnologyDiffusionLimitConstraint.build
-   :sections: summary, formulation
+.. docstring_method:: zen_garden.elements.technology.constraints.TechnologyDiffusionLimitTotalConstraint.get_constraint
+
+.. docstring_method:: zen_garden.elements.technology.constraints.TechnologyDiffusionLimitLocationConstraint.get_constraint
+
+.. docstring_method:: zen_garden.elements.storage_technology.constraints.StorageEnergyDiffusionLimitTotalConstraint.get_constraint
+
+.. docstring_method:: zen_garden.elements.storage_technology.constraints.StorageEnergyDiffusionLimitLocationConstraint.get_constraint
 
 Linear conversion CAPEX
 ^^^^^^^^^^^^^^^^^^^^^^^
 
-.. docstring_method:: zen_garden.elements.conversion_technology.constraints.LinearCapexConstraint.build
-   :sections: summary, formulation
+.. docstring_method:: zen_garden.elements.conversion_technology.constraints.LinearCapexConstraint.get_constraint
 
 Storage energy-to-power ratio
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. docstring_method:: zen_garden.elements.storage_technology.constraints.CapacityEnergyToPowerRatioConstraint.build
-   :sections: summary, formulation
+.. docstring_method:: zen_garden.elements.storage_technology.constraints.CapacityEnergyToPowerRatioMinConstraint.get_constraint
+
+.. docstring_method:: zen_garden.elements.storage_technology.constraints.CapacityEnergyToPowerRatioMaxConstraint.get_constraint
 
 Storage CAPEX
 ^^^^^^^^^^^^^
 
-.. docstring_method:: zen_garden.elements.storage_technology.constraints.StorageTechnologyCapexConstraint.build
-   :sections: summary, formulation
+.. docstring_method:: zen_garden.elements.storage_technology.constraints.StorageTechnologyCapexConstraint.get_constraint
+
+.. docstring_method:: zen_garden.elements.storage_technology.constraints.StorageTechnologyCapexEnergyConstraint.get_constraint
 
 Transport CAPEX
 ^^^^^^^^^^^^^^^
 
-.. docstring_method:: zen_garden.elements.transport_technology.constraints.TransportTechnologyCapexConstraint.build
-   :sections: summary, formulation
+.. docstring_method:: zen_garden.elements.transport_technology.constraints.TransportTechnologyCapexConstraint.get_constraint

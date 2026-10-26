@@ -29,13 +29,13 @@ class EnergySystem(Element):
     variables: ClassVar[list[type[GenericVariable]]] = ENERGY_SYSTEM_VARIABLES
     expressions: ClassVar[list[type[GenericExpression]]] = ENERGY_SYSTEM_EXPRESSIONS
     constraints: ClassVar[list[type[GenericConstraint]]] = ENERGY_SYSTEM_CONSTRAINTS
-    time_steps_operation_duration: pd.Series | None
-    time_steps_storage_duration: pd.Series | None
+    weight_representative_hours: pd.Series | None
+    duration_representative_hours_storage: pd.Series | None
 
     def _initialize(self) -> None:
         """Initialize values populated during time-series processing."""
-        self.time_steps_operation_duration = None
-        self.time_steps_storage_duration = None
+        self.weight_representative_hours = None
+        self.duration_representative_hours_storage = None
 
     def _get_input_path(self) -> Path:
         """Return the singleton energy-system input folder."""

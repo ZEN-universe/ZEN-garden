@@ -50,6 +50,28 @@ class Technology(Element):
             self.element_data_loader.extract_set_technologies_existing()
         )
 
+    def finalize_input_data(self) -> None:
+        """Annualize costs and calculate outstanding existing-capacity CAPEX."""
+        fraction_year = self.calculate_fraction_of_year()
+        annualized_attributes = (
+            "opex_specific_fixed",
+            "opex_specific_fixed_energy",
+            "capex_specific_conversion",
+            "capex_specific_storage",
+            "capex_specific_storage_energy",
+            "capex_specific_transport",
+            "capex_per_distance_transport",
+        )
+        for attribute in annualized_attributes:
+            if hasattr(self, attribute):
+                setattr(self, attribute, getattr(self, attribute) * fraction_year)
+
+        self.capex_capacity_existing = self.calculate_capex_of_capacities_existing()
+        if hasattr(self, "capacity_existing_energy"):
+            self.capex_capacity_existing_energy = (
+                self.calculate_capex_of_capacities_existing(storage_energy=True)
+            )
+
     def calculate_capex_of_capacities_existing(self, storage_energy=False):
         """This method calculates the annualized capex of the existing capacities.
 
@@ -117,7 +139,12 @@ class Technology(Element):
         return fraction_year
 
     def add_new_capacity_addition_tech(
-        self, capacity_addition: pd.Series, capex: pd.Series, step_horizon: list
+        self,
+        capacity_addition: pd.DataFrame,
+        capex: pd.DataFrame,
+        step_horizon: list,
+        capacity_addition_energy: pd.DataFrame | None = None,
+        capex_energy: pd.DataFrame | None = None,
     ):
         """Adds the newly built capacity to the existing capacity.
 
@@ -135,8 +162,21 @@ class Technology(Element):
         # new capacity
         new_capacity_addition = capacity_addition[step_horizon]
         new_capex = capex[step_horizon]
+        new_capacity_addition_energy = (
+            capacity_addition_energy[step_horizon]
+            if capacity_addition_energy is not None
+            else None
+        )
+        new_capex_energy = (
+            capex_energy[step_horizon] if capex_energy is not None else None
+        )
         # if at least one value unequal to zero
-        if not (new_capacity_addition.stack() == 0).all():
+        has_power_addition = not (new_capacity_addition.stack() == 0).all()
+        has_energy_addition = (
+            new_capacity_addition_energy is not None
+            and not (new_capacity_addition_energy.stack() == 0).all()
+        )
+        if has_power_addition or has_energy_addition:
             # add new index to set_technologies_existing
             index_step_horizon = list(range(len(step_horizon)))
             index_new_technology = [
@@ -155,69 +195,67 @@ class Technology(Element):
             ]
             self.lifetime_existing = cast(pd.Series, lifetime.stack())
 
-            for type_capacity in list(
-                set(new_capacity_addition.index.get_level_values(0))
+            additions: tuple[tuple[str, pd.DataFrame, pd.DataFrame], ...] = (
+                ("", new_capacity_addition, new_capex),
+            )
+            if (
+                new_capacity_addition_energy is not None
+                and new_capex_energy is not None
             ):
-                # if power
-                if type_capacity == system.set_capacity_types[0]:
-                    energy_string = ""
-                # if energy
-                else:
-                    energy_string = "_energy"
-                capacity_existing = getattr(self, "capacity_existing" + energy_string)
+                additions += (
+                    ("_energy", new_capacity_addition_energy, new_capex_energy),
+                )
+            for suffix, new_capacity, new_capacity_capex in additions:
+                capacity_existing = getattr(self, "capacity_existing" + suffix)
                 capex_capacity_existing = getattr(
-                    self, "capex_capacity_existing" + energy_string
+                    self, "capex_capacity_existing" + suffix
                 )
                 # add new existing capacity
                 capacity_existing = capacity_existing.unstack()
-                capacity_existing[index_new_technology] = new_capacity_addition.loc[
-                    type_capacity
-                ]
-                setattr(
-                    self, "capacity_existing" + energy_string, capacity_existing.stack()
-                )
+                capacity_existing[index_new_technology] = new_capacity
+                setattr(self, "capacity_existing" + suffix, capacity_existing.stack())
                 # calculate capex of existing capacity
                 capex_capacity_existing = capex_capacity_existing.unstack()
-                capex_capacity_existing[index_new_technology] = new_capex.loc[
-                    type_capacity
-                ]
+                capex_capacity_existing[index_new_technology] = new_capacity_capex
                 setattr(
                     self,
-                    "capex_capacity_existing" + energy_string,
+                    "capex_capacity_existing" + suffix,
                     capex_capacity_existing.stack(),
                 )
 
     def add_new_capacity_investment(
-        self, capacity_investment: pd.Series, step_horizon: list
+        self,
+        capacity_investment: pd.DataFrame,
+        step_horizon: list,
+        capacity_investment_energy: pd.DataFrame | None = None,
     ):
         """Adds the newly invested capacity to the list of invested capacity.
 
         :param capacity_investment: pd.Series of newly built capacity of technology
         :param step_horizon: optimization time step
         """
-        system = self.config.system
         new_capacity_investment = capacity_investment[step_horizon]
         new_capacity_investment = new_capacity_investment.fillna(0)
-        if not (new_capacity_investment.stack() == 0).all():
-            for type_capacity in list(
-                set(new_capacity_investment.index.get_level_values(0))
-            ):
-                # if power
-                if type_capacity == system.set_capacity_types[0]:
-                    energy_string = ""
-                # if energy
-                else:
-                    energy_string = "_energy"
+        new_capacity_investment_energy = (
+            capacity_investment_energy[step_horizon].fillna(0)
+            if capacity_investment_energy is not None
+            else None
+        )
+        investments: tuple[tuple[str, pd.DataFrame], ...] = (
+            ("", new_capacity_investment),
+        )
+        if new_capacity_investment_energy is not None:
+            investments += (("_energy", new_capacity_investment_energy),)
+        for suffix, new_investment in investments:
+            if not (new_investment.stack() == 0).all():
                 capacity_investment_existing = getattr(
-                    self, "capacity_investment_existing" + energy_string
+                    self, "capacity_investment_existing" + suffix
                 )
                 # add new existing invested capacity
                 capacity_investment_existing = capacity_investment_existing.unstack()
-                capacity_investment_existing[step_horizon] = (
-                    new_capacity_investment.loc[type_capacity]
-                )
+                capacity_investment_existing[step_horizon] = new_investment
                 setattr(
                     self,
-                    "capacity_investment_existing" + energy_string,
+                    "capacity_investment_existing" + suffix,
                     capacity_investment_existing.stack(),
                 )

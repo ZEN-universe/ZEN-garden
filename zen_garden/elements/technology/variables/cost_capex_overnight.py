@@ -8,11 +8,10 @@ class CostCapexOvernight(GenericVariable):
     """Variable for capex of building capacity overnight."""
 
     name = "cost_capex_overnight"
-    indices = ["set_technologies", "set_capacity_types", "set_location", "set_years"]
-    doc = "Variable for capex for building technology at location l and time t"
+    symbol = r"C^{\mathrm{cap,overnight}}_{h,p,y}"
+    indices = ("set_technologies", "set_location", "set_years")
+    doc = "Capex for building technology h at location p and period y."
     unit_category = {"money": 1}
-    masks = [CapacityAdditionEligibleMask]
-
-    @classmethod
-    def get_bounds(cls, model_constructor, index_sets):
-        return 0, np.inf
+    bounds = (0, np.inf)
+    masks = (CapacityAdditionEligibleMask,)
+    mask_default_value = 0.0

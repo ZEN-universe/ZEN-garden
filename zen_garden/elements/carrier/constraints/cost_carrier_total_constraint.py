@@ -1,9 +1,18 @@
+from zen_garden.elements.carrier.expressions.annual_carrier_cost import (
+    AnnualCarrierCost,
+)
+from zen_garden.elements.carrier.variables.cost_carrier_total import CostCarrierTotal
 from zen_garden.model.component_types.constraint import GenericConstraint
 
 
 class CostCarrierTotalConstraint(GenericConstraint):
+    """Cost Carrier Total."""
+
+    name = "constraint_cost_carrier_total"
+    indices = ("set_years",)
+
     @classmethod
-    def build(cls, model_constructor):
+    def get_constraint(cls, model_constructor):
         """Summary:
         Total cost of importing and exporting carrier.
 
@@ -22,26 +31,12 @@ class CostCarrierTotalConstraint(GenericConstraint):
         demand of carrier :math:`c` at node :math:`n` in time step :math:`t` of year
         :math:`y`
         :math:`\\Delta t_t`: duration of time step :math:`t`
-        """
-        times = cls.get_year_time_step_duration_array(model_constructor)
-        term_summed_cost_carrier = (
-            (
-                model_constructor.optimization_model.variables[
-                    "cost_carrier"
-                ].broadcast_like(times)
-                + model_constructor.optimization_model.variables[
-                    "cost_shed_demand"
-                ].broadcast_like(times)
-            )
-            * times
-        ).sum(["set_carriers", "set_nodes", "set_time_steps_operation"])
-        lhs = (
-            model_constructor.optimization_model.variables["cost_carrier_total"]
-            - term_summed_cost_carrier
-        )
-        rhs = 0
-        constraints = lhs == rhs
 
-        model_constructor.optimization_model.add_constraint(
-            "constraint_cost_carrier_total", constraints
-        )
+        Args:
+            model_constructor: Object containing the optimization model.
+
+        Returns:
+            Constraint over its declared model indices.
+        """
+        model = model_constructor.optimization_model
+        return model.variables[CostCarrierTotal] == model.expressions[AnnualCarrierCost]

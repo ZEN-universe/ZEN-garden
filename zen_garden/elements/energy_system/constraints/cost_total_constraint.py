@@ -1,9 +1,25 @@
+from zen_garden.elements.carrier.variables.cost_carrier_total import CostCarrierTotal
+from zen_garden.elements.energy_system.variables.cost_carbon_emissions_total import (
+    CostCarbonEmissionsTotal,
+)
+from zen_garden.elements.energy_system.variables.cost_total import CostTotal
+from zen_garden.elements.technology.variables.cost_capex_yearly_total import (
+    CostCapexYearlyTotal,
+)
+from zen_garden.elements.technology.variables.cost_opex_yearly_total import (
+    CostOpexYearlyTotal,
+)
 from zen_garden.model.component_types.constraint import GenericConstraint
 
 
 class CostTotalConstraint(GenericConstraint):
+    """Cost Total."""
+
+    name = "constraint_cost_total"
+    indices = ("set_years",)
+
     @classmethod
-    def build(cls, model_constructor):
+    def get_constraint(cls, model_constructor):
         """Summary:
         Add up all costs from technologies and carriers.
 
@@ -23,19 +39,21 @@ class CostTotalConstraint(GenericConstraint):
         importing and exporting carriers in year :math:`y`
         :math:`C^{\\mathrm{CO_2}}_y`: annual operational expenditures for carbon
         emissions in year :math:`y`
+
+        Args:
+            model_constructor: Object containing the optimization model.
+
+        Returns:
+            Constraint over its declared model indices.
         """
         lhs = (
-            model_constructor.optimization_model.variables["cost_total"]
-            - model_constructor.optimization_model.variables["cost_capex_yearly_total"]
-            - model_constructor.optimization_model.variables["cost_opex_yearly_total"]
-            - model_constructor.optimization_model.variables["cost_carrier_total"]
-            - model_constructor.optimization_model.variables[
-                "cost_carbon_emissions_total"
-            ]
+            model_constructor.optimization_model.variables[CostTotal]
+            - model_constructor.optimization_model.variables[CostCapexYearlyTotal]
+            - model_constructor.optimization_model.variables[CostOpexYearlyTotal]
+            - model_constructor.optimization_model.variables[CostCarrierTotal]
+            - model_constructor.optimization_model.variables[CostCarbonEmissionsTotal]
         )
         rhs = 0
         constraints = lhs == rhs
 
-        model_constructor.optimization_model.add_constraint(
-            "constraint_cost_total", constraints
-        )
+        return constraints

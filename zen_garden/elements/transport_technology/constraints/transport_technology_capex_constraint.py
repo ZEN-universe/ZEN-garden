@@ -1,117 +1,75 @@
 import numpy as np
-import xarray as xr
 
+from zen_garden.elements.energy_system.sets.set_edges import SetEdges
 from zen_garden.elements.technology.masks import PowerCapacityAdditionMask
+from zen_garden.elements.technology.sets.set_transport_technologies import (
+    SetTransportTechnologies,
+)
+from zen_garden.elements.technology.variables.cost_capex_overnight import (
+    CostCapexOvernight,
+)
+from zen_garden.elements.transport_technology.expressions.transport_capacity_on_unavailable_edges import (  # noqa: E501
+    TransportCapacityOnUnavailableEdges,
+)
+from zen_garden.elements.transport_technology.expressions.transport_overnight_capex import (  # noqa: E501
+    TransportOvernightCapex,
+)
+from zen_garden.elements.transport_technology.parameters.distance import Distance
 from zen_garden.model.component_types.constraint import GenericConstraint
-from zen_garden.model.registries.set_registry import SetRegistry
 
 
 class TransportTechnologyCapexConstraint(GenericConstraint):
-    masks = {"constraint_transport_technology_capex": [PowerCapacityAdditionMask]}
+    """Set transport CAPEX and prohibit additions on unavailable edges."""
+
+    name = "constraint_transport_technology_capex"
+    indices = ("set_technologies", "set_location", "set_years")
+    masks = (PowerCapacityAdditionMask,)
 
     @classmethod
-    def build(cls, model_constructor):
-        """Summary:
-        Definition of the capital expenditures for the transport technology.
+    def should_construct(cls, model_constructor):
+        return bool(model_constructor.optimization_model.sets[SetTransportTechnologies])
+
+    @classmethod
+    def get_constraint(cls, model_constructor):
+        """Construct set transport capex and prohibit additions on unavailable edges.
+
+        Summary:
+            Set transport CAPEX and prohibit additions on unavailable edges.
 
         Formulation:
 
         .. math::
-            \\text{if transport distance set to inf: } \\Delta K_{h,e,y} = 0
 
-        .. math::
-            \\text{else: } C^{\\mathrm{cap,overnight}}_{h,e,y} =
-            \\Delta K_{h,e,y}\\kappa^{\\mathrm{cap,fixed}}_{h,e,y}
-            + g_{h,e,y}d^{\\mathrm{dist}}_{h,e}
-            \\kappa^{\\mathrm{cap,dist}}_{h,e,y}
+            C^{capex,overnight}=k^{capex,trans}\\Delta K+k^{distance}G
+
+        The formulation applies over valid combinations of the declared indices.
+        Empty or masked combinations are not constructed.
 
         Notation:
+            Symbols and indices follow ``sets_params_constraints.rst``.
 
-        :math:`\\Delta K_{h,e,y}`: Capacity addition of transport technology :math:`h`
-        on edge :math:`e` in year :math:`y`
-        :math:`C^{\\mathrm{cap,overnight}}_{h,e,y}`: overnight CAPEX of transport
-        technology :math:`h` on edge :math:`e` in year :math:`y`
-        :math:`\\kappa^{\\mathrm{cap,fixed}}_{h,e,y}`: Specific constant capital
-        expenditures of transport technology :math:`h` in year :math:`y`
-        :math:`\\kappa^{\\mathrm{cap,dist}}_{h,e,y}`: Specific capital expenditures per
-        distance of transport technology :math:`h` on edge :math:`e` in year :math:`y`
-        :math:`g_{h,e,y}`: binary installation decision for
-        transport technology :math:`h` on edge :math:`e` in year :math:`y`
-        :math:`d^{\\mathrm{dist}}_{h,e}`: Transport distance for transport technology
-        :math:`h` on edge :math:`e`
+        Args:
+            model_constructor: Object containing the optimization model.
+
+        Returns:
+            Constraint over its declared model indices.
         """
-        optimization_model = model_constructor.optimization_model
-        index_values, index_list = optimization_model.create_custom_set(
-            ["set_transport_technologies", "set_edges", "set_years"]
+        model = model_constructor.optimization_model
+        technologies = model.sets[SetTransportTechnologies]
+        edges = model.sets[SetEdges]
+        cost = model.variables[CostCapexOvernight].sel(
+            set_technologies=technologies,
+            set_location=edges,
         )
-
-        # check if we even need to continue
-        if len(index_values) == 0:
-            return
-        # get the coords
-        coords = [
-            optimization_model.parameters.capex_per_distance_transport.coords[
-                "set_transport_technologies"
-            ],
-            optimization_model.parameters.capex_per_distance_transport.coords[
-                "set_edges"
-            ],
-            optimization_model.parameters.capex_per_distance_transport.coords[
-                "set_years"
-            ],
-        ]
-
-        ### masks
-        # This mask checks the distance between nodes for the condition
-        mask = np.isinf(optimization_model.parameters.distance).astype(float)
-
-        # This mask ensure we only get constraints where we want them
-        index_arrs = SetRegistry.tuple_to_arr(index_values, index_list)
-        global_mask = xr.DataArray(False, coords=coords)
-        global_mask.loc[index_arrs] = True
-
-        ### auxiliary calculations TODO improve
-        term_distance_inf = (
-            mask
-            * optimization_model.variables["capacity_addition"].loc[
-                coords[0], "power", coords[1], coords[2]
-            ]
-        )
-        term_distance_not_inf = (1 - mask) * (
-            optimization_model.variables["cost_capex_overnight"].loc[
-                coords[0], "power", coords[1], coords[2]
-            ]
-            - optimization_model.variables["capacity_addition"].loc[
-                coords[0], "power", coords[1], coords[2]
-            ]
-            * optimization_model.parameters.capex_specific_transport.loc[
-                coords[0], coords[1]
-            ]
-        )
-        # Additional check to avoid binary variables when their coefficient is 0
-        if np.any(
-            optimization_model.parameters.transport_capex_distance.loc[
-                coords[0], coords[1]
-            ]
-            != 0
-        ):
-            term_distance_not_inf -= (
-                (1 - mask)
-                * optimization_model.variables["technology_installation"].loc[
-                    coords[0], "power", coords[1], coords[2]
-                ]
-                * (
-                    optimization_model.parameters.transport_capex_distance.loc[
-                        coords[0], coords[1]
-                    ]
-                )
+        available = ~np.isinf(
+            model.parameters[Distance].rename(
+                set_transport_technologies="set_technologies",
+                set_edges="set_location",
             )
-
-        ### formulate constraint
-        lhs = term_distance_inf + term_distance_not_inf
-        lhs = lhs.where(global_mask)
-        rhs = 0
-        constraints = lhs == rhs
-        cls.add_constraint(
-            model_constructor, "constraint_transport_technology_capex", constraints
+        )
+        return (
+            cost.where(available)
+            - model.expressions[TransportOvernightCapex]
+            + model.expressions[TransportCapacityOnUnavailableEdges]
+            == 0
         )

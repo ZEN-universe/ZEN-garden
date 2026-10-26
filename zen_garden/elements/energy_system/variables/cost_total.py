@@ -5,8 +5,9 @@ class CostTotal(GenericVariable):
     """Variable for total cost."""
 
     name = "cost_total"
+    symbol = r"C^{\mathrm{total}}_{y}"
     indices = ["set_years"]
-    doc = "Variable for total cost of energy system"
+    doc = "Total cost of energy system."
     unit_category = {"money": 1}
 
     @classmethod

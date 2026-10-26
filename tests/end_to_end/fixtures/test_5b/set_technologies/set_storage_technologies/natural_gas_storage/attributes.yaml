@@ -82,6 +82,9 @@ capex_specific_storage_energy:
 capacity_addition_unbounded:
   default_value: 0.0
   unit: GW
+capacity_addition_unbounded_energy:
+  default_value: 0.0
+  unit: GWh
 flow_storage_inflow:
   default_value: 0.0
   unit: GW

@@ -8,14 +8,13 @@ class CapacityAddition(GenericVariable):
     """Variable for built/added technology capacity."""
 
     name = "capacity_addition"
-    indices = ["set_technologies", "set_capacity_types", "set_location", "set_years"]
+    symbol = r"\Delta K_{h,p,y}"
+    indices = ("set_technologies", "set_location", "set_years")
     doc = (
-        "Variable for size of built technology (invested capacity after construction) "
-        "at location l and time t"
+        "Size of built technology h (invested capacity after construction) at "
+        "location p and period y."
     )
     unit_category = {"energy_quantity": 1, "time": -1}
-    masks = [CapacityAdditionEligibleMask]
-
-    @classmethod
-    def get_bounds(cls, model_constructor, index_sets):
-        return 0, np.inf
+    bounds = (0, np.inf)
+    masks = (CapacityAdditionEligibleMask,)
+    mask_default_value = 0.0

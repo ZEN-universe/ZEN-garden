@@ -10,9 +10,9 @@ class PowerCapacityYearMask(GenericMask):
     """Power-capacity availability without the capacity-type dimension."""
 
     name = "power_capacity_year"
-    dependencies = [CapacityAvailableMask]
+    indices = ("set_technologies", "set_location", "set_years")
+    dependencies = (CapacityAvailableMask,)
 
     @classmethod
-    def build(cls, model_constructor, registry):
-        mask = registry[CapacityAvailableMask].sel(set_capacity_types="power")
-        return mask.drop_vars("set_capacity_types", errors="ignore")
+    def get_mask(cls, model_constructor, registry):
+        return registry[CapacityAvailableMask]

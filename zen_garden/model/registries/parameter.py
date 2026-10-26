@@ -1,14 +1,18 @@
 """Class to define parameters for the optimization model."""
 
 import copy
+import logging
 
 import numpy as np
 import pandas as pd
 import xarray as xr
 
-from zen_garden.model.registries.base import Registry
-from zen_garden.model.registries.set import BaseSet
+from zen_garden.model.component_types.parameter import GenericParameter
+from zen_garden.model.registries.base import Registry, component_name
+from zen_garden.model.registries.set import DomainSet
 from zen_garden.model.registries.set_registry import SetRegistry
+
+logger = logging.getLogger(__name__)
 
 
 class DictParameter(object):
@@ -21,6 +25,10 @@ class DictParameter(object):
         :param data: The data of the param
         """
         setattr(self, name, data)
+
+    def __getitem__(self, key: str | type[GenericParameter]):
+        """Return dictionary-form parameter data by name or parameter class."""
+        return getattr(self, component_name(key, GenericParameter))
 
     def __getattr__(self, name: str):
         """Fallback for dynamically-added parameters (see add_parameter).
@@ -42,13 +50,18 @@ class ParameterRegistry(Registry):
         self.max_parameter_value = {"name": None, "value": None}
         self.dict_parameters = DictParameter()
         self.units: dict[str, pd.Series | str | None] = {}
+        self.structural_masks: dict[str, xr.DataArray] = {}
+        self.applied_relations: dict[str, tuple[str, ...]] = {}
+        self.index_diagnostics: dict[str, dict[str, object]] = {}
 
     def add_parameter(
         self,
         name: str,
         doc: str,
-        data: BaseSet | tuple | list | xr.DataArray,
+        data: DomainSet | tuple | list | xr.DataArray,
         dict_of_units: dict | None = None,
+        structural_mask: xr.DataArray | None = None,
+        applied_relations: tuple[str, ...] = (),
     ):
         """Initialization of a parameter.
 
@@ -79,6 +92,47 @@ class ParameterRegistry(Registry):
         self.units[name] = self.get_param_units(
             index_values, dict_of_units, index_list, name
         )
+        if structural_mask is not None:
+            self.structural_masks[name] = structural_mask
+            self.applied_relations[name] = applied_relations
+            self._record_index_diagnostics(
+                name,
+                structural_mask,
+                applied_relations,
+            )
+
+    def _record_index_diagnostics(
+        self,
+        name: str,
+        structural_mask: xr.DataArray,
+        applied_relations: tuple[str, ...],
+    ) -> None:
+        """Record dense and structural counts for a parameter."""
+        dense_cells = structural_mask.size
+        structurally_valid = int(structural_mask.sum().item())
+        if structurally_valid:
+            dense_active_ratio = dense_cells / structurally_valid
+        elif dense_cells:
+            dense_active_ratio = float("inf")
+        else:
+            dense_active_ratio = 1.0
+        self.index_diagnostics[name] = {
+            "requested_dimensions": tuple(structural_mask.dims),
+            "applied_relations": applied_relations,
+            "dense_cells": dense_cells,
+            "structurally_valid": structurally_valid,
+            "performance_active": dense_cells,
+            "solver_entries": structurally_valid,
+            "dense_active_ratio": dense_active_ratio,
+        }
+        if dense_active_ratio >= 5:
+            logger.warning(
+                "Parameter %s has dense/active index ratio %.3g (%d/%d)",
+                name,
+                dense_active_ratio,
+                dense_cells,
+                structurally_valid,
+            )
 
     def _ensure_pd_series_multi_index(self, component_data):
         """Convert pd.Series index to pd.MultiIndex.
@@ -191,7 +245,7 @@ class ParameterRegistry(Registry):
         """
         if isinstance(data, pd.Series):
             # if single entry in index
-            if len(data.index[0]) == 1:
+            if not data.empty and len(data.index[0]) == 1:
                 data.index = pd.Index(sum(data.index.values, ()))
             data = data.to_dict()
         return data
@@ -205,7 +259,7 @@ class ParameterRegistry(Registry):
         """
         if isinstance(data, pd.Series):
             # if single entry in index
-            if len(data.index[0]) == 1:
+            if not data.empty and len(data.index[0]) == 1:
                 data.index = pd.Index(sum(data.index.values, ()))
             if len(data.index.names) == len(index_list):
                 data.index.names = index_list
@@ -224,9 +278,15 @@ class ParameterRegistry(Registry):
             # now we need to align the coords TODO try to speed up
             data, _ = xr.align(data, self.sets.coords_dataset, join="right")
 
-        # sometimes we get empty parameters
+        # Preserve the declared dimensions for empty parameters. A generic
+        # ``DataArray([])`` would introduce an artificial ``dim_0`` that then
+        # propagates into masks and expressions when an element set is empty.
         if isinstance(data, dict) and len(data) == 0:
-            data = xr.DataArray([])
+            data = xr.DataArray(
+                np.empty((0,) * len(index_list)),
+                coords={index: [] for index in index_list},
+                dims=index_list,
+            )
         return data
 
     def __getattr__(self, name) -> xr.DataArray:
@@ -240,3 +300,7 @@ class ParameterRegistry(Registry):
                 f"Parameter '{name}' does not exist. Did you forget to define it?"
             )
         return getattr(self.dict_parameters, name)
+
+    def __getitem__(self, key: str | type[GenericParameter]) -> xr.DataArray:
+        """Return parameter data by name or declarative parameter class."""
+        return getattr(self, component_name(key, GenericParameter))

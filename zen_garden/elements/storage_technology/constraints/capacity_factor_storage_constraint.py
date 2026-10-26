@@ -1,14 +1,34 @@
-import xarray as xr
-
+from zen_garden.elements.energy_system.sets.set_nodes import SetNodes
+from zen_garden.elements.storage_technology.expressions.storage_throughput import (
+    StorageThroughput,
+)
 from zen_garden.elements.technology.masks import PowerOperationMask
+from zen_garden.elements.technology.parameters.max_load import MaxLoad
+from zen_garden.elements.technology.sets.set_storage_technologies import (
+    SetStorageTechnologies,
+)
+from zen_garden.elements.technology.variables.capacity import Capacity
 from zen_garden.model.component_types.constraint import GenericConstraint
 
 
 class CapacityFactorStorageConstraint(GenericConstraint):
-    masks = {"constraint_capacity_factor_storage": [PowerOperationMask]}
+    """Capacity Factor Storage."""
+
+    name = "constraint_capacity_factor_storage"
+    indices = (
+        "set_storage_technologies",
+        "set_nodes",
+        "set_years",
+        "set_representative_hours",
+    )
+    masks = (PowerOperationMask,)
 
     @classmethod
-    def build(cls, model_constructor):
+    def should_construct(cls, model_constructor):
+        return bool(model_constructor.optimization_model.sets[SetStorageTechnologies])
+
+    @classmethod
+    def get_constraint(cls, model_constructor):
         """Summary:
         Limits load of storage technologies by capacity and maximum load factor.
 
@@ -28,27 +48,21 @@ class CapacityFactorStorageConstraint(GenericConstraint):
         technology :math:`h` on node :math:`n` and time :math:`t` in year :math:`y`
         :math:`K_{h,n,y}`: storage capacity of storage technology :math:`h` on
         node :math:`n` in year :math:`y`
+
+        Args:
+            model_constructor: Object containing the optimization model.
+
+        Returns:
+            Constraint over its declared model indices.
         """
-        techs = model_constructor.optimization_model.sets["set_storage_technologies"]
-        if len(techs) == 0:
-            return
-        nodes = model_constructor.optimization_model.sets["set_nodes"]
-        times = model_constructor.optimization_model.lp_model.variables.coords[
-            "set_time_steps_operation"
-        ]
-        time_step_year = xr.DataArray(
-            [
-                model_constructor.time_steps.convert_time_step_operation2year(t)
-                for t in times.data
-            ],
-            coords=[times],
-        )
+        techs = model_constructor.optimization_model.sets[SetStorageTechnologies]
+        nodes = model_constructor.optimization_model.sets[SetNodes]
         term_capacity = (
-            model_constructor.optimization_model.parameters.max_load.loc[
-                techs, nodes, :
+            model_constructor.optimization_model.parameters[MaxLoad].loc[
+                techs, nodes, :, :
             ]
-            * model_constructor.optimization_model.variables["capacity"].loc[
-                techs, "power", nodes, time_step_year
+            * model_constructor.optimization_model.variables[Capacity].loc[
+                techs, nodes, :
             ]
         ).rename(
             {
@@ -57,13 +71,14 @@ class CapacityFactorStorageConstraint(GenericConstraint):
             }
         )
 
-        # TODO integrate level storage here as well
-        lhs = term_capacity - cls.get_flow_expression_storage(
-            model_constructor, rename=False
+        throughput = model_constructor.optimization_model.expressions[
+            StorageThroughput
+        ].rename(
+            set_technologies="set_storage_technologies",
+            set_location="set_nodes",
         )
+        lhs = term_capacity - throughput
         rhs = 0
         constraints = lhs >= rhs
         ### return
-        cls.add_constraint(
-            model_constructor, "constraint_capacity_factor_storage", constraints
-        )
+        return constraints

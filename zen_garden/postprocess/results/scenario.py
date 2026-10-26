@@ -643,7 +643,7 @@ class Scenario:
 
         if timestep_type is TimestepType.yearly:
             ans = series.unstack(timestep_column).sort_index()
-            ans = ans.loc[:, years]
+            ans = ans.reindex(columns=years, fill_value=0.0)
             ans = self._convert_ts2year(ans)
             ans = self._rename_index(ans)
             return ans

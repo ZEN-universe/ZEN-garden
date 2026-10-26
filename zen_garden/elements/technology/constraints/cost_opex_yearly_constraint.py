@@ -1,14 +1,21 @@
-import pandas as pd
-
+from zen_garden.elements.technology.expressions.annual_fixed_opex import AnnualFixedOpex
+from zen_garden.elements.technology.expressions.annual_variable_opex import (
+    AnnualVariableOpex,
+)
 from zen_garden.elements.technology.masks import CapacityAnyTypeMask
+from zen_garden.elements.technology.variables.cost_opex_yearly import CostOpexYearly
 from zen_garden.model.component_types.constraint import GenericConstraint
 
 
 class CostOpexYearlyConstraint(GenericConstraint):
-    masks = {"constraint_cost_opex_yearly": [CapacityAnyTypeMask]}
+    """Cost Opex Yearly."""
+
+    name = "constraint_cost_opex_yearly"
+    indices = ("set_technologies", "set_location", "set_years")
+    masks = (CapacityAnyTypeMask,)
 
     @classmethod
-    def build(cls, model_constructor):
+    def get_constraint(cls, model_constructor):
         """Summary:
         Yearly opex for a technology at a location in each year.
 
@@ -35,35 +42,14 @@ class CostOpexYearlyConstraint(GenericConstraint):
         :math:`\\kappa^{\\mathrm{op,fix}}_{h,p,y}`: specific fixed OPEX
         :math:`K_{h,p,y}`: installed capacity of technology :math:`h` at location
         :math:`p` in year :math:`y`
-        """
-        optimization_model = model_constructor.optimization_model
-        times_dict: dict[str, pd.Series] = {
-            y: optimization_model.parameters.time_steps_operation_duration.loc[
-                model_constructor.time_steps.get_time_steps_year2operation(y)
-            ].to_series()
-            for y in optimization_model.sets["set_years"]
-        }
-        times = pd.concat(times_dict, keys=times_dict.keys())
-        times.index.names = ["set_years", "set_time_steps_operation"]
-        times = times.to_xarray().broadcast_like(
-            optimization_model.variables["cost_opex_variable"].mask
-        )
-        term_opex_variable = (
-            optimization_model.variables["cost_opex_variable"] * times
-        ).sum("set_time_steps_operation")
-        term_opex_fixed = (
-            optimization_model.parameters.opex_specific_fixed
-            * optimization_model.variables["capacity"]
-        ).sum("set_capacity_types")
-        lhs = (
-            optimization_model.variables["cost_opex_yearly"]
-            - term_opex_variable
-            - term_opex_fixed
-        )
-        rhs = 0
-        constraints = lhs == rhs
 
-        ### return
-        cls.add_constraint(
-            model_constructor, "constraint_cost_opex_yearly", constraints
+        Args:
+            model_constructor: Object containing the optimization model.
+
+        Returns:
+            Constraint over its declared model indices.
+        """
+        model = model_constructor.optimization_model
+        return model.variables[CostOpexYearly] == (
+            model.expressions[AnnualVariableOpex] + model.expressions[AnnualFixedOpex]
         )

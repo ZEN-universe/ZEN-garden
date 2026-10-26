@@ -4,8 +4,11 @@
 Notation
 ####################################
 
-This page defines the mathematical notation used throughout ZEN-garden. Entries
-are listed alphabetically by their mathematical symbols.
+This page defines the mathematical notation used throughout ZEN-garden. The
+tables are generated from the declarative model component classes, which are
+the source of truth for component names, symbols, dimensions, descriptions,
+and unit categories. Entries are listed alphabetically by their mathematical
+symbols.
 
 .. raw:: html
 
@@ -26,30 +29,18 @@ roles or types; subscripts are indices and are omitted when implied—for exampl
 Sets
 ====
 
-.. csv-table:: Sets
-    :header-rows: 1
-    :file: tables/sets.csv
-    :widths: 18 22 18 52
-    :delim: ;
+.. model-component-table:: sets
 
 .. _notation.parameters:
 
 Parameters
 ==========
 
-.. csv-table:: Parameters
-    :header-rows: 1
-    :file: tables/parameters.csv
-    :widths: 18 22 15 35 10
-    :delim: ;
+.. model-component-table:: parameters
 
 .. _notation.variables:
 
 Variables
 =========
 
-.. csv-table:: Variables
-    :header-rows: 1
-    :file: tables/variables.csv
-    :widths: 18 22 15 35 10
-    :delim: ;
+.. model-component-table:: variables

@@ -9,8 +9,9 @@ class CapexActiveMask(GenericMask):
     """Existing or modeled annual CAPEX active in a model year."""
 
     name = "capex_active"
-    dependencies = [ExistingCapexMask, ModeledCapexMask]
+    indices = ("set_technologies", "set_location", "set_years")
+    dependencies = (ExistingCapexMask, ModeledCapexMask)
 
     @classmethod
-    def build(cls, model_constructor, registry):
+    def get_mask(cls, model_constructor, registry):
         return registry[ExistingCapexMask] | registry[ModeledCapexMask]

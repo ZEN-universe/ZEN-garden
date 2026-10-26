@@ -31,8 +31,9 @@ class ConstraintRegistry(Registry):
         :param doc: docstring of variable
         """
         if name in self.docs.keys():
-            logger.warning(f"{name} already added. Can only be added once")
-            return
+            raise ValueError(
+                f"Constraint {name!r} already added. Can only be added once"
+            )
 
         if constraint is None or constraint == []:
             return
@@ -75,17 +76,49 @@ class ConstraintRegistry(Registry):
         :param name: name of variable
         :param constraint: linopy constraint
         """
-        # pass the constraint directly to avoid rebuilding it from lhs, sign, rhs
+        # A row has solver support only where at least one active variable label
+        # remains. Coefficients of every active term must be finite.
+        active_terms = constraint.lhs.vars >= 0
+        variable_support = active_terms.any("_term")
+        finite_active_coefficients = (
+            np.isfinite(constraint.lhs.coeffs).where(active_terms, True).all("_term")
+        )
         rhs = constraint.rhs
-        finite_mask = ~np.isnan(rhs) & np.isfinite(rhs)
+        finite_rhs = np.isfinite(rhs)
+        valid_sign = constraint.sign.isin(("=", "==", "<=", ">="))
+
+        constant_rows = ~variable_support & finite_rhs & valid_sign
+        constant_satisfied = xr.where(
+            constraint.sign.isin(("=", "==")),
+            rhs == 0,
+            xr.where(constraint.sign == "<=", rhs >= 0, rhs <= 0),
+        )
+        violated_constants = constant_rows & ~constant_satisfied
+        if bool(violated_constants.any().item()):
+            violated = violated_constants.to_series()
+            locations = violated.index[violated].tolist()
+            raise ValueError(
+                f"Constraint {name!r} contains violated constant-only rows at "
+                f"{locations!r}"
+            )
+
+        finite_mask = (
+            variable_support & finite_active_coefficients & finite_rhs & valid_sign
+        )
         if constraint.mask is not None:
             finite_mask &= constraint.mask
         if mask is not None:
             finite_mask &= mask
-        if isinstance(finite_mask, np.bool_):
+        if finite_mask.ndim == 0 and not bool(finite_mask.item()):
             return
-        # masked entries must have a finite rhs, since the scaling reads all rhs
-        data = constraint.data.assign(rhs=rhs.fillna(0))
+
+        # Linopy/scaling may inspect masked data, so sanitize only rows excluded
+        # by the validated mask while preserving all active solver rows.
+        data = constraint.data.assign(
+            coeffs=constraint.lhs.coeffs.where(finite_mask, 0),
+            rhs=rhs.where(finite_mask, 0),
+            sign=constraint.sign.where(valid_sign, "="),
+        )
         constraint = lp.constraints.Constraint(data, self.lp_model, skip_broadcast=True)
         self.lp_model.add_constraints(constraint, name=name, mask=finite_mask)
 

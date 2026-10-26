@@ -1,12 +1,34 @@
+from zen_garden.elements.storage_technology.expressions.storage_level_change_after_self_discharge import (  # noqa: E501
+    StorageLevelChangeAfterSelfDischarge,
+)
+from zen_garden.elements.storage_technology.expressions.storage_net_energy_inflow import (  # noqa: E501
+    StorageNetEnergyInflow,
+)
 from zen_garden.elements.storage_technology.masks import StorageStateMask
+from zen_garden.elements.technology.sets.set_storage_technologies import (
+    SetStorageTechnologies,
+)
 from zen_garden.model.component_types.constraint import GenericConstraint
 
 
 class CoupleStorageLevelConstraint(GenericConstraint):
-    masks = {"constraint_couple_storage_level": [StorageStateMask]}
+    """Couple Storage Level."""
+
+    name = "constraint_couple_storage_level"
+    indices = (
+        "set_storage_technologies",
+        "set_nodes",
+        "set_years",
+        "set_representative_hours_storage",
+    )
+    masks = (StorageStateMask,)
 
     @classmethod
-    def build(cls, model_constructor):
+    def should_construct(cls, model_constructor):
+        return bool(model_constructor.optimization_model.sets[SetStorageTechnologies])
+
+    @classmethod
+    def get_constraint(cls, model_constructor):
         """Summary:
         Couple subsequent storage levels (time coupling constraints).
 
@@ -50,79 +72,15 @@ class CoupleStorageLevelConstraint(GenericConstraint):
         :math:`q^{\\mathrm{in}}_{h,n,\\sigma(\\tilde{t})}`: exogenous inflow into
         storage
         :math:`F^{\\mathrm{spill}}_{h,n,\\sigma(\\tilde{t})}`: storage spillage
-        """
-        techs = model_constructor.optimization_model.sets["set_storage_technologies"]
-        if len(techs) == 0:
-            return
-        self_discharge = model_constructor.optimization_model.parameters.self_discharge
-        flow_storage_inflow = (
-            model_constructor.optimization_model.parameters.flow_storage_inflow
-        )
-        flow_storage_spillage = (
-            model_constructor.optimization_model.lp_model.variables.flow_storage_spillage
-        )
-        time_steps_storage_duration = (
-            model_constructor.optimization_model.parameters.time_steps_storage_duration
-        )
-        # reformulate self discharge multiplier as partial geometric series
-        multiplier_w_discharge = (
-            1 - (1 - self_discharge) ** time_steps_storage_duration
-        ) / (1 - (1 - self_discharge))
-        multiplier_wo_discharge = time_steps_storage_duration
-        multiplier = multiplier_w_discharge.where(
-            self_discharge != 0, 0.0
-        ) + multiplier_wo_discharge.where(self_discharge == 0, 0.0)
-        # time coupling to previous time step
-        times_coupling, mask_coupling = cls.get_previous_storage_time_step_array(
-            model_constructor
-        )
-        self_discharge_previous = (1 - self_discharge) ** time_steps_storage_duration
-        self_discharge_previous["set_time_steps_storage"] = times_coupling
-        term_delta_storage_level = model_constructor.optimization_model.variables[
-            "storage_level"
-        ] - self_discharge_previous * model_constructor.optimization_model.variables[
-            "storage_level"
-        ].sel(
-            {"set_time_steps_storage": times_coupling}
-        )
-        # charge and discharge flow
-        times_year_time_step = cls.get_year_time_step_array(model_constructor)
-        efficiency_charge = (
-            model_constructor.optimization_model.parameters.efficiency_charge.broadcast_like(
-                times_year_time_step
-            )
-            .where(times_year_time_step, 0.0)
-            .sum("set_years")
-        )
-        efficiency_discharge = (
-            model_constructor.optimization_model.parameters.efficiency_discharge.broadcast_like(
-                times_year_time_step
-            )
-            .where(times_year_time_step, 0.0)
-            .sum("set_years")
-        )
-        term_flow_charge_discharge = (
-            model_constructor.optimization_model.variables["flow_storage_charge"]
-            * efficiency_charge
-            - model_constructor.optimization_model.variables[
-                "flow_storage_discharge"
-            ].to_linexpr()
-            / efficiency_discharge
-            + flow_storage_inflow
-            - flow_storage_spillage
-        )
-        times_power2energy = cls.get_power2energy_time_step_array(model_constructor)
-        term_flow_charge_discharge = cls.map_and_expand(
-            term_flow_charge_discharge, times_power2energy
-        )
-        term_flow_charge_discharge = term_flow_charge_discharge * multiplier
-        # sum up all terms
-        lhs = (term_delta_storage_level - term_flow_charge_discharge).where(
-            mask_coupling, 0.0
-        )
-        rhs = 0
-        constraints = lhs == rhs
 
-        cls.add_constraint(
-            model_constructor, "constraint_couple_storage_level", constraints
+        Args:
+            model_constructor: Object containing the optimization model.
+
+        Returns:
+            Constraint over its declared model indices.
+"""
+        model = model_constructor.optimization_model
+        return (
+            model.expressions[StorageLevelChangeAfterSelfDischarge]
+            == model.expressions[StorageNetEnergyInflow]
         )

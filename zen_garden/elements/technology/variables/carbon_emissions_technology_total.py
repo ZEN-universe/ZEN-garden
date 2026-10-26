@@ -5,8 +5,9 @@ class CarbonEmissionsTechnologyTotal(GenericVariable):
     """Variable for total carbon emissions from technology."""
 
     name = "carbon_emissions_technology_total"
+    symbol = r"M^{\mathrm{tech}}_{y}"
     indices = ["set_years"]
-    doc = "Variable for total carbon emissions for operating technology"
+    doc = "Total carbon emissions for operating technology at location p and period y."
     unit_category = {"emissions": 1}
 
     @classmethod

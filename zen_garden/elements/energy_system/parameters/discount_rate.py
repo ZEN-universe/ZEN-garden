@@ -5,6 +5,7 @@ class DiscountRate(GenericParameter):
     """Discount rate of the energy system."""
 
     name = "discount_rate"
+    symbol = r"r^{\mathrm{disc}}"
     indices = ()
-    doc = "Discount rate of the energy system"
+    doc = "Parameter which specifies the discount rate of the energy system."
     unit_category = {}

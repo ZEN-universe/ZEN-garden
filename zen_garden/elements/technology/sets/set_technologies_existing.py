@@ -1,12 +1,12 @@
+from zen_garden.elements.energy_system.sets.set_technologies import SetTechnologies
 from zen_garden.model.component_types.set import GenericSet
 
 
 class SetTechnologiesExisting(GenericSet):
-    name, doc, index_set = (
-        "set_technologies_existing",
-        "Set of existing technology vintages",
-        "set_technologies",
-    )
+    name = "set_technologies_existing"
+    symbol = r"v \in \mathcal{V}_{h}"
+    doc = "Set of existing technology capacities."
+    index_set = SetTechnologies
 
     @classmethod
     def get_data(cls, model_constructor):

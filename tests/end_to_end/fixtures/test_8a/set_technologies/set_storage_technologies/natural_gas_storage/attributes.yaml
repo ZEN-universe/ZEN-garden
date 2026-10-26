@@ -13,6 +13,9 @@ energy_to_power_ratio_max:
 capacity_existing:
   default_value: 0.0
   unit: GW
+capacity_addition_unbounded_energy:
+  default_value: 0.0
+  unit: GWh
 flow_storage_inflow:
   default_value: 0.0
   unit: GW

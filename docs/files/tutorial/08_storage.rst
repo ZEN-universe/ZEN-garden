@@ -25,10 +25,18 @@ A storage technology in ZEN-garden has **two independent capacities**:
   parameter has an energy-rated twin ending in ``_energy``:
   ``capacity_limit_energy``, ``capacity_existing_energy``,
   ``capex_specific_storage_energy``, ``opex_specific_fixed_energy``,
-  ``capacity_addition_min_energy``, ``capacity_addition_max_energy``.
+  ``capacity_addition_min_energy``, ``capacity_addition_max_energy``, and
+  ``capacity_addition_unbounded_energy``.
+
+``capacity_addition_unbounded_energy`` is required explicitly for every storage
+technology. Set it to zero when all energy-capacity growth should be subject to
+the diffusion limit.
 
 ZEN-garden optimizes the two independently, so a battery and a seasonal gas
 store are described by the same technology class with different cost ratios.
+Internally, the optimization uses separate variables such as ``capacity`` and
+``capacity_energy``. Saved results retain the established ``capacity`` output
+with a ``set_capacity_types`` dimension containing ``power`` and ``energy``.
 
 To fix the ratio between them, e.g., for a battery that is always "four-hour" storage, 
 constrain it:

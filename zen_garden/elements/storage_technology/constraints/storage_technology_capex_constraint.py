@@ -1,97 +1,56 @@
+from zen_garden.elements.energy_system.sets.set_nodes import SetNodes
+from zen_garden.elements.storage_technology.expressions.storage_overnight_capex import (
+    StorageOvernightCapex,
+)
 from zen_garden.elements.technology.masks import CapacityAdditionEligibleMask
+from zen_garden.elements.technology.sets.set_storage_technologies import (
+    SetStorageTechnologies,
+)
+from zen_garden.elements.technology.variables.cost_capex_overnight import (
+    CostCapexOvernight,
+)
 from zen_garden.model.component_types.constraint import GenericConstraint
-from zen_garden.model.registries.set_registry import SetRegistry
-from zen_garden.utils import linexpr_from_tuple_np
 
 
 class StorageTechnologyCapexConstraint(GenericConstraint):
-    masks = {"constraint_storage_technology_capex": [CapacityAdditionEligibleMask]}
+    """Set storage overnight CAPEX from power-capacity additions."""
+
+    name = "constraint_storage_technology_capex"
+    indices = ("set_technologies", "set_location", "set_years")
+    masks = (CapacityAdditionEligibleMask,)
 
     @classmethod
-    def build(cls, model_constructor):
-        """Summary:
-        Definition of the capital expenditures for the storage technology.
+    def should_construct(cls, model_constructor):
+        return bool(model_constructor.optimization_model.sets[SetStorageTechnologies])
+
+    @classmethod
+    def get_constraint(cls, model_constructor):
+        """Construct the model component.
+
+        Summary:
+            Set storage overnight CAPEX from power- and energy-capacity additions.
 
         Formulation:
 
         .. math::
-            C^{\\mathrm{cap,overnight}}_{h,n,y} =
-            \\kappa^{\\mathrm{cap,power}}_{h,n,y}\\Delta K_{h,n,y}
-            + \\kappa^{\\mathrm{cap,energy}}_{h,n,y}\\Delta K^{\\mathrm{energy}}_{h,n,y}
 
-        The implementation stores the two terms separately along its capacity-type
-        dimension; their sum is :math:`C^{\\mathrm{cap,overnight}}_{h,n,y}`.
+            C^{capex,overnight}=k^{capex,storage}\\Delta K
+
+        The formulation applies over valid combinations of the declared indices.
+        Empty or masked combinations are not constructed.
 
         Notation:
+            Symbols and indices follow ``sets_params_constraints.rst``.
 
-        :math:`C^{\\mathrm{cap,overnight}}_{h,n,y}`: total overnight CAPEX of storage
-        technology :math:`h` at node :math:`n` in year :math:`y`
-        :math:`\\Delta K_{h,n,y}` and :math:`\\Delta K^{\\mathrm{energy}}_{h,n,y}`:
-        power- and energy-capacity additions
-        :math:`\\kappa^{\\mathrm{cap,power}}_{h,n,y}` and
-        :math:`\\kappa^{\\mathrm{cap,energy}}_{h,n,y}`: specific power- and
-        energy-capacity
-        CAPEX
+        Args:
+            model_constructor: Object containing the optimization model.
+
+        Returns:
+            Constraint over its declared model indices.
         """
-        index_values, index_names = (
-            model_constructor.optimization_model.create_custom_set(
-                [
-                    "set_storage_technologies",
-                    "set_capacity_types",
-                    "set_nodes",
-                    "set_years",
-                ]
-            )
+        model = model_constructor.optimization_model
+        cost = model.variables[CostCapexOvernight].sel(
+            set_technologies=model.sets[SetStorageTechnologies],
+            set_location=model.sets[SetNodes],
         )
-
-        # check if we need to continue
-        if len(index_values) == 0:
-            return
-
-        ### masks
-        # not necessary
-
-        ### index loop
-        # not necessary
-
-        ### auxiliary calculations
-        # get all the arrays and coords
-        techs, capacity_types, nodes, times = SetRegistry.tuple_to_arr(
-            index_values, index_names, unique=True
-        )
-        # variables.coords merges all variables, so only compute it once
-        variable_coords = model_constructor.optimization_model.lp_model.variables.coords
-        coords = [
-            variable_coords["set_storage_technologies"],
-            variable_coords["set_capacity_types"],
-            variable_coords["set_nodes"],
-            variable_coords["set_years"],
-        ]
-
-        ### formulate constraint
-        lhs = linexpr_from_tuple_np(
-            [
-                (
-                    1.0,
-                    model_constructor.optimization_model.variables[
-                        "cost_capex_overnight"
-                    ].loc[techs, capacity_types, nodes, times],
-                ),
-                (
-                    -model_constructor.optimization_model.parameters.capex_specific_storage.loc[
-                        techs, capacity_types, nodes, times
-                    ],
-                    model_constructor.optimization_model.variables[
-                        "capacity_addition"
-                    ].loc[techs, capacity_types, nodes, times],
-                ),
-            ],
-            coords,
-            model_constructor.optimization_model.lp_model,
-        )
-        rhs = 0
-        constraints = lhs == rhs
-
-        cls.add_constraint(
-            model_constructor, "constraint_storage_technology_capex", constraints
-        )
+        return cost == model.expressions[StorageOvernightCapex]

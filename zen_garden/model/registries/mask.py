@@ -73,11 +73,7 @@ class MaskRegistry:
                 raise ValueError(f"Cyclic mask dependencies: {cycle}")
             for mask_type in ready:
                 mask = mask_type.build(owners[mask_type], self)
-                if not isinstance(mask, xr.DataArray) or mask.dtype != bool:
-                    raise TypeError(
-                        f"Mask {mask_type.name!r} must build a boolean DataArray"
-                    )
-                self._masks[mask_type.name] = mask.fillna(False)
+                self._masks[mask_type.name] = mask
                 completed.add(mask_type)
                 remaining.remove(mask_type)
 
@@ -92,22 +88,12 @@ class MaskRegistry:
     def combine_for_indices(
         self,
         masks: Sequence[type[GenericMask]],
-        model_constructor: "ModelConstructor",
-        index_sets,
+        structural_mask: xr.DataArray,
     ) -> xr.DataArray | None:
         """Align masks to a component index and combine them with logical AND."""
         if not masks:
             return None
-        index_values, index_names = index_sets
-        target = model_constructor.optimization_model.sets.indices_to_mask(
-            index_values, index_names, (0, 0)
-        )[0]
-        if target.size == 0:
-            # SetRegistry assigns unique dimension names to empty variables when
-            # similarly named non-empty coordinates already exist in Linopy.
-            # No structural mask is needed because the index itself is empty.
-            return None
-        return self._combine(masks, target)
+        return self._combine(masks, structural_mask)
 
     def combine_for_constraint(
         self,

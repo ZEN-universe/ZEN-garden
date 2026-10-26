@@ -961,8 +961,10 @@ class CostEmissionCalculation:
             A list of carriers associated with the given technology. If the
             technology has no associated carriers, an empty list is returned.
         """
+        if tech not in carrier_mapping.index:
+            return []
         c = carrier_mapping.loc[tech]
-        if c == "":
+        if not isinstance(c, str) or c == "":
             return []
         return c.split(",")
 

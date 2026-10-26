@@ -5,6 +5,7 @@ class Lifetime(GenericParameter):
     """Lifetime of a newly built technology."""
 
     name = "lifetime"
+    symbol = r"L_{h}"
     indices = ("set_technologies",)
-    doc = "Lifetime of a newly built technology"
+    doc = "Parameter which specifies the lifetime of a newly built technology."
     unit_category = {}

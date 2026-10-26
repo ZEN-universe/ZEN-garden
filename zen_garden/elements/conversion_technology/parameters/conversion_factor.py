@@ -1,25 +1,33 @@
 import pandas as pd
 
-from zen_garden.model.component_types.parameter import GenericParameter
+from zen_garden.model.component_types.parameter import (
+    GenericParameter,
+    ParameterInputData,
+)
 
 
 class ConversionFactor(GenericParameter):
     """Conversion factor."""
 
     name = "conversion_factor"
+    symbol = r"\eta^{\mathrm{conv}}_{h,c,t}"
     indices = (
         "set_conversion_technologies",
         "set_dependent_carriers",
         "set_nodes",
-        "set_hours",
+        "set_years",
+        "set_representative_hours",
     )
-    doc = "Conversion factor"
+    doc = (
+        "Parameter which specifies the slope of the conversion efficiency if "
+        "approximated linearly."
+    )
     unit_category = {}
     time_series = True
     input_indices = ("set_nodes", "set_hours")
 
     @classmethod
-    def store_input_data(cls, element):
+    def get_input_data(cls, element):
         """Load one conversion-factor series per dependent carrier."""
         dependent_carriers = list(
             set(element.input_carrier + element.output_carrier).difference(
@@ -27,8 +35,7 @@ class ConversionFactor(GenericParameter):
             )
         )
         if not dependent_carriers:
-            cls._store_value(element, cls.name, None)
-            return
+            return ParameterInputData(None, None)
 
         values = {
             carrier: element.element_data_loader.extract_input_data(
@@ -43,4 +50,6 @@ class ConversionFactor(GenericParameter):
         combined.columns.name = "carrier"
         combined = combined.stack()
         levels = [combined.index.names[-1], *combined.index.names[:-1]]
-        cls._store_value(element, cls.name, combined.reorder_levels(levels))
+        return ParameterInputData(
+            combined.reorder_levels(levels), element.units.get(cls.name)
+        )

@@ -1,93 +1,58 @@
-import itertools
+"""End-of-year available-capacity constraint."""
 
 import linopy as lp
-import pandas as pd
 import xarray as xr
 from linopy.expressions import LinearExpression
 
-from zen_garden.elements.technology.constraints.technology_constraint import (
-    TechnologyConstraint,
+from zen_garden.elements.technology.expressions.surviving_capacity_additions import (
+    SurvivingCapacityAdditions,
 )
 from zen_garden.elements.technology.masks import CapacityAvailableMask
+from zen_garden.elements.technology.parameters.existing_capacities import (
+    ExistingCapacities,
+)
+from zen_garden.elements.technology.variables.capacity import Capacity
+from zen_garden.model.component_types.constraint import GenericConstraint
 
 
-class TechnologyLifetimeConstraint(TechnologyConstraint):
-    masks = {
-        "constraint_technology_lifetime": [CapacityAvailableMask],
-        "constraint_technology_lifetime_previous": [CapacityAvailableMask],
-    }
+class TechnologyLifetimeConstraint(GenericConstraint):
+    """Define end-of-year capacity from existing and surviving vintages."""
+
+    name = "constraint_technology_lifetime"
+    indices = ("set_technologies", "set_location", "set_years")
+    masks = (CapacityAvailableMask,)
 
     @classmethod
-    def build(cls, model_constructor):
-        """Summary:
-        Calculates remaining capacity of technologies based on the lifetime.
+    def get_constraint(cls, model_constructor):
+        """Construct define end-of-year capacity from existing and surviving vintages.
 
-        limited lifetime of the technologies. calculates 'capacity', i.e., the
-        capacity at the end of the year and 'capacity_previous', i.e., the capacity at
-        the beginning of the year.
+        Summary:
+            Define end-of-year capacity from existing and surviving vintages.
 
         Formulation:
 
         .. math::
-            K_{h,p,y} = k^{\\mathrm{ex}}_{h,p,y}
-            + \\sum_{\\tilde y\\in\\mathcal{Y}^{\\mathrm{life}}_{h,y}}
-            \\Delta K_{h,p,\\tilde y}
 
-        .. math::
-            K^{\\mathrm{prev}}_{h,p,y}
-            = K_{h,p,y}-\\Delta K_{h,p,y}
+            K_{h,q,p,y} =k^{existing}_{h,q,p,y} + \\sum_{v \\in \\mathcal
+            V^{active}_{h,y}} \\Delta K_{h,q,p,v}
 
-        For storage technologies, each equation is applied independently to power
-        and energy capacity.
+        The formulation applies over valid combinations of the declared indices.
+        Empty or masked combinations are not constructed.
 
         Notation:
+            Symbols and indices follow ``sets_params_constraints.rst``.
 
-        :math:`\\mathcal{Y}^{\\mathrm{life}}_{h,y}` contains modeled additions that
-        remain active according to
-        :math:`\\lfloor L_h/\\Delta y\\rfloor`
-        :math:`k^{\\mathrm{ex}}_{h,p,y}`: surviving existing capacity
-        :math:`K^{\\mathrm{prev}}_{h,p,y}`: capacity available before the current
-        year's addition
+        Args:
+            model_constructor: Object containing the optimization model.
+
+        Returns:
+            Constraint over its declared model indices.
         """
-        lt_range = pd.MultiIndex.from_tuples(
-            [
-                (t, y, py)
-                for t, y in itertools.product(
-                    model_constructor.optimization_model.sets["set_technologies"],
-                    model_constructor.optimization_model.sets["set_years"],
-                )
-                for py in list(cls.get_lifetime_range(model_constructor, t, y))
-            ],
-            names=[
-                "set_technologies",
-                "set_years",
-                "set_years_prev",
-            ],
-        )
-        lt_range = pd.Series(index=lt_range, data=-1)
-        lt_range = (
-            lt_range.to_xarray()
-            .broadcast_like(
-                model_constructor.optimization_model.variables["capacity"].lower
-            )
-            .fillna(0)
-        )
-        capacity_addition = model_constructor.optimization_model.variables[
-            "capacity_addition"
-        ].rename({"set_years": "set_years_prev"})
-        capacity_addition = capacity_addition.broadcast_like(lt_range)
-        expr = (lt_range * capacity_addition).sum("set_years_prev")
+        optimization_model = model_constructor.optimization_model
         lhs = lp.merge(
-            [1 * model_constructor.optimization_model.variables["capacity"], expr],
-            compat="broadcast_equals",
-            join="outer",
-            cls=LinearExpression,
-        )
-        lhs_previous = lp.merge(
             [
-                1 * model_constructor.optimization_model.variables["capacity_previous"],
-                expr,
-                1 * model_constructor.optimization_model.variables["capacity_addition"],
+                1 * optimization_model.variables[Capacity],
+                -optimization_model.expressions[SurvivingCapacityAdditions],
             ],
             compat="broadcast_equals",
             join="outer",
@@ -95,18 +60,7 @@ class TechnologyLifetimeConstraint(TechnologyConstraint):
         )
         rhs = xr.align(
             lhs.const,
-            model_constructor.optimization_model.parameters.existing_capacities,
+            optimization_model.parameters[ExistingCapacities],
             join="left",
         )[1]
-        constraints = lhs == rhs
-        constraints_previous = lhs_previous == rhs
-
-        ### return
-        cls.add_constraint(
-            model_constructor, "constraint_technology_lifetime", constraints
-        )
-        cls.add_constraint(
-            model_constructor,
-            "constraint_technology_lifetime_previous",
-            constraints_previous,
-        )
+        return lhs == rhs

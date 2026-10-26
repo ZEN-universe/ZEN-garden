@@ -5,6 +5,7 @@ class PriceCarbonEmissionsBudgetOvershoot(GenericParameter):
     """Carbon price for budget overshoot."""
 
     name = "price_carbon_emissions_budget_overshoot"
+    symbol = r"\pi^{\mathrm{CO_2,bud}}"
     indices = ()
-    doc = "Carbon price for budget overshoot"
+    doc = "Parameter which specifies the carbon price for budget overshoot."
     unit_category = {"money": 1, "emissions": -1}

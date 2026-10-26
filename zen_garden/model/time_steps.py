@@ -29,6 +29,17 @@ class TimeStepsDicts(object):
     time_steps_year2storage: dict | None
     time_steps_energy2power: dict | None
     time_steps_storage_level_startend_year: dict | None
+    representative_hours: list[int] | None
+    representative_hours_storage: dict[int, list[int]] | None
+    weight_representative_hours: pd.Series | None
+    duration_representative_hours_storage: pd.Series | None
+    operation_step_to_pair: dict[int, tuple[int, int]] | None
+    storage_step_to_pair: dict[int, tuple[int, int]] | None
+    operation_pair_to_step: dict[tuple[int, int], int] | None
+    storage_pair_to_step: dict[tuple[int, int], int] | None
+    storage_to_operation: pd.Series | None
+    previous_storage_time_step: pd.Series | None
+    storage_coupling_mask: pd.Series | None
 
     def __init__(self, dict_all_sequence_time_steps=None):
         """Sets all dicts of sequences of time steps.
@@ -52,6 +63,18 @@ class TimeStepsDicts(object):
             self.time_steps_energy2power = None
 
             self.time_steps_storage_level_startend_year = None
+
+            self.representative_hours = None
+            self.representative_hours_storage = None
+            self.weight_representative_hours = None
+            self.duration_representative_hours_storage = None
+            self.operation_step_to_pair = None
+            self.storage_step_to_pair = None
+            self.operation_pair_to_step = None
+            self.storage_pair_to_step = None
+            self.storage_to_operation = None
+            self.previous_storage_time_step = None
+            self.storage_coupling_mask = None
 
         # set the params if provided
         else:
@@ -355,3 +378,151 @@ class TimeStepsDicts(object):
         assert self.time_steps_operation2year is not None
         time_steps_operation2year = self.time_steps_operation2year
         return time_steps_operation2year[time_step_operation]
+
+    def initialize_representative_hours(self, years: list[int], system) -> None:
+        """Build the year-aware time representation used by the optimization model.
+
+        The aggregation pipeline still creates globally unique time-step identifiers.
+        This method converts them into explicit ``(year, representative_hour)`` pairs.
+        The flat identifiers remain available only for result serialization.
+
+        Args:
+            years: Complete ordered list of modeled years.
+            system: System configuration controlling storage periodicity.
+
+        Raises:
+            ValueError: If different years contain different numbers of operational
+                representative hours.
+        """
+        assert self.time_steps_year2operation is not None
+        assert self.time_steps_year2storage is not None
+        assert self.time_steps_operation_duration is not None
+        assert self.time_steps_storage_duration is not None
+        assert self.time_steps_energy2power is not None
+
+        operation_steps_by_year = {
+            year: [int(step) for step in self.time_steps_year2operation[year]]
+            for year in years
+        }
+        counts = {year: len(steps) for year, steps in operation_steps_by_year.items()}
+        expected_count = counts[years[0]]
+        unequal = {
+            year: count for year, count in counts.items() if count != expected_count
+        }
+        if unequal:
+            details = ", ".join(
+                f"year {year}: {count}" for year, count in unequal.items()
+            )
+            raise ValueError(
+                "Year-specific time-series aggregation must return the same number "
+                f"of representative hours for every year. Expected {expected_count}; "
+                f"received {details}."
+            )
+
+        self.representative_hours = list(range(expected_count))
+        self.operation_step_to_pair = {
+            step: (year, representative_hour)
+            for year, steps in operation_steps_by_year.items()
+            for representative_hour, step in enumerate(steps)
+        }
+        self.operation_pair_to_step = {
+            pair: step for step, pair in self.operation_step_to_pair.items()
+        }
+        operation_index = pd.MultiIndex.from_tuples(
+            list(self.operation_pair_to_step),
+            names=["set_years", "set_representative_hours"],
+        )
+        self.weight_representative_hours = pd.Series(
+            [
+                self.time_steps_operation_duration[self.operation_pair_to_step[pair]]
+                for pair in operation_index
+            ],
+            index=operation_index,
+            dtype=int,
+        )
+
+        storage_steps_by_year = {
+            year: [int(step) for step in self.time_steps_year2storage[year]]
+            for year in years
+        }
+        self.representative_hours_storage = {
+            year: list(range(len(steps)))
+            for year, steps in storage_steps_by_year.items()
+        }
+        self.storage_step_to_pair = {
+            step: (year, representative_hour)
+            for year, steps in storage_steps_by_year.items()
+            for representative_hour, step in enumerate(steps)
+        }
+        self.storage_pair_to_step = {
+            pair: step for step, pair in self.storage_step_to_pair.items()
+        }
+        storage_index = pd.MultiIndex.from_tuples(
+            list(self.storage_pair_to_step),
+            names=["set_years", "set_representative_hours_storage"],
+        )
+        self.duration_representative_hours_storage = pd.Series(
+            [
+                self.time_steps_storage_duration[self.storage_pair_to_step[pair]]
+                for pair in storage_index
+            ],
+            index=storage_index,
+            dtype=int,
+        )
+        self.storage_to_operation = pd.Series(
+            [
+                self.operation_step_to_pair[
+                    self.time_steps_energy2power[self.storage_pair_to_step[pair]]
+                ][1]
+                for pair in storage_index
+            ],
+            index=storage_index,
+            name="set_representative_hours",
+            dtype=int,
+        )
+        self._set_storage_predecessors(storage_steps_by_year, years, system)
+
+    def _set_storage_predecessors(
+        self,
+        storage_steps_by_year: dict[int, list[int]],
+        years: list[int],
+        system,
+    ) -> None:
+        """Create predecessor pairs and coupling flags for storage states."""
+        assert self.storage_step_to_pair is not None
+        previous: dict[tuple[int, int], tuple[int, int]] = {}
+        coupling: dict[tuple[int, int], bool] = {}
+        for year_position, year in enumerate(years):
+            steps = storage_steps_by_year[year]
+            for position, step in enumerate(steps):
+                pair = self.storage_step_to_pair[step]
+                if position > 0:
+                    predecessor_step = steps[position - 1]
+                    is_coupled = True
+                elif system.multiyear_periodicity and year_position > 0:
+                    predecessor_step = storage_steps_by_year[years[year_position - 1]][
+                        -1
+                    ]
+                    is_coupled = True
+                elif system.multiyear_periodicity and system.storage_periodicity:
+                    predecessor_step = storage_steps_by_year[years[-1]][-1]
+                    is_coupled = True
+                elif system.storage_periodicity:
+                    predecessor_step = steps[-1]
+                    is_coupled = True
+                else:
+                    predecessor_step = step
+                    is_coupled = False
+                previous[pair] = self.storage_step_to_pair[predecessor_step]
+                coupling[pair] = is_coupled
+
+        index = pd.MultiIndex.from_tuples(
+            list(previous),
+            names=["set_years", "set_representative_hours_storage"],
+        )
+        self.previous_storage_time_step = pd.Series(
+            [previous[pair] for pair in index], index=index, dtype=object
+        )
+        self.storage_coupling_mask = pd.Series(
+            [coupling[pair] for pair in index], index=index, dtype=bool
+        )

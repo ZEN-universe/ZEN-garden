@@ -18,6 +18,8 @@ import yaml
 from filelock import FileLock
 from tables import NaturalNameWarning
 
+from zen_garden.model.registries.variable import align_mask
+
 if TYPE_CHECKING:
     from zen_garden.input.unit_converter import UnitConverter
     from zen_garden.model.optimization_model import OptimizationModel
@@ -33,6 +35,67 @@ warnings.filterwarnings("ignore", category=NaturalNameWarning)
 H5_COMP_LEVEL: int = 4
 H5_COMP_LIB: Literal["zlib", "lzo", "bzip2", "blosc"] = "blosc"
 
+ENERGY_PARAMETER_COMPONENTS = {
+    "capacity_existing_energy": "capacity_existing",
+    "capacity_investment_existing_energy": "capacity_investment_existing",
+    "capacity_addition_min_energy": "capacity_addition_min",
+    "capacity_addition_max_energy": "capacity_addition_max",
+    "capacity_addition_unbounded_energy": "capacity_addition_unbounded",
+    "capacity_limit_energy": "capacity_limit",
+    "capacity_lower_limit_energy": "capacity_lower_limit",
+    "opex_specific_fixed_energy": "opex_specific_fixed",
+    "capex_specific_storage_energy": "capex_specific_storage",
+    "capex_capacity_existing_energy": "capex_capacity_existing",
+    "existing_capacities_energy": "existing_capacities",
+    "existing_capex_energy": "existing_capex",
+}
+
+ENERGY_VARIABLE_COMPONENTS = {
+    "capacity_energy": "capacity",
+    "capacity_previous_energy": "capacity_previous",
+    "capacity_addition_energy": "capacity_addition",
+    "capacity_investment_energy": "capacity_investment",
+    "cost_capex_overnight_energy": "cost_capex_overnight",
+    "cost_capex_yearly_energy": "cost_capex_yearly",
+    "technology_installation_energy": "technology_installation",
+}
+
+ENERGY_DUAL_COMPONENTS = {
+    "constraint_storage_energy_capacity_limit_not_reached": (
+        "constraint_technology_capacity_limit_not_reached"
+    ),
+    "constraint_storage_energy_capacity_limit_reached": (
+        "constraint_technology_capacity_limit_reached"
+    ),
+    "constraint_storage_energy_capacity_lower_limit": (
+        "constraint_technology_capacity_lower_limit"
+    ),
+    "constraint_storage_energy_min_capacity_addition": (
+        "constraint_technology_min_capacity_addition"
+    ),
+    "constraint_storage_energy_max_capacity_addition": (
+        "constraint_technology_max_capacity_addition"
+    ),
+    "constraint_storage_energy_construction_time": (
+        "constraint_technology_construction_time"
+    ),
+    "constraint_storage_energy_construction_time_outside": (
+        "constraint_technology_construction_time_outside"
+    ),
+    "constraint_storage_energy_lifetime": "constraint_technology_lifetime",
+    "constraint_storage_energy_lifetime_previous": (
+        "constraint_technology_lifetime_previous"
+    ),
+    "constraint_storage_energy_diffusion_limit_total": (
+        "constraint_technology_diffusion_limit_total"
+    ),
+    "constraint_storage_energy_diffusion_limit": (
+        "constraint_technology_diffusion_limit"
+    ),
+    "constraint_cost_capex_yearly_energy": "constraint_cost_capex_yearly",
+    "constraint_storage_technology_capex_energy": "constraint_storage_technology_capex",
+}
+
 UNRELATED_INDEXES_FOR_UNITS = set(
     [
         "set_location",
@@ -43,6 +106,8 @@ UNRELATED_INDEXES_FOR_UNITS = set(
         "set_time_steps_yearly",
         "set_years",
         "set_hours",
+        "set_representative_hours",
+        "set_representative_hours_storage",
     ]
 )
 
@@ -238,18 +303,30 @@ class Postprocess:
         """
 
         series: dict[str, pd.Series] = {}
-        for set in self.optimization_model.sets:
-            if not set.is_indexed():
+        set_registry = self.optimization_model.sets
+        for (
+            set_name,
+            relation_name,
+        ) in set_registry.legacy_indexed_set_relations.items():
+            if set_name == "set_representative_hours_storage":
                 continue
-
-            data = [",".join([str(t) for t in tpl]) for tpl in set.data.values()]
-            indices_list = list(set.data.keys())
+            relation = set_registry.relations[relation_name]
+            grouped: dict[Hashable, list[object]] = {}
+            for row in relation.combinations:
+                grouped.setdefault(row[0], []).append(row[1])
+            data = [
+                ",".join(str(value) for value in values) for values in grouped.values()
+            ]
+            indices_list = list(grouped)
+            indices: pd.Index
             if len(indices_list) >= 1 and isinstance(indices_list[0], tuple):
-                indices = pd.MultiIndex.from_tuples(indices_list, names=[set.name])
+                tuple_indices = [
+                    cast(tuple[Hashable, ...], value) for value in indices_list
+                ]
+                indices = pd.MultiIndex.from_tuples(tuple_indices, names=[set_name])
             else:
-                indices = pd.Index(data=indices_list, name=set.name)
-
-            series[set.name] = pd.Series(data, name=set.name, index=indices)
+                indices = pd.Index(data=indices_list, name=set_name)
+            series[set_name] = pd.Series(data, name=set_name, index=indices)
 
         self._write_h5_file(self.name_dir / "sets.h5", series)
         self._write_json_file(
@@ -268,31 +345,53 @@ class Postprocess:
             return []
 
         parameters = xr.Dataset()
+        legacy_names = {
+            "weight_representative_hours": "time_steps_operation_duration",
+            "duration_representative_hours_storage": "time_steps_storage_duration",
+        }
         for param in self.optimization_model.parameters.docs.keys():
+            output_name = legacy_names.get(param, param)
+            selected_name = ENERGY_PARAMETER_COMPONENTS.get(output_name, output_name)
             if (
                 self.config.solver.selected_saved_parameters
                 and param not in self.config.solver.selected_saved_parameters
+                and output_name not in self.config.solver.selected_saved_parameters
+                and selected_name not in self.config.solver.selected_saved_parameters
             ):
                 continue
             # get the values
             vals = getattr(self.optimization_model.parameters, param)
             # data frame
             if isinstance(vals, xr.DataArray):
-                parameters[param] = vals
+                parameters[output_name] = vals
             # we have a scalar
             else:
-                parameters[param] = xr.DataArray(data=[vals], dims=["scalar"])
+                parameters[output_name] = xr.DataArray(data=[vals], dims=["scalar"])
 
+        parameters = self._merge_capacity_type_components(
+            parameters, ENERGY_PARAMETER_COMPONENTS
+        )
+        parameters = self._to_legacy_time_dimensions(parameters)
         self._write_netcdf_file(self.name_dir / "parameters.nc", parameters)
-        units = {
-            name: pd.Series(value)
+        units: dict[str, pd.Series | None] = {
+            legacy_names.get(name, name): pd.Series(value)
             for name, value in self.optimization_model.parameters.units.items()
             if value is not None
         }
-        self._write_units_to_file(self.name_dir / "parameters_units.h5", units)
+        merged_units = self._merge_capacity_type_units(
+            units, ENERGY_PARAMETER_COMPONENTS
+        )
+        self._write_units_to_file(self.name_dir / "parameters_units.h5", merged_units)
         self._write_json_file(
             self.name_dir / "parameters_docs.json",
-            self.optimization_model.parameters.docs,
+            {
+                legacy_names.get(
+                    ENERGY_PARAMETER_COMPONENTS.get(name, name),
+                    ENERGY_PARAMETER_COMPONENTS.get(name, name),
+                ): self._legacy_time_doc(doc)
+                for name, doc in self.optimization_model.parameters.docs.items()
+                if name not in ENERGY_PARAMETER_COMPONENTS
+            },
         )
 
         return list(parameters.keys())
@@ -302,23 +401,47 @@ class Postprocess:
         post-processed immediately or loaded and postprocessed at some other
         time.
         """
-        self._write_netcdf_file(self.name_dir / "variables.nc", self.lp_model.solution)
+        raw_solution = self.lp_model.solution.copy()
+        variables = self.optimization_model.variables
+        for name, default in variables.mask_default_values.items():
+            if name not in raw_solution:
+                continue
+            structural = align_mask(
+                variables.structural_masks[name], raw_solution[name]
+            )
+            performance = align_mask(
+                variables.performance_masks[name], raw_solution[name]
+            )
+            restore = structural & ~performance
+            raw_solution[name] = raw_solution[name].where(~restore, default)
+        solution = self._merge_capacity_type_components(
+            raw_solution, ENERGY_VARIABLE_COMPONENTS
+        )
+        solution = self._to_legacy_time_dimensions(solution)
+        self._write_netcdf_file(self.name_dir / "variables.nc", solution)
 
-        units = {
+        units: dict[str, pd.Series | None] = {
             cast(str, name): self.optimization_model.variables.units[cast(str, name)]
             for name in self.lp_model.solution.keys()
         }
+        merged_units = self._merge_capacity_type_units(
+            units, ENERGY_VARIABLE_COMPONENTS
+        )
         units_filtered = {
             name: series
-            for name, series in units.items()
+            for name, series in merged_units.items()
             if series is not None and not series.empty
         }
         self._write_units_to_file(self.name_dir / "variables_units.h5", units_filtered)
         self._write_json_file(
             self.name_dir / "variables_docs.json",
-            self.optimization_model.variables.docs,
+            {
+                ENERGY_VARIABLE_COMPONENTS.get(name, name): self._legacy_time_doc(doc)
+                for name, doc in self.optimization_model.variables.docs.items()
+                if name not in ENERGY_VARIABLE_COMPONENTS
+            },
         )
-        return list(self.lp_model.solution.keys())
+        return list(solution.keys())
 
     def save_duals(self) -> list[Hashable]:
         """Saves the dual variable values to a h5 file."""
@@ -326,11 +449,202 @@ class Postprocess:
             logger.info("Duals are not saved")
             return []
 
-        self._write_netcdf_file(self.name_dir / "duals.nc", self.lp_model.dual)
-        self._write_json_file(
-            self.name_dir / "duals_docs", self.optimization_model.constraints.docs
+        dual = self._merge_capacity_type_components(
+            self.lp_model.dual, ENERGY_DUAL_COMPONENTS
         )
-        return list(self.lp_model.dual.keys())
+        dual = self._to_legacy_time_dimensions(dual)
+        self._write_netcdf_file(self.name_dir / "duals.nc", dual)
+        self._write_json_file(
+            self.name_dir / "duals_docs",
+            {
+                ENERGY_DUAL_COMPONENTS.get(name, name): self._legacy_time_doc(doc)
+                for name, doc in self.optimization_model.constraints.docs.items()
+                if name not in ENERGY_DUAL_COMPONENTS
+            },
+        )
+        return list(dual.keys())
+
+    @staticmethod
+    def _merge_capacity_type_components(
+        dataset: xr.Dataset, energy_components: dict[str, str]
+    ) -> xr.Dataset:
+        """Restore split power and energy components to the public result schema."""
+        converted = dataset.copy()
+        for energy_name, power_name in energy_components.items():
+            has_power = power_name in converted
+            has_energy = energy_name in converted
+            if not has_power and not has_energy:
+                continue
+
+            power = converted[power_name] if has_power else None
+            energy = converted[energy_name] if has_energy else None
+            if energy is not None and energy.size == 0:
+                energy = None
+                if power is None:
+                    converted = converted.drop_vars(energy_name)
+                    continue
+            if energy is not None:
+                rename = {}
+                if "set_storage_technologies" in energy.dims and (
+                    power is None or "set_technologies" in power.dims
+                ):
+                    rename["set_storage_technologies"] = "set_technologies"
+                if "set_nodes" in energy.dims and (
+                    power is None or "set_location" in power.dims
+                ):
+                    rename["set_nodes"] = "set_location"
+                energy = energy.rename(rename)
+
+            reference = power if power is not None else energy
+            assert reference is not None
+            technology_dimension = next(
+                (
+                    dimension
+                    for dimension in ("set_technologies", "set_storage_technologies")
+                    if dimension in reference.dims
+                ),
+                reference.dims[0],
+            )
+            axis = reference.dims.index(technology_dimension) + 1
+            components = []
+            if power is not None:
+                components.append(
+                    power.expand_dims({"set_capacity_types": ["power"]}, axis=axis)
+                )
+            if energy is not None:
+                components.append(
+                    energy.expand_dims({"set_capacity_types": ["energy"]}, axis=axis)
+                )
+            combined = xr.concat(components, dim="set_capacity_types", join="outer")
+            converted[power_name] = combined.transpose(*combined.dims)
+            if has_energy:
+                converted = converted.drop_vars(energy_name)
+        return converted
+
+    @staticmethod
+    def _merge_capacity_type_units(
+        units: dict[str, pd.Series | None], energy_components: dict[str, str]
+    ) -> dict[str, pd.Series]:
+        """Restore capacity-type indices in persisted unit metadata."""
+        converted = dict(units)
+        for energy_name, power_name in energy_components.items():
+            if energy_name not in converted or power_name not in converted:
+                continue
+            power_unit = converted[power_name]
+            energy_unit = converted[energy_name]
+            if power_unit is None or energy_unit is None:
+                del converted[energy_name]
+                continue
+            power = power_unit.rename_axis(
+                index={
+                    "set_storage_technologies": "set_technologies",
+                    "set_nodes": "set_location",
+                }
+            )
+            energy = energy_unit.rename_axis(
+                index={
+                    "set_storage_technologies": "set_technologies",
+                    "set_nodes": "set_location",
+                }
+            )
+            combined = pd.concat(
+                {"power": power, "energy": energy},
+                names=["set_capacity_types"],
+            )
+            names = list(combined.index.names)
+            if "set_technologies" in names:
+                names.remove("set_capacity_types")
+                position = names.index("set_technologies") + 1
+                names.insert(position, "set_capacity_types")
+                combined = combined.reorder_levels(names)
+            converted[power_name] = combined
+            del converted[energy_name]
+        return {name: unit for name, unit in converted.items() if unit is not None}
+
+    def _to_legacy_time_dimensions(self, dataset: xr.Dataset) -> xr.Dataset:
+        """Flatten internal year/hour dimensions to the stable result schema."""
+        converted = xr.Dataset()
+        for name, array in dataset.data_vars.items():
+            if {
+                "set_years",
+                "set_representative_hours",
+            }.issubset(array.dims):
+                converted[name] = self._flatten_time_dimension(
+                    array,
+                    representative_dimension="set_representative_hours",
+                    legacy_dimension="set_time_steps_operation",
+                    pair_to_step=self.time_steps.operation_pair_to_step,
+                )
+            elif {
+                "set_years",
+                "set_representative_hours_storage",
+            }.issubset(array.dims):
+                converted[name] = self._flatten_time_dimension(
+                    array,
+                    representative_dimension="set_representative_hours_storage",
+                    legacy_dimension="set_time_steps_storage",
+                    pair_to_step=self.time_steps.storage_pair_to_step,
+                )
+            else:
+                converted[name] = array
+        return converted
+
+    def _flatten_time_dimension(
+        self,
+        array: xr.DataArray,
+        *,
+        representative_dimension: str,
+        legacy_dimension: str,
+        pair_to_step: dict[tuple[int, int], int] | None,
+    ) -> xr.DataArray:
+        """Flatten one explicit year/representative-hour pair."""
+        assert pair_to_step is not None
+        target_dims = list(array.dims)
+        year_position = target_dims.index("set_years")
+        target_dims.remove("set_years")
+        target_dims.remove(representative_dimension)
+        target_dims.insert(year_position, legacy_dimension)
+        pieces = []
+        for year in array.coords["set_years"].values:
+            pairs = [
+                pair
+                for pair in pair_to_step
+                if pair[0] == int(year)
+                and pair[1] in array.coords[representative_dimension]
+            ]
+            if not pairs:
+                continue
+            hours = [pair[1] for pair in pairs]
+            steps = [pair_to_step[pair] for pair in pairs]
+            piece = array.sel(
+                {"set_years": year, representative_dimension: hours}
+            ).drop_vars("set_years", errors="ignore")
+            piece = piece.assign_coords({representative_dimension: steps}).rename(
+                {representative_dimension: legacy_dimension}
+            )
+            pieces.append(piece)
+        if not pieces:
+            return array
+        return xr.concat(pieces, dim=legacy_dimension).transpose(*target_dims)
+
+    @staticmethod
+    def _legacy_time_doc(doc: str) -> str:
+        """Translate internal time names in persisted component documentation."""
+        return (
+            doc.replace(
+                "set_years, set_representative_hours_storage",
+                "set_time_steps_storage",
+            )
+            .replace(
+                "set_years, set_representative_hours",
+                "set_time_steps_operation",
+            )
+            .replace("weight_representative_hours", "time_steps_operation_duration")
+            .replace(
+                "duration_representative_hours_storage",
+                "time_steps_storage_duration",
+            )
+        )
 
     def save_reduced_costs(self) -> list[Hashable]:
         """Saves the reduced cost values of variables to a h5 file."""
@@ -344,10 +658,12 @@ class Postprocess:
 
         reduced_costs = xr.Dataset()
         for name in self.lp_model.variables:
+            selected_name = ENERGY_VARIABLE_COMPONENTS.get(name, name)
             # skip variables not selected to be saved
             if (
                 self.config.solver.selected_saved_reduced_costs
                 and name not in self.config.solver.selected_saved_reduced_costs
+                and selected_name not in self.config.solver.selected_saved_reduced_costs
             ):
                 continue
 
@@ -364,6 +680,10 @@ class Postprocess:
 
             reduced_costs[name] = arr
 
+        reduced_costs = self._merge_capacity_type_components(
+            reduced_costs, ENERGY_VARIABLE_COMPONENTS
+        )
+        reduced_costs = self._to_legacy_time_dimensions(reduced_costs)
         self._write_netcdf_file(self.name_dir / "reduced_costs.nc", reduced_costs)
         return list(reduced_costs.keys())
 

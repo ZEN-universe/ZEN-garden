@@ -11,8 +11,14 @@ class StorageOperationMask(GenericMask):
     """Storage operation required by capacity or exogenous inflow."""
 
     name = "storage_operation"
-    dependencies = [PowerOperationMask, StorageInflowMask]
+    indices = (
+        "set_technologies",
+        "set_location",
+        "set_years",
+        "set_representative_hours",
+    )
+    dependencies = (PowerOperationMask, StorageInflowMask)
 
     @classmethod
-    def build(cls, model_constructor, registry):
+    def get_mask(cls, model_constructor, registry):
         return registry[PowerOperationMask] | registry[StorageInflowMask]

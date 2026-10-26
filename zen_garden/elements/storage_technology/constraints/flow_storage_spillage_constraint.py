@@ -1,12 +1,31 @@
 from zen_garden.elements.storage_technology.masks import StorageOperationMask
+from zen_garden.elements.storage_technology.parameters.flow_storage_inflow import (
+    FlowStorageInflow,
+)
+from zen_garden.elements.technology.sets.set_storage_technologies import (
+    SetStorageTechnologies,
+)
 from zen_garden.model.component_types.constraint import GenericConstraint
 
 
 class FlowStorageSpillageConstraint(GenericConstraint):
-    masks = {"constraint_flow_storage_spillage": [StorageOperationMask]}
+    """Flow Storage Spillage."""
+
+    name = "constraint_flow_storage_spillage"
+    indices = (
+        "set_storage_technologies",
+        "set_nodes",
+        "set_years",
+        "set_representative_hours",
+    )
+    masks = (StorageOperationMask,)
 
     @classmethod
-    def build(cls, model_constructor):
+    def should_construct(cls, model_constructor):
+        return bool(model_constructor.optimization_model.sets[SetStorageTechnologies])
+
+    @classmethod
+    def get_constraint(cls, model_constructor):
         """Summary:
         Limit storage spillage to the exogenous storage inflow.
 
@@ -24,14 +43,16 @@ class FlowStorageSpillageConstraint(GenericConstraint):
         at node :math:`n` in time step :math:`t` of year :math:`y`
         :math:`q^{\\mathrm{in}}_{h,n,t}`: exogenous inflow into storage technology
         :math:`h` at node :math:`n` in time step :math:`t` of year :math:`y`
-        """
-        techs = model_constructor.optimization_model.sets["set_storage_technologies"]
-        if len(techs) == 0:
-            return
 
-        flow_storage_inflow = (
-            model_constructor.optimization_model.parameters.flow_storage_inflow
-        )
+        Args:
+            model_constructor: Object containing the optimization model.
+
+        Returns:
+            Constraint over its declared model indices.
+        """
+        flow_storage_inflow = model_constructor.optimization_model.parameters[
+            FlowStorageInflow
+        ]
         flow_storage_spillage = (
             model_constructor.optimization_model.lp_model.variables.flow_storage_spillage
         )
@@ -40,6 +61,4 @@ class FlowStorageSpillageConstraint(GenericConstraint):
         rhs = 0
         constraints = lhs <= rhs
 
-        cls.add_constraint(
-            model_constructor, "constraint_flow_storage_spillage", constraints
-        )
+        return constraints

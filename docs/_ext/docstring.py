@@ -40,6 +40,8 @@ GOOGLE_SECTION_HEADERS = (
 
 FIELD_LIST_PREFIXES = (":param", ":return", ":rtype", ":raises")
 
+STRUCTURED_SECTIONS = ("summary", "formulation", "notation")
+
 
 class DocstringDirective(SphinxDirective):
     """Base directive for rendering selected portions of a docstring.
@@ -125,7 +127,8 @@ class DocstringDirective(SphinxDirective):
         current_section: str | None = None
 
         for line in lines:
-            match = self.section_header.match(line.strip())
+            stripped = line.strip()
+            match = self.section_header.match(stripped)
             if match:
                 current_section = match.group(1).lower()
                 if current_section in sections:
@@ -133,10 +136,14 @@ class DocstringDirective(SphinxDirective):
                         f"docstring contains duplicate '{current_section}' sections"
                     )
                 sections[current_section] = []
+            elif stripped.startswith(FIELD_LIST_PREFIXES) or any(
+                stripped.startswith(header) for header in GOOGLE_SECTION_HEADERS
+            ):
+                current_section = None
             elif current_section is not None:
                 sections[current_section].append(line)
 
-        required_sections = {"summary", "formulation", "notation"}
+        required_sections = set(STRUCTURED_SECTIONS)
         if not required_sections.issubset(sections):
             return None
 
@@ -144,7 +151,7 @@ class DocstringDirective(SphinxDirective):
         requested = (
             [part.strip().lower() for part in requested_option.split(",")]
             if requested_option
-            else list(sections)
+            else list(STRUCTURED_SECTIONS)
         )
         invalid = [part for part in requested if part not in sections]
         if invalid:
@@ -161,6 +168,14 @@ class DocstringDirective(SphinxDirective):
                 content = content[1:]
             while content and not content[-1].strip():
                 content = content[:-1]
+            nonempty_indents = [
+                len(line) - len(line.lstrip()) for line in content if line.strip()
+            ]
+            common_indent = min(nonempty_indents, default=0)
+            if common_indent:
+                content = [
+                    line[common_indent:] if line.strip() else "" for line in content
+                ]
             if selected and content:
                 selected.append("")
             selected.extend(content)

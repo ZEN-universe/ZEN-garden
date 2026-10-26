@@ -5,6 +5,9 @@ from zen_garden.model.component_types.constraint import GenericConstraint
 from .capacity_factor_conversion_constraint import (
     CapacityFactorConversionConstraint,
 )
+from .carbon_emissions_technology_conversion_constraint import (
+    CarbonEmissionsTechnologyConversionConstraint,
+)
 from .carrier_conversion_constraint import (
     CarrierConversionConstraint,
 )
@@ -14,13 +17,12 @@ from .linear_capex_constraint import (
 from .minimum_full_load_hours_constraint import (
     MinimumFullLoadHoursConstraint,
 )
-from .opex_emissions_technology_conversion_constraint import (
-    OpexEmissionsTechnologyConversionConstraint,
-)
+from .opex_technology_conversion_constraint import OpexTechnologyConversionConstraint
 
 CONVERSION_TECHNOLOGY_CONSTRAINTS: list[type[GenericConstraint]] = [
     CapacityFactorConversionConstraint,
-    OpexEmissionsTechnologyConversionConstraint,
+    OpexTechnologyConversionConstraint,
+    CarbonEmissionsTechnologyConversionConstraint,
     CarrierConversionConstraint,
     MinimumFullLoadHoursConstraint,
     # LinearCapexConstraint reads only variables/parameters (capacity_addition,
@@ -31,8 +33,9 @@ CONVERSION_TECHNOLOGY_CONSTRAINTS: list[type[GenericConstraint]] = [
 
 __all__ = [
     "CapacityFactorConversionConstraint",
+    "CarbonEmissionsTechnologyConversionConstraint",
     "CarrierConversionConstraint",
     "LinearCapexConstraint",
     "MinimumFullLoadHoursConstraint",
-    "OpexEmissionsTechnologyConversionConstraint",
+    "OpexTechnologyConversionConstraint",
 ]

@@ -19,7 +19,7 @@ looks ahead, see the tutorial on :ref:`myopic foresight <t_foresight.t_foresight
 Time steps in ZEN-garden
 ========================
 
-There are three different time indices:
+There are four different time indices:
 
 1. ``set_hours`` is the highest resolution in the model. Each hour is a base
    time index. When time series aggregation is used, the base time steps are
@@ -33,9 +33,19 @@ There are three different time indices:
    (``carbon_emissions_annual_limit``) or the yearly costs (``cost_total``).
    These are generally not associated with a specific element.
 
-3. ``set_time_steps_operation`` resolves the operation of built capacities at a
-   higher resolution than years. For technologies and carriers, this is the
-   operational index.
+3. ``set_representative_hours`` is the within-year operational index. Model
+   components that describe operation use ``set_years`` and
+   ``set_representative_hours`` as separate dimensions. Its members are local
+   hour identifiers (``0, ..., n-1``), shared by every modeled year.
+
+4. ``set_representative_hours_storage`` is the within-year storage-state
+   index. It is indexed by ``set_years`` because the storage sequence and its
+   number of state transitions can differ between years, even though the
+   operational representative-hour count is the same.
+
+Hourly input data continues to use ``set_hours``. During preprocessing,
+ZEN-garden transforms that input dimension into the explicit
+``(set_years, set_representative_hours)`` model dimensions.
 
 
 .. _t_tsa.time_parameters:
@@ -118,9 +128,18 @@ steps with similar input values into a single representative time step. The
 full time series of 8760 base time steps is then represented by a smaller
 number of representative time steps, for example 200.
 
-Because each aggregated time step stands for multiple base time steps, the
-operational costs and operational carbon emissions of each aggregated time step
-are multiplied by the ``time_steps_operation_duration`` of that time step.
+The number of operational representative hours is identical in every modeled
+year, including when year-specific time series aggregation is enabled. What can
+differ by year are the representative profiles, their sequence, and their
+weights. Consequently, ``set_representative_hours`` itself is not indexed by
+year, while ``weight_representative_hours`` has both ``set_years`` and
+``set_representative_hours`` dimensions.
+
+Because each aggregated time step stands for multiple base time steps,
+operational costs and operational carbon emissions are multiplied by
+``weight_representative_hours``. Storage-state equations use
+``duration_representative_hours_storage``, indexed by year and storage
+representative hour.
 
 The clustering algorithm itself is configured in the ``analysis`` section of
 ``config.yaml``; see the timeseries aggregation settings in
