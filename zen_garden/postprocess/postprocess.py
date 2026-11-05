@@ -648,6 +648,10 @@ class Postprocess:
                                 f"but got {type(series)}"
                             )
                         )
+                    # PyTables expects a NumPy dtype and cannot serialize the
+                    # extension StringDtype inferred by pandas 3.0.
+                    if isinstance(series.dtype, pd.StringDtype):
+                        series = series.astype(object)
                     store.put(key, series)
 
     def _write_netcdf_file(self, file_name: Path, dataset: xr.Dataset):
