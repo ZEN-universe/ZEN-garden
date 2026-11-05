@@ -3,6 +3,11 @@
 This file gets automatically updated in ZEN-garden's continuous integration 
 procedures. Do not edit the file manually.
 
+## [v3.4.1] - 2026-11-05 
+
+### Bug Fixes 🐛
+- Convert pandas `StringDtype` Series to NumPy-compatible `object` dtype before writing them through PyTables. This prevents compressed HDF5 result serialization from failing with affected pandas 3.0 releases while preserving the stored string values. [[🔀 PR #1365](https://github.com/ZEN-universe/ZEN-garden/pull/1365) @csfunke]
+
 ## [v3.4.0] - 2026-10-22 
 
 ### New Features ✨
