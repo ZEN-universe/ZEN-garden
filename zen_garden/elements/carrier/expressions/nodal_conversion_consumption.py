@@ -6,12 +6,12 @@ from linopy.expressions import LinearExpression
 from zen_garden.elements.conversion_technology.variables.flow_conversion_input import (
     FlowConversionInput,
 )
+from zen_garden.elements.energy_system.sets.set_carriers import SetCarriers
 from zen_garden.elements.energy_system.sets.set_nodes import SetNodes
 from zen_garden.elements.technology.sets.set_conversion_technologies import (
     SetConversionTechnologies,
 )
 from zen_garden.model.component_types.expression import GenericExpression
-from zen_garden.model.registries.multi_index_helper import MultiIndexHelper
 
 
 class NodalConversionConsumption(GenericExpression):
@@ -51,13 +51,10 @@ class NodalConversionConsumption(GenericExpression):
             Expression over its declared model indices.
         """
         optimization_model = model_constructor.optimization_model
-        index_values, index_names = optimization_model.create_custom_set(
-            ["set_carriers", "set_nodes", "set_years", "set_representative_hours"]
-        )
-        index = MultiIndexHelper(index_values, index_names)
+        carriers = list(optimization_model.sets[SetCarriers])
         flows = []
         nodes = list(optimization_model.sets[SetNodes])
-        for carrier in index.get_unique([0]):
+        for carrier in carriers:
             technologies = [
                 technology
                 for technology in optimization_model.sets[SetConversionTechnologies]
@@ -78,7 +75,7 @@ class NodalConversionConsumption(GenericExpression):
             merged,
             None,
             None,
-            index.get_unique([0]),
-            index_names[:1],
+            carriers,
+            [SetCarriers.name],
             optimization_model.lp_model,
         )

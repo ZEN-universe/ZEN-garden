@@ -219,15 +219,6 @@ class SetRegistry(Registry):
             **{source_name: source_member},
         )
 
-    def create_custom_set(
-        self,
-        list_index: Sequence[str],
-        index_relations: str | Sequence[str] = "auto",
-    ) -> tuple[list[Any], list[str]]:
-        """Resolve readable domains to the legacy registry boundary shape."""
-        resolved = self.resolve_indices(list_index, index_relations=index_relations)
-        return resolved.values, list(resolved.dimensions)
-
     def resolve_indices(
         self,
         dimensions: Sequence[str],

@@ -149,12 +149,3 @@ class ModelConstructor:
             self.constraints, ignore_missing=True
         ):
             constraint.build(self)
-
-    def create_custom_set(self, list_index: list[str]):
-        """Creates custom set for model component. See
-        :meth:`zen_garden.model.registries.set_registry.SetRegistry.create_custom_set`.
-
-        :param list_index: list of names of indices
-        :return: list_index: list of names of indices
-        """
-        return self.optimization_model.create_custom_set(list_index)

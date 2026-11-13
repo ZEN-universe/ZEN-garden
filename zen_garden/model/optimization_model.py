@@ -48,13 +48,6 @@ class OptimizationModel:
         """Return the canonical configuration from the model schema."""
         return self.model_schema.config
 
-    def create_custom_set(self, *args, **kwargs):
-        """Create custom sets in the model.
-        See
-        :meth:`zen_garden.model.registries.set_registry.SetRegistry.create_custom_set`.
-        """
-        return self.sets.create_custom_set(*args, **kwargs)
-
     def add_variable(self, *args, **kwargs):
         """Add variables to the model.
         See :meth:`zen_garden.model.registries.variable.VariableRegistry.add_variable`.

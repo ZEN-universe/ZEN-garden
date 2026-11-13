@@ -1,11 +1,14 @@
 """Transport outflow by carrier and node."""
 
+import itertools
+
 import linopy as lp
 import numpy as np
 import xarray as xr
 
 from zen_garden.elements.carrier.parameters.demand import Demand
 from zen_garden.elements.carrier.variables.flow_import import FlowImport
+from zen_garden.elements.energy_system.sets.set_carriers import SetCarriers
 from zen_garden.elements.energy_system.sets.set_nodes import SetNodes
 from zen_garden.elements.technology.sets.set_transport_technologies import (
     SetTransportTechnologies,
@@ -14,7 +17,6 @@ from zen_garden.elements.transport_technology.variables.flow_transport import (
     FlowTransport,
 )
 from zen_garden.model.component_types.expression import GenericExpression
-from zen_garden.model.registries.multi_index_helper import MultiIndexHelper
 
 
 class NodalTransportOutflow(GenericExpression):
@@ -57,15 +59,13 @@ class NodalTransportOutflow(GenericExpression):
         if optimization_model.variables[FlowTransport].size == 0:
             return optimization_model.variables[FlowImport].where(False).to_linexpr()
 
-        index_values, index_names = optimization_model.create_custom_set(
-            ["set_carriers", "set_nodes", "set_years", "set_representative_hours"]
-        )
-        index = MultiIndexHelper(index_values, index_names)
+        carriers = optimization_model.sets[SetCarriers]
+        nodes = optimization_model.sets[SetNodes]
         connected_edges = {
             node: model_constructor.network_topology.calculate_connected_edges(
                 node, "out"
             )
-            for node in optimization_model.sets[SetNodes]
+            for node in nodes
         }
         max_edges = max(len(edges) for edges in connected_edges.values())
         demand = optimization_model.parameters[Demand]
@@ -88,7 +88,7 @@ class NodalTransportOutflow(GenericExpression):
         carrier_positions = {value: pos for pos, value in enumerate(coords[0].values)}
         node_positions = {value: pos for pos, value in enumerate(coords[1].values)}
 
-        for carrier, node in index.get_unique([0, 1]):
+        for carrier, node in itertools.product(carriers, nodes):
             technologies = [
                 technology
                 for technology in optimization_model.sets[SetTransportTechnologies]

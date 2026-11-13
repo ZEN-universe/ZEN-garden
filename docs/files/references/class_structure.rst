@@ -182,4 +182,3 @@ each subclass's ``build`` method populates the matching registry.
        class DatasetPathResolver
        class ModelConstructionService
        class ElementFactory
-       class MultiIndexHelper

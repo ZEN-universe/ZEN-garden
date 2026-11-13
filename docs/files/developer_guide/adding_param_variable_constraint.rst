@@ -272,8 +272,8 @@ The class is added to the element's variable list, e.g.
 in ``zen_garden/elements/carrier/variables/__init__.py``, which the ``Carrier``
 element class exposes through its ``variables`` attribute.
 
-The base class's ``build`` classmethod resolves ``indices`` into the model's
-index sets by calling ``model_constructor.create_custom_set(cls.indices)`` (for
+The base class's ``build`` classmethod resolves ``indices`` into canonical
+domain combinations and a structural mask through the model's set registry (for
 a single set, use a one-item tuple such as ``indices = ("set_years",)``), then
 registers the variable through
 ``model_constructor.optimization_model.add_variable()``.
