@@ -3,6 +3,7 @@
 import itertools
 import json
 import logging
+import re
 import warnings
 from pathlib import Path
 from typing import Any, Callable, TypeVar, cast
@@ -143,6 +144,24 @@ def _build_query(
     return {raw_dims[0]: expr} if expr is not None else {}
 
 
+_UUID_DIM_SUFFIX = re.compile(
+    r"_[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+)
+
+
+def _strip_dim_suffix(dim: str) -> str:
+    """Removes the ``_<uuid>`` suffix of a dimension name.
+
+    Empty index sets that clash with an existing model coordinate of a
+    different size (e.g. ``set_time_steps_operation`` of ``flow_transport``
+    in a dataset without transport technologies) are stored under
+    ``<set_name>_<uuid>``, because all components share one netCDF file.
+    Each component is read as its own DataArray, so the original set name
+    can be restored safely.
+    """
+    return _UUID_DIM_SUFFIX.sub("", dim)
+
+
 def _open_component_variable(file_path: Path, component_name: str) -> xr.DataArray:
     """Opens a single netCDF variable and its dimension coordinates.
 
@@ -172,7 +191,13 @@ def _open_component_variable(file_path: Path, component_name: str) -> xr.DataArr
                 )
 
         ds = xr.Dataset({component_name: var, **coord_vars})
-        return ds[component_name]
+        da = ds[component_name]
+        renamed = {
+            dim: _strip_dim_suffix(str(dim))
+            for dim in da.dims
+            if _strip_dim_suffix(str(dim)) != dim
+        }
+        return da.rename(renamed) if renamed else da
     finally:
         store.close()
 
@@ -773,7 +798,10 @@ class Scenario:
         file_path = self.component_path / component_type.get_file_name()
         store = NetCDF4DataStore.open(str(file_path), mode="r")
         try:
-            return [str(dim) for dim in store.ds.variables[component_name].dimensions]
+            return [
+                _strip_dim_suffix(str(dim))
+                for dim in store.ds.variables[component_name].dimensions
+            ]
         finally:
             store.close()
 
