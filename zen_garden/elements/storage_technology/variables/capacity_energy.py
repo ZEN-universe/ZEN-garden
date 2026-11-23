@@ -1,6 +1,5 @@
 import numpy as np
 
-from zen_garden.elements.energy_system.sets.set_technologies import SetTechnologies
 from zen_garden.elements.energy_system.sets.set_years import SetYears
 from zen_garden.elements.storage_technology.masks.energy_capacity_available_mask import (  # noqa: E501
     EnergyCapacityAvailableMask,
@@ -16,11 +15,14 @@ from zen_garden.elements.storage_technology.parameters.capacity_limit_energy imp
 )
 from zen_garden.elements.technology.parameters.lifetime import Lifetime
 from zen_garden.elements.technology.parameters.lifetime_existing import LifetimeExisting
+from zen_garden.elements.technology.sets.relation_technology_existing_capacity import (
+    RelationTechnologyExistingCapacity,
+)
+from zen_garden.elements.technology.sets.set_existing_capacity_ids import (
+    SetExistingCapacityIds,
+)
 from zen_garden.elements.technology.sets.set_storage_technologies import (
     SetStorageTechnologies,
-)
-from zen_garden.elements.technology.sets.set_technologies_existing import (
-    SetTechnologiesExisting,
 )
 from zen_garden.model.component_types.variable import GenericVariable
 
@@ -53,8 +55,10 @@ class CapacityEnergy(GenericVariable):
             model = model_constructor.optimization_model
             parameters = model.parameters.dict_parameters
             existing_capacity = 0
-            for existing_id in model.sets.get_related(
-                SetTechnologies, technology, SetTechnologiesExisting
+            for existing_id in model.sets.project_relation(
+                RelationTechnologyExistingCapacity,
+                SetExistingCapacityIds,
+                set_storage_technologies=technology,
             ):
                 existing_lifetime = parameters[LifetimeExisting][
                     technology, node, existing_id

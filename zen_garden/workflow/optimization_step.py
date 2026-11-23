@@ -482,8 +482,9 @@ class OptimizationStep:
         reindexing restores performance-masked entries without manufacturing
         structurally invalid rows.
         """
-        index_values, index_names = self.optimization_model.create_custom_set(indices)
-        expected_index = pd.MultiIndex.from_tuples(index_values, names=index_names)
+        expected_index = self.optimization_model.sets.resolve_indices(
+            indices
+        ).combinations
         solution = self.optimization_model.lp_model.solution[variable_name].to_series()
         return solution.reindex(expected_index).fillna(0.0)
 

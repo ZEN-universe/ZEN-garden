@@ -16,7 +16,11 @@ from typing import TYPE_CHECKING
 from zen_garden.model.component_types.constraint import GenericConstraint
 from zen_garden.model.component_types.expression import GenericExpression
 from zen_garden.model.component_types.parameter import GenericParameter
-from zen_garden.model.component_types.set import GenericSet
+from zen_garden.model.component_types.set import (
+    GenericDomainSet,
+    GenericRelationSet,
+    SetDeclaration,
+)
 from zen_garden.model.component_types.variable import GenericVariable
 from zen_garden.model.element import Element
 from zen_garden.service_container import ServiceContainer
@@ -49,7 +53,7 @@ class ModelConstructor:
     expressions: list[type[GenericExpression]] = []
     parameters: list[type[GenericParameter]] = []
     variables: list[type[GenericVariable]] = []
-    sets: list[type[GenericSet]] = []
+    sets: list[SetDeclaration] = []
     always_construct: bool = True
 
     def __init__(
@@ -108,10 +112,27 @@ class ModelConstructor:
         return bool(self.element_registry.all_names_of_elements(self.element_class))
 
     def construct_sets(self):
-        """Constructs the Sets of this class."""
+        """Construct this element type's domain sets followed by relations."""
         logger.info(f"Constructing sets for {self.element_class.__name__}")
-        for model_set in GenericSet.construction_order(self.sets, ignore_missing=True):
+        domains = [
+            declaration
+            for declaration in self.sets
+            if issubclass(declaration, GenericDomainSet)
+        ]
+        relations = [
+            declaration
+            for declaration in self.sets
+            if issubclass(declaration, GenericRelationSet)
+        ]
+        for model_set in GenericDomainSet.construction_order(
+            domains, ignore_missing=True
+        ):
             model_set.build(self)
+        self.optimization_model.sets.validate_subsets()
+        for relation in GenericRelationSet.construction_order(
+            relations, ignore_missing=True
+        ):
+            relation.build(self)
 
     def construct_params(self):
         logger.info(f"Constructing parameters for {self.element_class.name}")
@@ -149,12 +170,3 @@ class ModelConstructor:
             self.constraints, ignore_missing=True
         ):
             constraint.build(self)
-
-    def create_custom_set(self, list_index: list[str]):
-        """Creates custom set for model component. See
-        :meth:`zen_garden.model.registries.set_registry.SetRegistry.create_custom_set`.
-
-        :param list_index: list of names of indices
-        :return: list_index: list of names of indices
-        """
-        return self.optimization_model.create_custom_set(list_index)

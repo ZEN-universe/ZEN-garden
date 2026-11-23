@@ -20,7 +20,7 @@ class CarrierConversionConstraint(GenericConstraint):
     name = "constraint_carrier_conversion"
     indices = (
         "set_conversion_technologies",
-        "set_dependent_carriers",
+        "set_carriers",
         "set_nodes",
         "set_years",
         "set_representative_hours",

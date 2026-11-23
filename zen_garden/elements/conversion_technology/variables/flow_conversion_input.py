@@ -1,11 +1,21 @@
+from typing import ClassVar
+
 import numpy as np
 import xarray as xr
 
 from zen_garden.elements.conversion_technology.parameters.conversion_factor import (
     ConversionFactor,
 )
+from zen_garden.elements.conversion_technology.sets.relation_conversion_technology_input_carrier import (  # noqa: E501
+    RelationConversionTechnologyInputCarrier,
+)
+from zen_garden.elements.energy_system.sets.set_carriers import SetCarriers
 from zen_garden.elements.technology.masks import PowerOperationMask
+from zen_garden.elements.technology.sets.relation_technology_reference_carrier import (  # noqa: E501
+    RelationTechnologyReferenceCarrier,
+)
 from zen_garden.elements.technology.variables.capacity import Capacity
+from zen_garden.model.component_types.set import GenericRelationSet
 from zen_garden.model.component_types.variable import GenericVariable
 
 
@@ -16,7 +26,7 @@ class FlowConversionInput(GenericVariable):
     symbol = r"F^{\mathrm{conv,in}}_{h,c^{\mathrm{in}},n,t}"
     indices = [
         "set_conversion_technologies",
-        "set_input_carriers",
+        "set_carriers",
         "set_nodes",
         "set_years",
         "set_representative_hours",
@@ -25,6 +35,9 @@ class FlowConversionInput(GenericVariable):
     unit_category = {"energy_quantity": 1, "time": -1}
     masks = [PowerOperationMask]
     mask_default_value = 0.0
+    index_relations: ClassVar[tuple[type[GenericRelationSet], ...]] = (
+        RelationConversionTechnologyInputCarrier,
+    )
 
     @classmethod
     def get_bounds(cls, model_constructor, index_sets):
@@ -39,14 +52,16 @@ class FlowConversionInput(GenericVariable):
         lower = xr.DataArray(0.0, coords=coords, dims=index_names)
         upper = xr.DataArray(np.inf, coords=coords, dims=index_names)
         technology_set, _, node_set, year_set, _ = [sets[name] for name in index_names]
-        carrier_dimension = index_names[1]
-
         for tech in technology_set:
-            carriers = sets.get_related(
-                "set_conversion_technologies", tech, carrier_dimension
+            carriers = sets.project_relation(
+                cls.index_relations[0],
+                SetCarriers,
+                set_conversion_technologies=tech,
             )
-            reference_carrier = sets.get_related(
-                "set_technologies", tech, "set_reference_carriers"
+            reference_carrier = sets.project_relation(
+                RelationTechnologyReferenceCarrier,
+                SetCarriers,
+                set_conversion_technologies=tech,
             )[0]
             for carrier in carriers:
                 if carrier == reference_carrier:

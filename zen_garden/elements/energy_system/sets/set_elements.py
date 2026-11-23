@@ -1,7 +1,7 @@
-from zen_garden.model.component_types.set import GenericSet
+from zen_garden.model.component_types.set import GenericDomainSet
 
 
-class SetElements(GenericSet):
+class SetElements(GenericDomainSet):
     name = "set_elements"
     symbol = r"a \in \mathcal{A}"
     doc = "Set of elements."

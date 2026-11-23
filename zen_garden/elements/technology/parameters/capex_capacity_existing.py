@@ -9,7 +9,7 @@ class CapexCapacityExisting(GenericParameter):
     indices = (
         "set_technologies",
         "set_location",
-        "set_technologies_existing",
+        "set_existing_capacity_ids",
     )
     doc = (
         "Parameter which specifies the total capex of an existing technology "

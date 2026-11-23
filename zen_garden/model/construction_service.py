@@ -10,7 +10,11 @@ from zen_garden.model.component_types.component import GenericComponent
 from zen_garden.model.component_types.constraint import GenericConstraint
 from zen_garden.model.component_types.expression import GenericExpression
 from zen_garden.model.component_types.parameter import GenericParameter
-from zen_garden.model.component_types.set import GenericSet
+from zen_garden.model.component_types.set import (
+    GenericDomainSet,
+    GenericRelationSet,
+    SetDeclaration,
+)
 from zen_garden.model.component_types.variable import GenericVariable
 from zen_garden.model.constructor import ModelConstructor
 from zen_garden.service_container import ServiceContainer
@@ -92,9 +96,44 @@ class ModelConstructionService:
 
     @measure_run_time
     def _construct_sets(self):
-        for model_set, owner in self._ordered_components("sets", GenericSet):
-            model_set.build(owner)
-        self.optimization_model.sets.finalize_structural_sets()
+        declarations = self._set_declarations()
+        domains = [
+            declaration
+            for declaration in declarations
+            if issubclass(declaration, GenericDomainSet)
+        ]
+        relations = [
+            declaration
+            for declaration in declarations
+            if issubclass(declaration, GenericRelationSet)
+        ]
+        for domain in GenericDomainSet.construction_order(domains, ignore_missing=True):
+            domain.build(declarations[domain])
+        self.optimization_model.sets.validate_subsets()
+        for relation in GenericRelationSet.construction_order(
+            relations, ignore_missing=True
+        ):
+            relation.build(declarations[relation])
+
+    def _set_declarations(self) -> dict[SetDeclaration, ModelConstructor]:
+        """Collect mixed domain/relation declarations and their owners."""
+        declarations: dict[SetDeclaration, ModelConstructor] = {}
+        names: dict[str, SetDeclaration] = {}
+        for model_constructor in self._model_constructors:
+            for declaration in model_constructor.sets:
+                if not issubclass(declaration, (GenericDomainSet, GenericRelationSet)):
+                    raise TypeError(
+                        f"{declaration.__name__} in 'sets' is not a domain or "
+                        "relation declaration"
+                    )
+                existing = names.get(declaration.name)
+                if existing is not None and existing is not declaration:
+                    raise ValueError(
+                        "Multiple set specifications define " f"{declaration.name!r}"
+                    )
+                names[declaration.name] = declaration
+                declarations[declaration] = model_constructor
+        return declarations
 
     @measure_run_time
     def _construct_params(self):

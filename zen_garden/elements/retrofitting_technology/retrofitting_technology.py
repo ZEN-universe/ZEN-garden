@@ -22,7 +22,7 @@ from zen_garden.elements.retrofitting_technology.variables import (
 from zen_garden.model.component_types.constraint import GenericConstraint
 from zen_garden.model.component_types.expression import GenericExpression
 from zen_garden.model.component_types.parameter import GenericParameter
-from zen_garden.model.component_types.set import GenericSet
+from zen_garden.model.component_types.set import SetDeclaration
 from zen_garden.model.component_types.variable import GenericVariable
 
 logger = logging.getLogger(__name__)
@@ -41,7 +41,7 @@ class RetrofittingTechnology(ConversionTechnology):
         RETROFITTING_TECHNOLOGY_PARAMETERS
     )
     variables: ClassVar[list[type[GenericVariable]]] = RETROFITTING_TECHNOLOGY_VARIABLES
-    own_sets: ClassVar[list[type[GenericSet]]] = RETROFITTING_TECHNOLOGY_SETS
+    own_sets: ClassVar[list[SetDeclaration]] = RETROFITTING_TECHNOLOGY_SETS
     expressions: ClassVar[list[type[GenericExpression]]] = (
         RETROFITTING_TECHNOLOGY_EXPRESSIONS
     )

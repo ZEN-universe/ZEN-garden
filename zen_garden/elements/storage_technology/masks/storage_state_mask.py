@@ -38,17 +38,14 @@ class StorageStateMask(GenericMask):
         inflow = registry[StorageInflowMask]
         storage_technologies = list(model.sets[SetStorageTechnologies])
         nodes = list(model.sets[SetNodes])
-        index_values, index_names = model_constructor.create_custom_set(
+        valid_storage_hours = model.sets.resolve_indices(
             [
                 "set_storage_technologies",
                 "set_nodes",
                 "set_years",
                 "set_representative_hours_storage",
             ]
-        )
-        valid_storage_hours = model.sets.indices_to_mask(
-            index_values, index_names, (0, 0)
-        )[0].rename(
+        ).structural_mask.rename(
             {
                 "set_storage_technologies": "set_technologies",
                 "set_nodes": "set_location",

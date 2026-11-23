@@ -81,7 +81,6 @@ Optimization model
     zen_garden.model.registries.base
     zen_garden.model.registries.constraint
     zen_garden.model.registries.mask
-    zen_garden.model.registries.multi_index_helper
     zen_garden.model.registries.parameter
     zen_garden.model.registries.set
     zen_garden.model.registries.set_registry

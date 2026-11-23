@@ -1,7 +1,7 @@
 from .config import ConfigBase
 from .model.component_types.constraint import GenericConstraint
 from .model.component_types.parameter import GenericParameter
-from .model.component_types.set import GenericSet
+from .model.component_types.set import GenericDomainSet, GenericRelationSet
 from .model.component_types.variable import GenericVariable
 from .model.schema import ModelSchema
 from .plugin_system.events import Event, EventPublisher
@@ -26,7 +26,8 @@ __all__ = [
     "EventPublisher",
     "GenericConstraint",
     "GenericParameter",
-    "GenericSet",
+    "GenericDomainSet",
+    "GenericRelationSet",
     "GenericVariable",
     "ModelSchema",
 ]

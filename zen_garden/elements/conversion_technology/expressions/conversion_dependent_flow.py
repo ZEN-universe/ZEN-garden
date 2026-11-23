@@ -1,25 +1,16 @@
 """Dependent-carrier flow of conversion technologies."""
 
-import itertools
-
 import linopy as lp
-import pandas as pd
 from linopy.expressions import LinearExpression
 
-from zen_garden.elements.conversion_technology.sets.set_input_carriers import (
-    SetInputCarriers,
-)
-from zen_garden.elements.conversion_technology.sets.set_output_carriers import (
-    SetOutputCarriers,
+from zen_garden.elements.conversion_technology.sets.relation_conversion_technology_dependent_carrier import (  # noqa: E501
+    RelationConversionTechnologyDependentCarrier,
 )
 from zen_garden.elements.conversion_technology.variables.flow_conversion_input import (
     FlowConversionInput,
 )
 from zen_garden.elements.conversion_technology.variables.flow_conversion_output import (
     FlowConversionOutput,
-)
-from zen_garden.elements.technology.sets.set_conversion_technologies import (
-    SetConversionTechnologies,
 )
 from zen_garden.model.component_types.expression import GenericExpression
 from zen_garden.utils import align_like
@@ -31,31 +22,11 @@ class ConversionDependentFlow(GenericExpression):
     name = "conversion_dependent_flow"
     indices = (
         "set_conversion_technologies",
-        "set_dependent_carriers",
+        "set_carriers",
         "set_nodes",
         "set_years",
         "set_representative_hours",
     )
-
-    @staticmethod
-    def _dependent_carrier_mask(technologies, carriers, sets):
-        """Return configured dependent-carrier membership by technology."""
-        mask = pd.Series(
-            {
-                (technology, carrier): carrier
-                in sets.get_related(
-                    "set_conversion_technologies",
-                    technology,
-                    "set_dependent_carriers",
-                )
-                for technology, carrier in itertools.product(technologies, carriers)
-            }
-        )
-        mask.index.names = [
-            "set_conversion_technologies",
-            "set_dependent_carriers",
-        ]
-        return mask
 
     @classmethod
     def get_expression(cls, model_constructor):
@@ -85,29 +56,18 @@ class ConversionDependentFlow(GenericExpression):
             Expression over its declared model indices.
         """
         optimization_model = model_constructor.optimization_model
-        input_flow = optimization_model.variables[FlowConversionInput].rename(
-            {"set_input_carriers": "set_dependent_carriers"}
+        input_flow = optimization_model.variables[FlowConversionInput]
+        output_flow = optimization_model.variables[FlowConversionOutput]
+        dependent_mask = optimization_model.sets.relation_mask(
+            RelationConversionTechnologyDependentCarrier
         )
-        output_flow = optimization_model.variables[FlowConversionOutput].rename(
-            {"set_output_carriers": "set_dependent_carriers"}
-        )
-        technologies = optimization_model.sets[SetConversionTechnologies]
-
         input_mask = align_like(
-            cls._dependent_carrier_mask(
-                technologies,
-                optimization_model.sets[SetInputCarriers].coordinate_values,
-                optimization_model.sets,
-            ).to_xarray(),
+            dependent_mask,
             input_flow,
             astype=bool,
         )
         output_mask = align_like(
-            cls._dependent_carrier_mask(
-                technologies,
-                optimization_model.sets[SetOutputCarriers].coordinate_values,
-                optimization_model.sets,
-            ).to_xarray(),
+            dependent_mask,
             output_flow,
             astype=bool,
         )

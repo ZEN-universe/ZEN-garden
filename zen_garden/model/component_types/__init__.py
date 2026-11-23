@@ -5,7 +5,7 @@ from .constraint import GenericConstraint
 from .expression import GenericExpression
 from .mask import GenericMask
 from .parameter import GenericParameter, ParameterData, ParameterInputData
-from .set import GenericSet
+from .set import GenericDomainSet, GenericRelationSet, SetDeclaration
 from .variable import (
     BoundFunction,
     BoundValue,
@@ -21,12 +21,14 @@ __all__ = [
     "GenericExpression",
     "GenericMask",
     "GenericParameter",
-    "GenericSet",
+    "GenericDomainSet",
+    "GenericRelationSet",
     "GenericVariable",
     "BoundFunction",
     "BoundValue",
     "ParameterData",
     "ParameterInputData",
+    "SetDeclaration",
     "VariableBounds",
     "VariableIndexSet",
     "VariableType",

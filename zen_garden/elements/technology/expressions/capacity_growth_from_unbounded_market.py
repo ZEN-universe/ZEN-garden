@@ -3,7 +3,11 @@ import pandas as pd
 from zen_garden.elements.energy_system.parameters.market_share_unbounded import (
     MarketShareUnbounded,
 )
+from zen_garden.elements.energy_system.sets.set_carriers import SetCarriers
 from zen_garden.elements.energy_system.sets.set_technologies import SetTechnologies
+from zen_garden.elements.technology.sets.relation_technology_reference_carrier import (  # noqa: E501
+    RelationTechnologyReferenceCarrier,
+)
 from zen_garden.elements.technology.variables.capacity_previous import CapacityPrevious
 from zen_garden.model.component_types.expression import GenericExpression
 
@@ -51,16 +55,19 @@ class CapacityGrowthFromUnboundedMarket(GenericExpression):
         """
         model = model_constructor.optimization_model
         capacity_previous = model.variables[CapacityPrevious]
+        reference_carriers = {
+            technology: model.sets.project_relation(
+                RelationTechnologyReferenceCarrier,
+                SetCarriers,
+                set_technologies=technology,
+            )[0]
+            for technology in model.sets[SetTechnologies]
+        }
         shares = {
             (technology, other): (
                 model.parameters[MarketShareUnbounded]
                 if other != technology
-                and model.sets.get_related(
-                    "set_technologies", technology, "set_reference_carriers"
-                )[0]
-                == model.sets.get_related(
-                    "set_technologies", other, "set_reference_carriers"
-                )[0]
+                and reference_carriers[technology] == reference_carriers[other]
                 else 0
             )
             for technology in model.sets[SetTechnologies]

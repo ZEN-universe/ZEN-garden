@@ -13,12 +13,13 @@ from sphinx.util.typing import ExtensionMetadata
 from zen_garden.elements import ELEMENT_TYPE_CLASSES, EnergySystem
 from zen_garden.model.component_types.index import STRUCTURAL_INDICES, GenericIndex
 from zen_garden.model.component_types.parameter import GenericParameter
-from zen_garden.model.component_types.set import GenericSet
+from zen_garden.model.component_types.set import GenericDomainSet, GenericRelationSet
 from zen_garden.model.component_types.variable import GenericVariable
 
 ModelComponent = (
     type[GenericIndex]
-    | type[GenericSet]
+    | type[GenericDomainSet]
+    | type[GenericRelationSet]
     | type[GenericParameter]
     | type[GenericVariable]
 )
@@ -37,7 +38,10 @@ def _registered_components(attribute: str) -> list[ModelComponent]:
                     f"{existing.__name__} and {component.__name__}"
                 )
             components[component.name] = component
-    return sorted(components.values(), key=lambda item: (item.symbol, item.name))
+    return sorted(
+        components.values(),
+        key=lambda item: (getattr(item, "symbol", ""), item.name),
+    )
 
 
 def _unit_category(component: ModelComponent) -> str:
@@ -95,9 +99,9 @@ class ModelComponentTable(SphinxDirective):
                         f"set {registered[index.name].__name__}"
                     )
             components.extend(STRUCTURAL_INDICES)
-            components.sort(key=lambda item: (item.symbol, item.name))
+            components.sort(key=lambda item: (getattr(item, "symbol", ""), item.name))
         if kind == "sets":
-            headings = ("Name", "Symbol", "Indexed by", "Description")
+            headings = ("Name", "Symbol", "Parent or dimensions", "Description")
         else:
             headings = ("Name", "Symbol", "Indices", "Description", "Unit category")
 
@@ -119,16 +123,18 @@ class ModelComponentTable(SphinxDirective):
         for component in components:
             row = nodes.row()
             row += _entry([nodes.literal(text=component.name)])
-            row += _entry([nodes.math(text=component.symbol)])
+            symbol = getattr(component, "symbol", None)
+            row += _entry([nodes.math(text=symbol)] if symbol else ["—"])
             if kind == "sets":
-                index_set = getattr(component, "index_set", None)
-                index_set_name = (
-                    index_set
-                    if isinstance(index_set, str)
-                    else getattr(index_set, "name", None)
-                )
+                if issubclass(component, GenericRelationSet):
+                    related_names = ", ".join(
+                        dimension.name for dimension in component.dimensions
+                    )
+                else:
+                    parent = getattr(component, "subset_of", None)
+                    related_names = parent.name if parent is not None else ""
                 row += _entry(
-                    [nodes.literal(text=index_set_name)] if index_set_name else ["—"]
+                    [nodes.literal(text=related_names)] if related_names else ["—"]
                 )
             else:
                 indices = getattr(component, "indices", ())

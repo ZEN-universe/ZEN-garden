@@ -12,7 +12,7 @@ import pandas as pd
 import xarray as xr
 
 from zen_garden.model.component_types.index import GenericIndex
-from zen_garden.model.component_types.set import GenericSet
+from zen_garden.model.component_types.set import GenericDomainSet, GenericRelationSet
 from zen_garden.model.registries.base import Registry, component_name
 from zen_garden.model.registries.set import DomainSet, RelationSet, ResolvedIndex
 
@@ -24,14 +24,20 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-SetKey = str | type[GenericSet] | type[GenericIndex]
+SetKey = str | type[GenericDomainSet] | type[GenericIndex]
+RelationKey = str | type[GenericRelationSet]
 
 
 def set_name(key: SetKey) -> str:
     """Return the canonical name for a set or structural-index key."""
     if isinstance(key, type) and issubclass(key, GenericIndex):
         return key.name
-    return component_name(key, GenericSet)
+    return component_name(key, GenericDomainSet)
+
+
+def relation_name(key: RelationKey) -> str:
+    """Return the canonical name for a relation key."""
+    return component_name(key, GenericRelationSet)
 
 
 def _coordinate_array(values: Sequence[Any] | pd.Index) -> np.ndarray:
@@ -59,15 +65,21 @@ class SetRegistry(Registry):
         self.element_registry = element_registry
         self.sets: dict[str, DomainSet] = {}
         self.relations: dict[str, RelationSet] = {}
+        self.relation_docs: dict[str, str] = {}
+        self.subset_parents: dict[str, str] = {}
         self.coords_dataset = xr.Dataset()
-        self.legacy_indexed_set_relations: dict[str, str] = {}
 
     @property
     def config(self):
         """Return the canonical configuration from the model schema."""
         return self.model_schema.config
 
-    def add_domain(self, domain: DomainSet) -> None:
+    def add_domain(
+        self,
+        domain: DomainSet,
+        *,
+        subset_of: type[GenericDomainSet] | None = None,
+    ) -> None:
         """Validate and register one canonical model domain."""
         if domain.name in self.sets:
             raise ValueError(f"Domain {domain.name!r} already added")
@@ -80,6 +92,8 @@ class SetRegistry(Registry):
             name=domain.name,
             index_list=[],
         )
+        if subset_of is not None:
+            self.subset_parents[domain.name] = subset_of.name
 
     def add_relation(self, relation: RelationSet) -> None:
         """Validate and register one canonical sparse relation."""
@@ -101,138 +115,107 @@ class SetRegistry(Registry):
                     f"{dimension!r}: {invalid.tolist()!r}"
                 )
         self.relations[relation.name] = relation
+        self.relation_docs[relation.name] = relation.doc
 
-    def finalize_structural_sets(self) -> None:
-        """Register derived domains and relations after declared sets exist."""
-        if "set_location" not in self.sets:
-            locations = [*self.sets["set_nodes"], *self.sets["set_edges"]]
-            self.add_domain(DomainSet("set_location", locations, "Model locations"))
+    def validate_subsets(self) -> None:
+        """Validate declared domain-subset relationships after domain creation."""
+        missing = set(self.subset_parents.values()).difference(self.sets)
+        if missing:
+            raise KeyError(f"Unknown subset parent domains: {sorted(missing)!r}")
 
-        relation_name = "relation_technology_location"
-        if relation_name not in self.relations:
-            node_technologies: list[Any] = []
-            for subset in (
-                "set_conversion_technologies",
-                "set_storage_technologies",
-                "set_retrofitting_technologies",
-            ):
-                node_technologies.extend(self.sets[subset])
-            node_technologies = list(dict.fromkeys(node_technologies))
-            combinations = [
-                (technology, node)
-                for technology in node_technologies
-                for node in self.sets["set_nodes"]
-            ]
-            combinations.extend(
-                (technology, edge)
-                for technology in self.sets["set_transport_technologies"]
-                for edge in self.sets["set_edges"]
-            )
-            self.add_relation(
-                RelationSet(
-                    relation_name,
-                    ("set_technologies", "set_location"),
-                    combinations,
-                )
-            )
+        for child in self.subset_parents:
+            visited: set[str] = set()
+            current = child
+            while current in self.subset_parents:
+                if current in visited:
+                    cycle = " -> ".join([*visited, current])
+                    raise ValueError(f"Cyclic domain subset declarations: {cycle}")
+                visited.add(current)
+                current = self.subset_parents[current]
 
-        capacity_relation_name = "relation_technology_capacity_type"
-        if capacity_relation_name not in self.relations:
-            storage_technologies = set(self.sets["set_storage_technologies"])
-            combinations = [
-                (technology, capacity_type)
-                for technology in self.sets["set_technologies"]
-                for capacity_type in self.sets["set_capacity_types"]
-                if capacity_type != "energy" or technology in storage_technologies
-            ]
-            self.add_relation(
-                RelationSet(
-                    capacity_relation_name,
-                    ("set_technologies", "set_capacity_types"),
-                    combinations,
-                    "Meaningful capacity categories for each technology.",
-                )
-            )
-        self._register_technology_subtype_relations()
-
-    def _register_technology_subtype_relations(self) -> None:
-        """Register exact-name projections of general technology relations."""
-        technology_relations = [
-            relation
-            for relation in self.relations.values()
-            if "set_technologies" in relation.dimensions
-        ]
-        for relation in technology_relations:
-            technology_position = relation.dimensions.index("set_technologies")
-            for subtype in (
-                "set_conversion_technologies",
-                "set_storage_technologies",
-                "set_transport_technologies",
-                "set_retrofitting_technologies",
-            ):
-                dimensions = list(relation.dimensions)
-                dimensions[technology_position] = subtype
-                derived_dimensions = tuple(dimensions)
-                if any(
-                    existing.dimensions == derived_dimensions
-                    for existing in self.relations.values()
-                ):
-                    continue
-                combinations = [
-                    row
-                    for row in relation.combinations
-                    if row[technology_position] in self.sets[subtype]
-                ]
-                name = f"{relation.name}_{subtype.removeprefix('set_')}"
-                self.add_relation(
-                    RelationSet(
-                        name,
-                        derived_dimensions,
-                        combinations,
-                        relation.doc,
-                        relation.apply_by_default,
-                    )
+        for child, parent in self.subset_parents.items():
+            invalid = self.sets[child].members.difference(self.sets[parent].members)
+            if len(invalid):
+                raise ValueError(
+                    f"Domain {child!r} contains members outside parent "
+                    f"{parent!r}: {invalid.tolist()!r}"
                 )
 
-    def get_related(
+    def is_subset(self, child: SetKey, parent: SetKey) -> bool:
+        """Return whether ``child`` is ``parent`` or its declared descendant."""
+        child_name = set_name(child)
+        parent_name = set_name(parent)
+        current = child_name
+        visited: set[str] = set()
+        while current not in visited:
+            if current == parent_name:
+                return True
+            visited.add(current)
+            if current not in self.subset_parents:
+                return False
+            current = self.subset_parents[current]
+        raise ValueError(f"Cyclic domain subset declarations involving {child_name!r}")
+
+    def project_relation(
         self,
-        source_dimension: SetKey,
-        source_member: Any,
+        relation: RelationKey,
         target_dimension: SetKey,
+        **selectors: Any,
     ) -> pd.Index:
-        """Return a unique two-dimensional relation projection."""
-        source_name = set_name(source_dimension)
+        """Project a relation onto one exact or subset domain."""
+        name = relation_name(relation)
+        if name not in self.relations:
+            raise KeyError(f"Unknown relation {name!r}")
+        relation_set = self.relations[name]
         target_name = set_name(target_dimension)
-        matches = [
-            relation
-            for relation in self.relations.values()
-            if set(relation.dimensions) == {source_name, target_name}
-        ]
-        if len(matches) != 1:
-            raise ValueError(
-                "Expected exactly one relation between "
-                f"{source_dimension!r} and {target_dimension!r}, found "
-                f"{[relation.name for relation in matches]!r}"
+        canonical_target = self._canonical_relation_dimension(relation_set, target_name)
+        frame = relation_set.combinations.to_frame(index=False)
+        if target_name != canonical_target:
+            frame = frame.loc[
+                frame[canonical_target].isin(self.sets[target_name].members)
+            ]
+        for selector, value in selectors.items():
+            canonical_selector = self._canonical_relation_dimension(
+                relation_set, selector
             )
-        return matches[0].project(
-            target_name,
-            **{source_name: source_member},
+            if selector != canonical_selector:
+                if value not in self.sets[selector]:
+                    return pd.Index([], name=target_name)
+                frame = frame.loc[
+                    frame[canonical_selector].isin(self.sets[selector].members)
+                ]
+            frame = frame.loc[frame[canonical_selector] == value]
+        return pd.Index(
+            frame[canonical_target].drop_duplicates(),
+            tupleize_cols=False,
+            name=target_name,
         )
 
-    def create_custom_set(
+    def relation_mask(
         self,
-        list_index: Sequence[str],
-        index_relations: str | Sequence[str] = "auto",
-    ) -> tuple[list[Any], list[str]]:
-        """Resolve readable domains to the legacy registry boundary shape."""
-        resolved = self.resolve_indices(list_index, index_relations=index_relations)
-        return resolved.values, list(resolved.dimensions)
+        relation: RelationKey,
+        dimensions: Sequence[SetKey] | None = None,
+    ) -> xr.DataArray:
+        """Return a relation mask over canonical or requested subset domains."""
+        name = relation_name(relation)
+        if name not in self.relations:
+            raise KeyError(f"Unknown relation {name!r}")
+        relation_set = self.relations[name]
+        requested = (
+            relation_set.dimensions
+            if dimensions is None
+            else tuple(set_name(dimension) for dimension in dimensions)
+        )
+        return self.resolve_indices(
+            requested,
+            index_relations=(relation,),
+        ).structural_mask
 
     def resolve_indices(
         self,
         dimensions: Sequence[str],
         *,
-        index_relations: str | Sequence[str] = "auto",
+        index_relations: str | Sequence[RelationKey] = "auto",
     ) -> ResolvedIndex:
         """Resolve domains and selected relations with deterministic joins."""
         dimensions_tuple = tuple(dimensions)
@@ -242,7 +225,8 @@ class SetRegistry(Registry):
         if len(set(dimensions_tuple)) != len(dimensions_tuple):
             raise ValueError(f"Index domains must be unique: {dimensions_tuple!r}")
 
-        relation_names = self._select_relations(dimensions_tuple, index_relations)
+        selected_relations = self._select_relations(dimensions_tuple, index_relations)
+        relation_names = tuple(name for name, _ in selected_relations)
         if not dimensions_tuple:
             return ResolvedIndex(
                 dimensions=(),
@@ -253,9 +237,9 @@ class SetRegistry(Registry):
             )
 
         frame = pd.DataFrame(index=[0])
-        for relation_name in relation_names:
-            relation_frame = self.relations[relation_name].combinations.to_frame(
-                index=False
+        for name, dimension_mapping in selected_relations:
+            relation_frame = self._adapt_relation_frame(
+                self.relations[name], dimension_mapping
             )
             if len(frame.columns) == 0:
                 frame = relation_frame
@@ -315,20 +299,20 @@ class SetRegistry(Registry):
     def _select_relations(
         self,
         dimensions: tuple[str, ...],
-        index_relations: str | Sequence[str],
-    ) -> tuple[str, ...]:
-        """Validate and select automatic or explicit relation names."""
-        requested = set(dimensions)
+        index_relations: str | Sequence[RelationKey],
+    ) -> tuple[tuple[str, dict[str, str]], ...]:
+        """Select relations and map canonical dimensions to requested domains."""
         if index_relations == "auto":
-            selected = tuple(
-                name
-                for name, relation in self.relations.items()
-                if relation.apply_by_default
-                and set(relation.dimensions).issubset(requested)
-            )
+            selected: list[tuple[str, dict[str, str]]] = []
+            for name, relation in self.relations.items():
+                if not relation.apply_by_default:
+                    continue
+                mapping = self._relation_dimension_mapping(relation, dimensions)
+                if mapping is not None:
+                    selected.append((name, mapping))
             signatures: dict[tuple[str, ...], list[str]] = {}
-            for name in selected:
-                signature = tuple(sorted(self.relations[name].dimensions))
+            for name, mapping in selected:
+                signature = tuple(sorted(mapping.values()))
                 signatures.setdefault(signature, []).append(name)
             ambiguous = {
                 signature: names
@@ -337,23 +321,90 @@ class SetRegistry(Registry):
             }
             if ambiguous:
                 raise ValueError(f"Ambiguous default index relations: {ambiguous!r}")
-            return selected
+            return tuple(selected)
         if isinstance(index_relations, str):
-            raise ValueError("index_relations must be 'auto' or a sequence of names")
-        selected = tuple(index_relations)
-        missing = set(selected).difference(self.relations)
+            raise ValueError(
+                "index_relations must be 'auto' or a sequence of relation classes"
+            )
+        selected_names = tuple(relation_name(relation) for relation in index_relations)
+        missing = set(selected_names).difference(self.relations)
         if missing:
             raise KeyError(f"Unknown index relations {sorted(missing)!r}")
-        invalid = [
-            name
-            for name in selected
-            if not set(self.relations[name].dimensions).issubset(requested)
-        ]
-        if invalid:
+        selected = []
+        for name in selected_names:
+            mapping = self._relation_dimension_mapping(self.relations[name], dimensions)
+            if mapping is None:
+                raise ValueError(
+                    f"Relation {name!r} does not fit declared domains "
+                    f"{dimensions!r}"
+                )
+            selected.append((name, mapping))
+        return tuple(selected)
+
+    def _relation_dimension_mapping(
+        self,
+        relation: RelationSet,
+        requested_dimensions: tuple[str, ...],
+    ) -> dict[str, str] | None:
+        """Map each canonical relation dimension to one requested domain."""
+        mapping: dict[str, str] = {}
+        for canonical in relation.dimensions:
+            if canonical in requested_dimensions:
+                mapping[canonical] = canonical
+                continue
+            candidates = [
+                requested
+                for requested in requested_dimensions
+                if self.is_subset(requested, canonical)
+            ]
+            if not candidates:
+                return None
+            if len(candidates) > 1:
+                raise ValueError(
+                    f"Relation {relation.name!r} dimension {canonical!r} "
+                    f"ambiguously matches subsets {candidates!r}"
+                )
+            mapping[canonical] = candidates[0]
+        if len(set(mapping.values())) != len(mapping):
             raise ValueError(
-                f"Relations do not fit declared domains {dimensions!r}: {invalid!r}"
+                f"Relation {relation.name!r} maps multiple dimensions to the "
+                f"same requested domain: {mapping!r}"
             )
-        return selected
+        return mapping
+
+    def _adapt_relation_frame(
+        self,
+        relation: RelationSet,
+        dimension_mapping: dict[str, str],
+    ) -> pd.DataFrame:
+        """Filter and rename relation tuples for requested subset domains."""
+        frame = relation.combinations.to_frame(index=False)
+        for canonical, requested in dimension_mapping.items():
+            if canonical != requested:
+                frame = frame.loc[frame[canonical].isin(self.sets[requested].members)]
+        return frame.rename(columns=dimension_mapping)
+
+    def _canonical_relation_dimension(
+        self,
+        relation: RelationSet,
+        requested_dimension: str,
+    ) -> str:
+        """Resolve one exact or subset domain against a relation signature."""
+        if requested_dimension not in self.sets:
+            raise KeyError(f"Unknown domain {requested_dimension!r}")
+        if requested_dimension in relation.dimensions:
+            return requested_dimension
+        candidates = [
+            dimension
+            for dimension in relation.dimensions
+            if self.is_subset(requested_dimension, dimension)
+        ]
+        if len(candidates) != 1:
+            raise ValueError(
+                f"Domain {requested_dimension!r} does not match exactly one "
+                f"dimension of relation {relation.name!r}: {candidates!r}"
+            )
+        return candidates[0]
 
     @staticmethod
     def tuple_to_arr(
@@ -499,7 +550,9 @@ class SetRegistry(Registry):
         return self.sets[set_name(name)]
 
     def __contains__(self, item: object) -> bool:
-        if isinstance(item, type) and issubclass(item, (GenericSet, GenericIndex)):
+        if isinstance(item, type) and issubclass(
+            item, (GenericDomainSet, GenericIndex)
+        ):
             return item.name in self.sets
         return item in self.sets
 

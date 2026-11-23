@@ -65,7 +65,7 @@ def compute_existing_quantity(
     still_active = _still_active_vintages(
         model_constructor, parameters[LifetimeExisting], parameters[Lifetime]
     )
-    quantity = (source * still_active).sum("set_technologies_existing")
+    quantity = (source * still_active).sum("set_existing_capacity_ids")
     quantity = _restrict_to_technology_index(model_constructor, quantity)
     if not storage_energy:
         return quantity
@@ -115,14 +115,7 @@ def _restrict_to_technology_index(
     model_constructor: "ModelConstructor", quantity: xr.DataArray
 ) -> xr.DataArray:
     """Keep only valid technology, location, and year tuples."""
-    index_values, index_names = model_constructor.create_custom_set(_QUANTITY_INDEX)
-    index_arrays = model_constructor.optimization_model.sets.tuple_to_arr(
-        index_values, index_names
-    )
-    coords = [
-        model_constructor.optimization_model.sets.get_coord(values, name)
-        for values, name in zip(index_arrays, index_names, strict=False)
-    ]
-    in_index = xr.DataArray(False, coords=coords, dims=index_names)
-    in_index.loc[index_arrays] = True
-    return quantity.reindex_like(in_index).where(in_index)
+    structural_mask = model_constructor.optimization_model.sets.resolve_indices(
+        _QUANTITY_INDEX
+    ).structural_mask
+    return quantity.reindex_like(structural_mask).where(structural_mask)

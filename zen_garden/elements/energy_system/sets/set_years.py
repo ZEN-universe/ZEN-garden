@@ -1,7 +1,7 @@
-from zen_garden.model.component_types.set import GenericSet
+from zen_garden.model.component_types.set import GenericDomainSet
 
 
-class SetYears(GenericSet):
+class SetYears(GenericDomainSet):
     name = "set_years"
     symbol = r"y \in \mathcal{Y}"
     doc = (

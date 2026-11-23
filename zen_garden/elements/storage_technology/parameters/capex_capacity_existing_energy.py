@@ -9,7 +9,7 @@ class CapexCapacityExistingEnergy(GenericParameter):
     indices = (
         "set_storage_technologies",
         "set_nodes",
-        "set_technologies_existing",
+        "set_existing_capacity_ids",
     )
     doc = "Outstanding CAPEX of existing storage energy capacity."
     unit_category = {"money": 1}

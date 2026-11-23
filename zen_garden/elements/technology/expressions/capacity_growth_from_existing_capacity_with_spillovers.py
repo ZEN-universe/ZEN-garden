@@ -77,5 +77,5 @@ class CapacityGrowthFromExistingCapacityWithSpillovers(GenericExpression):
             capacity_existing.sum("set_location") - capacity_existing
         ).where(technology_type_mask(model_constructor), 0)
         return diffusion_rate(model_constructor) * (capacity_existing * factor).sum(
-            "set_technologies_existing"
+            "set_existing_capacity_ids"
         )

@@ -1,5 +1,8 @@
 import pandas as pd
 
+from zen_garden.elements.conversion_technology.sets.relation_conversion_technology_dependent_carrier import (  # noqa: E501
+    RelationConversionTechnologyDependentCarrier,
+)
 from zen_garden.model.component_types.parameter import (
     GenericParameter,
     ParameterInputData,
@@ -13,7 +16,7 @@ class ConversionFactor(GenericParameter):
     symbol = r"\eta^{\mathrm{conv}}_{h,c,t}"
     indices = (
         "set_conversion_technologies",
-        "set_dependent_carriers",
+        "set_carriers",
         "set_nodes",
         "set_years",
         "set_representative_hours",
@@ -25,6 +28,7 @@ class ConversionFactor(GenericParameter):
     unit_category = {}
     time_series = True
     input_indices = ("set_nodes", "set_hours")
+    index_relations = (RelationConversionTechnologyDependentCarrier,)
 
     @classmethod
     def get_input_data(cls, element):

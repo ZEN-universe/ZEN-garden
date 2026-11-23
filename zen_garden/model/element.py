@@ -16,7 +16,7 @@ if TYPE_CHECKING:
     from zen_garden.input.network_topology import NetworkTopology
     from zen_garden.input.scenario_dict import ScenarioDict
     from zen_garden.input.unit_converter import UnitConverter
-    from zen_garden.model.component_types.set import GenericSet
+    from zen_garden.model.component_types.set import SetDeclaration
     from zen_garden.model.element_registry import ElementRegistry
     from zen_garden.model.schema import ModelSchema
     from zen_garden.types import YearSpecificTs
@@ -31,8 +31,8 @@ class Element:
     raw_time_series: dict[str, pd.Series | pd.DataFrame | None]
     own_parameters: ClassVar[list[type["GenericParameter"]]] = []
     parameters: ClassVar[list[type["GenericParameter"]]] = []
-    own_sets: ClassVar[list[type["GenericSet"]]] = []
-    sets: ClassVar[list[type["GenericSet"]]] = []
+    own_sets: ClassVar[list["SetDeclaration"]] = []
+    sets: ClassVar[list["SetDeclaration"]] = []
     # If False, this type's model components are only built when at least one
     # element of it is configured (see ModelConstructor.has_elements). Mandatory
     # types are referenced unconditionally by others (e.g. the carrier balance).
@@ -52,7 +52,7 @@ class Element:
         own = cls.__dict__.get("own_parameters", ())
         cls.parameters = list(dict.fromkeys([*inherited, *own]))
 
-        inherited_sets: list[type["GenericSet"]] = []
+        inherited_sets: list["SetDeclaration"] = []
         for base in cls.__bases__:
             inherited_sets.extend(getattr(base, "sets", ()))
         own_sets = cls.__dict__.get("own_sets", ())

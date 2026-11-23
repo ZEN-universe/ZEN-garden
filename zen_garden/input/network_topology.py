@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Literal, cast
+from typing import TYPE_CHECKING, cast
 
 import numpy as np
 import pandas as pd
@@ -148,19 +148,3 @@ class NetworkTopology:
             key: value * multiplier
             for key, value in set_haversine_distances_of_edges.items()
         }
-
-    def calculate_connected_edges(self, node: str, direction: Literal["in", "out"]):
-        """Calculates connected edges going in or going out.
-
-        :param node: current node, connected by edges
-        :param direction: direction of edges, either in or out.
-            In: node = end node,
-            out: node = start node
-        :return: _set_connected_edges: list of connected edges
-        """
-        assert direction in ["in", "out"], "direction must be either 'in' or 'out'"
-        return [
-            edge
-            for edge, nodes in self.set_nodes_on_edges.items()
-            if nodes[0 if direction == "out" else 1] == node
-        ]
