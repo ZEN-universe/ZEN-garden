@@ -332,10 +332,10 @@ class CostEmissionCalculation:
             [("emissions", "global")], names=["carrier", "node"]
         )
         emissions_pos = emissions_tech_pos.add(emissions_carrier_pos, fill_value=0)
-        X_use.loc[("emissions", "global")] = emissions_pos.loc[("emissions", "global")]
-        X_supply.loc[("emissions", "global")] = emissions_pos.loc[
-            ("emissions", "global")
-        ]
+        emissions_indexer = (("emissions", "global"), slice(None))
+        emissions_row = emissions_pos.loc[emissions_indexer]
+        X_use.loc[emissions_indexer] = emissions_row
+        X_supply.loc[emissions_indexer] = emissions_row
 
         abs_diff = (X_use - X_supply).abs()
         tolerance = atol + rtol * X_use.abs()
