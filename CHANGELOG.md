@@ -3,6 +3,14 @@
 This file gets automatically updated in ZEN-garden's continuous integration 
 procedures. Do not edit the file manually.
 
+## [v3.4.2] - 2026-11-23 
+
+### Bug Fixes 🐛
+- Restore the original set names of UUID-suffixed dimensions when reading results. Empty transport sets in datasets without transport technologies were saved as `<set_name>_<uuid>`, so filtering by friendly index names such as `technology` failed and broke the visualization platform for these datasets. [[🔀 PR #1367](https://github.com/ZEN-universe/ZEN-garden/pull/1367) @jacob-mannhardt]
+
+### Maintenance Tasks 🧹
+- Add unit tests for reading components with UUID-suffixed empty dimensions. [[🔀 PR #1367](https://github.com/ZEN-universe/ZEN-garden/pull/1367) @jacob-mannhardt]
+
 ## [v3.4.1] - 2026-11-05 
 
 ### Bug Fixes 🐛
