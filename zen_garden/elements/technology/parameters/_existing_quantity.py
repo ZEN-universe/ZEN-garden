@@ -65,7 +65,7 @@ def compute_existing_quantity(
     still_active = _still_active_vintages(
         model_constructor, parameters[LifetimeExisting], parameters[Lifetime]
     )
-    quantity = (source * still_active).sum("set_technologies_existing")
+    quantity = (source * still_active).sum("set_existing_capacity_ids")
     quantity = _restrict_to_technology_index(model_constructor, quantity)
     if not storage_energy:
         return quantity

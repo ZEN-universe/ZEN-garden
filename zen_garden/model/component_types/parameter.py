@@ -9,6 +9,7 @@ import pandas as pd
 import xarray as xr
 
 from zen_garden.model.component_types.component import GenericComponent
+from zen_garden.model.component_types.set import GenericRelationSet
 from zen_garden.model.linear_expression import validate_component_indices
 
 if TYPE_CHECKING:
@@ -59,7 +60,7 @@ class GenericParameter(GenericComponent, ABC):
     default_value: ClassVar[int | float | str | None] = None
     default_unit: ClassVar[str | None] = None
     dependencies: ClassVar[tuple[type["GenericParameter"], ...]] = ()
-    index_relations: ClassVar[str | tuple[str, ...]] = "auto"
+    index_relations: ClassVar[str | tuple[type[GenericRelationSet], ...]] = "auto"
     squeeze_singleton: ClassVar[bool] = True
     _abstract_component = True
 
@@ -98,9 +99,15 @@ class GenericParameter(GenericComponent, ABC):
             )
         if cls.index_relations != "auto" and not (
             isinstance(cls.index_relations, tuple)
-            and all(isinstance(name, str) for name in cls.index_relations)
+            and all(
+                isinstance(relation, type) and issubclass(relation, GenericRelationSet)
+                for relation in cls.index_relations
+            )
         ):
-            raise TypeError(f"{cls.__name__}.index_relations must be 'auto' or a tuple")
+            raise TypeError(
+                f"{cls.__name__}.index_relations must be 'auto' or a tuple "
+                "of GenericRelationSet classes"
+            )
         if cls.default_value is not None and cls.default_value not in (0, 1, "inf"):
             raise TypeError(
                 f"{cls.__name__}.default_value must be 0, 1, 'inf', or None"
@@ -285,4 +292,12 @@ class GenericParameter(GenericComponent, ABC):
             indices.remove("set_representative_hours")
             indices.remove("set_years")
             indices.append("set_hours")
+        indices = [
+            (
+                "set_technologies_existing"
+                if index == "set_existing_capacity_ids"
+                else index
+            )
+            for index in indices
+        ]
         return indices

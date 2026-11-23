@@ -9,7 +9,7 @@ class CapacityExisting(GenericParameter):
     indices = (
         "set_technologies",
         "set_location",
-        "set_technologies_existing",
+        "set_existing_capacity_ids",
     )
     doc = "Parameter which specifies the existing technology size."
     unit_category = {"energy_quantity": 1, "time": -1}

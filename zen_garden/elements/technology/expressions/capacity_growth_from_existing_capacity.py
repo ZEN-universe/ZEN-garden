@@ -60,5 +60,5 @@ class CapacityGrowthFromExistingCapacity(GenericExpression):
         )
         factor = factor.where(lifetime >= lifetime_existing - years_from_start, 0)
         return diffusion_rate(model_constructor) * (capacity_existing * factor).sum(
-            "set_technologies_existing"
+            "set_existing_capacity_ids"
         )

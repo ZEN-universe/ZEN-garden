@@ -18,6 +18,35 @@ import yaml
 from filelock import FileLock
 from tables import NaturalNameWarning
 
+from zen_garden.elements.conversion_technology.sets.relation_conversion_technology_dependent_carrier import (  # noqa: E501
+    RelationConversionTechnologyDependentCarrier,
+)
+from zen_garden.elements.conversion_technology.sets.relation_conversion_technology_input_carrier import (  # noqa: E501
+    RelationConversionTechnologyInputCarrier,
+)
+from zen_garden.elements.conversion_technology.sets.relation_conversion_technology_output_carrier import (  # noqa: E501
+    RelationConversionTechnologyOutputCarrier,
+)
+from zen_garden.elements.energy_system.sets.relation_edge_node import (
+    RelationEdgeEndNode,
+    RelationEdgeStartNode,
+)
+from zen_garden.elements.energy_system.sets.relation_year_representative_hour_storage import (  # noqa: E501
+    RelationYearRepresentativeHourStorage,
+)
+from zen_garden.elements.energy_system.sets.set_representative_hours import (
+    SetRepresentativeHours,
+)
+from zen_garden.elements.retrofitting_technology.sets.relation_retrofitting_technology_base_technology import (  # noqa: E501
+    RelationRetrofittingTechnologyBaseTechnology,
+)
+from zen_garden.elements.technology.sets.relation_technology_existing_capacity import (
+    RelationTechnologyExistingCapacity,
+)
+from zen_garden.elements.technology.sets.relation_technology_reference_carrier import (  # noqa: E501
+    RelationTechnologyReferenceCarrier,
+)
+from zen_garden.model.registries.set import RelationSet
 from zen_garden.model.registries.variable import align_mask
 
 if TYPE_CHECKING:
@@ -94,6 +123,25 @@ ENERGY_DUAL_COMPONENTS = {
     ),
     "constraint_cost_capex_yearly_energy": "constraint_cost_capex_yearly",
     "constraint_storage_technology_capex_energy": "constraint_storage_technology_capex",
+}
+
+LEGACY_INDEXED_SET_RELATIONS = {
+    "set_input_carriers": RelationConversionTechnologyInputCarrier,
+    "set_output_carriers": RelationConversionTechnologyOutputCarrier,
+    "set_dependent_carriers": RelationConversionTechnologyDependentCarrier,
+    "set_reference_carriers": RelationTechnologyReferenceCarrier,
+    "set_retrofitting_base_technologies": (
+        RelationRetrofittingTechnologyBaseTechnology
+    ),
+    "set_technologies_existing": RelationTechnologyExistingCapacity,
+    "set_representative_hours_storage": RelationYearRepresentativeHourStorage,
+}
+
+LEGACY_COMPONENT_DIMENSIONS = {
+    "flow_conversion_input": {"set_carriers": "set_input_carriers"},
+    "flow_conversion_output": {"set_carriers": "set_output_carriers"},
+    "conversion_factor": {"set_carriers": "set_dependent_carriers"},
+    "constraint_carrier_conversion": {"set_carriers": "set_dependent_carriers"},
 }
 
 UNRELATED_INDEXES_FOR_UNITS = set(
@@ -297,43 +345,82 @@ class Postprocess:
         self._write_json_file(fname, benchmarking_data)
 
     def save_sets(self) -> list[Hashable]:
-        """Saves the Set values to a json file which can then be
-        post-processed immediately or loaded and postprocessed at some
-        other time.
-        """
+        """Persist the stable version-4 set view reconstructed from relations."""
 
         series: dict[str, pd.Series] = {}
         set_registry = self.optimization_model.sets
-        for (
-            set_name,
-            relation_name,
-        ) in set_registry.legacy_indexed_set_relations.items():
-            if set_name == "set_representative_hours_storage":
+        start_nodes = set_registry.relations[
+            RelationEdgeStartNode.name
+        ].combinations.to_frame(index=False)
+        end_nodes = set_registry.relations[
+            RelationEdgeEndNode.name
+        ].combinations.to_frame(index=False)
+        edge_nodes = start_nodes.merge(
+            end_nodes,
+            on="set_edges",
+            suffixes=("_start", "_end"),
+            validate="one_to_one",
+        ).set_index("set_edges")
+        edge_nodes = edge_nodes.reindex(set_registry.sets["set_edges"].members)
+        serialized_edge_nodes = edge_nodes.apply(
+            lambda row: f"{row['set_nodes_start']},{row['set_nodes_end']}",
+            axis=1,
+        )
+        serialized_edge_nodes.name = "set_nodes_on_edges"
+        serialized_edge_nodes.index.name = "set_nodes_on_edges"
+        series["set_nodes_on_edges"] = serialized_edge_nodes
+
+        for set_name, relation_class in LEGACY_INDEXED_SET_RELATIONS.items():
+            if relation_class.name not in set_registry.relations:
                 continue
-            relation = set_registry.relations[relation_name]
-            grouped: dict[Hashable, list[object]] = {}
-            for row in relation.combinations:
-                grouped.setdefault(row[0], []).append(row[1])
-            data = [
-                ",".join(str(value) for value in values) for values in grouped.values()
-            ]
-            indices_list = list(grouped)
-            indices: pd.Index
-            if len(indices_list) >= 1 and isinstance(indices_list[0], tuple):
-                tuple_indices = [
-                    cast(tuple[Hashable, ...], value) for value in indices_list
-                ]
-                indices = pd.MultiIndex.from_tuples(tuple_indices, names=[set_name])
-            else:
-                indices = pd.Index(data=indices_list, name=set_name)
-            series[set_name] = pd.Series(data, name=set_name, index=indices)
+            series[set_name] = self._serialize_legacy_indexed_set(
+                set_name,
+                set_registry.relations[relation_class.name],
+            )
+
+        representative_hours = list(set_registry[SetRepresentativeHours])
+        series[SetRepresentativeHours.name] = pd.Series(
+            representative_hours,
+            name=SetRepresentativeHours.name,
+            index=pd.RangeIndex(
+                len(representative_hours),
+                name=SetRepresentativeHours.name,
+            ),
+        )
 
         self._write_h5_file(self.name_dir / "sets.h5", series)
+        docs = dict(self.optimization_model.sets.docs)
+        docs["set_nodes_on_edges"] = "Start and end node of each directed edge."
+        for set_name, relation_class in LEGACY_INDEXED_SET_RELATIONS.items():
+            if relation_class.name in set_registry.relations:
+                docs[set_name] = set_registry.relations[relation_class.name].doc
         self._write_json_file(
-            self.name_dir / "sets_docs", self.optimization_model.sets.docs
+            self.name_dir / "sets_docs",
+            docs,
         )
 
         return list(series.keys())
+
+    @staticmethod
+    def _serialize_legacy_indexed_set(
+        set_name: str,
+        relation: RelationSet,
+    ) -> pd.Series:
+        """Serialize a two-dimensional relation using the version-4 set shape."""
+        grouped: dict[Hashable, list[object]] = {}
+        for parent, child in relation.combinations:
+            grouped.setdefault(parent, []).append(child)
+        data = [",".join(str(value) for value in values) for values in grouped.values()]
+        indices_list = list(grouped)
+        indices: pd.Index
+        if indices_list and isinstance(indices_list[0], tuple):
+            tuple_indices = [
+                cast(tuple[Hashable, ...], value) for value in indices_list
+            ]
+            indices = pd.MultiIndex.from_tuples(tuple_indices, names=[set_name])
+        else:
+            indices = pd.Index(indices_list, name=set_name)
+        return pd.Series(data, name=set_name, index=indices)
 
     def save_param(self) -> list[Hashable]:
         """Saves the Param values to a json file which can then be
@@ -371,6 +458,7 @@ class Postprocess:
         parameters = self._merge_capacity_type_components(
             parameters, ENERGY_PARAMETER_COMPONENTS
         )
+        parameters = self._to_legacy_set_dimensions(parameters)
         parameters = self._to_legacy_time_dimensions(parameters)
         self._write_netcdf_file(self.name_dir / "parameters.nc", parameters)
         units: dict[str, pd.Series | None] = {
@@ -381,6 +469,7 @@ class Postprocess:
         merged_units = self._merge_capacity_type_units(
             units, ENERGY_PARAMETER_COMPONENTS
         )
+        merged_units = self._to_legacy_unit_dimensions(merged_units)
         self._write_units_to_file(self.name_dir / "parameters_units.h5", merged_units)
         self._write_json_file(
             self.name_dir / "parameters_docs.json",
@@ -388,7 +477,13 @@ class Postprocess:
                 legacy_names.get(
                     ENERGY_PARAMETER_COMPONENTS.get(name, name),
                     ENERGY_PARAMETER_COMPONENTS.get(name, name),
-                ): self._legacy_time_doc(doc)
+                ): self._legacy_component_doc(
+                    legacy_names.get(
+                        ENERGY_PARAMETER_COMPONENTS.get(name, name),
+                        ENERGY_PARAMETER_COMPONENTS.get(name, name),
+                    ),
+                    doc,
+                )
                 for name, doc in self.optimization_model.parameters.docs.items()
                 if name not in ENERGY_PARAMETER_COMPONENTS
             },
@@ -417,6 +512,7 @@ class Postprocess:
         solution = self._merge_capacity_type_components(
             raw_solution, ENERGY_VARIABLE_COMPONENTS
         )
+        solution = self._to_legacy_set_dimensions(solution)
         solution = self._to_legacy_time_dimensions(solution)
         self._write_netcdf_file(self.name_dir / "variables.nc", solution)
 
@@ -427,6 +523,7 @@ class Postprocess:
         merged_units = self._merge_capacity_type_units(
             units, ENERGY_VARIABLE_COMPONENTS
         )
+        merged_units = self._to_legacy_unit_dimensions(merged_units)
         units_filtered = {
             name: series
             for name, series in merged_units.items()
@@ -436,7 +533,9 @@ class Postprocess:
         self._write_json_file(
             self.name_dir / "variables_docs.json",
             {
-                ENERGY_VARIABLE_COMPONENTS.get(name, name): self._legacy_time_doc(doc)
+                ENERGY_VARIABLE_COMPONENTS.get(name, name): self._legacy_component_doc(
+                    ENERGY_VARIABLE_COMPONENTS.get(name, name), doc
+                )
                 for name, doc in self.optimization_model.variables.docs.items()
                 if name not in ENERGY_VARIABLE_COMPONENTS
             },
@@ -452,12 +551,15 @@ class Postprocess:
         dual = self._merge_capacity_type_components(
             self.lp_model.dual, ENERGY_DUAL_COMPONENTS
         )
+        dual = self._to_legacy_set_dimensions(dual)
         dual = self._to_legacy_time_dimensions(dual)
         self._write_netcdf_file(self.name_dir / "duals.nc", dual)
         self._write_json_file(
             self.name_dir / "duals_docs",
             {
-                ENERGY_DUAL_COMPONENTS.get(name, name): self._legacy_time_doc(doc)
+                ENERGY_DUAL_COMPONENTS.get(name, name): self._legacy_component_doc(
+                    ENERGY_DUAL_COMPONENTS.get(name, name), doc
+                )
                 for name, doc in self.optimization_model.constraints.docs.items()
                 if name not in ENERGY_DUAL_COMPONENTS
             },
@@ -561,6 +663,31 @@ class Postprocess:
             del converted[energy_name]
         return {name: unit for name, unit in converted.items() if unit is not None}
 
+    @staticmethod
+    def _to_legacy_set_dimensions(dataset: xr.Dataset) -> xr.Dataset:
+        """Rename canonical internal domains on a persistence-only copy."""
+        converted = xr.Dataset()
+        for name, array in dataset.data_vars.items():
+            component_name = cast(str, name)
+            rename = dict(LEGACY_COMPONENT_DIMENSIONS.get(component_name, {}))
+            if "set_existing_capacity_ids" in array.dims:
+                rename["set_existing_capacity_ids"] = "set_technologies_existing"
+            converted[component_name] = array.rename(rename)
+        return converted
+
+    @staticmethod
+    def _to_legacy_unit_dimensions(
+        units: dict[str, pd.Series],
+    ) -> dict[str, pd.Series]:
+        """Apply persistence-only domain aliases to unit-series index names."""
+        converted = {}
+        for name, unit in units.items():
+            rename = dict(LEGACY_COMPONENT_DIMENSIONS.get(name, {}))
+            if "set_existing_capacity_ids" in unit.index.names:
+                rename["set_existing_capacity_ids"] = "set_technologies_existing"
+            converted[name] = unit.rename_axis(index=rename) if rename else unit
+        return converted
+
     def _to_legacy_time_dimensions(self, dataset: xr.Dataset) -> xr.Dataset:
         """Flatten internal year/hour dimensions to the stable result schema."""
         converted = xr.Dataset()
@@ -646,6 +773,19 @@ class Postprocess:
             )
         )
 
+    @classmethod
+    def _legacy_component_doc(cls, component_name: str, doc: str) -> str:
+        """Translate canonical domain names in persisted documentation."""
+        converted = doc.replace(
+            "set_existing_capacity_ids",
+            "set_technologies_existing",
+        )
+        for canonical, legacy in LEGACY_COMPONENT_DIMENSIONS.get(
+            component_name, {}
+        ).items():
+            converted = converted.replace(canonical, legacy)
+        return cls._legacy_time_doc(converted)
+
     def save_reduced_costs(self) -> list[Hashable]:
         """Saves the reduced cost values of variables to a h5 file."""
         if self.config.solver.name != "gurobi":
@@ -683,6 +823,7 @@ class Postprocess:
         reduced_costs = self._merge_capacity_type_components(
             reduced_costs, ENERGY_VARIABLE_COMPONENTS
         )
+        reduced_costs = self._to_legacy_set_dimensions(reduced_costs)
         reduced_costs = self._to_legacy_time_dimensions(reduced_costs)
         self._write_netcdf_file(self.name_dir / "reduced_costs.nc", reduced_costs)
         return list(reduced_costs.keys())

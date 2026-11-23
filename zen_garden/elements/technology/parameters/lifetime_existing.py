@@ -10,7 +10,7 @@ class LifetimeExisting(GenericParameter):
 
     name = "lifetime_existing"
     symbol = r"L^{\mathrm{ex}}_{h,v}"
-    indices = ("set_technologies", "set_location", "set_technologies_existing")
+    indices = ("set_technologies", "set_location", "set_existing_capacity_ids")
     doc = "Parameter which specifies the remaining lifetime of an existing technology."
     unit_category = {}
     dependencies = (Lifetime,)

@@ -1,28 +1,39 @@
 """Technology set specifications."""
 
-from zen_garden.model.component_types.set import GenericSet
+from zen_garden.model.component_types.set import SetDeclaration
 
+from .relation_technology_capacity_type import RelationTechnologyCapacityType
+from .relation_technology_existing_capacity import RelationTechnologyExistingCapacity
+from .relation_technology_location import RelationTechnologyLocation
+from .relation_technology_reference_carrier import (
+    RelationTechnologyReferenceCarrier,
+)
 from .set_conversion_technologies import SetConversionTechnologies
-from .set_reference_carriers import SetReferenceCarriers
+from .set_existing_capacity_ids import SetExistingCapacityIds
 from .set_retrofitting_technologies import SetRetrofittingTechnologies
 from .set_storage_technologies import SetStorageTechnologies
-from .set_technologies_existing import SetTechnologiesExisting
 from .set_transport_technologies import SetTransportTechnologies
 
-TECHNOLOGY_SETS: list[type[GenericSet]] = [
+TECHNOLOGY_SETS: list[SetDeclaration] = [
     SetConversionTechnologies,
     SetRetrofittingTechnologies,
     SetTransportTechnologies,
     SetStorageTechnologies,
-    SetTechnologiesExisting,
-    SetReferenceCarriers,
+    SetExistingCapacityIds,
+    RelationTechnologyExistingCapacity,
+    RelationTechnologyReferenceCarrier,
+    RelationTechnologyLocation,
+    RelationTechnologyCapacityType,
 ]
 __all__ = [
     "TECHNOLOGY_SETS",
+    "RelationTechnologyCapacityType",
+    "RelationTechnologyExistingCapacity",
+    "RelationTechnologyLocation",
+    "RelationTechnologyReferenceCarrier",
     "SetConversionTechnologies",
-    "SetReferenceCarriers",
+    "SetExistingCapacityIds",
     "SetRetrofittingTechnologies",
     "SetStorageTechnologies",
-    "SetTechnologiesExisting",
     "SetTransportTechnologies",
 ]

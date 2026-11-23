@@ -1,6 +1,5 @@
 import numpy as np
 
-from zen_garden.elements.energy_system.sets.set_technologies import SetTechnologies
 from zen_garden.elements.energy_system.sets.set_years import SetYears
 from zen_garden.elements.technology.masks import CapacityAvailableMask
 from zen_garden.elements.technology.parameters.capacity_addition_max import (
@@ -10,8 +9,11 @@ from zen_garden.elements.technology.parameters.capacity_existing import Capacity
 from zen_garden.elements.technology.parameters.capacity_limit import CapacityLimit
 from zen_garden.elements.technology.parameters.lifetime import Lifetime
 from zen_garden.elements.technology.parameters.lifetime_existing import LifetimeExisting
-from zen_garden.elements.technology.sets.set_technologies_existing import (
-    SetTechnologiesExisting,
+from zen_garden.elements.technology.sets.relation_technology_existing_capacity import (
+    RelationTechnologyExistingCapacity,
+)
+from zen_garden.elements.technology.sets.set_existing_capacity_ids import (
+    SetExistingCapacityIds,
 )
 from zen_garden.model.component_types.variable import GenericVariable
 
@@ -38,8 +40,10 @@ class Capacity(GenericVariable):
             sets = model_constructor.optimization_model.sets
             params = model_constructor.optimization_model.parameters.dict_parameters
             capacities_existing = 0
-            for existing_id in sets.get_related(
-                SetTechnologies, tech, SetTechnologiesExisting
+            for existing_id in sets.project_relation(
+                RelationTechnologyExistingCapacity,
+                SetExistingCapacityIds,
+                set_technologies=tech,
             ):
                 lifetime_existing = params[LifetimeExisting][tech, loc, existing_id]
                 if lifetime_existing > params[Lifetime][tech]:

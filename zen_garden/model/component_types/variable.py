@@ -7,6 +7,7 @@ import xarray as xr
 
 from zen_garden.model.component_types.component import GenericComponent
 from zen_garden.model.component_types.mask import GenericMask
+from zen_garden.model.component_types.set import GenericRelationSet
 
 if TYPE_CHECKING:
     from zen_garden.model.constructor import ModelConstructor
@@ -32,7 +33,7 @@ class GenericVariable(GenericComponent, ABC):
     variable_type: ClassVar[VariableType] = "continuous"
     bounds: ClassVar[VariableBounds] = None
     masks: ClassVar[Sequence[type["GenericMask"]]] = ()
-    index_relations: ClassVar[str | tuple[str, ...]] = "auto"
+    index_relations: ClassVar[str | tuple[type[GenericRelationSet], ...]] = "auto"
     mask_default_value: ClassVar[float | None] = None
     _abstract_component = True
 
@@ -68,9 +69,15 @@ class GenericVariable(GenericComponent, ABC):
             raise TypeError(f"{cls.__name__}.variable_type is invalid")
         if cls.index_relations != "auto" and not (
             isinstance(cls.index_relations, tuple)
-            and all(isinstance(name, str) for name in cls.index_relations)
+            and all(
+                isinstance(relation, type) and issubclass(relation, GenericRelationSet)
+                for relation in cls.index_relations
+            )
         ):
-            raise TypeError(f"{cls.__name__}.index_relations must be 'auto' or a tuple")
+            raise TypeError(
+                f"{cls.__name__}.index_relations must be 'auto' or a tuple "
+                "of GenericRelationSet classes"
+            )
         if cls.mask_default_value not in (None, 0.0):
             raise TypeError(
                 f"{cls.__name__}.mask_default_value currently supports only 0.0"

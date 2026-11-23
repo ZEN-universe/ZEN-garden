@@ -1,7 +1,7 @@
-from zen_garden.model.component_types.set import GenericSet
+from zen_garden.model.component_types.set import GenericDomainSet
 
 
-class SetCapacityTypes(GenericSet):
+class SetCapacityTypes(GenericDomainSet):
     """Available technology capacity categories."""
 
     name = "set_capacity_types"

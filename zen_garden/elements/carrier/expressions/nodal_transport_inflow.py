@@ -1,17 +1,12 @@
 """Net transport inflow by carrier and node."""
 
-import itertools
-
-import linopy as lp
-import numpy as np
-import xarray as xr
-
-from zen_garden.elements.carrier.parameters.demand import Demand
 from zen_garden.elements.carrier.variables.flow_import import FlowImport
+from zen_garden.elements.energy_system.sets.relation_edge_node import (
+    RelationEdgeEndNode,
+)
 from zen_garden.elements.energy_system.sets.set_carriers import SetCarriers
-from zen_garden.elements.energy_system.sets.set_nodes import SetNodes
-from zen_garden.elements.technology.sets.set_transport_technologies import (
-    SetTransportTechnologies,
+from zen_garden.elements.technology.sets.relation_technology_reference_carrier import (  # noqa: E501
+    RelationTechnologyReferenceCarrier,
 )
 from zen_garden.elements.transport_technology.variables.flow_transport import (
     FlowTransport,
@@ -62,78 +57,21 @@ class NodalTransportInflow(GenericExpression):
         if optimization_model.variables[FlowTransport].size == 0:
             return optimization_model.variables[FlowImport].where(False).to_linexpr()
 
-        carriers = optimization_model.sets[SetCarriers]
-        nodes = optimization_model.sets[SetNodes]
-        connected_edges = {
-            node: model_constructor.network_topology.calculate_connected_edges(
-                node, "in"
-            )
-            for node in nodes
-        }
-        max_edges = max(len(edges) for edges in connected_edges.values())
-        demand = optimization_model.parameters[Demand]
-        coords = [
-            demand.coords["set_carriers"],
-            demand.coords["set_nodes"],
-            demand.coords["set_years"],
-            demand.coords["set_representative_hours"],
-            xr.DataArray(
-                np.arange(
-                    len(optimization_model.sets[SetTransportTechnologies])
-                    * (2 * max_edges + 1)
-                ),
-                dims=["_term"],
-            ),
-        ]
-        shape = tuple(len(coord) for coord in coords)
-        variables = np.full(shape, -1, dtype=int)
-        coefficients = np.full(shape, np.nan, dtype=float)
-        carrier_positions = {value: pos for pos, value in enumerate(coords[0].values)}
-        node_positions = {value: pos for pos, value in enumerate(coords[1].values)}
-
-        for carrier, node in itertools.product(carriers, nodes):
-            technologies = [
-                technology
-                for technology in optimization_model.sets[SetTransportTechnologies]
-                if carrier
-                in optimization_model.sets.get_related(
-                    "set_technologies", technology, "set_reference_carriers"
-                )
-            ]
-            edges = connected_edges[node]
-            flow_labels = (
-                optimization_model.variables[FlowTransport]
-                .labels.loc[technologies, edges, ...]
-                .data
-            )
-            flow_labels = flow_labels.reshape((-1, *flow_labels.shape[-2:])).transpose(
-                1, 2, 0
-            )
-            carrier_pos = carrier_positions[carrier]
-            node_pos = node_positions[node]
-            count = flow_labels.shape[-1]
-            variables[carrier_pos, node_pos, ..., :count] = flow_labels
-            coefficients[carrier_pos, node_pos, ..., :count] = 1
-            loss_labels = (
-                optimization_model.variables[FlowTransportLoss]
-                .labels.loc[technologies, edges, ...]
-                .data
-            )
-            loss_labels = loss_labels.reshape((-1, *loss_labels.shape[-2:])).transpose(
-                1, 2, 0
-            )
-            loss_count = loss_labels.shape[-1]
-            variables[carrier_pos, node_pos, ..., count : count + loss_count] = (
-                loss_labels
-            )
-            coefficients[carrier_pos, node_pos, ..., count : count + loss_count] = -1
-
-        return lp.LinearExpression(
-            xr.Dataset(
-                {
-                    "coeffs": xr.DataArray(coefficients, coords=coords),
-                    "vars": xr.DataArray(variables, coords=coords),
-                }
-            ),
-            optimization_model.lp_model,
+        sets = optimization_model.sets
+        carrier_mask = sets.relation_mask(
+            RelationTechnologyReferenceCarrier,
+            dimensions=("set_transport_technologies", SetCarriers),
+        )
+        carrier_mask = carrier_mask.reindex(
+            {SetCarriers.name: sets[SetCarriers].coordinate_values},
+            fill_value=False,
+        )
+        end_node_mask = sets.relation_mask(RelationEdgeEndNode)
+        valid_flow = carrier_mask & end_node_mask
+        net_flow = (
+            optimization_model.variables[FlowTransport]
+            - optimization_model.variables[FlowTransportLoss]
+        )
+        return net_flow.where(valid_flow).sum(
+            ["set_transport_technologies", "set_edges"]
         )

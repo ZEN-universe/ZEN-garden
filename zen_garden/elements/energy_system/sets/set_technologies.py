@@ -1,7 +1,7 @@
-from zen_garden.model.component_types.set import GenericSet
+from zen_garden.model.component_types.set import GenericDomainSet
 
 
-class SetTechnologies(GenericSet):
+class SetTechnologies(GenericDomainSet):
     name = "set_technologies"
     symbol = r"h \in \mathcal{H}"
     doc = "Set of technologies."

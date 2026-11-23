@@ -45,16 +45,22 @@ you would add it to the ``Carrier`` class.
 Adding Sets
 -----------
 
-A set is a class that inherits from
-:py:class:`GenericSet <zen_garden.model.component_types.set.GenericSet>` and
-declares:
+A domain set is a class that inherits from
+:py:class:`GenericDomainSet <zen_garden.model.component_types.set.GenericDomainSet>`
+and declares:
 
 - ``name``: the name of the set, which should be unique.
 - ``symbol``: the raw LaTeX notation displayed in the generated notation table.
 - ``doc``: the documentation for the set, which should be a string describing the set.
-- ``index_set``: the set that is used as the index for the new set, if applicable.
+- ``subset_of``: an optional parent domain whose relations can be reused.
 - ``get_data(cls, model_constructor)``: a classmethod that returns the data for the set,
-  which can be a list or a dictionary.
+  as a one-dimensional iterable.
+
+A sparse relation is a class that inherits from
+:py:class:`GenericRelationSet <zen_garden.model.component_types.set.GenericRelationSet>`
+and declares ``name``, ``doc``, ``dimensions``, and ``get_combinations()``.
+The ``dimensions`` are domain-set classes. ``apply_by_default`` controls whether
+automatic index resolution uses the relation.
 
 The class is added to the element's set list, e.g.
 :py:data:`CONVERSION_TECHNOLOGY_SETS <zen_garden.elements.conversion_technology.sets.CONVERSION_TECHNOLOGY_SETS>`
@@ -62,12 +68,14 @@ in ``zen_garden/elements/conversion_technology/sets/__init__.py``, which the
 ``ConversionTechnology`` element class exposes through its ``own_sets``
 attribute.
 
-Two examples, one without and one with an ``index_set``:
+The same ``own_sets`` collection contains both declaration types. Construction
+partitions it into domains and relations, so declaration order does not control
+execution. For example:
 
 .. code-block:: python
 
     # zen_garden/elements/energy_system/sets/set_technologies.py
-    class SetTechnologies(GenericSet):
+    class SetTechnologies(GenericDomainSet):
         name = "set_technologies"
         symbol = r"h \in \mathcal{H}"
         doc = "Technologies available to the energy system."
@@ -78,23 +86,36 @@ Two examples, one without and one with an ``index_set``:
 
 .. code-block:: python
 
-    # zen_garden/elements/technology/sets/set_reference_carriers.py
-    class SetReferenceCarriers(GenericSet):
-        name = "set_reference_carriers"
-        symbol = r"c_h^{\mathrm{ref}} \in \mathcal{C}"
+    # zen_garden/elements/technology/sets/relation_technology_reference_carrier.py
+    class RelationTechnologyReferenceCarrier(GenericRelationSet):
+        name = "relation_technology_reference_carrier"
         doc = "Reference carrier used by each technology."
-        index_set = SetTechnologies
+        dimensions = (SetTechnologies, SetCarriers)
+        apply_by_default = False
 
         @classmethod
-        def get_data(cls, model_constructor):
-            return model_constructor.element_registry.get_attribute_of_all_elements(
-                model_constructor.element_class, "reference_carrier"
+        def get_combinations(cls, model_constructor):
+            references = (
+                model_constructor.element_registry.get_attribute_of_all_elements(
+                    model_constructor.element_class, "reference_carrier"
+                )
             )
+            return references.items()
 
-``SetTechnologies`` is not indexed by any set, while ``SetReferenceCarriers``
-is indexed by the ``set_technologies`` set. That means that each technology
-from the ``set_technologies`` set will have a corresponding entry in the
-``set_reference_carriers`` set.
+``SetTechnologies`` provides independent members. The relation stores valid
+technology/carrier tuples without creating a role-specific carrier domain.
+
+The registry stores independent labels as domains and cross-domain membership
+as named relations. Use ``project_relation`` for semantic selections and
+``relation_mask`` for aligned expression construction. For example, directed
+network topology uses separate ``relation_edge_start_node`` and
+``relation_edge_end_node`` relations rather than a dictionary-backed
+``set_nodes_on_edges`` model domain. Relations used only for lookup declare
+``apply_by_default=False`` so they do not restrict unrelated component indices.
+
+Numerical or horizon-dependent eligibility, such as active investment vintages,
+is not a structural relation. Represent it as a derived mapping or performance
+mask instead.
 
 .. _adding_elements.adding_parameters:
 

@@ -1,8 +1,15 @@
 """Retrofitting-technology set specifications."""
 
-from zen_garden.model.component_types.set import GenericSet
+from zen_garden.model.component_types.set import SetDeclaration
 
-from .set_retrofitting_base_technologies import SetRetrofittingBaseTechnologies
+from .relation_retrofitting_technology_base_technology import (
+    RelationRetrofittingTechnologyBaseTechnology,
+)
 
-RETROFITTING_TECHNOLOGY_SETS: list[type[GenericSet]] = [SetRetrofittingBaseTechnologies]
-__all__ = ["RETROFITTING_TECHNOLOGY_SETS", "SetRetrofittingBaseTechnologies"]
+RETROFITTING_TECHNOLOGY_SETS: list[SetDeclaration] = [
+    RelationRetrofittingTechnologyBaseTechnology
+]
+__all__ = [
+    "RETROFITTING_TECHNOLOGY_SETS",
+    "RelationRetrofittingTechnologyBaseTechnology",
+]

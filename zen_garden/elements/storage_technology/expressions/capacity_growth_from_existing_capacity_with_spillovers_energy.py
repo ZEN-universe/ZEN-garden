@@ -94,4 +94,4 @@ class CapacityGrowthFromExistingCapacityWithSpilloversEnergy(GenericExpression):
         )
         return storage_energy_diffusion_rate(model_constructor) * (
             existing * factor
-        ).sum("set_technologies_existing")
+        ).sum("set_existing_capacity_ids")

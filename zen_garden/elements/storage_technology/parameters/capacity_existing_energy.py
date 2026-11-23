@@ -9,7 +9,7 @@ class CapacityExistingEnergy(GenericParameter):
     indices = (
         "set_storage_technologies",
         "set_nodes",
-        "set_technologies_existing",
+        "set_existing_capacity_ids",
     )
     doc = "Existing storage energy capacity by node and vintage."
     unit_category = {"energy_quantity": 1}

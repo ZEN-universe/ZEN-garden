@@ -80,4 +80,4 @@ class CapacityGrowthFromExistingCapacityEnergy(GenericExpression):
         factor = factor.where(lifetime >= existing_lifetime - years_from_start, 0)
         return storage_energy_diffusion_rate(model_constructor) * (
             model.parameters[CapacityExistingEnergy] * factor
-        ).sum("set_technologies_existing")
+        ).sum("set_existing_capacity_ids")

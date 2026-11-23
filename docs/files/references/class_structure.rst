@@ -129,11 +129,11 @@ type.
        class ParameterRegistry
        class VariableRegistry
        class ConstraintRegistry
-       class BaseSet
-       class SimpleSet
-       class IndexedSet
+       class DomainSet
+       class RelationSet
        class DictParameter
-       class GenericSet
+       class GenericDomainSet
+       class GenericRelationSet
        class GenericParameter
        class GenericVariable
        class GenericConstraint
@@ -142,24 +142,26 @@ type.
        Registry <|-- ParameterRegistry
        Registry <|-- VariableRegistry
        Registry <|-- ConstraintRegistry
-       BaseSet <|-- SimpleSet
-       BaseSet <|-- IndexedSet
-       SetRegistry *-- BaseSet
+       SetRegistry *-- DomainSet
+       SetRegistry *-- RelationSet
        ParameterRegistry *-- DictParameter
        OptimizationModel *-- SetRegistry
        OptimizationModel *-- ParameterRegistry
        OptimizationModel *-- VariableRegistry
        OptimizationModel *-- ConstraintRegistry
-       GenericSet ..> SetRegistry : build()
+       GenericDomainSet ..> SetRegistry : build()
+       GenericRelationSet ..> SetRegistry : build()
        GenericParameter ..> ParameterRegistry : build()
        GenericVariable ..> VariableRegistry : build()
        GenericConstraint ..> ConstraintRegistry : build()
 
 ``OptimizationModel`` holds one registry per component kind, each built once
-for the whole model. ``GenericSet``, ``GenericParameter``, ``GenericVariable``,
-and ``GenericConstraint`` are the base classes a developer subclasses to add a
-new component (see :ref:`adding_elements.structure` and :ref:`linopy.linopy`);
-each subclass's ``build`` method populates the matching registry.
+for the whole model. ``GenericDomainSet`` and ``GenericRelationSet`` declare
+independent domains and sparse typed relations, respectively.
+``GenericParameter``, ``GenericVariable``, and ``GenericConstraint`` declare the
+other model components (see :ref:`adding_elements.structure` and
+:ref:`linopy.linopy`); each subclass's ``build`` method populates the matching
+registry.
 
 
 .. mermaid::

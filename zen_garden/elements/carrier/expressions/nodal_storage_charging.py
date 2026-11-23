@@ -8,6 +8,9 @@ from zen_garden.elements.energy_system.sets.set_carriers import SetCarriers
 from zen_garden.elements.storage_technology.variables.flow_storage_charge import (
     FlowStorageCharge,
 )
+from zen_garden.elements.technology.sets.relation_technology_reference_carrier import (  # noqa: E501
+    RelationTechnologyReferenceCarrier,
+)
 from zen_garden.elements.technology.sets.set_storage_technologies import (
     SetStorageTechnologies,
 )
@@ -57,14 +60,11 @@ class NodalStorageCharging(GenericExpression):
         carriers = list(optimization_model.sets[SetCarriers])
         flows = []
         for carrier in carriers:
-            technologies = [
-                technology
-                for technology in optimization_model.sets[SetStorageTechnologies]
-                if carrier
-                in optimization_model.sets.get_related(
-                    "set_technologies", technology, "set_reference_carriers"
-                )
-            ]
+            technologies = optimization_model.sets.project_relation(
+                RelationTechnologyReferenceCarrier,
+                SetStorageTechnologies,
+                set_carriers=carrier,
+            )
             flows.append(variable.loc[technologies].sum("set_storage_technologies"))
         merged = lp.merge(flows, dim="group", join="outer", cls=LinearExpression)
         return optimization_model.constraints.reorder_group(

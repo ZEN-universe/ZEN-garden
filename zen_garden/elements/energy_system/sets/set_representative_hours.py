@@ -1,7 +1,7 @@
-from zen_garden.model.component_types.set import GenericSet
+from zen_garden.model.component_types.set import GenericDomainSet
 
 
-class SetRepresentativeHours(GenericSet):
+class SetRepresentativeHours(GenericDomainSet):
     """Operational representative hours shared by every modeled year."""
 
     name = "set_representative_hours"

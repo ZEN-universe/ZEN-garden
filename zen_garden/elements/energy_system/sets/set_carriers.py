@@ -1,7 +1,7 @@
-from zen_garden.model.component_types.set import GenericSet
+from zen_garden.model.component_types.set import GenericDomainSet
 
 
-class SetCarriers(GenericSet):
+class SetCarriers(GenericDomainSet):
     name = "set_carriers"
     symbol = r"c \in \mathcal{C}"
     doc = "Set of carriers."

@@ -3,6 +3,9 @@
 import linopy as lp
 from linopy.expressions import LinearExpression
 
+from zen_garden.elements.conversion_technology.sets.relation_conversion_technology_input_carrier import (  # noqa: E501
+    RelationConversionTechnologyInputCarrier,
+)
 from zen_garden.elements.conversion_technology.variables.flow_conversion_input import (
     FlowConversionInput,
 )
@@ -55,15 +58,12 @@ class NodalConversionConsumption(GenericExpression):
         flows = []
         nodes = list(optimization_model.sets[SetNodes])
         for carrier in carriers:
-            technologies = [
-                technology
-                for technology in optimization_model.sets[SetConversionTechnologies]
-                if carrier
-                in optimization_model.sets.get_related(
-                    "set_conversion_technologies", technology, "set_input_carriers"
-                )
-            ]
-            selected_carrier = [carrier] if technologies else []
+            technologies = optimization_model.sets.project_relation(
+                RelationConversionTechnologyInputCarrier,
+                SetConversionTechnologies,
+                set_carriers=carrier,
+            )
+            selected_carrier = [carrier] if len(technologies) else []
             variable = optimization_model.variables[FlowConversionInput]
             flows.append(
                 variable.loc[technologies, selected_carrier, nodes].sum(

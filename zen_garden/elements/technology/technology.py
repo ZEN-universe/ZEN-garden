@@ -14,7 +14,7 @@ from zen_garden.elements.technology.variables import TECHNOLOGY_VARIABLES
 from zen_garden.model.component_types.constraint import GenericConstraint
 from zen_garden.model.component_types.expression import GenericExpression
 from zen_garden.model.component_types.parameter import GenericParameter
-from zen_garden.model.component_types.set import GenericSet
+from zen_garden.model.component_types.set import SetDeclaration
 from zen_garden.model.component_types.variable import GenericVariable
 from zen_garden.model.element import Element
 
@@ -32,7 +32,7 @@ class Technology(Element):
     lifetime_existing: pd.Series
     own_parameters: ClassVar[list[type[GenericParameter]]] = TECHNOLOGY_PARAMETERS
     variables: ClassVar[list[type[GenericVariable]]] = TECHNOLOGY_VARIABLES
-    own_sets: ClassVar[list[type[GenericSet]]] = TECHNOLOGY_SETS
+    own_sets: ClassVar[list[SetDeclaration]] = TECHNOLOGY_SETS
     expressions: ClassVar[list[type[GenericExpression]]] = TECHNOLOGY_EXPRESSIONS
     constraints: ClassVar[list[type[GenericConstraint]]] = TECHNOLOGY_CONSTRAINTS
 

@@ -1,7 +1,7 @@
-from zen_garden.model.component_types.set import GenericSet
+from zen_garden.model.component_types.set import GenericDomainSet
 
 
-class SetHours(GenericSet):
+class SetHours(GenericDomainSet):
     """Unaggregated within-year input hours."""
 
     name = "set_hours"
