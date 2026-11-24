@@ -17,6 +17,7 @@ class ConversionOvernightCapex(GenericExpression):
     """Multiply conversion power additions by their specific CAPEX."""
 
     name = "conversion_overnight_capex"
+    unit_category = {"money": 1}
     indices = ("set_technologies", "set_location", "set_years")
 
     @classmethod

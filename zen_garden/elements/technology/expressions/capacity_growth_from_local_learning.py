@@ -19,6 +19,7 @@ class CapacityGrowthFromLocalLearning(GenericExpression):
     """Capacity growth supported by depreciated additions at the same location."""
 
     name = "capacity_growth_from_local_learning"
+    unit_category = {"energy_quantity": 1, "time": -1}
     indices = ("set_technologies", "set_location", "set_years")
 
     @classmethod

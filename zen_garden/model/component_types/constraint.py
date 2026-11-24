@@ -1,6 +1,7 @@
 """Generic constraint class for OptimizationModel."""
 
 from abc import ABC, abstractmethod
+from inspect import cleandoc
 from typing import TYPE_CHECKING, ClassVar, final
 
 from linopy.constraints import Constraint
@@ -33,6 +34,8 @@ class GenericConstraint(GenericComponent, ABC):
         super().__init_subclass__(**kwargs)
         if cls.__dict__.get("_abstract_component", False):
             return
+        if "doc" not in cls.__dict__ and cls.get_constraint.__doc__:
+            cls.doc = cleandoc(cls.get_constraint.__doc__)
         if "build" in cls.__dict__:
             raise TypeError(
                 f"{cls.__name__} must not override GenericConstraint.build()"

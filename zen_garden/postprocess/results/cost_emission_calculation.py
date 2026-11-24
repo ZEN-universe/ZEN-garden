@@ -15,22 +15,22 @@ import pandas as pd
 from scipy.sparse import coo_matrix, identity
 from scipy.sparse.linalg import splu
 
-REQUIRED_COMPONENTS: dict[Literal["parameter", "variable"], list[str]] = {
+REQUIRED_COMPONENTS: dict[Literal["parameter"], list[str]] = {
     "parameter": ["demand", "carbon_intensity_technology"],
-    "variable": [
-        "cost_capex_yearly",
-        "cost_opex_yearly",
-        "flow_conversion_input",
-        "flow_conversion_output",
-        "shed_demand",
-        "flow_import",
-        "flow_export",
-        "cost_carrier",
-        "cost_shed_demand",
-        "carbon_emissions_technology",
-        "carbon_emissions_carrier",
-    ],
 }
+REQUIRED_RESULT_COMPONENTS = [
+    "cost_capex_yearly",
+    "cost_opex_yearly",
+    "flow_conversion_input",
+    "flow_conversion_output",
+    "shed_demand",
+    "flow_import",
+    "flow_export",
+    "cost_carrier",
+    "cost_shed_demand",
+    "carbon_emissions_technology",
+    "carbon_emissions_carrier",
+]
 REQUIRED_TRANSPORT_COMPONENTS = ["flow_transport", "flow_transport_loss"]
 REQUIRED_STORAGE_COMPONENTS = ["flow_storage_charge", "flow_storage_discharge"]
 
@@ -67,6 +67,14 @@ class CostEmissionCalculation:
                         f"not found in scenario '{scenario_name}'."
                         " This component is required for cost/emission calculations."
                     )
+        all_results = self.r.get_component_names(component_type=None)
+        for required_component in REQUIRED_RESULT_COMPONENTS:
+            if required_component not in all_results:
+                raise ValueError(
+                    f"Required component '{required_component}' "
+                    f"not found in scenario '{scenario_name}'."
+                    " This component is required for cost/emission calculations."
+                )
 
         capex = (
             self.r.get_total("cost_capex_yearly", scenario_name=scenario_name)
@@ -135,11 +143,9 @@ class CostEmissionCalculation:
         )
         if self.transport_technologies:
             for component in REQUIRED_TRANSPORT_COMPONENTS:
-                if component not in self.r.get_component_names(
-                    component_type="variable"
-                ):
+                if component not in all_results:
                     raise ValueError(
-                        f"Required transport variable '{component}' "
+                        f"Required transport component '{component}' "
                         f"not found in scenario '{scenario_name}'."
                         " This component is required for cost/emission calculations."
                     )
@@ -165,11 +171,9 @@ class CostEmissionCalculation:
             )
         if self.storage_technologies:
             for component in REQUIRED_STORAGE_COMPONENTS:
-                if component not in self.r.get_component_names(
-                    component_type="variable"
-                ):
+                if component not in all_results:
                     raise ValueError(
-                        f"Required storage variable '{component}' "
+                        f"Required storage component '{component}' "
                         f"not found in scenario '{scenario_name}'."
                         " This component is required for cost/emission calculations."
                     )

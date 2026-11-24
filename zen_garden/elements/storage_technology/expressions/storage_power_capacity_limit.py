@@ -12,6 +12,7 @@ class StoragePowerCapacityLimit(GenericExpression):
     """Select and align storage power-capacity limits."""
 
     name = "storage_power_capacity_limit"
+    unit_category = {"energy_quantity": 1, "time": -1}
     indices = ("set_storage_technologies", "set_nodes", "set_years")
 
     @classmethod

@@ -2204,6 +2204,25 @@ test_5a:
       - DE
       - 0
       value: 261451.5841
+    capacity_previous:
+    - index:
+      - natural_gas_boiler
+      - power
+      - CH
+      - 0
+      value: 0.0
+    - index:
+      - natural_gas_boiler
+      - power
+      - DE
+      - 0
+      value: 131.8
+    - index:
+      - natural_gas_storage
+      - energy
+      - DE
+      - 0
+      value: 261451.5841
     capacity_addition:
     - index:
       - natural_gas_boiler

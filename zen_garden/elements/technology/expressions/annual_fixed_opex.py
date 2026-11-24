@@ -20,6 +20,7 @@ class AnnualFixedOpex(GenericExpression):
     """Calculate fixed OPEX from installed power and energy capacity."""
 
     name = "annual_fixed_opex"
+    unit_category = {"money": 1}
     indices = ("set_technologies", "set_location", "set_years")
 
     @classmethod

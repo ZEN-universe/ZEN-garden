@@ -21,6 +21,7 @@ class NodalStorageDischarging(GenericExpression):
     """Aggregate discharging flow by storage reference carrier and node."""
 
     name = "nodal_storage_discharging"
+    unit_category = {"energy_quantity": 1, "time": -1}
     indices = (
         "set_carriers",
         "set_nodes",

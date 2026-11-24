@@ -1,17 +1,24 @@
-from zen_garden.elements.energy_system.variables.net_present_cost import NetPresentCost
+from zen_garden.elements.energy_system.expressions.net_present_cost import (
+    NetPresentCost,
+)
 from zen_garden.model.component_types.expression import GenericExpression
 
 
 class TotalCost(GenericExpression):
-    """Total net present cost objective expression.
-
-    .. math::
-        J = \\sum_{y\\in\\mathcal{Y}} NPC_y
-    """
+    """Net present cost summed explicitly over all modeled years."""
 
     name = "total_cost"
+    unit_category = {"money": 1}
     indices = ()
-    doc = "Total net present cost, summed over all modeled years"
+    doc = r"""Total net present cost: sum the complete expanded annual term below
+        over every modeled year. No implicit reduction is applied.
+
+        .. math::
+
+            \sum_{y\in\mathcal Y}\left[\text{expanded per-year term below}\right]
+
+        """ + NetPresentCost.doc
+    dependencies = (NetPresentCost,)
 
     @classmethod
     def get_expression(cls, model_constructor):
@@ -20,11 +27,7 @@ class TotalCost(GenericExpression):
         Summary:
             Total net present cost objective expression.
 
-        Formulation:
-
-        .. math::
-
-            \\sum_yC^{NPC}_y
+        The complete mathematical term is expanded in :attr:`doc`.
 
         The formulation applies over valid combinations of the declared indices.
         Empty or masked combinations are not constructed.
@@ -38,6 +41,6 @@ class TotalCost(GenericExpression):
         Returns:
             Expression over its declared model indices.
         """
-        return model_constructor.optimization_model.variables[NetPresentCost].sum(
+        return model_constructor.optimization_model.expressions[NetPresentCost].sum(
             "set_years"
         )

@@ -21,6 +21,7 @@ class CapacityGrowthFromLocalLearningEnergy(GenericExpression):
     """Storage energy growth supported by earlier local additions."""
 
     name = "capacity_growth_from_local_learning_energy"
+    unit_category = {"energy_quantity": 1}
     indices = ("set_storage_technologies", "set_nodes", "set_years")
 
     @classmethod

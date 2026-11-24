@@ -24,6 +24,7 @@ class TransportOvernightCapex(GenericExpression):
     """Combine fixed and distance-dependent transport investment costs."""
 
     name = "transport_overnight_capex"
+    unit_category = {"money": 1}
     indices = ("set_technologies", "set_location", "set_years")
 
     @classmethod

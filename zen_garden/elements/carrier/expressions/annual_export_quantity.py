@@ -11,6 +11,7 @@ class AnnualExportQuantity(GenericExpression):
     """Weight and sum exported flow over representative hours."""
 
     name = "annual_export_quantity"
+    unit_category = {"energy_quantity": 1}
     indices = ("set_carriers", "set_nodes", "set_years")
 
     @classmethod

@@ -18,6 +18,7 @@ class NodalTransportOutflow(GenericExpression):
     """Aggregate outgoing transport flow."""
 
     name = "nodal_transport_outflow"
+    unit_category = {"energy_quantity": 1, "time": -1}
     indices = (
         "set_carriers",
         "set_nodes",

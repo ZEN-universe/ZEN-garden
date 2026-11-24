@@ -11,6 +11,33 @@ class CarbonEmissionsBudgetConstraint(GenericConstraint):
     """Carbon Emissions Budget."""
 
     name = "constraint_carbon_emissions_budget"
+    doc = r"""Limit emissions counted through the end of the modeled horizon.
+
+    .. math::
+
+        \begin{aligned}
+        m^{cum}_0
+        +{}&[1+\mathbb 1_{y\ne y_H}(\Delta y-1)]\Bigg\{
+        \sum_{h\in\mathcal H^{conv},n,r}w_r\varepsilon^{op}_h
+        F^{out}_{h,c_h^{ref},n,y,r}\\
+        &+\sum_{h\in\mathcal H^{stor},n,r}w_r\varepsilon^{op}_h
+        (F^{charge}_{h,n,y,r}+F^{discharge}_{h,n,y,r})
+        +\sum_{h\in\mathcal H^{trans},e,r}w_r\varepsilon^{op}_h
+        F^{trans}_{h,e,y,r}\\
+        &+\sum_{c,n,r}w_r(\varepsilon^{imp}_{c,y}F^{imp}_{c,n,y,r}
+        -\varepsilon^{exp}_{c,y}F^{exp}_{c,n,y,r})\Bigg\}\\
+        +{}&\Delta y\sum_{v<y}\Bigg\{
+        \sum_{h\in\mathcal H^{conv},n,r}w_r\varepsilon^{op}_h
+        F^{out}_{h,c_h^{ref},n,v,r}
+        +\sum_{h\in\mathcal H^{stor},n,r}w_r\varepsilon^{op}_h
+        (F^{charge}_{h,n,v,r}+F^{discharge}_{h,n,v,r})\\
+        &+\sum_{h\in\mathcal H^{trans},e,r}w_r\varepsilon^{op}_h
+        F^{trans}_{h,e,v,r}
+        +\sum_{c,n,r}w_r(\varepsilon^{imp}_{c,v}F^{imp}_{c,n,v,r}
+        -\varepsilon^{exp}_{c,v}F^{exp}_{c,n,v,r})\Bigg\}
+        -M^{bud,over}_y\leq\overline m^{budget}.
+        \end{aligned}
+    """
     indices = ("set_years",)
 
     @classmethod

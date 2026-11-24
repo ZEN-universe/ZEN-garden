@@ -10,6 +10,7 @@ class AnnualizedCapexFromExistingCapacity(GenericExpression):
     """Annualize remaining overnight CAPEX of existing capacity."""
 
     name = "annualized_capex_from_existing_capacity"
+    unit_category = {"money": 1}
     indices = ("set_technologies", "set_location", "set_years")
 
     @classmethod

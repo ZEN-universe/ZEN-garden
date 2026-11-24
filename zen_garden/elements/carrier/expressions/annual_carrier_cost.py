@@ -1,7 +1,7 @@
 """Annual cost of carrier trading and demand shedding."""
 
-from zen_garden.elements.carrier.variables.cost_carrier import CostCarrier
-from zen_garden.elements.carrier.variables.cost_shed_demand import CostShedDemand
+from zen_garden.elements.carrier.expressions.cost_carrier import CostCarrier
+from zen_garden.elements.carrier.expressions.cost_shed_demand import CostShedDemand
 from zen_garden.elements.energy_system.parameters.weight_representative_hours import (
     WeightRepresentativeHours,
 )
@@ -12,7 +12,9 @@ class AnnualCarrierCost(GenericExpression):
     """Aggregate carrier and shedding costs over carriers, nodes, and hours."""
 
     name = "annual_carrier_cost"
+    unit_category = {"money": 1}
     indices = ("set_years",)
+    dependencies = (CostCarrier, CostShedDemand)
 
     @classmethod
     def get_expression(cls, model_constructor):
@@ -42,8 +44,8 @@ class AnnualCarrierCost(GenericExpression):
         optimization_model = model_constructor.optimization_model
         return (
             (
-                optimization_model.variables[CostCarrier]
-                + optimization_model.variables[CostShedDemand]
+                optimization_model.expressions[CostCarrier]
+                + optimization_model.expressions[CostShedDemand]
             )
             * optimization_model.parameters[WeightRepresentativeHours]
         ).sum(["set_carriers", "set_nodes", "set_representative_hours"])

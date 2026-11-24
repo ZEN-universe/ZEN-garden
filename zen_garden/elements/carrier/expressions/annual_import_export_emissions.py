@@ -1,6 +1,6 @@
 """Annual emissions associated with carrier imports and exports."""
 
-from zen_garden.elements.carrier.variables.carbon_emissions_carrier import (
+from zen_garden.elements.carrier.expressions.carbon_emissions_carrier import (
     CarbonEmissionsCarrier,
 )
 from zen_garden.elements.energy_system.parameters.weight_representative_hours import (
@@ -13,7 +13,9 @@ class AnnualImportExportEmissions(GenericExpression):
     """Aggregate carrier-trading emissions over carriers, nodes, and hours."""
 
     name = "annual_import_export_emissions"
+    unit_category = {"emissions": 1}
     indices = ("set_years",)
+    dependencies = (CarbonEmissionsCarrier,)
 
     @classmethod
     def get_expression(cls, model_constructor):
@@ -42,6 +44,6 @@ class AnnualImportExportEmissions(GenericExpression):
         """
         optimization_model = model_constructor.optimization_model
         return (
-            optimization_model.variables[CarbonEmissionsCarrier]
+            optimization_model.expressions[CarbonEmissionsCarrier]
             * optimization_model.parameters[WeightRepresentativeHours]
         ).sum(["set_carriers", "set_nodes", "set_representative_hours"])

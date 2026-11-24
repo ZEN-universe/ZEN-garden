@@ -13,6 +13,7 @@ class StorageEnergyCapacityAddition(GenericExpression):
     """Select storage energy-capacity additions."""
 
     name = "storage_energy_capacity_addition"
+    unit_category = {"energy_quantity": 1}
     indices = ("set_storage_technologies", "set_nodes", "set_years")
 
     @classmethod

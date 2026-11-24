@@ -23,6 +23,7 @@ class CapacityAdditionsFromPreHorizonInvestmentsEnergy(GenericExpression):
     """Map committed storage energy investments to completion years."""
 
     name = "capacity_additions_from_pre_horizon_investments_energy"
+    unit_category = {"energy_quantity": 1}
     indices = ("set_storage_technologies", "set_nodes", "set_years")
 
     @classmethod

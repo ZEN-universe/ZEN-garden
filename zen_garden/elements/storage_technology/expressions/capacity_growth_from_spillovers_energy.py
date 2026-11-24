@@ -25,6 +25,7 @@ class CapacityGrowthFromSpilloversEnergy(GenericExpression):
     """Storage energy growth supported by additions at all nodes."""
 
     name = "capacity_growth_from_spillovers_energy"
+    unit_category = {"energy_quantity": 1}
     indices = ("set_storage_technologies", "set_nodes", "set_years")
 
     @classmethod

@@ -144,11 +144,14 @@ class ModelConstructionService:
 
     @measure_run_time
     def _construct_masks(self):
-        """Construct all masks referenced by variables and constraints."""
+        """Construct all masks referenced by variables, expressions, and constraints."""
         mask_owners = {}
         for model_constructor in self._model_constructors:
             for variable in model_constructor.variables:
                 for mask in variable.masks:
+                    mask_owners.setdefault(mask, model_constructor)
+            for expression in model_constructor.expressions:
+                for mask in expression.masks:
                     mask_owners.setdefault(mask, model_constructor)
             for constraint in model_constructor.constraints:
                 for mask in constraint.masks:
@@ -211,11 +214,40 @@ class ModelConstructionService:
 
         objective_name = self.config.analysis.objective
         if objective_name not in self.optimization_model.expressions:
-            raise KeyError(f"Objective type {objective_name} not known")
+            available = sorted(self.optimization_model.expressions)
+            raise KeyError(
+                f"Objective expression {objective_name!r} is not registered. "
+                f"Available expressions: {available}"
+            )
+
+        specification = self.optimization_model.expressions.specifications[
+            objective_name
+        ]
+        if specification.indices:
+            raise ValueError(
+                f"Objective expression {objective_name!r} declares dimensions "
+                f"{specification.indices}. Define a scalar expression with an "
+                "explicit sum or selection and use that expression as the objective."
+            )
+        objective = self.optimization_model.expressions[objective_name]
+        public_dimensions = tuple(
+            dimension for dimension in objective.dims if dimension != "_term"
+        )
+        if public_dimensions:
+            raise ValueError(
+                f"Objective expression {objective_name!r} has dimensions "
+                f"{public_dimensions} despite declaring indices=(). Define a scalar "
+                "expression with an explicit sum or selection."
+            )
 
         sense = self.config.analysis.sense
-        assert sense in ("min", "max"), f"Objective sense {sense} not known"
+        if sense not in ("min", "max"):
+            raise ValueError(
+                f"Objective sense {sense!r} is invalid; expected 'min' or 'max'."
+            )
 
+        objective_constant = float(objective.const.item())
+        self.optimization_model.objective_constant = objective_constant
         self.optimization_model.lp_model.add_objective(
-            self.optimization_model.expressions[objective_name], sense=sense
+            objective - objective_constant, sense=sense
         )

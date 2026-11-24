@@ -17,6 +17,7 @@ class SurvivingCapacityAdditions(GenericExpression):
     """Sum modeled capacity vintages that have not retired."""
 
     name = "surviving_capacity_additions"
+    unit_category = {"energy_quantity": 1, "time": -1}
     indices = ("set_technologies", "set_location", "set_years")
 
     @classmethod

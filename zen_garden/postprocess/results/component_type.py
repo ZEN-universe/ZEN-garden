@@ -4,6 +4,7 @@ from enum import Enum
 class ComponentType(Enum):
     parameter = "parameter"
     variable = "variable"
+    expression = "expression"
     dual = "dual"
     sets = "sets"
     reduced_costs = "reduced_costs"
@@ -32,6 +33,7 @@ class ComponentType(Enum):
         FILE_NAME_MAP = {
             ComponentType.dual: "duals.nc",
             ComponentType.variable: "variables.nc",
+            ComponentType.expression: "expressions.nc",
             ComponentType.parameter: "parameters.nc",
             ComponentType.sets: "sets.h5",
         }
@@ -48,6 +50,7 @@ class ComponentType(Enum):
         FILE_NAME_MAP = {
             ComponentType.dual: "duals_units.h5",
             ComponentType.variable: "variables_units.h5",
+            ComponentType.expression: "expressions_units.h5",
             ComponentType.parameter: "parameters_units.h5",
         }
         return FILE_NAME_MAP[self]

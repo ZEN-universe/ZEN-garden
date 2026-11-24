@@ -21,6 +21,7 @@ class NodalConversionConsumption(GenericExpression):
     """Aggregate conversion input flow by carrier and node."""
 
     name = "nodal_conversion_consumption"
+    unit_category = {"energy_quantity": 1, "time": -1}
     indices = (
         "set_carriers",
         "set_nodes",

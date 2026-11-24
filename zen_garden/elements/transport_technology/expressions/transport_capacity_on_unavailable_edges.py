@@ -15,6 +15,7 @@ class TransportCapacityOnUnavailableEdges(GenericExpression):
     """Select transport additions whose configured distance is infinite."""
 
     name = "transport_capacity_on_unavailable_edges"
+    unit_category = {"energy_quantity": 1, "time": -1}
     indices = ("set_technologies", "set_location", "set_years")
 
     @classmethod

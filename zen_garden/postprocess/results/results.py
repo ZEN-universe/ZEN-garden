@@ -527,16 +527,19 @@ class Results:
     def get_component_names(
         self,
         component_type: (
-            Literal["sets", "variable", "parameter", "dual", "reduced_cost"] | None
-        ),
+            Literal[
+                "sets", "variable", "expression", "parameter", "dual", "reduced_cost"
+            ]
+            | None
+        ) = None,
         scenario_name: str | None = None,
     ) -> list[str]:
         """Returns the names of all components of a given type.
 
         Args:
             component_type (str): Type of the component. Must be one of the
-                valid component types defined in ComponentType:
-                ["variable", "dual", "parameter", "set", "constraint"].
+            valid component types defined in ComponentType, including
+            ``"variable"``, ``"expression"``, ``"parameter"``, and ``"dual"``.
                 Duals are only available if the solver has been configured to save them.
 
         Returns:

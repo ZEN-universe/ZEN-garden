@@ -29,7 +29,7 @@ class NodalEnergyBalanceConstraint(GenericConstraint):
 
              \\sum_{h:c \\in \\mathcal C_h^{out}}F^{out}_{h,c,n,y,r}- \\sum_{h:c \\in
             \\mathcal C_h^{in}}F^{in}_{h,c,n,y,r} + \\sum_{h,e
-            \\in\\delta^-(n)}(F^{trans}_{h,e,y,r}-F^{loss}_{h,e,y,r})- \\sum_{h,e
+            \\in\\delta^-(n)}(1-\\lambda^{trans}_{h,e})F^{trans}_{h,e,y,r}- \\sum_{h,e
             \\in\\delta^ +(n)}F^{trans}_{h,e,y,r}- \\sum_{h:c_h^{ref}
             =c}F^{ch}_{h,n,y,r} + \\sum_{h:c_h^{ref} =c}F^{dis}_{h,n,y,r}
             +F^{imp}_{c,n,y,r}-F^{exp}_{c,n,y,r} +F^{shed}_{c,n,y,r} =d_{c,n,y,r}

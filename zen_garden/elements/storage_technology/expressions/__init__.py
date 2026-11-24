@@ -27,7 +27,10 @@ from .capacity_growth_from_spillovers_energy import CapacityGrowthFromSpillovers
 from .capacity_growth_from_unbounded_market_energy import (
     CapacityGrowthFromUnboundedMarketEnergy,
 )
+from .capacity_previous_energy import CapacityPreviousEnergy
 from .charging_mode_capacity_limit import ChargingModeCapacityLimit
+from .cost_capex_overnight_energy import CostCapexOvernightEnergy
+from .cost_capex_yearly_energy import CostCapexYearlyEnergy
 from .existing_capacity_is_below_limit_energy import (
     ExistingCapacityIsBelowLimitEnergy,
 )
@@ -45,6 +48,7 @@ from .storage_throughput import StorageThroughput
 from .surviving_capacity_additions_energy import SurvivingCapacityAdditionsEnergy
 
 STORAGE_TECHNOLOGY_EXPRESSIONS: list[type[GenericExpression]] = [
+    CapacityPreviousEnergy,
     SurvivingCapacityAdditionsEnergy,
     CapacityAdditionsFromNewInvestmentsEnergy,
     CapacityAdditionsFromPreHorizonInvestmentsEnergy,
@@ -57,6 +61,8 @@ STORAGE_TECHNOLOGY_EXPRESSIONS: list[type[GenericExpression]] = [
     ExistingCapacityIsBelowLimitEnergy,
     AnnualizedCapexFromNewInvestmentsEnergy,
     AnnualizedCapexFromExistingCapacityEnergy,
+    CostCapexOvernightEnergy,
+    CostCapexYearlyEnergy,
     StorageThroughput,
     StoragePowerCapacityAddition,
     StorageEnergyCapacityAddition,
@@ -69,6 +75,9 @@ STORAGE_TECHNOLOGY_EXPRESSIONS: list[type[GenericExpression]] = [
 ]
 
 __all__ = [
+    "CapacityPreviousEnergy",
+    "CostCapexOvernightEnergy",
+    "CostCapexYearlyEnergy",
     "SurvivingCapacityAdditionsEnergy",
     "CapacityAdditionsFromNewInvestmentsEnergy",
     "CapacityAdditionsFromPreHorizonInvestmentsEnergy",

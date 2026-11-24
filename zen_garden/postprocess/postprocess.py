@@ -4,6 +4,7 @@ configurations (system). The class contains methods to read the results and
 save them in a result dictionary (resultDict).
 """
 
+import itertools
 import json
 import logging
 import os
@@ -16,6 +17,8 @@ import pandas as pd
 import xarray as xr
 import yaml
 from filelock import FileLock
+from linopy.expressions import LinearExpression
+from linopy.variables import Variable
 from tables import NaturalNameWarning
 
 from zen_garden.elements.conversion_technology.sets.relation_conversion_technology_dependent_carrier import (  # noqa: E501
@@ -87,6 +90,12 @@ ENERGY_VARIABLE_COMPONENTS = {
     "cost_capex_overnight_energy": "cost_capex_overnight",
     "cost_capex_yearly_energy": "cost_capex_yearly",
     "technology_installation_energy": "technology_installation",
+}
+
+ENERGY_EXPRESSION_COMPONENTS = {
+    "capacity_previous_energy": "capacity_previous",
+    "cost_capex_overnight_energy": "cost_capex_overnight",
+    "cost_capex_yearly_energy": "cost_capex_yearly",
 }
 
 ENERGY_DUAL_COMPONENTS = {
@@ -268,11 +277,16 @@ class Postprocess:
         :param scenario_name: name of scenario for which results are postprocessed
         """
 
+        self.optimization_model.expressions.select(
+            self.config.analysis.selected_saved_expressions
+        )
+
         # save components
         component_map: dict[str, list[Hashable]] = {}
         component_map["sets"] = self.save_sets()
         component_map["parameter"] = self.save_param()
         component_map["variable"] = self.save_var()
+        component_map["expression"] = self.save_expressions()
         component_map["dual"] = self.save_duals()
         component_map["reduced_cost"] = self.save_reduced_costs()
         self.save_component_map(component_map)
@@ -497,6 +511,25 @@ class Postprocess:
         time.
         """
         raw_solution = self.lp_model.solution.copy()
+        requested = self.config.solver.selected_saved_variables
+        if requested:
+            solution_names = [cast(str, name) for name in raw_solution]
+            available = set(solution_names).union(
+                ENERGY_VARIABLE_COMPONENTS.get(name, name) for name in solution_names
+            )
+            unknown = sorted(set(requested).difference(available))
+            if unknown:
+                raise ValueError(
+                    f"Unknown selected_saved_variables: {unknown}. "
+                    f"Available solver variables: {sorted(available)}"
+                )
+            selected_names = [
+                name
+                for name in solution_names
+                if name in requested
+                or ENERGY_VARIABLE_COMPONENTS.get(name, name) in requested
+            ]
+            raw_solution = raw_solution[selected_names]
         variables = self.optimization_model.variables
         for name, default in variables.mask_default_values.items():
             if name not in raw_solution:
@@ -518,7 +551,7 @@ class Postprocess:
 
         units: dict[str, pd.Series | None] = {
             cast(str, name): self.optimization_model.variables.units[cast(str, name)]
-            for name in self.lp_model.solution.keys()
+            for name in raw_solution.keys()
         }
         merged_units = self._merge_capacity_type_units(
             units, ENERGY_VARIABLE_COMPONENTS
@@ -537,10 +570,140 @@ class Postprocess:
                     ENERGY_VARIABLE_COMPONENTS.get(name, name), doc
                 )
                 for name, doc in self.optimization_model.variables.docs.items()
-                if name not in ENERGY_VARIABLE_COMPONENTS
+                if name in raw_solution and name not in ENERGY_VARIABLE_COMPONENTS
             },
         )
         return list(solution.keys())
+
+    def save_expressions(self) -> list[Hashable]:
+        """Evaluate and persist configured expressions from the solved model."""
+        registry = self.optimization_model.expressions
+        selected = registry.select(self.config.analysis.selected_saved_expressions)
+        values: dict[str, xr.DataArray] = {}
+        units: dict[str, pd.Series | None] = {}
+        for name in selected:
+            value = self._evaluate_expression(name)
+            values[name] = value
+
+            expected = registry.indices[name]
+            unit_category = registry.unit_categories[name]
+            if not expected:
+                units[name] = self._scalar_expression_unit(unit_category)
+            else:
+                coordinate_values = [value.coords[index].values for index in expected]
+                index_values: list[object]
+                if len(expected) == 1:
+                    index_values = list(coordinate_values[0])
+                else:
+                    index_values = list(itertools.product(*coordinate_values))
+                units[name] = self.optimization_model.variables._get_var_units(
+                    unit_category,
+                    index_values,
+                    list(expected),
+                    value.notnull(),
+                )
+
+        objective_name = self.config.analysis.objective
+        if objective_name not in units:
+            units[objective_name] = self._scalar_expression_unit(
+                registry.unit_categories[objective_name]
+            )
+
+        dataset = xr.Dataset(values)
+        dataset = self._merge_capacity_type_components(
+            dataset, ENERGY_EXPRESSION_COMPONENTS
+        )
+        dataset = self._to_legacy_set_dimensions(dataset)
+        dataset = self._to_legacy_time_dimensions(dataset)
+        self._write_netcdf_file(self.name_dir / "expressions.nc", dataset)
+        merged_units = self._merge_capacity_type_units(
+            units, ENERGY_EXPRESSION_COMPONENTS
+        )
+        merged_units = self._to_legacy_unit_dimensions(merged_units)
+        self._write_units_to_file(
+            self.name_dir / "expressions_units.h5",
+            {
+                name: unit
+                for name, unit in merged_units.items()
+                if unit is not None and not unit.empty
+            },
+        )
+        docs: dict[str, str] = {}
+        for name in selected:
+            public_name = ENERGY_EXPRESSION_COMPONENTS.get(name, name)
+            docs.setdefault(
+                public_name,
+                self._legacy_component_doc(public_name, registry.docs[name]),
+            )
+        self._write_json_file(self.name_dir / "expressions_docs.json", docs)
+        return list(dataset.keys())
+
+    def _scalar_expression_unit(
+        self, unit_category: dict[str, int]
+    ) -> pd.Series | None:
+        """Resolve the unit of an expression without public index dimensions."""
+        if not unit_category:
+            return None
+
+        unit_converter = self.optimization_model.variables.unit_converter
+        unit = unit_converter.ureg("dimensionless")
+        base_dimensions = {
+            "money": "[currency]",
+            "distance": "[length]",
+            "time": "[time]",
+            "emissions": "[mass]",
+        }
+        for dimension, base_dimension in base_dimensions.items():
+            if dimension not in unit_category:
+                continue
+            base_unit = next(
+                unit_name
+                for unit_name, dimensionality in unit_converter.base_units.items()
+                if dimensionality == base_dimension
+            )
+            unit *= unit_converter.ureg(base_unit) ** unit_category[dimension]
+
+        if "energy_quantity" in unit_category:
+            energy_units = {
+                str(quantity.units): quantity
+                for quantity in unit_converter.carrier_energy_quantities.values()
+            }
+            if len(energy_units) != 1:
+                raise ValueError(
+                    "A scalar expression with an energy_quantity unit requires all "
+                    "model carriers to use the same energy-quantity unit."
+                )
+            energy_unit = next(iter(energy_units.values()))
+            unit *= energy_unit ** unit_category["energy_quantity"]
+
+        return pd.Series([str(unit.units)])
+
+    def _evaluate_expression(self, name: str) -> xr.DataArray:
+        """Evaluate one expression and restore performance-masked defaults."""
+        registry = self.optimization_model.expressions
+        expression = registry[name]
+        if isinstance(expression, LinearExpression):
+            value = expression.solution
+        elif isinstance(expression, Variable):
+            value = (1 * expression).solution
+        else:
+            value = expression
+        if not isinstance(value, xr.DataArray):
+            value = xr.DataArray(value)
+        expected = registry.indices[name]
+        public_dimensions = tuple(dim for dim in value.dims if dim != "_term")
+        if public_dimensions != expected:
+            raise ValueError(
+                f"Expression {name!r} produced dimensions {public_dimensions}, "
+                f"but declares {expected}"
+            )
+        value = value.transpose(*expected)
+        if name in registry.mask_default_values:
+            structural = align_mask(registry.structural_masks[name], value)
+            performance = align_mask(registry.performance_masks[name], value)
+            restore = structural & ~performance
+            value = value.where(~restore, registry.mask_default_values[name])
+        return value
 
     def save_duals(self) -> list[Hashable]:
         """Saves the dual variable values to a h5 file."""
@@ -630,27 +793,43 @@ class Postprocess:
         """Restore capacity-type indices in persisted unit metadata."""
         converted = dict(units)
         for energy_name, power_name in energy_components.items():
-            if energy_name not in converted or power_name not in converted:
+            has_power = power_name in converted
+            has_energy = energy_name in converted
+            if not has_power and not has_energy:
                 continue
-            power_unit = converted[power_name]
-            energy_unit = converted[energy_name]
-            if power_unit is None or energy_unit is None:
-                del converted[energy_name]
+            power_unit = converted.get(power_name)
+            energy_unit = converted.get(energy_name)
+            power = (
+                power_unit.rename_axis(
+                    index={
+                        "set_storage_technologies": "set_technologies",
+                        "set_nodes": "set_location",
+                    }
+                )
+                if power_unit is not None
+                else None
+            )
+            energy = (
+                energy_unit.rename_axis(
+                    index={
+                        "set_storage_technologies": "set_technologies",
+                        "set_nodes": "set_location",
+                    }
+                )
+                if energy_unit is not None
+                else None
+            )
+            pieces = {
+                capacity_type: unit
+                for capacity_type, unit in (("power", power), ("energy", energy))
+                if unit is not None
+            }
+            if not pieces:
+                if has_energy:
+                    del converted[energy_name]
                 continue
-            power = power_unit.rename_axis(
-                index={
-                    "set_storage_technologies": "set_technologies",
-                    "set_nodes": "set_location",
-                }
-            )
-            energy = energy_unit.rename_axis(
-                index={
-                    "set_storage_technologies": "set_technologies",
-                    "set_nodes": "set_location",
-                }
-            )
             combined = pd.concat(
-                {"power": power, "energy": energy},
+                pieces,
                 names=["set_capacity_types"],
             )
             names = list(combined.index.names)
@@ -660,7 +839,8 @@ class Postprocess:
                 names.insert(position, "set_capacity_types")
                 combined = combined.reorder_levels(names)
             converted[power_name] = combined
-            del converted[energy_name]
+            if has_energy:
+                del converted[energy_name]
         return {name: unit for name, unit in converted.items() if unit is not None}
 
     @staticmethod

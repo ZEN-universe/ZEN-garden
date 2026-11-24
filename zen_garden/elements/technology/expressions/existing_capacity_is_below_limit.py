@@ -11,6 +11,7 @@ class ExistingCapacityIsBelowLimit(GenericExpression):
     """Indicate where existing capacity is below the configured upper limit."""
 
     name = "existing_capacity_is_below_limit"
+    unit_category = {}
     indices = ("set_technologies", "set_location", "set_years")
 
     @classmethod

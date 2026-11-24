@@ -18,6 +18,7 @@ class InvestmentsBeyondHorizonEnergy(GenericExpression):
     """Select storage energy investments that cannot finish in the horizon."""
 
     name = "investments_beyond_horizon_energy"
+    unit_category = {"energy_quantity": 1}
     indices = (
         "set_storage_technologies",
         "set_nodes",

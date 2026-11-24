@@ -310,8 +310,33 @@ class Analysis(ConfigBase):
     """
 
     dataset: str = ""
-    objective: Literal["total_cost", "total_carbon_emissions"] = "total_cost"
-    sense: str = "min"
+    objective: str = "total_cost"
+    sense: Literal["min", "max"] = "min"
+    selected_saved_expressions: list[str] = [
+        "cost_carrier",
+        "cost_shed_demand",
+        "cost_carrier_total",
+        "carbon_emissions_carrier",
+        "carbon_emissions_carrier_total",
+        "cost_opex_variable",
+        "cost_opex_yearly",
+        "cost_opex_yearly_total",
+        "cost_capex_overnight",
+        "cost_capex_yearly",
+        "cost_capex_yearly_total",
+        "carbon_emissions_technology",
+        "carbon_emissions_technology_total",
+        "cost_capex_overnight_energy",
+        "cost_capex_yearly_energy",
+        "carbon_emissions_annual",
+        "cost_carbon_emissions_total",
+        "cost_total",
+        "net_present_cost",
+        "flow_transport_loss",
+        "carbon_emissions_cumulative",
+        "capacity_previous",
+        "capacity_previous_energy",
+    ]
     subsets: Subsets = Subsets()
     header_data_inputs: HeaderDataInputs = HeaderDataInputs()
     time_series_aggregation: TimeSeriesAggregation = TimeSeriesAggregation()

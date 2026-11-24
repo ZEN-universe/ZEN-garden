@@ -13,6 +13,7 @@ class RetrofitBaseActivity(GenericExpression):
     """Select reference flow for technologies participating in retrofits."""
 
     name = "retrofit_base_activity"
+    unit_category = {"energy_quantity": 1, "time": -1}
     indices = (
         "set_conversion_technologies",
         "set_nodes",

@@ -3,7 +3,7 @@
 from zen_garden.elements.energy_system.parameters.weight_representative_hours import (
     WeightRepresentativeHours,
 )
-from zen_garden.elements.technology.variables.carbon_emissions_technology import (
+from zen_garden.elements.technology.expressions.carbon_emissions_technology import (
     CarbonEmissionsTechnology,
 )
 from zen_garden.model.component_types.expression import GenericExpression
@@ -13,7 +13,9 @@ class AnnualTechnologyEmissions(GenericExpression):
     """Aggregate technology emissions over technologies, locations, and hours."""
 
     name = "annual_technology_emissions"
+    unit_category = {"emissions": 1}
     indices = ("set_years",)
+    dependencies = (CarbonEmissionsTechnology,)
 
     @classmethod
     def get_expression(cls, model_constructor):
@@ -42,6 +44,6 @@ class AnnualTechnologyEmissions(GenericExpression):
         """
         optimization_model = model_constructor.optimization_model
         return (
-            optimization_model.variables[CarbonEmissionsTechnology]
+            optimization_model.expressions[CarbonEmissionsTechnology]
             * optimization_model.parameters[WeightRepresentativeHours]
         ).sum(["set_technologies", "set_location", "set_representative_hours"])

@@ -3,7 +3,9 @@
 from zen_garden.elements.energy_system.parameters.weight_representative_hours import (
     WeightRepresentativeHours,
 )
-from zen_garden.elements.technology.variables.cost_opex_variable import CostOpexVariable
+from zen_garden.elements.technology.expressions.cost_opex_variable import (
+    CostOpexVariable,
+)
 from zen_garden.model.component_types.expression import GenericExpression
 
 
@@ -11,7 +13,9 @@ class AnnualVariableOpex(GenericExpression):
     """Weight and sum variable OPEX over representative hours."""
 
     name = "annual_variable_opex"
+    unit_category = {"money": 1}
     indices = ("set_technologies", "set_location", "set_years")
+    dependencies = (CostOpexVariable,)
 
     @classmethod
     def get_expression(cls, model_constructor):
@@ -40,6 +44,6 @@ class AnnualVariableOpex(GenericExpression):
         """
         optimization_model = model_constructor.optimization_model
         return (
-            optimization_model.variables[CostOpexVariable]
+            optimization_model.expressions[CostOpexVariable]
             * optimization_model.parameters[WeightRepresentativeHours]
         ).sum("set_representative_hours")

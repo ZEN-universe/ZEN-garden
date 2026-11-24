@@ -3,14 +3,16 @@
 import itertools
 
 import pandas as pd
+import xarray as xr
+from linopy.expressions import LinearExpression
 
 from zen_garden.elements.energy_system.parameters.discount_rate import DiscountRate
 from zen_garden.elements.energy_system.sets.set_years import SetYears
-from zen_garden.elements.storage_technology.variables.cost_capex_overnight_energy import (  # noqa: E501
+from zen_garden.elements.storage_technology.expressions.cost_capex_overnight_energy import (  # noqa: E501
     CostCapexOvernightEnergy,
 )
-from zen_garden.elements.storage_technology.variables.cost_capex_yearly_energy import (
-    CostCapexYearlyEnergy,
+from zen_garden.elements.storage_technology.variables.capacity_energy import (
+    CapacityEnergy,
 )
 from zen_garden.elements.technology.lifetime import get_active_vintage_years
 from zen_garden.elements.technology.parameters.depreciation_time import DepreciationTime
@@ -25,7 +27,9 @@ class AnnualizedCapexFromNewInvestmentsEnergy(GenericExpression):
     """Annualize active storage energy-capacity investment vintages."""
 
     name = "annualized_capex_from_new_investments_energy"
+    unit_category = {"money": 1}
     indices = ("set_storage_technologies", "set_nodes", "set_years")
+    dependencies = (CostCapexOvernightEnergy,)
 
     @classmethod
     def get_expression(cls, model_constructor):
@@ -51,7 +55,7 @@ class AnnualizedCapexFromNewInvestmentsEnergy(GenericExpression):
             Annualized modeled storage energy-capacity CAPEX.
         """
         model = model_constructor.optimization_model
-        yearly_capex = model.variables[CostCapexYearlyEnergy]
+        yearly_capex = model.variables[CapacityEnergy]
         discount_rate = model.parameters[DiscountRate]
         depreciation_time = model.parameters[DepreciationTime]
         annuity = (
@@ -82,10 +86,22 @@ class AnnualizedCapexFromNewInvestmentsEnergy(GenericExpression):
         active = pd.Series(1, index=vintages).to_xarray()
         active = active.broadcast_like(yearly_capex.lower).fillna(0)
         active = active.transpose(*yearly_capex.dims, "set_years_prev")
-        capex = model.variables[CostCapexOvernightEnergy].rename(
+        capex = model.expressions[CostCapexOvernightEnergy].rename(
             {"set_years": "set_years_prev"}
         )
         capex = transpose_linear_expression(
             1 * capex.broadcast_like(active), active.dims
         )
-        return (active * annuity * capex).sum("set_years_prev")
+        weighted = active * annuity * capex
+        if "_term" in weighted.const.dims:
+            weighted = LinearExpression(
+                xr.Dataset(
+                    {
+                        "coeffs": weighted.coeffs,
+                        "vars": weighted.vars,
+                        "const": weighted.const.sum("_term"),
+                    }
+                ),
+                weighted.model,
+            )
+        return weighted.sum("set_years_prev")

@@ -15,6 +15,7 @@ class AnnualizedCapexFromExistingCapacityEnergy(GenericExpression):
     """Annualize remaining CAPEX of existing storage energy capacity."""
 
     name = "annualized_capex_from_existing_capacity_energy"
+    unit_category = {"money": 1}
     indices = ("set_storage_technologies", "set_nodes", "set_years")
 
     @classmethod

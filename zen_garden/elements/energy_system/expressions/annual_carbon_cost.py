@@ -2,6 +2,9 @@
 
 import numpy as np
 
+from zen_garden.elements.energy_system.expressions.carbon_emissions_annual import (
+    CarbonEmissionsAnnual,
+)
 from zen_garden.elements.energy_system.parameters.price_carbon_emissions import (
     PriceCarbonEmissions,
 )
@@ -10,9 +13,6 @@ from zen_garden.elements.energy_system.parameters.price_carbon_emissions_annual_
 )
 from zen_garden.elements.energy_system.parameters.price_carbon_emissions_budget_overshoot import (  # noqa: E501
     PriceCarbonEmissionsBudgetOvershoot,
-)
-from zen_garden.elements.energy_system.variables.carbon_emissions_annual import (
-    CarbonEmissionsAnnual,
 )
 from zen_garden.elements.energy_system.variables.carbon_emissions_annual_overshoot import (  # noqa: E501
     CarbonEmissionsAnnualOvershoot,
@@ -27,7 +27,9 @@ class AnnualCarbonCost(GenericExpression):
     """Combine emissions prices and configured overshoot penalties."""
 
     name = "annual_carbon_cost"
+    unit_category = {"money": 1}
     indices = ("set_years",)
+    dependencies = (CarbonEmissionsAnnual,)
 
     @classmethod
     def get_expression(cls, model_constructor):
@@ -57,7 +59,7 @@ class AnnualCarbonCost(GenericExpression):
         """
         optimization_model = model_constructor.optimization_model
         expression = (
-            optimization_model.variables[CarbonEmissionsAnnual]
+            optimization_model.expressions[CarbonEmissionsAnnual]
             * optimization_model.parameters[PriceCarbonEmissions]
         )
         budget_price = optimization_model.parameters[

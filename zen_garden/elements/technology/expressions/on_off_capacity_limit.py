@@ -11,6 +11,7 @@ class OnOffCapacityLimit(GenericExpression):
     """Return and validate capacity upper bounds used by on/off linearization."""
 
     name = "on_off_capacity_limit"
+    unit_category = {"energy_quantity": 1, "time": -1}
     indices = ("set_technologies", "set_location", "set_years")
 
     @classmethod

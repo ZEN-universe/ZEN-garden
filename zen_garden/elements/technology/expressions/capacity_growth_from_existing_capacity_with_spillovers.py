@@ -23,6 +23,7 @@ class CapacityGrowthFromExistingCapacityWithSpillovers(GenericExpression):
     """Capacity growth supported by existing capacity with location spillovers."""
 
     name = "capacity_growth_from_existing_capacity_with_spillovers"
+    unit_category = {"energy_quantity": 1, "time": -1}
     indices = ("set_technologies", "set_location", "set_years")
 
     @classmethod
