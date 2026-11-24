@@ -17,6 +17,7 @@ class ConversionReferenceFlow(GenericExpression):
     """Select each conversion technology's configured reference-carrier flow."""
 
     name = "conversion_reference_flow"
+    unit_category = {"energy_quantity": 1, "time": -1}
     indices = (
         "set_conversion_technologies",
         "set_nodes",

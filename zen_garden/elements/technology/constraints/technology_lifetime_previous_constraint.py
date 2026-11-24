@@ -1,18 +1,9 @@
 """Beginning-of-year available-capacity constraint."""
 
-import linopy as lp
-import xarray as xr
-from linopy.expressions import LinearExpression
-
-from zen_garden.elements.technology.expressions.surviving_capacity_additions import (
-    SurvivingCapacityAdditions,
+from zen_garden.elements.technology.expressions.capacity_previous import (
+    CapacityPrevious,
 )
 from zen_garden.elements.technology.masks import CapacityAvailableMask
-from zen_garden.elements.technology.parameters.existing_capacities import (
-    ExistingCapacities,
-)
-from zen_garden.elements.technology.variables.capacity_addition import CapacityAddition
-from zen_garden.elements.technology.variables.capacity_previous import CapacityPrevious
 from zen_garden.model.component_types.constraint import GenericConstraint
 
 
@@ -20,6 +11,12 @@ class TechnologyLifetimePreviousConstraint(GenericConstraint):
     """Define capacity before additions made in the current year."""
 
     name = "constraint_technology_lifetime_previous"
+    doc = r"""Keep beginning-of-year power capacity non-negative.
+
+    .. math::
+
+        K_{h,p,y}-\Delta K_{h,p,y}\geq 0
+    """
     indices = ("set_technologies", "set_location", "set_years")
     masks = (CapacityAvailableMask,)
 
@@ -49,20 +46,4 @@ class TechnologyLifetimePreviousConstraint(GenericConstraint):
         Returns:
             Constraint over its declared model indices.
         """
-        optimization_model = model_constructor.optimization_model
-        lhs = lp.merge(
-            [
-                1 * optimization_model.variables[CapacityPrevious],
-                -optimization_model.expressions[SurvivingCapacityAdditions],
-                1 * optimization_model.variables[CapacityAddition],
-            ],
-            compat="broadcast_equals",
-            join="outer",
-            cls=LinearExpression,
-        )
-        rhs = xr.align(
-            lhs.const,
-            optimization_model.parameters[ExistingCapacities],
-            join="left",
-        )[1]
-        return lhs == rhs
+        return model_constructor.optimization_model.expressions[CapacityPrevious] >= 0

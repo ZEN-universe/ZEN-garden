@@ -8,11 +8,11 @@ from zen_garden.elements.energy_system.sets.set_carriers import SetCarriers
 from zen_garden.elements.technology.sets.relation_technology_reference_carrier import (  # noqa: E501
     RelationTechnologyReferenceCarrier,
 )
+from zen_garden.elements.transport_technology.expressions.flow_transport_loss import (
+    FlowTransportLoss,
+)
 from zen_garden.elements.transport_technology.variables.flow_transport import (
     FlowTransport,
-)
-from zen_garden.elements.transport_technology.variables.flow_transport_loss import (
-    FlowTransportLoss,
 )
 from zen_garden.model.component_types.expression import GenericExpression
 
@@ -21,12 +21,14 @@ class NodalTransportInflow(GenericExpression):
     """Aggregate incoming transport flow after losses."""
 
     name = "nodal_transport_inflow"
+    unit_category = {"energy_quantity": 1, "time": -1}
     indices = (
         "set_carriers",
         "set_nodes",
         "set_years",
         "set_representative_hours",
     )
+    dependencies = (FlowTransportLoss,)
 
     @classmethod
     def get_expression(cls, model_constructor):
@@ -70,7 +72,7 @@ class NodalTransportInflow(GenericExpression):
         valid_flow = carrier_mask & end_node_mask
         net_flow = (
             optimization_model.variables[FlowTransport]
-            - optimization_model.variables[FlowTransportLoss]
+            - optimization_model.expressions[FlowTransportLoss]
         )
         return net_flow.where(valid_flow).sum(
             ["set_transport_technologies", "set_edges"]

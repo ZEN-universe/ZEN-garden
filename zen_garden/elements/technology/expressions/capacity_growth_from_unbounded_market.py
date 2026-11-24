@@ -5,10 +5,12 @@ from zen_garden.elements.energy_system.parameters.market_share_unbounded import 
 )
 from zen_garden.elements.energy_system.sets.set_carriers import SetCarriers
 from zen_garden.elements.energy_system.sets.set_technologies import SetTechnologies
+from zen_garden.elements.technology.expressions.capacity_previous import (
+    CapacityPrevious,
+)
 from zen_garden.elements.technology.sets.relation_technology_reference_carrier import (  # noqa: E501
     RelationTechnologyReferenceCarrier,
 )
-from zen_garden.elements.technology.variables.capacity_previous import CapacityPrevious
 from zen_garden.model.component_types.expression import GenericExpression
 
 
@@ -16,7 +18,9 @@ class CapacityGrowthFromUnboundedMarket(GenericExpression):
     """Capacity growth supported by peers serving the same reference carrier."""
 
     name = "capacity_growth_from_unbounded_market"
+    unit_category = {"energy_quantity": 1, "time": -1}
     indices = ("set_technologies", "set_location", "set_years")
+    dependencies = (CapacityPrevious,)
 
     @staticmethod
     def _class_technologies(model_constructor, technology):
@@ -54,7 +58,7 @@ class CapacityGrowthFromUnboundedMarket(GenericExpression):
             Expression over its declared model indices.
         """
         model = model_constructor.optimization_model
-        capacity_previous = model.variables[CapacityPrevious]
+        capacity_previous = model.expressions[CapacityPrevious]
         reference_carriers = {
             technology: model.sets.project_relation(
                 RelationTechnologyReferenceCarrier,
@@ -75,14 +79,14 @@ class CapacityGrowthFromUnboundedMarket(GenericExpression):
         }
         shares = pd.Series(shares)
         shares.index.names = ["set_technologies", "set_other_technologies"]
-        shares = shares.to_xarray().broadcast_like(capacity_previous.lower).fillna(0)
+        previous_other = capacity_previous.rename(
+            {"set_technologies": "set_other_technologies"}
+        )
+        shares = shares.to_xarray().reindex(
+            set_other_technologies=previous_other.indexes["set_other_technologies"],
+            fill_value=0,
+        )
+        shares = shares.broadcast_like(capacity_previous.const).fillna(0)
         return (
-            (
-                shares
-                * capacity_previous.rename(
-                    {"set_technologies": "set_other_technologies"}
-                )
-            )
-            .where(shares != 0)
-            .sum("set_other_technologies")
+            (shares * previous_other).where(shares != 0).sum("set_other_technologies")
         )

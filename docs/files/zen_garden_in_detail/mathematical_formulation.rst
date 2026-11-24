@@ -6,18 +6,21 @@ Mathematical formulation
 ZEN-garden formulates energy-system design and operation as a mixed-integer
 linear program (MILP), or as a linear program (LP) when no binary decisions are
 required. The following
-sections describe the constraints and equations that define the optimization
-problem. For a complete list of symbols, see :ref:`notation.notation`.
+sections describe the objectives and constraints that define the optimization
+problem. For a complete list of symbols, see :ref:`notation.notation`. Reusable
+calculations are documented separately in :ref:`api_reference.expressions`.
 
 .. note::
 
    Important notes on the development and maintenance of this formulation:
 
-   * constraint ``get_constraint`` docstrings are the source of truth for equations and
-     implementation-specific conditions. Do not write equations into this file.
+   * Constraint ``get_constraint`` docstrings are the source of truth for equations and
+     implementation-specific conditions. They expand reused expressions into variables
+     and parameters. Each constraint is rendered under its declared name using only the
+     summary and formulation sections. Do not write constraint equations into this file.
      If an equation changes, its docstring should be updated in the same change.
-   * The objective function definitions are documented here because they are implemented
-     as objective methods rather than constraint ``get_constraint`` methods.
+   * Objective formulas come from the selected expression's declarative ``doc`` field.
+     Update that field when an objective expression changes.
    * :ref:`notation.notation` is the source of truth for sets, parameters,
      variables, symbols, time-step types, descriptions, and units. If a
      symbol or component description changes, its entry in the notation tables
@@ -25,147 +28,36 @@ problem. For a complete list of symbols, see :ref:`notation.notation`.
 
 .. _mathematical_formulation.objectives:
 
-Objectives and cost accounting
-------------------------------
+Objectives
+----------
 
-Two objective functions are available:
-
-1. minimize cumulative net present cost
-2. minimize cumulative emissions
-
-
-Minimizing net present cost
-^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-The net present cost of the energy system is minimized over the planning
-horizon:
-
-.. math::
-    :label: min_cost_new
-
-    \mathrm{min} \quad \sum_{y\in\mathcal{Y}} C^{\mathrm{NPC}}_y
-
-.. _mathematical_formulation.emissions_objective:
-
-Minimizing total emissions
-^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-The cumulative carbon emissions at the end of the planning horizon are
-minimized:
-
-.. math::
-    :label: min_emissions_new
-
-    \mathrm{min} \quad M^{\mathrm{cum}}_Y
-
-
-
-Total annual system cost
-^^^^^^^^^^^^^^^^^^^^^^^^
-
-The annual total cost combines capital expenditure, technology operating
-expenditure, carrier import/export and demand-shedding costs, and
-carbon-emissions costs.
-
-.. docstring_method:: zen_garden.elements.energy_system.constraints.CostTotalConstraint.get_constraint
-
-Net present cost
-^^^^^^^^^^^^^^^^
-
-.. docstring_method:: zen_garden.elements.energy_system.constraints.NetPresentCostConstraint.get_constraint
-
-Here, :math:`y` indexes planning periods rather than calendar years. The
-uppercase :math:`\Delta y` is the number of calendar years between planning
-periods. The lowercase :math:`\delta_y` is the number of annual cost terms
-assigned to period :math:`y`: it equals :math:`\Delta y` for ordinary periods
-and one for the final period. Costs are therefore discounted for every year in
-each interval, including years without an optimization decision, while the
-final period is counted once.
-
-Annualized technology CAPEX
-^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-Investment costs are converted to annual cash flows with an annuity factor
-based on the discount rate and depreciation time. These cash flows cover both
-new capacity investments and the remaining CAPEX of existing capacity.
-
-CAPEX symbols and parameters are defined in :ref:`notation.notation`.
-
-.. docstring_method:: zen_garden.elements.technology.constraints.CostCapexYearlyConstraint.get_constraint
-
-.. docstring_method:: zen_garden.elements.storage_technology.constraints.CostCapexYearlyEnergyConstraint.get_constraint
-
-Total annual technology CAPEX
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-.. docstring_method:: zen_garden.elements.technology.constraints.CostCapexYearlyTotalConstraint.get_constraint
-
-Annual technology OPEX
-^^^^^^^^^^^^^^^^^^^^^^
-
-Annual technology OPEX combines variable costs that depend on carrier flow
-with fixed costs proportional to installed capacity; storage technologies also
-have an energy-capacity term.
-
-.. docstring_method:: zen_garden.elements.technology.constraints.CostOpexYearlyConstraint.get_constraint
-
-Total annual technology OPEX
+Total discounted system cost
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. docstring_method:: zen_garden.elements.technology.constraints.CostOpexYearlyTotalConstraint.get_constraint
+The default ``total_cost`` objective minimizes the complete discounted system
+cost over all modeled years.
 
-Carrier import and export cost
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.. component_documentation:: zen_garden.elements.energy_system.expressions.TotalCost
+   :include-summary:
 
-Carrier parameters and variables are catalogued in :ref:`notation.notation`.
-
-.. docstring_method:: zen_garden.elements.carrier.constraints.CostCarrierConstraint.get_constraint
-
-Demand-shedding cost and limit
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-.. docstring_method:: zen_garden.elements.carrier.constraints.CostShedDemandConstraint.get_constraint
-
-.. docstring_method:: zen_garden.elements.carrier.constraints.LimitShedDemandConstraint.get_constraint
-
-Total annual carrier cost
-^^^^^^^^^^^^^^^^^^^^^^^^^
-
-.. docstring_method:: zen_garden.elements.carrier.constraints.CostCarrierTotalConstraint.get_constraint
-
-Carbon-emissions cost
-^^^^^^^^^^^^^^^^^^^^^
-
-.. docstring_method:: zen_garden.elements.energy_system.constraints.CostCarbonEmissionsTotalConstraint.get_constraint
-
-
-Technology operating costs and emissions
-----------------------------------------
-
-The following constraints calculate time-dependent variable OPEX and operating
-emissions. Their annual aggregation is documented in the preceding section and
-in :ref:`model_formulation_docstrings.emissions`.
-
-Conversion technologies
-^^^^^^^^^^^^^^^^^^^^^^^
-
-.. docstring_method:: zen_garden.elements.conversion_technology.constraints.OpexTechnologyConversionConstraint.get_constraint
-
-.. docstring_method:: zen_garden.elements.conversion_technology.constraints.CarbonEmissionsTechnologyConversionConstraint.get_constraint
-
-Storage technologies
-^^^^^^^^^^^^^^^^^^^^
-
-.. docstring_method:: zen_garden.elements.storage_technology.constraints.OpexTechnologyStorageConstraint.get_constraint
-
-.. docstring_method:: zen_garden.elements.storage_technology.constraints.CarbonEmissionsTechnologyStorageConstraint.get_constraint
-
-Transport technologies
+Total carbon emissions
 ^^^^^^^^^^^^^^^^^^^^^^
 
-.. docstring_method:: zen_garden.elements.transport_technology.constraints.OpexTechnologyTransportConstraint.get_constraint
+The previously supported emissions objective, ``total_carbon_emissions``,
+selects cumulative emissions at the final modeled year.
 
-.. docstring_method:: zen_garden.elements.transport_technology.constraints.CarbonEmissionsTechnologyTransportConstraint.get_constraint
+.. component_documentation:: zen_garden.elements.energy_system.expressions.TotalCarbonEmissions
+   :include-summary:
+
+Other objectives
+^^^^^^^^^^^^^^^^
+
+Any other registered scalar expression can also be selected through
+``analysis.objective``. ``analysis.sense`` selects minimization or
+maximization. ZEN-garden does not sum or otherwise reduce the selected
+expression automatically, so a user-defined objective must include any
+required sum or selection explicitly. The available expressions are listed in
+:ref:`api_reference.expressions`.
 
 
 Carrier balance and external exchange
@@ -180,13 +72,7 @@ exports; shed demand reduces served demand. Their notation is defined in
 
 .. _mathematical_formulation.nodal_carrier_balance:
 
-Nodal carrier balance
-^^^^^^^^^^^^^^^^^^^^^
-
 .. docstring_method:: zen_garden.elements.carrier.constraints.NodalEnergyBalanceConstraint.get_constraint
-
-Time-dependent import and export availability
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Setting an import or export availability to infinity removes the corresponding
 availability limit.
@@ -195,12 +81,11 @@ availability limit.
 
 .. docstring_method:: zen_garden.elements.carrier.constraints.AvailabilityExportConstraint.get_constraint
 
-Annual import and export availability
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
 .. docstring_method:: zen_garden.elements.carrier.constraints.AvailabilityImportYearlyConstraint.get_constraint
 
 .. docstring_method:: zen_garden.elements.carrier.constraints.AvailabilityExportYearlyConstraint.get_constraint
+
+.. docstring_method:: zen_garden.elements.carrier.constraints.LimitShedDemandConstraint.get_constraint
 
 
 .. _model_formulation_docstrings.emissions:
@@ -210,54 +95,14 @@ Emissions accounting and limits
 -------------------------------
 
 The parameter and variable definitions used by these constraints are provided
-in :ref:`notation.notation`.
-
-Carrier emissions
-^^^^^^^^^^^^^^^^^
-
-.. docstring_method:: zen_garden.elements.carrier.constraints.CarbonEmissionsCarrierConstraint.get_constraint
-
-Total annual carrier emissions
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-.. docstring_method:: zen_garden.elements.carrier.constraints.CarbonEmissionsCarrierTotalConstraint.get_constraint
-
-Total annual technology emissions
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-.. docstring_method:: zen_garden.elements.technology.constraints.CarbonEmissionsTechnologyTotalConstraint.get_constraint
-
-Total annual system emissions
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-.. docstring_method:: zen_garden.elements.energy_system.constraints.CarbonEmissionsAnnualConstraint.get_constraint
-
-Cumulative emissions
-^^^^^^^^^^^^^^^^^^^^
-
-Cumulative emissions are attributed to the end of each year. They include the
-initial value in the first planning period and are carried forward in
-subsequent periods.
-
-.. docstring_method:: zen_garden.elements.energy_system.constraints.CarbonEmissionsCumulativeConstraint.get_constraint
-
-Annual emissions limit
-^^^^^^^^^^^^^^^^^^^^^^
+in :ref:`notation.notation`. The emissions calculations used by the limits are
+documented in :ref:`api_reference.expressions`.
 
 .. docstring_method:: zen_garden.elements.energy_system.constraints.CarbonEmissionsAnnualLimitConstraint.get_constraint
 
-Annual-limit overshoot
-^^^^^^^^^^^^^^^^^^^^^^
-
 .. docstring_method:: zen_garden.elements.energy_system.constraints.CarbonEmissionsAnnualOvershootConstraint.get_constraint
 
-Cumulative emissions budget
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
 .. docstring_method:: zen_garden.elements.energy_system.constraints.CarbonEmissionsBudgetConstraint.get_constraint
-
-Budget overshoot
-^^^^^^^^^^^^^^^^
 
 .. docstring_method:: zen_garden.elements.energy_system.constraints.CarbonEmissionsBudgetOvershootConstraint.get_constraint
 
@@ -268,30 +113,15 @@ Operational technology constraints
 Conversion, storage, transport, and retrofit technology notation is defined in
 the corresponding sections of :ref:`notation.notation`.
 
-Conversion capacity factor
-^^^^^^^^^^^^^^^^^^^^^^^^^^
-
 .. docstring_method:: zen_garden.elements.conversion_technology.constraints.CapacityFactorConversionConstraint.get_constraint
 
-Carrier conversion
-^^^^^^^^^^^^^^^^^^
-
 .. docstring_method:: zen_garden.elements.conversion_technology.constraints.CarrierConversionConstraint.get_constraint
-
-Minimum full-load hours
-^^^^^^^^^^^^^^^^^^^^^^^
 
 This constraint is currently available only for conversion technologies.
 
 .. docstring_method:: zen_garden.elements.conversion_technology.constraints.MinimumFullLoadHoursConstraint.get_constraint
 
-Storage capacity factor
-^^^^^^^^^^^^^^^^^^^^^^^
-
 .. docstring_method:: zen_garden.elements.storage_technology.constraints.CapacityFactorStorageConstraint.get_constraint
-
-Storage-level coupling
-^^^^^^^^^^^^^^^^^^^^^^
 
 When ``storage_periodicity`` is enabled, the first storage level of a period is
 coupled to the last level, closing the storage balance across the period
@@ -303,9 +133,6 @@ steps. The canonical storage variables and temporal parameters are listed in
 
 .. docstring_method:: zen_garden.elements.storage_technology.constraints.CoupleStorageLevelConstraint.get_constraint
 
-Maximum storage level
-^^^^^^^^^^^^^^^^^^^^^
-
 Because storage flows are constant within an aggregated time step, the storage
 level cannot have an unmodeled peak between its start and end. Enforcing the
 capacity limit at both endpoints therefore also enforces it throughout the
@@ -313,43 +140,20 @@ step.
 
 .. docstring_method:: zen_garden.elements.storage_technology.constraints.StorageLevelMaxConstraint.get_constraint
 
-Storage spillage
-^^^^^^^^^^^^^^^^
-
 .. docstring_method:: zen_garden.elements.storage_technology.constraints.FlowStorageSpillageConstraint.get_constraint
-
-Mutually exclusive charging and discharging
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. docstring_method:: zen_garden.elements.storage_technology.constraints.ChargeStorageBinaryConstraint.get_constraint
 
 .. docstring_method:: zen_garden.elements.storage_technology.constraints.DischargeStorageBinaryConstraint.get_constraint
 
-Transport capacity factor
-^^^^^^^^^^^^^^^^^^^^^^^^^
-
 .. docstring_method:: zen_garden.elements.transport_technology.constraints.CapacityFactorTransportConstraint.get_constraint
-
-Transport losses
-^^^^^^^^^^^^^^^^
-
-Transport losses can be modeled with either a linear or an exponential loss
-factor based on transport distance.
-
-.. docstring_method:: zen_garden.elements.transport_technology.constraints.TransportTechnologyLossesFlowConstraint.get_constraint
-
-Retrofit flow coupling
-^^^^^^^^^^^^^^^^^^^^^^
 
 .. docstring_method:: zen_garden.elements.retrofitting_technology.constraints.RetrofitFlowCouplingConstraint.get_constraint
 
-.. _mathematical_formulation.technology_on_off:
-
-Technology on/off operation
-^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
 This generic constraint applies the appropriate activity-flow expression for
 each technology type.
+
+.. _mathematical_formulation.technology_on_off:
 
 .. docstring_method:: zen_garden.elements.technology.constraints.TechnologyOnOffCapacityHelperConstraint.get_constraint
 
@@ -370,9 +174,6 @@ remains active, and which bounds apply to additions and total installed
 capacity. General technology notation is defined in
 :ref:`notation.notation`.
 
-Technology lifetime
-^^^^^^^^^^^^^^^^^^^
-
 .. docstring_method:: zen_garden.elements.technology.constraints.TechnologyLifetimeConstraint.get_constraint
 
 .. docstring_method:: zen_garden.elements.technology.constraints.TechnologyLifetimePreviousConstraint.get_constraint
@@ -380,9 +181,6 @@ Technology lifetime
 .. docstring_method:: zen_garden.elements.storage_technology.constraints.StorageEnergyLifetimeConstraint.get_constraint
 
 .. docstring_method:: zen_garden.elements.storage_technology.constraints.StorageEnergyLifetimePreviousConstraint.get_constraint
-
-Capacity upper limit
-^^^^^^^^^^^^^^^^^^^^
 
 .. docstring_method:: zen_garden.elements.technology.constraints.TechnologyCapacityLimitReachedConstraint.get_constraint
 
@@ -392,33 +190,21 @@ Capacity upper limit
 
 .. docstring_method:: zen_garden.elements.storage_technology.constraints.StorageEnergyCapacityLimitNotReachedConstraint.get_constraint
 
-Capacity lower limit
-^^^^^^^^^^^^^^^^^^^^
-
 .. docstring_method:: zen_garden.elements.technology.constraints.TechnologyCapacityLowerLimitConstraint.get_constraint
 
 .. docstring_method:: zen_garden.elements.storage_technology.constraints.StorageEnergyCapacityLowerLimitConstraint.get_constraint
 
 .. _mathematical_formulation.minimum_capacity_addition:
 
-Minimum capacity addition
-^^^^^^^^^^^^^^^^^^^^^^^^^
-
 .. docstring_method:: zen_garden.elements.technology.constraints.TechnologyMinCapacityAdditionConstraint.get_constraint
 
 .. docstring_method:: zen_garden.elements.storage_technology.constraints.StorageEnergyMinCapacityAdditionConstraint.get_constraint
-
-Maximum capacity addition
-^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. docstring_method:: zen_garden.elements.technology.constraints.TechnologyMaxCapacityAdditionConstraint.get_constraint
 
 .. docstring_method:: zen_garden.elements.storage_technology.constraints.StorageEnergyMaxCapacityAdditionConstraint.get_constraint
 
 .. _mathematical_formulation.construction_time:
-
-Construction time
-^^^^^^^^^^^^^^^^^
 
 .. docstring_method:: zen_garden.elements.technology.constraints.TechnologyConstructionTimeConstraint.get_constraint
 
@@ -427,11 +213,6 @@ Construction time
 .. docstring_method:: zen_garden.elements.storage_technology.constraints.StorageEnergyConstructionTimeConstraint.get_constraint
 
 .. docstring_method:: zen_garden.elements.storage_technology.constraints.StorageEnergyConstructionTimeOutsideConstraint.get_constraint
-
-.. _mathematical_formulation.technology_diffusion:
-
-Technology diffusion
-^^^^^^^^^^^^^^^^^^^^
 
 The diffusion limit controls how quickly a technology can be deployed. It links
 the permitted capacity addition to the accumulated installation knowledge from
@@ -465,6 +246,8 @@ knowledge being freely transferable between locations. For storage
 technologies, the diffusion limits are applied independently to power and
 energy capacity.
 
+.. _mathematical_formulation.technology_diffusion:
+
 .. docstring_method:: zen_garden.elements.technology.constraints.TechnologyDiffusionLimitTotalConstraint.get_constraint
 
 .. docstring_method:: zen_garden.elements.technology.constraints.TechnologyDiffusionLimitLocationConstraint.get_constraint
@@ -473,26 +256,6 @@ energy capacity.
 
 .. docstring_method:: zen_garden.elements.storage_technology.constraints.StorageEnergyDiffusionLimitLocationConstraint.get_constraint
 
-Linear conversion CAPEX
-^^^^^^^^^^^^^^^^^^^^^^^
-
-.. docstring_method:: zen_garden.elements.conversion_technology.constraints.LinearCapexConstraint.get_constraint
-
-Storage energy-to-power ratio
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
 .. docstring_method:: zen_garden.elements.storage_technology.constraints.CapacityEnergyToPowerRatioMinConstraint.get_constraint
 
 .. docstring_method:: zen_garden.elements.storage_technology.constraints.CapacityEnergyToPowerRatioMaxConstraint.get_constraint
-
-Storage CAPEX
-^^^^^^^^^^^^^
-
-.. docstring_method:: zen_garden.elements.storage_technology.constraints.StorageTechnologyCapexConstraint.get_constraint
-
-.. docstring_method:: zen_garden.elements.storage_technology.constraints.StorageTechnologyCapexEnergyConstraint.get_constraint
-
-Transport CAPEX
-^^^^^^^^^^^^^^^
-
-.. docstring_method:: zen_garden.elements.transport_technology.constraints.TransportTechnologyCapexConstraint.get_constraint

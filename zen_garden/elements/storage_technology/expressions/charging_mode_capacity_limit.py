@@ -16,6 +16,7 @@ class ChargingModeCapacityLimit(GenericExpression):
     """Multiply storage power limit by the charging-mode binary."""
 
     name = "charging_mode_capacity_limit"
+    unit_category = {"energy_quantity": 1, "time": -1}
     indices = (
         "set_storage_technologies",
         "set_nodes",

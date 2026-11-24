@@ -70,6 +70,22 @@ Constraints
     zen_garden.elements.transport_technology.constraints
 
 
+.. _api_reference.expressions:
+
+Expressions
+===========
+.. autosummary::
+    :toctree: generated
+
+    zen_garden.elements.carrier.expressions
+    zen_garden.elements.conversion_technology.expressions
+    zen_garden.elements.energy_system.expressions
+    zen_garden.elements.retrofitting_technology.expressions
+    zen_garden.elements.storage_technology.expressions
+    zen_garden.elements.technology.expressions
+    zen_garden.elements.transport_technology.expressions
+
+
 
 
 Optimization model
@@ -80,6 +96,7 @@ Optimization model
     zen_garden.model.optimization_model
     zen_garden.model.registries.base
     zen_garden.model.registries.constraint
+    zen_garden.model.registries.expression
     zen_garden.model.registries.mask
     zen_garden.model.registries.parameter
     zen_garden.model.registries.set

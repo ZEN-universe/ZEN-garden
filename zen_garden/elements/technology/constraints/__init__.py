@@ -2,13 +2,6 @@
 
 from zen_garden.model.component_types.constraint import GenericConstraint
 
-from .carbon_emissions_technology_total_constraint import (
-    CarbonEmissionsTechnologyTotalConstraint,
-)
-from .cost_capex_yearly_constraint import CostCapexYearlyConstraint
-from .cost_capex_yearly_total_constraint import CostCapexYearlyTotalConstraint
-from .cost_opex_yearly_constraint import CostOpexYearlyConstraint
-from .cost_opex_yearly_total_constraint import CostOpexYearlyTotalConstraint
 from .technology_capacity_limit_not_reached_constraint import (
     TechnologyCapacityLimitNotReachedConstraint,
 )
@@ -68,11 +61,6 @@ TECHNOLOGY_CONSTRAINTS: list[type[GenericConstraint]] = [
     TechnologyLifetimePreviousConstraint,
     TechnologyDiffusionLimitTotalConstraint,
     TechnologyDiffusionLimitLocationConstraint,
-    CostCapexYearlyConstraint,
-    CostCapexYearlyTotalConstraint,
-    CostOpexYearlyConstraint,
-    CostOpexYearlyTotalConstraint,
-    CarbonEmissionsTechnologyTotalConstraint,
     TechnologyOnOffOperationLowerBoundConstraint,
     TechnologyOnOffOperationUpperBoundConstraint,
     TechnologyOnOffCapacityHelperConstraint,

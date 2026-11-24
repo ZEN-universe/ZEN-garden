@@ -14,6 +14,9 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 import pandas as pd
+import xarray as xr
+from linopy.expressions import LinearExpression
+from linopy.variables import Variable
 
 from zen_garden.elements.technology import Technology
 from zen_garden.elements.technology.sets.set_storage_technologies import (
@@ -306,6 +309,11 @@ class OptimizationStep:
                 keep_files=self.config.solver.keep_files,
                 sanitize_zeros=True,
             )
+        objective_value = self.optimization_model.lp_model.objective.value
+        if objective_value is not None:
+            self.optimization_model.lp_model.objective._value = (
+                objective_value + self.optimization_model.objective_constant
+            )
         # enable logger
         logging.disable(logging.NOTSET)
         if self.optimization_model.lp_model.termination_condition == "optimal":
@@ -474,7 +482,7 @@ class OptimizationStep:
             )
 
     def _solution_with_masked_zeros(
-        self, variable_name: str, indices: list[str]
+        self, component_name: str, indices: list[str]
     ) -> pd.Series:
         """Return a solution series with performance-masked entries set to zero.
 
@@ -485,8 +493,21 @@ class OptimizationStep:
         expected_index = self.optimization_model.sets.resolve_indices(
             indices
         ).combinations
-        solution = self.optimization_model.lp_model.solution[variable_name].to_series()
+        solution = self._component_solution(component_name).to_series()
         return solution.reindex(expected_index).fillna(0.0)
+
+    def _component_solution(self, component_name: str) -> xr.DataArray:
+        """Return a solved variable or evaluated expression by its public name."""
+        lp_solution = self.optimization_model.lp_model.solution
+        if component_name in lp_solution:
+            return lp_solution[component_name]
+
+        expression = self.optimization_model.expressions[component_name]
+        if isinstance(expression, LinearExpression):
+            return expression.solution
+        if isinstance(expression, Variable):
+            return (1 * expression).solution
+        return expression
 
     def add_carbon_emission_cumulative(self, decision_horizon):
         """Adds current emissions to existing emissions.
@@ -505,14 +526,12 @@ class OptimizationStep:
         interval_between_years = self.config.system.interval_between_years
         last_year = decision_horizon[-1]
         carbon_emissions_cumulative = (
-            self.optimization_model.lp_model.solution["carbon_emissions_cumulative"]
+            self._component_solution("carbon_emissions_cumulative")
             .loc[last_year]
             .item()
         )
         carbon_emissions_annual = (
-            self.optimization_model.lp_model.solution["carbon_emissions_annual"]
-            .loc[last_year]
-            .item()
+            self._component_solution("carbon_emissions_annual").loc[last_year].item()
         )
         self.energy_system.carbon_emissions_cumulative_existing = (
             carbon_emissions_cumulative

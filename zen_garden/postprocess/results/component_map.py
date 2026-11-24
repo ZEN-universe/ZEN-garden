@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from zen_garden.postprocess.results.component_type import ComponentType
 
@@ -10,12 +10,18 @@ class ComponentMap:
     parameter: list[str]
     dual: list[str]
     reduced_cost: list[str]
+    expression: list[str] = field(default_factory=list)
 
     @property
     def all_components(self) -> list[str]:
         """Get a list of all components."""
         return (
-            self.sets + self.variable + self.parameter + self.dual + self.reduced_cost
+            self.sets
+            + self.variable
+            + self.parameter
+            + self.dual
+            + self.reduced_cost
+            + self.expression
         )
 
     def find_type(self, component_name: str) -> ComponentType:
@@ -28,6 +34,8 @@ class ComponentMap:
             return ComponentType.sets
         elif component_name in self.variable:
             return ComponentType.variable
+        elif component_name in self.expression:
+            return ComponentType.expression
         elif component_name in self.parameter:
             return ComponentType.parameter
         elif component_name in self.dual:

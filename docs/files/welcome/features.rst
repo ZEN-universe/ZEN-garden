@@ -103,7 +103,7 @@ Emission limits and budgets
 
 Emissions are determined based on the carrier- and technology-specific carbon 
 intensities defined in the input data
-(:ref:`mathematical_formulation.emissions_objective`).
+(:ref:`mathematical_formulation.emissions_constraints`).
 
 **Decarbonization pathway:**
 

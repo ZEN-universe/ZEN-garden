@@ -31,6 +31,7 @@ class NodalNetSupply(GenericExpression):
     """Combine all production, consumption, trade, and storage flows."""
 
     name = "nodal_net_supply"
+    unit_category = {"energy_quantity": 1, "time": -1}
     indices = (
         "set_carriers",
         "set_nodes",

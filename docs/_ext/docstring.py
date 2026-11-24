@@ -181,12 +181,14 @@ class DocstringDirective(SphinxDirective):
             selected.extend(content)
         return selected
 
-    def render_docstring(self, obj: Any, full_name: str) -> list[nodes.Node]:
-        """Render a cleaned docstring and register its source as a dependency."""
-        doc = inspect.getdoc(obj)
-        if not doc:
-            raise ValueError("the selected object has no docstring")
-
+    def render_text(
+        self,
+        doc: str,
+        full_name: str,
+        source: str,
+        source_line: int,
+    ) -> list[nodes.Node]:
+        """Render documentation text as reStructuredText."""
         lines = doc.splitlines()
         selected = self.select_sections(lines)
         if selected is not None:
@@ -211,17 +213,6 @@ class DocstringDirective(SphinxDirective):
                     break
                 filtered.append(line)
 
-        source = inspect.getsourcefile(obj)
-        if source is not None:
-            self.env.note_dependency(source)
-        else:
-            source = f"{full_name} docstring"
-
-        try:
-            _, source_line = inspect.getsourcelines(obj)
-        except (OSError, TypeError):
-            source_line = 0
-
         rendered_lines = (
             self.number_math_directives(filtered, full_name)
             if self.number_equations
@@ -236,6 +227,24 @@ class DocstringDirective(SphinxDirective):
         node.document = self.state.document
         nested_parse_with_titles(self.state, content, node)
         return node.children
+
+    def render_docstring(self, obj: Any, full_name: str) -> list[nodes.Node]:
+        """Render a cleaned docstring and register its source as a dependency."""
+        doc = inspect.getdoc(obj)
+        if not doc:
+            raise ValueError("the selected object has no docstring")
+
+        source = inspect.getsourcefile(obj)
+        if source is not None:
+            self.env.note_dependency(source)
+        else:
+            source = f"{full_name} docstring"
+
+        try:
+            _, source_line = inspect.getsourcelines(obj)
+        except (OSError, TypeError):
+            source_line = 0
+        return self.render_text(doc, full_name, source, source_line)
 
 
 class DocstringMethod(DocstringDirective):
@@ -286,7 +295,28 @@ class DocstringMethod(DocstringDirective):
             for attr in obj_path:
                 obj = getattr(obj, attr)
 
-            return self.render_docstring(obj, full_name)
+            owner = getattr(obj, "__self__", None)
+            is_constraint = (
+                owner is not None
+                and obj_path[-1] == "get_constraint"
+                and isinstance(getattr(owner, "name", None), str)
+            )
+            if is_constraint:
+                self.options.setdefault("sections", "summary, formulation")
+
+            rendered = self.render_docstring(obj, full_name)
+            if not is_constraint:
+                return rendered
+
+            display_name = owner.name.removeprefix("constraint_").replace("_", " ")
+            container = nodes.container(
+                ids=[nodes.make_id(owner.name)], classes=["constraint-documentation"]
+            )
+            heading = nodes.paragraph(classes=["constraint-heading"])
+            heading += nodes.strong(text=display_name.capitalize())
+            container += heading
+            container.extend(rendered)
+            return [container]
 
         except Exception as e:
             error = self.state_machine.reporter.error(
@@ -336,6 +366,41 @@ class DocstringClass(DocstringDirective):
             return [error]
 
 
+class ComponentDocumentation(DocstringDirective):
+    """Insert the reStructuredText stored in a model component's ``doc`` field."""
+
+    def run(self) -> list[nodes.Node]:
+        """Import a component and render its declarative documentation."""
+        full_name = self.arguments[0]
+        module_name, _, obj_name = full_name.rpartition(".")
+
+        try:
+            module = importlib.import_module(module_name)
+            obj = getattr(module, obj_name)
+            doc = getattr(obj, "doc", None)
+            if not isinstance(doc, str) or not doc.strip():
+                raise ValueError("the selected component has no documentation text")
+            doc = inspect.cleandoc(doc)
+
+            source = inspect.getsourcefile(obj)
+            if source is not None:
+                self.env.note_dependency(source)
+            else:
+                source = f"{full_name}.doc"
+            try:
+                _, source_line = inspect.getsourcelines(obj)
+            except (OSError, TypeError):
+                source_line = 0
+            return self.render_text(doc, full_name, source, source_line)
+        except Exception as error:
+            report = self.state_machine.reporter.error(
+                f"Failed to extract component documentation for '{full_name}': "
+                f"{error}",
+                line=self.lineno,
+            )
+            return [report]
+
+
 def setup(app: Sphinx) -> ExtensionMetadata:
     """Setup directives.
 
@@ -344,6 +409,7 @@ def setup(app: Sphinx) -> ExtensionMetadata:
     """
     app.add_directive("docstring_method", DocstringMethod)
     app.add_directive("docstring_class", DocstringClass)
+    app.add_directive("component_documentation", ComponentDocumentation)
 
     return {
         "version": "0.2",

@@ -24,6 +24,8 @@ logger = logging.getLogger(__name__)
 
 VERSION_MAP = {1: "2.0.14", 2: "2.2.15", 3: "2.9.2", 4: "3.0.0"}
 
+# Kept for readers of legacy result versions. Version 4 resolves objectives
+# directly through the expression component map.
 OBJECTIVE_FUNCTION_MAP = {
     "total_cost": "net_present_cost",
     "total_carbon_emissions": "carbon_emissions_annual",
@@ -33,6 +35,7 @@ DOCS_FILENAME_MAP = {
     ComponentType.sets: "sets_docs.json",
     ComponentType.parameter: "parameters_docs.json",
     ComponentType.variable: "variables_docs.json",
+    ComponentType.expression: "expressions_docs.json",
     ComponentType.dual: "duals_docs.json",
 }
 
@@ -304,7 +307,7 @@ class Scenario:
                 for s in sorted(self.path.iterdir())
                 if s.is_dir() and s.name.startswith("MF_")
             )
-            return self._path / mf_folder
+            return mf_folder
         return self._path
 
     @property
@@ -739,14 +742,15 @@ class Scenario:
         :return: The unit of the component.
             Returns None if the component does not have a unit.
         """
-        if component_name == "objective":
-            if self.analysis.objective not in OBJECTIVE_FUNCTION_MAP:
-                raise ValueError(
-                    f"Invalid objective function {self.analysis.objective}"
-                )
-            component_name = OBJECTIVE_FUNCTION_MAP[self.analysis.objective]
+        is_objective = component_name == "objective"
+        if is_objective:
+            component_name = self.analysis.objective
 
-        component_type = self.component_map.find_type(component_name)
+        component_type = (
+            ComponentType.expression
+            if is_objective
+            else self.component_map.find_type(component_name)
+        )
         with pd.HDFStore(
             self.component_path / component_type.get_units_file_name(), mode="r"
         ) as store:
@@ -757,9 +761,11 @@ class Scenario:
             series, pd.Series
         ), f"Component {component_name} is not a series, but a {type(series)}."
 
-        _, timestep_type = TimestepType.from_index_names(
-            self.get_index_names(component_name)
-        )
+        timestep_type = None
+        if not is_objective:
+            _, timestep_type = TimestepType.from_index_names(
+                self.get_index_names(component_name)
+            )
         unit_map = {
             unit: self._convert_to_pint_unit(
                 unit, timestep_type, convert_to_yearly_unit

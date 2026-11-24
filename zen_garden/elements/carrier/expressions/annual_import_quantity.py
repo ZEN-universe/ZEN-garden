@@ -11,6 +11,7 @@ class AnnualImportQuantity(GenericExpression):
     """Weight and sum imported flow over representative hours."""
 
     name = "annual_import_quantity"
+    unit_category = {"energy_quantity": 1}
     indices = ("set_carriers", "set_nodes", "set_years")
 
     @classmethod

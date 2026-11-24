@@ -15,6 +15,7 @@ class InvestmentsBeyondHorizon(GenericExpression):
     """Select investments that cannot commission inside the modeled horizon."""
 
     name = "investments_beyond_horizon"
+    unit_category = {"energy_quantity": 1, "time": -1}
     indices = (
         "set_technologies",
         "set_location",

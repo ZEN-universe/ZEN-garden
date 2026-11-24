@@ -18,6 +18,7 @@ class CapacityAdditionsFromPreHorizonInvestments(GenericExpression):
     """Map pre-horizon investments to their modeled commissioning years."""
 
     name = "capacity_additions_from_pre_horizon_investments"
+    unit_category = {"energy_quantity": 1, "time": -1}
     indices = ("set_technologies", "set_location", "set_years")
 
     @classmethod

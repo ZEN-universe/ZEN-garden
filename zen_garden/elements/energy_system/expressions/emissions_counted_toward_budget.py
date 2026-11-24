@@ -1,16 +1,18 @@
 """Emissions quantity evaluated against the carbon budget."""
 
+import xarray as xr
+
+from zen_garden.elements.energy_system.expressions.carbon_emissions_annual import (
+    CarbonEmissionsAnnual,
+)
+from zen_garden.elements.energy_system.expressions.carbon_emissions_cumulative import (
+    CarbonEmissionsCumulative,
+)
 from zen_garden.elements.energy_system.parameters.interval_between_years import (
     IntervalBetweenYears,
 )
-from zen_garden.elements.energy_system.variables.carbon_emissions_annual import (
-    CarbonEmissionsAnnual,
-)
 from zen_garden.elements.energy_system.variables.carbon_emissions_budget_overshoot import (  # noqa: E501
     CarbonEmissionsBudgetOvershoot,
-)
-from zen_garden.elements.energy_system.variables.carbon_emissions_cumulative import (
-    CarbonEmissionsCumulative,
 )
 from zen_garden.model.component_types.expression import GenericExpression
 
@@ -19,7 +21,9 @@ class EmissionsCountedTowardBudget(GenericExpression):
     """Combine cumulative, annual, and budget-overshoot emissions."""
 
     name = "emissions_counted_toward_budget"
+    unit_category = {"emissions": 1}
     indices = ("set_years",)
+    dependencies = (CarbonEmissionsCumulative, CarbonEmissionsAnnual)
 
     @classmethod
     def get_expression(cls, model_constructor):
@@ -47,13 +51,18 @@ class EmissionsCountedTowardBudget(GenericExpression):
             Expression over its declared model indices.
         """
         optimization_model = model_constructor.optimization_model
-        not_last_year = [
-            year != model_constructor.model_schema.set_years_entire_horizon[-1]
-            for year in model_constructor.model_schema.set_years
-        ]
+        years = model_constructor.model_schema.set_years
+        not_last_year = xr.DataArray(
+            [
+                year != model_constructor.model_schema.set_years_entire_horizon[-1]
+                for year in years
+            ],
+            coords={"set_years": years},
+            dims="set_years",
+        )
         return (
-            optimization_model.variables[CarbonEmissionsCumulative]
+            optimization_model.expressions[CarbonEmissionsCumulative]
             - optimization_model.variables[CarbonEmissionsBudgetOvershoot]
-            + optimization_model.variables[CarbonEmissionsAnnual].where(not_last_year)
+            + optimization_model.expressions[CarbonEmissionsAnnual].where(not_last_year)
             * (optimization_model.parameters[IntervalBetweenYears] - 1)
         )

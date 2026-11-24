@@ -16,6 +16,7 @@ class StorageOvernightCapexEnergy(GenericExpression):
     """Multiply storage energy additions by their specific CAPEX."""
 
     name = "storage_overnight_capex_energy"
+    unit_category = {"money": 1}
     indices = ("set_storage_technologies", "set_nodes", "set_years")
 
     @classmethod

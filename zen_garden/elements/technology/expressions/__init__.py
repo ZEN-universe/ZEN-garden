@@ -18,6 +18,15 @@ from .capacity_growth_from_existing_capacity_with_spillovers import (
 from .capacity_growth_from_local_learning import CapacityGrowthFromLocalLearning
 from .capacity_growth_from_spillovers import CapacityGrowthFromSpillovers
 from .capacity_growth_from_unbounded_market import CapacityGrowthFromUnboundedMarket
+from .capacity_previous import CapacityPrevious
+from .carbon_emissions_technology import CarbonEmissionsTechnology
+from .carbon_emissions_technology_total import CarbonEmissionsTechnologyTotal
+from .cost_capex_overnight import CostCapexOvernight
+from .cost_capex_yearly import CostCapexYearly
+from .cost_capex_yearly_total import CostCapexYearlyTotal
+from .cost_opex_variable import CostOpexVariable
+from .cost_opex_yearly import CostOpexYearly
+from .cost_opex_yearly_total import CostOpexYearlyTotal
 from .existing_capacity_is_below_limit import ExistingCapacityIsBelowLimit
 from .investments_beyond_horizon import InvestmentsBeyondHorizon
 from .on_off_capacity_limit import OnOffCapacityLimit
@@ -25,6 +34,7 @@ from .surviving_capacity_additions import SurvivingCapacityAdditions
 from .technology_activity import TechnologyActivity
 
 TECHNOLOGY_EXPRESSIONS: list[type[GenericExpression]] = [
+    CapacityPrevious,
     SurvivingCapacityAdditions,
     CapacityAdditionsFromNewInvestments,
     CapacityAdditionsFromPreHorizonInvestments,
@@ -36,11 +46,19 @@ TECHNOLOGY_EXPRESSIONS: list[type[GenericExpression]] = [
     InvestmentsBeyondHorizon,
     ExistingCapacityIsBelowLimit,
     TechnologyActivity,
+    CostOpexVariable,
+    CarbonEmissionsTechnology,
+    CostCapexOvernight,
     AnnualTechnologyEmissions,
     AnnualVariableOpex,
     AnnualFixedOpex,
     AnnualizedCapexFromNewInvestments,
     AnnualizedCapexFromExistingCapacity,
+    CostOpexYearly,
+    CostOpexYearlyTotal,
+    CostCapexYearly,
+    CostCapexYearlyTotal,
+    CarbonEmissionsTechnologyTotal,
     OnOffCapacityLimit,
 ]
 
@@ -57,6 +75,15 @@ __all__ = [
     "CapacityGrowthFromLocalLearning",
     "CapacityGrowthFromSpillovers",
     "CapacityGrowthFromUnboundedMarket",
+    "CapacityPrevious",
+    "CarbonEmissionsTechnology",
+    "CarbonEmissionsTechnologyTotal",
+    "CostCapexOvernight",
+    "CostCapexYearly",
+    "CostCapexYearlyTotal",
+    "CostOpexVariable",
+    "CostOpexYearly",
+    "CostOpexYearlyTotal",
     "ExistingCapacityIsBelowLimit",
     "InvestmentsBeyondHorizon",
     "OnOffCapacityLimit",

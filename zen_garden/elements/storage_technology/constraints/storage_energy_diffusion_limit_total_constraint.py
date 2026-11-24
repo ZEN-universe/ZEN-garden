@@ -24,6 +24,20 @@ class StorageEnergyDiffusionLimitTotalConstraint(GenericConstraint):
     """Limit aggregate storage energy additions without double-counting spillovers."""
 
     name = "constraint_storage_energy_diffusion_limit_total"
+    doc = r"""Limit total storage-energy additions with expanded learning terms.
+
+    .. math::
+
+        \begin{aligned}
+        \sum_n\Delta E_{h,n,y}\leq\sum_n\Bigg[{}
+        &d_{h,n,y}\sum_i e^{existing}_{h,n,i}
+        (1-\delta_h)^{\Delta y(y-y_0)-1+\tau_h-\tau^{existing}_{h,n,i}}\\
+        &+d_{h,n,y}\sum_{v<y}\Delta E_{h,n,v}
+        (1-\delta_h)^{\Delta y(y-1-v)}\\
+        &+\sum_{h'\ne h:c_{h'}^{ref}=c_h^{ref}}s^{market}
+        (E_{h',n,y}-\Delta E_{h',n,y})+e^{unbounded}_h\Bigg].
+        \end{aligned}
+    """
     indices = ("set_storage_technologies", "set_years")
 
     @classmethod

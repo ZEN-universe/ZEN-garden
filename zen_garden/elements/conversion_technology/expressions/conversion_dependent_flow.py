@@ -20,6 +20,7 @@ class ConversionDependentFlow(GenericExpression):
     """Select all configured dependent-carrier conversion flows."""
 
     name = "conversion_dependent_flow"
+    unit_category = {"energy_quantity": 1, "time": -1}
     indices = (
         "set_conversion_technologies",
         "set_carriers",

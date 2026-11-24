@@ -50,7 +50,7 @@ class TechnologyDiffusionLimitTotalConstraint(GenericConstraint):
             &+d_{h,p,y} \\sum_{v<y} \\Delta K_{h,q,p,v}
             (1-\\delta_h)^{\\Delta y(y-1-v)} \\\\
             &+\\sum_{h' \\ne h:c_{h'}^{\\mathrm{ref}}=c_h^{\\mathrm{ref}}}
-            s^{\\mathrm{market}}K^{\\mathrm{previous}}_{h',q,p,y}
+            s^{\\mathrm{market}}(K_{h',q,p,y}-\\Delta K_{h',q,p,y})
             +k^{\\mathrm{unbounded}}_{h,q,p,y}\\Bigg].
             \\end{aligned}
 

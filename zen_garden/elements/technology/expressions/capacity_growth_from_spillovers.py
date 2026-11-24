@@ -26,6 +26,7 @@ class CapacityGrowthFromSpillovers(GenericExpression):
     """Capacity growth supported by local and cross-location installation knowledge."""
 
     name = "capacity_growth_from_spillovers"
+    unit_category = {"energy_quantity": 1, "time": -1}
     indices = ("set_technologies", "set_location", "set_years")
 
     @classmethod

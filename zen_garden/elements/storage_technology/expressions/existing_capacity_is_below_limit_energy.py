@@ -13,6 +13,7 @@ class ExistingCapacityIsBelowLimitEnergy(GenericExpression):
     """Indicate where existing storage energy capacity is below its limit."""
 
     name = "existing_capacity_is_below_limit_energy"
+    unit_category = {}
     indices = ("set_storage_technologies", "set_nodes", "set_years")
 
     @classmethod

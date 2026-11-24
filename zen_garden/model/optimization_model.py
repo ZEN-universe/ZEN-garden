@@ -41,6 +41,9 @@ class OptimizationModel:
         self.masks = MaskRegistry()
         # Expressions are model-construction artifacts rather than input data.
         self.expressions = ExpressionRegistry()
+        # Linopy excludes constant objective offsets from its objective object.
+        # Store the offset so reported objective values retain the complete value.
+        self.objective_constant = 0.0
         self.constraints = ConstraintRegistry(lp_model=self.lp_model)
 
     @property
@@ -60,9 +63,11 @@ class OptimizationModel:
         """
         self.parameters.add_parameter(*args, **kwargs)
 
-    def add_expression(self, name: ExpressionKey, expression: ExpressionValue) -> None:
+    def add_expression(
+        self, name: ExpressionKey, expression: ExpressionValue, **metadata
+    ) -> None:
         """Register a reusable expression created during model construction."""
-        self.expressions.add(name, expression)
+        self.expressions.add(name, expression, **metadata)
 
     def add_constraint(self, *args, **kwargs):
         """Add constraints to the model.

@@ -1,20 +1,7 @@
-import linopy as lp
-import xarray as xr
-from linopy.expressions import LinearExpression
-
-from zen_garden.elements.storage_technology.expressions.surviving_capacity_additions_energy import (  # noqa: E501
-    SurvivingCapacityAdditionsEnergy,
-)
-from zen_garden.elements.storage_technology.masks import EnergyCapacityAvailableMask
-from zen_garden.elements.storage_technology.parameters.existing_capacities_energy import (  # noqa: E501
-    ExistingCapacitiesEnergy,
-)
-from zen_garden.elements.storage_technology.variables.capacity_addition_energy import (
-    CapacityAdditionEnergy,
-)
-from zen_garden.elements.storage_technology.variables.capacity_previous_energy import (
+from zen_garden.elements.storage_technology.expressions.capacity_previous_energy import (  # noqa: E501
     CapacityPreviousEnergy,
 )
+from zen_garden.elements.storage_technology.masks import EnergyCapacityAvailableMask
 from zen_garden.model.component_types.constraint import GenericConstraint
 
 
@@ -22,6 +9,12 @@ class StorageEnergyLifetimePreviousConstraint(GenericConstraint):
     """Define storage energy capacity before current-year additions."""
 
     name = "constraint_storage_energy_lifetime_previous"
+    doc = r"""Keep beginning-of-year storage energy capacity non-negative.
+
+    .. math::
+
+        E_{h,n,y}-\Delta E_{h,n,y}\geq 0
+    """
     indices = ("set_storage_technologies", "set_nodes", "set_years")
     masks = (EnergyCapacityAvailableMask,)
 
@@ -49,18 +42,7 @@ class StorageEnergyLifetimePreviousConstraint(GenericConstraint):
         Returns:
             Beginning-of-year storage energy-capacity constraint.
         """
-        model = model_constructor.optimization_model
-        lhs = lp.merge(
-            [
-                1 * model.variables[CapacityPreviousEnergy],
-                -model.expressions[SurvivingCapacityAdditionsEnergy],
-                1 * model.variables[CapacityAdditionEnergy],
-            ],
-            compat="broadcast_equals",
-            join="outer",
-            cls=LinearExpression,
+        return (
+            model_constructor.optimization_model.expressions[CapacityPreviousEnergy]
+            >= 0
         )
-        rhs = xr.align(
-            lhs.const, model.parameters[ExistingCapacitiesEnergy], join="left"
-        )[1]
-        return lhs == rhs

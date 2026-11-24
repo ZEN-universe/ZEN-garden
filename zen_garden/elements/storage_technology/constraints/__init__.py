@@ -9,15 +9,10 @@ from .capacity_energy_to_power_ratio_min_constraint import (
     CapacityEnergyToPowerRatioMinConstraint,
 )
 from .capacity_factor_storage_constraint import CapacityFactorStorageConstraint
-from .carbon_emissions_technology_storage_constraint import (
-    CarbonEmissionsTechnologyStorageConstraint,
-)
 from .charge_storage_binary_constraint import ChargeStorageBinaryConstraint
-from .cost_capex_yearly_energy_constraint import CostCapexYearlyEnergyConstraint
 from .couple_storage_level_constraint import CoupleStorageLevelConstraint
 from .discharge_storage_binary_constraint import DischargeStorageBinaryConstraint
 from .flow_storage_spillage_constraint import FlowStorageSpillageConstraint
-from .opex_technology_storage_constraint import OpexTechnologyStorageConstraint
 from .storage_energy_capacity_limit_not_reached_constraint import (
     StorageEnergyCapacityLimitNotReachedConstraint,
 )
@@ -50,10 +45,6 @@ from .storage_energy_min_capacity_addition_constraint import (
     StorageEnergyMinCapacityAdditionConstraint,
 )
 from .storage_level_max_constraint import StorageLevelMaxConstraint
-from .storage_technology_capex_constraint import StorageTechnologyCapexConstraint
-from .storage_technology_capex_energy_constraint import (
-    StorageTechnologyCapexEnergyConstraint,
-)
 
 STORAGE_TECHNOLOGY_CONSTRAINTS: list[type[GenericConstraint]] = [
     StorageEnergyCapacityLimitNotReachedConstraint,
@@ -67,17 +58,12 @@ STORAGE_TECHNOLOGY_CONSTRAINTS: list[type[GenericConstraint]] = [
     StorageEnergyDiffusionLimitLocationConstraint,
     StorageEnergyLifetimeConstraint,
     StorageEnergyLifetimePreviousConstraint,
-    CostCapexYearlyEnergyConstraint,
     CapacityFactorStorageConstraint,
-    OpexTechnologyStorageConstraint,
-    CarbonEmissionsTechnologyStorageConstraint,
     StorageLevelMaxConstraint,
     CoupleStorageLevelConstraint,
     FlowStorageSpillageConstraint,
     CapacityEnergyToPowerRatioMinConstraint,
     CapacityEnergyToPowerRatioMaxConstraint,
-    StorageTechnologyCapexConstraint,
-    StorageTechnologyCapexEnergyConstraint,
     ChargeStorageBinaryConstraint,
     DischargeStorageBinaryConstraint,
 ]
@@ -94,17 +80,12 @@ __all__ = [
     "StorageEnergyDiffusionLimitLocationConstraint",
     "StorageEnergyLifetimeConstraint",
     "StorageEnergyLifetimePreviousConstraint",
-    "CostCapexYearlyEnergyConstraint",
     "CapacityEnergyToPowerRatioMaxConstraint",
     "CapacityEnergyToPowerRatioMinConstraint",
     "CapacityFactorStorageConstraint",
-    "CarbonEmissionsTechnologyStorageConstraint",
     "ChargeStorageBinaryConstraint",
     "CoupleStorageLevelConstraint",
     "FlowStorageSpillageConstraint",
     "DischargeStorageBinaryConstraint",
-    "OpexTechnologyStorageConstraint",
     "StorageLevelMaxConstraint",
-    "StorageTechnologyCapexConstraint",
-    "StorageTechnologyCapexEnergyConstraint",
 ]

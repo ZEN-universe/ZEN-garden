@@ -20,6 +20,7 @@ class StorageLevelChangeAfterSelfDischarge(GenericExpression):
     """Compare storage level with the decayed predecessor level."""
 
     name = "storage_level_change_after_self_discharge"
+    unit_category = {"energy_quantity": 1}
     indices = (
         "set_storage_technologies",
         "set_nodes",

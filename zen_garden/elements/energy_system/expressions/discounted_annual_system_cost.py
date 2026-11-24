@@ -2,11 +2,11 @@
 
 import pandas as pd
 
+from zen_garden.elements.energy_system.expressions.cost_total import CostTotal
 from zen_garden.elements.energy_system.parameters.discount_rate import DiscountRate
 from zen_garden.elements.energy_system.parameters.interval_between_years import (
     IntervalBetweenYears,
 )
-from zen_garden.elements.energy_system.variables.cost_total import CostTotal
 from zen_garden.model.component_types.expression import GenericExpression
 
 
@@ -14,7 +14,9 @@ class DiscountedAnnualSystemCost(GenericExpression):
     """Apply intra-period economic discounting to annual system cost."""
 
     name = "discounted_annual_system_cost"
+    unit_category = {"money": 1}
     indices = ("set_years",)
+    dependencies = (CostTotal,)
 
     @classmethod
     def get_expression(cls, model_constructor):
@@ -59,4 +61,4 @@ class DiscountedAnnualSystemCost(GenericExpression):
                 )
                 for intermediate_step in range(interval)
             )
-        return optimization_model.variables[CostTotal] * factor
+        return optimization_model.expressions[CostTotal] * factor

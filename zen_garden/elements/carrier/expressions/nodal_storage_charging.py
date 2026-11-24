@@ -21,6 +21,7 @@ class NodalStorageCharging(GenericExpression):
     """Aggregate charging flow by storage reference carrier and node."""
 
     name = "nodal_storage_charging"
+    unit_category = {"energy_quantity": 1, "time": -1}
     indices = (
         "set_carriers",
         "set_nodes",

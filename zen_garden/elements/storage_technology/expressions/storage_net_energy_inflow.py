@@ -41,6 +41,7 @@ class StorageNetEnergyInflow(GenericExpression):
     """Combine charge, discharge, inflow, spillage, and standing-loss duration."""
 
     name = "storage_net_energy_inflow"
+    unit_category = {"energy_quantity": 1, "time": -1}
     indices = (
         "set_storage_technologies",
         "set_nodes",

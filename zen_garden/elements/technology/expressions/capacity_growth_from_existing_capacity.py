@@ -17,6 +17,7 @@ class CapacityGrowthFromExistingCapacity(GenericExpression):
     """Capacity growth supported by depreciated pre-horizon capacity."""
 
     name = "capacity_growth_from_existing_capacity"
+    unit_category = {"energy_quantity": 1, "time": -1}
     indices = ("set_technologies", "set_location", "set_years")
 
     @classmethod

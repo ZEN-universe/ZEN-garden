@@ -19,6 +19,7 @@ class TechnologyActivity(GenericExpression):
     """Combine conversion, storage, and transport operational activity."""
 
     name = "technology_activity"
+    unit_category = {"energy_quantity": 1, "time": -1}
     indices = (
         "set_technologies",
         "set_location",

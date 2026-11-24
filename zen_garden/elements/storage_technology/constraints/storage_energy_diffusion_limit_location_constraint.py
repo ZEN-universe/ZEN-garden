@@ -27,6 +27,21 @@ class StorageEnergyDiffusionLimitLocationConstraint(GenericConstraint):
     """Limit storage energy additions at each node using market knowledge."""
 
     name = "constraint_storage_energy_diffusion_limit"
+    doc = r"""Limit nodal storage-energy additions with fully expanded learning terms.
+
+    .. math::
+
+        \begin{aligned}
+        \Delta E_{h,n,y}\leq{}&d_{h,n,y}\sum_i\left[
+        e^{existing}_{h,n,i}+s_h\sum_{n'\ne n}e^{existing}_{h,n',i}\right]
+        (1-\delta_h)^{\Delta y(y-y_0)-1+\tau_h-\tau^{existing}_{h,n,i}}\\
+        &+d_{h,n,y}\sum_{v<y}\left[\Delta E_{h,n,v}
+        +s_h\sum_{n'\ne n}\Delta E_{h,n',v}\right]
+        (1-\delta_h)^{\Delta y(y-1-v)}\\
+        &+\sum_{h'\ne h:c_{h'}^{ref}=c_h^{ref}}s^{market}
+        (E_{h',n,y}-\Delta E_{h',n,y})+e^{unbounded}_h.
+        \end{aligned}
+    """
     indices = ("set_storage_technologies", "set_nodes", "set_years")
 
     @classmethod
