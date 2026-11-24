@@ -21,14 +21,6 @@ class GenericIndex:
                 )
 
 
-class SetLocations(GenericIndex):
-    """Technology locations selected from nodes or edges."""
-
-    name = "set_location"
-    symbol = r"p \in \mathcal{P}"
-    doc = "Locations where technologies can be installed."
-
-
 class SetConstructionTimeSteps(GenericIndex):
     """Investment years used to represent construction time."""
 
@@ -55,7 +47,6 @@ class SetStorageTimeSteps(GenericIndex):
 
 
 STRUCTURAL_INDICES: tuple[type[GenericIndex], ...] = (
-    SetLocations,
     SetConstructionTimeSteps,
     SetOperationTimeSteps,
     SetStorageTimeSteps,

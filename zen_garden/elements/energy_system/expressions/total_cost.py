@@ -1,3 +1,6 @@
+from inspect import cleandoc
+from textwrap import indent
+
 from zen_garden.elements.energy_system.expressions.net_present_cost import (
     NetPresentCost,
 )
@@ -10,14 +13,20 @@ class TotalCost(GenericExpression):
     name = "total_cost"
     unit_category = {"money": 1}
     indices = ()
-    doc = r"""Total net present cost: sum the complete expanded annual term below
-        over every modeled year. No implicit reduction is applied.
-
-        .. math::
-
-            \sum_{y\in\mathcal Y}\left[\text{expanded per-year term below}\right]
-
-        """ + NetPresentCost.doc
+    discounted_annual_formula = cleandoc(
+        NetPresentCost.doc.split(".. math::", maxsplit=1)[1]
+    )
+    doc = (
+        "Total net present cost over all modeled years.\n\n"
+        ".. math::\n\n"
+        + indent(
+            r"\sum_{y\in\mathcal Y}" + "\n" + discounted_annual_formula,
+            "    ",
+        )
+        + "\n\nThe outer sum runs over modeled planning periods :math:`y`. "
+        "The inner sum over :math:`i` applies annual discount factors to the "
+        "calendar years represented by each planning period."
+    )
     dependencies = (NetPresentCost,)
 
     @classmethod
