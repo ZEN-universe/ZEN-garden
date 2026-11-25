@@ -42,6 +42,10 @@ def build_parser() -> argparse.ArgumentParser:
             If set, the optimization problem will be constructed but not solved.
             Useful for debugging or inspecting the model setup.
 
+        --threads (int, optional):
+            Number of solver threads. Overrides the thread option in
+            ``config.solver.solver_options``.
+
         --log-level (str, optional):
             Logging level for console output. Defaults to ``logging.INFO``.
 
@@ -102,6 +106,14 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="If set, the optimization problem will be constructed but not solved. "
         "Useful for debugging or inspecting the model setup.",
+    )
+    parser.add_argument(
+        "--threads",
+        type=int,
+        required=False,
+        default=None,
+        help="Number of solver threads. Overrides the thread option in "
+        "config.solver.solver_options.",
     )
     parser.add_argument(
         "--log-level",
@@ -207,4 +219,5 @@ def create_zen_garden_cli():
         job_index=job_index,
         no_solve=args.no_solve,
         log_level=args.log_level,
+        threads=args.threads,
     )

@@ -344,12 +344,14 @@ class Config(ConfigBase):
         config_path: str | Path,
         dataset_path: str | Path | None = None,
         folder_output: str | Path | None = None,
+        threads: int | None = None,
     ) -> "Config":
         """Load analysis, solver, and dataset system configuration.
 
         Relative paths are resolved against the main configuration file. A
         supplied dataset or output folder overrides the corresponding analysis
-        setting before paths and the dataset's system file are loaded.
+        setting before paths and the dataset's system file are loaded. A
+        supplied ``threads`` value overrides the solver's thread option.
         """
         config = super().from_file(config_path)
         assert isinstance(config, cls)
@@ -361,6 +363,13 @@ class Config(ConfigBase):
         if folder_output is not None:
             config.analysis.folder_output = str(folder_output)
             config.solver.solver_dir = str(folder_output)
+        if threads is not None:
+            options = config.solver.solver_options
+            # reuse the existing key if present (solvers differ in capitalization)
+            key = next((k for k in options if k.lower() == "threads"), None)
+            if key is None:
+                key = "Threads" if config.solver.name == "gurobi" else "threads"
+            options[key] = threads
 
         dataset_path = Path(config.analysis.dataset)
         if not dataset_path.is_absolute():
