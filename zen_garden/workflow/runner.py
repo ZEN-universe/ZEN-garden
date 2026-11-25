@@ -34,6 +34,7 @@ def run(
     folder_output: str | Path | None = None,
     no_solve: bool = False,
     log_level: str | int = logging.INFO,
+    threads: int | None = None,
 ):
     """Run ZEN-garden.
 
@@ -64,6 +65,9 @@ def run(
             (e.g. ``"INFO"``, ``"DEBUG"``, etc.) or as an integer
             (e.g. ``logging.INFO``, ``logging.DEBUG``, etc.).
             Defaults to ``logging.INFO``.
+        threads (int | None): Number of solver threads. Overrides the thread
+            option in ``config.solver.solver_options``. Defaults to ``None``
+            (use the config value).
 
     Returns:
         OptimizationSetup: The fully set up and solved optimization problem.
@@ -77,7 +81,7 @@ def run(
 
     # Load configurations
     config_obj = Config.from_file(
-        config, dataset_path=dataset, folder_output=folder_output
+        config, dataset_path=dataset, folder_output=folder_output, threads=threads
     )
     config_obj.validate_configurations()
 
