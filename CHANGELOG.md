@@ -3,6 +3,11 @@
 This file gets automatically updated in ZEN-garden's continuous integration 
 procedures. Do not edit the file manually.
 
+## [v3.4.3] - 2026-11-27 
+
+### Bug Fixes 🐛
+- Reduce the memory needed to read sparse components from the results. `Scenario.get_raw_values` now builds the series only from the non-NaN cells instead of calling `to_series()` on the full dense array, which needed several GB for large models such as zen-europe and raised a `MemoryError` in ZEN-temple. [[🔀 PR #1372](https://github.com/ZEN-universe/ZEN-garden/pull/1372) @jacob-mannhardt]
+
 ## [v3.4.2] - 2026-11-23 
 
 ### Bug Fixes 🐛
