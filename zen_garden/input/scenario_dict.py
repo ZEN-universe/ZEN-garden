@@ -252,6 +252,10 @@ class ScenarioDict(dict):
         :return: A new dict which can be used for the scenario analysis
         """
         new_dict = init_dict.copy()
+        # elements that are only added through the expansion of a set (and not
+        # named explicitly). The expansion is based on the element folders of the
+        # dataset, which can contain elements that are not part of the model.
+        self.set_expanded_elements = set()
         for element_class in reversed(list(self.element_type_classes.values())):
             current_set = element_class.label
             if current_set not in new_dict:
@@ -275,6 +279,7 @@ class ScenarioDict(dict):
                         # create dicts if necessary
                         if element not in new_dict:
                             new_dict[element] = {}
+                            self.set_expanded_elements.add(element)
                         # we only set the param dict if it is not already set
                         if param not in new_dict[element]:
                             new_dict[element][param] = base_dict.copy()
@@ -308,10 +313,10 @@ class ScenarioDict(dict):
         """Checks if all elements in scenario_dict are present in the element_dict.
 
         This is used to ensure that all elements in the scenario are defined in
-        the model.
+        the model. Elements that were only added by expanding a set (e.g.,
+        ``set_technologies``) and are not part of the model are removed.
 
-        :param scenario_dict: Dictionary containing the scenario elements
-        :param element_dict: Dictionary containing the element definitions
+        :param element_registry: registry containing the elements of the model
         """
         ignored_elements = (
             ScenarioDict._setting_elements
@@ -322,7 +327,12 @@ class ScenarioDict(dict):
         relevant_elements = set(self.keys()) - set(ignored_elements)
         existing_elements = [e.name for e in element_registry.all_elements()]
         for element in relevant_elements:
-            if element not in existing_elements:
+            if element in existing_elements:
+                continue
+            if element in self.set_expanded_elements:
+                del self[element]
+                del self.dict[element]
+            else:
                 raise KeyError(
                     f"The element '{element}', defined in the scenario file, "
                     "is not defined in the model."

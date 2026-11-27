@@ -146,7 +146,11 @@ name::
           default_op: 0.25
           exclude: [tech1, tech2]
 
-For sets, an additional key ``"exclude"`` is allowed, which allows us to define 
+A set only applies to the elements that are part of the model. Elements that
+have a folder in the dataset but are not selected in ``system.yaml`` are
+ignored.
+
+For sets, an additional key ``"exclude"`` is allowed, which allows us to define
 a list of set-elements that should not be overwritten. The set expansion works 
 hierarchical, meaning that if we define the same parameter for an element of 
 the set, this parameter will not be touched at all. For example, let's say we 
