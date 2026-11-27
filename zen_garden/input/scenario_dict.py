@@ -314,9 +314,7 @@ class ScenarioDict(dict):
 
         This is used to ensure that all elements in the scenario are defined in
         the model. Elements that were only added by expanding a set (e.g.,
-        ``set_technologies``) but are not part of the model, e.g., because they
-        have a folder in the dataset but are not selected in ``system.yaml``, are
-        removed instead of raising an error.
+        ``set_technologies``) and are not part of the model are removed.
 
         :param element_registry: registry containing the elements of the model
         """
