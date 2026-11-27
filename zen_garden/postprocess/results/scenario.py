@@ -202,6 +202,72 @@ def _open_component_variable(file_path: Path, component_name: str) -> xr.DataArr
         store.close()
 
 
+_MAX_CELLS_PER_SLAB = 2_000_000
+
+
+def _to_series_dropna(da: xr.DataArray) -> pd.Series:
+    """Equivalent to ``da.to_series().dropna()`` with a small memory footprint.
+
+    Many components (e.g. ``flow_conversion_input``) are stored as dense
+    arrays over the cartesian product of their index sets, but are almost
+    entirely NaN. ``to_series`` first builds a MultiIndex over every cell,
+    which needs several GB for large models. Here, the array is read in slabs
+    along its first dimension (aligned with the netCDF chunks) and only the
+    non-NaN cells are kept, so the peak memory scales with one slab plus the
+    number of non-NaN values.
+
+    :param da: The (lazy) DataArray to convert.
+    :return: The series of non-NaN values, indexed by the array's dimensions.
+    """
+    if da.ndim < 2 or da.size == 0:
+        return da.to_series().dropna()
+
+    dims = [str(dim) for dim in da.dims]
+    # factorize like xarray's Coordinates.to_index (used by to_series), so
+    # the levels keep the order of the coordinates
+    level_codes: list[np.ndarray] = []
+    levels: list[pd.Index] = []
+    for dim in dims:
+        dim_codes, uniques = da.get_index(dim).factorize()
+        level_codes.append(dim_codes)
+        levels.append(pd.Index(uniques))
+
+    first_dim = dims[0]
+    cells_per_entry = max(1, int(np.prod(da.shape[1:])))
+    slab_size = max(1, _MAX_CELLS_PER_SLAB // cells_per_entry)
+    # align the slabs with the compression chunks of the netCDF variable,
+    # otherwise every chunk is decompressed once per slab it overlaps
+    chunk_sizes = da.encoding.get("chunksizes")
+    if chunk_sizes:
+        chunk = int(chunk_sizes[0])
+        slab_size = max(chunk, slab_size // chunk * chunk)
+
+    positions: list[list[np.ndarray]] = [[] for _ in dims]
+    values: list[np.ndarray] = []
+    for start in range(0, da.shape[0], slab_size):
+        slab = np.asarray(da.isel({first_dim: slice(start, start + slab_size)}).values)
+        if slab.dtype.kind in "fc":
+            mask = ~np.isnan(slab)
+        else:
+            mask = ~pd.isna(slab)
+        nonzero = np.nonzero(mask)
+        values.append(slab[nonzero])
+        positions[0].append(nonzero[0] + start)
+        for i in range(1, len(dims)):
+            positions[i].append(nonzero[i])
+
+    codes = [level_codes[i][np.concatenate(positions[i])] for i in range(len(dims))]
+    # the pandas stubs accept neither Index levels nor numpy codes, although
+    # both are supported and avoid copying the codes into python lists
+    index = pd.MultiIndex(
+        levels=cast(Any, levels),
+        codes=cast(Any, codes),
+        names=dims,
+        verify_integrity=False,
+    )
+    return pd.Series(np.concatenate(values), index=index, name=da.name)
+
+
 class Scenario:
     def __init__(self, path: Path, name: str, base_scenario: str) -> None:
         """Implementation of the scenario. In this solution version, the analysis and
@@ -399,7 +465,7 @@ class Scenario:
         )
         raw_dims = tuple(str(dim) for dim in da.dims)
         query = _build_query(raw_dims, header_map, index)
-        ans = da.query(query).to_series().dropna()
+        ans = _to_series_dropna(da.query(query))
         if rename_index:
             ans = self._rename_index(ans)
         return ans
